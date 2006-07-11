@@ -1,0 +1,93 @@
+/*
+ * GlobalConfig.java
+ *
+ * © <your company here>, 2003-2005
+ * Confidential and proprietary.
+ */
+
+package org.logicprobe.LogicMail.conf;
+
+import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+
+/**
+ * Store the global configuration for LogicMail.
+ * Right now there is no user interface to set
+ * any of these fields, and many of them are always
+ * set to default values.  However, this prepares the
+ * rest of the code to consult these parameters so
+ * they ultimately can be made configurable.
+ */
+public class GlobalConfig {
+    /** full name of the user */
+    private String _fullname;
+    /** number of message headers to retrieve */
+    private int _retMsgCount;
+    /** true for ascending, false for decending */
+    private boolean _dispOrder;
+    
+    public GlobalConfig() {
+        _fullname = "";
+        _retMsgCount = 10;
+        _dispOrder = false;
+    }
+    
+    public GlobalConfig(byte[] byteArray) {
+        deserialize(byteArray);
+    }
+
+    public void setFullname(String fullname) {
+        _fullname = fullname;
+    }
+    
+    public String getFullname() {
+        return _fullname;
+    }
+
+    public void setRetMsgCount(int retMsgCount) {
+        _retMsgCount = retMsgCount;
+    }
+
+    public int getRetMsgCount() {
+        return _retMsgCount;
+    }
+    
+    public void setDispOrder(boolean dispOrder) {
+        _dispOrder = dispOrder;
+    }
+    
+    public boolean getDispOrder() {
+        return _dispOrder;
+    }
+
+    public byte[] serialize() {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        DataOutputStream output = new DataOutputStream(buffer);
+        
+        try {
+            output.writeUTF(_fullname);
+            // write _retMsgCount
+            // write _dispOrder
+            return buffer.toByteArray();
+        } catch (IOException exp) {
+            return null;
+        }
+    }
+
+    public void deserialize(byte[] byteArray) {
+        ByteArrayInputStream buffer = new ByteArrayInputStream(byteArray);
+        DataInputStream input = new DataInputStream(buffer);
+        
+        try {
+            _fullname = input.readUTF();
+            // read _retMsgCount
+            // read _dispOrder
+        } catch (IOException exp) {
+            _fullname = "";
+        }
+    }
+}
+
