@@ -11,6 +11,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.util.StringParser;
 import java.io.IOException;
 import java.util.Vector;
 import java.util.Calendar;
@@ -225,20 +226,27 @@ public class ImapClient extends MailClient {
                                  ":" +
                                  Integer.toString(lastIndex) +
                                  " (ENVELOPE)");
-        // pre-process the returned text to clean up mid-field line breaks
+        
+        // Pre-process the returned text to clean up mid-field line breaks
+        // This should all become unnecessary once execute()
+        // becomes more intelligent in how it handles replies
         String line;
         StringBuffer lineBuf = new StringBuffer();
         Vector rawList2 = new Vector();
         for(int i=0;i<rawList.size();i++) {
             line = (String)rawList.elementAt(i);
-            if(line.length() > 0 && line.startsWith("* ")) {
+            if(line.length() > 0 &&
+                    lineBuf.toString().startsWith("* ") &&
+                    line.startsWith("* ")) {
                 rawList2.addElement(lineBuf.toString());
                 lineBuf = new StringBuffer();
             }
             lineBuf.append(line);
+            if(i == rawList.size()-1 && lineBuf.toString().startsWith("* "))
+                rawList2.addElement(lineBuf.toString());
         }
+
         for(int i=0;i<rawList2.size();i++) {
-            //System.out.println((String)rawList2.elementAt(i));
             try {
                 MessageEnvelope env = parseMessageEnvelope((String)rawList2.elementAt(i));
                 // the index could be parsed, but this is quicker for now
@@ -251,161 +259,115 @@ public class ImapClient extends MailClient {
         return envList;
     }
 
-    private MessageEnvelope parseMessageEnvelope(String rawText) {
+    private MessageEnvelope generateDummyEnvelope() {
         MessageEnvelope env = new MessageEnvelope();
-        
-        int p = 0;
-        int q = 0;
-        
-        // Separate and parse date string
-        p = rawText.indexOf("\"");
-        q = rawText.indexOf("\"", p+1);
-        env.date = parseDateString(rawText.substring(p+1, q));
-        
-        // Parse the subject
-        p = rawText.indexOf("\"", q+1);
-        q = rawText.indexOf("\"", p+1);
-        env.subject = rawText.substring(p+1, q);
-
-        p = rawText.indexOf("(", q+1);
-        q = rawText.indexOf("))", p+1)+1;
+        env.date = Calendar.getInstance().getTime();
+        env.from = new String[1];
+        env.from[0] = "<sender>";
+        env.subject = "<subject>";
+        return env;
+    }
+    
+    private MessageEnvelope parseMessageEnvelope(String rawText) {
+        Vector parsedText = null;
         try {
-            env.from = parseAddressList(rawText.substring(p+1, q));
-        } catch (Exception e) {
-            env.from = new String[1];
-            env.from[0] = "<sender>";
+            parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
+        } catch (Exception exp) {
+            return generateDummyEnvelope();
+        }
+
+        // Sanity checking
+        if(parsedText.size() < 2 ||
+           !(parsedText.elementAt(1) instanceof Vector))
+           return generateDummyEnvelope();
+        
+        Vector parsedEnv = (Vector)parsedText.elementAt(1);
+
+        // More sanity checking
+        if(parsedEnv.size() < 10)
+           return generateDummyEnvelope();
+            
+        MessageEnvelope env = new MessageEnvelope();
+
+        if(parsedEnv.elementAt(0) instanceof String) {
+            env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
         }
         
+        if(parsedEnv.elementAt(1) instanceof String) {
+            env.subject = (String)parsedEnv.elementAt(1);
+        }
+
+        if(parsedEnv.elementAt(2) instanceof Vector) {
+            env.from = parseAddressList((Vector)parsedEnv.elementAt(2));
+        }
+        
+        if(parsedEnv.elementAt(3) instanceof Vector) {
+            env.sender = parseAddressList((Vector)parsedEnv.elementAt(3));
+        }
+
+        if(parsedEnv.elementAt(4) instanceof Vector) {
+            env.replyTo = parseAddressList((Vector)parsedEnv.elementAt(4));
+        }
+
+        if(parsedEnv.elementAt(5) instanceof Vector) {
+            env.to = parseAddressList((Vector)parsedEnv.elementAt(5));
+        }
+
+        if(parsedEnv.elementAt(6) instanceof Vector) {
+            env.cc = parseAddressList((Vector)parsedEnv.elementAt(6));
+        }
+
+        if(parsedEnv.elementAt(7) instanceof Vector) {
+            env.bcc = parseAddressList((Vector)parsedEnv.elementAt(7));
+        }
+
+        if(parsedEnv.elementAt(8) instanceof String) {
+            env.inReplyTo = (String)parsedEnv.elementAt(8);
+            if(env.inReplyTo.equals("NIL")) env.inReplyTo = "";
+        }
+
+        if(parsedEnv.elementAt(9) instanceof String) {
+            env.messageId = (String)parsedEnv.elementAt(9);
+            if(env.messageId.equals("NIL")) env.messageId = "";
+        }
         
         env.isOpened = false;
         return env;
     }
 
-    private String[] parseAddressList(String rawText) {
-        int index = 0;
-        int maxIndex = 0;
-        
+    private String[] parseAddressList(Vector addrVec) {
         // Find the number of addresses, and allocate the array
-        for(int i=0;i<rawText.length();i++)
-            if(rawText.charAt(i) == '(') maxIndex++;
-        String[] addrList = new String[maxIndex];
+        String[] addrList = new String[addrVec.size()];
+        int index = 0;
         
-        int p = 0;
-        int q = 0;
-        while(index < maxIndex) {
-            p = rawText.indexOf("(", q)+1;
-            if(rawText.charAt(p) == '\"')
-                q = rawText.indexOf("\"", p+1)+1;
-            else
-                q = rawText.indexOf(" ", p+1);
-            String realName = parseQuotableString(rawText.substring(p, q));
-            
-            p = q+1;
-            if(rawText.charAt(p+1) == '\"')
-                q = rawText.indexOf("\"", p+1)+1;
-            else
-                q = rawText.indexOf(" ", p+1);
-            String srcRoute = parseQuotableString(rawText.substring(p, q));
-            
-            p = q+1;
-            if(rawText.charAt(p+1) == '\"')
-                q = rawText.indexOf("\"", p+1)+1;
-            else
-                q = rawText.indexOf(" ", p+1);
-            String mbName = parseQuotableString(rawText.substring(p, q));
+        for(int i=0;i<addrVec.size();i++) {
+            if((addrVec.elementAt(i) instanceof Vector) &&
+               ((Vector)addrVec.elementAt(i)).size() >= 4) {
+                
+                Vector entry = (Vector)addrVec.elementAt(i);
 
-            p = q+1;
-            if(rawText.charAt(p+1) == '\"')
-                q = rawText.indexOf("\"", p+1)+1;
-            else
-                q = rawText.indexOf(")", p+1);
-            String hostName = parseQuotableString(rawText.substring(p, q));
+                String realName = "NIL";
+                if(entry.elementAt(0) instanceof String)
+                    realName = (String)entry.elementAt(0);
 
-            // Now assemble these into a single address entry
-            // (possibly eventually storing them separately)
-            if(realName.length() > 0)
-                addrList[index] = realName + " <" + mbName + "@" + hostName + ">";
-            else
-                addrList[index] = mbName + "@" + hostName;
-            index++;
-        }        
-        return addrList;
-    }
-    
-    /**
-     * Process a string that could be quoted,
-     * unquoted, or "NIL", stripping the quotes
-     * and cleaning things up.
-     * @param rawText Raw input string
-     * @return Cleaned up output string
-     */
-    private String parseQuotableString(String rawText) {
-        if(rawText == null || rawText.length() == 0)
-            return "";
-        if(rawText.length() < 2)
-            return rawText;
-        if(rawText.equals("NIL"))
-            return "";
-        if(rawText.charAt(0) == '\"' && rawText.charAt(rawText.length()-1) == '\"')
-            return rawText.substring(1, rawText.length()-1);
-        return "";
-    }
-    
-    private Date parseDateString(String rawDate) {
-        int p = 0;
-        int q = 0;
-        
-        // Clean up the date string for simple parsing
-        p = rawDate.indexOf(",");
-        if(p != -1) {
-            p++;
-            while(rawDate.charAt(p)==' ') p++;
-            rawDate = rawDate.substring(p);
+                String mbName = "NIL";
+                if(entry.elementAt(2) instanceof String)
+                    mbName = (String)entry.elementAt(2);
+
+                String hostName = "NIL";
+                if(entry.elementAt(3) instanceof String)
+                    hostName = (String)entry.elementAt(3);
+
+                // Now assemble these into a single address entry
+                // (possibly eventually storing them separately)
+                if(realName.length() > 0 && !realName.equals("NIL"))
+                    addrList[index] = realName + " <" + mbName + "@" + hostName + ">";
+                else
+                    addrList[index] = mbName + "@" + hostName;
+                index++;
+            }
         }
-        if(rawDate.charAt(rawDate.length()-1) == ')')
-            rawDate = rawDate.substring(0, rawDate.lastIndexOf(' '));
-
-        // Set the time zone
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"+rawDate.lastIndexOf(' ')+1));
-
-        p = 0;
-        q = rawDate.indexOf(" ", p+1);
-        cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(rawDate.substring(p, q)));
-
-        p = q+1;
-        q = rawDate.indexOf(" ", p+1);
-        String monthStr = rawDate.substring(p, q);
-        if(monthStr.equals("Jan")) cal.set(Calendar.MONTH, Calendar.JANUARY);
-        else if(monthStr.equals("Feb")) cal.set(Calendar.MONTH, Calendar.FEBRUARY);
-        else if(monthStr.equals("Mar")) cal.set(Calendar.MONTH, Calendar.MARCH);
-        else if(monthStr.equals("Apr")) cal.set(Calendar.MONTH, Calendar.APRIL);
-        else if(monthStr.equals("May")) cal.set(Calendar.MONTH, Calendar.MAY);
-        else if(monthStr.equals("Jun")) cal.set(Calendar.MONTH, Calendar.JUNE);
-        else if(monthStr.equals("Jul")) cal.set(Calendar.MONTH, Calendar.JULY);
-        else if(monthStr.equals("Aug")) cal.set(Calendar.MONTH, Calendar.AUGUST);
-        else if(monthStr.equals("Sep")) cal.set(Calendar.MONTH, Calendar.SEPTEMBER);
-        else if(monthStr.equals("Oct")) cal.set(Calendar.MONTH, Calendar.OCTOBER);
-        else if(monthStr.equals("Nov")) cal.set(Calendar.MONTH, Calendar.NOVEMBER);
-        else if(monthStr.equals("Dec")) cal.set(Calendar.MONTH, Calendar.DECEMBER);
-        
-        p = q+1;
-        q = rawDate.indexOf(" ", p+1);
-        cal.set(Calendar.YEAR, Integer.parseInt(rawDate.substring(p, q)));
-        
-        p = q+1;
-        q = rawDate.indexOf(":", p+1);
-        cal.set(Calendar.HOUR, Integer.parseInt(rawDate.substring(p, q)));
-        
-        p = q+1;
-        q = rawDate.indexOf(":", p+1);
-        cal.set(Calendar.MINUTE, Integer.parseInt(rawDate.substring(p, q)));
-
-        p = q+1;
-        q = rawDate.indexOf(" ", p+1);
-        cal.set(Calendar.SECOND, Integer.parseInt(rawDate.substring(p, q)));
-        cal.set(Calendar.MILLISECOND, 0);
-        
-        return cal.getTime();
+        return addrList;
     }
     
     public Message getMessage(int index) throws IOException, MailException {
