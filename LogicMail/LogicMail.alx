@@ -1,0 +1,31 @@
+<loader version="1.0">
+	<application id="LogicMail">
+		<name >
+			LogicMail
+		</name>
+		<description >
+			
+		</description>
+		<version >
+			0.1
+		</version>
+		<vendor >
+			Logicprobe
+		</vendor>
+		<copyright >
+			Copyright (c) 2006 Logicprobe
+		</copyright>
+		<fileset Java="1.24">
+			<directory >
+				
+			</directory>
+			<files >
+				LogicMail.cod
+
+			</files>
+
+		</fileset>
+
+	</application>
+
+</loader>
