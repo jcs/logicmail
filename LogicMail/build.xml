@@ -83,13 +83,14 @@
             <isset property="do.rapc"/>
         </condition>
     </target>
-    <target name="post-jar" if="do.rapc">
+    <target name="post-jar">
         <exec dir="${platform.home}/simulator" executable="${platform.home}/bin/rapc.exe" failonerror="true">
             <arg value="import=${platform.bootclasspath}"/>
             <arg value="codename=${name}"/>
             <arg value="${basedir}/${dist.dir}/${dist.jad}"/>
             <arg value="${basedir}/${dist.dir}/${dist.jar}"/>
         </exec>
+        <copy file="${platform.home}/simulator/${name}.cod" todir="${basedir}/${dist.dir}"/>
     </target>
     <target name="post-clean">
         <delete failonerror="false">
