@@ -103,8 +103,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         Object cookie = treeField.getCookie( node );
         if( cookie instanceof MailClient.FolderItem ) {
             MailClient.FolderItem item = (MailClient.FolderItem)cookie;
-            String text = item.name + " (" + Integer.toString(item.msgCount) + ")";
-            graphics.drawText( text, indent, y, Graphics.ELLIPSIS, width );
+            graphics.drawText( item.name, indent, y, Graphics.ELLIPSIS, width );
         }
     }
     

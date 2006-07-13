@@ -65,7 +65,7 @@ public class MessageScreen extends MainScreen {
                 try {
                     if(!client.isConnected()) client.open();
 
-                    client.setActiveMailbox(folderItem.path);
+                    client.setActiveMailbox(folderItem);
                     message = client.getMessage(envelope.index);
                 } catch (IOException exp) {
                     message = new Message();

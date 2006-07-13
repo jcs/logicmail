@@ -39,7 +39,7 @@ public class ImapClient extends MailClient {
      * to provide a common front-end that still works for
      * protocols that do not support a mailbox hierarchy.
      */
-    private String activeMailbox = "";
+    private FolderItem activeMailbox = null;
 
     /**
      * Container for LIST replies
@@ -61,7 +61,7 @@ public class ImapClient extends MailClient {
     
     public void open() throws IOException, MailException {
         super.open();
-        activeMailbox = "";
+        activeMailbox = null;
         try {
             // Authenticate with the server
             execute("LOGIN", acctCfg.getServerUser() + " " + acctCfg.getServerPass(), null);
@@ -81,7 +81,7 @@ public class ImapClient extends MailClient {
                 execute("CLOSE", null, null);
             execute("LOGOUT", null, null);
         }
-        activeMailbox = "";
+        activeMailbox = null;
         super.close();
     }
 
@@ -89,15 +89,31 @@ public class ImapClient extends MailClient {
         return folderDelim;
     }
 
-    public void setActiveMailbox(String mailbox) throws IOException, MailException {
+    public void setActiveMailbox(FolderItem mailbox) throws IOException, MailException {
         this.activeMailbox = mailbox;
         // change active mailbox
-        execute("SELECT", "\""+activeMailbox+"\"", null);
+        Vector selVec = execute("SELECT", "\""+activeMailbox.path+"\"");
         // ideally, this should parse out the message counts
-        // and populate the appropriate fields of a FolderItem
+        // and populate the appropriate fields of the activeMailbox FolderItem
+        int p, q;
+        for(int i=0;i<selVec.size();i++) {
+            String rowText = (String)selVec.elementAt(i);
+            if(rowText.endsWith("EXISTS")) {
+                p = rowText.indexOf(' ');
+                q = rowText.indexOf(' ', p+1);
+                if(q != -1 && p != -1 && q > p) {
+                    try {
+                        activeMailbox.msgCount = Integer.parseInt(rowText.substring(p+1, q));
+                    } catch (Exception e) {
+                        activeMailbox.msgCount = 0;
+                    }
+                }
+            }
+        }
+        System.out.println("msgCount = " + activeMailbox.msgCount);
     }
     
-    public String getActiveMailbox() {
+    public FolderItem getActiveMailbox() {
         return activeMailbox;
     }
 
@@ -135,19 +151,21 @@ public class ImapClient extends MailClient {
         FolderItem item = new FolderItem();
         item.path = folderPath;
         item.delim = folderDelim;
+        item.msgCount = 0;
         int pos = 0;
         int i = 0;
         while((i = folderPath.indexOf(folderDelim, i)) != -1)
             if(i != -1) { pos = i+1; i++; }
         item.name = folderPath.substring(pos);
-        String bakMailbox = activeMailbox;
-        activeMailbox = folderPath;
+        
+        //String bakMailbox = activeMailbox;
+        //activeMailbox = folderPath;
         // Message counts should be disabled for performance
         // reasons, but cannot be until SELECT parsing
         // is implemented.
-        item.msgCount = getMessageCount();
+        //item.msgCount = getMessageCount();
+        //activeMailbox = bakMailbox;
         
-        activeMailbox = bakMailbox;
         return item;
     }
 

@@ -66,10 +66,23 @@ public abstract class MailClient {
      */
     public abstract boolean hasFolders();
 
-    public abstract void setActiveMailbox(String mailbox) throws IOException, MailException;
+    /**
+     * Select a new active mailbox.
+     * This method is only useful if the protocol supports
+     * folders, and should otherwise be ignored or limited
+     * to a single inbox folder
+     * @param mailbox The FolderItem object describing the new active mailbox
+     */
+    public abstract void setActiveMailbox(FolderItem mailbox) throws IOException, MailException;
     
-    public abstract String getActiveMailbox();
-
+    /**
+     * Get the active mailbox.
+     * This method is only useful if the protocol supports
+     * folders, and should otherwise return null or
+     * a single inbox folder
+     * @return The FolderItem object describing the active mailbox
+     */
+    public abstract FolderItem getActiveMailbox();
 
     /**
      * Open a new connection.

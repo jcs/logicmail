@@ -86,12 +86,12 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private void getMessageList() {
         Thread thread = new Thread() {
             public void run() {
-                int firstIndex = folderItem.msgCount - mailSettings.getGlobalConfig().getRetMsgCount();
-                if(firstIndex < 0) firstIndex = 0;
                 Vector msgEnvList = null;
                 try {
                     if(!client.isConnected()) client.open();
-                    client.setActiveMailbox(folderItem.path);
+                    client.setActiveMailbox(folderItem);
+                    int firstIndex = folderItem.msgCount - mailSettings.getGlobalConfig().getRetMsgCount();
+                    if(firstIndex < 0) firstIndex = 0;
                     msgEnvList = client.getMessageEnvelopes(firstIndex, folderItem.msgCount);
                 } catch (IOException exp) {
                     System.out.println(exp);
