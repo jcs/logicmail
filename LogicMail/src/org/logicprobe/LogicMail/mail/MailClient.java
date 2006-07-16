@@ -31,26 +31,6 @@ public abstract class MailClient {
         public int msgCount;
     }
 
-    /**
-     * Relevant header fields for a message.
-     */
-    public static class MessageEnvelope {
-        // official envelope fields
-        public Date date;
-        public String subject;
-        public String[] from;
-        public String[] sender;
-        public String[] replyTo;
-        public String[] to;
-        public String[] cc;
-        public String[] bcc;
-        public String inReplyTo;
-        public String messageId;
-        // other useful tidbits
-        public int index;
-        public boolean isOpened;
-    }
-
     protected AccountConfig acctCfg;
     protected Connection connection;
     
@@ -136,5 +116,21 @@ public abstract class MailClient {
      * @see #getHeaders
      */
     public abstract Message getMessage(int index) throws IOException, MailException;
-}
+    
+    /**
+     * Retrieves the structure of a message from the mailbox.
+     * This allows for more intelligent retrieval of the
+     * message body, but might only work correctly with IMAP.
+     * @param index Message index in the active mailbox
+     */
+    public abstract Message.Structure getMessageStructure(int index) throws IOException, MailException;
 
+    /**
+     * Retrieve the body of a message.
+     * This allows for more intelligent retrieval of the
+     * message body, but might only work correctly with IMAP.
+     * @param index Message index in the active mailbox
+     * @param bindex Index of the body within the message
+     */
+    public abstract String getMessageBody(int index, int bindex) throws IOException, MailException;
+}

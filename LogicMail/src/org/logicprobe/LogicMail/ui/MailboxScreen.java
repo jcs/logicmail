@@ -19,6 +19,7 @@ import net.rim.device.api.i18n.SimpleDateFormat;
 import net.rim.device.api.system.Application;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.Message;
 import org.logicprobe.LogicMail.conf.*;
 
 /**
@@ -142,7 +143,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         // sanity check
         if(index >= messages.size()) return;
         
-        MailClient.MessageEnvelope entry = (MailClient.MessageEnvelope)messages.elementAt(index);
+        Message.Envelope entry = (Message.Envelope)messages.elementAt(index);
         if(entry.isOpened)
             graphics.drawBitmap(1, y, 20, lineHeight*2, bmapOpened, 0, 0);
         else
@@ -214,7 +215,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         int index = msgList.getSelectedIndex();
         if(index < 0 || index > messages.size()) return;
         
-        MailClient.MessageEnvelope envelope = (MailClient.MessageEnvelope)messages.elementAt(index);
+        Message.Envelope envelope = (Message.Envelope)messages.elementAt(index);
         
         UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, envelope));
     }

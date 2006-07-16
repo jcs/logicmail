@@ -190,10 +190,11 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     private void selectAccount(int index) {
         AccountConfig acctConfig = _mailSettings.getAccountConfig(index);
         if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
-            MailClient.FolderItem item = new MailClient.FolderItem();
-            item.name = "INBOX";
-            item.msgCount = 0;
-            UiApplication.getUiApplication().pushScreen(new MailboxScreen(_mailSettings, null, item));
+            Dialog.inform("POP is not currently supported");
+            //MailClient.FolderItem item = new MailClient.FolderItem();
+            //item.name = "INBOX";
+            //item.msgCount = 0;
+            //UiApplication.getUiApplication().pushScreen(new MailboxScreen(_mailSettings, null, item));
         }
         else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
             MailClient client = new ImapClient(acctConfig);

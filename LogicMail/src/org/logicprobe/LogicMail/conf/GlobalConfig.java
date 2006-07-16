@@ -31,7 +31,7 @@ public class GlobalConfig {
     
     public GlobalConfig() {
         _fullname = "";
-        _retMsgCount = 10;
+        _retMsgCount = 30;
         _dispOrder = false;
     }
     

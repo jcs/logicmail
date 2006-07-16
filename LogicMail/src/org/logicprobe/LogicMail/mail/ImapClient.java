@@ -110,7 +110,6 @@ public class ImapClient extends MailClient {
                 }
             }
         }
-        System.out.println("msgCount = " + activeMailbox.msgCount);
     }
     
     public FolderItem getActiveMailbox() {
@@ -184,6 +183,7 @@ public class ImapClient extends MailClient {
      * @see #getHeaders
      */
     private void receiveMessage(Message message, int size) throws IOException, MailException {
+        // Rewrite this one
         int count = 0;
 
         /**
@@ -200,10 +200,10 @@ public class ImapClient extends MailClient {
              * with header fields a lot.
              */
             if (buffer.startsWith(" ") || buffer.startsWith("\t")) {
-                message.setHeaderLine(count - 1, message.getHeaderLine(count - 1) + "\r\n" + buffer);
+                //message.setHeaderLine(count - 1, message.getHeaderLine(count - 1) + "\r\n" + buffer);
             }
             else {
-                message.addHeaderLine(buffer);
+                //message.addHeaderLine(buffer);
                 count++;
             }
 
@@ -218,7 +218,7 @@ public class ImapClient extends MailClient {
         while (octets < size) {
             buffer = connection.receive();
             octets = octets + buffer.length() + 2;
-            message.addBodyLine(buffer);
+            //message.addBodyLine(buffer);
         }
     }
 
@@ -266,9 +266,7 @@ public class ImapClient extends MailClient {
 
         for(int i=0;i<rawList2.size();i++) {
             try {
-                MessageEnvelope env = parseMessageEnvelope((String)rawList2.elementAt(i));
-                // the index could be parsed, but this is quicker for now
-                env.index = firstIndex+i;
+                Message.Envelope env = parseMessageEnvelope((String)rawList2.elementAt(i));
                 envList.addElement(env);
             } catch (Exception exp) {
                 System.out.println("Parse error: " + exp);
@@ -277,8 +275,8 @@ public class ImapClient extends MailClient {
         return envList;
     }
 
-    private MessageEnvelope generateDummyEnvelope() {
-        MessageEnvelope env = new MessageEnvelope();
+    private Message.Envelope generateDummyEnvelope() {
+        Message.Envelope env = new Message.Envelope();
         env.date = Calendar.getInstance().getTime();
         env.from = new String[1];
         env.from[0] = "<sender>";
@@ -286,7 +284,7 @@ public class ImapClient extends MailClient {
         return env;
     }
     
-    private MessageEnvelope parseMessageEnvelope(String rawText) {
+    private Message.Envelope parseMessageEnvelope(String rawText) {
         Vector parsedText = null;
         try {
             parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
@@ -305,7 +303,7 @@ public class ImapClient extends MailClient {
         if(parsedEnv.size() < 10)
            return generateDummyEnvelope();
             
-        MessageEnvelope env = new MessageEnvelope();
+        Message.Envelope env = new Message.Envelope();
 
         if(parsedEnv.elementAt(0) instanceof String) {
             env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
@@ -350,6 +348,8 @@ public class ImapClient extends MailClient {
         }
         
         env.isOpened = false;
+        
+        env.index = Integer.parseInt(rawText.substring(rawText.indexOf(' '), rawText.indexOf("FETCH")-1).trim());
         return env;
     }
 
@@ -391,10 +391,126 @@ public class ImapClient extends MailClient {
     public Message getMessage(int index) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
         Message message = new Message();
-        execute("FETCH", (index + 1)+ " (RFC822)", message);
         return message;
     }
-    
+
+    public String getMessageBody(int index, int bindex) throws IOException, MailException {
+        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
+        
+        Vector rawList = execute("FETCH", index + " (BODY["+ (bindex+1) +"])");
+
+        if(rawList.size() <= 1) return "";
+        
+        StringBuffer msgBuf = new StringBuffer();
+        for(int i=1;i<rawList.size()-1;i++) {
+            msgBuf.append((String)rawList.elementAt(i) + "\n");
+        }
+        String lastLine = (String)rawList.elementAt(rawList.size()-1);
+        msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
+
+        return msgBuf.toString();
+    }
+
+    public Message.Structure getMessageStructure(int index) throws IOException, MailException {
+        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
+
+        Vector rawList = execute("FETCH", index + " (BODYSTRUCTURE)");
+
+        // Pre-process the returned text to clean up mid-field line breaks
+        // This should all become unnecessary once execute()
+        // becomes more intelligent in how it handles replies
+        String line;
+        StringBuffer lineBuf = new StringBuffer();
+        Vector rawList2 = new Vector();
+        for(int i=0;i<rawList.size();i++) {
+            line = (String)rawList.elementAt(i);
+            if(line.length() > 0 &&
+                    lineBuf.toString().startsWith("* ") &&
+                    line.startsWith("* ")) {
+                rawList2.addElement(lineBuf.toString());
+                lineBuf = new StringBuffer();
+            }
+            lineBuf.append(line);
+            if(i == rawList.size()-1 && lineBuf.toString().startsWith("* "))
+                rawList2.addElement(lineBuf.toString());
+        }
+
+        Message.Structure msgStructure = null;
+        for(int i=0;i<rawList2.size();i++) {
+            try {
+                msgStructure = parseMessageStructure((String)rawList2.elementAt(i));
+            } catch (Exception exp) {
+                System.out.println("Parse error: " + exp);
+            }
+        }
+        
+        return msgStructure;
+    }
+
+        private Message.Structure parseMessageStructure(String rawText) {
+        Vector parsedText = null;
+        try {
+            parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
+        } catch (Exception exp) {
+            return null;
+        }
+
+        // Sanity checking
+        if(parsedText.size() < 2 ||
+           !(parsedText.elementAt(1) instanceof Vector))
+           return null;
+        
+        Vector parsedStruct = (Vector)parsedText.elementAt(1);
+
+        Message.Structure msgStructure = new Message.Structure();
+
+        // Determine the number of body parts and parse
+        if(parsedStruct.elementAt(0) instanceof String) {
+            msgStructure.sections = new Message.Section[1];
+            msgStructure.sections[0] = parseMessageStructureSection(parsedStruct);
+        }
+        else {
+            int count = 0;
+            int i;
+            for(i=0;i<parsedStruct.size();i++)
+                if(parsedStruct.elementAt(i) instanceof Vector)
+                    count++;
+                else
+                    break;
+            msgStructure.sections = new Message.Section[count];
+            for(i=0;i<count;i++)
+                msgStructure.sections[i] = parseMessageStructureSection((Vector)parsedStruct.elementAt(i));
+        }
+        
+        return msgStructure;
+    }
+
+    private Message.Section parseMessageStructureSection(Vector sectionList) {
+        Message.Section sec = new Message.Section();
+        
+        if(sectionList.elementAt(0) instanceof String) {
+            sec.type = ((String)sectionList.elementAt(0)).toLowerCase();
+        }
+
+        if(sectionList.elementAt(1) instanceof String) {
+            sec.subtype = ((String)sectionList.elementAt(1)).toLowerCase();
+        }
+
+        if(sectionList.elementAt(5) instanceof String) {
+            sec.encoding = ((String)sectionList.elementAt(5)).toLowerCase();
+        }
+
+        if(sectionList.elementAt(6) instanceof String) {
+            try {
+                sec.size = Integer.parseInt((String)sectionList.elementAt(6));
+            } catch (Exception exp) {
+                sec.size = -1;
+            }
+        }
+
+        return sec;
+    }
+
     /**
      * Execute a LIST command, and return a fully parsed response
      * @param refName Reference name

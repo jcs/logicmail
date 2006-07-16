@@ -11,10 +11,13 @@ import net.rim.device.api.ui.*;
 import net.rim.device.api.ui.component.*;
 import net.rim.device.api.ui.container.*;
 import net.rim.device.api.system.Application;
+import net.rim.device.api.io.Base64InputStream;
+import net.rim.device.api.system.EncodedImage;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
 import java.io.IOException;
+import java.util.Vector;
 
 /**
  * Display an E-Mail message
@@ -22,23 +25,23 @@ import java.io.IOException;
 public class MessageScreen extends MainScreen {
     private MailClient client;
     private MailClient.FolderItem folderItem;
-    private MailClient.MessageEnvelope envelope;
+    private Message.Envelope envelope;
+    private Message.Structure msgStructure;
+    
+    public static int maxSectionSize = 16384;
 
-    private RichTextField bodyField;
-    private Message message;
     static class MessageBody {
         String text;
     };
     
     public MessageScreen(MailClient client,
                          MailClient.FolderItem folderItem,
-                         MailClient.MessageEnvelope envelope)
+                         Message.Envelope envelope)
     {
         super();
         this.client = client;
         this.folderItem = folderItem;
         this.envelope = envelope;
-        message = null;
         
         // Create screen elements
         if(envelope.from != null && envelope.from.length > 0) {
@@ -50,8 +53,8 @@ public class MessageScreen extends MainScreen {
         if(envelope.subject != null)
         add(new RichTextField("Subject: " + envelope.subject));
         add(new SeparatorField());
-        bodyField = new RichTextField("");
-        add(bodyField);
+        //bodyField = new RichTextField("");
+        //add(bodyField);
         getMessageBody();
     }
 
@@ -62,31 +65,70 @@ public class MessageScreen extends MainScreen {
     private void getMessageBody() {
         Thread thread = new Thread() {
             public void run() {
+                Vector msgFields = new Vector();
+                String msgError = null;
                 try {
                     if(!client.isConnected()) client.open();
-
                     client.setActiveMailbox(folderItem);
-                    message = client.getMessage(envelope.index);
+
+                    // Get the structure of the message
+                    msgStructure = client.getMessageStructure(envelope.index);
+                    if(msgStructure == null)
+                        msgError = "Unable to parse structure";
+                    else {
+                        boolean flag = false;
+                        int i;
+                        String mimeType;
+                        String bodySection;
+                        for(i=0;i<msgStructure.sections.length;i++) {
+                            mimeType = msgStructure.sections[i].type + "/" +
+                                       msgStructure.sections[i].subtype;
+                            if(msgStructure.sections[i].size > maxSectionSize) {
+                                msgFields.addElement(new RichTextField("Section too big: "+mimeType));
+                            }
+                            else if(mimeType.equals("text/plain")) {
+                                flag = true;
+                                bodySection = client.getMessageBody(envelope.index, i);
+                                msgFields.addElement(new RichTextField(bodySection));
+                            }
+                            else if(msgStructure.sections[i].type.equals("image") &&
+                                    msgStructure.sections[i].encoding.equals("base64")) {
+                                try {
+                                    bodySection = client.getMessageBody(envelope.index, i);
+                                    byte[] imgBytes = Base64InputStream.decode(bodySection);
+                                    EncodedImage encImage =
+                                            EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);
+                                    msgFields.addElement(new BitmapField(encImage.getBitmap()));
+                                } catch (Exception exp) {
+                                    msgFields.addElement(new RichTextField("Unable to decode image: "+mimeType));
+                                }
+                            }
+                            else {
+                                msgFields.addElement(new RichTextField("Unsupported type: "+mimeType));
+                            }
+                        }
+                        if(!flag)
+                            msgError = "Unable to find plain text body";
+                    }
                 } catch (IOException exp) {
-                    message = new Message();
-                    message.addBodyLine("IOException: " + exp);
+                    msgError = "IOException: " + exp;
                     try { client.close(); } catch (Exception exp2) { }
                 } catch (MailException exp) {
-                    message = new Message();
-                    message.addBodyLine("Protocol error: " + exp);
+                    msgError = "Protocol error: " + exp;
                 } catch (Exception exp) {
-                    message = new Message();
-                    message.addBodyLine("Unknown error: " + exp);
+                    msgError = "Unknown error: " + exp;
                     try { client.close(); } catch (Exception exp2) { }
                 }
-
+                if(msgError != null)
+                    msgFields.insertElementAt(new RichTextField(msgError), 0);
+                
                 // Update the UI
                 synchronized(Application.getEventLock()) {
-                    StringBuffer bodyBuffer = new StringBuffer();
-                    for(int i=0;i<message.getBodyLineCount();i++)
-                        bodyBuffer.append(message.getBodyLine(i) + "\n");
-                    bodyField.setText(bodyBuffer.toString());
-                    bodyField.setDirty(true);
+                    for(int i=0;i<msgFields.size();i++) {
+                        add((Field)msgFields.elementAt(i));
+                        if(i != msgFields.size()-1)
+                            add(new SeparatorField());
+                    }
                 }
             }
         };
