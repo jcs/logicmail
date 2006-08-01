@@ -64,20 +64,23 @@ public class ImapClient extends MailClient {
         activeMailbox = null;
         try {
             // Authenticate with the server
-            execute("LOGIN", acctCfg.getServerUser() + " " + acctCfg.getServerPass(), null);
+            execute("LOGIN", acctCfg.getServerUser() + " " + acctCfg.getServerPass());
+
             // Retrieve server settings and capabilities
             Vector resp = executeList("", "");
             if(resp.size() > 0)
                 folderDelim = ((ListResponse)resp.elementAt(0)).delim;
         } catch (MailException exp) {
             close();
-            throw exp;
+            String msg = exp.getMessage();
+            if(msg.startsWith("NO")) msg = msg.substring(msg.indexOf(' ')+1);
+            throw new MailException(msg);
         }
     }
     
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
-            if(!activeMailbox.equals(""))
+            if(activeMailbox != null && !activeMailbox.equals(""))
                 execute("CLOSE", null, null);
             execute("LOGOUT", null, null);
         }
@@ -184,7 +187,7 @@ public class ImapClient extends MailClient {
      */
     private void receiveMessage(Message message, int size) throws IOException, MailException {
         // Rewrite this one
-        int count = 0;
+        //int count = 0;
 
         /**
          * First we read the header lines. The end of the header is denoted by
@@ -204,7 +207,7 @@ public class ImapClient extends MailClient {
             }
             else {
                 //message.addHeaderLine(buffer);
-                count++;
+                //count++;
             }
 
             buffer = connection.receive();

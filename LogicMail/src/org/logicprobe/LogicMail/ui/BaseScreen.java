@@ -27,17 +27,12 @@ public class BaseScreen extends MainScreen implements KeyListener {
     }
 
     // Create menu items
-    private MenuItem mailboxItem = new MenuItem("Mailbox", 110, 10) {
+    private MenuItem configItem = new MenuItem("Config", 10020, 10) {
         public void run() {
-            //UiApplication.getUiApplication().pushScreen(new FolderScreen());
+            UiApplication.getUiApplication().pushModalScreen(new ConfigScreen());
         }
     };
-    private MenuItem configItem = new MenuItem("Config", 120, 10) {
-        public void run() {
-            UiApplication.getUiApplication().pushScreen(new AcctCfgScreen());
-        }
-    };
-    private MenuItem aboutItem = new MenuItem("About", 150, 10) {
+    private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
         public void run() {
             // Show the about dialog
             String aboutMsg = "LogicMail\nVersion 0.1";
@@ -58,17 +53,12 @@ public class BaseScreen extends MainScreen implements KeyListener {
 
     protected void makeMenu(Menu menu, int instance) {
         menu.addSeparator();
+        menu.add(configItem);
         menu.add(aboutItem);
         menu.add(closeItem);
         menu.add(exitItem);
     }
 
-    /*
-    public boolean onClose() {
-       return true;
-    }
-    */
-    
     // KeyListener methods
     public boolean keyChar(char key, int status, int time) {
         return false;

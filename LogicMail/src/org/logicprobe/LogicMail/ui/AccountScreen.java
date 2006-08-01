@@ -24,10 +24,10 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     private MailSettings _mailSettings;
     private ListField _accountList;
     
-    public AccountScreen(MailSettings mailSettings) {
+    public AccountScreen() {
         super("Accounts");
         
-        _mailSettings = mailSettings;
+        _mailSettings = MailSettings.getInstance();
         
         _accountList = new ListField();
         _accountList.setEmptyString("No accounts", 0);
@@ -194,11 +194,11 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
             //MailClient.FolderItem item = new MailClient.FolderItem();
             //item.name = "INBOX";
             //item.msgCount = 0;
-            //UiApplication.getUiApplication().pushScreen(new MailboxScreen(_mailSettings, null, item));
+            //UiApplication.getUiApplication().pushScreen(new MailboxScreen(null, item));
         }
         else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
             MailClient client = new ImapClient(acctConfig);
-            UiApplication.getUiApplication().pushScreen(new FolderScreen(_mailSettings, client, acctConfig));
+            UiApplication.getUiApplication().pushScreen(new FolderScreen(client));
         }
     }
 }

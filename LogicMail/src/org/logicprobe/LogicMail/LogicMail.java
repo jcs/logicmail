@@ -25,11 +25,9 @@ public class LogicMail extends UiApplication {
     }
 
     public LogicMail() {
-        // Create the configuration object instance
-        MailSettings mailSettings = new MailSettings();
-        
         // Load the configuration
-        mailSettings.loadSettings();
-        pushScreen(new AccountScreen(mailSettings));
+        MailSettings.getInstance().loadSettings();
+
+        pushScreen(new AccountScreen());
     }
 } 

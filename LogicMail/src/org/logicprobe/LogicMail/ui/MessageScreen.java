@@ -16,6 +16,7 @@ import net.rim.device.api.system.EncodedImage;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import java.io.IOException;
 import java.util.Vector;
 
@@ -23,13 +24,12 @@ import java.util.Vector;
  * Display an E-Mail message
  */
 public class MessageScreen extends MainScreen {
-    private MailClient client;
+    private MailSettings _mailSettings;
+    private MailClient _client;
     private MailClient.FolderItem folderItem;
     private Message.Envelope envelope;
     private Message.Structure msgStructure;
     
-    public static int maxSectionSize = 16384;
-
     static class MessageBody {
         String text;
     };
@@ -39,7 +39,8 @@ public class MessageScreen extends MainScreen {
                          Message.Envelope envelope)
     {
         super();
-        this.client = client;
+        _mailSettings = MailSettings.getInstance();
+        _client = client;
         this.folderItem = folderItem;
         this.envelope = envelope;
         
@@ -63,62 +64,52 @@ public class MessageScreen extends MainScreen {
     }
 
     private void getMessageBody() {
-        Thread thread = new Thread() {
-            public void run() {
+        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
+            public void runSession() throws IOException, MailException {
                 Vector msgFields = new Vector();
                 String msgError = null;
-                try {
-                    if(!client.isConnected()) client.open();
-                    client.setActiveMailbox(folderItem);
+                _client.setActiveMailbox(folderItem);
 
-                    // Get the structure of the message
-                    msgStructure = client.getMessageStructure(envelope.index);
-                    if(msgStructure == null)
-                        msgError = "Unable to parse structure";
-                    else {
-                        boolean flag = false;
-                        int i;
-                        String mimeType;
-                        String bodySection;
-                        for(i=0;i<msgStructure.sections.length;i++) {
-                            mimeType = msgStructure.sections[i].type + "/" +
-                                       msgStructure.sections[i].subtype;
-                            if(msgStructure.sections[i].size > maxSectionSize) {
-                                msgFields.addElement(new RichTextField("Section too big: "+mimeType));
-                            }
-                            else if(mimeType.equals("text/plain")) {
-                                flag = true;
-                                bodySection = client.getMessageBody(envelope.index, i);
-                                msgFields.addElement(new RichTextField(bodySection));
-                            }
-                            else if(msgStructure.sections[i].type.equals("image") &&
-                                    msgStructure.sections[i].encoding.equals("base64")) {
-                                try {
-                                    bodySection = client.getMessageBody(envelope.index, i);
-                                    byte[] imgBytes = Base64InputStream.decode(bodySection);
-                                    EncodedImage encImage =
-                                            EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);
-                                    msgFields.addElement(new BitmapField(encImage.getBitmap()));
-                                } catch (Exception exp) {
-                                    msgFields.addElement(new RichTextField("Unable to decode image: "+mimeType));
-                                }
-                            }
-                            else {
-                                msgFields.addElement(new RichTextField("Unsupported type: "+mimeType));
+                // Get the structure of the message
+                msgStructure = _client.getMessageStructure(envelope.index);
+                if(msgStructure == null)
+                    msgError = "Unable to parse structure";
+                else {
+                    boolean flag = false;
+                    int i;
+                    String mimeType;
+                    String bodySection;
+                    for(i=0;i<msgStructure.sections.length;i++) {
+                        mimeType = msgStructure.sections[i].type + "/" +
+                                   msgStructure.sections[i].subtype;
+                        if(msgStructure.sections[i].size > _mailSettings.getGlobalConfig().getMaxSectionSize()) {
+                            msgFields.addElement(new RichTextField("Section too big: "+mimeType));
+                        }
+                        else if(mimeType.equals("text/plain")) {
+                            flag = true;
+                            bodySection = _client.getMessageBody(envelope.index, i);
+                            msgFields.addElement(new RichTextField(bodySection));
+                        }
+                        else if(msgStructure.sections[i].type.equals("image") &&
+                                msgStructure.sections[i].encoding.equals("base64")) {
+                            try {
+                                bodySection = _client.getMessageBody(envelope.index, i);
+                                byte[] imgBytes = Base64InputStream.decode(bodySection);
+                                EncodedImage encImage =
+                                        EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);
+                                msgFields.addElement(new BitmapField(encImage.getBitmap()));
+                            } catch (Exception exp) {
+                                msgFields.addElement(new RichTextField("Unable to decode image: "+mimeType));
                             }
                         }
-                        if(!flag)
-                            msgError = "Unable to find plain text body";
+                        else {
+                            msgFields.addElement(new RichTextField("Unsupported type: "+mimeType));
+                        }
                     }
-                } catch (IOException exp) {
-                    msgError = "IOException: " + exp;
-                    try { client.close(); } catch (Exception exp2) { }
-                } catch (MailException exp) {
-                    msgError = "Protocol error: " + exp;
-                } catch (Exception exp) {
-                    msgError = "Unknown error: " + exp;
-                    try { client.close(); } catch (Exception exp2) { }
+                    if(!flag)
+                        msgError = "Unable to find plain text body";
                 }
+
                 if(msgError != null)
                     msgFields.insertElementAt(new RichTextField(msgError), 0);
                 
@@ -132,7 +123,7 @@ public class MessageScreen extends MainScreen {
                 }
             }
         };
-        thread.start();
+        clientHandler.start();
     }
 
     private MenuItem propsItem = new MenuItem("Properties", 100, 10) {

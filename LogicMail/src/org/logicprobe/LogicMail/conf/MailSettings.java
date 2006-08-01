@@ -15,12 +15,19 @@ import javax.microedition.rms.*;
  * configuration, along with a front-end to the Record Store
  */
 public class MailSettings {
+    private static MailSettings _instance;
     private GlobalConfig _globalConfig;
     private Vector _accountConfigs;
     
-    public MailSettings() {
+    private MailSettings() {
         _globalConfig = new GlobalConfig();
         _accountConfigs = new Vector();
+    }
+    
+    public static synchronized MailSettings getInstance() {
+        if(_instance == null)
+            _instance = new MailSettings();
+        return _instance;
     }
     
     public GlobalConfig getGlobalConfig() {

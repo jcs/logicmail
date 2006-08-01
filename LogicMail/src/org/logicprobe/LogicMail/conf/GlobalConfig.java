@@ -28,11 +28,15 @@ public class GlobalConfig {
     private int _retMsgCount;
     /** true for ascending, false for decending */
     private boolean _dispOrder;
-    
+    /** maximum size of an e-mail section to download */
+    private int _maxSectionSize = 16384;
+
+
     public GlobalConfig() {
         _fullname = "";
         _retMsgCount = 30;
         _dispOrder = false;
+        _maxSectionSize = 16384;
     }
     
     public GlobalConfig(byte[] byteArray) {
@@ -63,14 +67,23 @@ public class GlobalConfig {
         return _dispOrder;
     }
 
+    public void setMaxSectionSize(int maxSectionSize) {
+        _maxSectionSize = maxSectionSize;
+    }
+    
+    public int getMaxSectionSize() {
+        return _maxSectionSize;
+    }
+    
     public byte[] serialize() {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(buffer);
         
         try {
             output.writeUTF(_fullname);
-            // write _retMsgCount
-            // write _dispOrder
+            output.writeInt(_retMsgCount);
+            output.writeBoolean(_dispOrder);
+            output.writeInt(_maxSectionSize);
             return buffer.toByteArray();
         } catch (IOException exp) {
             return null;
@@ -83,10 +96,14 @@ public class GlobalConfig {
         
         try {
             _fullname = input.readUTF();
-            // read _retMsgCount
-            // read _dispOrder
+            _retMsgCount = input.readInt();
+            _dispOrder = input.readBoolean();
+            _maxSectionSize = input.readInt();
         } catch (IOException exp) {
             _fullname = "";
+            _retMsgCount = 30;
+            _dispOrder = false;
+            _maxSectionSize = 16384;
         }
     }
 }

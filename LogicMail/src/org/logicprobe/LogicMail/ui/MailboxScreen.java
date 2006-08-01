@@ -31,8 +31,8 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private Bitmap bmapUnopened;
     private ListField msgList;
     
-    private MailSettings mailSettings;
-    private MailClient client;
+    private MailSettings _mailSettings;
+    private MailClient _client;
     private MailClient.FolderItem folderItem;
     
     // Things to calculate in advance
@@ -41,10 +41,10 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private static int senderWidth;
     private static int maxWidth;
     
-    public MailboxScreen(MailSettings mailSettings, MailClient client, MailClient.FolderItem folderItem) {
+    public MailboxScreen(MailClient client, MailClient.FolderItem folderItem) {
         super(folderItem.name);
-        this.mailSettings = mailSettings;
-        this.client = client;
+        _mailSettings = MailSettings.getInstance();
+        _client = client;
         this.folderItem = folderItem;
 
         bmapOpened = Bitmap.getBitmapResource("mail_opened.png");
@@ -85,29 +85,22 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     }
     
     private void getMessageList() {
-        Thread thread = new Thread() {
-            public void run() {
+        MailClientHandler clientHandler = new MailClientHandler(_client, "Getting message list") {
+            public void runSession() throws IOException, MailException {
                 Vector msgEnvList = null;
                 try {
-                    if(!client.isConnected()) client.open();
-                    client.setActiveMailbox(folderItem);
-                    int firstIndex = folderItem.msgCount - mailSettings.getGlobalConfig().getRetMsgCount();
+                    _client.setActiveMailbox(folderItem);
+                    int firstIndex = folderItem.msgCount - _mailSettings.getGlobalConfig().getRetMsgCount();
                     if(firstIndex < 0) firstIndex = 0;
-                    msgEnvList = client.getMessageEnvelopes(firstIndex, folderItem.msgCount);
-                } catch (IOException exp) {
-                    System.out.println(exp);
-                    try { client.close(); } catch (Exception exp2) { }
+                    msgEnvList = _client.getMessageEnvelopes(firstIndex, folderItem.msgCount);
                 } catch (MailException exp) {
-                    System.out.println("Protocol error: " + exp);
                     msgEnvList = null;
-                } catch (Exception exp) {
-                    System.out.println("Unknown error: " + exp);
-                    try { client.close(); } catch (Exception exp2) { }
+                    throw exp;
                 }
                 if(msgEnvList == null) return;
 
                 synchronized(Application.getEventLock()) {
-                    if(mailSettings.getGlobalConfig().getDispOrder())
+                    if(_mailSettings.getGlobalConfig().getDispOrder())
                         messages = msgEnvList;
                     else {
                         messages.removeAllElements();
@@ -124,7 +117,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
                 }
             }
         };
-        thread.start();
+        clientHandler.start();
     }
     
     /**
@@ -217,7 +210,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         
         Message.Envelope envelope = (Message.Envelope)messages.elementAt(index);
         
-        UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, envelope));
+        UiApplication.getUiApplication().pushScreen(new MessageScreen(_client, folderItem, envelope));
     }
 
     public boolean keyChar(char key,
