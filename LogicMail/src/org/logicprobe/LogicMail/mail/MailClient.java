@@ -14,7 +14,12 @@ package org.logicprobe.LogicMail.mail;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Vector;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.cache.Cacheable;
 
 /**
  * Create a generic interface to different mail protocols.
@@ -24,11 +29,35 @@ public abstract class MailClient {
     /**
      * Relevant information describing a folder.
      */
-    public static class FolderItem {
+    public static class FolderItem implements Cacheable {
         public String name;
         public String path;
         public String delim;
         public int msgCount;
+
+        public byte[] serialize() {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            DataOutputStream output = new DataOutputStream(buffer);
+            try {
+                output.writeUTF(name);
+                output.writeUTF(path);
+                output.writeUTF(delim);
+                output.writeInt(msgCount);
+                return buffer.toByteArray();
+            } catch (IOException exp) {
+                return null;
+            }
+        }
+        public void deserialize(byte[] byteArray) {
+            ByteArrayInputStream buffer = new ByteArrayInputStream(byteArray);
+            DataInputStream input = new DataInputStream(buffer);
+            try {
+               name = input.readUTF();
+               path = input.readUTF();
+               delim = input.readUTF();
+               msgCount = input.readInt();
+            } catch (IOException exp) { }
+        }
     }
 
     protected AccountConfig acctCfg;
@@ -39,6 +68,10 @@ public abstract class MailClient {
         connection = new Connection(acctCfg);
     }
 
+    public AccountConfig getAcctConfig() {
+        return acctCfg;
+    }
+    
     /**
      * Determine whether the underlying protocol supports multiple
      * mail folders.

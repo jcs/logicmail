@@ -16,6 +16,7 @@ import org.logicprobe.LogicMail.conf.*;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.cache.AccountCache;
 import java.util.Vector;
 import java.io.IOException;
 
@@ -37,8 +38,16 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         treeField.setIndentWidth(20);
         
         add(treeField);
-
-        refreshFolderTree();
+        
+        AccountCache acctCache =
+                new AccountCache(_client.getAcctConfig().getAcctName());
+        Vector folderItemList = acctCache.loadFolderList();
+        if(folderItemList != null && folderItemList.size() > 0) {
+            generateFolderTree(folderItemList);
+            acctCache.saveFolderList(folderItemList);
+        }
+        else
+            refreshFolderTree();
     }
 
     protected boolean onSavePrompt() {
@@ -117,6 +126,39 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         return retval;
     }
     
+    private synchronized void generateFolderTree(Vector folderItemList) {
+        treeField.deleteAll();
+        int parent = 0;
+        int node = 0;
+        int depth = 0;
+        int olddepth = 0;
+        Vector path = new Vector();
+        for(int i=0;i<folderItemList.size();i++) {
+            MailClient.FolderItem folderItem =
+                    (MailClient.FolderItem)folderItemList.elementAt(i);
+            // Find the tree depth of this folder
+            depth = 0;
+            int pos = 0;
+            while(pos < folderItem.path.length()) {
+                if(folderItem.path.indexOf(folderItem.delim, pos) != -1) { depth++; }
+                pos++;
+            }
+            if(depth > olddepth) {
+                path.addElement(new Integer(node));
+                parent = ((Integer)path.lastElement()).intValue();
+            }
+            else if(depth < olddepth) {
+                for(int j=path.size()-1;j>depth;j--)
+                    path.removeElementAt(j);
+                parent = ((Integer)path.elementAt(path.size()-2)).intValue();
+            }
+            node = treeField.addChildNode(parent, folderItem);
+            if(depth != olddepth)
+                olddepth = depth;
+        }
+        treeField.setDirty(true);
+    }
+    
     /**
      * Refresh the mail folder tree
      */
@@ -142,37 +184,13 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         
                 // Update the folder tree
                 synchronized(Application.getEventLock()) {
-                    treeField.deleteAll();
-                    int parent = 0;
-                    int node = 0;
-                    int depth = 0;
-                    int olddepth = 0;
-                    Vector path = new Vector();
-                    for(int i=0;i<folderList.size();i++) {
-                        String name = (String)folderList.elementAt(i);
-                        // Find the tree depth of this folder
-                        depth = 0;
-                        int pos = 0;
-                        while(pos < name.length()) {
-                            if(name.indexOf(delim, pos) != -1) { depth++; }
-                            pos++;
-                        }
-                        if(depth > olddepth) {
-                            path.addElement(new Integer(node));
-                            parent = ((Integer)path.lastElement()).intValue();
-                        }
-                        else if(depth < olddepth) {
-                            for(int j=path.size()-1;j>depth;j--)
-                                path.removeElementAt(j);
-                            parent = ((Integer)path.elementAt(path.size()-2)).intValue();
-                        }
-                        MailClient.FolderItem item = (MailClient.FolderItem)folderItemList.elementAt(i);
-                        node = treeField.addChildNode(parent, item);
-                        if(depth != olddepth)
-                            olddepth = depth;
-                    }
-                    treeField.setDirty(true);
+                    generateFolderTree(folderItemList);
                 }
+
+                // Save the results to the cache
+                AccountCache acctCache =
+                    new AccountCache(_client.getAcctConfig().getAcctName());
+                acctCache.saveFolderList(folderItemList);
             }
         };
         clientHandler.start();
