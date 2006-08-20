@@ -31,18 +31,24 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.*;
-import net.rim.device.api.ui.component.*;
-import net.rim.device.api.ui.container.*;
-import net.rim.device.api.system.KeyListener;
+import java.util.Vector;
+import java.io.IOException;
 import net.rim.device.api.system.Application;
-import org.logicprobe.LogicMail.conf.*;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.TreeField;
+import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.cache.AccountCache;
-import java.util.Vector;
-import java.io.IOException;
+import org.logicprobe.LogicMail.controller.MailboxController;
+import org.logicprobe.LogicMail.util.Observable;
 
 /**
  * Mail folder listing
@@ -51,10 +57,13 @@ import java.io.IOException;
 public class FolderScreen extends BaseScreen implements TreeFieldCallback {
     private TreeField treeField;
     private MailClient _client;
-
+    private MailboxController _mailboxController;
+    
     public FolderScreen(MailClient client) {
         super("Folders");
         _client = client;
+        _mailboxController = MailboxController.getInstance();
+        _mailboxController.addObserver(this);
 
         treeField = new TreeField(this, Field.FOCUSABLE);
         treeField.setEmptyString("No folders", 0);
@@ -71,7 +80,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
             acctCache.saveFolderList(folderItemList);
         }
         else
-            refreshFolderTree();
+            _mailboxController.refreshFolderTree();
     }
 
     protected boolean onSavePrompt() {
@@ -112,7 +121,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
 
     private MenuItem refreshItem = new MenuItem("Refresh", 110, 10) {
         public void run() {
-            refreshFolderTree();
+            _mailboxController.refreshFolderTree();
         }
     };
 
@@ -183,41 +192,14 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         treeField.setDirty(true);
     }
     
-    /**
-     * Refresh the mail folder tree
-     */
-    private void refreshFolderTree() {
-        MailClientHandler clientHandler = new MailClientHandler(_client, "Refreshing folder tree") {
-            public void runSession() throws IOException, MailException {
-                // Open a connection to the IMAP server, and retrieve
-                // the folder tree as a list of delimited items
-                String delim = "";
-                Vector folderList = null;
-                Vector folderItemList = new Vector();
-                ImapClient iclient = (ImapClient)_client;
-                try {
-                    delim = iclient.getFolderDelim();
-                    folderList = iclient.getFolderList("");
-                    for(int i=0;i<folderList.size();i++)
-                        folderItemList.addElement(iclient.getFolderItem((String)folderList.elementAt(i)));
-                } catch (MailException exp) {
-                    folderList = null;
-                    throw exp;
-                }
-                if(folderList == null) return;
-        
-                // Update the folder tree
+    public void update(Observable subject, Object arg) {
+        super.update(subject, arg);
+        if(subject.equals(_mailboxController)) {
+            if(((String)arg).equals("folders")) {
                 synchronized(Application.getEventLock()) {
-                    generateFolderTree(folderItemList);
+                    generateFolderTree(_mailboxController.getFolderItemList());
                 }
-
-                // Save the results to the cache
-                AccountCache acctCache =
-                    new AccountCache(_client.getAcctConfig().getAcctName());
-                acctCache.saveFolderList(folderItemList);
             }
-        };
-        clientHandler.start();
+        }
     }
 }
-

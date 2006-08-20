@@ -41,7 +41,7 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
 /**
  * Configuration screen
  */
-public class ConfigScreen extends MainScreen implements FieldChangeListener {
+public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     private MailSettings _mailSettings;
     private BasicEditField fldFullname;
     private BasicEditField fldRetMsgCount;
@@ -51,10 +51,7 @@ public class ConfigScreen extends MainScreen implements FieldChangeListener {
     private ButtonField btSave;
 
     public ConfigScreen() {
-        super();
-        LabelField titleField = new LabelField
-         ("LogicMail - Config", LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
-        setTitle(titleField);
+        super("LogicMail - Config");
 
         _mailSettings = MailSettings.getInstance();
         GlobalConfig config = _mailSettings.getGlobalConfig();

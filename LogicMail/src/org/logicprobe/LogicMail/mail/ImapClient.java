@@ -271,6 +271,7 @@ public class ImapClient extends MailClient {
 
     public Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException {
         Vector envList = new Vector();
+
         Vector rawList = execute("FETCH",
                                  Integer.toString(firstIndex) +
                                  ":" +

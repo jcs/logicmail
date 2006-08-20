@@ -31,23 +31,26 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.*;
-import net.rim.device.api.ui.component.*;
-import net.rim.device.api.ui.container.*;
+import java.io.IOException;
+import java.util.Vector;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.system.EncodedImage;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.component.BitmapField;
+import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.RichTextField;
+import net.rim.device.api.ui.component.SeparatorField;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import java.io.IOException;
-import java.util.Vector;
 
 /**
  * Display an E-Mail message
  */
-public class MessageScreen extends MainScreen {
+public class MessageScreen extends BaseScreen {
     private MailSettings _mailSettings;
     private MailClient _client;
     private MailClient.FolderItem folderItem;
@@ -78,8 +81,6 @@ public class MessageScreen extends MainScreen {
         if(envelope.subject != null)
         add(new RichTextField("Subject: " + envelope.subject));
         add(new SeparatorField());
-        //bodyField = new RichTextField("");
-        //add(bodyField);
         getMessageBody();
     }
 

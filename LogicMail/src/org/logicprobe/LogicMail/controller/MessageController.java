@@ -29,25 +29,24 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail;
+package org.logicprobe.LogicMail.controller;
 
-import net.rim.device.api.ui.UiApplication;
-import org.logicprobe.LogicMail.ui.AccountScreen;
-import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.util.Observer;
+import org.logicprobe.LogicMail.util.Observable;
 
 /**
- * Main class for the application
+ * Controller for message screens
  */
-public class LogicMail extends UiApplication {
-    public static void main(String argv[]) {
-        LogicMail app = new LogicMail();
-        app.enterEventDispatcher();
+public class MessageController extends Controller implements Observable {
+    private static MessageController _instance;
+    
+    /** Creates a new instance of MessageController */
+    private MessageController() {
     }
-
-    public LogicMail() {
-        // Load the configuration
-        MailSettings.getInstance().loadSettings();
-
-        pushScreen(new AccountScreen());
+    
+    public static synchronized MessageController getInstance() {
+        if(_instance == null)
+            _instance = new MessageController();
+        return _instance;
     }
-} 
+}

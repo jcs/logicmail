@@ -29,25 +29,33 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail;
+package org.logicprobe.LogicMail.controller;
 
-import net.rim.device.api.ui.UiApplication;
-import org.logicprobe.LogicMail.ui.AccountScreen;
-import org.logicprobe.LogicMail.conf.MailSettings;
+import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.util.Observable;
+import org.logicprobe.LogicMail.util.Observer;
 
 /**
- * Main class for the application
+ * Abstract parent class for all controllers.
+ * Provides convenient implementations of methods
+ * from interfaces common to all controllers.
  */
-public class LogicMail extends UiApplication {
-    public static void main(String argv[]) {
-        LogicMail app = new LogicMail();
-        app.enterEventDispatcher();
+public abstract class Controller implements Observable {
+    
+    // Observable methods
+    private Observer[] observers = new Observer[0];
+    public void addObserver(Observer o) {
+        Arrays.add(observers, o);
     }
-
-    public LogicMail() {
-        // Load the configuration
-        MailSettings.getInstance().loadSettings();
-
-        pushScreen(new AccountScreen());
+    public void deleteObserver(Observer o) {
+        Arrays.remove(observers, o);
     }
-} 
+    public void notifyObservers() {
+        notifyObservers(null);
+    }
+    public void notifyObservers(Object arg) {
+        for(int i=0;i<observers.length;i++)
+            if(observers[i] != null)
+                observers[i].update(this, arg);
+    }
+}

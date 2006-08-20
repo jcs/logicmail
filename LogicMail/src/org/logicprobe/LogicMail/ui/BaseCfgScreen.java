@@ -28,26 +28,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.logicprobe.LogicMail.ui;
 
-package org.logicprobe.LogicMail;
-
-import net.rim.device.api.ui.UiApplication;
-import org.logicprobe.LogicMail.ui.AccountScreen;
-import org.logicprobe.LogicMail.conf.MailSettings;
+import net.rim.device.api.ui.container.MainScreen;
+import net.rim.device.api.ui.component.LabelField;
 
 /**
- * Main class for the application
+ * This class is the base for all configuration screens
+ * in LogicMail. Its purpose is to provide uniform menu
+ * and event handler interfaces for those screens.
  */
-public class LogicMail extends UiApplication {
-    public static void main(String argv[]) {
-        LogicMail app = new LogicMail();
-        app.enterEventDispatcher();
+public abstract class BaseCfgScreen extends MainScreen {
+    
+    /** Creates a new instance of BaseCfgScreen */
+    public BaseCfgScreen(String title) {
+        LabelField titleField =
+                new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
+        setTitle(titleField);
     }
-
-    public LogicMail() {
-        // Load the configuration
-        MailSettings.getInstance().loadSettings();
-
-        pushScreen(new AccountScreen());
-    }
-} 
+    
+}

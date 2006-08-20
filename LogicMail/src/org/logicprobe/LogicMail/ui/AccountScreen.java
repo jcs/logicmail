@@ -31,13 +31,16 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.*;
-import net.rim.device.api.ui.component.*;
-import net.rim.device.api.ui.container.*;
-import java.util.Vector;
-import org.logicprobe.LogicMail.conf.*;
-import org.logicprobe.LogicMail.mail.MailClient;
-import org.logicprobe.LogicMail.mail.ImapClient;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.component.ListField;
+import net.rim.device.api.ui.component.ListFieldCallback;
+import net.rim.device.api.ui.component.Menu;
+import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.controller.MailboxController;
+import org.logicprobe.LogicMail.util.Observable;
 
 /**
  * Provide a list of accounts for the user
@@ -47,7 +50,7 @@ import org.logicprobe.LogicMail.mail.ImapClient;
 public class AccountScreen extends BaseScreen implements ListFieldCallback {
     private MailSettings _mailSettings;
     private ListField _accountList;
-    
+
     public AccountScreen() {
         super("Accounts");
         
@@ -75,19 +78,19 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
 
     private MenuItem editAcctItem = new MenuItem("Edit account", 110, 10) {
         public void run() {
-            editAccount(_accountList.getSelectedIndex());
+            _configController.editAccount(_accountList.getSelectedIndex());
         }
     };
 
     private MenuItem addAcctItem = new MenuItem("Add account", 120, 10) {
         public void run() {
-            editAccount(-1);
+            _configController.addAccount();
         }
     };
 
     private MenuItem deleteAcctItem = new MenuItem("Delete account", 130, 10) {
         public void run() {
-            deleteAccount(_accountList.getSelectedIndex());
+            _configController.deleteAccount(_accountList.getSelectedIndex());
         }
     };
 
@@ -150,59 +153,23 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         return retval;
     }
 
-    private void editAccount(int index) {
-        AcctCfgScreen acctCfgScreen = new AcctCfgScreen();
-        if(index == -1) {
-            // new account
-            UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-            
-            // now save the results
-            if(acctCfgScreen.getSaveData()) {
-                AccountConfig acctConfig = new AccountConfig();
-                acctConfig.setAcctName(acctCfgScreen.getAcctName());
-                acctConfig.setServerName(acctCfgScreen.getServerName());
-                acctConfig.setServerType(acctCfgScreen.getServerType());
-                acctConfig.setServerSSL(acctCfgScreen.getServerSSL());
-                acctConfig.setServerUser(acctCfgScreen.getServerUser());
-                acctConfig.setServerPass(acctCfgScreen.getServerPass());
-                _mailSettings.addAccountConfig(acctConfig);
-                _mailSettings.saveSettings();
+    public void update(Observable subject, Object arg) {
+        super.update(subject, arg);
+        if(subject.equals(_configController)) {
+            if(((String)arg).equals("accounts")) {
+                int numAcct = _mailSettings.getNumAccounts();
+                int selItem = _accountList.getSelectedIndex();
+
+                while(_accountList.getSize() > 0)
+                    _accountList.delete(0);
+                
+                for(int i=0;i<numAcct;i++)
+                    _accountList.insert(i);
+                
+                if(selItem > numAcct)
+                    selItem = numAcct;
+                _accountList.setSelectedIndex(selItem);
             }
-        } else {
-            // edit existing account
-            AccountConfig acctConfig = _mailSettings.getAccountConfig(index);
-            acctCfgScreen.setAcctName(acctConfig.getAcctName());
-            acctCfgScreen.setServerName(acctConfig.getServerName());
-            acctCfgScreen.setServerType(acctConfig.getServerType());
-            acctCfgScreen.setServerSSL(acctConfig.getServerSSL());
-            acctCfgScreen.setServerUser(acctConfig.getServerUser());
-            acctCfgScreen.setServerPass(acctConfig.getServerPass());
-            
-            UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-            
-            // wait for screen to die, then save results
-            if(acctCfgScreen.getSaveData()) {
-                acctConfig.setAcctName(acctCfgScreen.getAcctName());
-                acctConfig.setServerName(acctCfgScreen.getServerName());
-                acctConfig.setServerType(acctCfgScreen.getServerType());
-                acctConfig.setServerSSL(acctCfgScreen.getServerSSL());
-                acctConfig.setServerUser(acctCfgScreen.getServerUser());
-                acctConfig.setServerPass(acctCfgScreen.getServerPass());
-                _mailSettings.saveSettings();
-            }
-        }
-        for(int i=0;i<_accountList.getSize();i++)
-            _accountList.delete(i);
-        for(int i=0;i<_mailSettings.getNumAccounts();i++)
-            _accountList.insert(i);
-    }
-    
-    private void deleteAccount(int index) {
-        int response = Dialog.ask(Dialog.D_DELETE);
-        if(response == Dialog.DELETE) {
-            _mailSettings.removeAccountConfig(index);
-            _accountList.delete(index);
-            _mailSettings.saveSettings();
         }
     }
     
@@ -213,17 +180,7 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
      */
     private void selectAccount(int index) {
         AccountConfig acctConfig = _mailSettings.getAccountConfig(index);
-        if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
-            Dialog.inform("POP is not currently supported");
-            //MailClient.FolderItem item = new MailClient.FolderItem();
-            //item.name = "INBOX";
-            //item.msgCount = 0;
-            //UiApplication.getUiApplication().pushScreen(new MailboxScreen(null, item));
-        }
-        else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
-            MailClient client = new ImapClient(acctConfig);
-            UiApplication.getUiApplication().pushScreen(new FolderScreen(client));
-        }
+        if(acctConfig == null) return;
+        MailboxController.getInstance().openAccount(acctConfig);
     }
 }
-

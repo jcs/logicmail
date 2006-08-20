@@ -31,29 +31,44 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.*;
-import net.rim.device.api.ui.component.*;
-import net.rim.device.api.ui.container.*;
+import net.rim.device.api.util.Arrays;
 import net.rim.device.api.system.KeyListener;
+import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.container.MainScreen;
+import org.logicprobe.LogicMail.controller.ConfigController;
+import org.logicprobe.LogicMail.util.Observable;
+import org.logicprobe.LogicMail.util.Observer;
 
 /**
  * This class is the base for all screens in LogicMail.
  * Its purpose is to provide uniform menu and event
  * handler interfaces across the application.
  */
-public class BaseScreen extends MainScreen implements KeyListener {
+public abstract class BaseScreen extends MainScreen implements Observer, KeyListener {
+    protected ConfigController _configController;
+    
+    public BaseScreen() {
+        super();
+    }
+
     public BaseScreen(String title) {
         super();
         // Create screen elements
         LabelField titleField = new LabelField
          ("LogicMail - "+title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleField);
+        _configController = ConfigController.getInstance();
+        _configController.addObserver(this);
     }
 
     // Create menu items
     private MenuItem configItem = new MenuItem("Config", 10020, 10) {
         public void run() {
-            UiApplication.getUiApplication().pushModalScreen(new ConfigScreen());
+            _configController.configGlobal();
         }
     };
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
@@ -83,6 +98,26 @@ public class BaseScreen extends MainScreen implements KeyListener {
         menu.add(exitItem);
     }
 
+    /**
+     * Disable save-prompting dialog since it
+     * isn't applicable to most BaseScreen
+     * implementations
+     */
+    protected boolean onSavePrompt() {
+        return true;
+    }
+
+    /**
+     * Called when we are notified of something.
+     * Since this can only usefully notify a
+     * global configuration change, considering
+     * what we trigger from this abstract class,
+     * this method will be empty by default.
+     */
+    public void update(Observable subject, Object arg) {
+        // do nothing
+    }
+    
     // KeyListener methods
     public boolean keyChar(char key, int status, int time) {
         return false;
@@ -98,6 +133,6 @@ public class BaseScreen extends MainScreen implements KeyListener {
     }
     public boolean keyStatus(int keycode, int time) {
         return false;
-    }
+    }    
 }
 

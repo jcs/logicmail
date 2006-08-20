@@ -29,25 +29,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail;
-
-import net.rim.device.api.ui.UiApplication;
-import org.logicprobe.LogicMail.ui.AccountScreen;
-import org.logicprobe.LogicMail.conf.MailSettings;
+package org.logicprobe.LogicMail.util;
 
 /**
- * Main class for the application
+ * Interface for the observer pattern.
+ * Mimmics java.util.Observer
  */
-public class LogicMail extends UiApplication {
-    public static void main(String argv[]) {
-        LogicMail app = new LogicMail();
-        app.enterEventDispatcher();
-    }
-
-    public LogicMail() {
-        // Load the configuration
-        MailSettings.getInstance().loadSettings();
-
-        pushScreen(new AccountScreen());
-    }
-} 
+public interface Observer {
+    public void update(Observable subject, Object arg);
+}

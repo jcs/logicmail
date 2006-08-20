@@ -51,7 +51,7 @@ public abstract class MailClientHandler {
         _taskText = taskText;
     }
     
-    private class StatusRunnable implements Runnable {
+    private static class StatusRunnable implements Runnable {
         String _message;
         int _time;
         StatusRunnable(String message, int time) {
@@ -73,6 +73,10 @@ public abstract class MailClientHandler {
 
     private void showStatus(String message, int time) {
         UiApplication.getUiApplication().invokeLater(new StatusRunnable(message, time));
+    }
+    
+    public void changeStatusMessage(String message) {
+        showStatus(message, 100000);
     }
     
     public void start() {
