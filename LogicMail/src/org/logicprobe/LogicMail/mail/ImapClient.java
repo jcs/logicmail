@@ -35,17 +35,18 @@
  * de.trantor.mail.ImapClient
  * These portions are:
  *   Copyright (c) 2000-2002 Jorg Pleumann <joerg@pleumann.de>
+ *
+ * At this point, the only portions still from Mail4ME are
+ * fragments of the "execute" methods.
  */
 
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.util.StringParser;
 import java.io.IOException;
 import java.util.Vector;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
+import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.mail.MailClient.FolderItem;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**
  * 
@@ -122,12 +123,12 @@ public class ImapClient extends MailClient {
     public void setActiveMailbox(FolderItem mailbox) throws IOException, MailException {
         this.activeMailbox = mailbox;
         // change active mailbox
-        Vector selVec = execute("SELECT", "\""+activeMailbox.path+"\"");
+        String[] selVec = execute("SELECT", "\""+activeMailbox.path+"\"");
         // ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
         int p, q;
-        for(int i=0;i<selVec.size();i++) {
-            String rowText = (String)selVec.elementAt(i);
+        for(int i=0;i<selVec.length;i++) {
+            String rowText = selVec[i];
             if(rowText.endsWith("EXISTS")) {
                 p = rowText.indexOf(' ');
                 q = rowText.indexOf(' ', p+1);
@@ -190,67 +191,14 @@ public class ImapClient extends MailClient {
         return item;
     }
 
-    /**
-     * Receives a message. This method receives a whole message from the server
-     * and stores the header and body parts in the according vectors. It is able
-     * to undo any byte stuffing produced by the server. It also undoes header
-     * folding in a way, putting multiple header lines that belong to one
-     * field into a single line of the header vector.
-     * <p>
-     * The method assumes that either a "RETR" or a "TOP" command has already
-     * been issued, so that it can only be called from the getMessage() and
-     * getHeader() methods (whom it serves as an internal helper method).
-     *
-     * @see #getMessage
-     * @see #getHeaders
-     */
-    private void receiveMessage(Message message, int size) throws IOException, MailException {
-        // Rewrite this one
-
-        /**
-         * First we read the header lines. The end of the header is denoted by
-         * an empty line.
-         */
-        String buffer = connection.receive();
-        int octets = buffer.length() + 2;
-
-        while (!(buffer.equals(""))) {
-            /**
-             * Undo header folding, that is, put logical header lines that span
-             * multiple physical ones into one vector entry. This eases dealing
-             * with header fields a lot.
-             */
-            if (buffer.startsWith(" ") || buffer.startsWith("\t")) {
-                //message.setHeaderLine(count - 1, message.getHeaderLine(count - 1) + "\r\n" + buffer);
-            }
-            else {
-                //message.addHeaderLine(buffer);
-                //count++;
-            }
-
-            buffer = connection.receive();
-            octets = octets + buffer.length() + 2;
-        }
-
-        /**
-         * Next we read the body lines. The end of the body is denoted by a line
-         * consisting only of a dot (which is the usual end of multiline respones).
-         */
-        while (octets < size) {
-            buffer = connection.receive();
-            octets = octets + buffer.length() + 2;
-            //message.addBodyLine(buffer);
-        }
-    }
-
     public Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException {
         Vector envList = new Vector();
 
-        Vector rawList = execute("FETCH",
-                                 Integer.toString(firstIndex) +
-                                 ":" +
-                                 Integer.toString(lastIndex) +
-                                 " (ENVELOPE)");
+        String[] rawList = execute("FETCH",
+                                   Integer.toString(firstIndex) +
+                                   ":" +
+                                   Integer.toString(lastIndex) +
+                                   " (ENVELOPE)");
         
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
@@ -258,8 +206,8 @@ public class ImapClient extends MailClient {
         String line;
         StringBuffer lineBuf = new StringBuffer();
         Vector rawList2 = new Vector();
-        for(int i=0;i<rawList.size();i++) {
-            line = (String)rawList.elementAt(i);
+        for(int i=0;i<rawList.length;i++) {
+            line = rawList[i];
             if(line.length() > 0 &&
                     lineBuf.toString().startsWith("* ") &&
                     line.startsWith("* ")) {
@@ -267,7 +215,7 @@ public class ImapClient extends MailClient {
                 lineBuf = new StringBuffer();
             }
             lineBuf.append(line);
-            if(i == rawList.size()-1 && lineBuf.toString().startsWith("* "))
+            if(i == rawList.length-1 && lineBuf.toString().startsWith("* "))
                 rawList2.addElement(lineBuf.toString());
         }
 
@@ -285,15 +233,15 @@ public class ImapClient extends MailClient {
     public String getMessageBody(int index, int bindex) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
         
-        Vector rawList = execute("FETCH", index + " (BODY["+ (bindex+1) +"])");
+        String[] rawList = execute("FETCH", index + " (BODY["+ (bindex+1) +"])");
 
-        if(rawList.size() <= 1) return "";
+        if(rawList.length <= 1) return "";
         
         StringBuffer msgBuf = new StringBuffer();
-        for(int i=1;i<rawList.size()-1;i++) {
-            msgBuf.append((String)rawList.elementAt(i) + "\n");
+        for(int i=1;i<rawList.length-1;i++) {
+            msgBuf.append(rawList[i] + "\n");
         }
-        String lastLine = (String)rawList.elementAt(rawList.size()-1);
+        String lastLine = rawList[rawList.length-1];
         msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
 
         return msgBuf.toString();
@@ -302,7 +250,7 @@ public class ImapClient extends MailClient {
     public Message.Structure getMessageStructure(int index) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
 
-        Vector rawList = execute("FETCH", index + " (BODYSTRUCTURE)");
+        String[] rawList = execute("FETCH", index + " (BODYSTRUCTURE)");
 
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
@@ -310,8 +258,8 @@ public class ImapClient extends MailClient {
         String line;
         StringBuffer lineBuf = new StringBuffer();
         Vector rawList2 = new Vector();
-        for(int i=0;i<rawList.size();i++) {
-            line = (String)rawList.elementAt(i);
+        for(int i=0;i<rawList.length;i++) {
+            line = rawList[i];
             if(line.length() > 0 &&
                     lineBuf.toString().startsWith("* ") &&
                     line.startsWith("* ")) {
@@ -319,7 +267,7 @@ public class ImapClient extends MailClient {
                 lineBuf = new StringBuffer();
             }
             lineBuf.append(line);
-            if(i == rawList.size()-1 && lineBuf.toString().startsWith("* "))
+            if(i == rawList.length-1 && lineBuf.toString().startsWith("* "))
                 rawList2.addElement(lineBuf.toString());
         }
 
@@ -342,21 +290,21 @@ public class ImapClient extends MailClient {
      * @return Vector of ListResponse objects
      */
     private Vector executeList(String refName, String mboxName) throws IOException, MailException {
-        Vector results;
+        String[] results;
         results = execute("LIST", "\""+refName+"\" \""+mboxName+"\"");
         
-        Vector retVec = new Vector(results.size());
+        Vector retVec = new Vector(results.length);
         ListResponse response;
         String temp;
         String flagStr;
         String argStr;
         int p;
         int q;
-        for(int i=0;i<results.size();i++) {
+        for(int i=0;i<results.length;i++) {
             // Separate out the flag and argument strings
             flagStr = null;
             argStr = null;
-            temp = (String)results.elementAt(i);
+            temp = results[i];
             p = temp.indexOf('(');
             q = temp.indexOf(')', p + 1);
             if((p != -1) && (q > p))
@@ -408,9 +356,12 @@ public class ImapClient extends MailClient {
      * the request is only sent if it doesn't equal null, while the response is
      * always being waited for.
      *
+     * The message parameter is ignored, but kept for now to maintain this
+     * interface and not break other code.
+     *
      * @see MailException
      */
-    private String execute(String command, String arguments, Message message) throws IOException, MailException {
+    private String execute(String command, String arguments, Object message) throws IOException, MailException {
         String result = null;
 
         String tag = "A" + commandCount++ + " ";
@@ -429,8 +380,8 @@ public class ImapClient extends MailClient {
                     else if (message != null) {
                         int left = temp.indexOf('{');
                         int right = temp.indexOf('}', left);
-
-                        receiveMessage(message, Integer.parseInt(temp.substring(left + 1, right)));
+                        message = null;
+                        //receiveMessage(message, Integer.parseInt(temp.substring(left + 1, right)));
                     }
                 }
             }
@@ -452,17 +403,17 @@ public class ImapClient extends MailClient {
      * @param arguments Arguments for the command
      * @return List of returned strings
      */
-    private Vector execute(String command, String arguments)
+    private String[] execute(String command, String arguments)
         throws IOException, MailException
     {
-        Vector result = new Vector();
+        String[] result = new String[0];
 
         String tag = "A" + commandCount++ + " ";
         connection.send(tag + command + (arguments == null ? "" : " " + arguments));
 
         String temp = connection.receive();
         while (!temp.startsWith(tag)) {
-            result.addElement(temp);
+            Arrays.add(result, temp);
             temp = connection.receive();
         }
 

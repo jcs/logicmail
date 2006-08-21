@@ -38,6 +38,13 @@ import java.util.Date;
  */
 public class Message {
     /**
+     * Since this class exists only as a data
+     * structure namespace, its constructor
+     * is private to prevent instantiation.
+     */
+    private Message() { }
+    
+    /**
      * Relevant header fields for a message.
      */
     public static class Envelope {
