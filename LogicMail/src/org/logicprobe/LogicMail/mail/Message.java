@@ -74,4 +74,3 @@ public class Message {
         public Section[] sections;
     }
 }
-

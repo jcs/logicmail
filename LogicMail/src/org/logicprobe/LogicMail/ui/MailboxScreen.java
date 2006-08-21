@@ -63,7 +63,6 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private ListField msgList;
     
     private MailSettings _mailSettings;
-    private MailClient _client;
     private MailboxController _mailboxController;
     private MailClient.FolderItem folderItem;
     
@@ -76,7 +75,6 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     public MailboxScreen(MailClient client, MailClient.FolderItem folderItem) {
         super(folderItem.name);
         _mailSettings = MailSettings.getInstance();
-        _client = client;
         _mailboxController = MailboxController.getInstance();
         _mailboxController.addObserver(this);
         this.folderItem = folderItem;
@@ -233,8 +231,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         if(index < 0 || index > messages.size()) return;
         
         Message.Envelope envelope = (Message.Envelope)messages.elementAt(index);
-        
-        UiApplication.getUiApplication().pushScreen(new MessageScreen(_client, folderItem, envelope));
+        _mailboxController.openMessage(folderItem, envelope);
     }
 
     public boolean keyChar(char key,

@@ -46,114 +46,65 @@ import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.controller.MessageController;
+import org.logicprobe.LogicMail.util.Observable;
 
 /**
  * Display an E-Mail message
  */
 public class MessageScreen extends BaseScreen {
-    private MailSettings _mailSettings;
-    private MailClient _client;
-    private MailClient.FolderItem folderItem;
-    private Message.Envelope envelope;
-    private Message.Structure msgStructure;
+    private MessageController _messageController;
+    private Message.Envelope _envelope;
+    private Field[] _msgFields;
     
-    static class MessageBody {
-        String text;
-    };
-    
-    public MessageScreen(MailClient client,
-                         MailClient.FolderItem folderItem,
-                         Message.Envelope envelope)
+    public MessageScreen(MessageController messageController)
     {
         super();
-        _mailSettings = MailSettings.getInstance();
-        _client = client;
-        this.folderItem = folderItem;
-        this.envelope = envelope;
+        _messageController = messageController;
+        _messageController.addObserver(this);
+        _envelope = _messageController.getMsgEnvelope();
         
         // Create screen elements
-        if(envelope.from != null && envelope.from.length > 0) {
-            add(new RichTextField("From: " + envelope.from[0]));
-            if(envelope.from.length > 1)
-                for(int i=1;i<envelope.from.length;i++)
-                    add(new RichTextField("      " + envelope.from[i]));
+        if(_envelope.from != null && _envelope.from.length > 0) {
+            add(new RichTextField("From: " + _envelope.from[0]));
+            if(_envelope.from.length > 1)
+                for(int i=1;i<_envelope.from.length;i++)
+                    add(new RichTextField("      " + _envelope.from[i]));
         }
-        if(envelope.subject != null)
-        add(new RichTextField("Subject: " + envelope.subject));
+        if(_envelope.subject != null)
+        add(new RichTextField("Subject: " + _envelope.subject));
         add(new SeparatorField());
-        getMessageBody();
+        _messageController.updateMessageStructure();
     }
 
-    protected boolean onSavePrompt() {
-        return true;
-    }
-
-    private void getMessageBody() {
-        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
-            public void runSession() throws IOException, MailException {
-                Vector msgFields = new Vector();
-                String msgError = null;
-                _client.setActiveMailbox(folderItem);
-
-                // Get the structure of the message
-                msgStructure = _client.getMessageStructure(envelope.index);
-                if(msgStructure == null)
-                    msgError = "Unable to parse structure";
-                else {
-                    boolean flag = false;
-                    int i;
-                    String mimeType;
-                    String bodySection;
-                    for(i=0;i<msgStructure.sections.length;i++) {
-                        mimeType = msgStructure.sections[i].type + "/" +
-                                   msgStructure.sections[i].subtype;
-                        if(msgStructure.sections[i].size > _mailSettings.getGlobalConfig().getMaxSectionSize()) {
-                            msgFields.addElement(new RichTextField("Section too big: "+mimeType));
-                        }
-                        else if(mimeType.equals("text/plain")) {
-                            flag = true;
-                            bodySection = _client.getMessageBody(envelope.index, i);
-                            msgFields.addElement(new RichTextField(bodySection));
-                        }
-                        else if(msgStructure.sections[i].type.equals("image") &&
-                                msgStructure.sections[i].encoding.equals("base64")) {
-                            try {
-                                bodySection = _client.getMessageBody(envelope.index, i);
-                                byte[] imgBytes = Base64InputStream.decode(bodySection);
-                                EncodedImage encImage =
-                                        EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);
-                                msgFields.addElement(new BitmapField(encImage.getBitmap()));
-                            } catch (Exception exp) {
-                                msgFields.addElement(new RichTextField("Unable to decode image: "+mimeType));
-                            }
-                        }
-                        else {
-                            msgFields.addElement(new RichTextField("Unsupported type: "+mimeType));
-                        }
-                    }
-                    if(!flag)
-                        msgError = "Unable to find plain text body";
-                }
-
-                if(msgError != null)
-                    msgFields.insertElementAt(new RichTextField(msgError), 0);
-                
-                // Update the UI
-                synchronized(Application.getEventLock()) {
-                    for(int i=0;i<msgFields.size();i++) {
-                        add((Field)msgFields.elementAt(i));
-                        if(i != msgFields.size()-1)
-                            add(new SeparatorField());
-                    }
-                }
+    public void update(Observable subject, Object arg) {
+        super.update(subject, arg);
+        if(subject.equals(_messageController)) {
+            if(((String)arg).equals("structure")) {
+                if(_messageController.getMsgStructure() != null)
+                    _messageController.updateMessageFields();
             }
-        };
-        clientHandler.start();
+            else if(((String)arg).equals("fields")) {
+                _msgFields = _messageController.getMessageFields();
+                drawMessageFields();
+            }
+        }
+    }
+
+    private void drawMessageFields() {
+        synchronized(Application.getEventLock()) {
+            for(int i=0;i<_msgFields.length;i++) {
+                if(_msgFields[i] != null) 
+                    add(_msgFields[i]);
+                if(i != _msgFields.length-1)
+                    add(new SeparatorField());
+            }
+        }
     }
 
     private MenuItem propsItem = new MenuItem("Properties", 100, 10) {
         public void run() {
-            // display a dialog with message properties
+            _messageController.showMsgProperties();
         }
     };
     private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
@@ -165,6 +116,5 @@ public class MessageScreen extends BaseScreen {
         menu.add(propsItem);
         menu.add(closeItem);
     }
-
 }
 

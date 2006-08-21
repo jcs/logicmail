@@ -48,7 +48,9 @@ import java.util.Date;
 import java.util.TimeZone;
 
 /**
+ * 
  * Implements the IMAP client
+ * 
  */
 public class ImapClient extends MailClient {
     /**
@@ -115,10 +117,6 @@ public class ImapClient extends MailClient {
         }
         activeMailbox = null;
         super.close();
-    }
-
-    public String getFolderDelim() {
-        return folderDelim;
     }
 
     public void setActiveMailbox(FolderItem mailbox) throws IOException, MailException {
@@ -189,14 +187,6 @@ public class ImapClient extends MailClient {
             if(i != -1) { pos = i+1; i++; }
         item.name = folderPath.substring(pos);
         
-        //String bakMailbox = activeMailbox;
-        //activeMailbox = folderPath;
-        // Message counts should be disabled for performance
-        // reasons, but cannot be until SELECT parsing
-        // is implemented.
-        //item.msgCount = getMessageCount();
-        //activeMailbox = bakMailbox;
-        
         return item;
     }
 
@@ -216,7 +206,6 @@ public class ImapClient extends MailClient {
      */
     private void receiveMessage(Message message, int size) throws IOException, MailException {
         // Rewrite this one
-        //int count = 0;
 
         /**
          * First we read the header lines. The end of the header is denoted by
@@ -254,21 +243,6 @@ public class ImapClient extends MailClient {
         }
     }
 
-    public int getMessageCount() throws IOException, MailException {
-        String buffer = execute("STATUS", "\""+activeMailbox+"\" (MESSAGES)", null);
-
-        /**
-         * The result of the "STAT" request should always be "+OK <#msgs> <#bytes>",
-         * so we simply fetch the number between the first and the second space
-         * (and keep our fingers crossed that every POP3 implementation follows the
-         * RFC).
-         */
-        int space = buffer.indexOf(' ');
-
-        return Integer.parseInt(buffer.substring(space + 1));
-    }
-
-
     public Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException {
         Vector envList = new Vector();
 
@@ -299,7 +273,7 @@ public class ImapClient extends MailClient {
 
         for(int i=0;i<rawList2.size();i++) {
             try {
-                Message.Envelope env = parseMessageEnvelope((String)rawList2.elementAt(i));
+                Message.Envelope env = ImapParser.parseMessageEnvelope((String)rawList2.elementAt(i));
                 envList.addElement(env);
             } catch (Exception exp) {
                 System.out.println("Parse error: " + exp);
@@ -307,126 +281,7 @@ public class ImapClient extends MailClient {
         }
         return envList;
     }
-
-    private Message.Envelope generateDummyEnvelope() {
-        Message.Envelope env = new Message.Envelope();
-        env.date = Calendar.getInstance().getTime();
-        env.from = new String[1];
-        env.from[0] = "<sender>";
-        env.subject = "<subject>";
-        return env;
-    }
-    
-    private Message.Envelope parseMessageEnvelope(String rawText) {
-        Vector parsedText = null;
-        try {
-            parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
-        } catch (Exception exp) {
-            return generateDummyEnvelope();
-        }
-
-        // Sanity checking
-        if(parsedText.size() < 2 ||
-           !(parsedText.elementAt(1) instanceof Vector))
-           return generateDummyEnvelope();
         
-        Vector parsedEnv = (Vector)parsedText.elementAt(1);
-
-        // More sanity checking
-        if(parsedEnv.size() < 10)
-           return generateDummyEnvelope();
-            
-        Message.Envelope env = new Message.Envelope();
-
-        if(parsedEnv.elementAt(0) instanceof String) {
-            env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
-        }
-        
-        if(parsedEnv.elementAt(1) instanceof String) {
-            env.subject = (String)parsedEnv.elementAt(1);
-        }
-
-        if(parsedEnv.elementAt(2) instanceof Vector) {
-            env.from = parseAddressList((Vector)parsedEnv.elementAt(2));
-        }
-        
-        if(parsedEnv.elementAt(3) instanceof Vector) {
-            env.sender = parseAddressList((Vector)parsedEnv.elementAt(3));
-        }
-
-        if(parsedEnv.elementAt(4) instanceof Vector) {
-            env.replyTo = parseAddressList((Vector)parsedEnv.elementAt(4));
-        }
-
-        if(parsedEnv.elementAt(5) instanceof Vector) {
-            env.to = parseAddressList((Vector)parsedEnv.elementAt(5));
-        }
-
-        if(parsedEnv.elementAt(6) instanceof Vector) {
-            env.cc = parseAddressList((Vector)parsedEnv.elementAt(6));
-        }
-
-        if(parsedEnv.elementAt(7) instanceof Vector) {
-            env.bcc = parseAddressList((Vector)parsedEnv.elementAt(7));
-        }
-
-        if(parsedEnv.elementAt(8) instanceof String) {
-            env.inReplyTo = (String)parsedEnv.elementAt(8);
-            if(env.inReplyTo.equals("NIL")) env.inReplyTo = "";
-        }
-
-        if(parsedEnv.elementAt(9) instanceof String) {
-            env.messageId = (String)parsedEnv.elementAt(9);
-            if(env.messageId.equals("NIL")) env.messageId = "";
-        }
-        
-        env.isOpened = false;
-        
-        env.index = Integer.parseInt(rawText.substring(rawText.indexOf(' '), rawText.indexOf("FETCH")-1).trim());
-        return env;
-    }
-
-    private String[] parseAddressList(Vector addrVec) {
-        // Find the number of addresses, and allocate the array
-        String[] addrList = new String[addrVec.size()];
-        int index = 0;
-        
-        for(int i=0;i<addrVec.size();i++) {
-            if((addrVec.elementAt(i) instanceof Vector) &&
-               ((Vector)addrVec.elementAt(i)).size() >= 4) {
-                
-                Vector entry = (Vector)addrVec.elementAt(i);
-
-                String realName = "NIL";
-                if(entry.elementAt(0) instanceof String)
-                    realName = (String)entry.elementAt(0);
-
-                String mbName = "NIL";
-                if(entry.elementAt(2) instanceof String)
-                    mbName = (String)entry.elementAt(2);
-
-                String hostName = "NIL";
-                if(entry.elementAt(3) instanceof String)
-                    hostName = (String)entry.elementAt(3);
-
-                // Now assemble these into a single address entry
-                // (possibly eventually storing them separately)
-                if(realName.length() > 0 && !realName.equals("NIL"))
-                    addrList[index] = realName + " <" + mbName + "@" + hostName + ">";
-                else
-                    addrList[index] = mbName + "@" + hostName;
-                index++;
-            }
-        }
-        return addrList;
-    }
-    
-    public Message getMessage(int index) throws IOException, MailException {
-        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
-        Message message = new Message();
-        return message;
-    }
-
     public String getMessageBody(int index, int bindex) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
         
@@ -471,77 +326,13 @@ public class ImapClient extends MailClient {
         Message.Structure msgStructure = null;
         for(int i=0;i<rawList2.size();i++) {
             try {
-                msgStructure = parseMessageStructure((String)rawList2.elementAt(i));
+                msgStructure = ImapParser.parseMessageStructure((String)rawList2.elementAt(i));
             } catch (Exception exp) {
                 System.out.println("Parse error: " + exp);
             }
         }
         
         return msgStructure;
-    }
-
-        private Message.Structure parseMessageStructure(String rawText) {
-        Vector parsedText = null;
-        try {
-            parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
-        } catch (Exception exp) {
-            return null;
-        }
-
-        // Sanity checking
-        if(parsedText.size() < 2 ||
-           !(parsedText.elementAt(1) instanceof Vector))
-           return null;
-        
-        Vector parsedStruct = (Vector)parsedText.elementAt(1);
-
-        Message.Structure msgStructure = new Message.Structure();
-
-        // Determine the number of body parts and parse
-        if(parsedStruct.elementAt(0) instanceof String) {
-            msgStructure.sections = new Message.Section[1];
-            msgStructure.sections[0] = parseMessageStructureSection(parsedStruct);
-        }
-        else {
-            int count = 0;
-            int i;
-            for(i=0;i<parsedStruct.size();i++)
-                if(parsedStruct.elementAt(i) instanceof Vector)
-                    count++;
-                else
-                    break;
-            msgStructure.sections = new Message.Section[count];
-            for(i=0;i<count;i++)
-                msgStructure.sections[i] = parseMessageStructureSection((Vector)parsedStruct.elementAt(i));
-        }
-        
-        return msgStructure;
-    }
-
-    private Message.Section parseMessageStructureSection(Vector sectionList) {
-        Message.Section sec = new Message.Section();
-        
-        if(sectionList.elementAt(0) instanceof String) {
-            sec.type = ((String)sectionList.elementAt(0)).toLowerCase();
-        }
-
-        if(sectionList.elementAt(1) instanceof String) {
-            sec.subtype = ((String)sectionList.elementAt(1)).toLowerCase();
-        }
-
-        if(sectionList.elementAt(5) instanceof String) {
-            sec.encoding = ((String)sectionList.elementAt(5)).toLowerCase();
-        }
-
-        if(sectionList.elementAt(6) instanceof String) {
-            try {
-                sec.size = Integer.parseInt((String)sectionList.elementAt(6));
-            } catch (Exception exp) {
-                sec.size = -1;
-            }
-        }
-
-        return sec;
     }
 
     /**

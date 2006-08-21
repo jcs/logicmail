@@ -41,8 +41,10 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.Message;
 import org.logicprobe.LogicMail.ui.FolderScreen;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
+import org.logicprobe.LogicMail.ui.MessageScreen;
 import org.logicprobe.LogicMail.util.Observable;
 
 /**
@@ -148,6 +150,16 @@ public class MailboxController extends Controller implements Observable {
         clientHandler.start();
     }
 
+    public void openMessage(MailClient.FolderItem folderItem, Message.Envelope envelope) {
+        MessageController messageController =
+                new MessageController(_client, folderItem, envelope);
+        messageController.viewMessage();
+    }
+    
+    public MailClient getMailClient() {
+        return _client;
+    }
+    
     public Vector getFolderItemList() {
         return _folderItemList;
     }

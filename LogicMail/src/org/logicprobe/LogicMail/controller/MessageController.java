@@ -31,22 +31,163 @@
 
 package org.logicprobe.LogicMail.controller;
 
-import org.logicprobe.LogicMail.util.Observer;
+import java.io.IOException;
+import java.util.Calendar;
+import net.rim.device.api.io.Base64InputStream;
+import net.rim.device.api.system.EncodedImage;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.BitmapField;
+import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.RichTextField;
+import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Observable;
+import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.ui.MailClientHandler;
+import org.logicprobe.LogicMail.ui.MessageScreen;
 
 /**
  * Controller for message screens
  */
 public class MessageController extends Controller implements Observable {
-    private static MessageController _instance;
+    private MailSettings _mailSettings;
+    private Message.Structure _msgStructure;
+    private MailClient _client;
+    private MailClient.FolderItem _folderItem;
+    private Message.Envelope _envelope;
+    private Field[] _msgFields;
     
     /** Creates a new instance of MessageController */
-    private MessageController() {
+    public MessageController(MailClient client,
+                             MailClient.FolderItem folderItem,
+                             Message.Envelope envelope) {
+        _client = client;
+        _folderItem = folderItem;
+        _envelope = envelope;
+        _msgStructure = null;
+        _msgFields = null;
+        _mailSettings = MailSettings.getInstance();
+    }
+
+    public void viewMessage() {
+        UiApplication.getUiApplication().pushScreen(new MessageScreen(this));
     }
     
-    public static synchronized MessageController getInstance() {
-        if(_instance == null)
-            _instance = new MessageController();
-        return _instance;
+    public void updateMessageStructure() {
+        _client = MailboxController.getInstance().getMailClient();
+        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
+            public void runSession() throws IOException, MailException {
+                _client.setActiveMailbox(_folderItem);
+
+                // Get the structure of the message
+                _msgStructure = _client.getMessageStructure(_envelope.index);
+
+                notifyObservers("structure");
+            }
+        };
+        clientHandler.start();        
+    }
+    
+    public void updateMessageFields() {
+        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
+            public void runSession() throws IOException, MailException {
+                Field[] msgFields = new Field[0];
+                String msgError = null;
+
+                if(_msgStructure == null)
+                    msgError = "Unable to parse structure";
+                else {
+                    boolean flag = false;
+                    int i;
+                    String mimeType;
+                    String bodySection;
+                    for(i=0;i<_msgStructure.sections.length;i++) {
+                        mimeType = _msgStructure.sections[i].type + "/" +
+                                   _msgStructure.sections[i].subtype;
+                        if(_msgStructure.sections[i].size > _mailSettings.getGlobalConfig().getMaxSectionSize()) {
+                            Arrays.add(msgFields, new RichTextField("Section too big: "+mimeType));
+                        }
+                        else if(mimeType.equals("text/plain")) {
+                            flag = true;
+                            bodySection = _client.getMessageBody(_envelope.index, i);
+                            Arrays.add(msgFields, new RichTextField(bodySection));
+                        }
+                        else if(_msgStructure.sections[i].type.equals("image") &&
+                                _msgStructure.sections[i].encoding.equals("base64")) {
+                            try {
+                                bodySection = _client.getMessageBody(_envelope.index, i);
+                                byte[] imgBytes = Base64InputStream.decode(bodySection);
+                                EncodedImage encImage =
+                                        EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);
+                                Arrays.add(msgFields, new BitmapField(encImage.getBitmap()));
+                            } catch (Exception exp) {
+                                Arrays.add(msgFields, new RichTextField("Unable to decode image: "+mimeType));
+                            }
+                        }
+                        else {
+                            Arrays.add(msgFields, new RichTextField("Unsupported type: "+mimeType));
+                        }
+                    }
+                    if(!flag)
+                        msgError = "Unable to find plain text body";
+                }
+
+                if(msgError != null)
+                    Arrays.insertAt(msgFields, new RichTextField(msgError), 0);
+                
+                _msgFields = msgFields;
+                notifyObservers("fields");
+            }
+        };
+        clientHandler.start();
+    }
+    
+    public void showMsgProperties() {
+        int i;
+        StringBuffer msg = new StringBuffer();
+        msg.append("Subject:\n  " + _envelope.subject + "\n");
+        msg.append("Date:\n  " + _envelope.date + "\n");
+
+        msg.append("From:\n");
+        for(i=0;i<_envelope.from.length;i++)
+            msg.append("  " + _envelope.from[i] + "\n");
+
+        msg.append("To:\n");
+        for(i=0;i<_envelope.to.length;i++)
+            if(_envelope.to[i].length() > 0)
+                msg.append("  " + _envelope.to[i] + "\n");
+
+        if(_envelope.cc != null && _envelope.cc.length > 0) {
+            msg.append("CC:\n");
+            for(i=0;i<_envelope.cc.length;i++)
+                if(_envelope.cc[i].length() > 0)
+                msg.append("  " + _envelope.cc[i] + "\n");
+        }
+        
+        if(_envelope.bcc != null && _envelope.bcc.length > 0) {
+            msg.append("BCC:\n");
+            for(i=0;i<_envelope.bcc.length;i++)
+                if(_envelope.bcc[i].length() > 0)
+                    msg.append("  " + _envelope.bcc[i] + "\n");
+        }
+
+        Dialog dialog = new Dialog(Dialog.D_OK, msg.toString(),
+                                   0, null, Dialog.GLOBAL_STATUS);
+        dialog.show();
+    }
+    
+    public Message.Envelope getMsgEnvelope() {
+        return _envelope;
+    }
+    
+    public Message.Structure getMsgStructure() {
+        return _msgStructure;
+    }
+
+    public Field[] getMessageFields() {
+        return _msgFields;
     }
 }

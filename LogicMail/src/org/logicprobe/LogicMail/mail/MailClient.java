@@ -150,16 +150,6 @@ public abstract class MailClient {
     }
 
     /**
-     * Queries the number of messages currently available in the mailbox.
-     *
-     * @see #getMessage
-     * @see #getHeaders
-     * @see #removeMessage
-     *
-     */
-    public abstract int getMessageCount() throws IOException, MailException;
-    
-    /**
      * Return a list of MessageEnvelope objects for the specified
      * range of messages in the active mailbox
      * @param firstIndex Index of the first message
@@ -167,17 +157,6 @@ public abstract class MailClient {
      * @return Vector of MessageEnvelope objects
      */
     public abstract Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException;
-    
-    /**
-     * Retrieves a message from the mailbox. The method retrieves the
-     * message with the given index from the server. Message numbering
-     * follows the usual Java conventions for vectors. Thus the index must
-     * be a number ranging from 0 to getMessageCount() - 1.
-     *
-     * @see #getMessageCount
-     * @see #getHeaders
-     */
-    public abstract Message getMessage(int index) throws IOException, MailException;
     
     /**
      * Retrieves the structure of a message from the mailbox.
