@@ -31,14 +31,13 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.util.Arrays;
 import net.rim.device.api.system.KeyListener;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
+import org.logicprobe.LogicMail.LogicMail;
 import org.logicprobe.LogicMail.controller.ConfigController;
 import org.logicprobe.LogicMail.util.Observable;
 import org.logicprobe.LogicMail.util.Observer;
@@ -74,7 +73,7 @@ public abstract class BaseScreen extends MainScreen implements Observer, KeyList
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
         public void run() {
             // Show the about dialog
-            String aboutMsg = "LogicMail\nVersion 0.1";
+            String aboutMsg = "LogicMail\nVersion " + LogicMail.version;
             Dialog.inform(aboutMsg);
         }
     };

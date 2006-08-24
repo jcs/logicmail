@@ -32,20 +32,16 @@
 package org.logicprobe.LogicMail.ui;
 
 import java.util.Vector;
-import java.io.IOException;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.mail.MailClient;
-import org.logicprobe.LogicMail.mail.ImapClient;
-import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.controller.MailboxController;
 import org.logicprobe.LogicMail.util.Observable;
@@ -104,12 +100,12 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
     }
 
     private void openSelectedFolder() {
-        if(treeField == null) return;
+    	if(treeField == null) return;
         int curNode = treeField.getCurrentNode();
         if(curNode == -1) return;
         Object cookie = treeField.getCookie(curNode);
         if(cookie instanceof MailClient.FolderItem) {
-            UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, (MailClient.FolderItem)cookie));
+        	_mailboxController.openFolder((MailClient.FolderItem)cookie);
         }
     }
     

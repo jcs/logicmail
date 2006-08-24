@@ -32,7 +32,6 @@
 package org.logicprobe.LogicMail.controller;
 
 import java.io.IOException;
-import java.util.Calendar;
 import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.ui.Field;

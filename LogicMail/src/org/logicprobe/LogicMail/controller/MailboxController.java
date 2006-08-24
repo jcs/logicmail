@@ -44,7 +44,7 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
 import org.logicprobe.LogicMail.ui.FolderScreen;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
-import org.logicprobe.LogicMail.ui.MessageScreen;
+import org.logicprobe.LogicMail.ui.MailboxScreen;
 import org.logicprobe.LogicMail.util.Observable;
 
 /**
@@ -89,6 +89,14 @@ public class MailboxController extends Controller implements Observable {
             _client = new ImapClient(acctConfig);
             UiApplication.getUiApplication().pushScreen(new FolderScreen(_client));
         }
+    }
+    
+    /**
+     * Open a selected folder
+     * @param folderItem Item describing the folder to be opened
+     */
+    public void openFolder(MailClient.FolderItem folderItem) {
+    	UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, folderItem));
     }
     
     public void refreshFolderTree() {

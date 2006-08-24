@@ -41,7 +41,6 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.Vector;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

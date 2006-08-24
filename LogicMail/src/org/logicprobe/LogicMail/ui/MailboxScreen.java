@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Calendar;
 import java.util.Vector;
-import java.io.IOException;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.i18n.SimpleDateFormat;
@@ -42,13 +41,11 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.MailClient;
-import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
 import org.logicprobe.LogicMail.controller.MailboxController;
 import org.logicprobe.LogicMail.util.Observable;
@@ -97,7 +94,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         maxWidth = Graphics.getScreenWidth();
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
-        
+
         if(client != null) _mailboxController.refreshMessageList(folderItem);
     }
 

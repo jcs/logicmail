@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.*;
 import net.rim.device.api.ui.component.*;
-import net.rim.device.api.ui.container.*;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**

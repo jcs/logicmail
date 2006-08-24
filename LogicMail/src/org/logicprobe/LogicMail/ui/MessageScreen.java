@@ -31,21 +31,13 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import java.io.IOException;
-import java.util.Vector;
 import net.rim.device.api.system.Application;
-import net.rim.device.api.io.Base64InputStream;
-import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
-import org.logicprobe.LogicMail.mail.MailClient;
-import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
-import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.controller.MessageController;
 import org.logicprobe.LogicMail.util.Observable;
 

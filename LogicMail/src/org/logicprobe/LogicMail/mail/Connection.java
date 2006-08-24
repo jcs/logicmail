@@ -64,8 +64,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.SecureConnection;
-import javax.microedition.io.SocketConnection;
-import javax.microedition.io.SecurityInfo;
 import javax.microedition.io.Connector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 
@@ -117,7 +115,7 @@ public class Connection {
     /**
      * Holds the position of the next byte to be read from the buffer.
      */
-    private int position;
+    //private int position;
 
     public Connection(AccountConfig acctCfg) {
         this.acctCfg = acctCfg;

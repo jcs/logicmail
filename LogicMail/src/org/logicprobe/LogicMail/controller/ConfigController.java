@@ -33,12 +33,10 @@ package org.logicprobe.LogicMail.controller;
 
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.ui.AcctCfgScreen;
 import org.logicprobe.LogicMail.ui.ConfigScreen;
-import org.logicprobe.LogicMail.util.Observer;
 import org.logicprobe.LogicMail.util.Observable;
 
 /**

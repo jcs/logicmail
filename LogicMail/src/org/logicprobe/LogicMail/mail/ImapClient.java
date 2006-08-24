@@ -45,7 +45,6 @@ package org.logicprobe.LogicMail.mail;
 import java.io.IOException;
 import java.util.Vector;
 import net.rim.device.api.util.Arrays;
-import org.logicprobe.LogicMail.mail.MailClient.FolderItem;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**
@@ -113,8 +112,8 @@ public class ImapClient extends MailClient {
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
             if(activeMailbox != null && !activeMailbox.equals(""))
-                execute("CLOSE", null, null);
-            execute("LOGOUT", null, null);
+                execute("CLOSE", null);
+            execute("LOGOUT", null);
         }
         activeMailbox = null;
         super.close();
@@ -378,8 +377,8 @@ public class ImapClient extends MailClient {
                         result = temp.substring(p + 1, q);
                     }
                     else if (message != null) {
-                        int left = temp.indexOf('{');
-                        int right = temp.indexOf('}', left);
+                        //int left = temp.indexOf('{');
+                        //int right = temp.indexOf('}', left);
                         message = null;
                         //receiveMessage(message, Integer.parseInt(temp.substring(left + 1, right)));
                     }

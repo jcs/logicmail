@@ -31,13 +31,7 @@
 
 package org.logicprobe.LogicMail.cache;
 
-import java.io.IOException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.util.Vector;
-import javax.microedition.rms.*;
 import org.logicprobe.LogicMail.mail.MailClient;
 
 public class AccountCache {
