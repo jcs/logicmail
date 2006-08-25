@@ -33,8 +33,10 @@ package org.logicprobe.LogicMail.util;
 
 import java.util.Date;
 import java.util.Calendar;
+import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
+import net.rim.device.api.util.Arrays;
 
 /**
  * This class provides a collection of string parsing
@@ -42,11 +44,12 @@ import java.util.Vector;
  * E-Mail protocol server responses.
  */
 public class StringParser {
-    public StringParser() { }
+    private StringParser() { }
     
     /**
      * Parse a string containing a date/time
      * and return a usable Date object.
+     *
      * @param rawDate Text containing the date
      * @return Date object instance
      */
@@ -113,6 +116,7 @@ public class StringParser {
      * returns a tree of Vector and String objects representing its
      * contents.  This is useful for parsing the response to the
      * IMAP "ENVELOPE" fetch command.
+     *
      * @param rawText The raw text to be parsed
      * @return A tree of Vector and String objects
      */
@@ -177,4 +181,48 @@ public class StringParser {
 	return parsedText;
     }
 
+    /**
+     * This method iterates through the raw lines that make up
+     * standard E-Mail headers, and parses them out into hash
+     * table entries that can be queried by other methods.
+     * All header keys are stored in lower-case to ensure that
+     * processing methods are case-insensitive.
+     *
+     * @param rawLines The raw header lines
+     * @return Hash table providing the headers as key-value pairs
+     */
+    public static Hashtable parseMailHeaders(String[] rawLines) {
+        String line = "";
+        Hashtable table = new Hashtable();
+        
+        for(int i=0;i<rawLines.length;i++) {
+            if(rawLines[i].startsWith(" ") || rawLines[i].startsWith("\t"))
+                line = line + "\r\n" + rawLines[i];
+            else {
+                if(line.length() != 0) {
+                    table.put((line.substring(0, line.indexOf(':'))).toLowerCase(),
+                              line.substring(line.indexOf(' ') + 1));
+                }
+                line = rawLines[i];
+            }
+        }
+        return table;
+    }
+    
+    public static String[] parseTokenString(String text, String token) {
+        String[] tok = new String[0];
+        if(text == null) return tok;
+        int p = 0;
+        int q = 0;
+        while(q < text.length()) {
+            q = text.indexOf(token, p+1);
+            if(q == -1) {
+                Arrays.add(tok, text.substring(p));
+                break;
+            }
+            Arrays.add(tok, text.substring(p, q));
+            p = q + token.length();
+        }
+        return tok;
+    }
 }

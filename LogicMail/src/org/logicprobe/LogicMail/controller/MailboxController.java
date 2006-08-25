@@ -42,6 +42,7 @@ import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.mail.PopClient;
 import org.logicprobe.LogicMail.ui.FolderScreen;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
 import org.logicprobe.LogicMail.ui.MailboxScreen;
@@ -79,11 +80,8 @@ public class MailboxController extends Controller implements Observable {
      */
     public void openAccount(AccountConfig acctConfig) {
         if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
-            Dialog.inform("POP is not currently supported");
-            //MailClient.FolderItem item = new MailClient.FolderItem();
-            //item.name = "INBOX";
-            //item.msgCount = 0;
-            //UiApplication.getUiApplication().pushScreen(new MailboxScreen(null, item));
+            _client = new PopClient(acctConfig);
+            UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, _client.getActiveMailbox()));
         }
         else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
             _client = new ImapClient(acctConfig);
@@ -163,6 +161,29 @@ public class MailboxController extends Controller implements Observable {
                 new MessageController(_client, folderItem, envelope);
         messageController.viewMessage();
     }
+
+    public boolean checkClose() {
+        // Immediately close without prompting if we are on a mailbox screen
+        // and using a protocol that supports folders.
+        if((UiApplication.getUiApplication().getActiveScreen() instanceof MailboxScreen) &&
+                _client.hasFolders())
+            return true;
+        
+        // Otherwise we are on the main screen for the account, so prompt
+        // before closing the connection
+        if(_client.isConnected()) {
+            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
+                try { _client.close(); } catch (Exception exp) { }
+                return true;
+            }
+            else
+                return false;
+        }
+        else {
+            return true;
+        }
+    }
+    
     
     public MailClient getMailClient() {
         return _client;

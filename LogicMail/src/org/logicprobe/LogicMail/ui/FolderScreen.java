@@ -84,19 +84,12 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
     }
 
     public boolean onClose() {
-        if(_client.isConnected()) {
-            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
-                try { _client.close(); } catch (Exception exp) { }
-                close();
-                return true;
-            }
-            else
-                return false;
-        }
-        else {
+        if(_mailboxController.checkClose()) {
             close();
             return true;
         }
+        else
+            return false;
     }
 
     private void openSelectedFolder() {

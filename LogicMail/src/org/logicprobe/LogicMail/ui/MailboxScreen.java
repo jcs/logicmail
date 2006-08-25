@@ -102,6 +102,15 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         return true;
     }
 
+    public boolean onClose() {
+        if(_mailboxController.checkClose()) {
+            close();
+            return true;
+        }
+        else
+            return false;
+    }
+
     private MenuItem selectItem = new MenuItem("Select", 100, 10) {
         public void run() {
             openSelectedMessage();

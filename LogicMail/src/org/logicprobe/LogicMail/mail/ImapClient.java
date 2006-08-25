@@ -29,17 +29,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Portions of this code may have been inspired by and/or
- * copied from the following classes of the Mail4ME project:
- * de.trantor.mail.ImapClient
- * These portions are:
- *   Copyright (c) 2000-2002 Jorg Pleumann <joerg@pleumann.de>
- *
- * At this point, the only portions still from Mail4ME are
- * fragments of the "execute" methods.
- */
-
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
@@ -348,56 +337,8 @@ public class ImapClient extends MailClient {
     }
     
     /**
-     * Handles a request/response pair. This is a convenience method used
-     * internally to handle sending a request to the IMAP server as well as
-     * receiving the response. If the response starts with a "-" sign, and thus
-     * denotes a protocol error, an exception is raised to reflect it. Note that
-     * the request is only sent if it doesn't equal null, while the response is
-     * always being waited for.
-     *
-     * The message parameter is ignored, but kept for now to maintain this
-     * interface and not break other code.
-     *
-     * @see MailException
-     */
-    private String execute(String command, String arguments, Object message) throws IOException, MailException {
-        String result = null;
-
-        String tag = "A" + commandCount++ + " ";
-        connection.send(tag + command + (arguments == null ? "" : " " + arguments));
-
-        String temp = connection.receive();
-        while (!temp.startsWith(tag)) {
-            if (temp.indexOf(" " + command + " ") != -1) {
-                int p = temp.indexOf('(');
-                int q = temp.indexOf(')', p + 1);
-
-                if (p != -1) {
-                    if (q > p) {
-                        result = temp.substring(p + 1, q);
-                    }
-                    else if (message != null) {
-                        //int left = temp.indexOf('{');
-                        //int right = temp.indexOf('}', left);
-                        message = null;
-                        //receiveMessage(message, Integer.parseInt(temp.substring(left + 1, right)));
-                    }
-                }
-            }
-            temp = connection.receive();
-        }
-
-        temp = temp.substring(tag.length());
-        if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
-            throw new MailException(temp);
-        }
-
-        return result;
-    }    
-
-    /**
-     * Variation on the normal execute command that does not
-     * attempt to parse the reply text
+     * Executes an IMAP command, and returns the reply as an
+     * array of strings.
      * @param command IMAP command
      * @param arguments Arguments for the command
      * @return List of returned strings

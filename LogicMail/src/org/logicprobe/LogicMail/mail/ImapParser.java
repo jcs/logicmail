@@ -40,6 +40,8 @@ import org.logicprobe.LogicMail.util.StringParser;
  * needed when using the IMAP protocol
  */
 class ImapParser {
+    private ImapParser() { }
+    
     static Message.Envelope parseMessageEnvelope(String rawText) {
         Vector parsedText = null;
         try {
