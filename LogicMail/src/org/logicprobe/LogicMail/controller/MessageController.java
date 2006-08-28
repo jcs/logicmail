@@ -82,7 +82,7 @@ public class MessageController extends Controller implements Observable {
                 _client.setActiveMailbox(_folderItem);
 
                 // Get the structure of the message
-                _msgStructure = _client.getMessageStructure(_envelope.index);
+                _msgStructure = _client.getMessageStructure(_envelope);
 
                 notifyObservers("structure");
             }
@@ -111,13 +111,13 @@ public class MessageController extends Controller implements Observable {
                         }
                         else if(mimeType.equals("text/plain")) {
                             flag = true;
-                            bodySection = _client.getMessageBody(_envelope.index, i);
+                            bodySection = _client.getMessageBody(_envelope, i);
                             Arrays.add(msgFields, new RichTextField(bodySection));
                         }
                         else if(_msgStructure.sections[i].type.equals("image") &&
                                 _msgStructure.sections[i].encoding.equals("base64")) {
                             try {
-                                bodySection = _client.getMessageBody(_envelope.index, i);
+                                bodySection = _client.getMessageBody(_envelope, i);
                                 byte[] imgBytes = Base64InputStream.decode(bodySection);
                                 EncodedImage encImage =
                                         EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);

@@ -46,9 +46,9 @@ class PopParser {
         Hashtable headers = StringParser.parseMailHeaders(rawHeaders);
         Message.Envelope env = new Message.Envelope();
         
+        // Populate the common header field bits of the envelope
         env.subject = (String)headers.get("subject");
         if(env.subject == null) env.subject = "<subject>";
-        
         env.from = StringParser.parseTokenString((String)headers.get("from"), ", ");
         env.to = StringParser.parseTokenString((String)headers.get("to"), ", ");
         env.cc = StringParser.parseTokenString((String)headers.get("cc"), ", ");
@@ -58,6 +58,56 @@ class PopParser {
         env.messageId = (String)headers.get("message-id");
         env.inReplyTo = (String)headers.get("in-reply-to");
 
+        // Attempt to create a template of the message structure based on
+        // information in the headers, since POP does not provide another
+        // way to get this information prior to downloading the whole message
+        env.structure = null;
+        int p = 0;
+        int q = 0;
+        String contentType = (String)headers.get("content-type");
+        q = contentType.indexOf(';');
+        if(q == -1) return env;
+        String mimeType = contentType.substring(p, q);
+        p = q+1;
+        while((contentType.charAt(p) == ' ' ||
+              contentType.charAt(p) == '\r' ||
+              contentType.charAt(p) == '\n') &&
+              p < contentType.length())
+            p++;
+        String other = contentType.substring(p).trim();
+        // First handle the case where we have a multi-part message.
+        // For this, all we can really do is find the boundary string
+        // that separates the parts, so message downloading code
+        // knows what to look for.
+        if(mimeType.equalsIgnoreCase("Multipart/Mixed")) {
+            if(other.toLowerCase().startsWith("boundary=")) {
+                p = other.indexOf('=') + 1;
+                q = other.length()-1;
+                if(other.charAt(p) == '\"') p++;
+                if(other.charAt(q) == '\"') q--;
+                env.structure = new Message.Structure();
+                env.structure.boundary = other.substring(p, q);
+                env.structure.sections = new Message.Section[0];
+            }
+        }
+        // Otherwise we assume we have a normal single-part message.
+        // Thus, we create the relevant portions of the message structure
+        // object to indicate a single part message of the specified
+        // content and encoding types
+        else {
+            if(mimeType.indexOf('/') != -1) {
+                env.structure = new Message.Structure();
+                env.structure.boundary = null;
+                env.structure.sections = new Message.Section[1];
+                env.structure.sections[0] = new Message.Section();
+                env.structure.sections[0].type =
+                        mimeType.substring(0, mimeType.indexOf('/'));
+                env.structure.sections[0].subtype =
+                        mimeType.substring(mimeType.indexOf('/') + 1);
+                env.structure.sections[0].encoding =
+                        (String)headers.get("content-transfer-encoding");
+            }
+        }
         return env;
     }
 

@@ -161,16 +161,16 @@ public abstract class MailClient {
      * Retrieves the structure of a message from the mailbox.
      * This allows for more intelligent retrieval of the
      * message body, but might only work correctly with IMAP.
-     * @param index Message index in the active mailbox
+     * @param env Message index in the active mailbox
      */
-    public abstract Message.Structure getMessageStructure(int index) throws IOException, MailException;
+    public abstract Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException;
 
     /**
      * Retrieve the body of a message.
      * This allows for more intelligent retrieval of the
      * message body, but might only work correctly with IMAP.
-     * @param index Message index in the active mailbox
+     * @param env Message index in the active mailbox
      * @param bindex Index of the body within the message
      */
-    public abstract String getMessageBody(int index, int bindex) throws IOException, MailException;
+    public abstract String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException;
 }

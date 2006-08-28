@@ -32,10 +32,10 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
-import java.util.Calendar;
 import java.util.Vector;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.MailClient.FolderItem;
 
 /**
@@ -113,14 +113,41 @@ public class PopClient extends MailClient {
         return envList;
     }
 
-    public Message.Structure getMessageStructure(int index) throws IOException, MailException {
-        Message.Structure mstruct = new Message.Structure();
-        mstruct.sections = new Message.Section[0];
-        return mstruct;
+    public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {
+        return env.structure;
     }
 
-    public String getMessageBody(int index, int bindex) throws IOException, MailException {
-        return "";
+    public String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException {
+        // Figure out the max number of lines, using the byte-count
+        // specified in the user preferences, and assuming a line
+        // is 80 characters wide.
+        int maxLines = MailSettings.getInstance().getGlobalConfig().getMaxSectionSize() / 80;
+        
+        // First handle the simple case
+        if(env.structure.boundary == null) {
+            String[] message = executeFollow("TOP " + (env.index+1) + " " + maxLines);
+            int i = 0;
+            // Find the end of the headers
+            while(i < message.length) {
+                if(message[i].equals("")) {
+                    i++;
+                    break;
+                }
+                i++;
+            }
+            if(i == message.length) return "";
+            // Now turn the message body into one big string,
+            // and return it.
+            StringBuffer buf = new StringBuffer();
+            while(i < message.length) {
+                buf.append(message[i] + "\r\n");
+                i++;
+            }
+            return buf.toString();
+        }
+        else {
+            return "Multi-part not yet supported";
+        }
     }
     
     /**

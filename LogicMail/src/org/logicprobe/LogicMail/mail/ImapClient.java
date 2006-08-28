@@ -218,10 +218,10 @@ public class ImapClient extends MailClient {
         return envList;
     }
         
-    public String getMessageBody(int index, int bindex) throws IOException, MailException {
+    public String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
         
-        String[] rawList = execute("FETCH", index + " (BODY["+ (bindex+1) +"])");
+        String[] rawList = execute("FETCH", env.index + " (BODY["+ (bindex+1) +"])");
 
         if(rawList.length <= 1) return "";
         
@@ -235,10 +235,10 @@ public class ImapClient extends MailClient {
         return msgBuf.toString();
     }
 
-    public Message.Structure getMessageStructure(int index) throws IOException, MailException {
+    public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
 
-        String[] rawList = execute("FETCH", index + " (BODYSTRUCTURE)");
+        String[] rawList = execute("FETCH", env.index + " (BODYSTRUCTURE)");
 
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()

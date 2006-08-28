@@ -62,6 +62,9 @@ public class Message {
         // other useful tidbits
         public int index;
         public boolean isOpened;
+        // connect this envelope to the
+        // structure of the message
+        public Structure structure;
     }
 
     /**
@@ -78,6 +81,7 @@ public class Message {
      * Message body structure
      */
     public static class Structure {
+        public String boundary;
         public Section[] sections;
     }
 }
