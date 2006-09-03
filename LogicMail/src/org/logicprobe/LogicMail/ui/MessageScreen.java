@@ -32,7 +32,10 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.system.Application;
+import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
@@ -108,5 +111,27 @@ public class MessageScreen extends BaseScreen {
         menu.add(propsItem);
         menu.add(closeItem);
     }
+
+    public boolean keyChar(char key,
+                           int status,
+                           int time)
+    {
+        boolean retval = false;
+        switch(key) {
+            case Keypad.KEY_ENTER:
+            case Keypad.KEY_SPACE:
+                if(status == 0) {
+                    scroll(Manager.DOWNWARD);
+                    retval = true;
+                }
+                else if(status == KeypadListener.STATUS_ALT) {
+                    scroll(Manager.UPWARD);
+                    retval = true;
+                }
+                break;
+        }
+        return retval;
+    }
+
 }
 
