@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import java.util.Calendar;
 import java.util.Hashtable;
+import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -86,7 +87,7 @@ class PopParser {
                 if(other.charAt(p) == '\"') p++;
                 if(other.charAt(q) == '\"') q--;
                 env.structure = new Message.Structure();
-                env.structure.boundary = other.substring(p, q);
+                env.structure.boundary = other.substring(p, q+1);
                 env.structure.sections = new Message.Section[0];
             }
         }
@@ -118,5 +119,89 @@ class PopParser {
         env.from[0] = "<sender>";
         env.subject = "<subject>";
         return env;
+    }
+    
+    static String[] parseMultipartMessage(Message.Envelope env,
+                                          String[] rawMessage,
+                                          int offset) {
+        StringBuffer buf = new StringBuffer();
+        int p;
+        int q;
+        String[] bodySections = new String[0];
+        Message.Section[] msgSections = new Message.Section[0];
+        int bindex = 0;
+        boolean inBoundary = false;
+        for(int i=offset; i<rawMessage.length; i++) {
+            if(rawMessage[i].startsWith("--" + env.structure.boundary)) {
+                // Check for final boundary
+                if(i+1 == rawMessage.length) {
+                    msgSections[bindex].size = buf.length();
+                    env.structure.sections = msgSections;
+                    Arrays.add(bodySections, buf.toString());
+                    return bodySections;
+                }
+                else if(rawMessage[i+1].equals("")) {
+                    msgSections[bindex].size = buf.length();
+                    env.structure.sections = msgSections;
+                    Arrays.add(bodySections, buf.toString());
+                    return bodySections;
+                }
+                // Update for a new section boundary
+                inBoundary = true;
+                Arrays.add(msgSections, new Message.Section());
+                if(msgSections.length > 1) {
+                    Arrays.add(bodySections, buf.toString());
+                    msgSections[bindex].size = buf.length();
+                    bindex++;
+                }
+            }
+            else if(inBoundary && rawMessage[i].toLowerCase().startsWith("content-type")) {
+                p = rawMessage[i].indexOf(':');
+                q = rawMessage[i].indexOf('/');
+                if(p == -1 || q == -1 ||
+                   p+1 >= rawMessage[i].length() ||
+                   q+1 >= rawMessage[i].length()) {
+                    msgSections[bindex].type = "unknown";
+                    msgSections[bindex].subtype = "unknown";
+                }
+                else {
+                    msgSections[bindex].type = rawMessage[i].substring(p+1, q).trim();
+                    p = q+1;
+                    q = rawMessage[i].indexOf(';', p);
+                    if(q == -1) q = rawMessage[i].indexOf('\r', p);
+                    if(q == -1) q = rawMessage[i].indexOf('\n', p);
+                    if(q == -1) q = rawMessage[i].length()-1;
+                    msgSections[bindex].subtype = rawMessage[i].substring(p, q).trim();
+                }
+            }
+            else if(inBoundary && rawMessage[i].toLowerCase().startsWith("content-transfer-encoding")) {
+                p = rawMessage[i].indexOf(':');
+                if(p == -1 || p+1 >= rawMessage[i].length()) {
+                    msgSections[bindex].encoding = "unknown";
+                }
+                else {
+                    p++;
+                    q = rawMessage[i].indexOf(';', p);
+                    if(q == -1) q = rawMessage[i].indexOf('\r', p);
+                    if(q == -1) q = rawMessage[i].indexOf('\n', p);
+                    if(q == -1) q = rawMessage[i].length();
+                    msgSections[bindex].encoding = rawMessage[i].substring(p, q).trim();
+                }
+            }
+            else if(inBoundary && rawMessage[i].equals("")) {
+                inBoundary = false;
+                buf = new StringBuffer();
+            }
+            else {
+                buf.append(rawMessage[i] + "\r\n");
+            }
+        }
+        
+        // We should only get here if the message is truncated
+        Arrays.add(bodySections, buf.toString());
+        if(msgSections[bindex] != null)
+            msgSections[bindex].size = buf.length();
+        env.structure.sections = msgSections;
+        return bodySections;
     }
 }

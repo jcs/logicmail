@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 import java.util.Vector;
+import net.rim.device.api.crypto.encoder.MSCAPI_PrivateKeyDecoder;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -50,6 +51,12 @@ public class PopClient extends MailClient {
      * relevant information for the user's single mailbox.
      */
     private FolderItem activeMailbox = null;
+    
+    /** Body sections for the active message */
+    private String[] bodySections = null;
+    
+    /** The active message */
+    private Message.Envelope activeMessage = null;
     
     /** Creates a new instance of PopClient */
     public PopClient(AccountConfig acctCfg) {
@@ -113,29 +120,39 @@ public class PopClient extends MailClient {
         return envList;
     }
 
+    /**
+     * Return the structure of the message.
+     * Since POP does not give us the ability to do this independently of
+     * retrieving the whole message itself, we will just download the whole
+     * message here and cache it for use in separate calls to getMessageBody().
+     */
     public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {
-        return env.structure;
-    }
-
-    public String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException {
         // Figure out the max number of lines, using the byte-count
         // specified in the user preferences, and assuming a line
         // is 80 characters wide.
         int maxLines = MailSettings.getInstance().getGlobalConfig().getMaxSectionSize() / 80;
+
+        // Set the requested message to the active one.
+        activeMessage = env;
         
-        // First handle the simple case
-        if(env.structure.boundary == null) {
-            String[] message = executeFollow("TOP " + (env.index+1) + " " + maxLines);
-            int i = 0;
-            // Find the end of the headers
-            while(i < message.length) {
-                if(message[i].equals("")) {
-                    i++;
-                    break;
-                }
+        // Now download the message text
+        String[] message = executeFollow("TOP " + (env.index+1) + " " + maxLines);
+        int i = 0;
+        // Find the end of the headers
+        while(i < message.length) {
+            if(message[i].equals("")) {
                 i++;
+                break;
             }
-            if(i == message.length) return "";
+            i++;
+        }
+        if(i == message.length) {
+            bodySections = null;
+            return env.structure;
+        }
+
+        // First handle the simple case of a non-multipart message
+        if(env.structure.boundary == null) {
             // Now turn the message body into one big string,
             // and return it.
             StringBuffer buf = new StringBuffer();
@@ -143,11 +160,29 @@ public class PopClient extends MailClient {
                 buf.append(message[i] + "\r\n");
                 i++;
             }
-            return buf.toString();
+            bodySections = new String[1];
+            bodySections[0] = buf.toString();
+            env.structure.sections[0].size = bodySections[0].length();
         }
+        // Now handle multi-part messages
         else {
-            return "Multi-part not yet supported";
+            bodySections = PopParser.parseMultipartMessage(env, message, i);
         }
+        return env.structure;
+    }
+
+    public String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException {
+        // Handle a case of mis-ordering of use, to make sure we have
+        // the right message cached for retrieval
+        if(activeMessage != env) getMessageStructure(env);
+        
+        // Return the requested section of the message
+        if(bodySections != null &&
+           bindex < bodySections.length &&
+           bodySections[bindex] != null)
+            return bodySections[bindex];
+        else
+            return null;
     }
     
     /**
