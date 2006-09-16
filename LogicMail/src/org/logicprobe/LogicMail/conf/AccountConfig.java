@@ -59,7 +59,7 @@ public class AccountConfig implements Serializable {
         _serverSSL = false;
         _serverUser = "";
         _serverPass = "";
-        _serverPort = 143;
+        _serverPort = 110;
     }
     
     public AccountConfig(byte[] byteArray) {
@@ -159,7 +159,7 @@ public class AccountConfig implements Serializable {
             _serverSSL = false;
             _serverUser = "";
             _serverPass = "";
-            _serverPort = 143;
+            _serverPort = 110;
         }
     }
 }
