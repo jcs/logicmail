@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.*;
 import net.rim.device.api.ui.component.*;
+import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**
@@ -43,6 +44,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private BasicEditField fldServerName;
     private ObjectChoiceField fldServerType;
     private CheckboxField fldServerSSL;
+    private BasicEditField fldServerPort;
     private BasicEditField fldServerUser;
     private PasswordEditField fldServerPass;
     private ButtonField btSave;
@@ -61,15 +63,24 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         add(fldServerName = new BasicEditField("Server: ",
                                                acctConfig.getServerName()));
         String[] serverTypes = { "POP", "IMAP" };
-        add(fldServerType = new ObjectChoiceField("Type: ",
+        add(fldServerType = new ObjectChoiceField("Protocol: ",
                                                   serverTypes,
                                                   acctConfig.getServerType()));
-        add(fldServerSSL = new CheckboxField("SSL",
-                                             acctConfig.getServerSSL()));
+        fldServerType.setChangeListener(this);
+        fldServerSSL = new CheckboxField("SSL",
+                                         acctConfig.getServerSSL());
+        fldServerSSL.setChangeListener(this);
+        add(fldServerSSL);
+        fldServerPort = new BasicEditField("Port: ",
+                                           Integer.toString(acctConfig.getServerPort()));
+        fldServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        add(fldServerPort);
         add(fldServerUser = new BasicEditField("Username: ",
                                                acctConfig.getServerUser()));
         add(fldServerPass = new PasswordEditField("Password: ",
                                                   acctConfig.getServerPass()));
+
+        add(new LabelField(null, Field.NON_FOCUSABLE));
         
         btSave = new ButtonField("Save", Field.FIELD_HCENTER);
         btSave.setChangeListener(this);
@@ -80,6 +91,20 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         if(field == btSave) {
             onClose();
         }
+        else if(field == fldServerType || field == fldServerSSL) {
+            if(fldServerType.getSelectedIndex() == 0) {
+                if(fldServerSSL.getChecked())
+                    fldServerPort.setText("995");
+                else
+                    fldServerPort.setText("110");
+            }
+            else if(fldServerType.getSelectedIndex() == 1) {
+                if(fldServerSSL.getChecked())
+                    fldServerPort.setText("993");
+                else
+                    fldServerPort.setText("143");
+            }
+        }
     }
 
     public void save() {
@@ -87,6 +112,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         _acctConfig.setServerName(fldServerName.getText());
         _acctConfig.setServerType(fldServerType.getSelectedIndex());
         _acctConfig.setServerSSL(fldServerSSL.getChecked());
+        _acctConfig.setServerPort(Integer.parseInt(fldServerPort.getText()));
         _acctConfig.setServerUser(fldServerUser.getText());
         _acctConfig.setServerPass(fldServerPass.getText());
         _acctSaved = true;

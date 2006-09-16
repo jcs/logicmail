@@ -41,6 +41,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Observable;
@@ -83,7 +84,8 @@ public class MessageController extends Controller implements Observable {
 
                 // Get the structure of the message
                 _msgStructure = _client.getMessageStructure(_envelope);
-
+                _envelope.structure = _msgStructure;
+                
                 notifyObservers("structure");
             }
         };
@@ -101,18 +103,20 @@ public class MessageController extends Controller implements Observable {
                 else {
                     boolean flag = false;
                     int i;
+                    int sizeLimit = _mailSettings.getGlobalConfig().getImapMaxMsgSize();
                     String mimeType;
                     String bodySection;
                     for(i=0;i<_msgStructure.sections.length;i++) {
                         mimeType = _msgStructure.sections[i].type + "/" +
                                    _msgStructure.sections[i].subtype;
-                        if(_msgStructure.sections[i].size > _mailSettings.getGlobalConfig().getMaxSectionSize()) {
+                        if(_client instanceof ImapClient && _msgStructure.sections[i].size > sizeLimit) {
                             Arrays.add(msgFields, new RichTextField("Section too big: "+mimeType));
                         }
                         else if(mimeType.equals("text/plain")) {
                             flag = true;
                             bodySection = _client.getMessageBody(_envelope, i);
                             Arrays.add(msgFields, new RichTextField(bodySection));
+                            if(_client instanceof ImapClient) sizeLimit -= _msgStructure.sections[i].size;
                         }
                         else if(_msgStructure.sections[i].type.equals("image") &&
                                 _msgStructure.sections[i].encoding.equals("base64")) {
@@ -125,6 +129,7 @@ public class MessageController extends Controller implements Observable {
                             } catch (Exception exp) {
                                 Arrays.add(msgFields, new RichTextField("Unable to decode image: "+mimeType));
                             }
+                            if(_client instanceof ImapClient) sizeLimit -= _msgStructure.sections[i].size;
                         }
                         else {
                             Arrays.add(msgFields, new RichTextField("Unsupported type: "+mimeType));

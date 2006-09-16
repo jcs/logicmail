@@ -28,61 +28,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-package org.logicprobe.LogicMail.mail;
-
-import java.util.Date;
+package org.logicprobe.LogicMail.conf;
 
 /**
- * This class encapsulates all the data to represent an E-Mail message.
+ * Interface for configuration classes that can be serialized
+ * for storage in the J2ME RMS
  */
-public class Message {
+public interface Serializable {
     /**
-     * Since this class exists only as a data
-     * structure namespace, its constructor
-     * is private to prevent instantiation.
+     * Serialize.
+     * @return Byte array containing the data represented by this class
      */
-    private Message() { }
+    public byte[] serialize();
     
     /**
-     * Relevant header fields for a message.
+     * Deserialize.
+     * @param byteArray Byte array containing the data for this class to represent
      */
-    public static class Envelope {
-        // official envelope fields
-        public Date date;
-        public String subject;
-        public String[] from;
-        public String[] sender;
-        public String[] replyTo;
-        public String[] to;
-        public String[] cc;
-        public String[] bcc;
-        public String inReplyTo;
-        public String messageId;
-        // other useful tidbits
-        public int index;
-        public boolean isOpened;
-        // connect this envelope to the
-        // structure of the message
-        public Structure structure;
-    }
-
-    /**
-     * Message body section
-     */
-    public static class Section {
-        public String type;
-        public String subtype;
-        public String encoding;
-        public String charset;
-        public int size;
-    }
-
-    /**
-     * Message body structure
-     */
-    public static class Structure {
-        public String boundary;
-        public Section[] sections;
-    }
+    public void deserialize(byte[] byteArray);    
 }

@@ -225,4 +225,23 @@ public class StringParser {
         }
         return tok;
     }
+    
+    /**
+     * Parse an input string that contains an encoding type,
+     * and return a valid encoding type supported by RIM.
+     */
+    public static String parseValidCharsetString(String encoding) {
+        if(encoding == null)
+            return "ISO-8859-1";
+        else if(encoding.toUpperCase().indexOf("ISO-8859-1") != -1)
+            return "ISO-8859-1";
+        else if(encoding.toUpperCase().indexOf("UTF-8") != -1)
+            return "UTF-8";
+        else if(encoding.toUpperCase().indexOf("UTF-16BE") != -1)
+            return "UTF-16BE";
+        else if(encoding.toUpperCase().indexOf("US-ASCII") != -1)
+            return "US-ASCII";
+        else
+            return "ISO-8859-1";
+    }
 }

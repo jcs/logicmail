@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.util.Vector;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.mail.MailClient.FolderItem;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * 
@@ -141,6 +143,13 @@ public class ImapClient extends MailClient {
      * @return List of folder items
      */
     public Vector getFolderList(String baseFolder) throws IOException, MailException {
+        return getFolderListImpl(baseFolder, 0);
+    }
+
+    /**
+     * Implementation of the recursive folder listing method
+     */
+    private Vector getFolderListImpl(String baseFolder, int depth) throws IOException, MailException {
         Vector folders = new Vector();
         Vector respList = executeList(baseFolder, "%");
         for(int i=0;i<respList.size();i++) {
@@ -148,7 +157,9 @@ public class ImapClient extends MailClient {
             if(resp.canSelect) {
                 folders.addElement(resp.name);
                 if(resp.hasChildren) {
-                    Vector childList = getFolderList(resp.name + resp.delim);
+                    if(depth+1 >= _globalConfig.getImapMaxFolderDepth())
+                        return folders;
+                    Vector childList = getFolderListImpl(resp.name + resp.delim, depth+1);
                     for(int j=0;j<childList.size();j++)
                         folders.addElement(childList.elementAt(j));
                 }
@@ -231,8 +242,8 @@ public class ImapClient extends MailClient {
         }
         String lastLine = rawList[rawList.length-1];
         msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
-
-        return msgBuf.toString();
+        return new String(msgBuf.toString().getBytes(),
+                StringParser.parseValidCharsetString(env.structure.sections[bindex].charset));
     }
 
     public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {

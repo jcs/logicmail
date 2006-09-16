@@ -186,6 +186,7 @@ class ImapParser {
 
     private static Message.Section parseMessageStructureSection(Vector sectionList) {
         Message.Section sec = new Message.Section();
+        Vector tmpVec;
         
         if(sectionList.elementAt(0) instanceof String) {
             sec.type = ((String)sectionList.elementAt(0)).toLowerCase();
@@ -195,6 +196,17 @@ class ImapParser {
             sec.subtype = ((String)sectionList.elementAt(1)).toLowerCase();
         }
 
+        sec.charset = null;
+        if(sectionList.elementAt(2) instanceof Vector) {
+            tmpVec = (Vector)sectionList.elementAt(2);
+            if(tmpVec.size() >= 2) {
+                if((tmpVec.elementAt(0) instanceof String) &&
+                   ((String)tmpVec.elementAt(0)).equalsIgnoreCase("charset") &&
+                   tmpVec.elementAt(1) instanceof String)
+                    sec.charset = (String)tmpVec.elementAt(1);                    
+            }
+        }
+        
         if(sectionList.elementAt(5) instanceof String) {
             sec.encoding = ((String)sectionList.elementAt(5)).toLowerCase();
         }

@@ -48,6 +48,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.cache.Cacheable;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
 
 /**
  * Create a generic interface to different mail protocols.
@@ -88,11 +90,13 @@ public abstract class MailClient {
         }
     }
 
+    protected GlobalConfig _globalConfig;
     protected AccountConfig acctCfg;
     protected Connection connection;
     
     protected MailClient(AccountConfig acctCfg) {
         this.acctCfg = acctCfg;
+        _globalConfig = MailSettings.getInstance().getGlobalConfig();
         connection = new Connection(acctCfg);
     }
 

@@ -96,17 +96,24 @@ class PopParser {
         // object to indicate a single part message of the specified
         // content and encoding types
         else {
+            env.structure = new Message.Structure();
+            env.structure.boundary = null;
+            env.structure.sections = new Message.Section[1];
+            env.structure.sections[0] = new Message.Section();
+            env.structure.sections[0].charset = StringParser.parseValidCharsetString(contentType);
+
             if(mimeType.indexOf('/') != -1) {
-                env.structure = new Message.Structure();
-                env.structure.boundary = null;
-                env.structure.sections = new Message.Section[1];
-                env.structure.sections[0] = new Message.Section();
                 env.structure.sections[0].type =
                         mimeType.substring(0, mimeType.indexOf('/'));
                 env.structure.sections[0].subtype =
                         mimeType.substring(mimeType.indexOf('/') + 1);
                 env.structure.sections[0].encoding =
                         (String)headers.get("content-transfer-encoding");
+            }
+            else {
+                env.structure.sections[0].type = "text";
+                env.structure.sections[0].subtype = "plain";
+                env.structure.sections[0].encoding = "7bit";
             }
         }
         return env;
@@ -137,20 +144,32 @@ class PopParser {
                 if(i+1 == rawMessage.length) {
                     msgSections[bindex].size = buf.length();
                     env.structure.sections = msgSections;
-                    Arrays.add(bodySections, buf.toString());
+                    try {
+                        Arrays.add(bodySections, new String(buf.toString().getBytes(), msgSections[bindex].charset));
+                    } catch (Exception e) {
+                        Arrays.add(bodySections, buf.toString());
+                    }
                     return bodySections;
                 }
                 else if(rawMessage[i+1].equals("")) {
                     msgSections[bindex].size = buf.length();
                     env.structure.sections = msgSections;
-                    Arrays.add(bodySections, buf.toString());
+                    try {
+                        Arrays.add(bodySections, new String(buf.toString().getBytes(), msgSections[bindex].charset));
+                    } catch (Exception e) {
+                        Arrays.add(bodySections, buf.toString());
+                    }
                     return bodySections;
                 }
                 // Update for a new section boundary
                 inBoundary = true;
                 Arrays.add(msgSections, new Message.Section());
                 if(msgSections.length > 1) {
-                    Arrays.add(bodySections, buf.toString());
+                    try {
+                        Arrays.add(bodySections, new String(buf.toString().getBytes(), msgSections[bindex].charset));
+                    } catch (Exception e) {
+                        Arrays.add(bodySections, buf.toString());
+                    }
                     msgSections[bindex].size = buf.length();
                     bindex++;
                 }
@@ -173,6 +192,7 @@ class PopParser {
                     if(q == -1) q = rawMessage[i].length()-1;
                     msgSections[bindex].subtype = rawMessage[i].substring(p, q).trim();
                 }
+                msgSections[bindex].charset = StringParser.parseValidCharsetString(rawMessage[i]);
             }
             else if(inBoundary && rawMessage[i].toLowerCase().startsWith("content-transfer-encoding")) {
                 p = rawMessage[i].indexOf(':');
@@ -198,9 +218,12 @@ class PopParser {
         }
         
         // We should only get here if the message is truncated
-        Arrays.add(bodySections, buf.toString());
-        if(msgSections[bindex] != null)
+        try {
+            Arrays.add(bodySections, new String(buf.toString().getBytes(), msgSections[bindex].charset));
             msgSections[bindex].size = buf.length();
+        } catch (Exception e)  {
+            Arrays.add(bodySections, buf.toString());
+        }
         env.structure.sections = msgSections;
         return bodySections;
     }

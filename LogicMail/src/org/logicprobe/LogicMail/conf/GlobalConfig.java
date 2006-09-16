@@ -39,28 +39,29 @@ import java.io.DataOutputStream;
 
 /**
  * Store the global configuration for LogicMail.
- * Right now there is no user interface to set
- * any of these fields, and many of them are always
- * set to default values.  However, this prepares the
- * rest of the code to consult these parameters so
- * they ultimately can be made configurable.
  */
-public class GlobalConfig {
+public class GlobalConfig implements Serializable {
     /** full name of the user */
     private String _fullname;
     /** number of message headers to retrieve */
     private int _retMsgCount;
     /** true for ascending, false for decending */
     private boolean _dispOrder;
-    /** maximum size of an e-mail section to download */
-    private int _maxSectionSize = 16384;
+    /** IMAP: maximum message size */
+    private int _imapMaxMsgSize;
+    /** IMAP: maximum folder depth */
+    private int _imapMaxFolderDepth;
+    /** POP: maximum message lines */
+    private int _popMaxLines;
 
 
     public GlobalConfig() {
         _fullname = "";
         _retMsgCount = 30;
         _dispOrder = false;
-        _maxSectionSize = 16384;
+        _imapMaxMsgSize = 32768;
+        _imapMaxFolderDepth = 4;
+        _popMaxLines = 400;
     }
     
     public GlobalConfig(byte[] byteArray) {
@@ -91,12 +92,28 @@ public class GlobalConfig {
         return _dispOrder;
     }
 
-    public void setMaxSectionSize(int maxSectionSize) {
-        _maxSectionSize = maxSectionSize;
+    public int getImapMaxMsgSize() {
+        return _imapMaxMsgSize;
+    }
+
+    public void setImapMaxMsgSize(int imapMaxMsgSize) {
+        _imapMaxMsgSize = imapMaxMsgSize;
     }
     
-    public int getMaxSectionSize() {
-        return _maxSectionSize;
+    public int getImapMaxFolderDepth() {
+        return _imapMaxFolderDepth;
+    }
+
+    public void setImapMaxFolderDepth(int imapMaxFolderDepth) {
+        _imapMaxFolderDepth = imapMaxFolderDepth;
+    }
+
+    public int getPopMaxLines() {
+        return _popMaxLines;
+    }
+
+    public void setPopMaxLines(int popMaxLines) {
+        _popMaxLines = popMaxLines;
     }
     
     public byte[] serialize() {
@@ -107,7 +124,9 @@ public class GlobalConfig {
             output.writeUTF(_fullname);
             output.writeInt(_retMsgCount);
             output.writeBoolean(_dispOrder);
-            output.writeInt(_maxSectionSize);
+            output.writeInt(_imapMaxMsgSize);
+            output.writeInt(_imapMaxFolderDepth);
+            output.writeInt(_popMaxLines);
             return buffer.toByteArray();
         } catch (IOException exp) {
             return null;
@@ -122,12 +141,16 @@ public class GlobalConfig {
             _fullname = input.readUTF();
             _retMsgCount = input.readInt();
             _dispOrder = input.readBoolean();
-            _maxSectionSize = input.readInt();
+            _imapMaxMsgSize = input.readInt();
+            _imapMaxFolderDepth = input.readInt();
+            _popMaxLines = input.readInt();
         } catch (IOException exp) {
             _fullname = "";
             _retMsgCount = 30;
             _dispOrder = false;
-            _maxSectionSize = 16384;
+            _imapMaxMsgSize = 32768;
+            _imapMaxFolderDepth = 4;
+            _popMaxLines = 400;
         }
     }
 }

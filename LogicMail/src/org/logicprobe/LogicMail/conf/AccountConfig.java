@@ -40,7 +40,7 @@ import java.io.DataOutputStream;
 /**
  * Store account configuration for LogicMail
  */
-public class AccountConfig {
+public class AccountConfig implements Serializable {
     public static int TYPE_POP = 0;
     public static int TYPE_IMAP = 1;
     
@@ -50,6 +50,7 @@ public class AccountConfig {
     private boolean _serverSSL;
     private String _serverUser;
     private String _serverPass;
+    private int _serverPort;
 
     public AccountConfig() {
         _acctName = "";
@@ -58,6 +59,7 @@ public class AccountConfig {
         _serverSSL = false;
         _serverUser = "";
         _serverPass = "";
+        _serverPort = 143;
     }
     
     public AccountConfig(byte[] byteArray) {
@@ -96,30 +98,14 @@ public class AccountConfig {
         _serverSSL = serverSSL;
     }
 
-    /**
-     * Get the server port.
-     * Eventually this parameter might be exposed to
-     * the user.  Right now it just returns the default
-     * port based on the protocol and SSL settings.
-     * @return TCP port for this account
-     */
     public int getServerPort() {
-        if(_serverType == TYPE_POP) {
-            if(_serverSSL)
-                return 995;
-            else
-                return 110;
-        }
-        else if(_serverType == TYPE_IMAP) {
-            if(_serverSSL)
-                return 993;
-            else
-                return 143;
-        }
-        else
-            return 0;
+        return _serverPort;
     }
 
+    public void setServerPort(int serverPort) {
+        _serverPort = serverPort;
+    }
+    
     public String getServerUser() {
         return _serverUser;
     }
@@ -147,6 +133,7 @@ public class AccountConfig {
             output.writeBoolean(_serverSSL);
             output.writeUTF(_serverUser);
             output.writeUTF(_serverPass);
+            output.writeInt(_serverPort);
             return buffer.toByteArray();
         } catch (IOException exp) {
             return null;
@@ -164,6 +151,7 @@ public class AccountConfig {
             _serverSSL = input.readBoolean();
             _serverUser = input.readUTF();
             _serverPass = input.readUTF();
+            _serverPort = input.readInt();
         } catch (IOException exp) {
             _acctName = "";
             _serverName = "";
@@ -171,6 +159,7 @@ public class AccountConfig {
             _serverSSL = false;
             _serverUser = "";
             _serverPass = "";
+            _serverPort = 143;
         }
     }
 }

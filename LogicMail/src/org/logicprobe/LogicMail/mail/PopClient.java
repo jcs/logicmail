@@ -33,11 +33,11 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 import java.util.Vector;
-import net.rim.device.api.crypto.encoder.MSCAPI_PrivateKeyDecoder;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.MailClient.FolderItem;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * 
@@ -130,7 +130,7 @@ public class PopClient extends MailClient {
         // Figure out the max number of lines, using the byte-count
         // specified in the user preferences, and assuming a line
         // is 80 characters wide.
-        int maxLines = MailSettings.getInstance().getGlobalConfig().getMaxSectionSize() / 80;
+        int maxLines = MailSettings.getInstance().getGlobalConfig().getPopMaxLines();
 
         // Set the requested message to the active one.
         activeMessage = env;
@@ -161,7 +161,11 @@ public class PopClient extends MailClient {
                 i++;
             }
             bodySections = new String[1];
-            bodySections[0] = buf.toString();
+            try {
+                bodySections[0] = new String(buf.toString().getBytes(), env.structure.sections[0].charset);
+            } catch (Exception e) {
+                bodySections[0] = buf.toString();
+            }
             env.structure.sections[0].size = bodySections[0].length();
         }
         // Now handle multi-part messages

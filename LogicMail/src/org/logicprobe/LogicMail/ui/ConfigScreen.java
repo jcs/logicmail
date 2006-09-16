@@ -45,7 +45,9 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     private BasicEditField fldFullname;
     private BasicEditField fldRetMsgCount;
     private ObjectChoiceField fldDispOrder;
-    private BasicEditField fldMaxSectionSize;
+    private BasicEditField fldImapMaxMsgSize;
+    private BasicEditField fldImapMaxFolderDepth;
+    private BasicEditField fldPopMaxLines;
     
     private ButtonField btSave;
 
@@ -54,26 +56,37 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
 
         _mailSettings = MailSettings.getInstance();
         GlobalConfig config = _mailSettings.getGlobalConfig();
+
+        add(new RichTextField("Global settings:", Field.NON_FOCUSABLE));
         
-        fldFullname = new BasicEditField("Full name: ", config.getFullname());
+        fldFullname = new BasicEditField("  Full name: ", config.getFullname());
         add(fldFullname);
 
-        fldRetMsgCount = new BasicEditField("Message count: ",
+        fldRetMsgCount = new BasicEditField("  Message count: ",
                                             Integer.toString(config.getRetMsgCount()));
         fldRetMsgCount.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldRetMsgCount);
 
         String[] orderTypes = { "Ascending", "Descending" };
         if(!config.getDispOrder())
-            fldDispOrder = new ObjectChoiceField("Message order: ", orderTypes, 0);
+            fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 0);
         else
-            fldDispOrder = new ObjectChoiceField("Message order: ", orderTypes, 1);            
+            fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 1);            
         add(fldDispOrder);
         
-        fldMaxSectionSize = new BasicEditField("Max message section size (kb): ",
-                                               Integer.toString(config.getMaxSectionSize()/1024));
-        fldMaxSectionSize.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldMaxSectionSize);
+        add(new RichTextField("IMAP settings:", Field.NON_FOCUSABLE));
+        fldImapMaxMsgSize = new BasicEditField("  Max size to dl per msg (kb): ", Integer.toString(config.getImapMaxMsgSize()/1024));
+        fldImapMaxMsgSize.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        add(fldImapMaxMsgSize);
+        
+        fldImapMaxFolderDepth = new BasicEditField("  Max folder depth: ", Integer.toString(config.getImapMaxFolderDepth()));
+        fldImapMaxFolderDepth.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        add(fldImapMaxFolderDepth);
+
+        add(new RichTextField("POP settings:", Field.NON_FOCUSABLE));
+        fldPopMaxLines = new BasicEditField("  Max lines to dl per msg: ", Integer.toString(config.getPopMaxLines()));
+        fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        add(fldPopMaxLines);
 
         btSave = new ButtonField("Save", Field.FIELD_HCENTER);
         btSave.setChangeListener(this);
@@ -100,9 +113,15 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
             config.setDispOrder(true);
 
         try {
-            config.setMaxSectionSize(Integer.parseInt(fldMaxSectionSize.getText())*1024);
+            config.setImapMaxMsgSize(Integer.parseInt(fldImapMaxMsgSize.getText())*1024);
         } catch (Exception e) { }
-        
+        try {
+            config.setImapMaxFolderDepth(Integer.parseInt(fldImapMaxFolderDepth.getText()));
+        } catch (Exception e) { }
+        try {
+            config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
+        } catch (Exception e) { }
+
         _mailSettings.saveSettings();
     }
 }
