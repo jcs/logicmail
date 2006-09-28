@@ -139,7 +139,7 @@ public class PopClient extends MailClient {
         
         // Now download the message text
         String[] message = executeFollow("TOP " + (env.index+1) + " " + maxLines);
-
+        
         MIMEInputStream mimeInputStream = null;
         try {
             mimeInputStream = new MIMEInputStream(StringParser.createInputStream(message));
@@ -165,9 +165,7 @@ public class PopClient extends MailClient {
                 section.encoding = parts[i].getHeader("Content-Transfer-Encoding");
                 if(section.encoding.equalsIgnoreCase("base64")) {
                     SharedInputStream sis = parts[i].getRawMIMEInputStream();
-                    
-                    buffer = new byte[sis.available()];
-                    sis.read(buffer);
+                    buffer = StringParser.readWholeStream(sis);
 
                     int offset = 0;
                     while((offset+3 < buffer.length) &&
@@ -180,7 +178,7 @@ public class PopClient extends MailClient {
                 else {
                     section.size = parts[i].available();
                     buffer = new byte[parts[i].available()];
-                    parts[i].read(buffer);
+                    buffer = StringParser.readWholeStream(parts[i]);
                     Arrays.add(bodySections, new String(buffer, section.charset));
                 }
                 Arrays.add(msgSections, section);
