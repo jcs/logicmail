@@ -72,8 +72,12 @@ public class StringParser {
             rawDate = rawDate.substring(0, rawDate.lastIndexOf(' '));
 
         // Set the time zone
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"+rawDate.lastIndexOf(' ')+1));
-
+        Calendar cal;
+        String tz = rawDate.substring(rawDate.lastIndexOf(' ')+1);
+        if(tz.startsWith("-") || tz.startsWith("+"))
+            cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"+tz));
+        else
+            cal = Calendar.getInstance(TimeZone.getTimeZone(tz));
         p = 0;
         q = rawDate.indexOf(" ", p+1);
         cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(rawDate.substring(p, q)));
