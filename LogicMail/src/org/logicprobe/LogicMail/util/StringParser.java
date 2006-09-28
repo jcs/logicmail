@@ -32,6 +32,8 @@
 package org.logicprobe.LogicMail.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.Calendar;
@@ -255,5 +257,19 @@ public class StringParser {
         for(int i=0;i<rawLines.length;i++)
             buf.append(rawLines[i]  + "\r\n");
         return new ByteArrayInputStream(buf.toString().getBytes());        
+    }
+    
+    /**
+     * Read all available bytes from an InputStream
+     */
+    public static byte[] readWholeStream(InputStream is) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] tmpBuf;
+        while(is.available() > 0) {
+            tmpBuf = new byte[is.available()];
+            if(is.read(tmpBuf) < 0) break;
+            bos.write(tmpBuf);
+        }
+        return bos.toByteArray();
     }
 }
