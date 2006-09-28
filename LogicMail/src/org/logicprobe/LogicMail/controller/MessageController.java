@@ -152,30 +152,34 @@ public class MessageController extends Controller implements Observable {
     public void showMsgProperties() {
         int i;
         StringBuffer msg = new StringBuffer();
-        msg.append("Subject:\n  " + _envelope.subject + "\n");
-        msg.append("Date:\n  " + _envelope.date + "\n");
+        msg.append("Subject:\n  " + ((_envelope.subject!=null) ? _envelope.subject : "") + "\n");
+        msg.append("Date:\n  " + ((_envelope.date!=null) ? _envelope.date.toString() : "") + "\n");
 
-        msg.append("From:\n");
-        for(i=0;i<_envelope.from.length;i++)
-            msg.append("  " + _envelope.from[i] + "\n");
-
-        msg.append("To:\n");
-        for(i=0;i<_envelope.to.length;i++)
+        if(_envelope.from != null && _envelope.from.length > 0) {
+            msg.append("From:\n");
+            for(i=0;i<_envelope.from.length;i++)
+                msg.append("  " + ((_envelope.from[i]!=null) ? _envelope.from[i] : "") + "\n");
+        }
+        
+        if(_envelope.to != null && _envelope.to.length > 0) {
+            msg.append("To:\n");
+            for(i=0;i<_envelope.to.length;i++)
             if(_envelope.to[i].length() > 0)
-                msg.append("  " + _envelope.to[i] + "\n");
+                msg.append("  " + ((_envelope.to[i]!=null) ? _envelope.to[i] : "") + "\n");
+        }
 
         if(_envelope.cc != null && _envelope.cc.length > 0) {
             msg.append("CC:\n");
             for(i=0;i<_envelope.cc.length;i++)
                 if(_envelope.cc[i].length() > 0)
-                msg.append("  " + _envelope.cc[i] + "\n");
+                msg.append("  " + ((_envelope.cc[i]!=null) ? _envelope.cc[i] : "") + "\n");
         }
         
         if(_envelope.bcc != null && _envelope.bcc.length > 0) {
             msg.append("BCC:\n");
             for(i=0;i<_envelope.bcc.length;i++)
                 if(_envelope.bcc[i].length() > 0)
-                    msg.append("  " + _envelope.bcc[i] + "\n");
+                    msg.append("  " + ((_envelope.bcc[i]!=null) ? _envelope.bcc[i] : "") + "\n");
         }
 
         Dialog dialog = new Dialog(Dialog.D_OK, msg.toString(),

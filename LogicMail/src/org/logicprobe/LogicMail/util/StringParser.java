@@ -138,6 +138,8 @@ public class StringParser {
 
 	int p = 1;
 	int q = p;
+        int len;
+        String tmpText;
 	boolean inQuote = false;
 	while(q < rawText.length()) {
 	    if(rawText.charAt(q) == '\"') {
@@ -151,6 +153,28 @@ public class StringParser {
 		    inQuote = false;
 		}
 	    }
+            else if(rawText.charAt(q) == '{' && !inQuote) {
+                p = rawText.indexOf('}', q);
+                len = Integer.parseInt(rawText.substring(q+1, p));
+                p++;
+                while(rawText.charAt(p) == '\r' || rawText.charAt(p) == '\n')
+                    p++;
+
+                // Quick kludge for length miscalculation due to the way
+                // line breaks are currently handled
+                tmpText = rawText.substring(p, p+len);
+                if(tmpText.endsWith(" NIL"))
+                    len-=4;
+                else if(tmpText.endsWith(" NI"))
+                    len-=3;
+                else if(tmpText.endsWith(" N"))
+                    len-=2;
+                else if(tmpText.endsWith(" "))
+                    len-=1;
+
+                parsedText.addElement(rawText.substring(p, p+len));
+                q = p + len;
+            }
 	    else if(rawText.charAt(q) == ' ' && !inQuote) {
 		if(q-p > 0) {
 		    parsedText.addElement(rawText.substring(p, q).trim());

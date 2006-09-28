@@ -133,7 +133,6 @@ class ImapParser {
                 String hostName = "NIL";
                 if(entry.elementAt(3) instanceof String)
                     hostName = (String)entry.elementAt(3);
-
                 // Now assemble these into a single address entry
                 // (possibly eventually storing them separately)
                 if(realName.length() > 0 && !realName.equals("NIL"))

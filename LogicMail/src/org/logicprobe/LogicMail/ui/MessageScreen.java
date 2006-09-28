@@ -64,10 +64,11 @@ public class MessageScreen extends BaseScreen {
             add(new RichTextField("From: " + _envelope.from[0]));
             if(_envelope.from.length > 1)
                 for(int i=1;i<_envelope.from.length;i++)
-                    add(new RichTextField("      " + _envelope.from[i]));
+                    if(_envelope.from[i] != null)
+                        add(new RichTextField("      " + _envelope.from[i]));
         }
         if(_envelope.subject != null)
-        add(new RichTextField("Subject: " + _envelope.subject));
+            add(new RichTextField("Subject: " + _envelope.subject));
         add(new SeparatorField());
         _messageController.updateMessageStructure();
     }
