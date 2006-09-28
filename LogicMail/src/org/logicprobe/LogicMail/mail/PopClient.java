@@ -32,7 +32,11 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Vector;
+import net.rim.device.api.io.SharedInputStream;
+import net.rim.device.api.mime.MIMEInputStream;
+import net.rim.device.api.mime.MIMEParsingException;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -127,9 +131,7 @@ public class PopClient extends MailClient {
      * message here and cache it for use in separate calls to getMessageBody().
      */
     public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {
-        // Figure out the max number of lines, using the byte-count
-        // specified in the user preferences, and assuming a line
-        // is 80 characters wide.
+        // Figure out the max number of lines
         int maxLines = MailSettings.getInstance().getGlobalConfig().getPopMaxLines();
 
         // Set the requested message to the active one.
@@ -137,40 +139,61 @@ public class PopClient extends MailClient {
         
         // Now download the message text
         String[] message = executeFollow("TOP " + (env.index+1) + " " + maxLines);
-        int i = 0;
-        // Find the end of the headers
-        while(i < message.length) {
-            if(message[i].equals("")) {
-                i++;
-                break;
-            }
-            i++;
-        }
-        if(i == message.length) {
-            bodySections = null;
+
+        MIMEInputStream mimeInputStream = null;
+        try {
+            mimeInputStream = new MIMEInputStream(StringParser.createInputStream(message));
+        } catch (MIMEParsingException e) {
             return env.structure;
         }
 
-        // First handle the simple case of a non-multipart message
-        if(env.structure.boundary == null) {
-            // Now turn the message body into one big string,
-            // and return it.
-            StringBuffer buf = new StringBuffer();
-            while(i < message.length) {
-                buf.append(message[i] + "\r\n");
-                i++;
+        byte[] buffer;
+        if(mimeInputStream.isMultiPart()) {
+            // handle multi-part messages
+            MIMEInputStream parts[] = mimeInputStream.getParts();
+            bodySections = new String[0];
+            Message.Section[] msgSections = new Message.Section[0];
+            Message.Section section;
+            String mimeType;
+            for(int i=0;i<parts.length;i++) {
+                section = new Message.Section();
+                section.charset =
+                    StringParser.parseValidCharsetString(parts[i].getContentTypeParameter("charset"));
+                mimeType = parts[i].getContentType();
+                section.type = mimeType.substring(0, mimeType.indexOf('/'));
+                section.subtype = mimeType.substring(mimeType.indexOf('/') + 1);
+                section.encoding = parts[i].getHeader("Content-Transfer-Encoding");
+                if(section.encoding.equalsIgnoreCase("base64")) {
+                    SharedInputStream sis = parts[i].getRawMIMEInputStream();
+                    
+                    buffer = new byte[sis.available()];
+                    sis.read(buffer);
+
+                    int offset = 0;
+                    while((offset+3 < buffer.length) &&
+                            !(buffer[offset]=='\r' && buffer[offset+1]=='\n' &&
+                            buffer[offset+2]=='\r' && buffer[offset+3]=='\n'))
+                        offset++;
+                    section.size = buffer.length - offset;
+                    Arrays.add(bodySections, new String(buffer, offset, section.size));
+                }
+                else {
+                    section.size = parts[i].available();
+                    buffer = new byte[parts[i].available()];
+                    parts[i].read(buffer);
+                    Arrays.add(bodySections, new String(buffer, section.charset));
+                }
+                Arrays.add(msgSections, section);
             }
-            bodySections = new String[1];
-            try {
-                bodySections[0] = new String(buf.toString().getBytes(), env.structure.sections[0].charset);
-            } catch (Exception e) {
-                bodySections[0] = buf.toString();
-            }
-            env.structure.sections[0].size = bodySections[0].length();
+            env.structure.sections = msgSections;
         }
-        // Now handle multi-part messages
         else {
-            bodySections = PopParser.parseMultipartMessage(env, message, i);
+            // handle the simple case of a non-multipart message
+            env.structure.sections[0].size = mimeInputStream.available();
+            buffer = new byte[mimeInputStream.available()];
+            mimeInputStream.read(buffer);
+            bodySections = new String[1];
+            bodySections[0] = new String(buffer, env.structure.sections[0].charset);
         }
         return env.structure;
     }

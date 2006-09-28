@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.Hashtable;
@@ -243,5 +245,15 @@ public class StringParser {
             return "US-ASCII";
         else
             return "ISO-8859-1";
+    }
+    
+    /**
+     * Convert an array of lines into a usable InputStream
+     */
+    public static InputStream createInputStream(String[] rawLines) {
+        StringBuffer buf = new StringBuffer();
+        for(int i=0;i<rawLines.length;i++)
+            buf.append(rawLines[i]  + "\r\n");
+        return new ByteArrayInputStream(buf.toString().getBytes());        
     }
 }
