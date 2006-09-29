@@ -220,8 +220,6 @@ public class PopClient extends MailClient {
      */
     private String[] executeFollow(String command) throws IOException, MailException {
         String result = execute(command);
-        if(result.indexOf("follows") == -1)
-            throw new MailException("Command lacks a multi-line response");
             
         String buffer = connection.receive();
         String[] lines = new String[0];
