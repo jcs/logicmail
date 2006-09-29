@@ -134,7 +134,7 @@ public class Connection {
         String protocolStr = (acctCfg.getServerSSL() ? "ssl" : "socket");
         // This param, which allows bypassing the MDS proxy, should probably
         // be a global user configurable option
-        String paramStr = (acctCfg.getServerSSL() ? ";deviceside=true" : "");
+        String paramStr = (acctCfg.getDeviceSide() ? ";deviceside=true" : "");
         String connectStr = protocolStr + "://" + acctCfg.getServerName() +
                             ":" + acctCfg.getServerPort() +
                             paramStr;

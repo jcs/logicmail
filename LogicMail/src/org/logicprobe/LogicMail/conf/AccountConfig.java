@@ -51,6 +51,7 @@ public class AccountConfig implements Serializable {
     private String _serverUser;
     private String _serverPass;
     private int _serverPort;
+    private boolean _deviceSide;
 
     public AccountConfig() {
         _acctName = "";
@@ -60,6 +61,7 @@ public class AccountConfig implements Serializable {
         _serverUser = "";
         _serverPass = "";
         _serverPort = 110;
+        _deviceSide = false;
     }
     
     public AccountConfig(byte[] byteArray) {
@@ -122,6 +124,14 @@ public class AccountConfig implements Serializable {
         _serverPass = serverPass;
     }
 
+    public boolean getDeviceSide() {
+        return _deviceSide;
+    }
+    
+    public void setDeviceSide(boolean deviceSide) {
+        _deviceSide = deviceSide;
+    }
+
     public byte[] serialize() {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         DataOutputStream output = new DataOutputStream(buffer);
@@ -134,6 +144,7 @@ public class AccountConfig implements Serializable {
             output.writeUTF(_serverUser);
             output.writeUTF(_serverPass);
             output.writeInt(_serverPort);
+            output.writeBoolean(_deviceSide);
             return buffer.toByteArray();
         } catch (IOException exp) {
             return null;
@@ -152,6 +163,7 @@ public class AccountConfig implements Serializable {
             _serverUser = input.readUTF();
             _serverPass = input.readUTF();
             _serverPort = input.readInt();
+            _deviceSide = input.readBoolean();
         } catch (IOException exp) {
             _acctName = "";
             _serverName = "";
@@ -160,6 +172,7 @@ public class AccountConfig implements Serializable {
             _serverUser = "";
             _serverPass = "";
             _serverPort = 110;
+            _deviceSide = false;
         }
     }
 }

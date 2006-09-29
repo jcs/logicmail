@@ -47,6 +47,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private BasicEditField fldServerPort;
     private BasicEditField fldServerUser;
     private PasswordEditField fldServerPass;
+    private CheckboxField fldUseMDS;
     private ButtonField btSave;
 
     private boolean _acctSaved;
@@ -79,6 +80,10 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
                                                acctConfig.getServerUser()));
         add(fldServerPass = new PasswordEditField("Password: ",
                                                   acctConfig.getServerPass()));
+
+        fldUseMDS = new CheckboxField("Use MDS proxy",
+                                      !acctConfig.getDeviceSide());
+        add(fldUseMDS);
 
         add(new LabelField(null, Field.NON_FOCUSABLE));
         
@@ -115,6 +120,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         _acctConfig.setServerPort(Integer.parseInt(fldServerPort.getText()));
         _acctConfig.setServerUser(fldServerUser.getText());
         _acctConfig.setServerPass(fldServerPass.getText());
+        _acctConfig.setDeviceSide(!fldUseMDS.getChecked());
         _acctSaved = true;
     }
     
