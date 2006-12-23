@@ -35,7 +35,10 @@ import java.io.IOException;
 import java.util.Vector;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.mail.MailClient.FolderItem;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -43,7 +46,11 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements the IMAP client
  * 
  */
-public class ImapClient extends MailClient {
+public class ImapClient implements MailClient {
+    protected GlobalConfig globalConfig;
+    protected AccountConfig acctCfg;
+    protected Connection connection;
+
     /**
      * Counts the commands executed so far in this session. Every command of an
      * IMAP session needs a unique ID that is prepended to the command line.
@@ -61,7 +68,7 @@ public class ImapClient extends MailClient {
      * to provide a common front-end that still works for
      * protocols that do not support a mailbox hierarchy.
      */
-    private FolderItem activeMailbox = null;
+    private FolderTreeItem activeMailbox = null;
 
     /**
      * Container for LIST replies
@@ -74,15 +81,17 @@ public class ImapClient extends MailClient {
     };
 
     public ImapClient(AccountConfig acctCfg) {
-        super(acctCfg);
+        this.acctCfg = acctCfg;
+        globalConfig = MailSettings.getInstance().getGlobalConfig();
+        connection = new Connection(acctCfg);
     }
     
-    public boolean hasFolders() {
-        return true;
+    public AccountConfig getAcctConfig() {
+        return acctCfg;
     }
-    
+
     public void open() throws IOException, MailException {
-        super.open();
+        connection.open();
         activeMailbox = null;
         try {
             // Authenticate with the server
@@ -107,13 +116,26 @@ public class ImapClient extends MailClient {
             execute("LOGOUT", null);
         }
         activeMailbox = null;
-        super.close();
+        connection.close();
     }
 
-    public void setActiveMailbox(FolderItem mailbox) throws IOException, MailException {
+    public boolean isConnected() {
+        return connection.isConnected();
+    }
+
+    public FolderTreeItem getFolderTree() throws IOException, MailException {
+        // @TODO
+        return null;
+    }
+
+    public FolderTreeItem getActiveFolder() {
+        return activeMailbox;
+    }
+
+    public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
         this.activeMailbox = mailbox;
         // change active mailbox
-        String[] selVec = execute("SELECT", "\""+activeMailbox.path+"\"");
+        String[] selVec = execute("SELECT", "\""+activeMailbox.getPath()+"\"");
         // ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
         int p, q;
@@ -124,17 +146,26 @@ public class ImapClient extends MailClient {
                 q = rowText.indexOf(' ', p+1);
                 if(q != -1 && p != -1 && q > p) {
                     try {
-                        activeMailbox.msgCount = Integer.parseInt(rowText.substring(p+1, q));
+                        activeMailbox.setMsgCount(Integer.parseInt(rowText.substring(p+1, q)));
                     } catch (Exception e) {
-                        activeMailbox.msgCount = 0;
+                        activeMailbox.setMsgCount(0);
                     }
                 }
             }
         }
     }
-    
-    public FolderItem getActiveMailbox() {
-        return activeMailbox;
+
+    public Message.Envelope[] getMessageList(int firstIndex, int lastIndex) throws IOException, MailException {
+        // Glue implementation to remove need for getMessageEnvelopes() in the interface
+        Vector envList = getMessageEnvelopes(firstIndex, lastIndex);
+        Message.Envelope[] envArray = new Message.Envelope[envList.size()];
+        envList.copyInto(envArray);
+        return envArray;
+    }
+
+    public Message getMessage(int index) throws IOException, MailException {
+        // @TODO
+        return null;
     }
 
     /**
@@ -157,7 +188,7 @@ public class ImapClient extends MailClient {
             if(resp.canSelect) {
                 folders.addElement(resp.name);
                 if(resp.hasChildren) {
-                    if(depth+1 >= _globalConfig.getImapMaxFolderDepth())
+                    if(depth+1 >= globalConfig.getImapMaxFolderDepth())
                         return folders;
                     Vector childList = getFolderListImpl(resp.name + resp.delim, depth+1);
                     for(int j=0;j<childList.size();j++)
@@ -176,17 +207,13 @@ public class ImapClient extends MailClient {
      * @param folderPath Folder path string
      * @return Folder item object
      */
-    public FolderItem getFolderItem(String folderPath) throws IOException, MailException {
-        FolderItem item = new FolderItem();
-        item.path = folderPath;
-        item.delim = folderDelim;
-        item.msgCount = 0;
+    public FolderTreeItem getFolderItem(String folderPath) throws IOException, MailException {
         int pos = 0;
         int i = 0;
         while((i = folderPath.indexOf(folderDelim, i)) != -1)
             if(i != -1) { pos = i+1; i++; }
-        item.name = folderPath.substring(pos);
-        
+        FolderTreeItem item = new FolderTreeItem(folderPath.substring(pos), folderPath, folderDelim);
+        item.setMsgCount(0);
         return item;
     }
 
@@ -374,5 +401,6 @@ public class ImapClient extends MailClient {
         }
         return result;
     }
+
 }
 

@@ -28,7 +28,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.logicprobe.LogicMail.conf;
+package org.logicprobe.LogicMail.util;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
  * Interface for configuration classes that can be serialized
@@ -39,11 +43,11 @@ public interface Serializable {
      * Serialize.
      * @return Byte array containing the data represented by this class
      */
-    public byte[] serialize();
+    public void serialize(DataOutputStream output) throws IOException;
     
     /**
      * Deserialize.
      * @param byteArray Byte array containing the data for this class to represent
      */
-    public void deserialize(byte[] byteArray);    
+    public void deserialize(DataInputStream input) throws IOException;
 }

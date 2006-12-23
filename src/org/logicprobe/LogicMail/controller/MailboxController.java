@@ -38,10 +38,11 @@ import net.rim.device.api.ui.component.Dialog;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
-import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.mail.PopClient;
 import org.logicprobe.LogicMail.ui.FolderScreen;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
@@ -81,7 +82,7 @@ public class MailboxController extends Controller implements Observable {
     public void openAccount(AccountConfig acctConfig) {
         if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
             _client = new PopClient(acctConfig);
-            UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, _client.getActiveMailbox()));
+            UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, _client.getActiveFolder()));
         }
         else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
             _client = new ImapClient(acctConfig);
@@ -93,7 +94,7 @@ public class MailboxController extends Controller implements Observable {
      * Open a selected folder
      * @param folderItem Item describing the folder to be opened
      */
-    public void openFolder(MailClient.FolderItem folderItem) {
+    public void openFolder(FolderTreeItem folderItem) {
     	UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, folderItem));
     }
     
@@ -132,17 +133,23 @@ public class MailboxController extends Controller implements Observable {
         clientHandler.start();
     }
     
-    public void refreshMessageList(MailClient.FolderItem folderItem) {
+    public void refreshMessageList(FolderTreeItem folderItem) {
         if(_client == null) return;
-        final MailClient.FolderItem _folderItem = folderItem;
+        final FolderTreeItem _folderItem = folderItem;
         MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message list") {
             public void runSession() throws IOException, MailException {
                 Vector msgEnvList = null;
                 try {
-                    _client.setActiveMailbox(_folderItem);
-                    int firstIndex = _folderItem.msgCount - _mailSettings.getGlobalConfig().getRetMsgCount();
+                    _client.setActiveFolder(_folderItem);
+                    int firstIndex = _folderItem.getMsgCount() - _mailSettings.getGlobalConfig().getRetMsgCount();
                     if(firstIndex < 0) firstIndex = 0;
-                    msgEnvList = _client.getMessageEnvelopes(firstIndex, _folderItem.msgCount);
+
+                    // Kludge to remove dependency on getMessageEnvelopes
+                    Message.Envelope[] msgEnvArray;
+                    msgEnvArray = _client.getMessageList(firstIndex, _folderItem.getMsgCount());
+                    msgEnvList = new Vector();
+                    for(int i=0;i<msgEnvArray.length;i++)
+                        msgEnvList.addElement(msgEnvArray[i]);
                 } catch (MailException exp) {
                     msgEnvList = null;
                     throw exp;
@@ -156,7 +163,7 @@ public class MailboxController extends Controller implements Observable {
         clientHandler.start();
     }
 
-    public void openMessage(MailClient.FolderItem folderItem, Message.Envelope envelope) {
+    public void openMessage(FolderTreeItem folderItem, Message.Envelope envelope) {
         MessageController messageController =
                 new MessageController(_client, folderItem, envelope);
         messageController.viewMessage();
@@ -166,7 +173,7 @@ public class MailboxController extends Controller implements Observable {
         // Immediately close without prompting if we are on a mailbox screen
         // and using a protocol that supports folders.
         if((UiApplication.getUiApplication().getActiveScreen() instanceof MailboxScreen) &&
-                _client.hasFolders())
+                _client instanceof ImapClient) // temporary kludge since we removed hasFolders()
             return true;
         
         // Otherwise we are on the main screen for the account, so prompt

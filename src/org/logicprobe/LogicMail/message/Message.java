@@ -29,7 +29,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.message;
 
 import java.util.Date;
 

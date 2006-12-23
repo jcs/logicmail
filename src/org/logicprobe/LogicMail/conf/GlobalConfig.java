@@ -36,122 +36,112 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
  * Store the global configuration for LogicMail.
  */
 public class GlobalConfig implements Serializable {
     /** full name of the user */
-    private String _fullname;
+    private String fullname;
     /** number of message headers to retrieve */
-    private int _retMsgCount;
+    private int retMsgCount;
     /** true for ascending, false for decending */
-    private boolean _dispOrder;
+    private boolean dispOrder;
     /** IMAP: maximum message size */
-    private int _imapMaxMsgSize;
+    private int imapMaxMsgSize;
     /** IMAP: maximum folder depth */
-    private int _imapMaxFolderDepth;
+    private int imapMaxFolderDepth;
     /** POP: maximum message lines */
-    private int _popMaxLines;
+    private int popMaxLines;
 
 
     public GlobalConfig() {
-        _fullname = "";
-        _retMsgCount = 30;
-        _dispOrder = false;
-        _imapMaxMsgSize = 32768;
-        _imapMaxFolderDepth = 4;
-        _popMaxLines = 400;
+        this.fullname = "";
+        this.retMsgCount = 30;
+        this.dispOrder = false;
+        this.imapMaxMsgSize = 32768;
+        this.imapMaxFolderDepth = 4;
+        this.popMaxLines = 400;
     }
     
-    public GlobalConfig(byte[] byteArray) {
-        deserialize(byteArray);
+    public GlobalConfig(DataInputStream input) {
+        try {
+            deserialize(input);
+        } catch (IOException ex) {
+            this.fullname = "";
+            this.retMsgCount = 30;
+            this.dispOrder = false;
+            this.imapMaxMsgSize = 32768;
+            this.imapMaxFolderDepth = 4;
+            this.popMaxLines = 400;
+        }
     }
 
     public void setFullname(String fullname) {
-        _fullname = fullname;
+        this.fullname = fullname;
     }
     
     public String getFullname() {
-        return _fullname;
+        return fullname;
     }
 
     public void setRetMsgCount(int retMsgCount) {
-        _retMsgCount = retMsgCount;
+        this.retMsgCount = retMsgCount;
     }
 
     public int getRetMsgCount() {
-        return _retMsgCount;
+        return retMsgCount;
     }
     
     public void setDispOrder(boolean dispOrder) {
-        _dispOrder = dispOrder;
+        this.dispOrder = dispOrder;
     }
     
     public boolean getDispOrder() {
-        return _dispOrder;
+        return dispOrder;
     }
 
     public int getImapMaxMsgSize() {
-        return _imapMaxMsgSize;
+        return imapMaxMsgSize;
     }
 
     public void setImapMaxMsgSize(int imapMaxMsgSize) {
-        _imapMaxMsgSize = imapMaxMsgSize;
+        this.imapMaxMsgSize = imapMaxMsgSize;
     }
     
     public int getImapMaxFolderDepth() {
-        return _imapMaxFolderDepth;
+        return imapMaxFolderDepth;
     }
 
     public void setImapMaxFolderDepth(int imapMaxFolderDepth) {
-        _imapMaxFolderDepth = imapMaxFolderDepth;
+        this.imapMaxFolderDepth = imapMaxFolderDepth;
     }
 
     public int getPopMaxLines() {
-        return _popMaxLines;
+        return popMaxLines;
     }
 
     public void setPopMaxLines(int popMaxLines) {
-        _popMaxLines = popMaxLines;
+        this.popMaxLines = popMaxLines;
     }
     
-    public byte[] serialize() {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        DataOutputStream output = new DataOutputStream(buffer);
-        
-        try {
-            output.writeUTF(_fullname);
-            output.writeInt(_retMsgCount);
-            output.writeBoolean(_dispOrder);
-            output.writeInt(_imapMaxMsgSize);
-            output.writeInt(_imapMaxFolderDepth);
-            output.writeInt(_popMaxLines);
-            return buffer.toByteArray();
-        } catch (IOException exp) {
-            return null;
-        }
+    public void serialize(DataOutputStream output) throws IOException {
+        output.writeUTF(fullname);
+        output.writeInt(retMsgCount);
+        output.writeBoolean(dispOrder);
+        output.writeInt(imapMaxMsgSize);
+        output.writeInt(imapMaxFolderDepth);
+        output.writeInt(popMaxLines);
     }
 
-    public void deserialize(byte[] byteArray) {
-        ByteArrayInputStream buffer = new ByteArrayInputStream(byteArray);
-        DataInputStream input = new DataInputStream(buffer);
-        
-        try {
-            _fullname = input.readUTF();
-            _retMsgCount = input.readInt();
-            _dispOrder = input.readBoolean();
-            _imapMaxMsgSize = input.readInt();
-            _imapMaxFolderDepth = input.readInt();
-            _popMaxLines = input.readInt();
-        } catch (IOException exp) {
-            _fullname = "";
-            _retMsgCount = 30;
-            _dispOrder = false;
-            _imapMaxMsgSize = 32768;
-            _imapMaxFolderDepth = 4;
-            _popMaxLines = 400;
-        }
+    public void deserialize(DataInputStream input) throws IOException {
+        fullname = input.readUTF();
+        retMsgCount = input.readInt();
+        dispOrder = input.readBoolean();
+        imapMaxMsgSize = input.readInt();
+        imapMaxFolderDepth = input.readInt();
+        popMaxLines = input.readInt();
     }
 }
 

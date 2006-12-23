@@ -40,7 +40,7 @@ import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
-import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.controller.MessageController;
 import org.logicprobe.LogicMail.util.Observable;
 

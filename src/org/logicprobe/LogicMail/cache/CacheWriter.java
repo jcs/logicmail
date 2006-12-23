@@ -31,8 +31,13 @@
 
 package org.logicprobe.LogicMail.cache;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Vector;
-import javax.microedition.rms.*;
+import javax.microedition.rms.RecordStore;
+import javax.microedition.rms.RecordStoreException;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
  *
@@ -47,11 +52,11 @@ public class CacheWriter {
         _storeList = new Vector();
     }
     
-    public void addItem(Cacheable item) {
+    public void addItem(Serializable item) {
         _storeList.addElement(item);
     }
     
-    public void delItem(Cacheable item) {
+    public void delItem(Serializable item) {
         _storeList.removeElement(item);
     }
     
@@ -69,12 +74,16 @@ public class CacheWriter {
         RecordStore store = null;
         try {
             store = RecordStore.openRecordStore(_storeName, true);
-            byte[] buffer;
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            DataOutputStream output = new DataOutputStream(buffer);
             for(int i=0;i<_storeList.size();i++) {
-                buffer = ((Cacheable)_storeList.elementAt(i)).serialize();
-                store.addRecord(buffer, 0, buffer.length);
+                ((Serializable)_storeList.elementAt(i)).serialize(output);
+                byte[] byteArray = buffer.toByteArray();
+                store.addRecord(byteArray, 0, byteArray.length);
             }
         } catch (RecordStoreException exp) {
+            // do nothing
+        } catch (IOException exp) {
             // do nothing
         }
         

@@ -57,7 +57,7 @@
  *
  * Have fun!
  ******************************************************************************/
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.util;
 
 import java.io.IOException;
 import java.io.InputStream;

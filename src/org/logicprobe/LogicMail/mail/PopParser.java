@@ -36,6 +36,7 @@ import java.util.Hashtable;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**

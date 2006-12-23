@@ -42,129 +42,119 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 import java.util.Vector;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.cache.Cacheable;
-import org.logicprobe.LogicMail.conf.GlobalConfig;
-import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.message.Message;
 
 /**
  * Create a generic interface to different mail protocols.
  * This class allows most of the UI code to be protocol-agnostic.
  */
-public abstract class MailClient {
+public interface MailClient {
+
     /**
-     * Relevant information describing a folder.
+     * Get the account configuration.
+     * Should probably find a way to remove the need for this.
      */
-    public static class FolderItem implements Cacheable {
-        public String name;
-        public String path;
-        public String delim;
-        public int msgCount;
-
-        public byte[] serialize() {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            DataOutputStream output = new DataOutputStream(buffer);
-            try {
-                output.writeUTF(name);
-                output.writeUTF(path);
-                output.writeUTF(delim);
-                output.writeInt(msgCount);
-                return buffer.toByteArray();
-            } catch (IOException exp) {
-                return null;
-            }
-        }
-        public void deserialize(byte[] byteArray) {
-            ByteArrayInputStream buffer = new ByteArrayInputStream(byteArray);
-            DataInputStream input = new DataInputStream(buffer);
-            try {
-               name = input.readUTF();
-               path = input.readUTF();
-               delim = input.readUTF();
-               msgCount = input.readInt();
-            } catch (IOException exp) { }
-        }
-    }
-
-    protected GlobalConfig _globalConfig;
-    protected AccountConfig acctCfg;
-    protected Connection connection;
+    public abstract AccountConfig getAcctConfig();
     
-    protected MailClient(AccountConfig acctCfg) {
-        this.acctCfg = acctCfg;
-        _globalConfig = MailSettings.getInstance().getGlobalConfig();
-        connection = new Connection(acctCfg);
-    }
-
-    public AccountConfig getAcctConfig() {
-        return acctCfg;
-    }
-    
-    /**
-     * Determine whether the underlying protocol supports multiple
-     * mail folders.
-     * @return True if folders are supported
-     */
-    public abstract boolean hasFolders();
-
-    /**
-     * Select a new active mailbox.
-     * This method is only useful if the protocol supports
-     * folders, and should otherwise be ignored or limited
-     * to a single inbox folder
-     * @param mailbox The FolderItem object describing the new active mailbox
-     */
-    public abstract void setActiveMailbox(FolderItem mailbox) throws IOException, MailException;
-    
-    /**
-     * Get the active mailbox.
-     * This method is only useful if the protocol supports
-     * folders, and should otherwise return null or
-     * a single inbox folder
-     * @return The FolderItem object describing the active mailbox
-     */
-    public abstract FolderItem getActiveMailbox();
-
     /**
      * Open a new connection.
-     * This method should be overloaded to add protocol-specific
-     * login commands after the socket connection is established.
-     * @param acctCfg Configuration for the account to open
+     * This method should typically establish a socket connection and
+     * then send the protocol-specific login commands
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
      */
-    public void open() throws IOException, MailException {
-        connection.open();
-    }
+    public abstract void open() throws IOException, MailException;
     
     /**
      * Close an existing connection.
-     * This method should be overloaded to add protocol-specific
-     * logout commands prior to terminating the connection.
+     * This method should sent protocol-specific logout commands and
+     * then terminate the connection.
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
      */
-    public void close() throws IOException, MailException {
-        connection.close();
-    }
-
-    public boolean isConnected() {
-        return connection.isConnected();
-    }
+    public abstract void close() throws IOException, MailException;
 
     /**
-     * Return a list of MessageEnvelope objects for the specified
-     * range of messages in the active mailbox
+     * Find out if the connection is active.
+     * @return True if the connection is active, false otherwise
+     */
+    public abstract boolean isConnected();
+
+    /**
+     * Get the mail folder tree.
+     * This should return null if folders are not supported
+     * by the underlying protocol.
+     * If the tree has no singular root node, then this should
+     * reference an invisible root node.  Otherwise, this should
+     * reference the visible root folder.
+     *
+     * @return Root folder of the tree, and all children below it
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract FolderTreeItem getFolderTree()
+        throws IOException, MailException;
+    
+    /**
+     * Get the active mail folder.
+     * This method is only useful if the protocol supports
+     * folders, and should otherwise return null or
+     * a single inbox folder
+     *
+     * @return The FolderItem object describing the active mailbox
+     */
+    public abstract FolderTreeItem getActiveFolder();
+    
+    /**
+     * Select a new active mail folder.
+     * This method is only useful if the protocol supports
+     * folders, and should otherwise be ignored or limited
+     * to a single inbox folder
+     * 
+     * @param folderItem The FolderItem object describing the new active folderItem
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract void setActiveFolder(FolderTreeItem folderItem)
+        throws IOException, MailException;
+    
+    /**
+     * Get a list of the messages in the selected folder.
+     *
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
-     * @return Vector of MessageEnvelope objects
+     * @return List of message envelopes
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
      */
-    public abstract Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException;
+    public abstract Message.Envelope[] getMessageList(int firstIndex, int lastIndex)
+        throws IOException, MailException;
+    
+    /**
+     * Get a particular message from the selected folder.
+     * The details of message retrieval should be constrained by
+     * protocol-specific capabilities, application-wide data
+     * format capabilities, and user configuration options.
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract Message getMessage(int index) throws IOException, MailException;
+
+    // ----------------------------------------------------------------
+    // All remaining methods are deprecated and should be removed once
+    // the protocol code is adapted.  Ultimately, getMessage() should
+    // provide functionality equivalent to the typical use case of both
+    // these methods together.
     
     /**
      * Retrieves the structure of a message from the mailbox.
      * This allows for more intelligent retrieval of the
      * message body, but might only work correctly with IMAP.
+     *
      * @param env Message index in the active mailbox
      */
     public abstract Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException;
@@ -173,6 +163,7 @@ public abstract class MailClient {
      * Retrieve the body of a message.
      * This allows for more intelligent retrieval of the
      * message body, but might only work correctly with IMAP.
+     *
      * @param env Message index in the active mailbox
      * @param bindex Index of the body within the message
      */

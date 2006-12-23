@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.cache;
 
 import java.util.Vector;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailClient;
 
 public class AccountCache {
@@ -53,7 +54,7 @@ public class AccountCache {
         String key = "acct_" + _acctName + "_folders";
         CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(key.hashCode()));
         for(int i=0;i<folderList.size();i++)
-            writer.addItem((MailClient.FolderItem)folderList.elementAt(i));
+            writer.addItem((FolderTreeItem)folderList.elementAt(i));
         writer.store();
     }
 
@@ -63,7 +64,7 @@ public class AccountCache {
         reader.load();
         Vector folderList = new Vector();
         for(int i=0;i<reader.getNumItems();i++) {
-            MailClient.FolderItem item = new MailClient.FolderItem();
+            FolderTreeItem item = new FolderTreeItem();
             reader.getItem(i, item);
             folderList.addElement(item);
         }

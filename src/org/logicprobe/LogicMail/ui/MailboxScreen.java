@@ -45,8 +45,9 @@ import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailClient;
-import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.controller.MailboxController;
 import org.logicprobe.LogicMail.util.Observable;
 
@@ -61,7 +62,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     
     private MailSettings _mailSettings;
     private MailboxController _mailboxController;
-    private MailClient.FolderItem folderItem;
+    private FolderTreeItem folderItem;
     
     // Things to calculate in advance
     private static int lineHeight;
@@ -69,8 +70,8 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private static int senderWidth;
     private static int maxWidth;
     
-    public MailboxScreen(MailClient client, MailClient.FolderItem folderItem) {
-        super(folderItem.name);
+    public MailboxScreen(MailClient client, FolderTreeItem folderItem) {
+        super(folderItem.getName());
         _mailSettings = MailSettings.getInstance();
         _mailboxController = MailboxController.getInstance();
         _mailboxController.addObserver(this);

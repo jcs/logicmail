@@ -41,11 +41,12 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Observable;
-import org.logicprobe.LogicMail.mail.Message;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
 import org.logicprobe.LogicMail.ui.MessageScreen;
 
@@ -56,13 +57,13 @@ public class MessageController extends Controller implements Observable {
     private MailSettings _mailSettings;
     private Message.Structure _msgStructure;
     private MailClient _client;
-    private MailClient.FolderItem _folderItem;
+    private FolderTreeItem _folderItem;
     private Message.Envelope _envelope;
     private Field[] _msgFields;
     
     /** Creates a new instance of MessageController */
     public MessageController(MailClient client,
-                             MailClient.FolderItem folderItem,
+                             FolderTreeItem folderItem,
                              Message.Envelope envelope) {
         _client = client;
         _folderItem = folderItem;
@@ -80,7 +81,7 @@ public class MessageController extends Controller implements Observable {
         _client = MailboxController.getInstance().getMailClient();
         MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
             public void runSession() throws IOException, MailException {
-                _client.setActiveMailbox(_folderItem);
+                _client.setActiveFolder(_folderItem);
 
                 // Get the structure of the message
                 _msgStructure = _client.getMessageStructure(_envelope);

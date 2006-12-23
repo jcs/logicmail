@@ -41,6 +41,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.controller.MailboxController;
@@ -97,8 +98,8 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         int curNode = treeField.getCurrentNode();
         if(curNode == -1) return;
         Object cookie = treeField.getCookie(curNode);
-        if(cookie instanceof MailClient.FolderItem) {
-        	_mailboxController.openFolder((MailClient.FolderItem)cookie);
+        if(cookie instanceof FolderTreeItem) {
+        	_mailboxController.openFolder((FolderTreeItem)cookie);
         }
     }
     
@@ -128,9 +129,9 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
                              int indent)
     {
         Object cookie = treeField.getCookie( node );
-        if( cookie instanceof MailClient.FolderItem ) {
-            MailClient.FolderItem item = (MailClient.FolderItem)cookie;
-            graphics.drawText( item.name, indent, y, Graphics.ELLIPSIS, width );
+        if( cookie instanceof FolderTreeItem ) {
+            FolderTreeItem item = (FolderTreeItem)cookie;
+            graphics.drawText( item.getName(), indent, y, Graphics.ELLIPSIS, width );
         }
     }
     
@@ -156,13 +157,13 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         int olddepth = 0;
         Vector path = new Vector();
         for(int i=0;i<folderItemList.size();i++) {
-            MailClient.FolderItem folderItem =
-                    (MailClient.FolderItem)folderItemList.elementAt(i);
+            FolderTreeItem folderItem =
+                    (FolderTreeItem)folderItemList.elementAt(i);
             // Find the tree depth of this folder
             depth = 0;
             int pos = 0;
-            while(pos < folderItem.path.length()) {
-                if(folderItem.path.indexOf(folderItem.delim, pos) != -1) { depth++; }
+            while(pos < folderItem.getPath().length()) {
+                if(folderItem.getPath().indexOf(folderItem.getDelim(), pos) != -1) { depth++; }
                 pos++;
             }
             if(depth > olddepth) {

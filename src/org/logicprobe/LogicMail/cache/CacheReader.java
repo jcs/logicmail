@@ -31,8 +31,14 @@
 
 package org.logicprobe.LogicMail.cache;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.Vector;
-import javax.microedition.rms.*;
+import javax.microedition.rms.RecordStore;
+import javax.microedition.rms.RecordStoreException;
+import javax.microedition.rms.RecordStoreNotFoundException;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
  *
@@ -51,8 +57,14 @@ public class CacheReader {
         return _storeList.size();
     }
     
-    public void getItem(int index, Cacheable item) {
-        item.deserialize((byte[])_storeList.elementAt(index));
+    public void getItem(int index, Serializable item) {
+        ByteArrayInputStream buffer = new ByteArrayInputStream((byte[])_storeList.elementAt(index));
+        DataInputStream input = new DataInputStream(buffer);
+        try {
+            item.deserialize(input);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
     
     public void load() {

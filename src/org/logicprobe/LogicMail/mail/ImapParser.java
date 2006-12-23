@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import java.util.Calendar;
 import java.util.Vector;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**

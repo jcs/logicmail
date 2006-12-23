@@ -31,6 +31,11 @@
 
 package org.logicprobe.LogicMail.conf;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Vector;
 import javax.microedition.rms.*;
 
@@ -84,13 +89,26 @@ public class MailSettings {
         RecordStore store = null;
         try {
             store = RecordStore.openRecordStore("LogicMail_config", true);
-            byte[] buffer;
-            buffer = _globalConfig.serialize();
-            store.addRecord(buffer, 0, buffer.length);
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            DataOutputStream output = new DataOutputStream(buffer);
+            try {
+                _globalConfig.serialize(output);
+            } catch (IOException ex) {
+                // do nothing
+            }
+            byte[] byteArray = buffer.toByteArray();
+            store.addRecord(byteArray, 0, byteArray.length);
         
             for(int i=0;i<_accountConfigs.size();i++) {
-                buffer = ((AccountConfig)_accountConfigs.elementAt(i)).serialize();
-                store.addRecord(buffer, 0, buffer.length);
+                buffer = new ByteArrayOutputStream();
+                output = new DataOutputStream(buffer);
+                try {
+                    ((AccountConfig)_accountConfigs.elementAt(i)).serialize(output);
+                } catch (IOException ex) {
+                    // do nothing
+                }
+                byteArray = buffer.toByteArray();
+                store.addRecord(byteArray, 0, byteArray.length);
             }
         } catch (RecordStoreException exp) {
             // do nothing
@@ -108,18 +126,23 @@ public class MailSettings {
         RecordStore store = null;
         try {
             store = RecordStore.openRecordStore("LogicMail_config", false);
-            byte[] buffer;
             
             int records = store.getNumRecords();
             
             if(records >= 1) {
-                buffer = store.getRecord(1);
-                _globalConfig.deserialize(buffer);
+                ByteArrayInputStream buffer = new ByteArrayInputStream(store.getRecord(1));
+                DataInputStream input = new DataInputStream(buffer);
+                try {
+                    _globalConfig.deserialize(input);
+                } catch (IOException ex) {
+                    _globalConfig = new GlobalConfig();
+                }
             
                 if(records > 1) {
                     for(int i=2;i<=store.getNumRecords();i++) {
-                        buffer = store.getRecord(i);
-                        _accountConfigs.addElement(new AccountConfig(buffer));
+                        buffer = new ByteArrayInputStream(store.getRecord(i));
+                        input = new DataInputStream(buffer);
+                        _accountConfigs.addElement(new AccountConfig(input));
                     }
                 }
             }

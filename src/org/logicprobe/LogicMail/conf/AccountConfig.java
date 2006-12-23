@@ -36,6 +36,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
  * Store account configuration for LogicMail
@@ -64,8 +65,19 @@ public class AccountConfig implements Serializable {
         _deviceSide = false;
     }
     
-    public AccountConfig(byte[] byteArray) {
-        deserialize(byteArray);
+    public AccountConfig(DataInputStream input) {
+        try {
+            deserialize(input);
+        } catch (IOException ex) {
+            _acctName = "";
+            _serverName = "";
+            _serverType = TYPE_POP;
+            _serverSSL = false;
+            _serverUser = "";
+            _serverPass = "";
+            _serverPort = 110;
+            _deviceSide = false;
+        }
     }
 
     public String getAcctName() {
@@ -132,48 +144,26 @@ public class AccountConfig implements Serializable {
         _deviceSide = deviceSide;
     }
 
-    public byte[] serialize() {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        DataOutputStream output = new DataOutputStream(buffer);
-        
-        try {
-            output.writeUTF(_acctName);
-            output.writeUTF(_serverName);
-            output.writeInt(_serverType);
-            output.writeBoolean(_serverSSL);
-            output.writeUTF(_serverUser);
-            output.writeUTF(_serverPass);
-            output.writeInt(_serverPort);
-            output.writeBoolean(_deviceSide);
-            return buffer.toByteArray();
-        } catch (IOException exp) {
-            return null;
-        }
+    public void serialize(DataOutputStream output) throws IOException {
+        output.writeUTF(_acctName);
+        output.writeUTF(_serverName);
+        output.writeInt(_serverType);
+        output.writeBoolean(_serverSSL);
+        output.writeUTF(_serverUser);
+        output.writeUTF(_serverPass);
+        output.writeInt(_serverPort);
+        output.writeBoolean(_deviceSide);
     }
 
-    public void deserialize(byte[] byteArray) {
-        ByteArrayInputStream buffer = new ByteArrayInputStream(byteArray);
-        DataInputStream input = new DataInputStream(buffer);
-        
-        try {
-            _acctName = input.readUTF();
-            _serverName = input.readUTF();
-            _serverType = input.readInt();
-            _serverSSL = input.readBoolean();
-            _serverUser = input.readUTF();
-            _serverPass = input.readUTF();
-            _serverPort = input.readInt();
-            _deviceSide = input.readBoolean();
-        } catch (IOException exp) {
-            _acctName = "";
-            _serverName = "";
-            _serverType = TYPE_POP;
-            _serverSSL = false;
-            _serverUser = "";
-            _serverPass = "";
-            _serverPort = 110;
-            _deviceSide = false;
-        }
+    public void deserialize(DataInputStream input) throws IOException {
+        _acctName = input.readUTF();
+        _serverName = input.readUTF();
+        _serverType = input.readInt();
+        _serverSSL = input.readBoolean();
+        _serverUser = input.readUTF();
+        _serverPass = input.readUTF();
+        _serverPort = input.readInt();
+        _deviceSide = input.readBoolean();
     }
 }
 
