@@ -53,24 +53,24 @@ import org.logicprobe.LogicMail.util.Observable;
  * Controller for folder and mailbox screens
  */
 public class MailboxController extends Controller implements Observable {
-    private static MailboxController _instance;
-    private MailClient _client;
-    private MailSettings _mailSettings;
-    private Vector _folderItemList;
-    private Vector _msgEnvList;
+    private static MailboxController instance;
+    private MailClient client;
+    private MailSettings mailSettings;
+    private FolderTreeItem folderRoot;
+    private Vector msgEnvList;
     
     /** Creates a new instance of MailboxController */
     private MailboxController() {
-        _mailSettings = MailSettings.getInstance();
-        _client = null;
-        _folderItemList = null;
-        _msgEnvList = null;
+        mailSettings = MailSettings.getInstance();
+        client = null;
+        folderRoot = null;
+        msgEnvList = null;
     }
     
     public static synchronized MailboxController getInstance() {
-        if(_instance == null)
-            _instance = new MailboxController();
-        return _instance;
+        if(instance == null)
+            instance = new MailboxController();
+        return instance;
     }
 
     /**
@@ -80,13 +80,12 @@ public class MailboxController extends Controller implements Observable {
      * @param acctConfig Configuration of the account to open
      */
     public void openAccount(AccountConfig acctConfig) {
-        if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
-            _client = new PopClient(acctConfig);
-            UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, _client.getActiveFolder()));
+        client = MailClient.getNewClient(acctConfig);
+        if(client.hasFolders()) {
+            UiApplication.getUiApplication().pushScreen(new FolderScreen(client));
         }
-        else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
-            _client = new ImapClient(acctConfig);
-            UiApplication.getUiApplication().pushScreen(new FolderScreen(_client));
+        else {
+            UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, client.getActiveFolder()));
         }
     }
     
@@ -95,37 +94,33 @@ public class MailboxController extends Controller implements Observable {
      * @param folderItem Item describing the folder to be opened
      */
     public void openFolder(FolderTreeItem folderItem) {
-    	UiApplication.getUiApplication().pushScreen(new MailboxScreen(_client, folderItem));
+    	UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, folderItem));
     }
     
     public void refreshFolderTree() {
         // This only works for IMAP, so check to be sure
-        if(_client == null || !(_client instanceof ImapClient)) return;
+        if(client == null || !(client instanceof ImapClient)) return;
         
         // Invoke a thread to update the folder tree
-        MailClientHandler clientHandler = new MailClientHandler(_client, "Refreshing folder tree") {
+        MailClientHandler clientHandler = new MailClientHandler(client, "Refreshing folder tree") {
             public void runSession() throws IOException, MailException {
                 // Open a connection to the IMAP server, and retrieve
                 // the folder tree as a list of delimited items
-                Vector folderList = null;
-                Vector folderItemList = new Vector();
-                ImapClient iclient = (ImapClient)_client;
+                FolderTreeItem folderItem;
                 try {
-                    folderList = iclient.getFolderList("");
-                    for(int i=0;i<folderList.size();i++)
-                        folderItemList.addElement(iclient.getFolderItem((String)folderList.elementAt(i)));
+                    folderItem = client.getFolderTree();
                 } catch (MailException exp) {
-                    folderList = null;
+                    folderItem = null;
                     throw exp;
                 }
 
                 // Save the results to the cache
                 AccountCache acctCache =
-                    new AccountCache(_client.getAcctConfig().getAcctName());
-                acctCache.saveFolderList(folderItemList);
+                    new AccountCache(client.getAcctConfig().getAcctName());
+                acctCache.saveFolderTree(folderItem);
 
-                if(folderList != null) {
-                    _folderItemList = folderItemList;
+                if(folderItem != null) {
+                    folderRoot = folderItem;
                     notifyObservers("folders");
                 }
             }
@@ -134,19 +129,19 @@ public class MailboxController extends Controller implements Observable {
     }
     
     public void refreshMessageList(FolderTreeItem folderItem) {
-        if(_client == null) return;
+        if(client == null) return;
         final FolderTreeItem _folderItem = folderItem;
-        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message list") {
+        MailClientHandler clientHandler = new MailClientHandler(client, "Retrieving message list") {
             public void runSession() throws IOException, MailException {
                 Vector msgEnvList = null;
                 try {
-                    _client.setActiveFolder(_folderItem);
-                    int firstIndex = _folderItem.getMsgCount() - _mailSettings.getGlobalConfig().getRetMsgCount();
+                    client.setActiveFolder(_folderItem);
+                    int firstIndex = _folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
                     if(firstIndex < 0) firstIndex = 0;
 
                     // Kludge to remove dependency on getMessageEnvelopes
                     Message.Envelope[] msgEnvArray;
-                    msgEnvArray = _client.getMessageList(firstIndex, _folderItem.getMsgCount());
+                    msgEnvArray = client.getMessageList(firstIndex, _folderItem.getMsgCount());
                     msgEnvList = new Vector();
                     for(int i=0;i<msgEnvArray.length;i++)
                         msgEnvList.addElement(msgEnvArray[i]);
@@ -155,7 +150,7 @@ public class MailboxController extends Controller implements Observable {
                     throw exp;
                 }
                 if(msgEnvList != null) {
-                    _msgEnvList = msgEnvList;
+                    MailboxController.this.msgEnvList = msgEnvList;
                     notifyObservers("messages");
                 }
             }
@@ -165,7 +160,7 @@ public class MailboxController extends Controller implements Observable {
 
     public void openMessage(FolderTreeItem folderItem, Message.Envelope envelope) {
         MessageController messageController =
-                new MessageController(_client, folderItem, envelope);
+                new MessageController(client, folderItem, envelope);
         messageController.viewMessage();
     }
 
@@ -173,14 +168,14 @@ public class MailboxController extends Controller implements Observable {
         // Immediately close without prompting if we are on a mailbox screen
         // and using a protocol that supports folders.
         if((UiApplication.getUiApplication().getActiveScreen() instanceof MailboxScreen) &&
-                _client instanceof ImapClient) // temporary kludge since we removed hasFolders()
+           client.hasFolders())
             return true;
         
         // Otherwise we are on the main screen for the account, so prompt
         // before closing the connection
-        if(_client.isConnected()) {
+        if(client.isConnected()) {
             if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
-                try { _client.close(); } catch (Exception exp) { }
+                try { client.close(); } catch (Exception exp) { }
                 return true;
             }
             else
@@ -193,14 +188,14 @@ public class MailboxController extends Controller implements Observable {
     
     
     public MailClient getMailClient() {
-        return _client;
+        return client;
     }
     
-    public Vector getFolderItemList() {
-        return _folderItemList;
+    public FolderTreeItem getFolderRoot() {
+        return folderRoot;
     }
     
     public Vector getMsgEnvList() {
-        return _msgEnvList;
+        return msgEnvList;
     }
 }

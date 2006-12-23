@@ -46,7 +46,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements the IMAP client
  * 
  */
-public class ImapClient implements MailClient {
+public class ImapClient extends MailClient {
     protected GlobalConfig globalConfig;
     protected AccountConfig acctCfg;
     protected Connection connection;
@@ -123,9 +123,36 @@ public class ImapClient implements MailClient {
         return connection.isConnected();
     }
 
+    public boolean hasFolders() {
+        return true;
+    }
+
     public FolderTreeItem getFolderTree() throws IOException, MailException {
-        // @TODO
-        return null;
+        FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
+        getFolderTreeImpl(rootItem, 0);
+        return rootItem;
+    }
+
+    private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth) throws IOException, MailException {
+        Vector respList;
+        if(depth == 0)
+            respList = executeList(baseFolder.getPath(), "%");
+        else
+            respList = executeList(baseFolder.getPath() + baseFolder.getDelim(), "%");
+
+        int size = respList.size();
+        for(int i=0;i<size;++i) {
+            ListResponse resp = (ListResponse)respList.elementAt(i);
+            if(resp.canSelect) {
+                FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
+                baseFolder.addChild(childItem);
+                if(resp.hasChildren) {
+                    if(depth+1 >= globalConfig.getImapMaxFolderDepth())
+                        return;
+                    getFolderTreeImpl(childItem, depth+1);
+                }
+            }
+        }
     }
 
     public FolderTreeItem getActiveFolder() {
@@ -213,6 +240,16 @@ public class ImapClient implements MailClient {
         while((i = folderPath.indexOf(folderDelim, i)) != -1)
             if(i != -1) { pos = i+1; i++; }
         FolderTreeItem item = new FolderTreeItem(folderPath.substring(pos), folderPath, folderDelim);
+        item.setMsgCount(0);
+        return item;
+    }
+
+    public FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath) throws IOException, MailException {
+        int pos = 0;
+        int i = 0;
+        while((i = folderPath.indexOf(folderDelim, i)) != -1)
+            if(i != -1) { pos = i+1; i++; }
+        FolderTreeItem item = new FolderTreeItem(parent, folderPath.substring(pos), folderPath, folderDelim);
         item.setMsgCount(0);
         return item;
     }
@@ -403,4 +440,3 @@ public class ImapClient implements MailClient {
     }
 
 }
-

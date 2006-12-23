@@ -49,8 +49,28 @@ import org.logicprobe.LogicMail.message.Message;
  * Create a generic interface to different mail protocols.
  * This class allows most of the UI code to be protocol-agnostic.
  */
-public interface MailClient {
-
+public abstract class MailClient {
+    /**
+     * Get a new concrete mail client instance.
+     * This could be placed in an external factory, but it seemed simpler
+     * to put it in here for now.
+     *
+     * @param acctConfig User account configuration
+     * @return Usable mail client instance
+     */
+    public static MailClient getNewClient(AccountConfig acctConfig) {
+        MailClient client;
+        if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
+            return new PopClient(acctConfig);
+        }
+        else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
+            return new ImapClient(acctConfig);
+        }
+        else {
+            return null;
+        }
+    }
+    
     /**
      * Get the account configuration.
      * Should probably find a way to remove the need for this.
@@ -83,6 +103,15 @@ public interface MailClient {
      */
     public abstract boolean isConnected();
 
+    /**
+     * Return whether the underlying protocol supports mail folders.
+     * This enables actions to be taken without having to unnecessarily
+     * execute a potentially costly getFolderTree() operation.
+     *
+     * @return True if folders supported, false otherwise
+     */
+    public abstract boolean hasFolders();
+    
     /**
      * Get the mail folder tree.
      * This should return null if folders are not supported

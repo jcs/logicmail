@@ -60,8 +60,8 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private Bitmap bmapUnopened;
     private ListField msgList;
     
-    private MailSettings _mailSettings;
-    private MailboxController _mailboxController;
+    private MailSettings mailSettings;
+    private MailboxController mailboxController;
     private FolderTreeItem folderItem;
     
     // Things to calculate in advance
@@ -72,9 +72,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     
     public MailboxScreen(MailClient client, FolderTreeItem folderItem) {
         super(folderItem.getName());
-        _mailSettings = MailSettings.getInstance();
-        _mailboxController = MailboxController.getInstance();
-        _mailboxController.addObserver(this);
+        mailSettings = MailSettings.getInstance();
+        mailboxController = MailboxController.getInstance();
+        mailboxController.addObserver(this);
         this.folderItem = folderItem;
 
         bmapOpened = Bitmap.getBitmapResource("mail_opened.png");
@@ -96,7 +96,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
 
-        if(client != null) _mailboxController.refreshMessageList(folderItem);
+        if(client != null) mailboxController.refreshMessageList(folderItem);
     }
 
     protected boolean onSavePrompt() {
@@ -104,7 +104,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     }
 
     public boolean onClose() {
-        if(_mailboxController.checkClose()) {
+        if(mailboxController.checkClose()) {
             close();
             return true;
         }
@@ -125,11 +125,11 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
 
     public void update(Observable subject, Object arg) {
         super.update(subject, arg);
-        if(subject.equals(_mailboxController)) {
+        if(subject.equals(mailboxController)) {
             if(((String)arg).equals("messages")) {
-                Vector msgEnvList = _mailboxController.getMsgEnvList();
+                Vector msgEnvList = mailboxController.getMsgEnvList();
                 synchronized(Application.getEventLock()) {
-                    if(_mailSettings.getGlobalConfig().getDispOrder())
+                    if(mailSettings.getGlobalConfig().getDispOrder())
                         messages = msgEnvList;
                     else {
                         messages.removeAllElements();
@@ -164,7 +164,6 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     {
         // sanity check
         if(index >= messages.size()) return;
-        
         Message.Envelope entry = (Message.Envelope)messages.elementAt(index);
         if(entry.isOpened)
             graphics.drawBitmap(1, y, 20, lineHeight*2, bmapOpened, 0, 0);
@@ -238,7 +237,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         if(index < 0 || index > messages.size()) return;
         
         Message.Envelope envelope = (Message.Envelope)messages.elementAt(index);
-        _mailboxController.openMessage(folderItem, envelope);
+        mailboxController.openMessage(folderItem, envelope);
     }
 
     public boolean keyChar(char key,

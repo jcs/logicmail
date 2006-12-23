@@ -87,43 +87,35 @@ public class FolderTreeItem implements Serializable {
     }
     
     public void serialize(DataOutputStream output) throws IOException {
-        serializeHelper(output, 0);
-    }
-    
-    private void serializeHelper(DataOutputStream output, int depth) throws IOException {
-        output.writeInt(depth); // track tree depth
         output.writeUTF(name);
         output.writeUTF(path);
         output.writeUTF(delim);
         output.writeInt(msgCount);
-        if(children != null && children.length > 0)
+        if(children != null && children.length > 0) {
+            output.writeInt(children.length);
             for(int i=0;i<children.length;i++)
-                serializeHelper(output, depth+1);
-    }
-
-    public void deserialize(DataInputStream input) throws IOException {
-        deserializeHelper(input, 0);
+                children[i].serialize(output);
+        }
+        else
+            output.writeInt(0);
     }
     
-    private void deserializeHelper(DataInputStream input, int curDepth) throws IOException {
-        if(input.available() <= 0) return;
-        
-        int depth;
-        depth = input.readInt();
+    public void deserialize(DataInputStream input) throws IOException {
         name = input.readUTF();
         path = input.readUTF();
         delim = input.readUTF();
         msgCount = input.readInt();
-        if(depth > curDepth) {
-            while(input.available() > 0) {
+        int childCount = input.readInt();
+        if(childCount > 0) {
+            for(int i=0;i<childCount;i++) {
                 FolderTreeItem item = new FolderTreeItem();
-                item.deserializeHelper(input, depth);
+                item.deserialize(input);
                 item.parent = this;
                 addChild(item);
             }
         }
     }
-
+    
     public FolderTreeItem[] children() {
         return children;
     }

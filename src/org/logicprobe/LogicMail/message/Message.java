@@ -37,13 +37,31 @@ import java.util.Date;
  * This class encapsulates all the data to represent an E-Mail message.
  */
 public class Message {
-    /**
-     * Since this class exists only as a data
-     * structure namespace, its constructor
-     * is private to prevent instantiation.
-     */
-    private Message() { }
+    private MessageEnvelope envelope;
+    private MessagePart body;
     
+    /**
+     * Creates a new instance of Message
+     * @param envelope The envelope for the message
+     * @param body The structured message body tree
+     */
+    public Message(MessageEnvelope envelope, MessagePart body) {
+        this.envelope = envelope;
+        this.body = body;
+    }
+    
+    public MessageEnvelope getEnvelope() {
+        return envelope;
+    }
+
+    public MessagePart getBody() {
+        return body;
+    }
+
+    // ----------------------------------------------------------------
+    // All remaining items are deprecated and should be removed once
+    // the rest of the code is adapted.
+
     /**
      * Relevant header fields for a message.
      */
@@ -85,4 +103,5 @@ public class Message {
         public String boundary;
         public Section[] sections;
     }
+
 }

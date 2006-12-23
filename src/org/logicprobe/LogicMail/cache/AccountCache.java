@@ -50,24 +50,26 @@ public class AccountCache {
         _acctName = acctName;
     }
 
-    public void saveFolderList(Vector folderList) {
-        String key = "acct_" + _acctName + "_folders";
-        CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(key.hashCode()));
-        for(int i=0;i<folderList.size();i++)
-            writer.addItem((FolderTreeItem)folderList.elementAt(i));
-        writer.store();
+    public void saveFolderTree(FolderTreeItem folderRoot) {
+        try {
+            String key = "acct_" + _acctName + "_folders";
+            CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(key.hashCode()));
+            writer.addItem(folderRoot);
+            writer.store();
+        } catch (Exception e) { }
     }
 
-    public Vector loadFolderList() {
-        String key = "acct_" + _acctName + "_folders";
-        CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(key.hashCode()));
-        reader.load();
-        Vector folderList = new Vector();
-        for(int i=0;i<reader.getNumItems();i++) {
-            FolderTreeItem item = new FolderTreeItem();
-            reader.getItem(i, item);
-            folderList.addElement(item);
+    public FolderTreeItem loadFolderTree() {
+        try {
+            String key = "acct_" + _acctName + "_folders";
+            CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(key.hashCode()));
+            reader.load();
+            if(reader.getNumItems() < 1) return null;
+            FolderTreeItem folderRoot = new FolderTreeItem();
+            reader.getItem(0, folderRoot);
+            return folderRoot;
+        } catch (Exception e) {
+            return null;
         }
-        return folderList;
     }
 }

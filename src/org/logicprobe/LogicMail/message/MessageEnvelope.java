@@ -31,27 +31,26 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.util.Date;
+
 /**
- * Text message part (MIME type: "text/????")
+ * The "envelope" of a mail message.
+ * Essentially, this is a usable parsed form
+ * of some parts of the message headers
  */
-public class TextPart extends MessagePart {
-    private String charset;
-    
-    /** Creates a new instance of TextPart */
-    public TextPart() {
-        super("text");
-        setMimeSubtype(""); // plain, html, etc.
-    }
+public class MessageEnvelope {
+    public Date date;
+    public String subject;
+    public String[] from;
+    public String[] sender;
+    public String[] replyTo;
+    public String[] to;
+    public String[] cc;
+    public String[] bcc;
+    public String inReplyTo;
+    public String messageId;
 
-    public void accept(MessagePartVisitor visitor) {
-        visitor.visitTextPart(this);
-    }
-
-    public String getCharset() {
-        return charset;
-    }
-
-    public void setCharset(String charset) {
-        this.charset = charset;
+    /** Creates a new instance of MessageEnvelope */
+    public MessageEnvelope() {
     }
 }

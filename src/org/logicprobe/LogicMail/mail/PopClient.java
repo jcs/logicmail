@@ -49,7 +49,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements the POP3 client
  * 
  */
-public class PopClient implements MailClient {
+public class PopClient extends MailClient {
     protected GlobalConfig globalConfig;
     protected AccountConfig acctCfg;
     protected Connection connection;
@@ -105,6 +105,10 @@ public class PopClient implements MailClient {
 
     public boolean isConnected() {
         return connection.isConnected();
+    }
+
+    public boolean hasFolders() {
+        return false;
     }
 
     public FolderTreeItem getFolderTree() throws IOException, MailException {

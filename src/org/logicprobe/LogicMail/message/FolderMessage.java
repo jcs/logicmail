@@ -32,26 +32,66 @@
 package org.logicprobe.LogicMail.message;
 
 /**
- * Text message part (MIME type: "text/????")
+ * This class provides a message in the context of a folder.
+ * It contains the message's envelope, along with other information
+ * only relevant when looking at a view of the folder.
  */
-public class TextPart extends MessagePart {
-    private String charset;
+public class FolderMessage {
+    private MessageEnvelope envelope;
+    private int index;
+    private boolean seen;
+    private boolean answered;
+    private boolean flagged;
+    private boolean deleted;
     
-    /** Creates a new instance of TextPart */
-    public TextPart() {
-        super("text");
-        setMimeSubtype(""); // plain, html, etc.
+    /**
+     * Creates a new instance of FolderMessage.
+     * @param envelope The message's envelope
+     * @param index The index of the message within the folder
+     */
+    public FolderMessage(MessageEnvelope envelope, int index) {
+        this.envelope = envelope;
+        this.index = index;
     }
 
-    public void accept(MessagePartVisitor visitor) {
-        visitor.visitTextPart(this);
+    public MessageEnvelope getEnvelope() {
+        return envelope;
     }
 
-    public String getCharset() {
-        return charset;
+    public int getIndex() {
+        return index;
     }
 
-    public void setCharset(String charset) {
-        this.charset = charset;
+    public boolean isSeen() {
+        return seen;
     }
+
+    public void setSeen(boolean seen) {
+        this.seen = seen;
+    }
+
+    public boolean isAnswered() {
+        return answered;
+    }
+
+    public void setAnswered(boolean answered) {
+        this.answered = answered;
+    }
+
+    public boolean isFlagged() {
+        return flagged;
+    }
+
+    public void setFlagged(boolean flagged) {
+        this.flagged = flagged;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+    
 }

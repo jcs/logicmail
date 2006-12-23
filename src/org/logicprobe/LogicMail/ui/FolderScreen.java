@@ -53,14 +53,14 @@ import org.logicprobe.LogicMail.util.Observable;
  */
 public class FolderScreen extends BaseScreen implements TreeFieldCallback {
     private TreeField treeField;
-    private MailClient _client;
-    private MailboxController _mailboxController;
+    private MailClient client;
+    private MailboxController mailboxController;
     
     public FolderScreen(MailClient client) {
         super("Folders");
-        _client = client;
-        _mailboxController = MailboxController.getInstance();
-        _mailboxController.addObserver(this);
+        this.client = client;
+        mailboxController = MailboxController.getInstance();
+        mailboxController.addObserver(this);
 
         treeField = new TreeField(this, Field.FOCUSABLE);
         treeField.setEmptyString("No folders", 0);
@@ -70,14 +70,13 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         add(treeField);
         
         AccountCache acctCache =
-                new AccountCache(_client.getAcctConfig().getAcctName());
-        Vector folderItemList = acctCache.loadFolderList();
-        if(folderItemList != null && folderItemList.size() > 0) {
-            generateFolderTree(folderItemList);
-            acctCache.saveFolderList(folderItemList);
-        }
+                new AccountCache(this.client.getAcctConfig().getAcctName());
+
+        FolderTreeItem treeRoot = acctCache.loadFolderTree();
+        if(treeRoot != null && treeRoot.hasChildren())
+            generateFolderTree(treeRoot);
         else
-            _mailboxController.refreshFolderTree();
+            mailboxController.refreshFolderTree();
     }
 
     protected boolean onSavePrompt() {
@@ -85,7 +84,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
     }
 
     public boolean onClose() {
-        if(_mailboxController.checkClose()) {
+        if(mailboxController.checkClose()) {
             close();
             return true;
         }
@@ -99,7 +98,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         if(curNode == -1) return;
         Object cookie = treeField.getCookie(curNode);
         if(cookie instanceof FolderTreeItem) {
-        	_mailboxController.openFolder((FolderTreeItem)cookie);
+            mailboxController.openFolder((FolderTreeItem)cookie);
         }
     }
     
@@ -111,7 +110,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
 
     private MenuItem refreshItem = new MenuItem("Refresh", 110, 10) {
         public void run() {
-            _mailboxController.refreshFolderTree();
+            mailboxController.refreshFolderTree();
         }
     };
 
@@ -149,45 +148,27 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         return retval;
     }
     
-    private synchronized void generateFolderTree(Vector folderItemList) {
+    private synchronized void generateFolderTree(FolderTreeItem folderRoot) {
         treeField.deleteAll();
-        int parent = 0;
-        int node = 0;
-        int depth = 0;
-        int olddepth = 0;
-        Vector path = new Vector();
-        for(int i=0;i<folderItemList.size();i++) {
-            FolderTreeItem folderItem =
-                    (FolderTreeItem)folderItemList.elementAt(i);
-            // Find the tree depth of this folder
-            depth = 0;
-            int pos = 0;
-            while(pos < folderItem.getPath().length()) {
-                if(folderItem.getPath().indexOf(folderItem.getDelim(), pos) != -1) { depth++; }
-                pos++;
-            }
-            if(depth > olddepth) {
-                path.addElement(new Integer(node));
-                parent = ((Integer)path.lastElement()).intValue();
-            }
-            else if(depth < olddepth) {
-                for(int j=path.size()-1;j>depth;j--)
-                    path.removeElementAt(j);
-                parent = ((Integer)path.elementAt(path.size()-2)).intValue();
-            }
-            node = treeField.addChildNode(parent, folderItem);
-            if(depth != olddepth)
-                olddepth = depth;
-        }
+        generateFolderTreeHelper(treeField, 0, folderRoot);
         treeField.setDirty(true);
+    }
+    
+    public void generateFolderTreeHelper(TreeField tree, int parent, FolderTreeItem item) {
+        int id = (item.getParent() == null) ? 0 : tree.addChildNode(parent, item);
+        if(item.hasChildren()) {
+            FolderTreeItem[] children = item.children();
+            for(int i=0;i<children.length;i++)
+                generateFolderTreeHelper(tree, id, children[i]);
+        }
     }
     
     public void update(Observable subject, Object arg) {
         super.update(subject, arg);
-        if(subject.equals(_mailboxController)) {
+        if(subject.equals(mailboxController)) {
             if(((String)arg).equals("folders")) {
                 synchronized(Application.getEventLock()) {
-                    generateFolderTree(_mailboxController.getFolderItemList());
+                    generateFolderTree(mailboxController.getFolderRoot());
                 }
             }
         }
