@@ -38,14 +38,26 @@ import net.rim.device.api.util.Arrays;
  */
 public class MultiPart extends MessagePart {
     private MessagePart[] parts;
-    
-    private static int SUBTYPE_MIXED = 1;
-    private static int SUBTYPE_ALTERNATIVE = 2;
+    private boolean partMixed;
+    private boolean partAlternative;
+    private boolean partRelated;
     
     /** Creates a new instance of MultiPart */
-    public MultiPart() {
-        super("multipart");
-        setMimeSubtype(""); // mixed or alternative
+    public MultiPart(String mimeSubtype) {
+        super("multipart", mimeSubtype);
+        partMixed = false;
+        partAlternative = false;
+        partRelated = false;
+        if(mimeSubtype.equalsIgnoreCase("alternative")) {
+            partAlternative = true;
+        }
+        else if(mimeSubtype.equalsIgnoreCase("related")) {
+            partRelated = true;
+        }
+        else {
+            // If all else fails, automatically assume a "mixed" part
+            partMixed = true;
+        }
     }
 
     public void accept(MessagePartVisitor visitor) {
@@ -68,5 +80,17 @@ public class MultiPart extends MessagePart {
     
     public MessagePart[] getParts() {
         return parts;
+    }
+
+    public boolean isPartMixed() {
+        return partMixed;
+    }
+
+    public boolean isPartAlternative() {
+        return partAlternative;
+    }
+
+    public boolean isPartRelated() {
+        return partRelated;
     }
 }

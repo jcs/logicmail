@@ -32,18 +32,16 @@
 package org.logicprobe.LogicMail.controller;
 
 import java.io.IOException;
-import java.util.Vector;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.MailClientFactory;
 import org.logicprobe.LogicMail.mail.MailException;
-import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.mail.PopClient;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.ui.FolderScreen;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
 import org.logicprobe.LogicMail.ui.MailboxScreen;
@@ -57,14 +55,14 @@ public class MailboxController extends Controller implements Observable {
     private MailClient client;
     private MailSettings mailSettings;
     private FolderTreeItem folderRoot;
-    private Vector msgEnvList;
+    private FolderMessage[] folderMessages;
     
     /** Creates a new instance of MailboxController */
     private MailboxController() {
         mailSettings = MailSettings.getInstance();
         client = null;
         folderRoot = null;
-        msgEnvList = null;
+        folderMessages = null;
     }
     
     public static synchronized MailboxController getInstance() {
@@ -80,7 +78,7 @@ public class MailboxController extends Controller implements Observable {
      * @param acctConfig Configuration of the account to open
      */
     public void openAccount(AccountConfig acctConfig) {
-        client = MailClient.getNewClient(acctConfig);
+        client = MailClientFactory.createMailClient(acctConfig);
         if(client.hasFolders()) {
             UiApplication.getUiApplication().pushScreen(new FolderScreen(client));
         }
@@ -98,8 +96,8 @@ public class MailboxController extends Controller implements Observable {
     }
     
     public void refreshFolderTree() {
-        // This only works for IMAP, so check to be sure
-        if(client == null || !(client instanceof ImapClient)) return;
+        // This only works for protocols with folders, so check to be sure
+        if(client == null || !(client.hasFolders())) return;
         
         // Invoke a thread to update the folder tree
         MailClientHandler clientHandler = new MailClientHandler(client, "Refreshing folder tree") {
@@ -133,24 +131,18 @@ public class MailboxController extends Controller implements Observable {
         final FolderTreeItem _folderItem = folderItem;
         MailClientHandler clientHandler = new MailClientHandler(client, "Retrieving message list") {
             public void runSession() throws IOException, MailException {
-                Vector msgEnvList = null;
+                FolderMessage[] folderMessages;
                 try {
                     client.setActiveFolder(_folderItem);
                     int firstIndex = _folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
                     if(firstIndex < 0) firstIndex = 0;
-
-                    // Kludge to remove dependency on getMessageEnvelopes
-                    Message.Envelope[] msgEnvArray;
-                    msgEnvArray = client.getMessageList(firstIndex, _folderItem.getMsgCount());
-                    msgEnvList = new Vector();
-                    for(int i=0;i<msgEnvArray.length;i++)
-                        msgEnvList.addElement(msgEnvArray[i]);
+                    folderMessages = client.getFolderMessages(firstIndex, _folderItem.getMsgCount());
                 } catch (MailException exp) {
-                    msgEnvList = null;
+                    folderMessages = null;
                     throw exp;
                 }
-                if(msgEnvList != null) {
-                    MailboxController.this.msgEnvList = msgEnvList;
+                if(folderMessages != null) {
+                    MailboxController.this.folderMessages = folderMessages;
                     notifyObservers("messages");
                 }
             }
@@ -158,9 +150,9 @@ public class MailboxController extends Controller implements Observable {
         clientHandler.start();
     }
 
-    public void openMessage(FolderTreeItem folderItem, Message.Envelope envelope) {
+    public void openMessage(FolderTreeItem folderItem, FolderMessage folderMessage) {
         MessageController messageController =
-                new MessageController(client, folderItem, envelope);
+                new MessageController(client, folderItem, folderMessage);
         messageController.viewMessage();
     }
 
@@ -195,7 +187,7 @@ public class MailboxController extends Controller implements Observable {
         return folderRoot;
     }
     
-    public Vector getMsgEnvList() {
-        return msgEnvList;
+    public FolderMessage[] getFolderMessages() {
+        return folderMessages;
     }
 }

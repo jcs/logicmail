@@ -54,42 +54,74 @@ public class FolderMessage {
         this.index = index;
     }
 
+    /**
+     * Get the envelope associated with this message.
+     * @return Message envelope
+     */
     public MessageEnvelope getEnvelope() {
         return envelope;
     }
 
+    /**
+     * Get the mailbox index of this message
+     * @return index
+     */
     public int getIndex() {
         return index;
     }
 
+    /**
+     * Find out whether this message has been previously viewed
+     */
     public boolean isSeen() {
         return seen;
     }
 
+    /**
+     * Set the flag indicating whether this message has been previously viewed
+     */
     public void setSeen(boolean seen) {
         this.seen = seen;
     }
 
+    /**
+     * Find out whether this message has been replied to
+     */
     public boolean isAnswered() {
         return answered;
     }
 
+    /**
+     * Set the flag indicating whether this message has been replied to
+     */
     public void setAnswered(boolean answered) {
         this.answered = answered;
     }
 
+    /**
+     * Find out whether this message has been flagged
+     */
     public boolean isFlagged() {
         return flagged;
     }
 
+    /**
+     * Set the flag indicating whether this message has been flagged
+     */
     public void setFlagged(boolean flagged) {
         this.flagged = flagged;
     }
 
+    /**
+     * Find out whether this message has been marked as deleted
+     */
     public boolean isDeleted() {
         return deleted;
     }
 
+    /**
+     * Set the flag indicating whether this message has been marked as deleted
+     */
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }

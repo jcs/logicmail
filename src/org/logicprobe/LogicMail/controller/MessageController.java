@@ -32,19 +32,15 @@
 package org.logicprobe.LogicMail.controller;
 
 import java.io.IOException;
-import net.rim.device.api.io.Base64InputStream;
-import net.rim.device.api.system.EncodedImage;
-import net.rim.device.api.ui.Field;
+import java.util.Vector;
 import net.rim.device.api.ui.UiApplication;
-import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.util.Arrays;
-import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.ImapClient;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.ui.MessageRenderer;
 import org.logicprobe.LogicMail.util.Observable;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.ui.MailClientHandler;
@@ -54,133 +50,80 @@ import org.logicprobe.LogicMail.ui.MessageScreen;
  * Controller for message screens
  */
 public class MessageController extends Controller implements Observable {
-    private MailSettings _mailSettings;
-    private Message.Structure _msgStructure;
-    private MailClient _client;
-    private FolderTreeItem _folderItem;
-    private Message.Envelope _envelope;
-    private Field[] _msgFields;
+    private MailClient client;
+    private FolderTreeItem folderItem;
+    private FolderMessage folderMessage;
+    private MessageEnvelope envelope;
+    private Vector msgFields;
     
     /** Creates a new instance of MessageController */
     public MessageController(MailClient client,
                              FolderTreeItem folderItem,
-                             Message.Envelope envelope) {
-        _client = client;
-        _folderItem = folderItem;
-        _envelope = envelope;
-        _msgStructure = null;
-        _msgFields = null;
-        _mailSettings = MailSettings.getInstance();
+                             FolderMessage folderMessage) {
+        this.client = client;
+        this.folderItem = folderItem;
+        this.folderMessage = folderMessage;
+        this.envelope = folderMessage.getEnvelope();
+        this.msgFields = null;
     }
 
     public void viewMessage() {
         UiApplication.getUiApplication().pushScreen(new MessageScreen(this));
     }
     
-    public void updateMessageStructure() {
-        _client = MailboxController.getInstance().getMailClient();
-        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
+    public void updateMessage() {
+        this.client = MailboxController.getInstance().getMailClient();
+        MailClientHandler clientHandler = new MailClientHandler(this.client, "Retrieving message") {
             public void runSession() throws IOException, MailException {
-                _client.setActiveFolder(_folderItem);
+                // Set the active folder
+                client.setActiveFolder(MessageController.this.folderItem);
 
-                // Get the structure of the message
-                _msgStructure = _client.getMessageStructure(_envelope);
-                _envelope.structure = _msgStructure;
+                // Download the message
+                Message msg = client.getMessage(folderMessage);
                 
-                notifyObservers("structure");
+                // Prepare the UI elements
+                MessageRenderer msgRenderer = new MessageRenderer();
+                msg.getBody().accept(msgRenderer);
+                MessageController.this.msgFields = msgRenderer.getMessageFields();
+                
+                notifyObservers("message");
             }
         };
         clientHandler.start();        
-    }
-    
-    public void updateMessageFields() {
-        MailClientHandler clientHandler = new MailClientHandler(_client, "Retrieving message") {
-            public void runSession() throws IOException, MailException {
-                Field[] msgFields = new Field[0];
-                String msgError = null;
-
-                if(_msgStructure == null)
-                    msgError = "Unable to parse structure";
-                else {
-                    boolean flag = false;
-                    int i;
-                    int sizeLimit = _mailSettings.getGlobalConfig().getImapMaxMsgSize();
-                    String mimeType;
-                    String bodySection;
-                    for(i=0;i<_msgStructure.sections.length;i++) {
-                        mimeType = _msgStructure.sections[i].type + "/" +
-                                   _msgStructure.sections[i].subtype;
-                        if(_client instanceof ImapClient && _msgStructure.sections[i].size > sizeLimit) {
-                            Arrays.add(msgFields, new RichTextField("Section too big: "+mimeType));
-                        }
-                        else if(mimeType.equals("text/plain")) {
-                            flag = true;
-                            bodySection = _client.getMessageBody(_envelope, i);
-                            Arrays.add(msgFields, new RichTextField(bodySection));
-                            if(_client instanceof ImapClient) sizeLimit -= _msgStructure.sections[i].size;
-                        }
-                        else if(_msgStructure.sections[i].type.equals("image") &&
-                                _msgStructure.sections[i].encoding.equals("base64")) {
-                            try {
-                                bodySection = _client.getMessageBody(_envelope, i);
-                                byte[] imgBytes = Base64InputStream.decode(bodySection);
-                                EncodedImage encImage =
-                                        EncodedImage.createEncodedImage(imgBytes, 0, imgBytes.length, mimeType);
-                                Arrays.add(msgFields, new BitmapField(encImage.getBitmap()));
-                            } catch (Exception exp) {
-                                Arrays.add(msgFields, new RichTextField("Unable to decode image: "+mimeType));
-                            }
-                            if(_client instanceof ImapClient) sizeLimit -= _msgStructure.sections[i].size;
-                        }
-                        else {
-                            Arrays.add(msgFields, new RichTextField("Unsupported type: "+mimeType));
-                        }
-                    }
-                    if(!flag)
-                        msgError = "Unable to find plain text body";
-                }
-
-                if(msgError != null)
-                    Arrays.insertAt(msgFields, new RichTextField(msgError), 0);
-                
-                _msgFields = msgFields;
-                notifyObservers("fields");
-            }
-        };
-        clientHandler.start();
+        
     }
     
     public void showMsgProperties() {
         int i;
         StringBuffer msg = new StringBuffer();
-        msg.append("Subject:\n  " + ((_envelope.subject!=null) ? _envelope.subject : "") + "\n");
-        msg.append("Date:\n  " + ((_envelope.date!=null) ? _envelope.date.toString() : "") + "\n");
+        msg.append("Subject:\n  " + ((envelope.subject!=null) ? envelope.subject : "") + "\n");
+        msg.append("Date:\n  " + ((envelope.date!=null) ? envelope.date.toString() : "") + "\n");
 
-        if(_envelope.from != null && _envelope.from.length > 0) {
+        if(envelope.from != null && envelope.from.length > 0) {
             msg.append("From:\n");
-            for(i=0;i<_envelope.from.length;i++)
-                msg.append("  " + ((_envelope.from[i]!=null) ? _envelope.from[i] : "") + "\n");
+            for(i=0;i<envelope.from.length;i++)
+                msg.append("  " + ((envelope.from[i]!=null) ? envelope.from[i] : "") + "\n");
         }
         
-        if(_envelope.to != null && _envelope.to.length > 0) {
+        if(envelope.to != null && envelope.to.length > 0) {
             msg.append("To:\n");
-            for(i=0;i<_envelope.to.length;i++)
-            if(_envelope.to[i].length() > 0)
-                msg.append("  " + ((_envelope.to[i]!=null) ? _envelope.to[i] : "") + "\n");
+            for(i=0;i<envelope.to.length;i++)
+            if(envelope.to[i].length() > 0)
+                msg.append("  " + ((envelope.to[i]!=null) ? envelope.to[i] : "") + "\n");
         }
 
-        if(_envelope.cc != null && _envelope.cc.length > 0) {
+        if(envelope.cc != null && envelope.cc.length > 0) {
             msg.append("CC:\n");
-            for(i=0;i<_envelope.cc.length;i++)
-                if(_envelope.cc[i].length() > 0)
-                msg.append("  " + ((_envelope.cc[i]!=null) ? _envelope.cc[i] : "") + "\n");
+            for(i=0;i<envelope.cc.length;i++)
+                if(envelope.cc[i].length() > 0)
+                msg.append("  " + ((envelope.cc[i]!=null) ? envelope.cc[i] : "") + "\n");
         }
         
-        if(_envelope.bcc != null && _envelope.bcc.length > 0) {
+        if(envelope.bcc != null && envelope.bcc.length > 0) {
             msg.append("BCC:\n");
-            for(i=0;i<_envelope.bcc.length;i++)
-                if(_envelope.bcc[i].length() > 0)
-                    msg.append("  " + ((_envelope.bcc[i]!=null) ? _envelope.bcc[i] : "") + "\n");
+            for(i=0;i<envelope.bcc.length;i++)
+                if(envelope.bcc[i].length() > 0)
+                    msg.append("  " + ((envelope.bcc[i]!=null) ? envelope.bcc[i] : "") + "\n");
         }
 
         Dialog dialog = new Dialog(Dialog.D_OK, msg.toString(),
@@ -188,15 +131,11 @@ public class MessageController extends Controller implements Observable {
         dialog.show();
     }
     
-    public Message.Envelope getMsgEnvelope() {
-        return _envelope;
+    public MessageEnvelope getMsgEnvelope() {
+        return envelope;
     }
     
-    public Message.Structure getMsgStructure() {
-        return _msgStructure;
-    }
-
-    public Field[] getMessageFields() {
-        return _msgFields;
+    public Vector getMessageFields() {
+        return msgFields;
     }
 }

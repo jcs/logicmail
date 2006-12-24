@@ -128,7 +128,7 @@ public class StringParser {
      * @param rawText The raw text to be parsed
      * @return A tree of Vector and String objects
      */
-    public static Vector parseNestedParenString(String rawText) {
+    public static Vector nestedParenStringLexer(String rawText) {
 	Vector parsedText = new Vector();
 	// Sanity checking
 	if(!(rawText.charAt(0) == '(' &&
@@ -204,7 +204,7 @@ public class StringParser {
 		    return null;
 		}
 		else {
-		    parsedText.addElement(parseNestedParenString(rawText.substring(p, q+1)));
+		    parsedText.addElement(nestedParenStringLexer(rawText.substring(p, q+1)));
 		}
 		p = q+1;
 	    }

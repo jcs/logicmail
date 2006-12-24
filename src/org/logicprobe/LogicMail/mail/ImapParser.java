@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import java.util.Calendar;
 import java.util.Vector;
-import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -41,12 +41,25 @@ import org.logicprobe.LogicMail.util.StringParser;
  * needed when using the IMAP protocol
  */
 class ImapParser {
+    /**
+     * Simple container for a parsed message structure tree
+     */
+    public static class MessageSection {
+        public String address;
+        public String type;
+        public String subtype;
+        public String encoding;
+        public String charset;
+        public int size;
+        public MessageSection[] subsections;
+    }
+    
     private ImapParser() { }
     
-    static Message.Envelope parseMessageEnvelope(String rawText) {
+    static MessageEnvelope parseMessageEnvelope(String rawText) {
         Vector parsedText = null;
         try {
-            parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
+            parsedText = StringParser.nestedParenStringLexer(rawText.substring(rawText.indexOf('(')));
         } catch (Exception exp) {
             return generateDummyEnvelope();
         }
@@ -62,7 +75,7 @@ class ImapParser {
         if(parsedEnv.size() < 10)
            return generateDummyEnvelope();
             
-        Message.Envelope env = new Message.Envelope();
+        MessageEnvelope env = new MessageEnvelope();
 
         if(parsedEnv.elementAt(0) instanceof String) {
             env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
@@ -105,13 +118,9 @@ class ImapParser {
             env.messageId = (String)parsedEnv.elementAt(9);
             if(env.messageId.equals("NIL")) env.messageId = "";
         }
-        
-        env.isOpened = false;
-        
-        env.index = Integer.parseInt(rawText.substring(rawText.indexOf(' '), rawText.indexOf("FETCH")-1).trim());
         return env;
     }
-    
+
     static String[] parseAddressList(Vector addrVec) {
         // Find the number of addresses, and allocate the array
         String[] addrList = new String[addrVec.size()];
@@ -146,10 +155,25 @@ class ImapParser {
         return addrList;
     }
     
-    static Message.Structure parseMessageStructure(String rawText) {
+    private static MessageEnvelope generateDummyEnvelope() {
+        MessageEnvelope env = new MessageEnvelope();
+        env.date = Calendar.getInstance().getTime();
+        env.from = new String[1];
+        env.from[0] = "<sender>";
+        env.subject = "<subject>";
+        return env;
+    }
+
+    /**
+     * Parse the IMAP message structure tree.
+     *
+     * @param Raw text returned from the server
+     * @return Root of the message structure tree
+     */
+    static MessageSection parseMessageStructure(String rawText) {
         Vector parsedText = null;
         try {
-            parsedText = StringParser.parseNestedParenString(rawText.substring(rawText.indexOf('(')));
+            parsedText = StringParser.nestedParenStringLexer(rawText.substring(rawText.indexOf('(')));
         } catch (Exception exp) {
             return null;
         }
@@ -160,32 +184,66 @@ class ImapParser {
            return null;
         
         Vector parsedStruct = (Vector)parsedText.elementAt(1);
-
-        Message.Structure msgStructure = new Message.Structure();
-
-        // Determine the number of body parts and parse
-        if(parsedStruct.elementAt(0) instanceof String) {
-            msgStructure.sections = new Message.Section[1];
-            msgStructure.sections[0] = parseMessageStructureSection(parsedStruct);
-        }
-        else {
-            int count = 0;
-            int i;
-            for(i=0;i<parsedStruct.size();i++)
-                if(parsedStruct.elementAt(i) instanceof Vector)
-                    count++;
-                else
-                    break;
-            msgStructure.sections = new Message.Section[count];
-            for(i=0;i<count;i++)
-                msgStructure.sections[i] = parseMessageStructureSection((Vector)parsedStruct.elementAt(i));
-        }
-        
+        MessageSection msgStructure = parseMessageStructureHelper(null, 1, parsedStruct);
+        fixMessageStructure(msgStructure);
         return msgStructure;
     }
 
-    private static Message.Section parseMessageStructureSection(Vector sectionList) {
-        Message.Section sec = new Message.Section();
+    /**
+     * This method implements a kludge to fix body part addresses
+     */
+    private static void fixMessageStructure(MessageSection msgStructure) {
+        if(msgStructure == null) return;
+        int p = msgStructure.address.indexOf('.');
+        if(p != -1 && p+1 < msgStructure.address.length())
+            msgStructure.address = msgStructure.address.substring(p+1);
+        
+        if(msgStructure.subsections != null && msgStructure.subsections.length > 0)
+            for(int i=0;i<msgStructure.subsections.length;i++)
+                fixMessageStructure(msgStructure.subsections[i]);
+    }
+    
+    private static MessageSection parseMessageStructureHelper(String parentAddress,
+                                                              int index,
+                                                              Vector parsedStruct) {
+        // Determine the address of this body part
+        String address;
+        if(parentAddress == null) {
+            address = Integer.toString(index);
+        }
+        else {
+            address = parentAddress + "." + Integer.toString(index);
+        }
+        // Determine the number of body parts and parse
+        if(parsedStruct.elementAt(0) instanceof String) {
+            // The first element is a string, so we hit a simple message part
+            MessageSection section = parseMessageStructureSection(parsedStruct);
+            section.address = address;
+            return section;
+        }
+        else if(parsedStruct.elementAt(0) instanceof Vector) {
+            // The first element is a vector, so we hit a multipart message part
+            int size = parsedStruct.size();
+            MessageSection[] subSections = new MessageSection[size-3];
+            for(int i=0;i<size;++i) {
+                // Iterate through the message parts
+                if(parsedStruct.elementAt(i) instanceof Vector)
+                    subSections[i] = parseMessageStructureHelper(address, i+1, (Vector)parsedStruct.elementAt(i));
+                else if(parsedStruct.elementAt(i) instanceof String) {
+                    MessageSection section = new MessageSection();
+                    section.type = "multipart";
+                    section.subtype = ((String)parsedStruct.elementAt(i)).toLowerCase();
+                    section.subsections = subSections;
+                    section.address = address;
+                    return section;
+                }
+            }
+        }
+        return null;
+    }
+    
+    private static MessageSection parseMessageStructureSection(Vector sectionList) {
+        MessageSection sec = new MessageSection();
         Vector tmpVec;
         
         if(sectionList.elementAt(0) instanceof String) {
@@ -220,14 +278,5 @@ class ImapParser {
         }
 
         return sec;
-    }
-
-    private static Message.Envelope generateDummyEnvelope() {
-        Message.Envelope env = new Message.Envelope();
-        env.date = Calendar.getInstance().getTime();
-        env.from = new String[1];
-        env.from[0] = "<sender>";
-        env.subject = "<subject>";
-        return env;
     }
 }

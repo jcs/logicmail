@@ -29,48 +29,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Portions of this code may have been inspired by and/or
- * copied from the following classes of the Mail4ME project:
- * de.trantor.mail.InboxClient
- * These portions are:
- *   Copyright (c) 2000-2002 Jorg Pleumann <joerg@pleumann.de>
- * 
- */
-
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
-import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 
 /**
  * Create a generic interface to different mail protocols.
  * This class allows most of the UI code to be protocol-agnostic.
  */
-public abstract class MailClient {
-    /**
-     * Get a new concrete mail client instance.
-     * This could be placed in an external factory, but it seemed simpler
-     * to put it in here for now.
-     *
-     * @param acctConfig User account configuration
-     * @return Usable mail client instance
-     */
-    public static MailClient getNewClient(AccountConfig acctConfig) {
-        MailClient client;
-        if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
-            return new PopClient(acctConfig);
-        }
-        else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
-            return new ImapClient(acctConfig);
-        }
-        else {
-            return null;
-        }
-    }
-    
+public interface MailClient {
     /**
      * Get the account configuration.
      * Should probably find a way to remove the need for this.
@@ -159,7 +129,7 @@ public abstract class MailClient {
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-    public abstract Message.Envelope[] getMessageList(int firstIndex, int lastIndex)
+    public abstract FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
         throws IOException, MailException;
     
     /**
@@ -171,30 +141,5 @@ public abstract class MailClient {
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-    public abstract Message getMessage(int index) throws IOException, MailException;
-
-    // ----------------------------------------------------------------
-    // All remaining methods are deprecated and should be removed once
-    // the protocol code is adapted.  Ultimately, getMessage() should
-    // provide functionality equivalent to the typical use case of both
-    // these methods together.
-    
-    /**
-     * Retrieves the structure of a message from the mailbox.
-     * This allows for more intelligent retrieval of the
-     * message body, but might only work correctly with IMAP.
-     *
-     * @param env Message index in the active mailbox
-     */
-    public abstract Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException;
-
-    /**
-     * Retrieve the body of a message.
-     * This allows for more intelligent retrieval of the
-     * message body, but might only work correctly with IMAP.
-     *
-     * @param env Message index in the active mailbox
-     * @param bindex Index of the body within the message
-     */
-    public abstract String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException;
+    public abstract Message getMessage(FolderMessage folderMessage) throws IOException, MailException;
 }

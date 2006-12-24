@@ -36,11 +36,12 @@ package org.logicprobe.LogicMail.message;
  */
 public class TextPart extends MessagePart {
     private String charset;
+    private String text;
     
     /** Creates a new instance of TextPart */
-    public TextPart() {
-        super("text");
-        setMimeSubtype(""); // plain, html, etc.
+    public TextPart(String mimeSubtype, String text) {
+        super("text", mimeSubtype);
+        this.text = text;
     }
 
     public void accept(MessagePartVisitor visitor) {
@@ -53,5 +54,9 @@ public class TextPart extends MessagePart {
 
     public void setCharset(String charset) {
         this.charset = charset;
+    }
+    
+    public String getText() {
+        return text;
     }
 }

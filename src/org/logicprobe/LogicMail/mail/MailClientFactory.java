@@ -29,40 +29,32 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.message;
+package org.logicprobe.LogicMail.mail;
+
+import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**
- * Abstract representation of a message part
+ * Factory to handle creation and configuration of
+ * concrete MailClient instances
  */
-public abstract class MessagePart {
-    private String mimeType;
-    private String mimeSubtype;
-
-    /** Creates a new instance of MessagePart */
-    protected MessagePart(String mimeType, String mimeSubtype) {
-        this.mimeType = mimeType;
-        this.mimeSubtype = mimeSubtype;
-    }
-
-    /**
-     * Accept a visitor on this message part.
-     * @param visitor The visitor instance
-     */
-    public abstract void accept(MessagePartVisitor visitor);
+public class MailClientFactory {
+    private MailClientFactory() { }
     
     /**
-     * Get the MIME type for this part
-     * @return The "type" part of "type/subtype"
+     * Get a new concrete mail client instance.
+     *
+     * @param acctConfig User account configuration
+     * @return Usable mail client instance
      */
-    public String getMimeType() {
-        return mimeType;
-    }
-
-    /**
-     * Get the MIME subtype for this part
-     * @return The "subtype" part of "type/subtype"
-     */
-    public String getMimeSubtype() {
-        return mimeSubtype;
+    public static MailClient createMailClient(AccountConfig acctConfig) {
+        if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
+            return new PopClient(acctConfig);
+        }
+        else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
+            return new ImapClient(acctConfig);
+        }
+        else {
+            return null;
+        }
     }
 }

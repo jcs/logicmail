@@ -37,16 +37,20 @@ import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * 
  * Implements the IMAP client
  * 
  */
-public class ImapClient extends MailClient {
+public class ImapClient implements MailClient {
     protected GlobalConfig globalConfig;
     protected AccountConfig acctCfg;
     protected Connection connection;
@@ -182,80 +186,9 @@ public class ImapClient extends MailClient {
         }
     }
 
-    public Message.Envelope[] getMessageList(int firstIndex, int lastIndex) throws IOException, MailException {
-        // Glue implementation to remove need for getMessageEnvelopes() in the interface
-        Vector envList = getMessageEnvelopes(firstIndex, lastIndex);
-        Message.Envelope[] envArray = new Message.Envelope[envList.size()];
-        envList.copyInto(envArray);
-        return envArray;
-    }
-
-    public Message getMessage(int index) throws IOException, MailException {
-        // @TODO
-        return null;
-    }
-
-    /**
-     * Get the folder listing
-     * @param baseFolder Base folder to search under, or "" for the root
-     * @return List of folder items
-     */
-    public Vector getFolderList(String baseFolder) throws IOException, MailException {
-        return getFolderListImpl(baseFolder, 0);
-    }
-
-    /**
-     * Implementation of the recursive folder listing method
-     */
-    private Vector getFolderListImpl(String baseFolder, int depth) throws IOException, MailException {
-        Vector folders = new Vector();
-        Vector respList = executeList(baseFolder, "%");
-        for(int i=0;i<respList.size();i++) {
-            ListResponse resp = (ListResponse)respList.elementAt(i);
-            if(resp.canSelect) {
-                folders.addElement(resp.name);
-                if(resp.hasChildren) {
-                    if(depth+1 >= globalConfig.getImapMaxFolderDepth())
-                        return folders;
-                    Vector childList = getFolderListImpl(resp.name + resp.delim, depth+1);
-                    for(int j=0;j<childList.size();j++)
-                        folders.addElement(childList.elementAt(j));
-                }
-            }
-        }
-        return folders;
-    }
-
-    /**
-     * Get relevant stats for the folder.
-     * This method parses out the folder path, determines the
-     * message counts, and provides generally useful information
-     * for the UI to display.
-     * @param folderPath Folder path string
-     * @return Folder item object
-     */
-    public FolderTreeItem getFolderItem(String folderPath) throws IOException, MailException {
-        int pos = 0;
-        int i = 0;
-        while((i = folderPath.indexOf(folderDelim, i)) != -1)
-            if(i != -1) { pos = i+1; i++; }
-        FolderTreeItem item = new FolderTreeItem(folderPath.substring(pos), folderPath, folderDelim);
-        item.setMsgCount(0);
-        return item;
-    }
-
-    public FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath) throws IOException, MailException {
-        int pos = 0;
-        int i = 0;
-        while((i = folderPath.indexOf(folderDelim, i)) != -1)
-            if(i != -1) { pos = i+1; i++; }
-        FolderTreeItem item = new FolderTreeItem(parent, folderPath.substring(pos), folderPath, folderDelim);
-        item.setMsgCount(0);
-        return item;
-    }
-
-    public Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException {
-        Vector envList = new Vector();
+    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
+        FolderMessage[] folderMessages = new FolderMessage[lastIndex - firstIndex];
+        int index = 0;
 
         String[] rawList = execute("FETCH",
                                    Integer.toString(firstIndex) +
@@ -284,36 +217,68 @@ public class ImapClient extends MailClient {
 
         for(int i=0;i<rawList2.size();i++) {
             try {
-                Message.Envelope env = ImapParser.parseMessageEnvelope((String)rawList2.elementAt(i));
-                envList.addElement(env);
+                String rawText = (String)rawList2.elementAt(i);
+                MessageEnvelope env = ImapParser.parseMessageEnvelope(rawText);
+                int midx = Integer.parseInt(rawText.substring(rawText.indexOf(' '), rawText.indexOf("FETCH")-1).trim());
+                folderMessages[index++] = new FolderMessage(env, midx);
             } catch (Exception exp) {
                 System.out.println("Parse error: " + exp);
             }
         }
-        return envList;
+        return folderMessages;
     }
-        
-    public String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException {
-        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
-        
-        String[] rawList = execute("FETCH", env.index + " (BODY["+ (bindex+1) +"])");
 
-        if(rawList.length <= 1) return "";
-        
-        StringBuffer msgBuf = new StringBuffer();
-        for(int i=1;i<rawList.length-1;i++) {
-            msgBuf.append(rawList[i] + "\n");
+    public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
+        ImapParser.MessageSection structure = getMessageStructure(folderMessage.getIndex());
+        MessagePart rootPart =
+            getMessagePart(folderMessage.getIndex(),
+                           structure, globalConfig.getImapMaxMsgSize());
+        Message msg = new Message(folderMessage.getEnvelope(), rootPart);
+        return msg;
+    }
+
+    private MessagePart getMessagePart(int index,
+                                       ImapParser.MessageSection structure,
+                                       int maxSize)
+        throws IOException, MailException
+    {
+        MessagePart part;
+        if(MessagePartFactory.isMessagePartSupported(structure.type, structure.subtype)) {
+            String data;
+            if(structure.type.equalsIgnoreCase("multipart"))
+                data = null;
+            else {
+                if(structure.size < maxSize) {
+                    data = getMessageBody(index, structure.address);
+                    maxSize -= structure.size;
+                }
+                else {
+                    // We hit the size limit, so stop processing
+                    return null;
+                }
+            }
+            part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, data);
         }
-        String lastLine = rawList[rawList.length-1];
-        msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
-        return new String(msgBuf.toString().getBytes(),
-                StringParser.parseValidCharsetString(env.structure.sections[bindex].charset));
-    }
+        else
+            part = null;
 
-    public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {
+        if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0))
+            for(int i=0;i<structure.subsections.length;i++) {
+                MessagePart subPart = getMessagePart(index, structure.subsections[i], maxSize);
+                if(subPart != null)
+                    ((MultiPart)part).addPart(subPart);
+            }
+        return part;
+    }
+    
+    /**
+     * Returns the message structure tree independent of message content.
+     * This tree is used to build the final message tree.
+     */
+    private ImapParser.MessageSection getMessageStructure(int msgIndex) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
 
-        String[] rawList = execute("FETCH", env.index + " (BODYSTRUCTURE)");
+        String[] rawList = execute("FETCH", msgIndex + " (BODYSTRUCTURE)");
 
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
@@ -334,7 +299,7 @@ public class ImapClient extends MailClient {
                 rawList2.addElement(lineBuf.toString());
         }
 
-        Message.Structure msgStructure = null;
+        ImapParser.MessageSection msgStructure = null;
         for(int i=0;i<rawList2.size();i++) {
             try {
                 msgStructure = ImapParser.parseMessageStructure((String)rawList2.elementAt(i));
@@ -344,6 +309,38 @@ public class ImapClient extends MailClient {
         }
         
         return msgStructure;
+    }
+
+    /**
+     * Create a new folder item, doing the relevant parsing on the path.
+     * @param parent Parent folder
+     * @param folderPath Folder path string
+     * @return Folder item object
+     */
+    private FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath) throws IOException, MailException {
+        int pos = 0;
+        int i = 0;
+        while((i = folderPath.indexOf(folderDelim, i)) != -1)
+            if(i != -1) { pos = i+1; i++; }
+        FolderTreeItem item = new FolderTreeItem(parent, folderPath.substring(pos), folderPath, folderDelim);
+        item.setMsgCount(0);
+        return item;
+    }
+
+    private String getMessageBody(int index, String address) throws IOException, MailException {
+        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
+        
+        String[] rawList = execute("FETCH", index + " (BODY["+ address +"])");
+
+        if(rawList.length <= 1) return "";
+        
+        StringBuffer msgBuf = new StringBuffer();
+        for(int i=1;i<rawList.length-1;i++) {
+            msgBuf.append(rawList[i] + "\n");
+        }
+        String lastLine = rawList[rawList.length-1];
+        msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
+        return msgBuf.toString();
     }
 
     /**
@@ -438,5 +435,4 @@ public class ImapClient extends MailClient {
         }
         return result;
     }
-
 }

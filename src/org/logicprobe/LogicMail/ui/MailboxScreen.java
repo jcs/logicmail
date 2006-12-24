@@ -47,15 +47,17 @@ import net.rim.device.api.ui.component.Menu;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.controller.MailboxController;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.Observable;
 
 /**
  * Display the active mailbox listing
  */
 public class MailboxScreen extends BaseScreen implements ListFieldCallback {
-    private Vector messages;
+    private FolderMessage[] messages;
     private Bitmap bmapOpened;
     private Bitmap bmapUnopened;
     private ListField msgList;
@@ -80,15 +82,13 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         bmapOpened = Bitmap.getBitmapResource("mail_opened.png");
         bmapUnopened = Bitmap.getBitmapResource("mail_unopened.png");
 
-        messages = new Vector();
-
+        messages = new FolderMessage[0];
+        
         // add field elements
         msgList = new ListField();
         lineHeight = msgList.getRowHeight();
         msgList.setRowHeight(lineHeight * 2);
         msgList.setCallback(this);
-        for(int i=0;i<messages.size();i++)
-            msgList.insert(i);
         add(msgList);
         
         // Determine field sizes
@@ -127,23 +127,24 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         super.update(subject, arg);
         if(subject.equals(mailboxController)) {
             if(((String)arg).equals("messages")) {
-                Vector msgEnvList = mailboxController.getMsgEnvList();
+                FolderMessage[] folderMessages = mailboxController.getFolderMessages();
                 synchronized(Application.getEventLock()) {
-                    if(mailSettings.getGlobalConfig().getDispOrder())
-                        messages = msgEnvList;
-                    else {
-                        messages.removeAllElements();
-                        for(int i=msgEnvList.size()-1;i>=0;i--)
-                            messages.addElement(msgEnvList.elementAt(i));
+                    if(mailSettings.getGlobalConfig().getDispOrder()) {
+                        messages = folderMessages;
                     }
-
-                    for(int i=0;i<msgList.getSize();i++)
+                    else {
+                        messages = new FolderMessage[folderMessages.length];
+                        int j = 0;
+                        for(int i=folderMessages.length-1;i>=0;i--)
+                            messages[j++] = folderMessages[i];
+                    }
+                    int size = msgList.getSize();
+                    for(int i=0;i<size;i++)
                         msgList.delete(0);
-                    for(int i=0;i<messages.size();i++)
+                    for(int i=0;i<messages.length;i++)
                         msgList.insert(i);
 
                     msgList.setDirty(true);
-
                 }
             }
         }
@@ -163,23 +164,24 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
                             int width)
     {
         // sanity check
-        if(index >= messages.size()) return;
-        Message.Envelope entry = (Message.Envelope)messages.elementAt(index);
-        if(entry.isOpened)
+        if(index >= messages.length) return;
+        FolderMessage entry = (FolderMessage)messages[index];
+        MessageEnvelope env = entry.getEnvelope();
+        if(entry.isSeen())
             graphics.drawBitmap(1, y, 20, lineHeight*2, bmapOpened, 0, 0);
         else
             graphics.drawBitmap(1, y, 20, lineHeight*2, bmapUnopened, 0, 0);
             
         Font origFont = graphics.getFont();
         graphics.setFont(origFont.derive(Font.BOLD));
-        if(entry.from != null && entry.from.length > 0)
-            graphics.drawText((String)entry.from[0], 20, y,
+        if(env.from != null && env.from.length > 0)
+            graphics.drawText((String)env.from[0], 20, y,
                               (int)(getStyle() | DrawStyle.ELLIPSIS),
                                senderWidth);
                                
         graphics.setFont(origFont.derive(Font.PLAIN));
-        if(entry.subject != null)
-            graphics.drawText((String)entry.subject, 20, y+lineHeight,
+        if(env.subject != null)
+            graphics.drawText((String)env.subject, 20, y+lineHeight,
                               (int)(getStyle() | DrawStyle.ELLIPSIS),
                                maxWidth-20);
         graphics.setFont(origFont);
@@ -187,11 +189,11 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         // Current time
         // Perhaps this should only be set on initialization
         // of this screen, and/or new message downloads
-        if(entry.date != null) {
+        if(env.date != null) {
             Calendar nowCal = Calendar.getInstance();
     
             Calendar dispCal = Calendar.getInstance();
-            dispCal.setTime(entry.date);
+            dispCal.setTime(env.date);
 
             SimpleDateFormat dateFormat;
 
@@ -221,7 +223,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     }
     
     public Object get(ListField listField, int index) {
-        return (Object)messages.elementAt(index);
+        return (Object)messages[index];
     }
     
     public int indexOfList(ListField listField,
@@ -234,10 +236,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     private void openSelectedMessage()
     {
         int index = msgList.getSelectedIndex();
-        if(index < 0 || index > messages.size()) return;
+        if(index < 0 || index > messages.length) return;
         
-        Message.Envelope envelope = (Message.Envelope)messages.elementAt(index);
-        mailboxController.openMessage(folderItem, envelope);
+        mailboxController.openMessage(folderItem, messages[index]);
     }
 
     public boolean keyChar(char key,

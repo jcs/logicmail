@@ -32,7 +32,6 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
-import java.util.Vector;
 import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
@@ -40,7 +39,12 @@ import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -49,7 +53,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements the POP3 client
  * 
  */
-public class PopClient extends MailClient {
+public class PopClient implements MailClient {
     protected GlobalConfig globalConfig;
     protected AccountConfig acctCfg;
     protected Connection connection;
@@ -60,12 +64,6 @@ public class PopClient extends MailClient {
      * relevant information for the user's single mailbox.
      */
     private FolderTreeItem activeMailbox = null;
-    
-    /** Body sections for the active message */
-    private String[] bodySections = null;
-    
-    /** The active message */
-    private Message.Envelope activeMessage = null;
     
     /** Creates a new instance of PopClient */
     public PopClient(AccountConfig acctCfg) {
@@ -127,116 +125,86 @@ public class PopClient extends MailClient {
         activeMailbox.setMsgCount(Integer.parseInt(result.substring(p+1, q)));
     }
 
-    public Message.Envelope[] getMessageList(int firstIndex, int lastIndex) throws IOException, MailException {
-        // Glue implementation to remove need for getMessageEnvelopes() in the interface
-        Vector envList = getMessageEnvelopes(firstIndex, lastIndex);
-        Message.Envelope[] envArray = new Message.Envelope[envList.size()];
-        envList.copyInto(envArray);
-        return envArray;
-    }
-
-    public Message getMessage(int index) throws IOException, MailException {
-        // @TODO
-        return null;
-    }
-
-    public Vector getMessageEnvelopes(int firstIndex, int lastIndex) throws IOException, MailException {
-        Vector envList = new Vector();
+    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
+        FolderMessage[] folderMessages = new FolderMessage[lastIndex - firstIndex];
+        int index = 0;
         String[] headerText;
-        Message.Envelope env;
+        MessageEnvelope env;
         for(int i=firstIndex; i<lastIndex; i++) {
             headerText = executeFollow("TOP " + (i+1) + " 0");
             env = PopParser.parseMessageEnvelope(headerText);
-            env.index = i;
-            envList.addElement(env);
+            folderMessages[index++] = new FolderMessage(env, i);
         }
-        return envList;
+        return folderMessages;
     }
 
-    /**
-     * Return the structure of the message.
-     * Since POP does not give us the ability to do this independently of
-     * retrieving the whole message itself, we will just download the whole
-     * message here and cache it for use in separate calls to getMessageBody().
-     */
-    public Message.Structure getMessageStructure(Message.Envelope env) throws IOException, MailException {
+    public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
         // Figure out the max number of lines
         int maxLines = MailSettings.getInstance().getGlobalConfig().getPopMaxLines();
 
-        // Set the requested message to the active one.
-        activeMessage = env;
-        
-        // Now download the message text
-        String[] message = executeFollow("TOP " + (env.index+1) + " " + maxLines);
+        // Download the message text
+        String[] message = executeFollow("TOP " + (folderMessage.getIndex()+1) + " " + maxLines);
         
         MIMEInputStream mimeInputStream = null;
         try {
             mimeInputStream = new MIMEInputStream(StringParser.createInputStream(message));
         } catch (MIMEParsingException e) {
-            return env.structure;
+            return null;
         }
 
-        byte[] buffer;
-        if(mimeInputStream.isMultiPart()) {
-            // handle multi-part messages
-            MIMEInputStream parts[] = mimeInputStream.getParts();
-            bodySections = new String[0];
-            Message.Section[] msgSections = new Message.Section[0];
-            Message.Section section;
-            String mimeType;
-            for(int i=0;i<parts.length;i++) {
-                section = new Message.Section();
-                section.charset =
-                    StringParser.parseValidCharsetString(parts[i].getContentTypeParameter("charset"));
-                mimeType = parts[i].getContentType();
-                section.type = mimeType.substring(0, mimeType.indexOf('/'));
-                section.subtype = mimeType.substring(mimeType.indexOf('/') + 1);
-                section.encoding = parts[i].getHeader("Content-Transfer-Encoding");
-                if(section.encoding.equalsIgnoreCase("base64")) {
-                    SharedInputStream sis = parts[i].getRawMIMEInputStream();
-                    buffer = StringParser.readWholeStream(sis);
-
-                    int offset = 0;
-                    while((offset+3 < buffer.length) &&
-                            !(buffer[offset]=='\r' && buffer[offset+1]=='\n' &&
-                            buffer[offset+2]=='\r' && buffer[offset+3]=='\n'))
-                        offset++;
-                    section.size = buffer.length - offset;
-                    Arrays.add(bodySections, new String(buffer, offset, section.size));
-                }
-                else {
-                    section.size = parts[i].available();
-                    buffer = new byte[parts[i].available()];
-                    buffer = StringParser.readWholeStream(parts[i]);
-                    Arrays.add(bodySections, new String(buffer, section.charset));
-                }
-                Arrays.add(msgSections, section);
-            }
-            env.structure.sections = msgSections;
-        }
-        else {
-            // handle the simple case of a non-multipart message
-            env.structure.sections[0].size = mimeInputStream.available();
-            buffer = new byte[mimeInputStream.available()];
-            mimeInputStream.read(buffer);
-            bodySections = new String[1];
-            bodySections[0] = new String(buffer, env.structure.sections[0].charset);
-        }
-        return env.structure;
+        MessagePart rootPart = getMessagePart(mimeInputStream);
+        Message msg = new Message(folderMessage.getEnvelope(), rootPart);
+        return msg;
     }
 
-    public String getMessageBody(Message.Envelope env, int bindex) throws IOException, MailException {
-        // Handle a case of mis-ordering of use, to make sure we have
-        // the right message cached for retrieval
-        if(activeMessage != env) getMessageStructure(env);
+    /**
+     * Recursively walk the provided MIMEInputStream, building a message
+     * tree in the process.
+     *
+     * @param mimeInputStream MIMEInputStream of the downloaded message data
+     * @return Root MessagePart element for this portion of the message tree
+     */
+    private MessagePart getMessagePart(MIMEInputStream mimeInputStream) throws IOException {
+        // Parse out the MIME type and relevant header fields
+        String mimeType = mimeInputStream.getContentType();
+        String type = mimeType.substring(0, mimeType.indexOf('/'));
+        String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
+        String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
         
-        // Return the requested section of the message
-        if(bodySections != null &&
-           bindex < bodySections.length &&
-           bodySections[bindex] != null)
-            return bodySections[bindex];
-        else
-            return null;
+        // Handle the multi-part case
+        if(mimeInputStream.isMultiPart() && type.equalsIgnoreCase("multipart")) {
+            MessagePart part = MessagePartFactory.createMessagePart(type, subtype, null, null);
+            MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
+            for(int i=0;i<mimeSubparts.length;i++) {
+                MessagePart subPart = getMessagePart(mimeSubparts[i]);
+                if(subPart != null)
+                    ((MultiPart)part).addPart(subPart);
+            }
+            return part;
+        }
+        // Handle the single-part case
+        else {
+            byte[] buffer;
+            // Handle encoded binary data (should be more encoding-agnostic)
+            if(encoding.equalsIgnoreCase("base64") && mimeInputStream.isPartComplete()!=0) {
+                SharedInputStream sis = mimeInputStream.getRawMIMEInputStream();
+                buffer = StringParser.readWholeStream(sis);
+
+                int offset = 0;
+                while((offset+3 < buffer.length) &&
+                        !(buffer[offset]=='\r' && buffer[offset+1]=='\n' &&
+                        buffer[offset+2]=='\r' && buffer[offset+3]=='\n'))
+                    offset++;
+                int size = buffer.length - offset;
+                return MessagePartFactory.createMessagePart(type, subtype, encoding, new String(buffer, offset, size));
+            }
+            else {
+                int size = mimeInputStream.available();
+                buffer = new byte[mimeInputStream.available()];
+                buffer = StringParser.readWholeStream(mimeInputStream);
+                return MessagePartFactory.createMessagePart(type, subtype, encoding, new String(buffer));
+            }
+        }
     }
     
     /**
@@ -248,7 +216,7 @@ public class PopClient extends MailClient {
      * @return An array of lines containing the response
      */
     private String[] executeFollow(String command) throws IOException, MailException {
-        String result = execute(command);
+        execute(command);
             
         String buffer = connection.receive();
         String[] lines = new String[0];

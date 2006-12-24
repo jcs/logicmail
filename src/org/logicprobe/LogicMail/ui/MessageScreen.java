@@ -31,6 +31,7 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Vector;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
@@ -40,48 +41,44 @@ import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
-import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.controller.MessageController;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.Observable;
 
 /**
  * Display an E-Mail message
  */
 public class MessageScreen extends BaseScreen {
-    private MessageController _messageController;
-    private Message.Envelope _envelope;
-    private Field[] _msgFields;
+    private MessageController messageController;
+    private MessageEnvelope envelope;
+    private Vector msgFields;
     
     public MessageScreen(MessageController messageController)
     {
         super();
-        _messageController = messageController;
-        _messageController.addObserver(this);
-        _envelope = _messageController.getMsgEnvelope();
+        this.messageController = messageController;
+        this.messageController.addObserver(this);
+        envelope = this.messageController.getMsgEnvelope();
         
         // Create screen elements
-        if(_envelope.from != null && _envelope.from.length > 0) {
-            add(new RichTextField("From: " + _envelope.from[0]));
-            if(_envelope.from.length > 1)
-                for(int i=1;i<_envelope.from.length;i++)
-                    if(_envelope.from[i] != null)
-                        add(new RichTextField("      " + _envelope.from[i]));
+        if(envelope.from != null && envelope.from.length > 0) {
+            add(new RichTextField("From: " + envelope.from[0]));
+            if(envelope.from.length > 1)
+                for(int i=1;i<envelope.from.length;i++)
+                    if(envelope.from[i] != null)
+                        add(new RichTextField("      " + envelope.from[i]));
         }
-        if(_envelope.subject != null)
-            add(new RichTextField("Subject: " + _envelope.subject));
+        if(envelope.subject != null)
+            add(new RichTextField("Subject: " + envelope.subject));
         add(new SeparatorField());
-        _messageController.updateMessageStructure();
+        this.messageController.updateMessage();
     }
 
     public void update(Observable subject, Object arg) {
         super.update(subject, arg);
-        if(subject.equals(_messageController)) {
-            if(((String)arg).equals("structure")) {
-                if(_messageController.getMsgStructure() != null)
-                    _messageController.updateMessageFields();
-            }
-            else if(((String)arg).equals("fields")) {
-                _msgFields = _messageController.getMessageFields();
+        if(subject.equals(this.messageController)) {
+            if(((String)arg).equals("message")) {
+                msgFields = this.messageController.getMessageFields();
                 drawMessageFields();
             }
         }
@@ -89,10 +86,11 @@ public class MessageScreen extends BaseScreen {
 
     private void drawMessageFields() {
         synchronized(Application.getEventLock()) {
-            for(int i=0;i<_msgFields.length;i++) {
-                if(_msgFields[i] != null) 
-                    add(_msgFields[i]);
-                if(i != _msgFields.length-1)
+            int size = msgFields.size();
+            for(int i=0;i<size;++i) {
+                if(msgFields.elementAt(i) != null) 
+                    add((Field)msgFields.elementAt(i));
+                if(i != size-1)
                     add(new SeparatorField());
             }
         }
@@ -100,7 +98,7 @@ public class MessageScreen extends BaseScreen {
 
     private MenuItem propsItem = new MenuItem("Properties", 100, 10) {
         public void run() {
-            _messageController.showMsgProperties();
+            org.logicprobe.LogicMail.ui.MessageScreen.this.messageController.showMsgProperties();
         }
     };
     private MenuItem closeItem = new MenuItem("Close", 200000, 10) {

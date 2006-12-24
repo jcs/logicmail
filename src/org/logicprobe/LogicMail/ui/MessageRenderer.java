@@ -29,40 +29,47 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.message;
+package org.logicprobe.LogicMail.ui;
+
+import java.util.Vector;
+import net.rim.device.api.ui.component.BitmapField;
+import net.rim.device.api.ui.component.RichTextField;
+import org.logicprobe.LogicMail.message.ImagePart;
+import org.logicprobe.LogicMail.message.MessagePartVisitor;
+import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.message.UnsupportedPart;
 
 /**
- * Abstract representation of a message part
+ * This class implements a visitor that generates UI elements to display
+ * a message tree to the user.
  */
-public abstract class MessagePart {
-    private String mimeType;
-    private String mimeSubtype;
-
-    /** Creates a new instance of MessagePart */
-    protected MessagePart(String mimeType, String mimeSubtype) {
-        this.mimeType = mimeType;
-        this.mimeSubtype = mimeSubtype;
-    }
-
-    /**
-     * Accept a visitor on this message part.
-     * @param visitor The visitor instance
-     */
-    public abstract void accept(MessagePartVisitor visitor);
+public class MessageRenderer implements MessagePartVisitor {
+    private Vector messageFields;
     
-    /**
-     * Get the MIME type for this part
-     * @return The "type" part of "type/subtype"
-     */
-    public String getMimeType() {
-        return mimeType;
+    /** Creates a new instance of MessageRenderer */
+    public MessageRenderer() {
+        messageFields = new Vector();
     }
 
-    /**
-     * Get the MIME subtype for this part
-     * @return The "subtype" part of "type/subtype"
-     */
-    public String getMimeSubtype() {
-        return mimeSubtype;
+    public void visitMultiPart(MultiPart part) {
+        // MultiPart parts are invisible to the user
     }
+
+    public void visitTextPart(TextPart part) {
+        messageFields.addElement(new RichTextField(part.getText()));
+    }
+
+    public void visitImagePart(ImagePart part) {
+        messageFields.addElement(new BitmapField(part.getImage().getBitmap()));
+    }
+
+    public void visitUnsupportedPart(UnsupportedPart part) {
+        messageFields.addElement(new RichTextField("Unsupported type: "+part.getMimeType()+"/"+part.getMimeSubtype()));
+    }
+
+    public Vector getMessageFields() {
+        return messageFields;
+    }
+    
 }
