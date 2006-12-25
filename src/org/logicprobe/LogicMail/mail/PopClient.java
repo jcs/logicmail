@@ -170,10 +170,11 @@ public class PopClient implements MailClient {
         String type = mimeType.substring(0, mimeType.indexOf('/'));
         String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
         String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
+        String charset = mimeInputStream.getContentTypeParameter("charset");
         
         // Handle the multi-part case
         if(mimeInputStream.isMultiPart() && type.equalsIgnoreCase("multipart")) {
-            MessagePart part = MessagePartFactory.createMessagePart(type, subtype, null, null);
+            MessagePart part = MessagePartFactory.createMessagePart(type, subtype, null, null, null);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
             for(int i=0;i<mimeSubparts.length;i++) {
                 MessagePart subPart = getMessagePart(mimeSubparts[i]);
@@ -196,13 +197,13 @@ public class PopClient implements MailClient {
                         buffer[offset+2]=='\r' && buffer[offset+3]=='\n'))
                     offset++;
                 int size = buffer.length - offset;
-                return MessagePartFactory.createMessagePart(type, subtype, encoding, new String(buffer, offset, size));
+                return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer, offset, size));
             }
             else {
                 int size = mimeInputStream.available();
                 buffer = new byte[mimeInputStream.available()];
                 buffer = StringParser.readWholeStream(mimeInputStream);
-                return MessagePartFactory.createMessagePart(type, subtype, encoding, new String(buffer));
+                return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer));
             }
         }
     }

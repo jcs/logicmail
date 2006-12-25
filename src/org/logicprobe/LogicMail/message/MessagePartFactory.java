@@ -31,8 +31,10 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.IOException;
 import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.system.EncodedImage;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Creates message parts, doing the necessary decoding.
@@ -43,17 +45,19 @@ public class MessagePartFactory {
      * @param mimeType MIME type
      * @param mimeSubType MIME subtype
      * @param encoding Encoding type (i.e. 7bit, base64)
+     * @param param Type-specific parameter (i.e. charset, filename)
      * @param data Actual text data for the section
      */
     public static MessagePart createMessagePart(String mimeType,
                                                 String mimeSubtype,
                                                 String encoding,
+                                                String param,
                                                 String data)
     {
         if(mimeType.equalsIgnoreCase("multipart"))
             return createMultiPart(mimeSubtype);
         else if(mimeType.equalsIgnoreCase("text"))
-            return createTextPart(mimeSubtype, data);
+            return createTextPart(mimeSubtype, encoding, param, data);
         else if(mimeType.equalsIgnoreCase("image"))
             return createImagePart(mimeSubtype, encoding, data);
         else
@@ -88,7 +92,20 @@ public class MessagePartFactory {
         return new MultiPart(mimeSubtype);
     }
     
-    private static MessagePart createTextPart(String mimeSubtype, String data) {
+    private static MessagePart createTextPart(String mimeSubtype, String encoding, String charset, String data) {
+        // Check for any encodings that need to be handled
+        if(encoding.equalsIgnoreCase("quoted-printable")) {
+            data = StringParser.decodeQuotedPrintable(data);
+        }
+        else if(encoding.equalsIgnoreCase("base64")) {
+            try {
+                byte[] textBytes = Base64InputStream.decode(data);
+                data = new String(textBytes, StringParser.parseValidCharsetString(charset));
+            }
+            catch (IOException exp) {
+                return createUnsupportedPart("text", mimeSubtype, data);
+            }
+        }
         // Check for a supported text sub-type and decode if necessary
         if(mimeSubtype.equalsIgnoreCase("plain")) {
             return new TextPart(mimeSubtype, data);

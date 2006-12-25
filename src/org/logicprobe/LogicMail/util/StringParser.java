@@ -300,4 +300,28 @@ public class StringParser {
         }
         return bos.toByteArray();
     }
+    
+    /**
+     * Decode a quoted-printable string
+     */
+    public static String decodeQuotedPrintable(String text) {
+        StringBuffer buffer = new StringBuffer();
+        int index = 0;
+        int length = text.length();
+        while(index < length) {
+            if(text.charAt(index) == '=') {
+                if(index+2 >= length) break;
+                try {
+                    int charVal = Integer.parseInt(text.substring(index+1, index+3), 16);
+                    buffer.append((char)charVal);
+                } catch (NumberFormatException exp) { }
+                index += 3;
+            }
+            else {
+                buffer.append(text.charAt(index));
+                index++;
+            }
+        }
+        return buffer.toString();
+    }
 }

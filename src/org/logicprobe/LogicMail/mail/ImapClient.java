@@ -257,7 +257,7 @@ public class ImapClient implements MailClient {
                     return null;
                 }
             }
-            part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, data);
+            part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, structure.charset, data);
         }
         else
             part = null;
