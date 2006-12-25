@@ -135,7 +135,7 @@ public class MailboxController extends Controller implements Observable {
                 try {
                     client.setActiveFolder(_folderItem);
                     int firstIndex = _folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
-                    if(firstIndex < 0) firstIndex = 0;
+                    if(firstIndex < 0) firstIndex = 1;
                     folderMessages = client.getFolderMessages(firstIndex, _folderItem.getMsgCount());
                 } catch (MailException exp) {
                     folderMessages = null;

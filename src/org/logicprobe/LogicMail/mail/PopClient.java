@@ -126,7 +126,7 @@ public class PopClient implements MailClient {
     }
 
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
-        FolderMessage[] folderMessages = new FolderMessage[lastIndex - firstIndex];
+        FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
         int index = 0;
         String[] headerText;
         MessageEnvelope env;

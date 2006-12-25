@@ -80,11 +80,16 @@ public class MessageController extends Controller implements Observable {
 
                 // Download the message
                 Message msg = client.getMessage(folderMessage);
-                
+
                 // Prepare the UI elements
-                MessageRenderer msgRenderer = new MessageRenderer();
-                msg.getBody().accept(msgRenderer);
-                MessageController.this.msgFields = msgRenderer.getMessageFields();
+                if(msg.getBody() != null) {
+                    MessageRenderer msgRenderer = new MessageRenderer();
+                    msg.getBody().accept(msgRenderer);
+                    MessageController.this.msgFields = msgRenderer.getMessageFields();
+                }
+                else {
+                    MessageController.this.msgFields = null;
+                }
                 
                 notifyObservers("message");
             }

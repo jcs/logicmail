@@ -85,6 +85,7 @@ public class MessageScreen extends BaseScreen {
     }
 
     private void drawMessageFields() {
+        if(msgFields == null) return;
         synchronized(Application.getEventLock()) {
             int size = msgFields.size();
             for(int i=0;i<size;++i) {
