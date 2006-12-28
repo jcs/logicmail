@@ -90,46 +90,6 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             return false;
     }
 
-    private boolean checkClose() {
-        // Prompt before closing the connection
-        if(client.isConnected()) {
-            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
-                try { client.close(); } catch (Exception exp) { }
-                return true;
-            }
-            else
-                return false;
-        }
-        else {
-            return true;
-        }
-    }
-
-    
-    /**
-     * Kick off the folder tree refresh process
-     */
-    public void refreshFolderTree() {
-        // Initialize the handler on demand
-        if(refreshFolderTreeHandler == null) {
-            refreshFolderTreeHandler = new RefreshFolderTreeHandler();
-            refreshFolderTreeHandler.setMailClientListener(this);
-        }
-        
-        // Start the background process
-        refreshFolderTreeHandler.start();
-    }
-
-    private void openSelectedFolder() {
-    	if(treeField == null) return;
-        int curNode = treeField.getCurrentNode();
-        if(curNode == -1) return;
-        Object cookie = treeField.getCookie(curNode);
-        if(cookie instanceof FolderTreeItem) {
-            UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, (FolderTreeItem)cookie));
-        }
-    }
-    
     private MenuItem folderItem = new MenuItem("Select", 100, 10) {
         public void run() {
             openSelectedFolder();
@@ -174,6 +134,44 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
                 break;
         }
         return retval;
+    }
+    private boolean checkClose() {
+        // Prompt before closing the connection
+        if(client.isConnected()) {
+            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
+                try { client.close(); } catch (Exception exp) { }
+                return true;
+            }
+            else
+                return false;
+        }
+        else {
+            return true;
+        }
+    }
+    
+    /**
+     * Kick off the folder tree refresh process
+     */
+    public void refreshFolderTree() {
+        // Initialize the handler on demand
+        if(refreshFolderTreeHandler == null) {
+            refreshFolderTreeHandler = new RefreshFolderTreeHandler();
+            refreshFolderTreeHandler.setMailClientListener(this);
+        }
+        
+        // Start the background process
+        refreshFolderTreeHandler.start();
+    }
+
+    private void openSelectedFolder() {
+    	if(treeField == null) return;
+        int curNode = treeField.getCurrentNode();
+        if(curNode == -1) return;
+        Object cookie = treeField.getCookie(curNode);
+        if(cookie instanceof FolderTreeItem) {
+            UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, (FolderTreeItem)cookie));
+        }
     }
     
     private synchronized void generateFolderTree(FolderTreeItem folderRoot) {

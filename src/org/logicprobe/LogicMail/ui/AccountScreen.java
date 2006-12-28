@@ -96,34 +96,6 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         }
     };
 
-    private void addAccount() {
-        AccountConfig acctConfig = new AccountConfig();
-        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
-        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-        if(acctCfgScreen.acctSaved()) {
-            mailSettings.addAccountConfig(acctConfig);
-            mailSettings.saveSettings();
-        }
-    }
-
-    private void editAccount(int index) {
-        if(index == -1) return;
-        AccountConfig acctConfig = mailSettings.getAccountConfig(index);
-        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
-        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-        if(acctCfgScreen.acctSaved()) {
-            mailSettings.saveSettings();
-        }
-    }
-    
-    private void deleteAccount(int index) {
-        if(index == -1) return;
-        int response = Dialog.ask(Dialog.D_DELETE);
-        if(response == Dialog.DELETE) {
-            mailSettings.removeAccountConfig(index);
-            mailSettings.saveSettings();
-        }            
-    }
 
     protected void makeMenu(Menu menu, int instance) {
         if(mailSettings.getNumAccounts() > 0) {
@@ -182,6 +154,38 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
                 break;
         }
         return retval;
+    }
+
+    private void addAccount() {
+        AccountConfig acctConfig = new AccountConfig();
+        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
+        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
+        if(acctCfgScreen.acctSaved()) {
+            mailSettings.addAccountConfig(acctConfig);
+            mailSettings.saveSettings();
+        }
+        updateAccountList();
+    }
+
+    private void editAccount(int index) {
+        if(index == -1) return;
+        AccountConfig acctConfig = mailSettings.getAccountConfig(index);
+        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
+        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
+        if(acctCfgScreen.acctSaved()) {
+            mailSettings.saveSettings();
+        }
+        updateAccountList();
+    }
+    
+    private void deleteAccount(int index) {
+        if(index == -1) return;
+        int response = Dialog.ask(Dialog.D_DELETE);
+        if(response == Dialog.DELETE) {
+            mailSettings.removeAccountConfig(index);
+            mailSettings.saveSettings();
+        }            
+        updateAccountList();
     }
 
     private void updateAccountList() {
