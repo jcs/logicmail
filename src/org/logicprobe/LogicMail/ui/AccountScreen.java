@@ -34,13 +34,15 @@ package org.logicprobe.LogicMail.ui;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.controller.MailboxController;
-import org.logicprobe.LogicMail.util.Observable;
+import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.MailClientFactory;
 
 /**
  * Provide a list of accounts for the user
@@ -48,20 +50,20 @@ import org.logicprobe.LogicMail.util.Observable;
  * be the main screen for the program.
  */
 public class AccountScreen extends BaseScreen implements ListFieldCallback {
-    private MailSettings _mailSettings;
-    private ListField _accountList;
+    private MailSettings mailSettings;
+    private ListField accountList;
 
     public AccountScreen() {
         super("Accounts");
         
-        _mailSettings = MailSettings.getInstance();
+        mailSettings = MailSettings.getInstance();
         
-        _accountList = new ListField();
-        _accountList.setEmptyString("No accounts", 0);
-        _accountList.setCallback(this);
-        for(int i=0;i<_mailSettings.getNumAccounts();i++)
-            _accountList.insert(i);
-        add(_accountList);
+        accountList = new ListField();
+        accountList.setEmptyString("No accounts", 0);
+        accountList.setCallback(this);
+        for(int i=0;i<mailSettings.getNumAccounts();i++)
+            accountList.insert(i);
+        add(accountList);
         
     }
 
@@ -72,36 +74,65 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     // menu items
     private MenuItem selectAcctItem = new MenuItem("Select account", 100, 10) {
         public void run() {
-            selectAccount(_accountList.getSelectedIndex());
+            selectAccount(accountList.getSelectedIndex());
         }
     };
 
     private MenuItem editAcctItem = new MenuItem("Edit account", 110, 10) {
         public void run() {
-            _configController.editAccount(_accountList.getSelectedIndex());
+            editAccount(accountList.getSelectedIndex());
         }
     };
 
     private MenuItem addAcctItem = new MenuItem("Add account", 120, 10) {
         public void run() {
-            _configController.addAccount();
+            addAccount();
         }
     };
 
     private MenuItem deleteAcctItem = new MenuItem("Delete account", 130, 10) {
         public void run() {
-            _configController.deleteAccount(_accountList.getSelectedIndex());
+            deleteAccount(accountList.getSelectedIndex());
         }
     };
 
+    private void addAccount() {
+        AccountConfig acctConfig = new AccountConfig();
+        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
+        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
+        if(acctCfgScreen.acctSaved()) {
+            mailSettings.addAccountConfig(acctConfig);
+            mailSettings.saveSettings();
+        }
+    }
+
+    private void editAccount(int index) {
+        if(index == -1) return;
+        AccountConfig acctConfig = mailSettings.getAccountConfig(index);
+        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
+        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
+        if(acctCfgScreen.acctSaved()) {
+            mailSettings.saveSettings();
+        }
+    }
+    
+    private void deleteAccount(int index) {
+        if(index == -1) return;
+        int response = Dialog.ask(Dialog.D_DELETE);
+        if(response == Dialog.DELETE) {
+            mailSettings.removeAccountConfig(index);
+            mailSettings.saveSettings();
+        }            
+    }
+
     protected void makeMenu(Menu menu, int instance) {
-        if(_mailSettings.getNumAccounts() > 0) {
+        if(mailSettings.getNumAccounts() > 0) {
             menu.add(selectAcctItem);
             menu.addSeparator();
             menu.add(editAcctItem);
         }
         menu.add(addAcctItem);
-        if(_mailSettings.getNumAccounts() > 0) {
+        if(mailSettings.getNumAccounts() > 0) {
             menu.add(deleteAcctItem);
         }
         super.makeMenu(menu, instance);
@@ -112,10 +143,10 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
                             int index,
                             int y, int w)
     {
-        String text = _mailSettings.getAccountConfig(index).getAcctName();
-        if(_mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_POP)
+        String text = mailSettings.getAccountConfig(index).getAcctName();
+        if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_POP)
             text = text.concat(" (POP)");
-        else if(_mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_IMAP)
+        else if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_IMAP)
             text = text.concat(" (IMAP)");
             
         // In the future, consider icons or font size changes
@@ -129,7 +160,7 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     }
     
     public Object get(ListField listField, int index) {
-        return (Object)_mailSettings.getAccountConfig(index);
+        return (Object)mailSettings.getAccountConfig(index);
     }
     
     public int indexOfList(ListField listField,
@@ -146,41 +177,43 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         boolean retval = false;
         switch(key) {
             case Keypad.KEY_ENTER:
-                selectAccount(_accountList.getSelectedIndex());
+                selectAccount(accountList.getSelectedIndex());
                 retval = true;
                 break;
         }
         return retval;
     }
 
-    public void update(Observable subject, Object arg) {
-        super.update(subject, arg);
-        if(subject.equals(_configController)) {
-            if(((String)arg).equals("accounts")) {
-                int numAcct = _mailSettings.getNumAccounts();
-                int selItem = _accountList.getSelectedIndex();
+    private void updateAccountList() {
+        int numAcct = mailSettings.getNumAccounts();
+        int selItem = accountList.getSelectedIndex();
 
-                while(_accountList.getSize() > 0)
-                    _accountList.delete(0);
-                
-                for(int i=0;i<numAcct;i++)
-                    _accountList.insert(i);
-                
-                if(selItem > numAcct)
-                    selItem = numAcct;
-                _accountList.setSelectedIndex(selItem);
-            }
-        }
+        while(accountList.getSize() > 0)
+            accountList.delete(0);
+
+        for(int i=0;i<numAcct;i++)
+            accountList.insert(i);
+
+        if(selItem > numAcct)
+            selItem = numAcct;
+        accountList.setSelectedIndex(selItem);
     }
     
     /**
      * Open the selected account.
-     * If the account is IMAP, then we go to the folder tree.
-     * If the account is POP, then go straight to the inbox.
+     * If the account supports folders, then we go to the folder tree.
+     * Otherwise, go straight to the inbox.
      */
     private void selectAccount(int index) {
-        AccountConfig acctConfig = _mailSettings.getAccountConfig(index);
+        AccountConfig acctConfig = mailSettings.getAccountConfig(index);
         if(acctConfig == null) return;
-        MailboxController.getInstance().openAccount(acctConfig);
+
+        MailClient client = MailClientFactory.createMailClient(acctConfig);
+        if(client.hasFolders()) {
+            UiApplication.getUiApplication().pushScreen(new FolderScreen(client));
+        }
+        else {
+            UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, client.getActiveFolder()));
+        }
     }
 }

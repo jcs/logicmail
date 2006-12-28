@@ -45,125 +45,125 @@ public class AccountConfig implements Serializable {
     public static int TYPE_POP = 0;
     public static int TYPE_IMAP = 1;
     
-    private String _acctName;
-    private String _serverName;
-    private int _serverType;
-    private boolean _serverSSL;
-    private String _serverUser;
-    private String _serverPass;
-    private int _serverPort;
-    private boolean _deviceSide;
+    private String acctName;
+    private String serverName;
+    private int serverType;
+    private boolean serverSSL;
+    private String serverUser;
+    private String serverPass;
+    private int serverPort;
+    private boolean deviceSide;
 
     public AccountConfig() {
-        _acctName = "";
-        _serverName = "";
-        _serverType = TYPE_POP;
-        _serverSSL = false;
-        _serverUser = "";
-        _serverPass = "";
-        _serverPort = 110;
-        _deviceSide = false;
+        acctName = "";
+        serverName = "";
+        serverType = TYPE_POP;
+        serverSSL = false;
+        serverUser = "";
+        serverPass = "";
+        serverPort = 110;
+        deviceSide = false;
     }
     
     public AccountConfig(DataInputStream input) {
         try {
             deserialize(input);
         } catch (IOException ex) {
-            _acctName = "";
-            _serverName = "";
-            _serverType = TYPE_POP;
-            _serverSSL = false;
-            _serverUser = "";
-            _serverPass = "";
-            _serverPort = 110;
-            _deviceSide = false;
+            acctName = "";
+            serverName = "";
+            serverType = TYPE_POP;
+            serverSSL = false;
+            serverUser = "";
+            serverPass = "";
+            serverPort = 110;
+            deviceSide = false;
         }
     }
 
     public String getAcctName() {
-        return _acctName;
+        return acctName;
     }
     
     public void setAcctName(String acctName) {
-        _acctName = acctName;
+        this.acctName = acctName;
     }
     
     public String getServerName() {
-        return _serverName;
+        return serverName;
     }
     
     public void setServerName(String serverName) {
-        _serverName = serverName;
+        this.serverName = serverName;
     }
     
     public int getServerType() {
-        return _serverType;
+        return serverType;
     }
     
     public void setServerType(int serverType) {
-        _serverType = serverType;
+        this.serverType = serverType;
     }
     
     public boolean getServerSSL() {
-        return _serverSSL;
+        return serverSSL;
     }
     
     public void setServerSSL(boolean serverSSL) {
-        _serverSSL = serverSSL;
+        this.serverSSL = serverSSL;
     }
 
     public int getServerPort() {
-        return _serverPort;
+        return serverPort;
     }
 
     public void setServerPort(int serverPort) {
-        _serverPort = serverPort;
+        this.serverPort = serverPort;
     }
     
     public String getServerUser() {
-        return _serverUser;
+        return serverUser;
     }
     
     public void setServerUser(String serverUser) {
-        _serverUser = serverUser;
+        this.serverUser = serverUser;
     }
     
     public String getServerPass() {
-        return _serverPass;
+        return serverPass;
     }
     
     public void setServerPass(String serverPass) {
-        _serverPass = serverPass;
+        this.serverPass = serverPass;
     }
 
     public boolean getDeviceSide() {
-        return _deviceSide;
+        return deviceSide;
     }
     
     public void setDeviceSide(boolean deviceSide) {
-        _deviceSide = deviceSide;
+        this.deviceSide = deviceSide;
     }
 
     public void serialize(DataOutputStream output) throws IOException {
-        output.writeUTF(_acctName);
-        output.writeUTF(_serverName);
-        output.writeInt(_serverType);
-        output.writeBoolean(_serverSSL);
-        output.writeUTF(_serverUser);
-        output.writeUTF(_serverPass);
-        output.writeInt(_serverPort);
-        output.writeBoolean(_deviceSide);
+        output.writeUTF(acctName);
+        output.writeUTF(serverName);
+        output.writeInt(serverType);
+        output.writeBoolean(serverSSL);
+        output.writeUTF(serverUser);
+        output.writeUTF(serverPass);
+        output.writeInt(serverPort);
+        output.writeBoolean(deviceSide);
     }
 
     public void deserialize(DataInputStream input) throws IOException {
-        _acctName = input.readUTF();
-        _serverName = input.readUTF();
-        _serverType = input.readInt();
-        _serverSSL = input.readBoolean();
-        _serverUser = input.readUTF();
-        _serverPass = input.readUTF();
-        _serverPort = input.readInt();
-        _deviceSide = input.readBoolean();
+        acctName = input.readUTF();
+        serverName = input.readUTF();
+        serverType = input.readInt();
+        serverSSL = input.readBoolean();
+        serverUser = input.readUTF();
+        serverPass = input.readUTF();
+        serverPort = input.readInt();
+        deviceSide = input.readBoolean();
     }
 }
 

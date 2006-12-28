@@ -31,12 +31,13 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import java.util.Vector;
+import java.io.IOException;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
@@ -44,23 +45,20 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.cache.AccountCache;
-import org.logicprobe.LogicMail.controller.MailboxController;
-import org.logicprobe.LogicMail.util.Observable;
+import org.logicprobe.LogicMail.mail.MailException;
 
 /**
  * Mail folder listing
  * (may only be available with IMAP)
  */
-public class FolderScreen extends BaseScreen implements TreeFieldCallback {
+public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailClientListener {
     private TreeField treeField;
     private MailClient client;
-    private MailboxController mailboxController;
+    private RefreshFolderTreeHandler refreshFolderTreeHandler;
     
     public FolderScreen(MailClient client) {
         super("Folders");
         this.client = client;
-        mailboxController = MailboxController.getInstance();
-        mailboxController.addObserver(this);
 
         treeField = new TreeField(this, Field.FOCUSABLE);
         treeField.setEmptyString("No folders", 0);
@@ -76,7 +74,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         if(treeRoot != null && treeRoot.hasChildren())
             generateFolderTree(treeRoot);
         else
-            mailboxController.refreshFolderTree();
+            refreshFolderTree();
     }
 
     protected boolean onSavePrompt() {
@@ -84,12 +82,42 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
     }
 
     public boolean onClose() {
-        if(mailboxController.checkClose()) {
+        if(checkClose()) {
             close();
             return true;
         }
         else
             return false;
+    }
+
+    private boolean checkClose() {
+        // Prompt before closing the connection
+        if(client.isConnected()) {
+            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
+                try { client.close(); } catch (Exception exp) { }
+                return true;
+            }
+            else
+                return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    
+    /**
+     * Kick off the folder tree refresh process
+     */
+    public void refreshFolderTree() {
+        // Initialize the handler on demand
+        if(refreshFolderTreeHandler == null) {
+            refreshFolderTreeHandler = new RefreshFolderTreeHandler();
+            refreshFolderTreeHandler.setMailClientListener(this);
+        }
+        
+        // Start the background process
+        refreshFolderTreeHandler.start();
     }
 
     private void openSelectedFolder() {
@@ -98,7 +126,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         if(curNode == -1) return;
         Object cookie = treeField.getCookie(curNode);
         if(cookie instanceof FolderTreeItem) {
-            mailboxController.openFolder((FolderTreeItem)cookie);
+            UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, (FolderTreeItem)cookie));
         }
     }
     
@@ -110,7 +138,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
 
     private MenuItem refreshItem = new MenuItem("Refresh", 110, 10) {
         public void run() {
-            mailboxController.refreshFolderTree();
+            refreshFolderTree();
         }
     };
 
@@ -163,14 +191,46 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback {
         }
     }
     
-    public void update(Observable subject, Object arg) {
-        super.update(subject, arg);
-        if(subject.equals(mailboxController)) {
-            if(((String)arg).equals("folders")) {
+    public void mailActionComplete(MailClientHandler source, boolean result) {
+        if(source.equals(refreshFolderTreeHandler)) {
+            if(refreshFolderTreeHandler.getFolderRoot() != null) {
                 synchronized(Application.getEventLock()) {
-                    generateFolderTree(mailboxController.getFolderRoot());
+                    generateFolderTree(refreshFolderTreeHandler.getFolderRoot());
                 }
             }
         }
     }
+
+    /**
+     * Implements the folder tree refresh action
+     */
+    private class RefreshFolderTreeHandler extends MailClientHandler {
+        private FolderTreeItem folderRoot;
+        public RefreshFolderTreeHandler() {
+            super(FolderScreen.this.client, "Refreshing folder tree");
+        }
+        public void runSession() throws IOException, MailException {
+            // Open a connection to the IMAP server, and retrieve
+            // the folder tree as a list of delimited items
+            FolderTreeItem folderItem;
+            try {
+                folderItem = client.getFolderTree();
+            } catch (MailException exp) {
+                folderItem = null;
+                throw exp;
+            }
+
+            // Save the results to the cache
+            AccountCache acctCache =
+                new AccountCache(client.getAcctConfig().getAcctName());
+            acctCache.saveFolderTree(folderItem);
+
+            this.folderRoot = folderItem;
+        }
+
+        public FolderTreeItem getFolderRoot() {
+            return folderRoot;
+        }
+    }
+
 }

@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.io.IOException;
 import java.util.Calendar;
-import java.util.Vector;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.i18n.SimpleDateFormat;
@@ -41,6 +41,8 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
@@ -48,23 +50,22 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailClient;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.controller.MailboxController;
+import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.util.Observable;
 
 /**
  * Display the active mailbox listing
  */
-public class MailboxScreen extends BaseScreen implements ListFieldCallback {
+public class MailboxScreen extends BaseScreen implements ListFieldCallback, MailClientListener {
     private FolderMessage[] messages;
     private Bitmap bmapOpened;
     private Bitmap bmapUnopened;
     private ListField msgList;
     
     private MailSettings mailSettings;
-    private MailboxController mailboxController;
     private FolderTreeItem folderItem;
+    private MailClient client;
+    private RefreshMessageListHandler refreshMessageListHandler;
     
     // Things to calculate in advance
     private static int lineHeight;
@@ -75,9 +76,8 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     public MailboxScreen(MailClient client, FolderTreeItem folderItem) {
         super(folderItem.getName());
         mailSettings = MailSettings.getInstance();
-        mailboxController = MailboxController.getInstance();
-        mailboxController.addObserver(this);
         this.folderItem = folderItem;
+        this.client = client;
 
         bmapOpened = Bitmap.getBitmapResource("mail_opened.png");
         bmapUnopened = Bitmap.getBitmapResource("mail_unopened.png");
@@ -96,7 +96,18 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
 
-        if(client != null) mailboxController.refreshMessageList(folderItem);
+        if(client != null) refreshMessageList();
+    }
+
+    private void refreshMessageList() {
+        // Initialize the handler on demand
+        if(refreshMessageListHandler == null) {
+            refreshMessageListHandler = new RefreshMessageListHandler(folderItem);
+            refreshMessageListHandler.setMailClientListener(this);
+        }
+
+        // Start the background process
+        refreshMessageListHandler.start();
     }
 
     protected boolean onSavePrompt() {
@@ -104,12 +115,33 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     }
 
     public boolean onClose() {
-        if(mailboxController.checkClose()) {
+        if(checkClose()) {
             close();
             return true;
         }
         else
             return false;
+    }
+
+    private boolean checkClose() {
+        // Immediately close without prompting if we are
+        // using a protocol that supports folders.
+        if(client.hasFolders())
+            return true;
+        
+        // Otherwise we are on the main screen for the account, so prompt
+        // before closing the connection
+        if(client.isConnected()) {
+            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
+                try { client.close(); } catch (Exception exp) { }
+                return true;
+            }
+            else
+                return false;
+        }
+        else {
+            return true;
+        }
     }
 
     private MenuItem selectItem = new MenuItem("Select", 100, 10) {
@@ -121,33 +153,6 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
     protected void makeMenu(Menu menu, int instance) {
         menu.add(selectItem);
         super.makeMenu(menu, instance);
-    }
-
-    public void update(Observable subject, Object arg) {
-        super.update(subject, arg);
-        if(subject.equals(mailboxController)) {
-            if(((String)arg).equals("messages")) {
-                FolderMessage[] folderMessages = mailboxController.getFolderMessages();
-                synchronized(Application.getEventLock()) {
-                    if(mailSettings.getGlobalConfig().getDispOrder()) {
-                        messages = folderMessages;
-                    }
-                    else {
-                        messages = new FolderMessage[folderMessages.length];
-                        int j = 0;
-                        for(int i=folderMessages.length-1;i>=0;i--)
-                            messages[j++] = folderMessages[i];
-                    }
-                    int size = msgList.getSize();
-                    for(int i=0;i<size;i++)
-                        msgList.delete(0);
-                    for(int i=0;i<messages.length;i++)
-                        msgList.insert(i);
-
-                    msgList.setDirty(true);
-                }
-            }
-        }
     }
     
     /**
@@ -238,7 +243,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
         int index = msgList.getSelectedIndex();
         if(index < 0 || index > messages.length) return;
         
-        mailboxController.openMessage(folderItem, messages[index]);
+        UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, messages[index]));
     }
 
     public boolean keyChar(char key,
@@ -253,6 +258,63 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback {
                 break;
         }
         return retval;
+    }
+
+    public void mailActionComplete(MailClientHandler source, boolean result) {
+        if(source.equals(refreshMessageListHandler)) {
+            if(refreshMessageListHandler.getFolderMessages() != null) {
+                FolderMessage[] folderMessages = refreshMessageListHandler.getFolderMessages();
+                synchronized(Application.getEventLock()) {
+                    if(mailSettings.getGlobalConfig().getDispOrder()) {
+                        messages = folderMessages;
+                    }
+                    else {
+                        messages = new FolderMessage[folderMessages.length];
+                        int j = 0;
+                        for(int i=folderMessages.length-1;i>=0;i--)
+                            messages[j++] = folderMessages[i];
+                    }
+                    int size = msgList.getSize();
+                    for(int i=0;i<size;i++)
+                        msgList.delete(0);
+                    for(int i=0;i<messages.length;i++)
+                        msgList.insert(i);
+
+                    msgList.setDirty(true);
+                }
+            }
+        }
+    }
+
+    /**
+     * Implements the message list refresh action
+     */
+    private class RefreshMessageListHandler extends MailClientHandler {
+        private FolderTreeItem folderItem;
+        private FolderMessage[] folderMessages;
+        
+        public RefreshMessageListHandler(FolderTreeItem folderItem) {
+            super(MailboxScreen.this.client, "Retrieving message list");
+            this.folderItem = folderItem;
+        }
+
+        public void runSession() throws IOException, MailException {
+            FolderMessage[] folderMessages;
+            try {
+                client.setActiveFolder(folderItem);
+                int firstIndex = folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
+                if(firstIndex < 0) firstIndex = 1;
+                folderMessages = client.getFolderMessages(firstIndex, folderItem.getMsgCount());
+            } catch (MailException exp) {
+                folderMessages = null;
+                throw exp;
+            }
+            this.folderMessages = folderMessages;
+        }
+        
+        public FolderMessage[] getFolderMessages() {
+            return folderMessages;
+        }
     }
     
 }

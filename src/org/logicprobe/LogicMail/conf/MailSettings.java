@@ -44,39 +44,39 @@ import javax.microedition.rms.*;
  * configuration, along with a front-end to the Record Store
  */
 public class MailSettings {
-    private static MailSettings _instance;
-    private GlobalConfig _globalConfig;
-    private Vector _accountConfigs;
+    private static MailSettings instance;
+    private GlobalConfig globalConfig;
+    private Vector accountConfigs;
     
     private MailSettings() {
-        _globalConfig = new GlobalConfig();
-        _accountConfigs = new Vector();
+        globalConfig = new GlobalConfig();
+        accountConfigs = new Vector();
     }
     
     public static synchronized MailSettings getInstance() {
-        if(_instance == null)
-            _instance = new MailSettings();
-        return _instance;
+        if(instance == null)
+            instance = new MailSettings();
+        return instance;
     }
     
     public GlobalConfig getGlobalConfig() {
-        return _globalConfig;
+        return globalConfig;
     }
     
     public int getNumAccounts() {
-        return _accountConfigs.size();
+        return accountConfigs.size();
     }
     
     public AccountConfig getAccountConfig(int index) {
-        return (AccountConfig)_accountConfigs.elementAt(index);
+        return (AccountConfig)accountConfigs.elementAt(index);
     }
     
     public void addAccountConfig(AccountConfig accountConfig) {
-        _accountConfigs.addElement(accountConfig);
+        accountConfigs.addElement(accountConfig);
     }
     
     public void removeAccountConfig(int index) {
-        _accountConfigs.removeElementAt(index);
+        accountConfigs.removeElementAt(index);
     }
     
     public void saveSettings() {
@@ -92,18 +92,18 @@ public class MailSettings {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             DataOutputStream output = new DataOutputStream(buffer);
             try {
-                _globalConfig.serialize(output);
+                globalConfig.serialize(output);
             } catch (IOException ex) {
                 // do nothing
             }
             byte[] byteArray = buffer.toByteArray();
             store.addRecord(byteArray, 0, byteArray.length);
         
-            for(int i=0;i<_accountConfigs.size();i++) {
+            for(int i=0;i<accountConfigs.size();i++) {
                 buffer = new ByteArrayOutputStream();
                 output = new DataOutputStream(buffer);
                 try {
-                    ((AccountConfig)_accountConfigs.elementAt(i)).serialize(output);
+                    ((AccountConfig)accountConfigs.elementAt(i)).serialize(output);
                 } catch (IOException ex) {
                     // do nothing
                 }
@@ -122,7 +122,7 @@ public class MailSettings {
     }
     
     public void loadSettings() {
-        _accountConfigs.removeAllElements();
+        accountConfigs.removeAllElements();
         RecordStore store = null;
         try {
             store = RecordStore.openRecordStore("LogicMail_config", false);
@@ -133,16 +133,16 @@ public class MailSettings {
                 ByteArrayInputStream buffer = new ByteArrayInputStream(store.getRecord(1));
                 DataInputStream input = new DataInputStream(buffer);
                 try {
-                    _globalConfig.deserialize(input);
+                    globalConfig.deserialize(input);
                 } catch (IOException ex) {
-                    _globalConfig = new GlobalConfig();
+                    globalConfig = new GlobalConfig();
                 }
             
                 if(records > 1) {
                     for(int i=2;i<=store.getNumRecords();i++) {
                         buffer = new ByteArrayInputStream(store.getRecord(i));
                         input = new DataInputStream(buffer);
-                        _accountConfigs.addElement(new AccountConfig(input));
+                        accountConfigs.addElement(new AccountConfig(input));
                     }
                 }
             }

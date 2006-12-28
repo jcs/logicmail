@@ -33,23 +33,19 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.system.KeyListener;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
 import org.logicprobe.LogicMail.LogicMail;
-import org.logicprobe.LogicMail.controller.ConfigController;
-import org.logicprobe.LogicMail.util.Observable;
-import org.logicprobe.LogicMail.util.Observer;
 
 /**
  * This class is the base for all screens in LogicMail.
  * Its purpose is to provide uniform menu and event
  * handler interfaces across the application.
  */
-public abstract class BaseScreen extends MainScreen implements Observer, KeyListener {
-    protected ConfigController _configController;
-    
+public abstract class BaseScreen extends MainScreen implements KeyListener {
     public BaseScreen() {
         super();
     }
@@ -60,14 +56,12 @@ public abstract class BaseScreen extends MainScreen implements Observer, KeyList
         LabelField titleField = new LabelField
          ("LogicMail - "+title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleField);
-        _configController = ConfigController.getInstance();
-        _configController.addObserver(this);
     }
 
     // Create menu items
     private MenuItem configItem = new MenuItem("Config", 10020, 10) {
         public void run() {
-            _configController.configGlobal();
+            configGlobal();
         }
     };
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
@@ -89,6 +83,10 @@ public abstract class BaseScreen extends MainScreen implements Observer, KeyList
         }
     };
 
+    private void configGlobal() {
+        UiApplication.getUiApplication().pushModalScreen(new ConfigScreen());
+    }
+    
     protected void makeMenu(Menu menu, int instance) {
         menu.addSeparator();
         menu.add(configItem);
@@ -106,17 +104,6 @@ public abstract class BaseScreen extends MainScreen implements Observer, KeyList
         return true;
     }
 
-    /**
-     * Called when we are notified of something.
-     * Since this can only usefully notify a
-     * global configuration change, considering
-     * what we trigger from this abstract class,
-     * this method will be empty by default.
-     */
-    public void update(Observable subject, Object arg) {
-        // do nothing
-    }
-    
     // KeyListener methods
     public boolean keyChar(char key, int status, int time) {
         return false;

@@ -31,8 +31,12 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.*;
-import net.rim.device.api.ui.component.*;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.component.BasicEditField;
+import net.rim.device.api.ui.component.ButtonField;
+import net.rim.device.api.ui.component.ObjectChoiceField;
+import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -41,7 +45,7 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
  * Configuration screen
  */
 public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
-    private MailSettings _mailSettings;
+    private MailSettings mailSettings;
     private BasicEditField fldFullname;
     private BasicEditField fldRetMsgCount;
     private ObjectChoiceField fldDispOrder;
@@ -54,8 +58,8 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     public ConfigScreen() {
         super("LogicMail - Config");
 
-        _mailSettings = MailSettings.getInstance();
-        GlobalConfig config = _mailSettings.getGlobalConfig();
+        mailSettings = MailSettings.getInstance();
+        GlobalConfig config = mailSettings.getGlobalConfig();
 
         add(new RichTextField("Global settings:", Field.NON_FOCUSABLE));
         
@@ -100,7 +104,7 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     }
 
     public void save() {
-        GlobalConfig config = _mailSettings.getGlobalConfig();
+        GlobalConfig config = mailSettings.getGlobalConfig();
         config.setFullname(fldFullname.getText());
 
         try {
@@ -122,6 +126,6 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
             config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
         } catch (Exception e) { }
 
-        _mailSettings.saveSettings();
+        mailSettings.saveSettings();
     }
 }

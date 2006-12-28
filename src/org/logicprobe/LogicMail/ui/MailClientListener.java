@@ -29,35 +29,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
-
-import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.conf.GlobalConfig;
-import org.logicprobe.LogicMail.conf.MailSettings;
+package org.logicprobe.LogicMail.ui;
 
 /**
- * Factory to handle creation and configuration of
- * concrete MailClient instances
+ * This is the interface for notifying clients of completed
+ * MailClientHandler processes.
  */
-public class MailClientFactory {
-    private MailClientFactory() { }
-    
+public interface MailClientListener {
     /**
-     * Get a new concrete mail client instance.
-     *
-     * @param acctConfig User account configuration
-     * @return Usable mail client instance
+     * Invoked when a MailClientHandler process is complete
+     * @param source The MailClientHandler that invoked this method
+     * @param result True on success, false if an error occured
      */
-    public static MailClient createMailClient(AccountConfig acctConfig) {
-        GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
-        if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
-            return new PopClient(globalConfig, acctConfig);
-        }
-        else if(acctConfig.getServerType() == AccountConfig.TYPE_IMAP) {
-            return new ImapClient(globalConfig, acctConfig);
-        }
-        else {
-            return null;
-        }
-    }
+    public abstract void mailActionComplete(MailClientHandler source, boolean result);
 }

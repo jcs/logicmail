@@ -66,9 +66,9 @@ public class PopClient implements MailClient {
     private FolderTreeItem activeMailbox = null;
     
     /** Creates a new instance of PopClient */
-    public PopClient(AccountConfig acctCfg) {
+    public PopClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
         this.acctCfg = acctCfg;
-        globalConfig = MailSettings.getInstance().getGlobalConfig();
+        this.globalConfig = globalConfig;
         connection = new Connection(acctCfg);
         
         // Create our dummy folder item for the inbox
@@ -140,7 +140,7 @@ public class PopClient implements MailClient {
 
     public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
         // Figure out the max number of lines
-        int maxLines = MailSettings.getInstance().getGlobalConfig().getPopMaxLines();
+        int maxLines = globalConfig.getPopMaxLines();
 
         // Download the message text
         String[] message = executeFollow("TOP " + (folderMessage.getIndex()+1) + " " + maxLines);

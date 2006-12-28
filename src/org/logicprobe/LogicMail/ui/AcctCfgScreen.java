@@ -50,14 +50,14 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private CheckboxField fldUseMDS;
     private ButtonField btSave;
 
-    private boolean _acctSaved;
-    private AccountConfig _acctConfig;
+    private boolean acctSaved;
+    private AccountConfig acctConfig;
     
     public AcctCfgScreen(AccountConfig acctConfig) {
         super("LogicMail - Account");
         
-        _acctConfig = acctConfig;
-        _acctSaved = false;
+        this.acctConfig = acctConfig;
+        acctSaved = false;
         
         add(fldAcctName = new BasicEditField("Account name: ",
                                              acctConfig.getAcctName()));
@@ -113,18 +113,18 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     }
 
     public void save() {
-        _acctConfig.setAcctName(fldAcctName.getText());
-        _acctConfig.setServerName(fldServerName.getText());
-        _acctConfig.setServerType(fldServerType.getSelectedIndex());
-        _acctConfig.setServerSSL(fldServerSSL.getChecked());
-        _acctConfig.setServerPort(Integer.parseInt(fldServerPort.getText()));
-        _acctConfig.setServerUser(fldServerUser.getText());
-        _acctConfig.setServerPass(fldServerPass.getText());
-        _acctConfig.setDeviceSide(!fldUseMDS.getChecked());
-        _acctSaved = true;
+        this.acctConfig.setAcctName(fldAcctName.getText());
+        this.acctConfig.setServerName(fldServerName.getText());
+        this.acctConfig.setServerType(fldServerType.getSelectedIndex());
+        this.acctConfig.setServerSSL(fldServerSSL.getChecked());
+        this.acctConfig.setServerPort(Integer.parseInt(fldServerPort.getText()));
+        this.acctConfig.setServerUser(fldServerUser.getText());
+        this.acctConfig.setServerPass(fldServerPass.getText());
+        this.acctConfig.setDeviceSide(!fldUseMDS.getChecked());
+        acctSaved = true;
     }
     
     public boolean acctSaved() {
-        return _acctSaved;
+        return acctSaved;
     }
 }

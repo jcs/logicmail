@@ -43,20 +43,37 @@ import net.rim.device.api.ui.Screen;
  * UI popup elements for user feedback and interaction.
  */
 public abstract class MailClientHandler {
-    MailClient _client;
-    String _taskText;
+    protected MailClient client;
+    private String taskText;
+    private MailClientListener clientListener;
     
+    /**
+     * Creates a new MailClientHandler
+     * @param client MailClient instance to use
+     * @param taskText UI popup text describing the task
+     */
     public MailClientHandler(MailClient client, String taskText) {
-        _client = client;
-        _taskText = taskText;
+        this.client = client;
+        this.taskText = taskText;
+        this.clientListener = null;
+    }
+    
+    /**
+     * Set the listener for this handler.
+     * This listener will be notified of completion of
+     * the MailClient task.
+     * @param clientListener Listener
+     */
+    public void setMailClientListener(MailClientListener clientListener) {
+        this.clientListener = clientListener;
     }
     
     private static class StatusRunnable implements Runnable {
-        String _message;
-        int _time;
+        String message;
+        int time;
         StatusRunnable(String message, int time) {
-            _message = message;
-            _time = time;
+            this.message = message;
+            this.time = time;
         }
         public void run() {
             // Remove any previous status screen
@@ -66,48 +83,72 @@ public abstract class MailClientHandler {
                 if(activeScreen instanceof Status)
                     UiApplication.getUiApplication().popScreen(activeScreen);
             } catch (Exception e) { }
-            if(_message != null)
-                Status.show(_message, _time);
+            if(this.message != null)
+                Status.show(this.message, this.time);
         }
     }
 
     private void showStatus(String message, int time) {
         UiApplication.getUiApplication().invokeLater(new StatusRunnable(message, time));
     }
-    
+
+    /**
+     * Change the status message.
+     * Commonly used if this is a multi-step task.
+     * @param message New status message to display
+     */
     public void changeStatusMessage(String message) {
         showStatus(message, 100000);
     }
     
+    /**
+     * Start the background task
+     */
     public void start() {
         Thread thread = new Thread() {
             public void run() {
                 try {
-                    if(!_client.isConnected()) {
+                    if(!MailClientHandler.this.client.isConnected()) {
                         // Connect if necessary
                         showStatus("Connecting to server", 100000);
-                        _client.open();
+                        MailClientHandler.this.client.open();
                     }
                     // Run the server interaction session
-                    showStatus(_taskText, 100000);
+                    showStatus(MailClientHandler.this.taskText, 100000);
                     runSession();
                     showStatus(null, 0); // remove any status screens
+                    // Notify the listener of completion
+                    if(MailClientHandler.this.clientListener != null)
+                        MailClientHandler.this.clientListener.mailActionComplete(MailClientHandler.this, true);
                 } catch (IOException exp) {
                     System.out.println(exp);
                     showStatus("I/O Error", 2000);
-                    try { _client.close(); } catch (Exception exp2) { }
+                    try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
+                    // Notify the listener of failure
+                    if(MailClientHandler.this.clientListener != null)
+                        MailClientHandler.this.clientListener.mailActionComplete(MailClientHandler.this, false);
                 } catch (MailException exp) {
                     System.out.println("Protocol error: " + exp);
                     showStatus(exp.getMessage(), 10000);
+                    // Notify the listener of failure
+                    if(MailClientHandler.this.clientListener != null)
+                        MailClientHandler.this.clientListener.mailActionComplete(MailClientHandler.this, false);
                 } catch (Exception exp) {
                     System.out.println("Unknown error: " + exp);
                     showStatus("Unknown error", 2000);
-                    try { _client.close(); } catch (Exception exp2) { }
+                    try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
+                    // Notify the listener of failure
+                    if(MailClientHandler.this.clientListener != null)
+                        MailClientHandler.this.clientListener.mailActionComplete(MailClientHandler.this, false);
                 }
             }
         };
         thread.start();
     }
 
+    /**
+     * Override this method to define the particular MailClient
+     * task to be executed.
+     */
     public abstract void runSession() throws IOException, MailException;
 }
