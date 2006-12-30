@@ -53,7 +53,8 @@ public class PopProtocol {
      */
     public void executeUser(String username) throws IOException, MailException {
         execute("USER " + username);
-        // Needs error checking on reply
+        // Invalid users are caught by execute()
+        // and a MailException is thrown
     }
     
     /**
@@ -62,7 +63,8 @@ public class PopProtocol {
      */
     public void executePass(String password) throws IOException, MailException {
         execute("PASS " + password);
-        // Needs error checking on reply
+        // Invalid users are caught by execute()
+        // and a MailException is thrown
     }
     
     /**
@@ -70,7 +72,6 @@ public class PopProtocol {
      */
     public void executeQuit() throws IOException, MailException {
         execute("QUIT");
-        // Error checking would be helpful, if possible
     }
     
     /**

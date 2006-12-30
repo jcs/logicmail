@@ -58,10 +58,17 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
  */
 public class MailboxScreen extends BaseScreen implements ListFieldCallback, MailClientListener {
     private FolderMessage[] messages;
-    private Bitmap bmapOpened;
-    private Bitmap bmapUnopened;
     private ListField msgList;
     
+    // Message icons
+    private Bitmap bmapOpened;
+    private Bitmap bmapUnopened;
+    private Bitmap bmapReplied;
+    private Bitmap bmapFlagged;
+    private Bitmap bmapDraft;
+    private Bitmap bmapDeleted;
+    private Bitmap bmapUnknown;
+
     private MailSettings mailSettings;
     private FolderTreeItem folderItem;
     private MailClient client;
@@ -79,8 +86,14 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         this.folderItem = folderItem;
         this.client = client;
 
+        // Load message icons
         bmapOpened = Bitmap.getBitmapResource("mail_opened.png");
         bmapUnopened = Bitmap.getBitmapResource("mail_unopened.png");
+        bmapReplied = Bitmap.getBitmapResource("mail_replied.png");
+        bmapFlagged = Bitmap.getBitmapResource("mail_flagged.png");
+        bmapDraft = Bitmap.getBitmapResource("mail_draft.png");
+        bmapDeleted = Bitmap.getBitmapResource("mail_deleted.png");
+        bmapUnknown = Bitmap.getBitmapResource("mail_unknown.png");
 
         messages = new FolderMessage[0];
         
@@ -172,10 +185,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         if(index >= messages.length) return;
         FolderMessage entry = (FolderMessage)messages[index];
         MessageEnvelope env = entry.getEnvelope();
-        if(entry.isSeen())
-            graphics.drawBitmap(1, y, 20, lineHeight*2, bmapOpened, 0, 0);
-        else
-            graphics.drawBitmap(1, y, 20, lineHeight*2, bmapUnopened, 0, 0);
+        graphics.drawBitmap(1, y, 20, lineHeight*2, getIconForMessage(entry), 0, 0);
             
         Font origFont = graphics.getFont();
         graphics.setFont(origFont.derive(Font.BOLD));
@@ -221,6 +231,23 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
                               dateWidth);
             graphics.setFont(origFont);
         }
+    }
+    
+    private Bitmap getIconForMessage(FolderMessage message) {
+        if(message.isDeleted())
+            return bmapDeleted;
+        else if(message.isAnswered())
+            return bmapReplied;
+        else if(message.isFlagged())
+            return bmapFlagged;
+        else if(message.isDraft())
+            return bmapDraft;
+        else if(message.isRecent())
+            return bmapUnopened;
+        else if(message.isSeen())
+            return bmapOpened;
+        else
+            return bmapUnknown;
     }
     
     public int getPreferredWidth(ListField listField) {

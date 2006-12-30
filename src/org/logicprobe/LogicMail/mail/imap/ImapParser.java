@@ -57,22 +57,21 @@ class ImapParser {
     
     private ImapParser() { }
     
-    static MessageEnvelope parseMessageEnvelope(String rawText) {
-        Vector parsedText = null;
-        try {
-            parsedText = StringParser.nestedParenStringLexer(rawText.substring(rawText.indexOf('(')));
-        } catch (Exception exp) {
-            return generateDummyEnvelope();
-        }
+    static ImapProtocol.MessageFlags parseMessageFlags(String rawText) {
+        ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
+        flags.seen     = (rawText.indexOf("\\Seen") != -1);
+        flags.answered = (rawText.indexOf("\\Answered") != -1);
+        flags.flagged  = (rawText.indexOf("\\Flagged") != -1);
+        flags.deleted  = (rawText.indexOf("\\Deleted") != -1);
+        flags.draft    = (rawText.indexOf("\\Draft") != -1);
+        flags.recent   = (rawText.indexOf("\\Recent") != -1);
+        return flags;
+    }
 
+    
+    
+    static MessageEnvelope parseMessageEnvelope(Vector parsedEnv) {
         // Sanity checking
-        if(parsedText.size() < 2 ||
-           !(parsedText.elementAt(1) instanceof Vector))
-           return generateDummyEnvelope();
-        
-        Vector parsedEnv = (Vector)parsedText.elementAt(1);
-
-        // More sanity checking
         if(parsedEnv.size() < 10)
            return generateDummyEnvelope();
             
@@ -156,7 +155,7 @@ class ImapParser {
         return addrList;
     }
     
-    private static MessageEnvelope generateDummyEnvelope() {
+    static MessageEnvelope generateDummyEnvelope() {
         MessageEnvelope env = new MessageEnvelope();
         env.date = Calendar.getInstance().getTime();
         env.from = new String[1];

@@ -43,6 +43,8 @@ public class FolderMessage {
     private boolean answered;
     private boolean flagged;
     private boolean deleted;
+    private boolean draft;
+    private boolean recent;
     
     /**
      * Creates a new instance of FolderMessage.
@@ -124,6 +126,34 @@ public class FolderMessage {
      */
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
+    }
+
+    /**
+     * Find out whether this message is a draft
+     */
+    public boolean isDraft() {
+        return draft;
+    }
+
+    /**
+     * Set the flag indicating whether this message is a draft
+     */
+    public void setDraft(boolean draft) {
+        this.draft = draft;
+    }
+
+    /**
+     * Find out whether this message has recently arrived
+     */
+    public boolean isRecent() {
+        return recent;
+    }
+
+    /**
+     * Set the flag indicating whether this message has recently arrived
+     */
+    public void setRecent(boolean recent) {
+        this.recent = recent;
     }
     
 }

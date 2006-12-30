@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail.imap;
 
 import java.io.IOException;
+import java.util.Hashtable;
 import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -57,6 +58,11 @@ public class ImapClient implements MailClient {
     private Connection connection;
     private ImapProtocol imapProtocol;
 
+    /**
+     * Table of supported server capabilities
+     */
+    private Hashtable capabilities;
+    
     /**
      * Delmiter between folder names in the hierarchy
      */
@@ -85,10 +91,13 @@ public class ImapClient implements MailClient {
         connection.open();
         activeMailbox = null;
         try {
+            // Find out server capabilities
+            capabilities = imapProtocol.executeCapability();
+            
             // Authenticate with the server
             imapProtocol.executeLogin(acctCfg.getServerUser(), acctCfg.getServerPass());
 
-            // Retrieve server settings and capabilities
+            // Discover folder delim
             Vector resp = imapProtocol.executeList("", "");
             if(resp.size() > 0)
                 folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
@@ -153,61 +162,29 @@ public class ImapClient implements MailClient {
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
         this.activeMailbox = mailbox;
         // change active mailbox
-        String[] selVec = imapProtocol.executeSelect(activeMailbox.getPath());
+        ImapProtocol.SelectResponse response = imapProtocol.executeSelect(activeMailbox.getPath());
+        
+        activeMailbox.setMsgCount(response.exists);
+        
         // ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
-        int p, q;
-        for(int i=0;i<selVec.length;i++) {
-            String rowText = selVec[i];
-            if(rowText.endsWith("EXISTS")) {
-                p = rowText.indexOf(' ');
-                q = rowText.indexOf(' ', p+1);
-                if(q != -1 && p != -1 && q > p) {
-                    try {
-                        activeMailbox.setMsgCount(Integer.parseInt(rowText.substring(p+1, q)));
-                    } catch (Exception e) {
-                        activeMailbox.setMsgCount(0);
-                    }
-                }
-            }
-        }
     }
 
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
-        FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
-        int index = 0;
-
-        String[] rawList = imapProtocol.executeFetchEnvelope(firstIndex,lastIndex);
+        ImapProtocol.FetchEnvelopeResponse[] response =
+                imapProtocol.executeFetchEnvelope(firstIndex, lastIndex);
         
-        // Pre-process the returned text to clean up mid-field line breaks
-        // This should all become unnecessary once execute()
-        // becomes more intelligent in how it handles replies
-        String line;
-        StringBuffer lineBuf = new StringBuffer();
-        Vector rawList2 = new Vector();
-        for(int i=0;i<rawList.length;i++) {
-            line = rawList[i];
-            if(line.length() > 0 &&
-                    lineBuf.toString().startsWith("* ") &&
-                    line.startsWith("* ")) {
-                rawList2.addElement(lineBuf.toString());
-                lineBuf = new StringBuffer();
-            }
-            lineBuf.append(line);
-            if(i == rawList.length-1 && lineBuf.toString().startsWith("* "))
-                rawList2.addElement(lineBuf.toString());
+        FolderMessage[] folderMessages = new FolderMessage[response.length];
+        for(int i=0;i<response.length;i++) {
+            folderMessages[i] = new FolderMessage(response[i].envelope, response[i].index);
+            folderMessages[i].setSeen(response[i].flags.seen);
+            folderMessages[i].setAnswered(response[i].flags.answered);
+            folderMessages[i].setDeleted(response[i].flags.deleted);
+            folderMessages[i].setRecent(response[i].flags.recent);
+            folderMessages[i].setFlagged(response[i].flags.flagged);
+            folderMessages[i].setDraft(response[i].flags.draft);
         }
-
-        for(int i=0;i<rawList2.size();i++) {
-            try {
-                String rawText = (String)rawList2.elementAt(i);
-                MessageEnvelope env = ImapParser.parseMessageEnvelope(rawText);
-                int midx = Integer.parseInt(rawText.substring(rawText.indexOf(' '), rawText.indexOf("FETCH")-1).trim());
-                folderMessages[index++] = new FolderMessage(env, midx);
-            } catch (Exception exp) {
-                System.out.println("Parse error: " + exp);
-            }
-        }
+        
         return folderMessages;
     }
 
@@ -261,37 +238,7 @@ public class ImapClient implements MailClient {
     private ImapParser.MessageSection getMessageStructure(int msgIndex) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
 
-        String[] rawList = imapProtocol.executeFetchBodystructure(msgIndex);
-
-        // Pre-process the returned text to clean up mid-field line breaks
-        // This should all become unnecessary once execute()
-        // becomes more intelligent in how it handles replies
-        String line;
-        StringBuffer lineBuf = new StringBuffer();
-        Vector rawList2 = new Vector();
-        for(int i=0;i<rawList.length;i++) {
-            line = rawList[i];
-            if(line.length() > 0 &&
-                    lineBuf.toString().startsWith("* ") &&
-                    line.startsWith("* ")) {
-                rawList2.addElement(lineBuf.toString());
-                lineBuf = new StringBuffer();
-            }
-            lineBuf.append(line);
-            if(i == rawList.length-1 && lineBuf.toString().startsWith("* "))
-                rawList2.addElement(lineBuf.toString());
-        }
-
-        ImapParser.MessageSection msgStructure = null;
-        for(int i=0;i<rawList2.size();i++) {
-            try {
-                msgStructure = ImapParser.parseMessageStructure((String)rawList2.elementAt(i));
-            } catch (Exception exp) {
-                System.out.println("Parse error: " + exp);
-            }
-        }
-        
-        return msgStructure;
+        return imapProtocol.executeFetchBodystructure(msgIndex);
     }
 
     /**
@@ -313,16 +260,6 @@ public class ImapClient implements MailClient {
     private String getMessageBody(int index, String address) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
         
-        String[] rawList = imapProtocol.executeFetchBody(index, address);
-
-        if(rawList.length <= 1) return "";
-        
-        StringBuffer msgBuf = new StringBuffer();
-        for(int i=1;i<rawList.length-1;i++) {
-            msgBuf.append(rawList[i] + "\n");
-        }
-        String lastLine = rawList[rawList.length-1];
-        msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
-        return msgBuf.toString();
+        return imapProtocol.executeFetchBody(index, address);
     }
 }
