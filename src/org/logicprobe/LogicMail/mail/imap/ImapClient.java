@@ -29,14 +29,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.mail.imap;
 
 import java.io.IOException;
 import java.util.Vector;
-import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
-import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -51,16 +52,11 @@ import org.logicprobe.LogicMail.util.Connection;
  * 
  */
 public class ImapClient implements MailClient {
-    protected GlobalConfig globalConfig;
-    protected AccountConfig acctCfg;
-    protected Connection connection;
+    private GlobalConfig globalConfig;
+    private AccountConfig acctCfg;
+    private Connection connection;
+    private ImapProtocol imapProtocol;
 
-    /**
-     * Counts the commands executed so far in this session. Every command of an
-     * IMAP session needs a unique ID that is prepended to the command line.
-     */
-    private int commandCount = 0;
-    
     /**
      * Delmiter between folder names in the hierarchy
      */
@@ -74,20 +70,11 @@ public class ImapClient implements MailClient {
      */
     private FolderTreeItem activeMailbox = null;
 
-    /**
-     * Container for LIST replies
-     */
-    private static class ListResponse {
-        public boolean hasChildren;
-        public boolean canSelect;
-        public String delim;
-        public String name;
-    };
-
     public ImapClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
         this.acctCfg = acctCfg;
         this.globalConfig = globalConfig;
         connection = new Connection(acctCfg);
+        imapProtocol = new ImapProtocol(connection);
     }
     
     public AccountConfig getAcctConfig() {
@@ -99,12 +86,12 @@ public class ImapClient implements MailClient {
         activeMailbox = null;
         try {
             // Authenticate with the server
-            execute("LOGIN", acctCfg.getServerUser() + " " + acctCfg.getServerPass());
+            imapProtocol.executeLogin(acctCfg.getServerUser(), acctCfg.getServerPass());
 
             // Retrieve server settings and capabilities
-            Vector resp = executeList("", "");
+            Vector resp = imapProtocol.executeList("", "");
             if(resp.size() > 0)
-                folderDelim = ((ListResponse)resp.elementAt(0)).delim;
+                folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
         } catch (MailException exp) {
             close();
             String msg = exp.getMessage();
@@ -116,8 +103,8 @@ public class ImapClient implements MailClient {
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
             if(activeMailbox != null && !activeMailbox.equals(""))
-                execute("CLOSE", null);
-            execute("LOGOUT", null);
+                imapProtocol.executeClose();
+            imapProtocol.executeLogout();
         }
         activeMailbox = null;
         connection.close();
@@ -140,13 +127,13 @@ public class ImapClient implements MailClient {
     private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth) throws IOException, MailException {
         Vector respList;
         if(depth == 0)
-            respList = executeList(baseFolder.getPath(), "%");
+            respList = imapProtocol.executeList(baseFolder.getPath(), "%");
         else
-            respList = executeList(baseFolder.getPath() + baseFolder.getDelim(), "%");
+            respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%");
 
         int size = respList.size();
         for(int i=0;i<size;++i) {
-            ListResponse resp = (ListResponse)respList.elementAt(i);
+            ImapProtocol.ListResponse resp = (ImapProtocol.ListResponse)respList.elementAt(i);
             if(resp.canSelect) {
                 FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
                 baseFolder.addChild(childItem);
@@ -166,7 +153,7 @@ public class ImapClient implements MailClient {
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
         this.activeMailbox = mailbox;
         // change active mailbox
-        String[] selVec = execute("SELECT", "\""+activeMailbox.getPath()+"\"");
+        String[] selVec = imapProtocol.executeSelect(activeMailbox.getPath());
         // ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
         int p, q;
@@ -190,11 +177,7 @@ public class ImapClient implements MailClient {
         FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
         int index = 0;
 
-        String[] rawList = execute("FETCH",
-                                   Integer.toString(firstIndex) +
-                                   ":" +
-                                   Integer.toString(lastIndex) +
-                                   " (ENVELOPE)");
+        String[] rawList = imapProtocol.executeFetchEnvelope(firstIndex,lastIndex);
         
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
@@ -278,7 +261,7 @@ public class ImapClient implements MailClient {
     private ImapParser.MessageSection getMessageStructure(int msgIndex) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
 
-        String[] rawList = execute("FETCH", msgIndex + " (BODYSTRUCTURE)");
+        String[] rawList = imapProtocol.executeFetchBodystructure(msgIndex);
 
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
@@ -330,7 +313,7 @@ public class ImapClient implements MailClient {
     private String getMessageBody(int index, String address) throws IOException, MailException {
         if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
         
-        String[] rawList = execute("FETCH", index + " (BODY["+ address +"])");
+        String[] rawList = imapProtocol.executeFetchBody(index, address);
 
         if(rawList.length <= 1) return "";
         
@@ -341,98 +324,5 @@ public class ImapClient implements MailClient {
         String lastLine = rawList[rawList.length-1];
         msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
         return msgBuf.toString();
-    }
-
-    /**
-     * Execute a LIST command, and return a fully parsed response
-     * @param refName Reference name
-     * @param mboxName Mailbox name or wildcards (i.e. "%")
-     * @return Vector of ListResponse objects
-     */
-    private Vector executeList(String refName, String mboxName) throws IOException, MailException {
-        String[] results;
-        results = execute("LIST", "\""+refName+"\" \""+mboxName+"\"");
-        
-        Vector retVec = new Vector(results.length);
-        ListResponse response;
-        String temp;
-        String flagStr;
-        String argStr;
-        int p;
-        int q;
-        for(int i=0;i<results.length;i++) {
-            // Separate out the flag and argument strings
-            flagStr = null;
-            argStr = null;
-            temp = results[i];
-            p = temp.indexOf('(');
-            q = temp.indexOf(')', p + 1);
-            if((p != -1) && (q > p))
-                flagStr = temp.substring(p + 1, q);
-            if(temp.length() > q+2)
-                argStr = temp.substring(q+2);
-            
-            response = new ListResponse();
-            response.hasChildren = false;
-            response.canSelect = true;
-            response.delim = "";
-            response.name = "";
-            
-            // Should eventually tokenize and parse properly.
-            // Right now just looking at the first flag, for
-            // simplicity, since most responses only have one
-            if(flagStr.startsWith("\\Noselect"))
-                response.canSelect = false;
-            else if(flagStr.startsWith("\\HasChildren"))
-                response.hasChildren = true;
-            
-            p = argStr.indexOf('\"');
-            q = argStr.indexOf('\"', p + 1);
-            
-            // Store the delimiter
-            if((p != -1) && (q > p))
-                response.delim = argStr.substring(p+1, q);
-            
-            // Store the name, strip off quotes if necessary
-            if(argStr.length() > q+2) {
-                response.name = argStr.substring(q+2);
-                p = response.name.indexOf('\"');
-                q = response.name.indexOf('\"', p + 1);
-                if((p != -1) && (q > p))
-                    response.name = response.name.substring(p+1, q);
-            }
-            
-            retVec.addElement(response);
-        }
-        
-        return retVec;
-    }
-    
-    /**
-     * Executes an IMAP command, and returns the reply as an
-     * array of strings.
-     * @param command IMAP command
-     * @param arguments Arguments for the command
-     * @return List of returned strings
-     */
-    private String[] execute(String command, String arguments)
-        throws IOException, MailException
-    {
-        String[] result = new String[0];
-
-        String tag = "A" + commandCount++ + " ";
-        connection.send(tag + command + (arguments == null ? "" : " " + arguments));
-
-        String temp = connection.receive();
-        while (!temp.startsWith(tag)) {
-            Arrays.add(result, temp);
-            temp = connection.receive();
-        }
-
-        temp = temp.substring(tag.length());
-        if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
-            throw new MailException(temp);
-        }
-        return result;
     }
 }

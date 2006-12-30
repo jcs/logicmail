@@ -29,16 +29,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.mail.pop;
 
 import java.io.IOException;
 import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
-import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
-import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -54,10 +55,11 @@ import org.logicprobe.LogicMail.util.StringParser;
  * 
  */
 public class PopClient implements MailClient {
-    protected GlobalConfig globalConfig;
-    protected AccountConfig acctCfg;
-    protected Connection connection;
-
+    private GlobalConfig globalConfig;
+    private AccountConfig acctCfg;
+    private Connection connection;
+    private PopProtocol popProtocol;
+    
     /**
      * Active mailbox.  Since POP3 does not support multiple
      * mailboxes for a user, it is used to contain some
@@ -70,6 +72,7 @@ public class PopClient implements MailClient {
         this.acctCfg = acctCfg;
         this.globalConfig = globalConfig;
         connection = new Connection(acctCfg);
+        popProtocol = new PopProtocol(connection);
         
         // Create our dummy folder item for the inbox
         activeMailbox = new FolderTreeItem("INBOX", "INBOX", "");
@@ -84,9 +87,11 @@ public class PopClient implements MailClient {
         connection.open();
         
         try {
-            execute(null);
-            execute("USER " + acctCfg.getServerUser());
-            execute("PASS " + acctCfg.getServerPass());
+            // Eat the initial server response
+            connection.receive();
+            // Login to the server
+            popProtocol.executeUser(acctCfg.getServerUser());
+            popProtocol.executePass(acctCfg.getServerPass());
         } catch (MailException exp) {
             close();
             throw exp;
@@ -95,7 +100,7 @@ public class PopClient implements MailClient {
 
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
-            execute("QUIT");
+            popProtocol.executeQuit();
         }
         activeMailbox = null;
         connection.close();
@@ -119,10 +124,7 @@ public class PopClient implements MailClient {
 
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
-        String result = execute("STAT");
-        int p = result.indexOf(' ');
-        int q = result.indexOf(' ', p+1);
-        activeMailbox.setMsgCount(Integer.parseInt(result.substring(p+1, q)));
+        activeMailbox.setMsgCount(popProtocol.executeStat());
     }
 
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
@@ -131,7 +133,7 @@ public class PopClient implements MailClient {
         String[] headerText;
         MessageEnvelope env;
         for(int i=firstIndex; i<lastIndex; i++) {
-            headerText = executeFollow("TOP " + (i+1) + " 0");
+            headerText = popProtocol.executeTop(index+1, 0);
             env = PopParser.parseMessageEnvelope(headerText);
             folderMessages[index++] = new FolderMessage(env, i);
         }
@@ -143,7 +145,7 @@ public class PopClient implements MailClient {
         int maxLines = globalConfig.getPopMaxLines();
 
         // Download the message text
-        String[] message = executeFollow("TOP " + (folderMessage.getIndex()+1) + " " + maxLines);
+        String[] message = popProtocol.executeTop((folderMessage.getIndex()+1), maxLines);
         
         MIMEInputStream mimeInputStream = null;
         try {
@@ -206,44 +208,5 @@ public class PopClient implements MailClient {
                 return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer));
             }
         }
-    }
-    
-    /**
-     * Execute a POP3 command that returns multiple lines.
-     * This works by running the normal execute() and then
-     * receiving every new line until a lone "." is encountered.
-     *
-     * @param command The command to execute
-     * @return An array of lines containing the response
-     */
-    private String[] executeFollow(String command) throws IOException, MailException {
-        execute(command);
-            
-        String buffer = connection.receive();
-        String[] lines = new String[0];
-        while(buffer != null && !buffer.equals(".")) {
-            Arrays.add(lines, buffer);
-            buffer = connection.receive();
-        }
-        return lines;
-    }
-    
-    /**
-     * Execute a POP3 command, and return the result.
-     * If the command is null, we still wait for a result
-     * so we can receive a multi-line response.
-     * @param command The command
-     * @return The result
-     */
-    private String execute(String command) throws IOException, MailException {
-        if(command != null) connection.send(command);
-        
-        String result = connection.receive();
-        
-        if((result.length() > 1) && (result.charAt(0) == '-')) {
-            throw new MailException(result);
-        }
-        
-        return result;
     }
 }

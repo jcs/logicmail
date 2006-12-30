@@ -29,10 +29,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.mail.imap;
 
 import java.util.Calendar;
 import java.util.Vector;
+import org.logicprobe.LogicMail.mail.*;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
 

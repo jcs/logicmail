@@ -34,6 +34,8 @@ package org.logicprobe.LogicMail.mail;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.imap.ImapClient;
+import org.logicprobe.LogicMail.mail.pop.PopClient;
 
 /**
  * Factory to handle creation and configuration of
