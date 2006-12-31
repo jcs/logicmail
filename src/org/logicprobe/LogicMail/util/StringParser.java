@@ -41,6 +41,7 @@ import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.DateTimeUtilities;
 
 /**
  * This class provides a collection of string parsing
@@ -61,6 +62,7 @@ public class StringParser {
         int p = 0;
         int q = 0;
         
+        int[] fields = new int[7];
         // Clean up the date string for simple parsing
         p = rawDate.indexOf(",");
         if(p != -1) {
@@ -78,43 +80,45 @@ public class StringParser {
             cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"+tz));
         else
             cal = Calendar.getInstance(TimeZone.getTimeZone(tz));
+
         p = 0;
         q = rawDate.indexOf(" ", p+1);
-        cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(rawDate.substring(p, q)));
-
+        fields[2] = Integer.parseInt(rawDate.substring(p, q));
+        
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
         String monthStr = rawDate.substring(p, q);
-        if(monthStr.equals("Jan")) cal.set(Calendar.MONTH, Calendar.JANUARY);
-        else if(monthStr.equals("Feb")) cal.set(Calendar.MONTH, Calendar.FEBRUARY);
-        else if(monthStr.equals("Mar")) cal.set(Calendar.MONTH, Calendar.MARCH);
-        else if(monthStr.equals("Apr")) cal.set(Calendar.MONTH, Calendar.APRIL);
-        else if(monthStr.equals("May")) cal.set(Calendar.MONTH, Calendar.MAY);
-        else if(monthStr.equals("Jun")) cal.set(Calendar.MONTH, Calendar.JUNE);
-        else if(monthStr.equals("Jul")) cal.set(Calendar.MONTH, Calendar.JULY);
-        else if(monthStr.equals("Aug")) cal.set(Calendar.MONTH, Calendar.AUGUST);
-        else if(monthStr.equals("Sep")) cal.set(Calendar.MONTH, Calendar.SEPTEMBER);
-        else if(monthStr.equals("Oct")) cal.set(Calendar.MONTH, Calendar.OCTOBER);
-        else if(monthStr.equals("Nov")) cal.set(Calendar.MONTH, Calendar.NOVEMBER);
-        else if(monthStr.equals("Dec")) cal.set(Calendar.MONTH, Calendar.DECEMBER);
+        if(monthStr.equals("Jan")) fields[1]=0;
+        else if(monthStr.equals("Feb")) fields[1]=1;
+        else if(monthStr.equals("Mar")) fields[1]=2;
+        else if(monthStr.equals("Apr")) fields[1]=3;
+        else if(monthStr.equals("May")) fields[1]=4;
+        else if(monthStr.equals("Jun")) fields[1]=5;
+        else if(monthStr.equals("Jul")) fields[1]=6;
+        else if(monthStr.equals("Aug")) fields[1]=7;
+        else if(monthStr.equals("Sep")) fields[1]=8;
+        else if(monthStr.equals("Oct")) fields[1]=9;
+        else if(monthStr.equals("Nov")) fields[1]=10;
+        else if(monthStr.equals("Dec")) fields[1]=11;
         
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
-        cal.set(Calendar.YEAR, Integer.parseInt(rawDate.substring(p, q)));
+        fields[0]=Integer.parseInt(rawDate.substring(p, q));
         
         p = q+1;
         q = rawDate.indexOf(":", p+1);
-        cal.set(Calendar.HOUR, Integer.parseInt(rawDate.substring(p, q)));
+        fields[3]=Integer.parseInt(rawDate.substring(p, q));
         
         p = q+1;
         q = rawDate.indexOf(":", p+1);
-        cal.set(Calendar.MINUTE, Integer.parseInt(rawDate.substring(p, q)));
+        fields[4] = Integer.parseInt(rawDate.substring(p, q));
 
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
-        cal.set(Calendar.SECOND, Integer.parseInt(rawDate.substring(p, q)));
-        cal.set(Calendar.MILLISECOND, 0);
-        
+        fields[5] = Integer.parseInt(rawDate.substring(p, q));
+        fields[6] = 0;
+
+        DateTimeUtilities.setCalendarFields(cal, fields);
         return cal.getTime();
     }
     
