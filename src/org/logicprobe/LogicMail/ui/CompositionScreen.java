@@ -38,26 +38,68 @@ import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.component.EditField;
 import net.rim.device.api.ui.component.SeparatorField;
+import net.rim.device.api.util.Arrays;
 
 /**
  * This is the message composition screen.
  */
 public class CompositionScreen extends BaseScreen implements FieldChangeListener {
-    private EmailAddressBookEditField fldTo;
+    private EmailAddressBookEditField[] fldTo;
+    private EmailAddressBookEditField[] fldCC;
     private EditField fldSubject;
     private EditField fldEdit;
     
     /** Creates a new instance of CompositionScreen */
     public CompositionScreen() {
-        fldTo = new EmailAddressBookEditField("To: ", "");
-
-        //fldTo.setChangeListener(this);
-        add(fldTo);
+        fldTo = new EmailAddressBookEditField[1];
+        fldTo[0] = new EmailAddressBookEditField("To: ", "");
+        fldCC = new EmailAddressBookEditField[1];
+        fldCC[0] = new EmailAddressBookEditField("CC: ", "");
+        
         fldSubject = new EditField("Subject: ", "");
-        add(fldSubject);
-        add(new SeparatorField());
         fldEdit = new EditField();
-        add(fldEdit);
+        this.showFields();
+    }
+    
+    private void addToField() {
+        EmailAddressBookEditField fld =
+            new EmailAddressBookEditField("To: ", "");
+        if(fldTo == null) {
+            fldTo = new EmailAddressBookEditField[1];
+            this.add(fld);
+            fldTo[0] = fld;
+        }
+        else {
+            this.insert(fld, fldTo[fldTo.length-1].getIndex()+1);
+            Arrays.add(fldTo, fld);
+        }
+    }
+
+    private void addCCField() {
+        EmailAddressBookEditField fld =
+            new EmailAddressBookEditField("CC: ", "");
+        int index = 0;
+        // continue here
+        if(fldCC == null) {
+            fldCC = new EmailAddressBookEditField[1];
+            fldTo[0] = fld;
+        }
+        else {
+            this.insert(fld, fldTo[fldTo.length-1].getIndex()+1);
+            Arrays.add(fldTo, fld);
+        }
+    }
+
+    private void showFields() {
+        int i;
+        this.deleteAll();
+        for(i=0;i<fldTo.length;i++)
+            this.add(fldTo[i]);
+        for(i=0;i<fldCC.length;i++)
+            this.add(fldCC[i]);
+        this.add(fldSubject);
+        this.add(new SeparatorField());
+        this.add(fldEdit);
     }
     
     public boolean keyChar(char key,
