@@ -241,6 +241,12 @@ public class StringParser {
                 }
                 line = rawLines[i];
             }
+            
+            // Special case for last item
+            if(i == rawLines.length-1 && line.length() != 0) {
+                table.put((line.substring(0, line.indexOf(':'))).toLowerCase(),
+                          line.substring(line.indexOf(' ') + 1));
+            }
         }
         return table;
     }
