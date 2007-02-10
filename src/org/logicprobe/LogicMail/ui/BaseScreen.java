@@ -38,7 +38,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
-import org.logicprobe.LogicMail.LogicMail;
+import org.logicprobe.LogicMail.AppInfo;
 
 /**
  * This class is the base for all screens in LogicMail.
@@ -67,7 +67,7 @@ public abstract class BaseScreen extends MainScreen implements KeyListener {
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
         public void run() {
             // Show the about dialog
-            String aboutMsg = "LogicMail\nVersion " + LogicMail.version;
+            String aboutMsg = AppInfo.getName() + "\nVersion " + AppInfo.getVersion();
             Dialog.inform(aboutMsg);
         }
     };

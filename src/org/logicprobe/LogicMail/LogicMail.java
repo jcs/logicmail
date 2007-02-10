@@ -39,7 +39,6 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application
  */
 public class LogicMail extends UiApplication {
-    public static String version = "0.2";
     public static void main(String argv[]) {
         LogicMail app = new LogicMail();
         app.enterEventDispatcher();
