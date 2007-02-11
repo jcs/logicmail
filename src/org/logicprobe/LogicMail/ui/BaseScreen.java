@@ -31,7 +31,6 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.system.KeyListener;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
@@ -45,7 +44,7 @@ import org.logicprobe.LogicMail.AppInfo;
  * Its purpose is to provide uniform menu and event
  * handler interfaces across the application.
  */
-public abstract class BaseScreen extends MainScreen implements KeyListener {
+public abstract class BaseScreen extends MainScreen {
     public BaseScreen() {
         super();
     }
@@ -103,22 +102,5 @@ public abstract class BaseScreen extends MainScreen implements KeyListener {
     protected boolean onSavePrompt() {
         return true;
     }
-
-    // KeyListener methods
-    public boolean keyChar(char key, int status, int time) {
-        return false;
-    }
-    public boolean keyDown(int keycode, int time) {
-        return false;
-    }
-    public boolean keyUp(int keycode, int time) {
-        return false;
-    }
-    public boolean keyRepeat(int keycode, int time) {
-        return false;
-    }
-    public boolean keyStatus(int keycode, int time) {
-        return false;
-    }    
 }
 
