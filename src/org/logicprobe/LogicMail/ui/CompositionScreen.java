@@ -31,99 +31,135 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Keypad;
-import net.rim.device.api.ui.Manager;
+import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.EditField;
+import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.SeparatorField;
-import net.rim.device.api.util.Arrays;
+import net.rim.device.api.ui.container.VerticalFieldManager;
 
 /**
  * This is the message composition screen.
  */
-public class CompositionScreen extends BaseScreen implements FieldChangeListener {
-    private EmailAddressBookEditField[] fldTo;
-    private EmailAddressBookEditField[] fldCC;
+public class CompositionScreen extends BaseScreen {
+    private VerticalFieldManager vfmRecipients;
+//    private EmailAddressBookEditField[] fldTo;
+//    private EmailAddressBookEditField[] fldCC;
     private EditField fldSubject;
     private EditField fldEdit;
     
     /** Creates a new instance of CompositionScreen */
     public CompositionScreen() {
-        fldTo = new EmailAddressBookEditField[1];
-        fldTo[0] = new EmailAddressBookEditField("To: ", "");
-        fldCC = new EmailAddressBookEditField[1];
-        fldCC[0] = new EmailAddressBookEditField("CC: ", "");
-        
+        vfmRecipients = new VerticalFieldManager();
+        vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, ""));
+        vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, ""));
+        add(vfmRecipients);
         fldSubject = new EditField("Subject: ", "");
+        add(fldSubject);
+        add(new SeparatorField());
         fldEdit = new EditField();
-        this.showFields();
+        add(fldEdit);
+    }
+
+    private MenuItem sendMenuItem = new MenuItem("Send", 200000, 10) {
+        public void run() {
+        }
+    };
+    private MenuItem addToMenuItem = new MenuItem("Add To:", 200110, 10) {
+        public void run() {
+            insertRecipientField(EmailAddressBookEditField.ADDRESS_TO);
+        }
+    };
+
+    private MenuItem addCcMenuItem = new MenuItem("Add Cc:", 200120, 10) {
+        public void run() {
+            insertRecipientField(EmailAddressBookEditField.ADDRESS_CC);
+        }
+    };
+
+    private MenuItem addBccMenuItem = new MenuItem("Add Bcc:", 200130, 10) {
+        public void run() {
+            insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC);
+        }
+    };
+
+
+    protected void makeMenu(Menu menu, int instance) {
+        if(((EmailAddressBookEditField)vfmRecipients.getField(0)).getText().length() > 0) {
+            menu.add(sendMenuItem);
+            menu.addSeparator();
+        }
+        menu.add(addToMenuItem);
+        menu.add(addCcMenuItem);
+        menu.add(addBccMenuItem);
+        menu.addSeparator();
     }
     
-    private void addToField() {
-        EmailAddressBookEditField fld =
-            new EmailAddressBookEditField("To: ", "");
-        if(fldTo == null) {
-            fldTo = new EmailAddressBookEditField[1];
-            this.add(fld);
-            fldTo[0] = fld;
-        }
-        else {
-            this.insert(fld, fldTo[fldTo.length-1].getIndex()+1);
-            Arrays.add(fldTo, fld);
-        }
-    }
-
-    private void addCCField() {
-        EmailAddressBookEditField fld =
-            new EmailAddressBookEditField("CC: ", "");
-        int index = 0;
-        // continue here
-        if(fldCC == null) {
-            fldCC = new EmailAddressBookEditField[1];
-            fldTo[0] = fld;
-        }
-        else {
-            this.insert(fld, fldTo[fldTo.length-1].getIndex()+1);
-            Arrays.add(fldTo, fld);
-        }
-    }
-
-    private void showFields() {
+    private void insertRecipientField(int addressType) {
+        int size = vfmRecipients.getFieldCount();
+        EmailAddressBookEditField currentField;
         int i;
-        this.deleteAll();
-        for(i=0;i<fldTo.length;i++)
-            this.add(fldTo[i]);
-        for(i=0;i<fldCC.length;i++)
-            this.add(fldCC[i]);
-        this.add(fldSubject);
-        this.add(new SeparatorField());
-        this.add(fldEdit);
-    }
-    
-    public boolean keyChar(char key,
-                           int status,
-                           int time)
-    {
-        boolean retval = false;
-        switch(key) {
-            case Keypad.KEY_ENTER:
-            case Keypad.KEY_SPACE:
-                if(status == 0) {
-                    scroll(Manager.DOWNWARD);
-                    retval = true;
-                }
-                else if(status == KeypadListener.STATUS_ALT) {
-                    scroll(Manager.UPWARD);
-                    retval = true;
-                }
-                break;
+
+        // If a field of this type already exists, and is empty, move
+        // focus there instead of adding a new field
+        for(i=0; i<size; i++) {
+            currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+            if(currentField.getAddressType() == addressType &&
+               currentField.getText().length() == 0) {
+                currentField.setFocus();
+                return;
+            }
         }
-        return retval;
+        
+        // Otherwise, find the appropriate insertion point,
+        // and add a new field, and give it focus
+        if(addressType == EmailAddressBookEditField.ADDRESS_TO) {
+            for(i=0; i<size; i++) {
+                currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+                if(currentField.getAddressType() != EmailAddressBookEditField.ADDRESS_TO) {
+                    currentField = new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, "");
+                    vfmRecipients.insert(currentField, i);
+                    currentField.setFocus();
+                    return;
+                }
+            }
+        }
+        else if(addressType == EmailAddressBookEditField.ADDRESS_CC) {
+            i = 0;
+            while(i < size) {
+                currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+                if(currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO ||
+                   currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_CC)
+                    i++;
+                else {
+                    currentField = new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, "");
+                    vfmRecipients.insert(currentField, i);
+                    currentField.setFocus();
+                    return;
+                }
+            }
+        }
+        currentField = new EmailAddressBookEditField(addressType, "");
+        vfmRecipients.add(currentField);
+        currentField.setFocus();
     }
 
-    public void fieldChanged(Field field, int context) {
-        // @TODO
+    public boolean keyChar(char key, int status, int time) {
+        EmailAddressBookEditField currentField;
+        int index;
+        switch(key) {
+        case Keypad.KEY_BACKSPACE:
+            currentField = (EmailAddressBookEditField)vfmRecipients.getFieldWithFocus();
+            if(currentField == null) break;
+            if(vfmRecipients.getFieldWithFocusIndex() == 0) break;
+            if(currentField.getText().length() > 0) break;
+            index = currentField.getIndex();
+            vfmRecipients.delete(currentField);
+            vfmRecipients.getField(index-1).setFocus();
+            return true;
+        }
+        return super.keyChar(key, status, time);
     }
 }

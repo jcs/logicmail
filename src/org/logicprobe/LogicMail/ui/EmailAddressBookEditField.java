@@ -40,6 +40,9 @@ import javax.microedition.pim.PIMException;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.ui.ContextMenu;
+import net.rim.device.api.ui.DrawStyle;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
@@ -50,17 +53,99 @@ import net.rim.device.api.util.Arrays;
  * ability to input addresses from the address book.
  */
 public class EmailAddressBookEditField extends EmailAddressEditField {
+    private String name;
+    private String address;
+    private Bitmap bmapContactItem;
+    private int addressType;
     
-    /** Creates a new instance of EmailAddressBookEditField */
-    public EmailAddressBookEditField(String label, String initialValue) {
-        super(label, initialValue);
+    public static int ADDRESS_TO = 1;
+    public static int ADDRESS_CC = 2;
+    public static int ADDRESS_BCC = 3;
+    
+    /**
+     * Creates a new instance of EmailAddressBookEditField.
+     * @param addressType The type of address (ADDRESS_TO, ADDRESS_CC, or ADDRESS_BCC)
+     * @param initialValue The initial value of the field
+     */
+    public EmailAddressBookEditField(int addressType, String initialValue) {
+        super("", initialValue);
+        if(addressType == ADDRESS_TO)
+            this.setLabel("To: ");
+        else if(addressType == ADDRESS_CC)
+            this.setLabel("Cc: ");
+        else if(addressType == ADDRESS_BCC)
+            this.setLabel("Bcc: ");
+        else {
+            this.setLabel("To: ");
+            addressType = ADDRESS_TO;
+        }
+        this.addressType = addressType;
+            
+        name = null;
+        address = "";
+        bmapContactItem = Bitmap.getBitmapResource("contact_item.png");
     }
 
+    public String getText() {
+        if(name != null)
+            return address;
+        else
+            return super.getText();
+    }
+    
+    public int getAddressType() {
+        return addressType;
+    }
+    
     private MenuItem addressBookMenuItem = new MenuItem("Address book", 200000, 10) {
         public void run() {
             addressBookChooser();
         }
     };
+
+    protected void makeContextMenu(ContextMenu contextMenu) {
+        contextMenu.addItem(addressBookMenuItem);
+    }
+    
+    protected void paint(Graphics graphics) {
+        if(name != null) {
+            int width = this.getExtent().width;
+            int height = this.getExtent().height;
+            int x = this.getExtent().x;
+            int y = this.getExtent().y;
+            int labelWidth =
+                graphics.drawText(this.getLabel(), x, y,
+                                  (int)this.getStyle(),
+                                  width);
+            int nameWidth =
+                graphics.drawText(name, x+labelWidth, y,
+                                  (int)(this.getStyle() | DrawStyle.ELLIPSIS),
+                                  width-labelWidth-bmapContactItem.getWidth()-5);
+            graphics.drawBitmap(x+labelWidth+nameWidth+5, y, width, height, bmapContactItem, 0, 0);
+        }
+        else {
+            super.paint(graphics);
+        }
+    }
+    
+    /**
+     * Handle key events
+     */
+    protected boolean keyChar(char key, int status, int time) {
+        switch(key) {
+            case Keypad.KEY_BACKSPACE:
+            case Keypad.KEY_DELETE:
+                if(name != null) {
+                    name = null;
+                    address = "";
+                    setText(address);
+                    setEditable(true);
+                    return true;
+                }
+                break;
+        }
+        return super.keyChar(key, status, time);
+    }
 
     /**
      * Handle choosing an address from the address book
@@ -76,17 +161,24 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
         choice = abDlg.doModal();
         if(choice < 0 || choice > contacts.size()) return;
         
-        String[] email = ((ContactItem)contacts.elementAt(choice)).email;
+        ContactItem contactItem = ((ContactItem)contacts.elementAt(choice));
+        String[] email = contactItem.email;
         if(email == null) {
             this.setText("");
         }
         else if(email.length > 1) {
             Dialog addrDlg = new Dialog("Which address?", email, null, 0, Bitmap.getPredefinedBitmap(Bitmap.QUESTION));
             choice = addrDlg.doModal();
-            this.setText(email[choice]);
+            address = email[choice];
+            name = contactItem.name;
+            this.setText(name);
+            this.setEditable(false);
         }
         else {
-            this.setText(email[0]);
+            address = email[0];
+            name = contactItem.name;
+            this.setText(name);
+            this.setEditable(false);
         }
     }
 
@@ -141,8 +233,4 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
         return addressList;
     }
     
-    
-    protected void makeContextMenu(ContextMenu contextMenu) {
-        contextMenu.addItem(addressBookMenuItem);
-    }
 }
