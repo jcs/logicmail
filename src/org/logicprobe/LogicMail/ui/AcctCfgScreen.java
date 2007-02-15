@@ -49,6 +49,12 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private PasswordEditField fldServerPass;
     private CheckboxField fldUseMDS;
     private ButtonField btSave;
+    private BasicEditField fldSmtpServerName;
+    private BasicEditField fldSmtpServerPort;
+    private CheckboxField fldSmtpServerSSL;
+    private CheckboxField fldSmtpUseAuth;
+    private BasicEditField fldSmtpUser;
+    private BasicEditField fldSmtpPass;
 
     private boolean acctSaved;
     private AccountConfig acctConfig;
@@ -61,6 +67,8 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         
         add(fldAcctName = new BasicEditField("Account name: ",
                                              acctConfig.getAcctName()));
+        add(new SeparatorField());
+        add(new RichTextField("Incoming server:", Field.NON_FOCUSABLE));
         add(fldServerName = new BasicEditField("Server: ",
                                                acctConfig.getServerName()));
         String[] serverTypes = { "POP", "IMAP" };
@@ -85,6 +93,25 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
                                       !acctConfig.getDeviceSide());
         add(fldUseMDS);
 
+        add(new SeparatorField());
+        add(new RichTextField("Outgoing server:", Field.NON_FOCUSABLE));
+        add(fldSmtpServerName = new BasicEditField("SMTP server: ", acctConfig.getSmtpServerName()));
+        fldSmtpServerPort = new BasicEditField("Port: ", Integer.toString(acctConfig.getSmtpServerPort()));
+        fldSmtpServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        add(fldSmtpServerPort);
+        
+        add(fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL()));
+        add(fldSmtpUseAuth = new CheckboxField("Authentication", acctConfig.getSmtpUseAuth()));
+        add(fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser()));
+        add(fldSmtpPass = new BasicEditField("Password: ", acctConfig.getSmtpPass()));
+        if(!acctConfig.getSmtpUseAuth()) {
+            fldSmtpUser.setEditable(false);
+            fldSmtpPass.setEditable(false);
+            fldSmtpUser.setText("n/a");
+            fldSmtpPass.setText("n/a");
+        }
+        fldSmtpUseAuth.setChangeListener(this);
+        
         add(new LabelField(null, Field.NON_FOCUSABLE));
         
         btSave = new ButtonField("Save", Field.FIELD_HCENTER);
@@ -110,6 +137,20 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
                     fldServerPort.setText("143");
             }
         }
+        else if(field == fldSmtpUseAuth) {
+            if(fldSmtpUseAuth.getChecked()) {
+                fldSmtpUser.setEditable(true);
+                fldSmtpPass.setEditable(true);
+                fldSmtpUser.setText(acctConfig.getSmtpUser());
+                fldSmtpPass.setText(acctConfig.getSmtpPass());
+            }
+            else {
+                fldSmtpUser.setEditable(false);
+                fldSmtpPass.setEditable(false);
+                fldSmtpUser.setText("n/a");
+                fldSmtpPass.setText("n/a");
+            }
+        }
     }
 
     public void save() {
@@ -121,6 +162,14 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         this.acctConfig.setServerUser(fldServerUser.getText());
         this.acctConfig.setServerPass(fldServerPass.getText());
         this.acctConfig.setDeviceSide(!fldUseMDS.getChecked());
+        this.acctConfig.setSmtpServerName(fldSmtpServerName.getText());
+        this.acctConfig.setSmtpServerPort(Integer.parseInt(fldSmtpServerPort.getText()));
+        this.acctConfig.setSmtpServerSSL(fldSmtpServerSSL.getChecked());
+        this.acctConfig.setSmtpUseAuth(fldSmtpUseAuth.getChecked());
+        if(fldSmtpUseAuth.getChecked()) {
+            this.acctConfig.setSmtpUser(fldSmtpUser.getText());
+            this.acctConfig.setSmtpPass(fldSmtpPass.getText());
+        }
         acctSaved = true;
     }
     

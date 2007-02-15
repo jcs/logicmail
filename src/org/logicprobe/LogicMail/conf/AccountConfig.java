@@ -53,6 +53,12 @@ public class AccountConfig implements Serializable {
     private String serverPass;
     private int serverPort;
     private boolean deviceSide;
+    private String smtpServerName;
+    private int smtpServerPort;
+    private boolean smtpServerSSL;
+    private boolean smtpUseAuth;
+    private String smtpUser;
+    private String smtpPass;
 
     public AccountConfig() {
         acctName = "";
@@ -63,6 +69,12 @@ public class AccountConfig implements Serializable {
         serverPass = "";
         serverPort = 110;
         deviceSide = false;
+        smtpServerName = "";
+        smtpServerPort = 25;
+        smtpServerSSL = false;
+        smtpUseAuth = false;
+        smtpUser = "";
+        smtpPass = "";
     }
     
     public AccountConfig(DataInputStream input) {
@@ -77,7 +89,47 @@ public class AccountConfig implements Serializable {
             serverPass = "";
             serverPort = 110;
             deviceSide = false;
+            smtpServerName = "";
+            smtpServerPort = 25;
+            smtpServerSSL = false;
+            smtpUseAuth = false;
+            smtpUser = "";
+            smtpPass = "";
         }
+    }
+
+    public void serialize(DataOutputStream output) throws IOException {
+        output.writeUTF(acctName);
+        output.writeUTF(serverName);
+        output.writeInt(serverType);
+        output.writeBoolean(serverSSL);
+        output.writeUTF(serverUser);
+        output.writeUTF(serverPass);
+        output.writeInt(serverPort);
+        output.writeBoolean(deviceSide);
+        output.writeUTF(smtpServerName);
+        output.writeInt(smtpServerPort);
+        output.writeBoolean(smtpServerSSL);
+        output.writeBoolean(smtpUseAuth);
+        output.writeUTF(smtpUser);
+        output.writeUTF(smtpPass);
+    }
+
+    public void deserialize(DataInputStream input) throws IOException {
+        acctName = input.readUTF();
+        serverName = input.readUTF();
+        serverType = input.readInt();
+        serverSSL = input.readBoolean();
+        serverUser = input.readUTF();
+        serverPass = input.readUTF();
+        serverPort = input.readInt();
+        deviceSide = input.readBoolean();
+        smtpServerName = input.readUTF();
+        smtpServerPort = input.readInt();
+        smtpServerSSL = input.readBoolean();
+        smtpUseAuth = input.readBoolean();
+        smtpUser = input.readUTF();
+        smtpPass = input.readUTF();
     }
 
     public String getAcctName() {
@@ -144,26 +196,52 @@ public class AccountConfig implements Serializable {
         this.deviceSide = deviceSide;
     }
 
-    public void serialize(DataOutputStream output) throws IOException {
-        output.writeUTF(acctName);
-        output.writeUTF(serverName);
-        output.writeInt(serverType);
-        output.writeBoolean(serverSSL);
-        output.writeUTF(serverUser);
-        output.writeUTF(serverPass);
-        output.writeInt(serverPort);
-        output.writeBoolean(deviceSide);
+    public String getSmtpServerName() {
+        return smtpServerName;
     }
 
-    public void deserialize(DataInputStream input) throws IOException {
-        acctName = input.readUTF();
-        serverName = input.readUTF();
-        serverType = input.readInt();
-        serverSSL = input.readBoolean();
-        serverUser = input.readUTF();
-        serverPass = input.readUTF();
-        serverPort = input.readInt();
-        deviceSide = input.readBoolean();
+    public void setSmtpServerName(String smtpServerName) {
+        this.smtpServerName = smtpServerName;
+    }
+
+    public boolean getSmtpUseAuth() {
+        return smtpUseAuth;
+    }
+
+    public void setSmtpUseAuth(boolean smtpUseAuth) {
+        this.smtpUseAuth = smtpUseAuth;
+    }
+
+    public String getSmtpUser() {
+        return smtpUser;
+    }
+
+    public void setSmtpUser(String smtpUser) {
+        this.smtpUser = smtpUser;
+    }
+
+    public String getSmtpPass() {
+        return smtpPass;
+    }
+
+    public void setSmtpPass(String smtpPass) {
+        this.smtpPass = smtpPass;
+    }
+
+    public int getSmtpServerPort() {
+        return smtpServerPort;
+    }
+
+    public void setSmtpServerPort(int smtpServerPort) {
+        this.smtpServerPort = smtpServerPort;
+    }
+
+    public boolean getSmtpServerSSL() {
+        return smtpServerSSL;
+    }
+
+    public void setSmtpServerSSL(boolean smtpServerSSL) {
+        this.smtpServerSSL = smtpServerSSL;
     }
 }
 
