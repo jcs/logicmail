@@ -49,6 +49,7 @@ public abstract class MailClientHandler {
     
     /**
      * Creates a new MailClientHandler
+     * 
      * @param client MailClient instance to use
      * @param taskText UI popup text describing the task
      */
@@ -62,6 +63,7 @@ public abstract class MailClientHandler {
      * Set the listener for this handler.
      * This listener will be notified of completion of
      * the MailClient task.
+     * 
      * @param clientListener Listener
      */
     public void setMailClientListener(MailClientListener clientListener) {

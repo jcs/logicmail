@@ -37,7 +37,7 @@ import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -52,7 +52,7 @@ import org.logicprobe.LogicMail.util.Connection;
  * Implements the IMAP client
  * 
  */
-public class ImapClient implements MailClient {
+public class ImapClient implements IncomingMailClient {
     private GlobalConfig globalConfig;
     private AccountConfig acctCfg;
     private Connection connection;

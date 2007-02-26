@@ -37,33 +37,7 @@ import org.logicprobe.LogicMail.message.Message;
 /**
  * Create a generic interface to outgoing mail protocols.
  */
-public interface OutgoingMailClient {
-    /**
-     * Open a new connection.
-     * This method should typically establish a socket connection and
-     * then send the protocol-specific login commands
-     *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
-     */
-    public abstract void open() throws IOException, MailException;
-    
-    /**
-     * Close an existing connection.
-     * This method should sent protocol-specific logout commands and
-     * then terminate the connection.
-     *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
-     */
-    public abstract void close() throws IOException, MailException;
-
-    /**
-     * Find out if the connection is active.
-     * @return True if the connection is active, false otherwise
-     */
-    public abstract boolean isConnected();
-
+public interface OutgoingMailClient extends MailClient {
     /**
      * Send a message
      *

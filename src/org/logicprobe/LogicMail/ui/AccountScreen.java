@@ -41,7 +41,7 @@ import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailClientFactory;
 
 /**
@@ -212,7 +212,7 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         AccountConfig acctConfig = mailSettings.getAccountConfig(index);
         if(acctConfig == null) return;
 
-        MailClient client = MailClientFactory.createMailClient(acctConfig);
+        IncomingMailClient client = MailClientFactory.createMailClient(acctConfig);
         if(client.hasFolders()) {
             UiApplication.getUiApplication().pushScreen(new FolderScreen(client));
         }

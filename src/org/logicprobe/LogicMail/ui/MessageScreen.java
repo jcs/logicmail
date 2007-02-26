@@ -44,7 +44,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -54,14 +54,14 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
  * Display an E-Mail message
  */
 public class MessageScreen extends BaseScreen implements MailClientListener {
-    private MailClient client;
+    private IncomingMailClient client;
     private FolderTreeItem folderItem;
     private FolderMessage folderMessage;
     private MessageEnvelope envelope;
     private Vector msgFields;
     private UpdateMessageHandler updateMessageHandler;
     
-    public MessageScreen(MailClient client,
+    public MessageScreen(IncomingMailClient client,
                          FolderTreeItem folderItem,
                          FolderMessage folderMessage)
     {
@@ -202,10 +202,10 @@ public class MessageScreen extends BaseScreen implements MailClientListener {
 
         public void runSession() throws IOException, MailException {
             // Set the active folder
-            client.setActiveFolder(MessageScreen.this.folderItem);
+            ((IncomingMailClient)client).setActiveFolder(MessageScreen.this.folderItem);
 
             // Download the message
-            Message msg = client.getMessage(MessageScreen.this.folderMessage);
+            Message msg = ((IncomingMailClient)client).getMessage(MessageScreen.this.folderMessage);
 
             // Prepare the UI elements
             if(msg.getBody() != null) {

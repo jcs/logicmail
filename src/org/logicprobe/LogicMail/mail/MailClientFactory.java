@@ -40,7 +40,7 @@ import org.logicprobe.LogicMail.mail.smtp.SmtpClient;
 
 /**
  * Factory to handle creation and configuration of
- * concrete MailClient instances
+ * concrete IncomingMailClient instances
  */
 public class MailClientFactory {
     private MailClientFactory() { }
@@ -51,7 +51,7 @@ public class MailClientFactory {
      * @param acctConfig User account configuration
      * @return Usable mail client instance
      */
-    public static MailClient createMailClient(AccountConfig acctConfig) {
+    public static IncomingMailClient createMailClient(AccountConfig acctConfig) {
         GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
         if(acctConfig.getServerType() == AccountConfig.TYPE_POP) {
             return new PopClient(globalConfig, acctConfig);

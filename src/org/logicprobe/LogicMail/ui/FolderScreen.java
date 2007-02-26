@@ -43,7 +43,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.mail.MailException;
 
@@ -53,10 +53,10 @@ import org.logicprobe.LogicMail.mail.MailException;
  */
 public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailClientListener {
     private TreeField treeField;
-    private MailClient client;
+    private IncomingMailClient client;
     private RefreshFolderTreeHandler refreshFolderTreeHandler;
     
-    public FolderScreen(MailClient client) {
+    public FolderScreen(IncomingMailClient client) {
         super("Folders");
         this.client = client;
 
@@ -219,7 +219,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             // the folder tree as a list of delimited items
             FolderTreeItem folderItem;
             try {
-                folderItem = client.getFolderTree();
+                folderItem = ((IncomingMailClient)client).getFolderTree();
             } catch (MailException exp) {
                 folderItem = null;
                 throw exp;
@@ -227,7 +227,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
 
             // Save the results to the cache
             AccountCache acctCache =
-                new AccountCache(client.getAcctConfig().getAcctName());
+                new AccountCache(((IncomingMailClient)client).getAcctConfig().getAcctName());
             acctCache.saveFolderTree(folderItem);
 
             this.folderRoot = folderItem;

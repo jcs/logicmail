@@ -38,7 +38,7 @@ import net.rim.device.api.mime.MIMEParsingException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -54,7 +54,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements the POP3 client
  * 
  */
-public class PopClient implements MailClient {
+public class PopClient implements IncomingMailClient {
     private GlobalConfig globalConfig;
     private AccountConfig acctCfg;
     private Connection connection;

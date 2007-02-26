@@ -32,21 +32,13 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
-import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
 
 /**
- * Create a generic interface to different mail protocols.
- * This class allows most of the UI code to be protocol-agnostic.
+ * This is a generic interface to all mail protocols.
+ * This class allows most of the background event handling
+ * code to be protocol agnostic.
  */
 public interface MailClient {
-    /**
-     * Get the account configuration.
-     * Should probably find a way to remove the need for this.
-     */
-    public abstract AccountConfig getAcctConfig();
-    
     /**
      * Open a new connection.
      * This method should typically establish a socket connection and
@@ -72,74 +64,4 @@ public interface MailClient {
      * @return True if the connection is active, false otherwise
      */
     public abstract boolean isConnected();
-
-    /**
-     * Return whether the underlying protocol supports mail folders.
-     * This enables actions to be taken without having to unnecessarily
-     * execute a potentially costly getFolderTree() operation.
-     *
-     * @return True if folders supported, false otherwise
-     */
-    public abstract boolean hasFolders();
-    
-    /**
-     * Get the mail folder tree.
-     * This should return null if folders are not supported
-     * by the underlying protocol.
-     * If the tree has no singular root node, then this should
-     * reference an invisible root node.  Otherwise, this should
-     * reference the visible root folder.
-     *
-     * @return Root folder of the tree, and all children below it
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
-     */
-    public abstract FolderTreeItem getFolderTree()
-        throws IOException, MailException;
-    
-    /**
-     * Get the active mail folder.
-     * This method is only useful if the protocol supports
-     * folders, and should otherwise return null or
-     * a single inbox folder
-     *
-     * @return The FolderItem object describing the active mailbox
-     */
-    public abstract FolderTreeItem getActiveFolder();
-    
-    /**
-     * Select a new active mail folder.
-     * This method is only useful if the protocol supports
-     * folders, and should otherwise be ignored or limited
-     * to a single inbox folder
-     * 
-     * @param folderItem The FolderItem object describing the new active folderItem
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
-     */
-    public abstract void setActiveFolder(FolderTreeItem folderItem)
-        throws IOException, MailException;
-    
-    /**
-     * Get a list of the messages in the selected folder.
-     *
-     * @param firstIndex Index of the first message
-     * @param lastIndex Index of the last message
-     * @return List of message envelopes
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
-     */
-    public abstract FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
-        throws IOException, MailException;
-    
-    /**
-     * Get a particular message from the selected folder.
-     * The details of message retrieval should be constrained by
-     * protocol-specific capabilities, application-wide data
-     * format capabilities, and user configuration options.
-     *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
-     */
-    public abstract Message getMessage(FolderMessage folderMessage) throws IOException, MailException;
 }

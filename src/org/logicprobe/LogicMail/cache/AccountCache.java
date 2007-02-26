@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.cache;
 
 import java.util.Vector;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 
 public class AccountCache {
     private String _acctName;

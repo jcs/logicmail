@@ -48,7 +48,7 @@ import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailClient;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -71,7 +71,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
 
     private MailSettings mailSettings;
     private FolderTreeItem folderItem;
-    private MailClient client;
+    private IncomingMailClient client;
     private RefreshMessageListHandler refreshMessageListHandler;
     
     // Things to calculate in advance
@@ -80,7 +80,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
     private static int senderWidth;
     private static int maxWidth;
     
-    public MailboxScreen(MailClient client, FolderTreeItem folderItem) {
+    public MailboxScreen(IncomingMailClient client, FolderTreeItem folderItem) {
         super(folderItem.getName());
         mailSettings = MailSettings.getInstance();
         this.folderItem = folderItem;
@@ -328,10 +328,10 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         public void runSession() throws IOException, MailException {
             FolderMessage[] folderMessages;
             try {
-                client.setActiveFolder(folderItem);
+                ((IncomingMailClient)client).setActiveFolder(folderItem);
                 int firstIndex = folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
                 if(firstIndex < 0) firstIndex = 1;
-                folderMessages = client.getFolderMessages(firstIndex, folderItem.getMsgCount());
+                folderMessages = ((IncomingMailClient)client).getFolderMessages(firstIndex, folderItem.getMsgCount());
             } catch (MailException exp) {
                 folderMessages = null;
                 throw exp;
