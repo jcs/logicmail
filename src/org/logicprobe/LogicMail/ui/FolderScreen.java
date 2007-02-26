@@ -104,7 +104,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     
     private MenuItem compositionItem = new MenuItem("Compose", 120, 10) {
         public void run() {
-            UiApplication.getUiApplication().pushScreen(new CompositionScreen());
+            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
         }
     };
 

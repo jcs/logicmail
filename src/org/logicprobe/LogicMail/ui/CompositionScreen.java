@@ -31,27 +31,38 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.FieldChangeListener;
+import java.io.IOException;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.EditField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
+import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.MailClientFactory;
+import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.OutgoingMailClient;
+import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MessagePartFactory;
 
 /**
  * This is the message composition screen.
  */
 public class CompositionScreen extends BaseScreen {
+    private AccountConfig acctConfig;
+    private OutgoingMailClient client;
     private VerticalFieldManager vfmRecipients;
-//    private EmailAddressBookEditField[] fldTo;
-//    private EmailAddressBookEditField[] fldCC;
     private EditField fldSubject;
     private EditField fldEdit;
     
     /** Creates a new instance of CompositionScreen */
-    public CompositionScreen() {
+    public CompositionScreen(AccountConfig acctConfig) {
+        this.acctConfig = acctConfig;
+        this.client = MailClientFactory.createOutgoingMailClient(acctConfig);
         vfmRecipients = new VerticalFieldManager();
         vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, ""));
         vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, ""));
@@ -65,6 +76,7 @@ public class CompositionScreen extends BaseScreen {
 
     private MenuItem sendMenuItem = new MenuItem("Send", 200000, 10) {
         public void run() {
+            sendMessage();
         }
     };
     private MenuItem addToMenuItem = new MenuItem("Add To:", 200110, 10) {
@@ -95,6 +107,76 @@ public class CompositionScreen extends BaseScreen {
         menu.add(addCcMenuItem);
         menu.add(addBccMenuItem);
         menu.addSeparator();
+    }
+    
+    private void sendMessage() {
+        // Simplest possible implementation for now,
+        // which turns the content of the screen into
+        // a message containing a single text/plain section
+        MessageEnvelope env = new MessageEnvelope();
+        
+        // Build the recipients list
+        EmailAddressBookEditField currentField;
+        int size = vfmRecipients.getFieldCount();
+        for(int i=0; i<size; i++) {
+            currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+            if(currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO &&
+               currentField.getText().length() > 0) {
+                if(env.to == null) {
+                    env.to = new String[1];
+                    env.to[0] = currentField.getText();
+                }
+                else {
+                    Arrays.add(env.to, currentField.getText());
+                }
+            }
+            else if(currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_CC &&
+                    currentField.getText().length() > 0) {
+                if(env.cc == null) {
+                    env.cc = new String[1];
+                    env.cc[0] = currentField.getText();
+                }
+                else {
+                    Arrays.add(env.cc, currentField.getText());
+                }
+            }
+            else if(currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_BCC &&
+                    currentField.getText().length() > 0) {
+                if(env.bcc == null) {
+                    env.bcc = new String[1];
+                    env.bcc[0] = currentField.getText();
+                }
+                else {
+                    Arrays.add(env.bcc, currentField.getText());
+                }
+            }
+        }
+        
+        // Set the sender
+        // (this should come from global or account settings)
+        env.from = new String[1];
+        env.from[0] = MailSettings.getInstance().getGlobalConfig().getFullname() +
+                      " <" + acctConfig.getServerUser() + "@" + acctConfig.getServerName() + ">";
+        
+        // Set the subject
+        env.subject = fldSubject.getText();
+        
+        MessagePart bodyPart = MessagePartFactory.createMessagePart("text", "plain", "7bit", "us-ascii", fldEdit.getText());
+        
+        Message message = new Message(env, bodyPart);
+        
+        // Connect and send.
+        // This has to be moved to a separate threaded method
+        // before being usable on a real device.
+//        try {
+//            client.open();
+//            client.sendMessage(message);
+//            client.close();
+//        } catch (MailException ex) {
+//            System.err.println("Protocol error sending message");
+//        } catch (IOException ex) {
+//            System.err.println("I/O error sending message");
+//        }
     }
     
     private void insertRecipientField(int addressType) {
