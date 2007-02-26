@@ -37,11 +37,13 @@ package org.logicprobe.LogicMail.message;
 public abstract class MessagePart {
     private String mimeType;
     private String mimeSubtype;
+    private MessagePart parent;
 
     /** Creates a new instance of MessagePart */
     protected MessagePart(String mimeType, String mimeSubtype) {
         this.mimeType = mimeType;
         this.mimeSubtype = mimeSubtype;
+        this.parent = null;
     }
 
     /**
@@ -64,5 +66,21 @@ public abstract class MessagePart {
      */
     public String getMimeSubtype() {
         return mimeSubtype;
+    }
+
+    /**
+     * Set the parent of this part
+     * @param parent The parent message part, or null if this is the root
+     */
+    protected void setParent(MessagePart parent) {
+        this.parent = parent;
+    }
+    
+    /**
+     * Get the parent of this part
+     * @return Parent, or null if this is the root
+     */
+    public MessagePart getParent() {
+        return parent;
     }
 }

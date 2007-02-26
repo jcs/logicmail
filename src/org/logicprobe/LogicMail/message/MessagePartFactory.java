@@ -108,7 +108,9 @@ public class MessagePartFactory {
         }
         // Check for a supported text sub-type and decode if necessary
         if(mimeSubtype.equalsIgnoreCase("plain")) {
-            return new TextPart(mimeSubtype, data);
+            TextPart textPart = new TextPart(mimeSubtype, data);
+            textPart.setCharset(charset);
+            return textPart;
         }
         else {
             return createUnsupportedPart("text", mimeSubtype, data);

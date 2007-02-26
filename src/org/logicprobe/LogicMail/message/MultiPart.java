@@ -76,6 +76,7 @@ public class MultiPart extends MessagePart {
         else {
             Arrays.add(parts, part);
         }
+        part.setParent(this);
     }
     
     public MessagePart[] getParts() {
