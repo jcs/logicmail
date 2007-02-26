@@ -79,7 +79,11 @@ public class ImapClient implements MailClient {
     public ImapClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
         this.acctCfg = acctCfg;
         this.globalConfig = globalConfig;
-        connection = new Connection(acctCfg);
+        connection = new Connection(
+                acctCfg.getServerName(),
+                acctCfg.getServerPort(),
+                acctCfg.getServerSSL(),
+                acctCfg.getDeviceSide());
         imapProtocol = new ImapProtocol(connection);
     }
     

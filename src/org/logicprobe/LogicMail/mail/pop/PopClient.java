@@ -71,7 +71,11 @@ public class PopClient implements MailClient {
     public PopClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
         this.acctCfg = acctCfg;
         this.globalConfig = globalConfig;
-        connection = new Connection(acctCfg);
+        connection = new Connection(
+                acctCfg.getServerName(),
+                acctCfg.getServerPort(),
+                acctCfg.getServerSSL(),
+                acctCfg.getDeviceSide());
         popProtocol = new PopProtocol(connection);
         
         // Create our dummy folder item for the inbox
