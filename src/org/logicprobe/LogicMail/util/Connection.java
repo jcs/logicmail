@@ -86,11 +86,14 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
  * is the only way to get rid of compile-time dependencies on these classes.
  */
 public class Connection {
+    private String serverName;
+    private int serverPort;
+    private boolean useSSL;
+    private boolean deviceSide;
     private StreamConnection socket;
     private SecureConnection ssocket;
     protected InputStream input;
     protected OutputStream output;
-    private AccountConfig acctCfg;
 
     /**
      * Byte array holding carriage return and line feed
@@ -116,9 +119,12 @@ public class Connection {
      * Holds the position of the next byte to be read from the buffer.
      */
     //private int position;
-
-    public Connection(AccountConfig acctCfg) {
-        this.acctCfg = acctCfg;
+    
+    public Connection(String serverName, int serverPort, boolean useSSL, boolean deviceSide) {
+        this.serverName = serverName;
+        this.serverPort = serverPort;
+        this.useSSL = useSSL;
+        this.deviceSide = deviceSide;
         this.debug = false;
         this.input = null;
         this.output = null;
@@ -131,16 +137,17 @@ public class Connection {
      */
     public void open() throws IOException {
         close();
-        String protocolStr = (acctCfg.getServerSSL() ? "ssl" : "socket");
+        String protocolStr = (useSSL ? "ssl" : "socket");
         // This param, which allows bypassing the MDS proxy, should probably
         // be a global user configurable option
-        String paramStr = (acctCfg.getDeviceSide() ? ";deviceside=true" : "");
-        String connectStr = protocolStr + "://" + acctCfg.getServerName() +
-                            ":" + acctCfg.getServerPort() +
+        String paramStr = (deviceSide ? ";deviceside=true" : "");
+        String connectStr = protocolStr + "://" + serverName +
+                            ":" + serverPort +
                             paramStr;
+        if (debug) System.out.println("[OPEN] " + connectStr);
         socket = null;
         ssocket = null;
-        if(acctCfg.getServerSSL()) {
+        if(useSSL) {
             ssocket = (SecureConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
             input = ssocket.openInputStream();
             output = ssocket.openOutputStream();
@@ -178,7 +185,7 @@ public class Connection {
      * @return True if connected
      */
     public boolean isConnected() {
-        if(acctCfg.getServerSSL()) {
+        if(useSSL) {
             if(ssocket != null)
                 return true;
             else
