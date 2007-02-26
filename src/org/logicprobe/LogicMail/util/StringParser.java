@@ -334,4 +334,26 @@ public class StringParser {
         }
         return buffer.toString();
     }
+    
+    /**
+     * Encode a quoted-printable string
+     */
+    public static String encodeQuotedPrintable(String text) {
+        StringBuffer buffer = new StringBuffer();
+        char ch;
+        String charStr;
+        for(int i=0; i<text.length(); i++) {
+            ch = text.charAt(i);
+            if(ch < 128)
+                buffer.append(ch);
+            else {
+                charStr = Integer.toHexString((int)ch);
+                buffer.append('=');
+                if(charStr.length() == 1)
+                    buffer.append('0');
+                buffer.append(charStr);
+            }
+        }
+        return buffer.toString();
+    }
 }
