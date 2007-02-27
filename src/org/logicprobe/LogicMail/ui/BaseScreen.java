@@ -77,7 +77,6 @@ public abstract class BaseScreen extends MainScreen {
     };
     private MenuItem exitItem = new MenuItem("Exit", 200001, 10) {
         public void run() {
-            Dialog.alert("Visit Again!");
             System.exit(0);
         }
     };
