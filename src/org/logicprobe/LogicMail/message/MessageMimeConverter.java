@@ -109,7 +109,6 @@ public class MessageMimeConverter implements MessagePartVisitor {
                     currentStream.write(StringParser.encodeQuotedPrintable(part.getText()).getBytes(charset));
                 else
                     currentStream.write(part.getText().getBytes(charset));
-                System.err.println("Wrote bytes: "+part.getText().getBytes(charset).length);
             }
             else {
                 byte[] data = part.getText().getBytes(charset);

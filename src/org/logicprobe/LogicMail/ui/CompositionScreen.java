@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import java.io.IOException;
+import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.EditField;
@@ -52,7 +53,7 @@ import org.logicprobe.LogicMail.message.MessagePartFactory;
 /**
  * This is the message composition screen.
  */
-public class CompositionScreen extends BaseScreen {
+public class CompositionScreen extends BaseScreen implements MailClientListener {
     private AccountConfig acctConfig;
     private OutgoingMailClient client;
     private VerticalFieldManager vfmRecipients;
@@ -165,19 +166,26 @@ public class CompositionScreen extends BaseScreen {
         
         Message message = new Message(env, bodyPart);
         
-        // Connect and send.
-        // This has to be moved to a separate threaded method
-        // before being usable on a real device.
-//        try {
-//            client.open();
-//            client.sendMessage(message);
-//            client.close();
-//        } catch (MailException ex) {
-//            System.err.println("Protocol error sending message");
-//        } catch (IOException ex) {
-//            System.err.println("I/O error sending message");
-//        }
+        SendMessageHandler sendHandler = new SendMessageHandler(message);
+        sendHandler.setMailClientListener(this);
+        sendHandler.start();
     }
+    
+    /**
+     * Handle completion of sending a message.
+     */
+    public void mailActionComplete(MailClientHandler source, boolean result) {
+        // If the mail sent successfully, close the screen.
+        // Ideally, this should also store the message in a
+        // configured sent-messages folder on the outgoing
+        // mail server if applicable.
+        if(result == true) {
+            synchronized(Application.getEventLock()) {
+                this.close();
+            }
+        }
+    }
+
     
     private void insertRecipientField(int addressType) {
         int size = vfmRecipients.getFieldCount();
@@ -243,5 +251,23 @@ public class CompositionScreen extends BaseScreen {
             return true;
         }
         return super.keyChar(key, status, time);
+    }
+
+    /**
+     * Implements the handler for sending messages
+     */
+    private class SendMessageHandler extends MailClientHandler {
+        private Message message;
+
+        public SendMessageHandler(Message message) {
+            super(CompositionScreen.this.client, "Sending message");
+            this.message = message;
+        }
+
+        public void runSession() throws IOException, MailException {
+            client.open();
+            ((OutgoingMailClient)client).sendMessage(message);
+            client.close();
+        }
     }
 }

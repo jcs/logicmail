@@ -162,9 +162,15 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
             openSelectedMessage();
         }
     };
+    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
+        public void run() {
+            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
+        }
+    };
 
     protected void makeMenu(Menu menu, int instance) {
         menu.add(selectItem);
+        menu.add(compositionItem);
         super.makeMenu(menu, instance);
     }
     

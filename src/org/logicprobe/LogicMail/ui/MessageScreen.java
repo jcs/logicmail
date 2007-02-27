@@ -39,6 +39,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
@@ -103,6 +104,11 @@ public class MessageScreen extends BaseScreen implements MailClientListener {
             showMsgProperties();
         }
     };
+    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
+        public void run() {
+            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
+        }
+    };
     private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
         public void run() {
             onClose();
@@ -110,6 +116,7 @@ public class MessageScreen extends BaseScreen implements MailClientListener {
     };
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
+        menu.add(compositionItem);
         menu.add(closeItem);
     }
 
