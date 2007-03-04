@@ -265,7 +265,6 @@ public class CompositionScreen extends BaseScreen implements MailClientListener 
         }
 
         public void runSession() throws IOException, MailException {
-            client.open();
             ((OutgoingMailClient)client).sendMessage(message);
             client.close();
         }

@@ -56,7 +56,7 @@ public class AccountConfig implements Serializable {
     private String smtpServerName;
     private int smtpServerPort;
     private boolean smtpServerSSL;
-    private boolean smtpUseAuth;
+    private int smtpUseAuth;
     private String smtpUser;
     private String smtpPass;
 
@@ -72,7 +72,7 @@ public class AccountConfig implements Serializable {
         smtpServerName = "";
         smtpServerPort = 25;
         smtpServerSSL = false;
-        smtpUseAuth = false;
+        smtpUseAuth = 0;
         smtpUser = "";
         smtpPass = "";
     }
@@ -92,7 +92,7 @@ public class AccountConfig implements Serializable {
             smtpServerName = "";
             smtpServerPort = 25;
             smtpServerSSL = false;
-            smtpUseAuth = false;
+            smtpUseAuth = 0;
             smtpUser = "";
             smtpPass = "";
         }
@@ -110,7 +110,7 @@ public class AccountConfig implements Serializable {
         output.writeUTF(smtpServerName);
         output.writeInt(smtpServerPort);
         output.writeBoolean(smtpServerSSL);
-        output.writeBoolean(smtpUseAuth);
+        output.writeInt(smtpUseAuth);
         output.writeUTF(smtpUser);
         output.writeUTF(smtpPass);
     }
@@ -127,7 +127,7 @@ public class AccountConfig implements Serializable {
         smtpServerName = input.readUTF();
         smtpServerPort = input.readInt();
         smtpServerSSL = input.readBoolean();
-        smtpUseAuth = input.readBoolean();
+        smtpUseAuth = input.readInt();
         smtpUser = input.readUTF();
         smtpPass = input.readUTF();
     }
@@ -204,11 +204,11 @@ public class AccountConfig implements Serializable {
         this.smtpServerName = smtpServerName;
     }
 
-    public boolean getSmtpUseAuth() {
+    public int getSmtpUseAuth() {
         return smtpUseAuth;
     }
 
-    public void setSmtpUseAuth(boolean smtpUseAuth) {
+    public void setSmtpUseAuth(int smtpUseAuth) {
         this.smtpUseAuth = smtpUseAuth;
     }
 

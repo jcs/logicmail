@@ -72,12 +72,18 @@ public class SmtpClient implements OutgoingMailClient {
         
         // Eat the initial server response
         connection.receive();
-
         String hostname = System.getProperty("microedition.hostname");
         if(hostname == null) hostname = "unknown";
         
         helloResult = smtpProtocol.executeExtendedHello(hostname);
         
+        if(acctCfg.getSmtpUseAuth() > 0) {
+            boolean result = smtpProtocol.executeAuth(acctCfg.getSmtpUseAuth(), acctCfg.getSmtpUser(), acctCfg.getSmtpPass());
+            if(!result) {
+                connection.close();
+                throw new MailException("Unable to authenticate");
+            }
+        }
         isFresh = true;
     }
 

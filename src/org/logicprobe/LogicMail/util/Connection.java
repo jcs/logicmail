@@ -62,9 +62,11 @@ package org.logicprobe.LogicMail.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import javax.microedition.io.SocketConnection;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.SecureConnection;
 import javax.microedition.io.Connector;
+import net.rim.device.cldc.io.ssl.TLSException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**
@@ -91,7 +93,7 @@ public class Connection {
     private boolean useSSL;
     private boolean deviceSide;
     private StreamConnection socket;
-    private SecureConnection ssocket;
+    private String localAddress;
     protected InputStream input;
     protected OutputStream output;
 
@@ -129,7 +131,6 @@ public class Connection {
         this.input = null;
         this.output = null;
         this.socket = null;
-        this.ssocket = null;
     }
 
     /**
@@ -142,20 +143,12 @@ public class Connection {
         // be a global user configurable option
         String paramStr = (deviceSide ? ";deviceside=true" : "");
         String connectStr = protocolStr + "://" + serverName +
-                            ":" + serverPort +
-                            paramStr;
+                     ":" + serverPort + paramStr;
         if (debug) System.out.println("[OPEN] " + connectStr);
-        socket = null;
-        ssocket = null;
-        if(useSSL) {
-            ssocket = (SecureConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
-            input = ssocket.openInputStream();
-            output = ssocket.openOutputStream();
-        } else {
-            socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
-            input = socket.openInputStream();
-            output = socket.openOutputStream();
-        }
+        socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
+        input = socket.openInputStream();
+        output = socket.openOutputStream();
+        localAddress = ((SocketConnection)socket).getLocalAddress();
     }        
 
     /**
@@ -174,10 +167,6 @@ public class Connection {
             socket.close();
             socket = null;
         }
-        else if(ssocket != null) {
-            ssocket.close();
-            ssocket = null;
-        }
     }
 
     /**
@@ -185,20 +174,28 @@ public class Connection {
      * @return True if connected
      */
     public boolean isConnected() {
-        if(useSSL) {
-            if(ssocket != null)
-                return true;
-            else
-                return false;
-        }
-        else {
-            if(socket != null)
-                return true;
-            else
-                return false;
-        }
+        if(socket != null)
+            return true;
+        else
+            return false;
     }
 
+    /**
+     * Get the local address to which this connection is bound
+     * @return Local address
+     */
+    public String getLocalAddress() {
+        return localAddress;
+    }
+    
+    /**
+     * Get the server name used when this connection was created
+     * @return Server name
+     */
+    public String getServerName() {
+        return serverName;
+    }
+    
     /**
      * Sends a string to the server. This method is used internally for
      * all outgoing communication to the server. The main thing it does

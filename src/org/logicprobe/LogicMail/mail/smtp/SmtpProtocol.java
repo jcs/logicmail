@@ -33,9 +33,13 @@ package org.logicprobe.LogicMail.mail.smtp;
 
 import java.io.IOException;
 import java.util.Vector;
+import net.rim.device.api.io.Base64InputStream;
+import net.rim.device.api.io.Base64OutputStream;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.MD5;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * This class implements the commands for the SMTP protocol
@@ -43,11 +47,191 @@ import org.logicprobe.LogicMail.util.Connection;
 public class SmtpProtocol {
     private Connection connection;
     
+    /** Specifies the PLAIN authentication mechanism */
+    public static int AUTH_PLAIN = 1;
+    /** Specifies the LOGIN authentication mechanism */
+    public static int AUTH_LOGIN = 2;
+    /** Specifies the CRAM-MD5 authentication mechanism */
+    public static int AUTH_CRAM_MD5 = 3;
+    /** Specifies the DIGEST-MD5 authentication mechanism */
+    public static int AUTH_DIGEST_MD5 = 4;
+    
     /** Creates a new instance of SmtpProtocol */
     public SmtpProtocol(Connection connection) {
         this.connection = connection;
     }
     
+    /**
+     * Execute the "AUTH" command.
+     * @param mech Authentication mechanism to use
+     * @param username Username
+     * @param password Password
+     * @return True if successful, false on failure
+     */
+    public boolean executeAuth(int mech, String username, String password) throws IOException, MailException {
+        String result;
+        byte[] data;
+        if(mech == AUTH_PLAIN) {
+            result = execute("AUTH PLAIN");
+            if(!result.startsWith("334")) return false;
+            
+            // Format the username and password
+            byte[] userData = username.getBytes();
+            byte[] passData = password.getBytes();
+            data = new byte[userData.length + passData.length + 2];
+            int i = 0;
+            data[i++] = 0;
+            for(int j=0; j<userData.length; j++)
+                data[i++] = userData[j];
+            data[i++] = 0;
+            for(int j=0; j<passData.length; j++)
+                data[i++] = passData[j];
+            
+            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+            if(!result.startsWith("235")) return false;
+        }
+        else if(mech == AUTH_LOGIN) {
+            result = execute("AUTH LOGIN");
+            if(!result.startsWith("334")) return false;
+            data = username.getBytes();
+            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+            if(!result.startsWith("334")) return false;
+            data = password.getBytes();
+            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+            if(!result.startsWith("235")) return false;
+        }
+        else if(mech == AUTH_CRAM_MD5) {
+            result = execute("AUTH CRAM-MD5");
+            if(!result.startsWith("334")) return false;
+            
+            int i;
+            byte[] challenge = Base64InputStream.decode(result.substring(4));
+           
+            byte[] passData = password.getBytes();
+
+            byte[] s = password.getBytes("US-ASCII");
+            byte[] digest = hmac_md5(s, challenge);
+            StringBuffer buf = new StringBuffer();
+            buf.append(username);
+            buf.append(' ');
+            buf.append(byteArrayToHexString(digest));
+
+            byte[] eval = buf.toString().getBytes("US-ASCII");
+            
+            result = execute(Base64OutputStream.encodeAsString(eval, 0, eval.length, false, false));
+            if(!result.startsWith("235")) return false;
+        }
+        else if(mech == AUTH_DIGEST_MD5) {
+            // Note: This code does not currently work correctly
+            result = execute("AUTH DIGEST-MD5");
+            if(!result.startsWith("334")) return false;
+            
+            String challenge = new String(Base64InputStream.decode(result.substring(4)));
+            System.err.println("-->Challenge: " + challenge);
+            // Note, the fields with CSV string values will get mucked up
+            String[] fields = StringParser.parseTokenString(challenge, ",");
+            int i;
+            String realm = null;
+            String nonce = null;
+            String qop = null;
+            String algorithm = null;
+            String charset = null;
+            for(i = 0; i < fields.length; i++) {
+                if(fields[i].startsWith("realm")) {
+                    realm = parseValue(fields[i]);
+                }
+                else if(fields[i].startsWith("nonce")) {
+                    nonce = parseValue(fields[i]);
+                }
+                else if(fields[i].startsWith("qop")) {
+                    qop = parseValue(fields[i]);
+                }
+                else if(fields[i].startsWith("algorithm")) {
+                    algorithm = parseValue(fields[i]);
+                }
+                else if(fields[i].startsWith("charset")) {
+                    charset = parseValue(fields[i]);
+                }
+            }
+            System.err.println("-->  Realm: "+realm);
+            System.err.println("-->  Nonce: "+nonce);
+            System.err.println("-->  Qop: "+qop);
+            System.err.println("-->  Algorithm: "+algorithm);
+            System.err.println("-->  Charset: "+charset);
+            
+            StringBuffer buf = new StringBuffer();
+            MD5 md5 = new MD5();
+            // Generate the response
+            // If authzid is not specified, then A1 is:
+            // A1 = { H( { username-value, ":", realm-value, ":", passwd } ),
+            //       ":", nonce-value, ":", cnonce-value }
+            buf.append(username);
+            buf.append(':');
+            buf.append(realm);
+            buf.append(':');
+            buf.append(password);
+            md5.update(buf.toString().getBytes(charset));
+            String A1 = byteArrayToHexString(md5.getDigest()); // HEX(H(A1))
+            System.err.println("A1: HEX(H( { "+buf.toString()+" )) = " + A1);
+            
+            // If the "qop" directive's value is "auth", then A2 is:
+            // A2 = { "AUTHENTICATE:", digest-uri-value }
+            buf = new StringBuffer();
+            md5.reset();
+            buf.append("AUTHENTICATE:");
+            buf.append("smtp/");
+            buf.append(connection.getServerName());
+            md5.update(buf.toString().getBytes(charset));
+            String A2 = byteArrayToHexString(md5.getDigest()); // HEX(H(A2))
+            System.err.println("A2: HEX(H("+buf.toString()+")) = " + A2);
+            
+            String cnonce = "K4esOhbue3/urOGXWiEivkF9WUeZziawEHFC9nEz4BA=";
+            String nc = "00000001";
+
+            //HEX( KD ( HEX(H(A1)),
+            //     { nonce-value, ":" nc-value, ":",
+            //       cnonce-value, ":", qop-value, ":", HEX(H(A2)) }))
+            buf = new StringBuffer();
+            md5.reset();
+            buf.append(A1);
+            buf.append(':');
+            buf.append(nonce);
+            buf.append(':');
+            buf.append(nc);
+            buf.append(':');
+            buf.append(cnonce);
+            buf.append(':');
+            buf.append("auth");
+            buf.append(':');
+            buf.append(A2);
+            md5.update(buf.toString().getBytes(charset));
+            String resp = byteArrayToHexString(md5.getDigest());
+            System.err.println("HEX(MD5("+buf.toString()+")) = " + resp);
+            
+            // Craft the reply
+            buf = new StringBuffer();
+            buf.append("charset="+charset+",");
+            buf.append("username=\""+username+"\",");
+            buf.append("realm=\""+realm+"\",");
+            buf.append("nonce=\""+nonce+"\",");
+            buf.append("nc="+nc+",");
+            buf.append("cnonce=\""+cnonce+"\",");
+            buf.append("digest-uri=\"smtp/"+connection.getServerName()+"\",");
+            buf.append("response="+resp+",");
+            buf.append("qop=auth");
+            System.err.println("-->Response: " + buf.toString());
+            byte[] response = buf.toString().getBytes(charset);
+            result = execute(Base64OutputStream.encodeAsString(response, 0, response.length, false, false));
+            if(!result.startsWith("334")) return false;
+            System.err.println("-->Result: "+(new String(Base64InputStream.decode(result))));
+            if(!result.startsWith("235")) return false;
+        }
+        else {
+            throw new MailException("Unknown authentication mechanism");
+        }
+        return true;
+    }
+
     /**
      * Execute the "EHLO" command.
      * @param domain Domain name of the client
@@ -133,10 +317,6 @@ public class SmtpProtocol {
         
         String result = connection.receive();
         
-//        if((result.length() > 1) && (result.charAt(0) == '-')) {
-//            throw new MailException(result);
-//        }
-        
         return result;
     }
 
@@ -160,5 +340,79 @@ public class SmtpProtocol {
             if(buffer.length() >=4 && buffer.charAt(3) == ' ') break;
         }
         return lines;
+    }
+
+    private static final char[] HEX_CHARS =
+        {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+
+    /**
+     * Convert a byte array to a hex string.
+     * This converts to a string where the letters in the
+     * hex string are in lower-case.
+     *
+     * @param in Input byte array
+     * @return Hex string
+     */
+    public static final String byteArrayToHexString( final byte[] hash ) {
+        char buf[] = new char[hash.length * 2];
+        for (int i = 0, x = 0; i < hash.length; i++) {
+                buf[x++] = HEX_CHARS[(hash[i] >>> 4) & 0xf];
+                buf[x++] = HEX_CHARS[hash[i] & 0xf];
+        }
+        return new String(buf);
+    }
+    
+    /**
+     * Computes a CRAM digest using the HMAC algorithm:
+     * <pre>
+     * MD5(key XOR opad, MD5(key XOR ipad, text))
+     * </pre>.
+     * <code>secret</code> is null-padded to a length of 64 bytes.
+     * If the shared secret is longer than 64 bytes, the MD5 digest of the
+     * shared secret is used as a 16 byte input to the keyed MD5 calculation.
+     * See RFC 2104 for details.
+     */
+    private static byte[] hmac_md5(byte[] key, byte[] text) {
+        byte[] k_ipad = new byte[64];
+        byte[] k_opad = new byte[64];
+        byte[] digest;
+        
+        MD5 md5 = new MD5();
+        // if key is longer than 64 bytes reset it to key=MD5(key)
+        if (key.length>64) {
+            md5.update(key);
+            key = md5.getDigest();
+        }
+        // start out by storing key in pads
+        System.arraycopy(key, 0, k_ipad, 0, key.length);
+        System.arraycopy(key, 0, k_opad, 0, key.length);
+        // XOR key with ipad and opad values
+        for (int i=0; i<64; i++) {
+            k_ipad[i] ^= 0x36;
+            k_opad[i] ^= 0x5c;
+        }
+        // perform inner MD5
+        md5.reset();
+        md5.update(k_ipad);
+        md5.update(text);
+        digest = md5.getDigest();
+        
+        // perform outer MD5
+        md5.reset();
+        md5.update(k_opad);
+        md5.update(digest);
+        digest = md5.getDigest();
+        
+        return digest;
+    }
+
+    private static String parseValue(String input) {
+        int p, q;
+        p = input.indexOf("=") + 1;
+        q = input.length() - 1;
+        if(q <= p) return null;
+        if(input.charAt(p) == '\"') p++;
+        if(input.charAt(q) == '\"') q--;
+        return input.substring(p, q+1);
     }
 }

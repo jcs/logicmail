@@ -52,7 +52,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private BasicEditField fldSmtpServerName;
     private BasicEditField fldSmtpServerPort;
     private CheckboxField fldSmtpServerSSL;
-    private CheckboxField fldSmtpUseAuth;
+    private ObjectChoiceField fldSmtpUseAuth;
     private BasicEditField fldSmtpUser;
     private BasicEditField fldSmtpPass;
 
@@ -101,10 +101,13 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         add(fldSmtpServerPort);
         
         add(fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL()));
-        add(fldSmtpUseAuth = new CheckboxField("Authentication", acctConfig.getSmtpUseAuth()));
+        fldSmtpServerSSL.setChangeListener(this);
+        
+        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5", "DIGEST-MD5" };
+        add(fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth()));
         add(fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser()));
         add(fldSmtpPass = new BasicEditField("Password: ", acctConfig.getSmtpPass()));
-        if(!acctConfig.getSmtpUseAuth()) {
+        if(acctConfig.getSmtpUseAuth() == 0) {
             fldSmtpUser.setEditable(false);
             fldSmtpPass.setEditable(false);
             fldSmtpUser.setText("n/a");
@@ -137,8 +140,14 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
                     fldServerPort.setText("143");
             }
         }
+        else if(field == fldSmtpServerSSL) {
+            if(fldSmtpServerSSL.getChecked())
+                fldSmtpServerPort.setText("465");
+            else
+                fldSmtpServerPort.setText("25");
+        }
         else if(field == fldSmtpUseAuth) {
-            if(fldSmtpUseAuth.getChecked()) {
+            if(fldSmtpUseAuth.getSelectedIndex() > 0) {
                 fldSmtpUser.setEditable(true);
                 fldSmtpPass.setEditable(true);
                 fldSmtpUser.setText(acctConfig.getSmtpUser());
@@ -165,8 +174,8 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         this.acctConfig.setSmtpServerName(fldSmtpServerName.getText());
         this.acctConfig.setSmtpServerPort(Integer.parseInt(fldSmtpServerPort.getText()));
         this.acctConfig.setSmtpServerSSL(fldSmtpServerSSL.getChecked());
-        this.acctConfig.setSmtpUseAuth(fldSmtpUseAuth.getChecked());
-        if(fldSmtpUseAuth.getChecked()) {
+        this.acctConfig.setSmtpUseAuth(fldSmtpUseAuth.getSelectedIndex());
+        if(fldSmtpUseAuth.getSelectedIndex() > 0) {
             this.acctConfig.setSmtpUser(fldSmtpUser.getText());
             this.acctConfig.setSmtpPass(fldSmtpPass.getText());
         }
