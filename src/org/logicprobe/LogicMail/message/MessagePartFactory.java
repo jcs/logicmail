@@ -143,7 +143,8 @@ public class MessagePartFactory {
     private static boolean isMultiPartSupported(String mimeSubtype) {
         return (mimeSubtype.equalsIgnoreCase("mixed") ||
                 mimeSubtype.equalsIgnoreCase("related") ||
-                mimeSubtype.equalsIgnoreCase("alternative"));
+                mimeSubtype.equalsIgnoreCase("alternative") ||
+                mimeSubtype.equalsIgnoreCase("signed"));
     }
 
     private static boolean isTextPartSupported(String mimeSubtype) {

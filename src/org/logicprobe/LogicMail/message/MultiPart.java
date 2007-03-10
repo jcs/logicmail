@@ -41,6 +41,7 @@ public class MultiPart extends MessagePart {
     private boolean partMixed;
     private boolean partAlternative;
     private boolean partRelated;
+    private boolean partSigned;
     
     /** Creates a new instance of MultiPart */
     public MultiPart(String mimeSubtype) {
@@ -48,11 +49,15 @@ public class MultiPart extends MessagePart {
         partMixed = false;
         partAlternative = false;
         partRelated = false;
+        partSigned = false;
         if(mimeSubtype.equalsIgnoreCase("alternative")) {
             partAlternative = true;
         }
         else if(mimeSubtype.equalsIgnoreCase("related")) {
             partRelated = true;
+        }
+        else if(mimeSubtype.equalsIgnoreCase("signed")) {
+            partSigned = true;
         }
         else {
             // If all else fails, automatically assume a "mixed" part
@@ -93,5 +98,9 @@ public class MultiPart extends MessagePart {
 
     public boolean isPartRelated() {
         return partRelated;
+    }
+    
+    public boolean isPartSigned() {
+        return partSigned;
     }
 }
