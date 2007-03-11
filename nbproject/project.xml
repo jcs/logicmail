@@ -2,6 +2,10 @@
 <project xmlns="http://www.netbeans.org/ns/project/1">
     <type>org.netbeans.modules.kjava.j2meproject</type>
     <configuration>
+        <configurations xmlns="http://www.netbeans.org/ns/project-configurations/1">
+            <configuration>BB41Configuration</configuration>
+            <configuration>BB40Configuration</configuration>
+        </configurations>
         <data xmlns="http://www.netbeans.org/ns/j2me-project">
             <name>LogicMail</name>
             <minimum-ant-version>1.6</minimum-ant-version>

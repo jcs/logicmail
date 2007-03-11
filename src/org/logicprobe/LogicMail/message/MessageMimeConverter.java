@@ -11,11 +11,10 @@ package org.logicprobe.LogicMail.message;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Hashtable;
-import net.rim.device.api.io.Base64OutputStream;
 import net.rim.device.api.mime.MIMEOutputStream;
 import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.UtilProxy;
 
 /**
  * Converts a message into the equivalent MIME structure
@@ -23,6 +22,7 @@ import org.logicprobe.LogicMail.util.StringParser;
 public class MessageMimeConverter implements MessagePartVisitor {
     private ByteArrayOutputStream byteArrayOutputStream;
     private MIMEOutputStream mimeOutputStream;
+    private UtilProxy utilProxy;
     
     /** maps message parts to MIMEOutputStream objects */
     private Hashtable partMimeMap;
@@ -31,6 +31,7 @@ public class MessageMimeConverter implements MessagePartVisitor {
     public MessageMimeConverter() {
         byteArrayOutputStream = new ByteArrayOutputStream();
         mimeOutputStream = null;
+        utilProxy = UtilProxy.getInstance();
         partMimeMap = new Hashtable();
     }
 
@@ -112,7 +113,7 @@ public class MessageMimeConverter implements MessagePartVisitor {
             }
             else {
                 byte[] data = part.getText().getBytes(charset);
-                currentStream.write(Base64OutputStream.encode(data, 0, data.length, true, true));
+                currentStream.write(utilProxy.Base64Encode(data, 0, data.length, true, true));
             }
         } catch (IOException e) {
             System.err.println("Error encoding content");
@@ -134,7 +135,7 @@ public class MessageMimeConverter implements MessagePartVisitor {
         
         try {
             byte[] data = part.getImage().getData();
-            currentStream.write(Base64OutputStream.encode(data, 0, data.length, true, true));
+            currentStream.write(utilProxy.Base64Encode(data, 0, data.length, true, true));
         } catch (IOException e) {
             System.err.println("Error encoding content");
         }

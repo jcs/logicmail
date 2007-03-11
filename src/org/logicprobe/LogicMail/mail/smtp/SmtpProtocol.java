@@ -33,13 +33,12 @@ package org.logicprobe.LogicMail.mail.smtp;
 
 import java.io.IOException;
 import java.util.Vector;
-import net.rim.device.api.io.Base64InputStream;
-import net.rim.device.api.io.Base64OutputStream;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.MD5;
 import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.UtilProxy;
 
 /**
  * This class implements the commands for the SMTP protocol
@@ -69,6 +68,7 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeAuth(int mech, String username, String password) throws IOException, MailException {
+        UtilProxy utilProxy = UtilProxy.getInstance();
         String result;
         byte[] data;
         if(mech == AUTH_PLAIN) {
@@ -87,17 +87,17 @@ public class SmtpProtocol {
             for(int j=0; j<passData.length; j++)
                 data[i++] = passData[j];
             
-            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+            result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
             if(!result.startsWith("235")) return false;
         }
         else if(mech == AUTH_LOGIN) {
             result = execute("AUTH LOGIN");
             if(!result.startsWith("334")) return false;
             data = username.getBytes();
-            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+            result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
             if(!result.startsWith("334")) return false;
             data = password.getBytes();
-            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+            result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
             if(!result.startsWith("235")) return false;
         }
         else if(mech == AUTH_CRAM_MD5) {
@@ -105,7 +105,7 @@ public class SmtpProtocol {
             if(!result.startsWith("334")) return false;
             
             int i;
-            byte[] challenge = Base64InputStream.decode(result.substring(4));
+            byte[] challenge = utilProxy.Base64Decode(result.substring(4));
            
             byte[] passData = password.getBytes();
 
@@ -118,7 +118,7 @@ public class SmtpProtocol {
 
             byte[] eval = buf.toString().getBytes("US-ASCII");
             
-            result = execute(Base64OutputStream.encodeAsString(eval, 0, eval.length, false, false));
+            result = execute(utilProxy.Base64EncodeAsString(eval, 0, eval.length, false, false));
             if(!result.startsWith("235")) return false;
         }
         else if(mech == AUTH_DIGEST_MD5) {
@@ -126,7 +126,7 @@ public class SmtpProtocol {
             result = execute("AUTH DIGEST-MD5");
             if(!result.startsWith("334")) return false;
             
-            String challenge = new String(Base64InputStream.decode(result.substring(4)));
+            String challenge = new String(utilProxy.Base64Decode(result.substring(4)));
             System.err.println("-->Challenge: " + challenge);
             // Note, the fields with CSV string values will get mucked up
             String[] fields = StringParser.parseTokenString(challenge, ",");
@@ -221,9 +221,9 @@ public class SmtpProtocol {
             buf.append("qop=auth");
             System.err.println("-->Response: " + buf.toString());
             byte[] response = buf.toString().getBytes(charset);
-            result = execute(Base64OutputStream.encodeAsString(response, 0, response.length, false, false));
+            result = execute(utilProxy.Base64EncodeAsString(response, 0, response.length, false, false));
             if(!result.startsWith("334")) return false;
-            System.err.println("-->Result: "+(new String(Base64InputStream.decode(result))));
+            System.err.println("-->Result: "+(new String(utilProxy.Base64Decode(result))));
             if(!result.startsWith("235")) return false;
         }
         else {
