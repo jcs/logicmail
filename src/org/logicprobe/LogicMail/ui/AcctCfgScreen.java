@@ -54,7 +54,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private CheckboxField fldSmtpServerSSL;
     private ObjectChoiceField fldSmtpUseAuth;
     private BasicEditField fldSmtpUser;
-    private BasicEditField fldSmtpPass;
+    private PasswordEditField fldSmtpPass;
 
     private boolean acctSaved;
     private AccountConfig acctConfig;
@@ -103,10 +103,10 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         add(fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL()));
         fldSmtpServerSSL.setChangeListener(this);
         
-        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5", "DIGEST-MD5" };
+        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
         add(fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth()));
         add(fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser()));
-        add(fldSmtpPass = new BasicEditField("Password: ", acctConfig.getSmtpPass()));
+        add(fldSmtpPass = new PasswordEditField("Password: ", acctConfig.getSmtpPass()));
         if(acctConfig.getSmtpUseAuth() == 0) {
             fldSmtpUser.setEditable(false);
             fldSmtpPass.setEditable(false);
