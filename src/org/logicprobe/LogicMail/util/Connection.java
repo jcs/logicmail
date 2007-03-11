@@ -64,10 +64,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import javax.microedition.io.SocketConnection;
 import javax.microedition.io.StreamConnection;
-import javax.microedition.io.SecureConnection;
 import javax.microedition.io.Connector;
-import net.rim.device.cldc.io.ssl.TLSException;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 
 /**
  * Is the abstract base class for socket connections used inside the SMTP,
