@@ -129,7 +129,7 @@ package org.logicprobe.LogicMail.util;
  */
 
 public class MD5 {
-    class MD5State {
+    private static class MD5State {
         /**
          * 128-bit state
          */
