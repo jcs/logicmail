@@ -49,11 +49,11 @@ public abstract class UtilProxy {
         UtilProxy utilProxy = null;
         String version = AppInfo.getVersion();
         try {
-            if(version.indexOf("BB v4.0") != -1) {
+            if(version.endsWith(".40")) {
                 utilProxy =
                     (UtilProxy)Class.forName("org.logicprobe.LogicMail.util.UtilProxyBB40").newInstance();
             }
-            else if(version.indexOf("BB v4.1") != -1) {
+            else if(version.endsWith(".41")) {
                 utilProxy =
                     (UtilProxy)Class.forName("org.logicprobe.LogicMail.util.UtilProxyBB41").newInstance();
             }
