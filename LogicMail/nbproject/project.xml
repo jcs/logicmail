@@ -4,6 +4,7 @@
     <configuration>
         <configurations xmlns="http://www.netbeans.org/ns/project-configurations/1">
             <configuration>BB41Configuration</configuration>
+            <configuration>TestConfiguration</configuration>
             <configuration>BB40Configuration</configuration>
         </configurations>
         <data xmlns="http://www.netbeans.org/ns/j2me-project">

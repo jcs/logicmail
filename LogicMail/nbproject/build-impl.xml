@@ -384,6 +384,9 @@
             <param name="config.active" value="BB41Configuration"/>
         </antcall>
         <antcall target="${target.to.call}" inheritall="false" inheritrefs="false">
+            <param name="config.active" value="TestConfiguration"/>
+        </antcall>
+        <antcall target="${target.to.call}" inheritall="false" inheritrefs="false">
             <param name="config.active" value="BB40Configuration"/>
         </antcall>
     </target>
