@@ -147,7 +147,7 @@ public class StringParser {
 	boolean inQuote = false;
 	while(q < rawText.length()) {
 	    if(rawText.charAt(q) == '\"') {
-		if(!inQuote) {
+                if(!inQuote) {
 		    inQuote = true;
 		    p = q;
 		}
@@ -179,7 +179,7 @@ public class StringParser {
                 parsedText.addElement(rawText.substring(p, p+len));
                 q = p + len;
             }
-	    else if(rawText.charAt(q) == ' ' && !inQuote) {
+	    else if((rawText.charAt(q) == ' ' && !inQuote) || (q == rawText.length() - 1)) {
 		if(q-p > 0) {
 		    parsedText.addElement(rawText.substring(p, q).trim());
 		    p = q;
@@ -192,9 +192,15 @@ public class StringParser {
 		p = q;
 		// paren matching
 		int level = 0;
+                boolean subInQuote = false;
 		for(int i=q+1;i<rawText.length();i++) {
-		    if(rawText.charAt(i) == '(') level++;
-		    else if(rawText.charAt(i) == ')') {
+                    if(rawText.charAt(i) == '\"' && !subInQuote)
+                        subInQuote = true;
+                    else if(rawText.charAt(i) == '\"' && subInQuote)
+                        subInQuote = false;
+                    
+		    if(rawText.charAt(i) == '(' && !subInQuote) level++;
+		    else if(rawText.charAt(i) == ')' && !subInQuote) {
 			if(level == 0) {
 			    q = i;
 			    break;
