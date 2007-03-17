@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2006, John Doe
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +36,7 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * Unit test for StringParser
@@ -62,14 +63,79 @@ public class StringParserTest extends TestCase {
      */
     public void testNestedParenStringLexer() {
         System.out.println("nestedParenStringLexer");
-//        java.lang.String rawText = "";
-//        org.logicprobe.LogicMail.util.StringParser instance = null;
-//        java.util.Vector expectedResult = null;
-//        java.util.Vector result = instance.nestedParenStringLexer(rawText);
-//        assertEquals(expectedResult, result);
+        String rawText =
+                "(FLAGS (\\Answered \\Seen) " +
+                "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
+                "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                "((\"John Doe\" NIL \"jdoe\" \"generic.test\")) " +
+                "NIL NIL " +
+                "\"<200703121933.25327.jdoe@generic.test>\" " +
+                "\"<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>\"))";
+
+        Vector result = StringParser.nestedParenStringLexer(rawText);
+        Vector temp;
+        //printTree(result, 0);
+        assertEquals("FLAGS", (String)result.elementAt(0));
+        Vector flags = (Vector)result.elementAt(1);
+        assertEquals("\\Answered", (String)flags.elementAt(0));
+        assertEquals("\\Seen", (String)flags.elementAt(1));
+
+        assertEquals("ENVELOPE", (String)result.elementAt(2));
+        Vector envelope = (Vector)result.elementAt(3);
+        assertEquals("Mon, 12 Mar 2007 19:38:31 -0700", (String)envelope.elementAt(0));
+        assertEquals("Re: Calm down! :-)", (String)envelope.elementAt(1));
         
-        //TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        temp = (Vector)envelope.elementAt(2);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("jim smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("scratch.test", (String)temp.elementAt(3));
+        
+        temp = (Vector)envelope.elementAt(3);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("jim smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("scratch.test", (String)temp.elementAt(3));
+
+        temp = (Vector)envelope.elementAt(4);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("jim smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("scratch.test", (String)temp.elementAt(3));
+
+        temp = (Vector)envelope.elementAt(5);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("John Doe", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jdoe", (String)temp.elementAt(2));
+        assertEquals("generic.test", (String)temp.elementAt(3));
+        
+        assertEquals("NIL", (String)envelope.elementAt(6));
+        assertEquals("NIL", (String)envelope.elementAt(7));
+        assertEquals("<200703121933.25327.jdoe@generic.test>", (String)envelope.elementAt(8));
+        assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>", (String)envelope.elementAt(9));
+}
+    
+    private void printTree(Object node, int level) {
+        if(node instanceof Vector) {
+            Vector vec = (Vector)node;
+            int size = vec.size();
+            for(int i=0; i<size; i++)
+                printTree(vec.elementAt(i), level + 1);
+        }
+        else {
+            StringBuffer buf = new StringBuffer();
+            buf.append(level+">");
+            for(int i=0; i<level; i++)
+                buf.append("    ");
+            buf.append(node.toString());
+            System.out.println(buf.toString());
+        }
     }
 
     /**
@@ -78,13 +144,13 @@ public class StringParserTest extends TestCase {
     public void testParseMailHeaders() {
         System.out.println("parseMailHeaders");
         String[] rawLines = {
-            "Return-Path: <octo@logicprobe.org>",
-            "Received: from hyperion.logicprobe.org ([unix socket])",
-            "         by hyperion.logicprobe.org (Cyrus v2.3.0) with LMTPA;",
+            "Return-Path: <jdoe@generic.test>",
+            "Received: from hyperion.generic.test ([unix socket])",
+            "         by hyperion.generic.test (Cyrus v2.3.0) with LMTPA;",
             "         Sun, 24 Dec 2006 20:59:45 -0500",
             "X-Sieve: CMU Sieve 2.3",
-            "From: Derek Konigsberg <octo@logicprobe.org>",
-            "To: neo@logicprobe.org",
+            "From: John Doe <jdoe@generic.test>",
+            "To: neo@generic.test",
             "Subject: Some test message",
             "Date: Sun, 24 Dec 2006 20:59:41 -0500",
             "User-Agent: KMail/1.9.1",
@@ -93,7 +159,7 @@ public class StringParserTest extends TestCase {
             "  charset=\"utf-8\"",
             "Content-Transfer-Encoding: base64",
             "Content-Disposition: inline",
-            "Message-Id: <200612242059.42552.octo@logicprobe.org>",
+            "Message-Id: <200612242059.42552.jdoe@generic.test>",
             "X-Scanned-By: MIMEDefang 2.54 on 10.4.1.12"
         };
         
@@ -106,11 +172,11 @@ public class StringParserTest extends TestCase {
 //        }
         
         assertEquals("Number of headers", 14, result.size());
-        assertEquals("<octo@logicprobe.org>", result.get("return-path"));
-        assertEquals("from hyperion.logicprobe.org ([unix socket])\r\n         by hyperion.logicprobe.org (Cyrus v2.3.0) with LMTPA;\r\n         Sun, 24 Dec 2006 20:59:45 -0500", result.get("received"));
+        assertEquals("<jdoe@generic.test>", result.get("return-path"));
+        assertEquals("from hyperion.generic.test ([unix socket])\r\n         by hyperion.generic.test (Cyrus v2.3.0) with LMTPA;\r\n         Sun, 24 Dec 2006 20:59:45 -0500", result.get("received"));
         assertEquals("CMU Sieve 2.3", result.get("x-sieve"));
-        assertEquals("Derek Konigsberg <octo@logicprobe.org>", result.get("from"));
-        assertEquals("neo@logicprobe.org", result.get("to"));
+        assertEquals("John Doe <jdoe@generic.test>", result.get("from"));
+        assertEquals("neo@generic.test", result.get("to"));
         assertEquals("Some test message", result.get("subject"));
         assertEquals("Sun, 24 Dec 2006 20:59:41 -0500", result.get("date"));
         assertEquals("KMail/1.9.1", result.get("user-agent"));
@@ -118,7 +184,7 @@ public class StringParserTest extends TestCase {
         assertEquals("text/plain;\r\n  charset=\"utf-8\"", result.get("content-type"));
         assertEquals("base64", result.get("content-transfer-encoding"));
         assertEquals("inline", result.get("content-disposition"));
-        assertEquals("<200612242059.42552.octo@logicprobe.org>", result.get("message-id"));
+        assertEquals("<200612242059.42552.jdoe@generic.test>", result.get("message-id"));
         assertEquals("MIMEDefang 2.54 on 10.4.1.12", result.get("x-scanned-by"));
     }
 
@@ -203,14 +269,21 @@ public class StringParserTest extends TestCase {
      */
     public void testDecodeQuotedPrintable() {
         System.out.println("decodeQuotedPrintable");
-//        java.lang.String text = "";
-//        org.logicprobe.LogicMail.util.StringParser instance = null;
-//        java.lang.String expectedResult = "";
-//        java.lang.String result = instance.decodeQuotedPrintable(text);
-//        assertEquals(expectedResult, result);
-        
-        //TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        String text = "=A1Hol=E1 Se=F1or!";
+        String expectedResult = "¡Holá Señor!";
+        String result = StringParser.decodeQuotedPrintable(text);
+        assertEquals(expectedResult, result);
+    }
+
+    /**
+     * Test of encodeQuotedPrintable method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testEncodeQuotedPrintable() {
+        System.out.println("encodeQuotedPrintable");
+        String text = "¡Holá Señor!";
+        String expectedResult = "=A1Hol=E1 Se=F1or!".toLowerCase();
+        String result = StringParser.encodeQuotedPrintable(text).toLowerCase();
+        assertEquals(expectedResult, result);
     }
 
     public StringParserTest() {
@@ -232,10 +305,10 @@ public class StringParserTest extends TestCase {
 //            public void run(TestCase tc) {
 //                ((StringParserTest)tc).testParseDateString();
 //        }}));
-//        testSuite.addTest(new StringParserTest("nestedParenStringLexer", new TestMethod() {
-//            public void run(TestCase tc) {
-//                ((StringParserTest)tc).testNestedParenStringLexer();
-//        }}));
+        testSuite.addTest(new StringParserTest("nestedParenStringLexer", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testNestedParenStringLexer();
+        }}));
         testSuite.addTest(new StringParserTest("parseMailHeaders", new TestMethod() {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testParseMailHeaders();
@@ -256,10 +329,14 @@ public class StringParserTest extends TestCase {
 //            public void run(TestCase tc) {
 //                ((StringParserTest)tc).testReadWholeStream();
 //        }}));
-//        testSuite.addTest(new StringParserTest("decodeQuotedPrintable", new TestMethod() {
-//            public void run(TestCase tc) {
-//                ((StringParserTest)tc).testDecodeQuotedPrintable();
-//        }}));
+        testSuite.addTest(new StringParserTest("decodeQuotedPrintable", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testDecodeQuotedPrintable();
+        }}));
+        testSuite.addTest(new StringParserTest("encodeQuotedPrintable", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testEncodeQuotedPrintable();
+        }}));
         return testSuite;
     }
 }
