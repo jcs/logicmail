@@ -43,6 +43,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Implements an SMTP client
@@ -117,7 +118,7 @@ public class SmtpClient implements OutgoingMailClient {
             buffer.append("Bcc: " + makeCsvString(env.bcc) + "\r\n");
         if(env.replyTo != null && env.replyTo.length > 0)
             buffer.append("Reply-To: " + makeCsvString(env.replyTo) + "\r\n");
-        buffer.append("Date: " + Calendar.getInstance().getTime().toString() + "\r\n");
+        buffer.append("Date: " + StringParser.createDateString(Calendar.getInstance().getTime()) + "\r\n");
         buffer.append("User-Agent: "+AppInfo.getName()+"/"+AppInfo.getVersion() + "\r\n");
         buffer.append("Subject: " + env.subject + "\r\n");
         

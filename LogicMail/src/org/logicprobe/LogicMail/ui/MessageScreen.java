@@ -50,6 +50,7 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Display an E-Mail message
@@ -145,7 +146,7 @@ public class MessageScreen extends BaseScreen implements MailClientListener {
         int i;
         StringBuffer msg = new StringBuffer();
         msg.append("Subject:\n  " + ((envelope.subject!=null) ? envelope.subject : "") + "\n");
-        msg.append("Date:\n  " + ((envelope.date!=null) ? envelope.date.toString() : "") + "\n");
+        msg.append("Date:\n  " + ((envelope.date!=null) ? StringParser.createDateString(envelope.date) : "") + "\n");
 
         if(envelope.from != null && envelope.from.length > 0) {
             msg.append("From:\n");
