@@ -224,7 +224,7 @@ class ImapParser {
         else if(parsedStruct.elementAt(0) instanceof Vector) {
             // The first element is a vector, so we hit a multipart message part
             int size = parsedStruct.size();
-            MessageSection[] subSections = new MessageSection[size-3];
+            MessageSection[] subSections = new MessageSection[size-4];
             for(int i=0;i<size;++i) {
                 // Iterate through the message parts
                 if(parsedStruct.elementAt(i) instanceof Vector)
