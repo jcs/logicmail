@@ -104,8 +104,8 @@ public class StringParserTest extends TestCase {
     /**
      * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
      */
-    public void testNestedParenStringLexer() {
-        System.out.println("nestedParenStringLexer");
+    public void testNestedParenStringLexerEnvelope() {
+        System.out.println("nestedParenStringLexer (Envelope)");
         String rawText =
                 "(FLAGS (\\Answered \\Seen) " +
                 "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
@@ -162,7 +162,69 @@ public class StringParserTest extends TestCase {
         assertEquals("NIL", (String)envelope.elementAt(7));
         assertEquals("<200703121933.25327.jdoe@generic.test>", (String)envelope.elementAt(8));
         assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>", (String)envelope.elementAt(9));
-}
+    }
+    
+    /**
+     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testNestedParenStringLexerBodyStructure() {
+        System.out.println("nestedParenStringLexer (BodyStructure)");
+        String rawText =
+                "(BODYSTRUCTURE " +
+                "((\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 165 8 NIL NIL NIL) " +
+                "(\"TEXT\" \"HTML\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 627 10 NIL NIL NIL) " +
+                "\"ALTERNATIVE\" (\"BOUNDARY\" \"Boundary-00=_y9RuEFduwo6YU42\") (\"INLINE\" NIL) NIL))";
+
+        Vector result = StringParser.nestedParenStringLexer(rawText);
+        Vector temp1;
+        Vector temp2;
+        Vector temp3;
+        //printTree(result, 0);
+        assertEquals("BODYSTRUCTURE", (String)result.elementAt(0));
+        temp1 = (Vector)result.elementAt(1);
+        
+        temp2 = (Vector)temp1.elementAt(0);
+        assertEquals("TEXT", (String)temp2.elementAt(0));
+        assertEquals("PLAIN", (String)temp2.elementAt(1));
+        temp3 = (Vector)temp2.elementAt(2);
+        assertEquals("CHARSET", (String)temp3.elementAt(0));
+        assertEquals("us-ascii", (String)temp3.elementAt(1));
+        assertEquals("NIL", (String)temp2.elementAt(3));
+        assertEquals("NIL", (String)temp2.elementAt(4));
+        assertEquals("7BIT", (String)temp2.elementAt(5));
+        assertEquals("165", (String)temp2.elementAt(6));
+        assertEquals("8", (String)temp2.elementAt(7));
+        assertEquals("NIL", (String)temp2.elementAt(8));
+        assertEquals("NIL", (String)temp2.elementAt(9));
+        assertEquals("NIL", (String)temp2.elementAt(10));
+        
+        temp2 = (Vector)temp1.elementAt(1);
+        assertEquals("TEXT", (String)temp2.elementAt(0));
+        assertEquals("HTML", (String)temp2.elementAt(1));
+        temp3 = (Vector)temp2.elementAt(2);
+        assertEquals("CHARSET", (String)temp3.elementAt(0));
+        assertEquals("us-ascii", (String)temp3.elementAt(1));
+        assertEquals("NIL", (String)temp2.elementAt(3));
+        assertEquals("NIL", (String)temp2.elementAt(4));
+        assertEquals("7BIT", (String)temp2.elementAt(5));
+        assertEquals("627", (String)temp2.elementAt(6));
+        assertEquals("10", (String)temp2.elementAt(7));
+        assertEquals("NIL", (String)temp2.elementAt(8));
+        assertEquals("NIL", (String)temp2.elementAt(9));
+        assertEquals("NIL", (String)temp2.elementAt(10));
+        
+        assertEquals("ALTERNATIVE", (String)temp1.elementAt(2));
+
+        temp2 = (Vector)temp1.elementAt(3);
+        assertEquals("BOUNDARY", (String)temp2.elementAt(0));
+        assertEquals("Boundary-00=_y9RuEFduwo6YU42", (String)temp2.elementAt(1));
+
+        temp2 = (Vector)temp1.elementAt(4);
+        assertEquals("INLINE", (String)temp2.elementAt(0));
+        assertEquals("NIL", (String)temp2.elementAt(1));
+
+        assertEquals("NIL", (String)temp1.elementAt(5));
+    }
     
     private void printTree(Object node, int level) {
         if(node instanceof Vector) {
@@ -352,9 +414,13 @@ public class StringParserTest extends TestCase {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testCreateDateString();
         }}));
-        testSuite.addTest(new StringParserTest("nestedParenStringLexer", new TestMethod() {
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope", new TestMethod() {
             public void run(TestCase tc) {
-                ((StringParserTest)tc).testNestedParenStringLexer();
+                ((StringParserTest)tc).testNestedParenStringLexerEnvelope();
+        }}));
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerBodyStructure", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testNestedParenStringLexerBodyStructure();
         }}));
         testSuite.addTest(new StringParserTest("parseMailHeaders", new TestMethod() {
             public void run(TestCase tc) {
