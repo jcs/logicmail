@@ -43,22 +43,34 @@ public abstract class UtilProxy {
     private static UtilProxy instance = null;
     
     /**
+     * Get a class reference for the util proxy, using exception catching
+     * to determine which one this build has been compiled with.
+     */
+    private static Class getUtilProxyClass() {
+        Class utilProxyClass;
+        try {
+            utilProxyClass = Class.forName("org.logicprobe.LogicMail.util.UtilProxyBB41");
+            return utilProxyClass;
+        }
+        catch (ClassNotFoundException e) { }
+        try {
+            utilProxyClass = Class.forName("org.logicprobe.LogicMail.util.UtilProxyBB40");
+            return utilProxyClass;
+        }
+        catch (ClassNotFoundException e) { }
+        return null;
+    }
+    
+    /**
      * Creates a new instance of UtilProxy
      */
     private static UtilProxy createUtilProxy() {
         UtilProxy utilProxy = null;
-        String version = AppInfo.getVersion();
+        Class utilProxyClass = getUtilProxyClass();
+        if(utilProxyClass == null) return null;
+
         try {
-            if(version.endsWith(".40")) {
-                utilProxy =
-                    (UtilProxy)Class.forName("org.logicprobe.LogicMail.util.UtilProxyBB40").newInstance();
-            }
-            else if(version.endsWith(".41")) {
-                utilProxy =
-                    (UtilProxy)Class.forName("org.logicprobe.LogicMail.util.UtilProxyBB41").newInstance();
-            }
-        } catch (ClassNotFoundException e) {
-            utilProxy = null;
+            utilProxy = (UtilProxy)utilProxyClass.newInstance();
         } catch (InstantiationException e) {
             utilProxy = null;
         } catch (IllegalAccessException e) {
