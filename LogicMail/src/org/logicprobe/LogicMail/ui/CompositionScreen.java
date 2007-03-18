@@ -72,6 +72,13 @@ public class CompositionScreen extends BaseScreen implements MailClientListener 
         add(fldSubject);
         add(new SeparatorField());
         fldEdit = new EditField();
+        
+        // Add the signature if available
+        String sig = MailSettings.getInstance().getGlobalConfig().getMsgSignature();
+        if(sig != null && sig.length() > 0) {
+            fldEdit.insert("\r\n--\r\n"+sig);
+            fldEdit.setCursorPosition(0);
+        }
         add(fldEdit);
     }
 
@@ -156,8 +163,12 @@ public class CompositionScreen extends BaseScreen implements MailClientListener 
         // Set the sender
         // (this should come from global or account settings)
         env.from = new String[1];
+        String fromAddress = acctConfig.getSmtpFromAddress();
+        if(fromAddress == null || fromAddress.length() == 0)
+            fromAddress = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
+        
         env.from[0] = MailSettings.getInstance().getGlobalConfig().getFullname() +
-                      " <" + acctConfig.getServerUser() + "@" + acctConfig.getServerName() + ">";
+                      " <" + fromAddress + ">";
         
         // Set the subject
         env.subject = fldSubject.getText();

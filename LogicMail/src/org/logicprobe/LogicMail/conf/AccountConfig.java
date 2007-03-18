@@ -56,6 +56,7 @@ public class AccountConfig implements Serializable {
     private String smtpServerName;
     private int smtpServerPort;
     private boolean smtpServerSSL;
+    private String smtpFromAddress;
     private int smtpUseAuth;
     private String smtpUser;
     private String smtpPass;
@@ -75,6 +76,7 @@ public class AccountConfig implements Serializable {
         smtpUseAuth = 0;
         smtpUser = "";
         smtpPass = "";
+        smtpFromAddress = "";
     }
     
     public AccountConfig(DataInputStream input) {
@@ -95,6 +97,7 @@ public class AccountConfig implements Serializable {
             smtpUseAuth = 0;
             smtpUser = "";
             smtpPass = "";
+            smtpFromAddress = "";
         }
     }
 
@@ -113,6 +116,7 @@ public class AccountConfig implements Serializable {
         output.writeInt(smtpUseAuth);
         output.writeUTF(smtpUser);
         output.writeUTF(smtpPass);
+        output.writeUTF(smtpFromAddress);
     }
 
     public void deserialize(DataInputStream input) throws IOException {
@@ -130,6 +134,7 @@ public class AccountConfig implements Serializable {
         smtpUseAuth = input.readInt();
         smtpUser = input.readUTF();
         smtpPass = input.readUTF();
+        smtpFromAddress = input.readUTF();
     }
 
     public String getAcctName() {
@@ -242,6 +247,14 @@ public class AccountConfig implements Serializable {
 
     public void setSmtpServerSSL(boolean smtpServerSSL) {
         this.smtpServerSSL = smtpServerSSL;
+    }
+
+    public String getSmtpFromAddress() {
+        return smtpFromAddress;
+    }
+
+    public void setSmtpFromAddress(String smtpFromAddress) {
+        this.smtpFromAddress = smtpFromAddress;
     }
 }
 

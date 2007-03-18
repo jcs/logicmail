@@ -54,7 +54,8 @@ public class GlobalConfig implements Serializable {
     private int imapMaxFolderDepth;
     /** POP: maximum message lines */
     private int popMaxLines;
-
+    /** Message signature */
+    private String msgSignature;
 
     public GlobalConfig() {
         this.fullname = "";
@@ -63,6 +64,7 @@ public class GlobalConfig implements Serializable {
         this.imapMaxMsgSize = 32768;
         this.imapMaxFolderDepth = 4;
         this.popMaxLines = 400;
+        this.msgSignature = "";
     }
     
     public GlobalConfig(DataInputStream input) {
@@ -75,6 +77,7 @@ public class GlobalConfig implements Serializable {
             this.imapMaxMsgSize = 32768;
             this.imapMaxFolderDepth = 4;
             this.popMaxLines = 400;
+            this.msgSignature = "";
         }
     }
 
@@ -126,6 +129,14 @@ public class GlobalConfig implements Serializable {
         this.popMaxLines = popMaxLines;
     }
     
+    public String getMsgSignature() {
+        return msgSignature;
+    }
+
+    public void setMsgSignature(String msgSignature) {
+        this.msgSignature = msgSignature;
+    }
+
     public void serialize(DataOutputStream output) throws IOException {
         output.writeUTF(fullname);
         output.writeInt(retMsgCount);
@@ -133,6 +144,7 @@ public class GlobalConfig implements Serializable {
         output.writeInt(imapMaxMsgSize);
         output.writeInt(imapMaxFolderDepth);
         output.writeInt(popMaxLines);
+        output.writeUTF(msgSignature);
     }
 
     public void deserialize(DataInputStream input) throws IOException {
@@ -142,6 +154,7 @@ public class GlobalConfig implements Serializable {
         imapMaxMsgSize = input.readInt();
         imapMaxFolderDepth = input.readInt();
         popMaxLines = input.readInt();
+        msgSignature = input.readUTF();
     }
 }
 

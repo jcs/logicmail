@@ -31,8 +31,17 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.*;
-import net.rim.device.api.ui.component.*;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.component.BasicEditField;
+import net.rim.device.api.ui.component.ButtonField;
+import net.rim.device.api.ui.component.CheckboxField;
+import net.rim.device.api.ui.component.EmailAddressEditField;
+import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.ObjectChoiceField;
+import net.rim.device.api.ui.component.PasswordEditField;
+import net.rim.device.api.ui.component.RichTextField;
+import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 
@@ -52,6 +61,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     private BasicEditField fldSmtpServerName;
     private BasicEditField fldSmtpServerPort;
     private CheckboxField fldSmtpServerSSL;
+    private EmailAddressEditField fldSmtpFromAddress;
     private ObjectChoiceField fldSmtpUseAuth;
     private BasicEditField fldSmtpUser;
     private PasswordEditField fldSmtpPass;
@@ -103,6 +113,8 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         add(fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL()));
         fldSmtpServerSSL.setChangeListener(this);
         
+        add(fldSmtpFromAddress = new EmailAddressEditField("E-Mail address: ", acctConfig.getSmtpFromAddress()));
+        
         String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
         add(fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth()));
         add(fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser()));
@@ -110,8 +122,8 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         if(acctConfig.getSmtpUseAuth() == 0) {
             fldSmtpUser.setEditable(false);
             fldSmtpPass.setEditable(false);
-            fldSmtpUser.setText("n/a");
-            fldSmtpPass.setText("n/a");
+            fldSmtpUser.setText("");
+            fldSmtpPass.setText("");
         }
         fldSmtpUseAuth.setChangeListener(this);
         
@@ -156,8 +168,8 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
             else {
                 fldSmtpUser.setEditable(false);
                 fldSmtpPass.setEditable(false);
-                fldSmtpUser.setText("n/a");
-                fldSmtpPass.setText("n/a");
+                fldSmtpUser.setText("");
+                fldSmtpPass.setText("");
             }
         }
     }
@@ -174,6 +186,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         this.acctConfig.setSmtpServerName(fldSmtpServerName.getText());
         this.acctConfig.setSmtpServerPort(Integer.parseInt(fldSmtpServerPort.getText()));
         this.acctConfig.setSmtpServerSSL(fldSmtpServerSSL.getChecked());
+        this.acctConfig.setSmtpFromAddress(fldSmtpFromAddress.getText());
         this.acctConfig.setSmtpUseAuth(fldSmtpUseAuth.getSelectedIndex());
         if(fldSmtpUseAuth.getSelectedIndex() > 0) {
             this.acctConfig.setSmtpUser(fldSmtpUser.getText());

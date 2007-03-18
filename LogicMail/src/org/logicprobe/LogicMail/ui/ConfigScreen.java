@@ -33,10 +33,12 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.RichTextField;
+import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -52,6 +54,7 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     private BasicEditField fldImapMaxMsgSize;
     private BasicEditField fldImapMaxFolderDepth;
     private BasicEditField fldPopMaxLines;
+    private AutoTextEditField fldSignature;
     
     private ButtonField btSave;
 
@@ -92,6 +95,12 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
         fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldPopMaxLines);
 
+        add(new SeparatorField());
+        add(new RichTextField("Signature:", Field.NON_FOCUSABLE));
+        add(fldSignature = new AutoTextEditField());
+        fldSignature.setText(config.getMsgSignature());
+        add(new SeparatorField());
+
         btSave = new ButtonField("Save", Field.FIELD_HCENTER);
         btSave.setChangeListener(this);
         add(btSave);
@@ -125,7 +134,7 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
         try {
             config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
         } catch (Exception e) { }
-
+        config.setMsgSignature(fldSignature.getText());
         mailSettings.saveSettings();
     }
 }
