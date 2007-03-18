@@ -35,7 +35,10 @@ import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Hashtable;
+import java.util.TimeZone;
 import java.util.Vector;
 
 /**
@@ -48,16 +51,56 @@ public class StringParserTest extends TestCase {
      */
     public void testParseDateString() {
         System.out.println("parseDateString");
-//        java.lang.String rawDate = "";
-//        org.logicprobe.LogicMail.util.StringParser instance = null;
-//        java.util.Date expectedResult = null;
-//        java.util.Date result = instance.parseDateString(rawDate);
-//        assertEquals(expectedResult, result);
+        String rawDate;
+        Date result;
+        Calendar cal = Calendar.getInstance();
         
-        //TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        rawDate = "Sat, 10 Feb 2007 21:27:01 -0800";
+        result = StringParser.parseDateString(rawDate);
+        cal.setTime(result);
+        cal.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+        
+        assertEquals("Test 1", 2007, cal.get(Calendar.YEAR));
+        assertEquals("Test 1", 1, cal.get(Calendar.MONTH));
+        assertEquals("Test 1", 10, cal.get(Calendar.DAY_OF_MONTH));
+        assertEquals("Test 1", 21, cal.get(Calendar.HOUR_OF_DAY));
+        assertEquals("Test 1", 27, cal.get(Calendar.MINUTE));
+        assertEquals("Test 1", 1, cal.get(Calendar.SECOND));
+        
+        rawDate = "Sat, 10 Feb 2007 21:30:37 America/Los_Angeles";
+        result = StringParser.parseDateString(rawDate);
+        cal = Calendar.getInstance();
+        cal.setTime(result);
+        cal.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+        assertEquals("Test 2", 2007, cal.get(Calendar.YEAR));
+        assertEquals("Test 2", 1, cal.get(Calendar.MONTH));
+        assertEquals("Test 2", 10, cal.get(Calendar.DAY_OF_MONTH));
+        assertEquals("Test 2", 21, cal.get(Calendar.HOUR_OF_DAY));
+        assertEquals("Test 2", 30, cal.get(Calendar.MINUTE));
+        assertEquals("Test 2", 37, cal.get(Calendar.SECOND));
     }
 
+    /**
+     * Test of createDateString method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testCreateDateString() {
+        System.out.println("createDateString");
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/Los_Angeles"));
+        
+        cal.set(Calendar.YEAR, 2007);
+        cal.set(Calendar.MONTH, 1);
+        cal.set(Calendar.DAY_OF_MONTH, 10);
+        cal.set(Calendar.HOUR_OF_DAY, 21);
+        cal.set(Calendar.MINUTE, 27);
+        cal.set(Calendar.SECOND, 1);
+        
+        String expected = "Sat, 10 Feb 2007 21:27:01 America/Los_Angeles";
+        
+        String actual = StringParser.createDateString(cal.getTime(), TimeZone.getTimeZone("America/Los_Angeles"));
+        
+        assertEquals(expected, actual);
+    }
+    
     /**
      * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
      */
@@ -301,10 +344,14 @@ public class StringParserTest extends TestCase {
 
     public Test suite() {
         TestSuite testSuite = new TestSuite("StringParser");
-//        testSuite.addTest(new StringParserTest("parseDateString", new TestMethod() {
-//            public void run(TestCase tc) {
-//                ((StringParserTest)tc).testParseDateString();
-//        }}));
+        testSuite.addTest(new StringParserTest("parseDateString", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testParseDateString();
+        }}));
+        testSuite.addTest(new StringParserTest("createDateString", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testCreateDateString();
+        }}));
         testSuite.addTest(new StringParserTest("nestedParenStringLexer", new TestMethod() {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testNestedParenStringLexer();

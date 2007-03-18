@@ -42,6 +42,7 @@ import java.util.TimeZone;
 import java.util.Vector;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.DateTimeUtilities;
+import net.rim.device.api.util.NumberUtilities;
 
 /**
  * This class provides a collection of string parsing
@@ -120,6 +121,109 @@ public class StringParser {
 
         DateTimeUtilities.setCalendarFields(cal, fields);
         return cal.getTime();
+    }
+    
+    /**
+     * Create a proper E-Mail date string from a Java.util.Date object
+     *
+     * @param time Date to convert
+     * @return String to add to an E-Mail
+     */
+    public static String createDateString(Date time) {
+        return createDateString(time, TimeZone.getDefault());
+    }
+    
+    /**
+     * Create a proper E-Mail date string from a Java.util.Date object
+     *
+     * @param time Date to convert
+     * @param zone Time zone for the date
+     * @return String to add to an E-Mail
+     */
+    public static String createDateString(Date time, TimeZone zone) {
+        Calendar cal = Calendar.getInstance(zone);
+        cal.setTime(time);
+        StringBuffer buf = new StringBuffer();
+
+        switch(cal.get(Calendar.DAY_OF_WEEK)) {
+            case Calendar.SUNDAY:
+                buf.append("Sun, ");
+                break;
+            case Calendar.MONDAY:
+                buf.append("Mon, ");
+                break;
+            case Calendar.TUESDAY:
+                buf.append("Tues, ");
+                break;
+            case Calendar.WEDNESDAY:
+                buf.append("Wed, ");
+                break;
+            case Calendar.THURSDAY:
+                buf.append("Thur, ");
+                break;
+            case Calendar.FRIDAY:
+                buf.append("Fri, ");
+                break;
+            case Calendar.SATURDAY:
+                buf.append("Sat, ");
+                break;
+        }
+
+        buf.append(cal.get(Calendar.DAY_OF_MONTH));
+        buf.append(' ');
+        
+        switch(cal.get(Calendar.MONTH)) {
+            case Calendar.JANUARY:
+                buf.append("Jan ");
+                break;
+            case Calendar.FEBRUARY:
+                buf.append("Feb ");
+                break;
+            case Calendar.MARCH:
+                buf.append("Mar ");
+                break;
+            case Calendar.APRIL:
+                buf.append("Apr ");
+                break;
+            case Calendar.MAY:
+                buf.append("May ");
+                break;
+            case Calendar.JUNE:
+                buf.append("Jun ");
+                break;
+            case Calendar.JULY:
+                buf.append("Jul ");
+                break;
+            case Calendar.AUGUST:
+                buf.append("Aug ");
+                break;
+            case Calendar.SEPTEMBER:
+                buf.append("Sep ");
+                break;
+            case Calendar.OCTOBER:
+                buf.append("Oct ");
+                break;
+            case Calendar.NOVEMBER:
+                buf.append("Nov ");
+                break;
+            case Calendar.DECEMBER:
+                buf.append("Dec ");
+                break;
+        }
+        
+        buf.append(cal.get(Calendar.YEAR));
+        buf.append(' ');
+        
+        buf.append(NumberUtilities.toString(cal.get(Calendar.HOUR_OF_DAY), 10, 2));
+        buf.append(':');
+        buf.append(NumberUtilities.toString(cal.get(Calendar.MINUTE), 10, 2));
+        buf.append(':');
+        buf.append(NumberUtilities.toString(cal.get(Calendar.SECOND), 10, 2));
+        
+        buf.append(' ');
+        buf.append(cal.getTimeZone().getID());
+        
+        return buf.toString();
     }
     
     /**
