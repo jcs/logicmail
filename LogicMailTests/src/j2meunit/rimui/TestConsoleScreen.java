@@ -111,8 +111,16 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     private void populateTestTree(TestSuite suite, int parentId) {
+        // Get the tests
+        Vector tests = new Vector();
         for(Enumeration e = suite.tests(); e.hasMoreElements(); ) {
-            Test test = (Test)e.nextElement();
+            tests.addElement(e.nextElement());
+        }
+        
+        // Iterate backwards so the tree is populated in the correct order
+        int size = tests.size();
+        for(int i = size - 1; i >= 0; i--) {
+            Test test = (Test)tests.elementAt(i);
             TestTreeItem item = new TestTreeItem(test);
             int id = testTreeField.addChildNode(parentId, item);
             item.id = id;
