@@ -104,8 +104,8 @@ public class StringParserTest extends TestCase {
     /**
      * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
      */
-    public void testNestedParenStringLexerEnvelope() {
-        System.out.println("nestedParenStringLexer (Envelope)");
+    public void testNestedParenStringLexerEnvelope1() {
+        System.out.println("nestedParenStringLexer (Envelope1)");
         String rawText =
                 "(FLAGS (\\Answered \\Seen) " +
                 "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
@@ -162,6 +162,66 @@ public class StringParserTest extends TestCase {
         assertEquals("NIL", (String)envelope.elementAt(7));
         assertEquals("<200703121933.25327.jdoe@generic.test>", (String)envelope.elementAt(8));
         assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>", (String)envelope.elementAt(9));
+    }
+    
+    /**
+     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testNestedParenStringLexerEnvelope2() {
+        System.out.println("nestedParenStringLexer (Envelope2)");
+        String rawText =
+                "(FLAGS () ENVELOPE (\"Sun, 18 Mar 2007 09:04:29 -0700\" {23}\r\n" +
+                "[list] \"this is a test\" " +
+                "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
+                "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
+                "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
+                "((NIL NIL \"jsmith\" \"XXXXXXXX\")) " +
+                "NIL NIL NIL \"<45FD630D.1040808@XXXXX>\"))";
+
+        Vector result = StringParser.nestedParenStringLexer(rawText);
+        Vector temp;
+        //printTree(result, 0);
+        assertEquals("FLAGS", (String)result.elementAt(0));
+        Vector flags = (Vector)result.elementAt(1);
+        assertEquals(0, flags.size());
+
+        assertEquals("ENVELOPE", (String)result.elementAt(2));
+        Vector envelope = (Vector)result.elementAt(3);
+        assertEquals("Sun, 18 Mar 2007 09:04:29 -0700", (String)envelope.elementAt(0));
+        assertEquals("[list] \"this is a test\"", (String)envelope.elementAt(1));
+        
+        temp = (Vector)envelope.elementAt(2);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("Jim Smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("XXXX", (String)temp.elementAt(3));
+        
+        temp = (Vector)envelope.elementAt(3);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("Jim Smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("XXXX", (String)temp.elementAt(3));
+
+        temp = (Vector)envelope.elementAt(4);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("Jim Smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("XXXX", (String)temp.elementAt(3));
+
+        temp = (Vector)envelope.elementAt(5);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("NIL", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("XXXXXXXX", (String)temp.elementAt(3));
+        
+        assertEquals("NIL", (String)envelope.elementAt(6));
+        assertEquals("NIL", (String)envelope.elementAt(7));
+        assertEquals("NIL", (String)envelope.elementAt(8));
+        assertEquals("<45FD630D.1040808@XXXXX>", (String)envelope.elementAt(9));
     }
     
     /**
@@ -414,9 +474,13 @@ public class StringParserTest extends TestCase {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testCreateDateString();
         }}));
-        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope", new TestMethod() {
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope1", new TestMethod() {
             public void run(TestCase tc) {
-                ((StringParserTest)tc).testNestedParenStringLexerEnvelope();
+                ((StringParserTest)tc).testNestedParenStringLexerEnvelope1();
+        }}));
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope2", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testNestedParenStringLexerEnvelope2();
         }}));
         testSuite.addTest(new StringParserTest("nestedParenStringLexerBodyStructure", new TestMethod() {
             public void run(TestCase tc) {
