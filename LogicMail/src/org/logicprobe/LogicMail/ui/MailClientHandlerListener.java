@@ -35,7 +35,7 @@ package org.logicprobe.LogicMail.ui;
  * This is the interface for notifying clients of completed
  * MailClientHandler processes.
  */
-public interface MailClientListener {
+public interface MailClientHandlerListener {
     /**
      * Invoked when a MailClientHandler process is complete
      * @param source The MailClientHandler that invoked this method

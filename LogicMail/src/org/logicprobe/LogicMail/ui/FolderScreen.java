@@ -51,7 +51,7 @@ import org.logicprobe.LogicMail.mail.MailException;
  * Mail folder listing
  * (may only be available with IMAP)
  */
-public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailClientListener {
+public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailClientHandlerListener {
     private TreeField treeField;
     private IncomingMailClient client;
     private RefreshFolderTreeHandler refreshFolderTreeHandler;
@@ -164,7 +164,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         // Initialize the handler on demand
         if(refreshFolderTreeHandler == null) {
             refreshFolderTreeHandler = new RefreshFolderTreeHandler();
-            refreshFolderTreeHandler.setMailClientListener(this);
+            refreshFolderTreeHandler.setListener(this);
         }
         
         // Start the background process

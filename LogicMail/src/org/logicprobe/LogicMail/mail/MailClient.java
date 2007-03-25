@@ -42,12 +42,16 @@ public interface MailClient {
     /**
      * Open a new connection.
      * This method should typically establish a socket connection and
-     * then send the protocol-specific login commands
+     * then send the protocol-specific login commands.
+     * It should also be possible to invoke this method multiple times
+     * to correct for authentication failures, without having to reopen
+     * the underlying connection.
      *
+     * @return True if successful, false on authentication failure
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-    public abstract void open() throws IOException, MailException;
+    public abstract boolean open() throws IOException, MailException;
     
     /**
      * Close an existing connection.
@@ -64,4 +68,28 @@ public interface MailClient {
      * @return True if the connection is active, false otherwise
      */
     public abstract boolean isConnected();
+
+    /**
+     * Get the configured username for this client.
+     * @return Configured username, empty if none, null if n/a
+     */
+    public abstract String getUsername();
+    
+    /**
+     * Set the username for this client to use
+     * @param username The username
+     */
+    public abstract void setUsername(String username);
+
+    /**
+     * Get the configured password for this client.
+     * @return Configured password, empty if none, null if n/a
+     */
+    public abstract String getPassword();
+    
+    /**
+     * Set the password for this client to use
+     * @param password The password
+     */
+    public abstract void setPassword(String password);
 }

@@ -55,6 +55,9 @@ public class SmtpClient implements OutgoingMailClient {
     private SmtpProtocol smtpProtocol;
     private Vector helloResult;
     private boolean isFresh;
+    private boolean openStarted;
+    private String username;
+    private String password;
     
     /** Creates a new instance of SmtpClient */
     public SmtpClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
@@ -66,26 +69,39 @@ public class SmtpClient implements OutgoingMailClient {
             acctCfg.getSmtpServerSSL(),
             acctCfg.getDeviceSide());
         smtpProtocol = new SmtpProtocol(connection);
+
+        if(acctCfg.getSmtpUseAuth() > 0) {
+            username = acctCfg.getSmtpUser();
+            password = acctCfg.getSmtpPass();
+        }
+        else {
+            username = null;
+            password = null;
+        }
+        openStarted = false;
     }
 
-    public void open() throws IOException, MailException {
-        connection.open();
-        
-        // Eat the initial server response
-        connection.receive();
-        String hostname = System.getProperty("microedition.hostname");
-        if(hostname == null) hostname = "unknown";
-        
-        helloResult = smtpProtocol.executeExtendedHello(hostname);
-        
+    public boolean open() throws IOException, MailException {
+        if(!openStarted) {
+            connection.open();
+
+            // Eat the initial server response
+            connection.receive();
+            String hostname = System.getProperty("microedition.hostname");
+            if(hostname == null) hostname = "localhost";
+
+            helloResult = smtpProtocol.executeExtendedHello(hostname);
+            openStarted = true;
+        }
         if(acctCfg.getSmtpUseAuth() > 0) {
-            boolean result = smtpProtocol.executeAuth(acctCfg.getSmtpUseAuth(), acctCfg.getSmtpUser(), acctCfg.getSmtpPass());
+            boolean result = smtpProtocol.executeAuth(acctCfg.getSmtpUseAuth(), username, password);
             if(!result) {
-                connection.close();
-                throw new MailException("Unable to authenticate");
+                return false;
             }
         }
         isFresh = true;
+        openStarted = false;
+        return true;
     }
 
     public void close() throws IOException, MailException {
@@ -95,6 +111,22 @@ public class SmtpClient implements OutgoingMailClient {
 
     public boolean isConnected() {
         return connection.isConnected();
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public void sendMessage(Message message) throws IOException, MailException {

@@ -73,7 +73,7 @@ public class SmtpProtocol {
         byte[] data;
         if(mech == AUTH_PLAIN) {
             result = execute("AUTH PLAIN");
-            if(!result.startsWith("334")) return false;
+            if(!result.startsWith("334")) throw new MailException(result.substring(4));
             
             // Format the username and password
             byte[] userData = username.getBytes();
@@ -92,17 +92,17 @@ public class SmtpProtocol {
         }
         else if(mech == AUTH_LOGIN) {
             result = execute("AUTH LOGIN");
-            if(!result.startsWith("334")) return false;
+            if(!result.startsWith("334")) throw new MailException(result.substring(4));
             data = username.getBytes();
             result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("334")) return false;
+            if(!result.startsWith("334")) throw new MailException("Authentication error");
             data = password.getBytes();
             result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
             if(!result.startsWith("235")) return false;
         }
         else if(mech == AUTH_CRAM_MD5) {
             result = execute("AUTH CRAM-MD5");
-            if(!result.startsWith("334")) return false;
+            if(!result.startsWith("334")) throw new MailException(result.substring(4));
             
             int i;
             byte[] challenge = utilProxy.Base64Decode(result.substring(4));
@@ -124,7 +124,7 @@ public class SmtpProtocol {
         else if(mech == AUTH_DIGEST_MD5) {
             // Note: This code does not currently work correctly
             result = execute("AUTH DIGEST-MD5");
-            if(!result.startsWith("334")) return false;
+            if(!result.startsWith("334")) throw new MailException(result.substring(4));
             
             String challenge = new String(utilProxy.Base64Decode(result.substring(4)));
             System.err.println("-->Challenge: " + challenge);

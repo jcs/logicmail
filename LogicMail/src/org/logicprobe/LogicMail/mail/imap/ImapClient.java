@@ -41,7 +41,6 @@ import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
@@ -57,6 +56,9 @@ public class ImapClient implements IncomingMailClient {
     private AccountConfig acctCfg;
     private Connection connection;
     private ImapProtocol imapProtocol;
+    private String username;
+    private String password;
+    private boolean openStarted;
 
     /**
      * Table of supported server capabilities
@@ -85,32 +87,37 @@ public class ImapClient implements IncomingMailClient {
                 acctCfg.getServerSSL(),
                 acctCfg.getDeviceSide());
         imapProtocol = new ImapProtocol(connection);
-    }
-    
-    public AccountConfig getAcctConfig() {
-        return acctCfg;
+        username = acctCfg.getServerUser();
+        password = acctCfg.getServerPass();
+        openStarted = false;
     }
 
-    public void open() throws IOException, MailException {
-        connection.open();
-        activeMailbox = null;
+    public boolean open() throws IOException, MailException {
         try {
-            // Find out server capabilities
-            capabilities = imapProtocol.executeCapability();
-            
+            if(!openStarted) {
+                connection.open();
+                activeMailbox = null;
+                // Find out server capabilities
+                capabilities = imapProtocol.executeCapability();
+                openStarted = true;
+            }
             // Authenticate with the server
-            imapProtocol.executeLogin(acctCfg.getServerUser(), acctCfg.getServerPass());
+            if(!imapProtocol.executeLogin(username, password)) {
+                return false;
+            }
 
             // Discover folder delim
             Vector resp = imapProtocol.executeList("", "");
             if(resp.size() > 0)
                 folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
+            openStarted = false;
         } catch (MailException exp) {
             close();
             String msg = exp.getMessage();
             if(msg.startsWith("NO")) msg = msg.substring(msg.indexOf(' ')+1);
             throw new MailException(msg);
         }
+        return true;
     }
     
     public void close() throws IOException, MailException {
@@ -125,6 +132,26 @@ public class ImapClient implements IncomingMailClient {
 
     public boolean isConnected() {
         return connection.isConnected();
+    }
+
+    public AccountConfig getAcctConfig() {
+        return acctCfg;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public boolean hasFolders() {

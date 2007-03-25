@@ -59,6 +59,9 @@ public class PopClient implements IncomingMailClient {
     private AccountConfig acctCfg;
     private Connection connection;
     private PopProtocol popProtocol;
+    private String username;
+    private String password;
+    private boolean openStarted;
     
     /**
      * Active mailbox.  Since POP3 does not support multiple
@@ -77,29 +80,36 @@ public class PopClient implements IncomingMailClient {
                 acctCfg.getServerSSL(),
                 acctCfg.getDeviceSide());
         popProtocol = new PopProtocol(connection);
+        username = acctCfg.getServerUser();
+        password = acctCfg.getServerPass();
         
         // Create our dummy folder item for the inbox
         activeMailbox = new FolderTreeItem("INBOX", "INBOX", "");
         activeMailbox.setMsgCount(0);
+        openStarted = false;
     }
 
     public AccountConfig getAcctConfig() {
         return acctCfg;
     }
 
-    public void open() throws IOException, MailException {
-        connection.open();
-        
-        try {
+    public boolean open() throws IOException, MailException {
+        if(!openStarted) {
+            connection.open();
             // Eat the initial server response
             connection.receive();
-            // Login to the server
-            popProtocol.executeUser(acctCfg.getServerUser());
-            popProtocol.executePass(acctCfg.getServerPass());
-        } catch (MailException exp) {
-            close();
-            throw exp;
+            openStarted = true;
         }
+        
+        try {
+            // Login to the server
+            popProtocol.executeUser(username);
+            popProtocol.executePass(password);
+        } catch (MailException exp) {
+            return false;
+        }
+        openStarted = false;
+        return true;
     }
 
     public void close() throws IOException, MailException {
@@ -112,6 +122,22 @@ public class PopClient implements IncomingMailClient {
 
     public boolean isConnected() {
         return connection.isConnected();
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public boolean hasFolders() {
@@ -136,7 +162,7 @@ public class PopClient implements IncomingMailClient {
         int index = 0;
         String[] headerText;
         MessageEnvelope env;
-        for(int i=firstIndex; i<lastIndex; i++) {
+        for(int i=firstIndex; i<=lastIndex; i++) {
             headerText = popProtocol.executeTop(index+1, 0);
             env = PopParser.parseMessageEnvelope(headerText);
             folderMessages[index++] = new FolderMessage(env, i);

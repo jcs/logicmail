@@ -55,7 +55,7 @@ import org.logicprobe.LogicMail.util.StringParser;
 /**
  * Display an E-Mail message
  */
-public class MessageScreen extends BaseScreen implements MailClientListener {
+public class MessageScreen extends BaseScreen implements MailClientHandlerListener {
     private IncomingMailClient client;
     private FolderTreeItem folderItem;
     private FolderMessage folderMessage;
@@ -184,7 +184,7 @@ public class MessageScreen extends BaseScreen implements MailClientListener {
         // Initialize the handler on demand
         if(updateMessageHandler == null) {
             updateMessageHandler = new UpdateMessageHandler();
-            updateMessageHandler.setMailClientListener(this);
+            updateMessageHandler.setListener(this);
         }
 
         // Start the background process

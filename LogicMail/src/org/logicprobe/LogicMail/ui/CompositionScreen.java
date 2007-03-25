@@ -53,7 +53,7 @@ import org.logicprobe.LogicMail.message.MessagePartFactory;
 /**
  * This is the message composition screen.
  */
-public class CompositionScreen extends BaseScreen implements MailClientListener {
+public class CompositionScreen extends BaseScreen implements MailClientHandlerListener {
     private AccountConfig acctConfig;
     private OutgoingMailClient client;
     private VerticalFieldManager vfmRecipients;
@@ -178,7 +178,7 @@ public class CompositionScreen extends BaseScreen implements MailClientListener 
         Message message = new Message(env, bodyPart);
         
         SendMessageHandler sendHandler = new SendMessageHandler(message);
-        sendHandler.setMailClientListener(this);
+        sendHandler.setListener(this);
         sendHandler.start();
     }
     

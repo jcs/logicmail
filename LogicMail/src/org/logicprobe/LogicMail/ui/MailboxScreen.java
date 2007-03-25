@@ -56,7 +56,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 /**
  * Display the active mailbox listing
  */
-public class MailboxScreen extends BaseScreen implements ListFieldCallback, MailClientListener {
+public class MailboxScreen extends BaseScreen implements ListFieldCallback, MailClientHandlerListener {
     private FolderMessage[] messages;
     private ListField msgList;
     
@@ -116,7 +116,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         // Initialize the handler on demand
         if(refreshMessageListHandler == null) {
             refreshMessageListHandler = new RefreshMessageListHandler(folderItem);
-            refreshMessageListHandler.setMailClientListener(this);
+            refreshMessageListHandler.setListener(this);
         }
 
         // Start the background process

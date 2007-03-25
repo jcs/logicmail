@@ -80,12 +80,18 @@ public class ImapProtocol {
      * Execute the "LOGIN" command
      * @param username The username to login with
      * @param password The password to login with
+     * @return True on success, false on authentication failures
      */
-    public void executeLogin(String username, String password) throws IOException, MailException {
+    public boolean executeLogin(String username, String password) throws IOException, MailException {
         // Authenticate with the server
-        execute("LOGIN", "\""+ username + "\" \"" + password + "\"");
-        // Invalid users are caught by execute()
-        // and a MailException is thrown
+        try {
+            execute("LOGIN", "\""+ username + "\" \"" + password + "\"");
+        } catch (MailException exp) {
+            // Invalid users are caught by execute()
+            // and a MailException is thrown
+            return false;
+        }
+        return true;
     }
     
     /**
