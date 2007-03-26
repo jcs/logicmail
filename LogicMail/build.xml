@@ -84,6 +84,7 @@
         </condition>
     </target>
     <target name="post-jar">
+        <copy file="${basedir}/${src.dir}/icons/logicmail.png" todir="${basedir}/${dist.dir}"/>
         <exec dir="${platform.home}/simulator" executable="${platform.home}/bin/rapc.exe" failonerror="true">
             <arg value="import=${platform.bootclasspath}"/>
             <arg value="codename=${name}"/>
@@ -91,6 +92,7 @@
             <arg value="${basedir}/${dist.dir}/${dist.jar}"/>
         </exec>
         <copy file="${platform.home}/simulator/${name}.cod" todir="${basedir}/${dist.dir}"/>
+        <delete file="${basedir}/${dist.dir}/logicmail.png"/>
     </target>
     <target name="post-clean">
         <delete failonerror="false">
