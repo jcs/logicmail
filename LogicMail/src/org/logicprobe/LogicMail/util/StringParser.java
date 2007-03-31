@@ -71,16 +71,19 @@ public class StringParser {
             while(rawDate.charAt(p)==' ') p++;
             rawDate = rawDate.substring(p);
         }
-        if(rawDate.charAt(rawDate.length()-1) == ')')
+        if(rawDate.charAt(rawDate.length()-1) == ')') {
             rawDate = rawDate.substring(0, rawDate.lastIndexOf(' '));
+        }
 
         // Set the time zone
         Calendar cal;
         String tz = rawDate.substring(rawDate.lastIndexOf(' ')+1);
-        if(tz.startsWith("-") || tz.startsWith("+"))
+        if(tz.startsWith("-") || tz.startsWith("+")) {
             cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"+tz));
-        else
+        }
+        else {
             cal = Calendar.getInstance(TimeZone.getTimeZone(tz));
+        }
 
         p = 0;
         q = rawDate.indexOf(" ", p+1);
@@ -89,18 +92,18 @@ public class StringParser {
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
         String monthStr = rawDate.substring(p, q);
-        if(monthStr.equals("Jan")) fields[1]=0;
-        else if(monthStr.equals("Feb")) fields[1]=1;
-        else if(monthStr.equals("Mar")) fields[1]=2;
-        else if(monthStr.equals("Apr")) fields[1]=3;
-        else if(monthStr.equals("May")) fields[1]=4;
-        else if(monthStr.equals("Jun")) fields[1]=5;
-        else if(monthStr.equals("Jul")) fields[1]=6;
-        else if(monthStr.equals("Aug")) fields[1]=7;
-        else if(monthStr.equals("Sep")) fields[1]=8;
-        else if(monthStr.equals("Oct")) fields[1]=9;
-        else if(monthStr.equals("Nov")) fields[1]=10;
-        else if(monthStr.equals("Dec")) fields[1]=11;
+        if(monthStr.equals("Jan")) { fields[1]=0; }
+        else if(monthStr.equals("Feb")) { fields[1]=1; }
+        else if(monthStr.equals("Mar")) { fields[1]=2; }
+        else if(monthStr.equals("Apr")) { fields[1]=3; }
+        else if(monthStr.equals("May")) { fields[1]=4; }
+        else if(monthStr.equals("Jun")) { fields[1]=5; }
+        else if(monthStr.equals("Jul")) { fields[1]=6; }
+        else if(monthStr.equals("Aug")) { fields[1]=7; }
+        else if(monthStr.equals("Sep")) { fields[1]=8; }
+        else if(monthStr.equals("Oct")) { fields[1]=9; }
+        else if(monthStr.equals("Nov")) { fields[1]=10; }
+        else if(monthStr.equals("Dec")) { fields[1]=11; }
         
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
@@ -271,14 +274,18 @@ public class StringParser {
                 // Quick kludge for length miscalculation due to the way
                 // line breaks are currently handled
                 tmpText = rawText.substring(p, p+len);
-                if(tmpText.endsWith(" NIL"))
+                if(tmpText.endsWith(" NIL")) {
                     len-=4;
-                else if(tmpText.endsWith(" NI"))
+                }
+                else if(tmpText.endsWith(" NI")) {
                     len-=3;
-                else if(tmpText.endsWith(" N"))
+                }
+                else if(tmpText.endsWith(" N")) {
                     len-=2;
-                else if(tmpText.endsWith(" "))
+                }
+                else if(tmpText.endsWith(" ")) {
                     len-=1;
+                }
 
                 parsedText.addElement(rawText.substring(p, p+len));
                 q = p + len;
@@ -298,19 +305,24 @@ public class StringParser {
 		int level = 0;
                 boolean subInQuote = false;
 		for(int i=q+1;i<rawText.length();i++) {
-                    if(rawText.charAt(i) == '\"' && !subInQuote)
+                    if(rawText.charAt(i) == '\"' && !subInQuote) {
                         subInQuote = true;
-                    else if(rawText.charAt(i) == '\"' && subInQuote)
+                    }
+                    else if(rawText.charAt(i) == '\"' && subInQuote) {
                         subInQuote = false;
+                    }
                     
-		    if(rawText.charAt(i) == '(' && !subInQuote) level++;
+		    if(rawText.charAt(i) == '(' && !subInQuote) {
+                        level++;
+                    }
 		    else if(rawText.charAt(i) == ')' && !subInQuote) {
 			if(level == 0) {
 			    q = i;
 			    break;
 			}
-			else
+			else {
 			    level--;
+                        }
 		    }
 		}
 
@@ -363,7 +375,9 @@ public class StringParser {
     
     public static String[] parseTokenString(String text, String token) {
         String[] tok = new String[0];
-        if(text == null) return tok;
+        if(text == null) {
+            return tok;
+        }
         int p = 0;
         int q = 0;
         while(q < text.length()) {
@@ -415,7 +429,9 @@ public class StringParser {
         byte[] tmpBuf;
         while(is.available() > 0) {
             tmpBuf = new byte[is.available()];
-            if(is.read(tmpBuf) < 0) break;
+            if(is.read(tmpBuf) < 0) {
+                break;
+            }
             bos.write(tmpBuf);
         }
         return bos.toByteArray();
@@ -430,7 +446,9 @@ public class StringParser {
         int length = text.length();
         while(index < length) {
             if(text.charAt(index) == '=') {
-                if(index+2 >= length) break;
+                if(index+2 >= length) {
+                    break;
+                }
                 try {
                     int charVal = Integer.parseInt(text.substring(index+1, index+3), 16);
                     buffer.append((char)charVal);
@@ -454,13 +472,15 @@ public class StringParser {
         String charStr;
         for(int i=0; i<text.length(); i++) {
             ch = text.charAt(i);
-            if(ch < 128)
+            if(ch < 128) {
                 buffer.append(ch);
+            }
             else {
                 charStr = Integer.toHexString((int)ch);
                 buffer.append('=');
-                if(charStr.length() == 1)
+                if(charStr.length() == 1) {
                     buffer.append('0');
+                }
                 buffer.append(charStr);
             }
         }

@@ -57,6 +57,8 @@ class ImapParser {
     
     private ImapParser() { }
     
+    private static String strNIL = "NIL";
+    
     static ImapProtocol.MessageFlags parseMessageFlags(String rawText) {
         ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
         flags.seen     = (rawText.indexOf("\\Seen") != -1);
@@ -72,8 +74,9 @@ class ImapParser {
     
     static MessageEnvelope parseMessageEnvelope(Vector parsedEnv) {
         // Sanity checking
-        if(parsedEnv.size() < 10)
+        if(parsedEnv.size() < 10) {
            return generateDummyEnvelope();
+        }
             
         MessageEnvelope env = new MessageEnvelope();
 
@@ -111,12 +114,16 @@ class ImapParser {
 
         if(parsedEnv.elementAt(8) instanceof String) {
             env.inReplyTo = (String)parsedEnv.elementAt(8);
-            if(env.inReplyTo.equals("NIL")) env.inReplyTo = "";
+            if(env.inReplyTo.equals(strNIL)) {
+                env.inReplyTo = "";
+            }
         }
 
         if(parsedEnv.elementAt(9) instanceof String) {
             env.messageId = (String)parsedEnv.elementAt(9);
-            if(env.messageId.equals("NIL")) env.messageId = "";
+            if(env.messageId.equals(strNIL)) {
+                env.messageId = "";
+            }
         }
         return env;
     }
@@ -132,23 +139,28 @@ class ImapParser {
                 
                 Vector entry = (Vector)addrVec.elementAt(i);
 
-                String realName = "NIL";
-                if(entry.elementAt(0) instanceof String)
+                String realName = strNIL;
+                if(entry.elementAt(0) instanceof String) {
                     realName = (String)entry.elementAt(0);
+                }
 
-                String mbName = "NIL";
-                if(entry.elementAt(2) instanceof String)
+                String mbName = strNIL;
+                if(entry.elementAt(2) instanceof String) {
                     mbName = (String)entry.elementAt(2);
+                }
 
-                String hostName = "NIL";
-                if(entry.elementAt(3) instanceof String)
+                String hostName = strNIL;
+                if(entry.elementAt(3) instanceof String) {
                     hostName = (String)entry.elementAt(3);
+                }
                 // Now assemble these into a single address entry
                 // (possibly eventually storing them separately)
-                if(realName.length() > 0 && !realName.equals("NIL"))
+                if(realName.length() > 0 && !realName.equals(strNIL)) {
                     addrList[index] = realName + " <" + mbName + "@" + hostName + ">";
-                else
+                }
+                else {
                     addrList[index] = mbName + "@" + hostName;
+                }
                 index++;
             }
         }
@@ -180,8 +192,9 @@ class ImapParser {
 
         // Sanity checking
         if(parsedText.size() < 2 ||
-           !(parsedText.elementAt(1) instanceof Vector))
+           !(parsedText.elementAt(1) instanceof Vector)) {
            return null;
+        }
         
         Vector parsedStruct = (Vector)parsedText.elementAt(1);
         MessageSection msgStructure = parseMessageStructureHelper(null, 1, parsedStruct);
@@ -193,14 +206,19 @@ class ImapParser {
      * This method implements a kludge to fix body part addresses
      */
     private static void fixMessageStructure(MessageSection msgStructure) {
-        if(msgStructure == null) return;
+        if(msgStructure == null) {
+            return;
+        }
         int p = msgStructure.address.indexOf('.');
-        if(p != -1 && p+1 < msgStructure.address.length())
+        if(p != -1 && p+1 < msgStructure.address.length()) {
             msgStructure.address = msgStructure.address.substring(p+1);
+        }
         
-        if(msgStructure.subsections != null && msgStructure.subsections.length > 0)
-            for(int i=0;i<msgStructure.subsections.length;i++)
+        if(msgStructure.subsections != null && msgStructure.subsections.length > 0) {
+            for(int i=0;i<msgStructure.subsections.length;i++) {
                 fixMessageStructure(msgStructure.subsections[i]);
+            }
+        }
     }
     
     private static MessageSection parseMessageStructureHelper(String parentAddress,
@@ -260,8 +278,9 @@ class ImapParser {
             if(tmpVec.size() >= 2) {
                 if((tmpVec.elementAt(0) instanceof String) &&
                    ((String)tmpVec.elementAt(0)).equalsIgnoreCase("charset") &&
-                   tmpVec.elementAt(1) instanceof String)
+                   tmpVec.elementAt(1) instanceof String) {
                     sec.charset = (String)tmpVec.elementAt(1);                    
+                }
             }
         }
         

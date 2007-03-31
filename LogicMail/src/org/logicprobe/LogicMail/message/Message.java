@@ -31,8 +31,6 @@
 
 package org.logicprobe.LogicMail.message;
 
-import java.util.Date;
-
 /**
  * This class encapsulates all the data to represent an E-Mail message.
  */

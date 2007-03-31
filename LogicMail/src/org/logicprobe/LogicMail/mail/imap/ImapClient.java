@@ -108,13 +108,16 @@ public class ImapClient implements IncomingMailClient {
 
             // Discover folder delim
             Vector resp = imapProtocol.executeList("", "");
-            if(resp.size() > 0)
+            if(resp.size() > 0) {
                 folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
+            }
             openStarted = false;
         } catch (MailException exp) {
             close();
             String msg = exp.getMessage();
-            if(msg.startsWith("NO")) msg = msg.substring(msg.indexOf(' ')+1);
+            if(msg.startsWith("NO")) {
+                msg = msg.substring(msg.indexOf(' ')+1);
+            }
             throw new MailException(msg);
         }
         return true;
@@ -122,8 +125,9 @@ public class ImapClient implements IncomingMailClient {
     
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
-            if(activeMailbox != null && !activeMailbox.equals(""))
+            if(activeMailbox != null && !activeMailbox.equals("")) {
                 imapProtocol.executeClose();
+            }
             imapProtocol.executeLogout();
         }
         activeMailbox = null;
@@ -178,8 +182,9 @@ public class ImapClient implements IncomingMailClient {
                 FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
                 baseFolder.addChild(childItem);
                 if(resp.hasChildren) {
-                    if(depth+1 >= globalConfig.getImapMaxFolderDepth())
+                    if(depth+1 >= globalConfig.getImapMaxFolderDepth()) {
                         return;
+                    }
                     getFolderTreeImpl(childItem, depth+1);
                 }
             }
@@ -253,12 +258,14 @@ public class ImapClient implements IncomingMailClient {
         else
             part = null;
 
-        if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0))
+        if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
             for(int i=0;i<structure.subsections.length;i++) {
                 MessagePart subPart = getMessagePart(index, structure.subsections[i], maxSize);
-                if(subPart != null)
+                if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
+                }
             }
+        }
         return part;
     }
     
@@ -267,7 +274,9 @@ public class ImapClient implements IncomingMailClient {
      * This tree is used to build the final message tree.
      */
     private ImapParser.MessageSection getMessageStructure(int msgIndex) throws IOException, MailException {
-        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
+        if(activeMailbox.equals("")) {
+            throw new MailException("Mailbox not selected");
+        }
 
         return imapProtocol.executeFetchBodystructure(msgIndex);
     }
@@ -281,15 +290,18 @@ public class ImapClient implements IncomingMailClient {
     private FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath) throws IOException, MailException {
         int pos = 0;
         int i = 0;
-        while((i = folderPath.indexOf(folderDelim, i)) != -1)
+        while((i = folderPath.indexOf(folderDelim, i)) != -1) {
             if(i != -1) { pos = i+1; i++; }
+        }
         FolderTreeItem item = new FolderTreeItem(parent, folderPath.substring(pos), folderPath, folderDelim);
         item.setMsgCount(0);
         return item;
     }
 
     private String getMessageBody(int index, String address) throws IOException, MailException {
-        if(activeMailbox.equals("")) throw new MailException("Mailbox not selected");
+        if(activeMailbox.equals("")) {
+            throw new MailException("Mailbox not selected");
+        }
         
         return imapProtocol.executeFetchBody(index, address);
     }

@@ -58,6 +58,7 @@ public class SmtpClient implements OutgoingMailClient {
     private boolean openStarted;
     private String username;
     private String password;
+    private static String strCRLF = "\r\n";
     
     /** Creates a new instance of SmtpClient */
     public SmtpClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
@@ -88,7 +89,9 @@ public class SmtpClient implements OutgoingMailClient {
             // Eat the initial server response
             connection.receive();
             String hostname = System.getProperty("microedition.hostname");
-            if(hostname == null) hostname = "localhost";
+            if(hostname == null) {
+                hostname = "localhost";
+            }
 
             helloResult = smtpProtocol.executeExtendedHello(hostname);
             openStarted = true;
@@ -130,7 +133,9 @@ public class SmtpClient implements OutgoingMailClient {
     }
 
     public void sendMessage(Message message) throws IOException, MailException {
-        if(!isFresh) smtpProtocol.executeReset();
+        if(!isFresh) {
+            smtpProtocol.executeReset();
+        }
         isFresh = false;
         
         // serialize the message
@@ -142,28 +147,34 @@ public class SmtpClient implements OutgoingMailClient {
         StringBuffer buffer = new StringBuffer();
 
         // Create the message headers
-        buffer.append("From: " + makeCsvString(env.from) + "\r\n");
-        buffer.append("To: " + makeCsvString(env.to) + "\r\n");
-        if(env.cc != null && env.cc.length > 0)
-            buffer.append("Cc: " + makeCsvString(env.cc) + "\r\n");
-        if(env.bcc != null && env.bcc.length > 0)
-            buffer.append("Bcc: " + makeCsvString(env.bcc) + "\r\n");
-        if(env.replyTo != null && env.replyTo.length > 0)
-            buffer.append("Reply-To: " + makeCsvString(env.replyTo) + "\r\n");
-        buffer.append("Date: " + StringParser.createDateString(Calendar.getInstance().getTime()) + "\r\n");
-        buffer.append("User-Agent: "+AppInfo.getName()+"/"+AppInfo.getVersion() + "\r\n");
-        buffer.append("Subject: " + env.subject + "\r\n");
+        buffer.append("From: " + makeCsvString(env.from) + strCRLF);
+        buffer.append("To: " + makeCsvString(env.to) + strCRLF);
+        if(env.cc != null && env.cc.length > 0) {
+            buffer.append("Cc: " + makeCsvString(env.cc) + strCRLF);
+        }
+        if(env.bcc != null && env.bcc.length > 0) {
+            buffer.append("Bcc: " + makeCsvString(env.bcc) + strCRLF);
+        }
+        if(env.replyTo != null && env.replyTo.length > 0) {
+            buffer.append("Reply-To: " + makeCsvString(env.replyTo) + strCRLF);
+        }
+        buffer.append("Date: " + StringParser.createDateString(Calendar.getInstance().getTime()) + strCRLF);
+        buffer.append("User-Agent: "+AppInfo.getName()+"/"+AppInfo.getVersion() + strCRLF);
+        buffer.append("Subject: " + env.subject + strCRLF);
         
         // Add the body
         buffer.append(mimeStr);
 
         // Send the message
-        if(!smtpProtocol.executeMail(stripEmail(env.from[0])))
+        if(!smtpProtocol.executeMail(stripEmail(env.from[0]))) {
             throw new MailException("Error with sender");
-        if(!smtpProtocol.executeRecipient(stripEmail(env.to[0])))
+        }
+        if(!smtpProtocol.executeRecipient(stripEmail(env.to[0]))) {
             throw new MailException("Error with recipient");
-        if(!smtpProtocol.executeData(buffer.toString()))
+        }
+        if(!smtpProtocol.executeData(buffer.toString())) {
             throw new MailException("Error sending message");
+        }
     }
     
     private static String makeCsvString(String[] input) {

@@ -172,9 +172,13 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     }
 
     private void openSelectedFolder() {
-    	if(treeField == null) return;
+    	if(treeField == null) {
+            return;
+        }
         int curNode = treeField.getCurrentNode();
-        if(curNode == -1) return;
+        if(curNode == -1) {
+            return;
+        }
         Object cookie = treeField.getCookie(curNode);
         if(cookie instanceof FolderTreeItem) {
             UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, (FolderTreeItem)cookie));

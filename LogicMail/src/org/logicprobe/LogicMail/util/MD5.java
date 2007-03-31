@@ -426,8 +426,9 @@ public class MD5 {
         int index, partlen, i, start;
         finals = null;
         /* Length can be told to be shorter, but not inter */
-        if ((length - offset) > buffer.length)
+        if ((length - offset) > buffer.length) {
             length = buffer.length - offset;
+        }
         
         /* compute number of bytes mod 64 */
         
@@ -491,8 +492,9 @@ public class MD5 {
      *            Array of bytes to use for updating the hash
      */
     public final void update( final byte buffer[]) {
-        if( buffer == null )
+        if( buffer == null ) {
             return;
+        }
         update( state, buffer,0, buffer.length );
     }
     

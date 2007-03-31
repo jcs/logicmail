@@ -88,7 +88,9 @@ public class CacheWriter {
         }
         
         try {
-            if(store != null) store.closeRecordStore();
+            if(store != null) {
+                store.closeRecordStore();
+            }
         } catch (RecordStoreException exp) {
             // do nothing
         }

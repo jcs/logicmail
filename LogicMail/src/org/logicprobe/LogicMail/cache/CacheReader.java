@@ -72,7 +72,9 @@ public class CacheReader {
         RecordStore store = null;
         try {
             store = RecordStore.openRecordStore(_storeName, false);
-            if(store == null) return;
+            if(store == null) {
+                return;
+            }
             int records = store.getNumRecords();
             for(int i=1;i<=records;i++) {
                 _storeList.addElement(store.getRecord(i));
@@ -84,7 +86,9 @@ public class CacheReader {
         }
         
         try {
-            if(store != null) store.closeRecordStore();
+            if(store != null) {
+                store.closeRecordStore();
+            }
         } catch (RecordStoreException exp) {
             // do nothing
         }

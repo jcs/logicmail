@@ -54,8 +54,9 @@ public class MailSettings {
     }
     
     public static synchronized MailSettings getInstance() {
-        if(instance == null)
+        if(instance == null) {
             instance = new MailSettings();
+        }
         return instance;
     }
     
@@ -115,7 +116,9 @@ public class MailSettings {
         }
         
         try {
-            if(store != null) store.closeRecordStore();
+            if(store != null) {
+                store.closeRecordStore();
+            }
         } catch (RecordStoreException exp) {
             // do nothing
         }
@@ -151,7 +154,9 @@ public class MailSettings {
         }
         
         try {
-            if(store != null) store.closeRecordStore();
+            if(store != null) {
+                store.closeRecordStore();
+            }
         } catch (RecordStoreException exp) {
             // do nothing
         }

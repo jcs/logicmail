@@ -175,7 +175,7 @@ public class PopClient implements IncomingMailClient {
         int maxLines = globalConfig.getPopMaxLines();
 
         // Download the message text
-        String[] message = popProtocol.executeTop((folderMessage.getIndex()+1), maxLines);
+        String[] message = popProtocol.executeTop((folderMessage.getIndex()), maxLines);
         
         MIMEInputStream mimeInputStream = null;
         try {
@@ -210,8 +210,9 @@ public class PopClient implements IncomingMailClient {
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
             for(int i=0;i<mimeSubparts.length;i++) {
                 MessagePart subPart = getMessagePart(mimeSubparts[i]);
-                if(subPart != null)
+                if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
+                }
             }
             return part;
         }
@@ -226,14 +227,13 @@ public class PopClient implements IncomingMailClient {
                 int offset = 0;
                 while((offset+3 < buffer.length) &&
                         !(buffer[offset]=='\r' && buffer[offset+1]=='\n' &&
-                        buffer[offset+2]=='\r' && buffer[offset+3]=='\n'))
+                        buffer[offset+2]=='\r' && buffer[offset+3]=='\n')) {
                     offset++;
+                }
                 int size = buffer.length - offset;
                 return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer, offset, size));
             }
             else {
-                int size = mimeInputStream.available();
-                buffer = new byte[mimeInputStream.available()];
                 buffer = StringParser.readWholeStream(mimeInputStream);
                 return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer));
             }

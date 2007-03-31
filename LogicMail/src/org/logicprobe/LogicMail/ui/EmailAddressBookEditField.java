@@ -159,7 +159,9 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
         Dialog abDlg = new Dialog("Address book", names, null, 0, null, Dialog.LIST);
         int choice;
         choice = abDlg.doModal();
-        if(choice < 0 || choice > contacts.size()) return;
+        if(choice < 0 || choice > contacts.size()) {
+            return;
+        }
         
         ContactItem contactItem = ((ContactItem)contacts.elementAt(choice));
         String[] email = contactItem.email;
@@ -222,8 +224,9 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
                         }
                     }
                 }
-                if(contactItem.name != null && contactItem.email != null)
+                if(contactItem.name != null && contactItem.email != null) {
                     addressList.addElement(contactItem);
+                }
             }
         } catch (ControlledAccessException e) {
             // should do something

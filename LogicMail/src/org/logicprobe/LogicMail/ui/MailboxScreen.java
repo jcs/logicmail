@@ -109,7 +109,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
 
-        if(client != null) refreshMessageList();
+        if(client != null) {
+            refreshMessageList();
+        }
     }
 
     private void refreshMessageList() {
@@ -139,8 +141,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
     private boolean checkClose() {
         // Immediately close without prompting if we are
         // using a protocol that supports folders.
-        if(client.hasFolders())
+        if(client.hasFolders()) {
             return true;
+        }
         
         // Otherwise we are on the main screen for the account, so prompt
         // before closing the connection
@@ -188,23 +191,26 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
                             int width)
     {
         // sanity check
-        if(index >= messages.length) return;
+        if(index >= messages.length) {
+            return;
+        }
         FolderMessage entry = (FolderMessage)messages[index];
         MessageEnvelope env = entry.getEnvelope();
         graphics.drawBitmap(1, y, 20, lineHeight*2, getIconForMessage(entry), 0, 0);
             
         Font origFont = graphics.getFont();
         graphics.setFont(origFont.derive(Font.BOLD));
-        if(env.from != null && env.from.length > 0)
+        if(env.from != null && env.from.length > 0) {
             graphics.drawText((String)env.from[0], 20, y,
                               (int)(getStyle() | DrawStyle.ELLIPSIS),
                                senderWidth);
-                               
+        }
         graphics.setFont(origFont.derive(Font.PLAIN));
-        if(env.subject != null)
+        if(env.subject != null) {
             graphics.drawText((String)env.subject, 20, y+lineHeight,
                               (int)(getStyle() | DrawStyle.ELLIPSIS),
                                maxWidth-20);
+        }
         graphics.setFont(origFont);
         
         // Current time
@@ -274,7 +280,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
     private void openSelectedMessage()
     {
         int index = msgList.getSelectedIndex();
-        if(index < 0 || index > messages.length) return;
+        if(index < 0 || index > messages.length) {
+            return;
+        }
         
         UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, messages[index]));
     }
@@ -336,7 +344,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
             try {
                 ((IncomingMailClient)client).setActiveFolder(folderItem);
                 int firstIndex = folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
-                if(firstIndex < 0) firstIndex = 1;
+                if(firstIndex < 0) {
+                    firstIndex = 1;
+                }
                 folderMessages = ((IncomingMailClient)client).getFolderMessages(firstIndex, folderItem.getMsgCount());
             } catch (MailException exp) {
                 folderMessages = null;

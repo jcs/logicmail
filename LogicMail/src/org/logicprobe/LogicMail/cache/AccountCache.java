@@ -31,9 +31,7 @@
 
 package org.logicprobe.LogicMail.cache;
 
-import java.util.Vector;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.IncomingMailClient;
 
 public class AccountCache {
     private String _acctName;
@@ -51,25 +49,21 @@ public class AccountCache {
     }
 
     public void saveFolderTree(FolderTreeItem folderRoot) {
-        try {
-            String key = "acct_" + _acctName + "_folders";
-            CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(key.hashCode()));
-            writer.addItem(folderRoot);
-            writer.store();
-        } catch (Exception e) { }
+        String key = "acct_" + _acctName + "_folders";
+        CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(key.hashCode()));
+        writer.addItem(folderRoot);
+        writer.store();
     }
 
     public FolderTreeItem loadFolderTree() {
-        try {
-            String key = "acct_" + _acctName + "_folders";
-            CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(key.hashCode()));
-            reader.load();
-            if(reader.getNumItems() < 1) return null;
-            FolderTreeItem folderRoot = new FolderTreeItem();
-            reader.getItem(0, folderRoot);
-            return folderRoot;
-        } catch (Exception e) {
+        String key = "acct_" + _acctName + "_folders";
+        CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(key.hashCode()));
+        reader.load();
+        if(reader.getNumItems() < 1) {
             return null;
         }
+        FolderTreeItem folderRoot = new FolderTreeItem();
+        reader.getItem(0, folderRoot);
+        return folderRoot;
     }
 }

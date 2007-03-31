@@ -32,8 +32,6 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.io.IOException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.util.Serializable;
@@ -42,8 +40,8 @@ import org.logicprobe.LogicMail.util.Serializable;
  * Store account configuration for LogicMail
  */
 public class AccountConfig implements Serializable {
-    public static int TYPE_POP = 0;
-    public static int TYPE_IMAP = 1;
+    final public static int TYPE_POP = 0;
+    final public static int TYPE_IMAP = 1;
     
     private String acctName;
     private String serverName;

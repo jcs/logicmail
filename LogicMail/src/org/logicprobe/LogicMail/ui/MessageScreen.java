@@ -76,26 +76,34 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
         // Create screen elements
         if(envelope.from != null && envelope.from.length > 0) {
             add(new RichTextField("From: " + envelope.from[0]));
-            if(envelope.from.length > 1)
-                for(int i=1;i<envelope.from.length;i++)
-                    if(envelope.from[i] != null)
+            if(envelope.from.length > 1) {
+                for(int i=1;i<envelope.from.length;i++) {
+                    if(envelope.from[i] != null) {
                         add(new RichTextField("      " + envelope.from[i]));
+                    }
+                }
+            }
         }
-        if(envelope.subject != null)
+        if(envelope.subject != null) {
             add(new RichTextField("Subject: " + envelope.subject));
+        }
         add(new SeparatorField());
         updateMessage();
     }
 
     private void drawMessageFields() {
-        if(msgFields == null) return;
+        if(msgFields == null) {
+            return;
+        }
         synchronized(Application.getEventLock()) {
             int size = msgFields.size();
             for(int i=0;i<size;++i) {
-                if(msgFields.elementAt(i) != null) 
+                if(msgFields.elementAt(i) != null) {
                     add((Field)msgFields.elementAt(i));
-                if(i != size-1)
+                }
+                if(i != size-1) {
                     add(new SeparatorField());
+                }
             }
         }
     }
@@ -150,29 +158,36 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
 
         if(envelope.from != null && envelope.from.length > 0) {
             msg.append("From:\n");
-            for(i=0;i<envelope.from.length;i++)
+            for(i=0;i<envelope.from.length;i++) {
                 msg.append("  " + ((envelope.from[i]!=null) ? envelope.from[i] : "") + "\n");
+            }
         }
         
         if(envelope.to != null && envelope.to.length > 0) {
             msg.append("To:\n");
-            for(i=0;i<envelope.to.length;i++)
-            if(envelope.to[i].length() > 0)
-                msg.append("  " + ((envelope.to[i]!=null) ? envelope.to[i] : "") + "\n");
+            for(i=0;i<envelope.to.length;i++) {
+                if(envelope.to[i].length() > 0) {
+                    msg.append("  " + ((envelope.to[i]!=null) ? envelope.to[i] : "") + "\n");
+                }
+            }
         }
 
         if(envelope.cc != null && envelope.cc.length > 0) {
             msg.append("CC:\n");
-            for(i=0;i<envelope.cc.length;i++)
-                if(envelope.cc[i].length() > 0)
-                msg.append("  " + ((envelope.cc[i]!=null) ? envelope.cc[i] : "") + "\n");
+            for(i=0;i<envelope.cc.length;i++) {
+                if(envelope.cc[i].length() > 0) {
+                    msg.append("  " + ((envelope.cc[i]!=null) ? envelope.cc[i] : "") + "\n");
+                }
+            }
         }
         
         if(envelope.bcc != null && envelope.bcc.length > 0) {
             msg.append("BCC:\n");
-            for(i=0;i<envelope.bcc.length;i++)
-                if(envelope.bcc[i].length() > 0)
+            for(i=0;i<envelope.bcc.length;i++) {
+                if(envelope.bcc[i].length() > 0) {
                     msg.append("  " + ((envelope.bcc[i]!=null) ? envelope.bcc[i] : "") + "\n");
+                }
+            }
         }
 
         Dialog dialog = new Dialog(Dialog.D_OK, msg.toString(),
@@ -201,7 +216,6 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     }
     
     private class UpdateMessageHandler extends MailClientHandler {
-        private MessageEnvelope envelope;
         private Vector msgFields;
 
         public UpdateMessageHandler() {

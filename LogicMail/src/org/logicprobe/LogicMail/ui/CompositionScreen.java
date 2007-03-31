@@ -164,8 +164,9 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         // (this should come from global or account settings)
         env.from = new String[1];
         String fromAddress = acctConfig.getSmtpFromAddress();
-        if(fromAddress == null || fromAddress.length() == 0)
+        if(fromAddress == null || fromAddress.length() == 0) {
             fromAddress = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
+        }
         
         env.from[0] = MailSettings.getInstance().getGlobalConfig().getFullname() +
                       " <" + fromAddress + ">";
@@ -253,9 +254,15 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         switch(key) {
         case Keypad.KEY_BACKSPACE:
             currentField = (EmailAddressBookEditField)vfmRecipients.getFieldWithFocus();
-            if(currentField == null) break;
-            if(vfmRecipients.getFieldWithFocusIndex() == 0) break;
-            if(currentField.getText().length() > 0) break;
+            if(currentField == null) {
+                break;
+            }
+            if(vfmRecipients.getFieldWithFocusIndex() == 0) {
+                break;
+            }
+            if(currentField.getText().length() > 0) {
+                break;
+            }
             index = currentField.getIndex();
             vfmRecipients.delete(currentField);
             vfmRecipients.getField(index-1).setFocus();

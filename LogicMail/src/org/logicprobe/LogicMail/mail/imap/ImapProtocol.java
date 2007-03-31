@@ -124,7 +124,7 @@ public class ImapProtocol {
         String[] tokens = StringParser.parseTokenString(replyText[0], "");
         if(tokens.length > 2 && tokens[1].equals("CAPABILITY")) {
             for(int i=2;i<tokens.length;i++)
-                table.put(tokens[i], new Boolean(true));
+                table.put(tokens[i], Boolean.TRUE);
         }
         
         return table;
@@ -252,8 +252,9 @@ public class ImapProtocol {
                 lineBuf = new StringBuffer();
             }
             lineBuf.append(line);
-            if(i == rawList.length-1 && lineBuf.toString().startsWith("* "))
+            if(i == rawList.length-1 && lineBuf.toString().startsWith("* ")) {
                 rawList2.addElement(lineBuf.toString());
+            }
         }
         
         int index = 0;
@@ -335,8 +336,9 @@ public class ImapProtocol {
                 lineBuf = new StringBuffer();
             }
             lineBuf.append(line);
-            if(i == rawList.length-1 && lineBuf.toString().startsWith("* "))
+            if(i == rawList.length-1 && lineBuf.toString().startsWith("* ")) {
                 rawList2.addElement(lineBuf.toString());
+            }
         }
 
         ImapParser.MessageSection msgStructure = null;
@@ -361,7 +363,9 @@ public class ImapProtocol {
     public String executeFetchBody(int index, String address) throws IOException, MailException {
         String[] rawList = execute("FETCH", index + " (BODY["+ address +"])");
 
-        if(rawList.length <= 1) return "";
+        if(rawList.length <= 1) {
+            return "";
+        }
         
         StringBuffer msgBuf = new StringBuffer();
         for(int i=1;i<rawList.length-1;i++) {
@@ -407,10 +411,12 @@ public class ImapProtocol {
             temp = results[i];
             p = temp.indexOf('(');
             q = temp.indexOf(')', p + 1);
-            if((p != -1) && (q > p))
+            if((p != -1) && (q > p)) {
                 flagStr = temp.substring(p + 1, q);
-            if(temp.length() > q+2)
+            }
+            if(temp.length() > q+2) {
                 argStr = temp.substring(q+2);
+            }
             
             response = new ListResponse();
             response.delim = "";
@@ -426,16 +432,18 @@ public class ImapProtocol {
             q = argStr.indexOf('\"', p + 1);
             
             // Store the delimiter
-            if((p != -1) && (q > p))
+            if((p != -1) && (q > p)) {
                 response.delim = argStr.substring(p+1, q);
+            }
             
             // Store the name, strip off quotes if necessary
             if(argStr.length() > q+2) {
                 response.name = argStr.substring(q+2);
                 p = response.name.indexOf('\"');
                 q = response.name.indexOf('\"', p + 1);
-                if((p != -1) && (q > p))
+                if((p != -1) && (q > p)) {
                     response.name = response.name.substring(p+1, q);
+                }
             }
             
             retVec.addElement(response);

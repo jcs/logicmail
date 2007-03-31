@@ -32,7 +32,6 @@
 package org.logicprobe.LogicMail.util;
 
 import java.io.IOException;
-import org.logicprobe.LogicMail.AppInfo;
 
 /**
  * Proxy for utility classes and methods that may
@@ -67,7 +66,9 @@ public abstract class UtilProxy {
     private static UtilProxy createUtilProxy() {
         UtilProxy utilProxy = null;
         Class utilProxyClass = getUtilProxyClass();
-        if(utilProxyClass == null) return null;
+        if(utilProxyClass == null) {
+            return null;
+        }
 
         try {
             utilProxy = (UtilProxy)utilProxyClass.newInstance();

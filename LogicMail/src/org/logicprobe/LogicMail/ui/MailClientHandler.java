@@ -92,11 +92,13 @@ public abstract class MailClientHandler {
             try {
                 Screen activeScreen =
                         UiApplication.getUiApplication().getActiveScreen();
-                if(activeScreen instanceof Status)
+                if(activeScreen instanceof Status) {
                     UiApplication.getUiApplication().popScreen(activeScreen);
+                }
             } catch (Exception e) { }
-            if(this.message != null)
+            if(this.message != null) {
                 Status.show(this.message, this.time);
+            }
         }
     }
 
@@ -208,28 +210,32 @@ public abstract class MailClientHandler {
                     runSession();
                     showStatus(null, 0); // remove any status screens
                     // Notify the listener of completion
-                    if(MailClientHandler.this.handlerListener != null)
+                    if(MailClientHandler.this.handlerListener != null) {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, true);
+                    }
                 } catch (IOException exp) {
                     System.out.println(exp);
                     showStatus("I/O Error", 2000);
                     try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
                     // Notify the listener of failure
-                    if(MailClientHandler.this.handlerListener != null)
+                    if(MailClientHandler.this.handlerListener != null) {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, false);
+                    }
                 } catch (MailException exp) {
                     System.out.println("Protocol error: " + exp);
                     showStatus(exp.getMessage(), 10000);
                     // Notify the listener of failure
-                    if(MailClientHandler.this.handlerListener != null)
+                    if(MailClientHandler.this.handlerListener != null) {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, false);
+                    }
                 } catch (Exception exp) {
                     System.out.println("Unknown error: " + exp);
                     showStatus("Unknown error", 2000);
                     try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
                     // Notify the listener of failure
-                    if(MailClientHandler.this.handlerListener != null)
+                    if(MailClientHandler.this.handlerListener != null) {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, false);
+                    }
                 }
             }
         };

@@ -73,7 +73,9 @@ public class SmtpProtocol {
         byte[] data;
         if(mech == AUTH_PLAIN) {
             result = execute("AUTH PLAIN");
-            if(!result.startsWith("334")) throw new MailException(result.substring(4));
+            if(!result.startsWith("334")) {
+                throw new MailException(result.substring(4));
+            }
             
             // Format the username and password
             byte[] userData = username.getBytes();
@@ -81,28 +83,40 @@ public class SmtpProtocol {
             data = new byte[userData.length + passData.length + 2];
             int i = 0;
             data[i++] = 0;
-            for(int j=0; j<userData.length; j++)
+            for(int j=0; j<userData.length; j++) {
                 data[i++] = userData[j];
+            }
             data[i++] = 0;
-            for(int j=0; j<passData.length; j++)
+            for(int j=0; j<passData.length; j++) {
                 data[i++] = passData[j];
+            }
             
             result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("235")) return false;
+            if(!result.startsWith("235")) {
+                return false;
+            }
         }
         else if(mech == AUTH_LOGIN) {
             result = execute("AUTH LOGIN");
-            if(!result.startsWith("334")) throw new MailException(result.substring(4));
+            if(!result.startsWith("334")) {
+                throw new MailException(result.substring(4));
+            }
             data = username.getBytes();
             result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("334")) throw new MailException("Authentication error");
+            if(!result.startsWith("334")) {
+                throw new MailException("Authentication error");
+            }
             data = password.getBytes();
             result = execute(utilProxy.Base64EncodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("235")) return false;
+            if(!result.startsWith("235")) {
+                return false;
+            }
         }
         else if(mech == AUTH_CRAM_MD5) {
             result = execute("AUTH CRAM-MD5");
-            if(!result.startsWith("334")) throw new MailException(result.substring(4));
+            if(!result.startsWith("334")) {
+                throw new MailException(result.substring(4));
+            }
             
             int i;
             byte[] challenge = utilProxy.Base64Decode(result.substring(4));
@@ -119,12 +133,16 @@ public class SmtpProtocol {
             byte[] eval = buf.toString().getBytes("US-ASCII");
             
             result = execute(utilProxy.Base64EncodeAsString(eval, 0, eval.length, false, false));
-            if(!result.startsWith("235")) return false;
+            if(!result.startsWith("235")) {
+                return false;
+            }
         }
         else if(mech == AUTH_DIGEST_MD5) {
             // Note: This code does not currently work correctly
             result = execute("AUTH DIGEST-MD5");
-            if(!result.startsWith("334")) throw new MailException(result.substring(4));
+            if(!result.startsWith("334")) {
+                throw new MailException(result.substring(4));
+            }
             
             String challenge = new String(utilProxy.Base64Decode(result.substring(4)));
             System.err.println("-->Challenge: " + challenge);
@@ -222,9 +240,13 @@ public class SmtpProtocol {
             System.err.println("-->Response: " + buf.toString());
             byte[] response = buf.toString().getBytes(charset);
             result = execute(utilProxy.Base64EncodeAsString(response, 0, response.length, false, false));
-            if(!result.startsWith("334")) return false;
+            if(!result.startsWith("334")) {
+                return false;
+            }
             System.err.println("-->Result: "+(new String(utilProxy.Base64Decode(result))));
-            if(!result.startsWith("235")) return false;
+            if(!result.startsWith("235")) {
+                return false;
+            }
         }
         else {
             throw new MailException("Unknown authentication mechanism");
@@ -277,8 +299,9 @@ public class SmtpProtocol {
      */
     public boolean executeData(String message) throws IOException, MailException {
         String result = execute("DATA");
-        if(!result.startsWith("354"))
+        if(!result.startsWith("354")) {
             return false;
+        }
         
         connection.send(message);
         result = execute("\r\n.");
@@ -313,7 +336,9 @@ public class SmtpProtocol {
      * @return The result
      */
     private String execute(String command) throws IOException, MailException {
-        if(command != null) connection.send(command);
+        if(command != null) {
+            connection.send(command);
+        }
         
         String result = connection.receive();
         
@@ -337,7 +362,9 @@ public class SmtpProtocol {
         while(buffer != null) {
             buffer = connection.receive();
             Arrays.add(lines, buffer);
-            if(buffer.length() >=4 && buffer.charAt(3) == ' ') break;
+            if(buffer.length() >=4 && buffer.charAt(3) == ' ') {
+                break;
+            }
         }
         return lines;
     }
@@ -410,9 +437,15 @@ public class SmtpProtocol {
         int p, q;
         p = input.indexOf("=") + 1;
         q = input.length() - 1;
-        if(q <= p) return null;
-        if(input.charAt(p) == '\"') p++;
-        if(input.charAt(q) == '\"') q--;
+        if(q <= p) {
+            return null;
+        }
+        if(input.charAt(p) == '\"') {
+            p++;
+        }
+        if(input.charAt(q) == '\"') {
+            q--;
+        }
         return input.substring(p, q+1);
     }
 }

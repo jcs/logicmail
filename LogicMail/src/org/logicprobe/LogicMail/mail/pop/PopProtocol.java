@@ -127,7 +127,9 @@ public class PopProtocol {
      * @return The result
      */
     private String execute(String command) throws IOException, MailException {
-        if(command != null) connection.send(command);
+        if(command != null) {
+            connection.send(command);
+        }
         
         String result = connection.receive();
         

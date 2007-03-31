@@ -49,7 +49,9 @@ class PopParser {
         
         // Populate the common header field bits of the envelope
         env.subject = (String)headers.get("subject");
-        if(env.subject == null) env.subject = "<subject>";
+        if(env.subject == null) {
+            env.subject = "<subject>";
+        }
         env.from = StringParser.parseTokenString((String)headers.get("from"), ", ");
         env.to = StringParser.parseTokenString((String)headers.get("to"), ", ");
         env.cc = StringParser.parseTokenString((String)headers.get("cc"), ", ");

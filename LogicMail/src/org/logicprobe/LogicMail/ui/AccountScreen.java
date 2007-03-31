@@ -116,10 +116,12 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
                             int y, int w)
     {
         String text = mailSettings.getAccountConfig(index).getAcctName();
-        if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_POP)
+        if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_POP) {
             text = text.concat(" (POP)");
-        else if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_IMAP)
+        }
+        else if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_IMAP) {
             text = text.concat(" (IMAP)");
+        }
             
         // In the future, consider icons or font size changes
         // to indicate the runtime status of an account on
@@ -168,7 +170,9 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     }
 
     private void editAccount(int index) {
-        if(index == -1) return;
+        if(index == -1) {
+            return;
+        }
         AccountConfig acctConfig = mailSettings.getAccountConfig(index);
         AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
         UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
@@ -179,7 +183,9 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     }
     
     private void deleteAccount(int index) {
-        if(index == -1) return;
+        if(index == -1) {
+            return;
+        }
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeAccountConfig(index);
@@ -192,14 +198,17 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         int numAcct = mailSettings.getNumAccounts();
         int selItem = accountList.getSelectedIndex();
 
-        while(accountList.getSize() > 0)
+        while(accountList.getSize() > 0) {
             accountList.delete(0);
+        }
 
-        for(int i=0;i<numAcct;i++)
+        for(int i=0;i<numAcct;i++) {
             accountList.insert(i);
+        }
 
-        if(selItem > numAcct)
+        if(selItem > numAcct) {
             selItem = numAcct;
+        }
         accountList.setSelectedIndex(selItem);
     }
     
@@ -210,7 +219,9 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
      */
     private void selectAccount(int index) {
         AccountConfig acctConfig = mailSettings.getAccountConfig(index);
-        if(acctConfig == null) return;
+        if(acctConfig == null) {
+            return;
+        }
 
         IncomingMailClient client = MailClientFactory.createMailClient(acctConfig);
         if(client.hasFolders()) {

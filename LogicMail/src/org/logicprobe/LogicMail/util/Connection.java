@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -36,7 +36,7 @@
  * from Mail4ME, and is covered under the copyright shown below.  Any code not
  * originating from Mail4ME is covered under the copyright shown at the top of
  * this source file.
- * 
+ *
  * Mail4ME - Mail for the Java 2 Micro Edition
  *
  * A lightweight, J2ME- (and also J2SE-) compatible package for sending and
@@ -93,7 +93,7 @@ public class Connection {
     private String localAddress;
     protected InputStream input;
     protected OutputStream output;
-
+    
     /**
      * Byte array holding carriage return and line feed
      */
@@ -103,17 +103,17 @@ public class Connection {
      * If true, protocol debugging information is written to standard output.
      */
     private boolean debug;
-
+    
     /**
      * Provides a buffer used for incoming data.
      */
     private byte[] buffer = new byte[128];
-
+    
     /**
      * Holds the actual number of bytes in the buffer.
      */
     private int count;
-
+    
     /**
      * Holds the position of the next byte to be read from the buffer.
      */
@@ -129,7 +129,7 @@ public class Connection {
         this.output = null;
         this.socket = null;
     }
-
+    
     /**
      * Opens a connection.
      */
@@ -140,14 +140,16 @@ public class Connection {
         // be a global user configurable option
         String paramStr = (deviceSide ? ";deviceside=true" : "");
         String connectStr = protocolStr + "://" + serverName +
-                     ":" + serverPort + paramStr;
-        if (debug) System.out.println("[OPEN] " + connectStr);
+                ":" + serverPort + paramStr;
+        if (debug) {
+            System.out.println("[OPEN] " + connectStr);
+        }
         socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
         input = socket.openInputStream();
         output = socket.openOutputStream();
         localAddress = ((SocketConnection)socket).getLocalAddress();
-    }        
-
+    }
+    
     /**
      * Closes a connection.
      */
@@ -165,7 +167,7 @@ public class Connection {
             socket = null;
         }
     }
-
+    
     /**
      * Determine whether we are currently connected
      * @return True if connected
@@ -176,7 +178,7 @@ public class Connection {
         else
             return false;
     }
-
+    
     /**
      * Get the local address to which this connection is bound
      * @return Local address
@@ -205,13 +207,15 @@ public class Connection {
     public void send(String s) throws IOException {
         byte[] bytes = s.getBytes();
         int length = bytes.length;
-
+        
         /**
          * Special case for empty strings: Only CR/LF is sent.
          */
         if (s.length() == 0) {
-            if (debug) System.out.println("[SEND]");
-
+            if (debug) {
+                System.out.println("[SEND]");
+            }
+            
             output.write(CRLF, 0, 2);
         }
         /**
@@ -221,7 +225,7 @@ public class Connection {
             int i = 0;
             while (i < length) {
                 int j = i;
-
+                
                 /**
                  * Find next occurence of a line separator or the end of the
                  * string.
@@ -229,28 +233,30 @@ public class Connection {
                 while ((j < length) && (bytes[j] != 0x0A) && (bytes[j] != 0x0D)) {
                     j++;
                 }
-
-                if (debug) System.out.println("[SEND] " + s.substring(i, j));
-
+                
+                if (debug) {
+                    System.out.println("[SEND] " + s.substring(i, j));
+                }
+                
                 /**
                  * Write the string up to there and terminate it properly.
                  */
                 output.write(bytes, i, j - i);
                 output.write(CRLF, 0, 2);
-
+                
                 /**
                  * If we stopped at a CR, ignore a possibly following LF.
                  */
                 if ((j < length - 1) && (bytes[j] == 0x0D) && (bytes[j + 1] == 0x0A)) {
                     j++;
                 }
-
+                
                 i = j + 1;
             }
         }
         output.flush(); // I can't believe this wasn't here before (DK)
     }
-
+    
     /**
      * Receives a string from the server. This method is used internally for
      * incoming communication from the server. The main thing it does is
@@ -272,7 +278,7 @@ public class Connection {
          * a high level of heap fragmentation, which made applications
          * instable on MIDP devices (that don't provide compacting GC,
          * that is).
-         * 
+         *
          * This new implementation seems to work better: Is reads
          * characters from the InputStream one-by-one, putting them
          * in a buffer of fixed size that is large enough to hold a
@@ -288,9 +294,9 @@ public class Connection {
          * 512 characters), temporary Strings will again be necessary,
          * but there's not much one can about that.
          */
-        String result = "";
+        StringBuffer resultBuffer = new StringBuffer();
         boolean stop = false;
-
+        
         /**
          * The "stop" flag will be set as soon as we have received
          * a complete line, that is, a line terminated by CR/LF. Until
@@ -298,13 +304,13 @@ public class Connection {
          */
         while (!stop) {
             count = 0;
-
+            
             /**
              * The inner block reads single bytes from the InputStream
              * until, again, a line terminator is read or the buffer is
              * full.
-             */               
-               while (true) {
+             */
+            while (true) {
                 int actual = input.read(buffer, count, 1);
                 
                 /**
@@ -313,14 +319,13 @@ public class Connection {
                  * didn't like is. Try to close the connection, but ignore
                  * any errors that might result from this.
                  */
-                    if (actual == -1) {
-                        try {
-                      close();
-                   }
-                      catch (IOException ignored) {
-                  }
-                      
-                       throw new IOException("Connection closed");
+                if (actual == -1) {
+                    try {
+                        close();
+                    } catch (IOException ignored) {
+                    }
+                    
+                    throw new IOException("Connection closed");
                 }
                 
                 /**
@@ -329,19 +334,18 @@ public class Connection {
                  */
                 else if (actual == 0) {
                     try {
-                      Thread.yield();
+                        Thread.yield();
+                    } catch (Exception ignored) {
                     }
-                      catch (Exception ignored) {
-                    }
-                  }
+                }
                 
                 /**
                  * If a byte has been read, examine it and put it in the
                  * buffer.
                  */
-                 // Note: We really should look for CRLF, and not use this
-                 // half-assed approach which screws up on mid-lime LFs. (DK)
-                 else {
+                // Note: We really should look for CRLF, and not use this
+                // half-assed approach which screws up on mid-lime LFs. (DK)
+                else {
                     byte b = buffer[count];
                     
                     /**
@@ -359,22 +363,25 @@ public class Connection {
                     }
                     /**
                      * Everything else makes it into the buffer.
-                     */ 
+                     */
                     else {
                         count++;
-                        if (count == buffer.length) break;
+                        if (count == buffer.length) {
+                            break;
+                        }
                     }
                 }
-          }
-
-            result = result + new String(buffer, 0, count);
+            }
+            resultBuffer.append(new String(buffer, 0, count));
         }
         
-        if (debug) System.out.println("[RECV] " + result);
-
-        return result;
+        if (debug) {
+            System.out.println("[RECV] " + resultBuffer.toString());
+        }
+        
+        return resultBuffer.toString();
     }
-
+    
     /**
      * Controls the output of debugging information to standard output. Set it to
      * true to see all protocol information exchanged.
@@ -384,7 +391,7 @@ public class Connection {
     public void setDebug(boolean debug) {
         this.debug = debug;
     }
-
+    
     /**
      * Queries the current value of the debugging flag.
      *

@@ -32,8 +32,6 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.io.IOException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.util.Serializable;

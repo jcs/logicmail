@@ -32,7 +32,6 @@
 package org.logicprobe.LogicMail;
 
 import net.rim.device.api.system.ApplicationDescriptor;
-import net.rim.device.api.system.Bitmap;
 
 /**
  * Class to provide information about the application
