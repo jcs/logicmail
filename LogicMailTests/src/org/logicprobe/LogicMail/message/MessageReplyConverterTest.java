@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,22 +28,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.logicprobe.LogicMail.message;
 
-package org.logicprobe.LogicMail;
+import j2meunit.framework.Test;
+import j2meunit.framework.TestCase;
+import j2meunit.framework.TestMethod;
+import j2meunit.framework.TestSuite;
 
-public class LogicMailTest {
-    public LogicMailTest() {
+/**
+ * Unit test for MessageReplyConverter
+ */
+public class MessageReplyConverterTest extends TestCase {
+    public MessageReplyConverterTest() {
+    }
+    
+    public MessageReplyConverterTest(String testName, TestMethod testMethod) {
+        super(testName, testMethod);
+    }
+    
+    public void setUp() {
     }
 
-    public static void main(String[] args) {
-        j2meunit.rimui.TestRunner instance =
-                new j2meunit.rimui.TestRunner(new String[] {
-            "org.logicprobe.LogicMail.util.UtilTest",
-            "org.logicprobe.LogicMail.message.MessageTest",
-            "org.logicprobe.LogicMail.ui.UiTest"
-        });
-        instance.enterEventDispatcher();
+    public void tearDown() {
+    }
+    
+//    public void testFoo() {
+//    }
+
+    public Test suite() {
+        TestSuite suite = new TestSuite("MessageReplyConverter");
+//        suite.addTest(new MessageReplyConverterTest("testFoo", new TestMethod()
+//        { public void run(TestCase tc) {((MessageReplyConverterTest)tc).testFoo(); } }));
+        
+        return suite;
     }
 }
-
-

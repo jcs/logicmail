@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, John Doe
+ * Copyright (c) 2006, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,6 +45,18 @@ import java.util.Vector;
  * Unit test for StringParser
  */
 public class StringParserTest extends TestCase {
+    public StringParserTest() {
+    }
+
+    public StringParserTest(String testName, TestMethod testMethod) {
+        super(testName, testMethod);
+    }
+    
+    public void setUp() {
+    }
+
+    public void tearDown() {
+    }
 
     /**
      * Test of parseDateString method, of class org.logicprobe.LogicMail.util.StringParser.
@@ -449,19 +461,6 @@ public class StringParserTest extends TestCase {
         String expectedResult = "=A1Hol=E1 Se=F1or!".toLowerCase();
         String result = StringParser.encodeQuotedPrintable(text).toLowerCase();
         assertEquals(expectedResult, result);
-    }
-
-    public StringParserTest() {
-    }
-
-    public StringParserTest(String testName, TestMethod testMethod) {
-        super(testName, testMethod);
-    }
-    
-    public void setUp() {
-    }
-
-    public void tearDown() {
     }
 
     public Test suite() {
