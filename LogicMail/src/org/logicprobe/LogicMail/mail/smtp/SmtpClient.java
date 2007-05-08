@@ -162,6 +162,10 @@ public class SmtpClient implements OutgoingMailClient {
         buffer.append("User-Agent: "+AppInfo.getName()+"/"+AppInfo.getVersion() + strCRLF);
         buffer.append("Subject: " + env.subject + strCRLF);
         
+        if(env.inReplyTo != null) {
+            buffer.append("In-Reply-To: " + env.inReplyTo + strCRLF);
+        }
+        
         // Add the body
         buffer.append(mimeStr);
 

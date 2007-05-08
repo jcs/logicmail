@@ -31,19 +31,77 @@
 
 package org.logicprobe.LogicMail.message;
 
+import org.logicprobe.LogicMail.util.StringParser;
+
 /**
- * Converts a message into a reply to that message
+ * Converts a message into a reply to that message.
+ * This class works by finding the first text/plain part of the message,
+ * and generating a new text/plain part that has the same contents, with
+ * each line prefixed by a "> ".
  */
 public class MessageReplyConverter implements MessagePartVisitor {
+    private TextPart originalTextPart;
+    private MessageEnvelope envelope;
     
-    /** Creates a new instance of MessageReplyConverter */
-    public MessageReplyConverter() {
+    /**
+     * Creates a new instance of MessageReplyConverter.
+     * @param envelope Envelope of the message to convert
+     */
+    public MessageReplyConverter(MessageEnvelope envelope) {
+        this.envelope = envelope;
     }
 
+    /**
+     * Returns a reply message body based on the visited message structure.
+     * @return Message body
+     */
+    public MessagePart toReplyBody() {
+        StringBuffer buf = new StringBuffer();
+        int p, q;
+        
+        // Create the first line of the reply text
+        buf.append("On ");
+        buf.append(StringParser.createDateString(envelope.date));
+        buf.append(", ");
+        if(envelope.sender != null && envelope.sender.length > 0) {
+            p = envelope.sender[0].indexOf('<');
+            if(p > 0) {
+                buf.append(envelope.sender[0].substring(0, p-1));
+            }
+            else {
+                buf.append(envelope.sender[0]);
+            }
+        }
+        buf.append(" wrote:\r\n");
+        
+        // Generate the quoted message text
+        buf.append("> ");
+        if(originalTextPart != null) {
+            String originalText = originalTextPart.getText();
+            int size = originalText.length();
+            char ch;
+            for(int i=0; i<size; i++) {
+                ch = originalText.charAt(i);
+                buf.append(ch);
+                if(ch == '\n' && i < size - 1) {
+                    buf.append("> ");
+                }
+            }
+        }
+        
+        // Return the final result of the buffer
+        return new TextPart("plain", buf.toString());
+    }
+    
     public void visitMultiPart(MultiPart part) {
     }
 
     public void visitTextPart(TextPart part) {
+        // If this is the first text part, then use it
+        // for the reply message body
+        if(originalTextPart == null) {
+            originalTextPart = part;
+        }
     }
 
     public void visitImagePart(ImagePart part) {

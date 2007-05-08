@@ -49,6 +49,8 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.MessageReplyConverter;
+import org.logicprobe.LogicMail.message.TextPart;
 
 /**
  * This is the message composition screen.
@@ -59,8 +61,13 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
     private VerticalFieldManager vfmRecipients;
     private EditField fldSubject;
     private EditField fldEdit;
+    private String inReplyTo;
     
-    /** Creates a new instance of CompositionScreen */
+    /**
+     * Creates a new instance of CompositionScreen.
+     *
+     * @param acctConfig Account configuration
+     */
     public CompositionScreen(AccountConfig acctConfig) {
         this.acctConfig = acctConfig;
         this.client = MailClientFactory.createOutgoingMailClient(acctConfig);
@@ -82,6 +89,73 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         add(fldEdit);
     }
 
+    /**
+     * Creates a new instance of CompositionScreen.
+     * Used for replying to a source message.
+     *
+     * @param acctConfig Account configuration
+     * @param sourceMessage Message we are replying to
+     * @param replyAll True if we are replying to all, false otherwise
+     */
+    public CompositionScreen(AccountConfig acctConfig, Message sourceMessage, boolean replyAll) {
+        this(acctConfig);
+        int i;
+        
+        MessageEnvelope env = sourceMessage.getEnvelope();
+        MessageReplyConverter replyConverter = new MessageReplyConverter(env);
+        sourceMessage.getBody().accept(replyConverter);
+        MessagePart body = replyConverter.toReplyBody();
+        
+        // Currently only all-text reply bodies are supported
+        if(body instanceof TextPart) {
+            fldEdit.insert("\r\n");
+            fldEdit.insert(((TextPart)body).getText());
+            fldEdit.setCursorPosition(0);
+        }
+        
+        // Set the reply subject
+        if(env.subject.startsWith("Re:") || env.subject.startsWith("re:")) {
+            fldSubject.setText(env.subject);
+        }
+        else {
+            fldSubject.setText("Re: " + env.subject);
+        }
+        
+        // First, set the primary recipient
+        if(env.replyTo == null || env.replyTo.length == 0) {
+            for(i=0; i<env.from.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.from[i]);
+            }
+        }
+        else {
+            for(i=0; i<env.replyTo.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.replyTo[i]);
+            }
+        }
+        
+        // Then, handle the reply-all case
+        if(replyAll) {
+            String myAddress = acctConfig.getSmtpFromAddress().toLowerCase();
+            if(env.to != null) {
+                for(i=0; i<env.to.length; i++) {
+                    if(env.to[i].toLowerCase().indexOf(myAddress) == -1) {
+                        insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.to[i]);
+                    }
+                }
+            }
+            if(env.cc != null) {
+                for(i=0; i<env.cc.length; i++) {
+                    if(env.cc[i].toLowerCase().indexOf(myAddress) == -1) {
+                        insertRecipientField(EmailAddressBookEditField.ADDRESS_CC).setAddress(env.cc[i]);
+                    }
+                }
+            }
+        }
+        
+        // Finally, set the message in-reply-to ID
+        inReplyTo = env.messageId;
+    }
+    
     private MenuItem sendMenuItem = new MenuItem("Send", 200000, 10) {
         public void run() {
             sendMessage();
@@ -122,6 +196,8 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         // which turns the content of the screen into
         // a message containing a single text/plain section
         MessageEnvelope env = new MessageEnvelope();
+        
+        env.inReplyTo = inReplyTo;
         
         // Build the recipients list
         EmailAddressBookEditField currentField;
@@ -198,8 +274,12 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         }
     }
 
-    
-    private void insertRecipientField(int addressType) {
+    /**
+     * Insert a new recipient field.
+     * @param addressType The type of address this field will hold
+     * @return The newly added field
+     */
+    private EmailAddressBookEditField insertRecipientField(int addressType) {
         int size = vfmRecipients.getFieldCount();
         EmailAddressBookEditField currentField;
         int i;
@@ -211,7 +291,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
             if(currentField.getAddressType() == addressType &&
                currentField.getText().length() == 0) {
                 currentField.setFocus();
-                return;
+                return currentField;
             }
         }
         
@@ -224,7 +304,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
                     currentField = new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, "");
                     vfmRecipients.insert(currentField, i);
                     currentField.setFocus();
-                    return;
+                    return currentField;
                 }
             }
         }
@@ -239,13 +319,14 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
                     currentField = new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, "");
                     vfmRecipients.insert(currentField, i);
                     currentField.setFocus();
-                    return;
+                    return currentField;
                 }
             }
         }
         currentField = new EmailAddressBookEditField(addressType, "");
         vfmRecipients.add(currentField);
         currentField.setFocus();
+        return currentField;
     }
 
     public boolean keyChar(char key, int status, int time) {

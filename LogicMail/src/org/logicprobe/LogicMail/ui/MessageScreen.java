@@ -61,6 +61,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     private FolderMessage folderMessage;
     private MessageEnvelope envelope;
     private Vector msgFields;
+    private Message msg;
     private UpdateMessageHandler updateMessageHandler;
     
     public MessageScreen(IncomingMailClient client,
@@ -113,6 +114,20 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
             showMsgProperties();
         }
     };
+    private MenuItem replyItem = new MenuItem("Reply...", 110, 10) {
+        public void run() {
+            if(msg != null) {
+                UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig(), msg, false));
+            }
+        }
+    };
+    private MenuItem replyAllItem = new MenuItem("Reply to all...", 115, 10) {
+        public void run() {
+            if(msg != null) {
+                UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig(), msg, true));
+            }
+        }
+    };
     private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
         public void run() {
             UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
@@ -125,7 +140,11 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     };
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
+        menu.addSeparator();
+        menu.add(replyItem);
+        menu.add(replyAllItem);
         menu.add(compositionItem);
+        menu.addSeparator();
         menu.add(closeItem);
     }
 
@@ -210,6 +229,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
         if(source.equals(updateMessageHandler)) {
             if(updateMessageHandler.getMessageFields() != null) {
                 msgFields = updateMessageHandler.getMessageFields();
+                msg = updateMessageHandler.getMessage();
                 drawMessageFields();
             }
         }
@@ -217,6 +237,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     
     private class UpdateMessageHandler extends MailClientHandler {
         private Vector msgFields;
+        private Message msg;
 
         public UpdateMessageHandler() {
             super(MessageScreen.this.client, "Retrieving message");
@@ -227,7 +248,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
             ((IncomingMailClient)client).setActiveFolder(MessageScreen.this.folderItem);
 
             // Download the message
-            Message msg = ((IncomingMailClient)client).getMessage(MessageScreen.this.folderMessage);
+            msg = ((IncomingMailClient)client).getMessage(MessageScreen.this.folderMessage);
 
             // Prepare the UI elements
             if(msg.getBody() != null) {
@@ -242,6 +263,10 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
 
         public Vector getMessageFields() {
             return msgFields;
+        }
+        
+        public Message getMessage() {
+            return msg;
         }
     }
 }

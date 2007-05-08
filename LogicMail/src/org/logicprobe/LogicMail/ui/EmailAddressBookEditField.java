@@ -57,6 +57,7 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
     private String address;
     private Bitmap bmapContactItem;
     private int addressType;
+    private boolean inAddressBook;
     
     public static int ADDRESS_TO = 1;
     public static int ADDRESS_CC = 2;
@@ -93,6 +94,50 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
             return super.getText();
     }
     
+    /**
+     * Set the address contained within the field.
+     * Supports handling the "John Doe <jdoe@generic.org>" format.
+     * @param address Address to set the field to
+     */
+    public void setAddress(String sourceAddress) {
+        sourceAddress = sourceAddress.trim();
+        int p = sourceAddress.indexOf('<');
+        int q = sourceAddress.indexOf('>');
+
+        if(p == -1 && q == -1) {
+            this.address = sourceAddress;
+        }
+        else if(p != -1 && q != -1 && p < q && sourceAddress.length() > 2) {
+            this.address = sourceAddress.substring(p + 1, q);
+        }
+        else if(p != -1 && q == -1 && sourceAddress.length() > 1) {
+            this.address = sourceAddress.substring(p+1);
+        }
+        else {
+            this.address = "";
+        }
+        if(this.address.equals("")) {
+            return;
+        }
+        
+        if(p != -1 && p > 0) {
+            this.name = sourceAddress.substring(0, p).trim();
+        }
+        else {
+            this.name = null;
+        }
+
+        if(this.name != null) {
+            this.setText(this.name);
+            this.setEditable(false);
+        }
+        else {
+            this.setText(this.address);
+            this.setEditable(true);
+        }
+        inAddressBook = false;
+    }
+    
     public int getAddressType() {
         return addressType;
     }
@@ -121,7 +166,9 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
                 graphics.drawText(name, x+labelWidth, y,
                                   (int)(this.getStyle() | DrawStyle.ELLIPSIS),
                                   width-labelWidth-bmapContactItem.getWidth()-5);
-            graphics.drawBitmap(x+labelWidth+nameWidth+5, y, width, height, bmapContactItem, 0, 0);
+            if(inAddressBook) {
+                graphics.drawBitmap(x+labelWidth+nameWidth+5, y, width, height, bmapContactItem, 0, 0);
+            }
         }
         else {
             super.paint(graphics);
@@ -167,6 +214,7 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
         String[] email = contactItem.email;
         if(email == null) {
             this.setText("");
+            inAddressBook = false;
         }
         else if(email.length > 1) {
             Dialog addrDlg = new Dialog("Which address?", email, null, 0, Bitmap.getPredefinedBitmap(Bitmap.QUESTION));
@@ -175,12 +223,14 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
             name = contactItem.name;
             this.setText(name);
             this.setEditable(false);
+            inAddressBook = true;
         }
         else {
             address = email[0];
             name = contactItem.name;
             this.setText(name);
             this.setEditable(false);
+            inAddressBook = true;
         }
     }
 
