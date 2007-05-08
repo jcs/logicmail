@@ -34,6 +34,12 @@ import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
+import java.util.Calendar;
+import java.util.Vector;
+import net.rim.device.api.ui.component.RichTextField;
+import org.logicprobe.LogicMail.ui.MessageRenderer;
+import org.logicprobe.LogicMail.ui.MessageRendererTest;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Unit test for MessageReplyConverter
@@ -52,13 +58,40 @@ public class MessageReplyConverterTest extends TestCase {
     public void tearDown() {
     }
     
-//    public void testFoo() {
-//    }
+    public void testSimpleTextMessage() {
+        String sampleText =
+                "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+                "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+                "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+                "nisi ut aliquip ex ea commodo consequat.";
+        MessagePart body = new TextPart("plain", sampleText);
+        
+        MessageEnvelope env = new MessageEnvelope();
+        env.sender = new String[1];
+        env.sender[0] = "John Doe <jdoe@generic.org>";
+        env.date = Calendar.getInstance().getTime();
+        
+        String expectedText =
+                "On "+StringParser.createDateString(env.date)+", John Doe wrote:\r\n" +
+                "> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+                "> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+                "> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+                "> nisi ut aliquip ex ea commodo consequat.";
+        
+        MessageReplyConverter instance = new MessageReplyConverter(env);
+        body.accept(instance);
+        MessagePart result = instance.toReplyBody();
+        
+        assertNotNull("Null result", result);
+        assertTrue("Bad type", result instanceof TextPart);
+        
+        assertEquals("Content mismatch", expectedText, ((TextPart)result).getText());
+    }
 
     public Test suite() {
         TestSuite suite = new TestSuite("MessageReplyConverter");
-//        suite.addTest(new MessageReplyConverterTest("testFoo", new TestMethod()
-//        { public void run(TestCase tc) {((MessageReplyConverterTest)tc).testFoo(); } }));
+        suite.addTest(new MessageReplyConverterTest("Simple text message", new TestMethod()
+        { public void run(TestCase tc) {((MessageReplyConverterTest)tc).testSimpleTextMessage(); } }));
         
         return suite;
     }

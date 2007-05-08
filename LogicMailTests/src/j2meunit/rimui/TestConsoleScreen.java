@@ -124,7 +124,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
             TestTreeItem item = new TestTreeItem(test);
             int id = testTreeField.addChildNode(parentId, item);
             item.id = id;
-            testTreeItems.put(test, item);
+            testTreeItems.put(test.toString(), item);
             if(test instanceof TestSuite) {
                 populateTestTree((TestSuite)test, id);
             }
@@ -244,12 +244,12 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     public synchronized void startTest(Test test) {
-        TestTreeItem item = (TestTreeItem)testTreeItems.get(test);
+        TestTreeItem item = (TestTreeItem)testTreeItems.get(test.toString());
         item.hasRun = true;
     }
 
     private void updateTestBranch(Test test) {
-        TestTreeItem item = (TestTreeItem)testTreeItems.get(test);
+        TestTreeItem item = (TestTreeItem)testTreeItems.get(test.toString());
         if(item == null) return;
         boolean hasAllRun = true;
         boolean hasAllPassed = true;
@@ -279,12 +279,12 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         TestFailure failure;
         for(e = testResults.failures(); e.hasMoreElements(); ) {
             failure = (TestFailure)e.nextElement();
-            item = (TestTreeItem)testTreeItems.get(failure.failedTest());
+            item = (TestTreeItem)testTreeItems.get(failure.failedTest().toString());
             item.hasPassed = false;
         }
         for(e = testResults.errors(); e.hasMoreElements(); ) {
             failure = (TestFailure)e.nextElement();
-            item = (TestTreeItem)testTreeItems.get(failure.failedTest());
+            item = (TestTreeItem)testTreeItems.get(failure.failedTest().toString());
             item.hasPassed = false;
         }
     }
@@ -349,10 +349,10 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
                 TestCase testCase =
                     (TestCase)Class.forName(className).newInstance();
                 testSuite.addTest(testCase.suite());
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 System.out.println("Access to TestCase " + testCaseClasses[i] +
-                    " failed: " + e.getMessage() + " - " +
-                    e.getClass().getName());
+                    " failed: " + t.getMessage() + " - " +
+                    t.getClass().getName());
             }
         }
         
@@ -371,7 +371,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         long startTime = System.currentTimeMillis();
 
         // Mark the suite's tree item
-        TestTreeItem item = (TestTreeItem)testTreeItems.get(suite);
+        TestTreeItem item = (TestTreeItem)testTreeItems.get(suite.toString());
         if(item != null)
             item.hasRun = true;
 
@@ -402,9 +402,9 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
                 try {
                     doRun(selectedTest);
                     updateResults();
-                } catch (Throwable e) {
-                    System.out.println("Exception while running test: " + e);
-                    e.printStackTrace();
+                } catch (Throwable t) {
+                    System.out.println("Exception while running test: " + t);
+                    t.printStackTrace();
                 }
             }
         }.start();
