@@ -182,10 +182,9 @@ public class ImapClient implements IncomingMailClient {
                 FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
                 baseFolder.addChild(childItem);
                 if(resp.hasChildren) {
-                    if(depth+1 >= globalConfig.getImapMaxFolderDepth()) {
-                        return;
+                    if(depth+1 < globalConfig.getImapMaxFolderDepth()) {
+                        getFolderTreeImpl(childItem, depth+1);
                     }
-                    getFolderTreeImpl(childItem, depth+1);
                 }
             }
         }
