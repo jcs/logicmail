@@ -1,0 +1,14 @@
+## RIM Java Development Environment
+# RIM Workspace file
+[BuildConfigurations
+Debug
+Release
+]
+[Projects
+LogicMail\jdeproject\LogicMail.jdp
+LogicMailTests\jdeproject\LogicMailTests.jdp
+]
+[ReleaseActiveProjects
+LogicMail\jdeproject\LogicMail.jdp
+LogicMailTests\jdeproject\LogicMailTests.jdp
+]
