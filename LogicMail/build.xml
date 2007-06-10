@@ -93,6 +93,7 @@
         </exec>
         <copy file="${platform.home}/simulator/${name}.cod" todir="${basedir}/${dist.dir}"/>
         <delete file="${basedir}/${dist.dir}/logicmail.png"/>
+        <copy file="${basedir}/LogicMail.alx" todir="${basedir}/${dist.dir}"/>
     </target>
     <target name="post-clean">
         <delete failonerror="false">
