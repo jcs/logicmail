@@ -7,13 +7,13 @@
 			
 		</description>
 		<version >
-			0.1
+			0.2.20070507
 		</version>
 		<vendor >
 			Logicprobe
 		</vendor>
 		<copyright >
-			Copyright (c) 2006 Logicprobe
+			Copyright (c) 2007, Derek Konigsberg
 		</copyright>
 		<fileset Java="1.24">
 			<directory >
@@ -21,11 +21,7 @@
 			</directory>
 			<files >
 				LogicMail.cod
-
 			</files>
-
 		</fileset>
-
 	</application>
-
 </loader>
