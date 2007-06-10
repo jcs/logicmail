@@ -37,15 +37,15 @@ import j2meunit.framework.TestSuite;
 /**
  * Unit test suite for the LogicMail.message classes
  */
-public class MessageTest extends TestCase {
+public class MessageTests extends TestCase {
     
-    public MessageTest() {
+    public MessageTests() {
         super();
     }
     
     public Test suite() {
         TestSuite suite = new TestSuite("LogicMail.message");
-        suite.addTest(new MessageMimeConverterTest().suite());
+        //suite.addTest(new MessageMimeConverterTest().suite());
         suite.addTest(new MessageReplyConverterTest().suite());
         return suite;
     }

@@ -38,9 +38,9 @@ import j2meunit.framework.TestSuite;
 /**
  * Unit test suite for the LogicMail.util classes
  */
-public class UtilTest extends TestCase {
+public class UtilTests extends TestCase {
     
-    public UtilTest() {
+    public UtilTests() {
         super();
     }
     

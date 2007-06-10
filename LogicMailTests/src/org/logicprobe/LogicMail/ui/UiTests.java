@@ -35,11 +35,11 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestSuite;
 
 /**
- * Unit test suite for the LogicMail.message classes
+ * Unit test suite for the LogicMail.ui classes
  */
-public class UiTest extends TestCase {
+public class UiTests extends TestCase {
     
-    public UiTest() {
+    public UiTests() {
         super();
     }
     

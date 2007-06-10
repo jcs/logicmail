@@ -31,16 +31,16 @@
 
 package org.logicprobe.LogicMail;
 
-public class LogicMailTest {
-    public LogicMailTest() {
+public class LogicMailTests {
+    public LogicMailTests() {
     }
 
     public static void main(String[] args) {
         j2meunit.rimui.TestRunner instance =
                 new j2meunit.rimui.TestRunner(new String[] {
-            "org.logicprobe.LogicMail.util.UtilTest",
-            "org.logicprobe.LogicMail.message.MessageTest",
-            "org.logicprobe.LogicMail.ui.UiTest"
+            "org.logicprobe.LogicMail.util.UtilTests",
+            "org.logicprobe.LogicMail.message.MessageTests",
+            "org.logicprobe.LogicMail.ui.UiTests"
         });
         instance.enterEventDispatcher();
     }
