@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.message;
 
+import net.rim.device.api.util.Arrays;
+
 /**
  * This class encapsulates all the data to represent an E-Mail message.
  */
@@ -48,11 +50,124 @@ public class Message {
         this.body = body;
     }
     
+    /**
+     * Get the message envelope
+     * @return Envelope
+     */
     public MessageEnvelope getEnvelope() {
         return envelope;
     }
 
+    /**
+     * Get the message body
+     * @return Body
+     */
     public MessagePart getBody() {
         return body;
+    }
+
+    /**
+     * Get a message that represents a reply to the original message.
+     * @return Reply message
+     */
+    public Message toReplyMessage() {
+        // Generate the reply message body
+        MessageReplyConverter replyConverter = new MessageReplyConverter(this.envelope);
+        this.body.accept(replyConverter);
+        MessagePart replyBody = replyConverter.toReplyBody();
+        MessageEnvelope replyEnvelope = createReplyEnvelope();
+
+        return new Message(replyEnvelope, replyBody);
+    }
+
+    /**
+     * Create the envelope for a reply to this message
+     * @return Envelope
+     */
+    private MessageEnvelope createReplyEnvelope() {
+        // Generate the reply message envelope
+        MessageEnvelope replyEnvelope = new MessageEnvelope();
+
+        // Set the reply subject
+        if(envelope.subject.startsWith("Re:") || envelope.subject.startsWith("re:")) {
+            replyEnvelope.subject = envelope.subject;
+        }
+        else {
+            replyEnvelope.subject = "Re: " + envelope.subject;
+        }
+        
+        // Set the message recipient
+        int i;
+        if(envelope.replyTo == null || envelope.replyTo.length == 0) {
+            replyEnvelope.to = new String[envelope.sender.length];
+            for(i=0; i<envelope.sender.length; i++) {
+                replyEnvelope.to[i] = envelope.sender[i];
+            }
+        }
+        else {
+            replyEnvelope.to = new String[envelope.replyTo.length];
+            for(i=0; i<envelope.replyTo.length; i++) {
+                replyEnvelope.to[i] = envelope.replyTo[i];
+            }
+        }
+
+        // Finally, set the message in-reply-to ID
+        replyEnvelope.inReplyTo = envelope.messageId;
+        return replyEnvelope;
+    }
+    
+    /**
+     * Get a message that represents a reply to all the recipients
+     * of the original message.
+     * @param myAddress Address of the person doing the reply-all, to avoid
+     *                  being sent a copy of the outgoing message.
+     * @return Reply-All message
+     */
+    public Message toReplyAllMessage(String myAddress) {
+        // Generate the reply message body
+        MessageReplyConverter replyConverter = new MessageReplyConverter(this.envelope);
+        this.body.accept(replyConverter);
+        MessagePart replyBody = replyConverter.toReplyBody();
+        MessageEnvelope replyEnvelope = createReplyEnvelope();
+        
+        // Then handle the additional fields for the reply-all case
+        // How do we get myAddress here?
+        int i;
+        if(envelope.to != null) {
+            for(i=0; i<envelope.to.length; i++) {
+                if(envelope.to[i].toLowerCase().indexOf(myAddress) == -1) {
+                    if(replyEnvelope.to == null) {
+                        replyEnvelope.to = new String[1];
+                        replyEnvelope.to[0] = envelope.to[i];
+                    }
+                    else {
+                        Arrays.add(replyEnvelope.to, envelope.to[i]);
+                    }
+                }
+            }
+        }
+        if(envelope.cc != null) {
+            for(i=0; i<envelope.cc.length; i++) {
+                if(envelope.cc[i].toLowerCase().indexOf(myAddress) == -1) {
+                    if(replyEnvelope.cc == null) {
+                        replyEnvelope.cc = new String[1];
+                        replyEnvelope.cc[0] = envelope.cc[i];
+                    }
+                    else {
+                        Arrays.add(replyEnvelope.cc, envelope.cc[i]);
+                    }
+                }
+            }
+        }
+        
+        return new Message(replyEnvelope, replyBody);
+    }
+
+    /**
+     * Get a message that represents a forwarding of the original message
+     * @return Forwarded message
+     */
+    public Message toForwardMessage() {
+        return null;
     }
 }

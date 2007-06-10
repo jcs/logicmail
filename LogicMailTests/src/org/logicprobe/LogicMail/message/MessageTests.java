@@ -45,6 +45,7 @@ public class MessageTests extends TestCase {
     
     public Test suite() {
         TestSuite suite = new TestSuite("LogicMail.message");
+        suite.addTest(new MessageTest().suite());
         //suite.addTest(new MessageMimeConverterTest().suite());
         suite.addTest(new MessageReplyConverterTest().suite());
         return suite;
