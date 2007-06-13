@@ -50,12 +50,16 @@ public class TestResultsScreen extends MainScreen {
         if(testFailure != null) {
             add(new SeparatorField());
             add(new RichTextField("Failure:", RichTextField.TEXT_ALIGN_HCENTER));
-            add(new LabelField(testFailure.thrownException().getMessage()));
+            RichTextField messageField = new RichTextField(testFailure.thrownException().getMessage());
+            messageField.setEditable(false);
+            add(messageField);
         }
         if(testError != null) {
             add(new SeparatorField());
             add(new RichTextField("Error:", RichTextField.TEXT_ALIGN_HCENTER));
-            add(new LabelField(testError.thrownException().getMessage()));
+            RichTextField messageField = new RichTextField(testError.thrownException().getMessage());
+            messageField.setEditable(false);
+            add(messageField);
         }
         if(testFailure == null && testError == null) {
             add(new SeparatorField());
