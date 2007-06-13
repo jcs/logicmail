@@ -117,18 +117,34 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     private MenuItem replyItem = new MenuItem("Reply...", 110, 10) {
         public void run() {
             if(msg != null) {
-                UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig(), msg, false));
+                UiApplication.getUiApplication().pushScreen(
+                        new CompositionScreen(
+                            client.getAcctConfig(),
+                            msg.toReplyMessage()));
             }
         }
     };
     private MenuItem replyAllItem = new MenuItem("Reply to all...", 115, 10) {
         public void run() {
             if(msg != null) {
-                UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig(), msg, true));
+                UiApplication.getUiApplication().pushScreen(
+                        new CompositionScreen(
+                            client.getAcctConfig(),
+                            msg.toReplyAllMessage(client.getAcctConfig().getSmtpFromAddress())));
             }
         }
     };
-    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
+    private MenuItem forwardItem = new MenuItem("Forward...", 120, 10) {
+        public void run() {
+            if(msg != null) {
+                UiApplication.getUiApplication().pushScreen(
+                        new CompositionScreen(
+                            client.getAcctConfig(),
+                            msg.toForwardMessage()));
+            }
+        }
+    };
+    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 150, 10) {
         public void run() {
             UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
         }
@@ -143,6 +159,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
         menu.addSeparator();
         menu.add(replyItem);
         menu.add(replyAllItem);
+        menu.add(forwardItem);
         menu.add(compositionItem);
         menu.addSeparator();
         menu.add(closeItem);

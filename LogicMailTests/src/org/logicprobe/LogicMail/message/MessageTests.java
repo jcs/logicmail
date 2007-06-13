@@ -48,6 +48,7 @@ public class MessageTests extends TestCase {
         suite.addTest(new MessageTest().suite());
         //suite.addTest(new MessageMimeConverterTest().suite());
         suite.addTest(new MessageReplyConverterTest().suite());
+        suite.addTest(new MessageForwardConverterTest().suite());
         return suite;
     }
 }

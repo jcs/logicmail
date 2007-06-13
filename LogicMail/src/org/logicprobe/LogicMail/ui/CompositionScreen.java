@@ -91,20 +91,18 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
 
     /**
      * Creates a new instance of CompositionScreen.
-     * Used for replying to a source message.
+     * Used for working with an already created message,
+     * such as a reply or forward.
      *
      * @param acctConfig Account configuration
-     * @param sourceMessage Message we are replying to
-     * @param replyAll True if we are replying to all, false otherwise
+     * @param message Message we are composing
      */
-    public CompositionScreen(AccountConfig acctConfig, Message sourceMessage, boolean replyAll) {
+    public CompositionScreen(AccountConfig acctConfig, Message message) {
         this(acctConfig);
         int i;
-        
-        MessageEnvelope env = sourceMessage.getEnvelope();
-        MessageReplyConverter replyConverter = new MessageReplyConverter(env);
-        sourceMessage.getBody().accept(replyConverter);
-        MessagePart body = replyConverter.toReplyBody();
+
+        MessagePart body = message.getBody();
+        MessageEnvelope env = message.getEnvelope();
         
         // Currently only all-text reply bodies are supported
         if(body instanceof TextPart) {
@@ -112,50 +110,30 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
             fldEdit.insert(((TextPart)body).getText());
             fldEdit.setCursorPosition(0);
         }
+
+        // Set the subject
+        fldSubject.setText(env.subject);
         
-        // Set the reply subject
-        if(env.subject.startsWith("Re:") || env.subject.startsWith("re:")) {
-            fldSubject.setText(env.subject);
-        }
-        else {
-            fldSubject.setText("Re: " + env.subject);
-        }
-        
-        // First, set the primary recipient
-        if(env.replyTo == null || env.replyTo.length == 0) {
-            for(i=0; i<env.from.length; i++) {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.from[i]);
+        // Set the recipients
+        if(env.to != null) {
+            for(i=0; i<env.to.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.to[i]);
             }
         }
-        else {
-            for(i=0; i<env.replyTo.length; i++) {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.replyTo[i]);
+        if(env.cc != null) {
+            for(i=0; i<env.cc.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_CC).setAddress(env.cc[i]);
             }
         }
-        
-        // Then, handle the reply-all case
-        if(replyAll) {
-            String myAddress = acctConfig.getSmtpFromAddress().toLowerCase();
-            if(env.to != null) {
-                for(i=0; i<env.to.length; i++) {
-                    if(env.to[i].toLowerCase().indexOf(myAddress) == -1) {
-                        insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setAddress(env.to[i]);
-                    }
-                }
-            }
-            if(env.cc != null) {
-                for(i=0; i<env.cc.length; i++) {
-                    if(env.cc[i].toLowerCase().indexOf(myAddress) == -1) {
-                        insertRecipientField(EmailAddressBookEditField.ADDRESS_CC).setAddress(env.cc[i]);
-                    }
-                }
+        if(env.bcc != null) {
+            for(i=0; i<env.bcc.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC).setAddress(env.bcc[i]);
             }
         }
         
-        // Finally, set the message in-reply-to ID
-        inReplyTo = env.messageId;
+        inReplyTo = env.inReplyTo;
     }
-    
+
     private MenuItem sendMenuItem = new MenuItem("Send", 200000, 10) {
         public void run() {
             sendMessage();

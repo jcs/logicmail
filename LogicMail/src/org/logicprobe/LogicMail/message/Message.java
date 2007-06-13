@@ -164,10 +164,29 @@ public class Message {
     }
 
     /**
-     * Get a message that represents a forwarding of the original message
+     * Get a message that represents a forwarding of the original message.
+     * The resulting header will be clean, asside from the subject.
+     * The resulting body will be the same as a reply message (single TextPart),
+     * asside from some of the original header fields being prepended.
+     *
      * @return Forwarded message
      */
     public Message toForwardMessage() {
-        return null;
+        // Generate the forward message body
+        MessageForwardConverter forwardConverter = new MessageForwardConverter(this.envelope);
+        this.body.accept(forwardConverter);
+        MessagePart forwardBody = forwardConverter.toForwardBody();
+
+        MessageEnvelope forwardEnvelope = new MessageEnvelope();
+        
+        // Set the forward subject
+        if(envelope.subject.toLowerCase().startsWith("fwd:")) {
+            forwardEnvelope.subject = envelope.subject;
+        }
+        else {
+            forwardEnvelope.subject = "Fwd: " + envelope.subject;
+        }
+        
+        return new Message(forwardEnvelope, forwardBody);
     }
 }

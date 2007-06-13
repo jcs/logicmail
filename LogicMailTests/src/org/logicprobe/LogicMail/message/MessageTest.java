@@ -183,7 +183,35 @@ public class MessageTest extends TestCase {
     
     public void testToForwardMessage() {
         Message forwardMessage = message.toForwardMessage();
-        fail("Test not implemented yet");
+        MessageEnvelope forwardEnvelope = forwardMessage.getEnvelope();
+        assertNotNull(forwardEnvelope);
+        MessagePart forwardBody = forwardMessage.getBody();
+        assertNotNull(forwardBody);
+        
+        // Perform a simple test to ensure that the reply converter executed
+        assertTrue(forwardBody instanceof TextPart);
+        String expectedText =
+                "----Original Message----\r\n"+
+                "Subject: The subject\r\n"+
+                "Date: "+StringParser.createDateString(envelope.date)+"\r\n"+
+                "From: John Doe <jdoe@generic.org>\r\n"+
+                "To: Jim Smith <jsmith@random.net>, Jane Doe <jdoe@generic.org>\r\n"+
+                "Cc: Jane Smith <jane.smith@random.net>\r\n"+
+                "\r\n" +
+                "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+                "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+                "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+                "nisi ut aliquip ex ea commodo consequat.\r\n"+
+                "------------------------";
+        assertEquals(expectedText, ((TextPart)forwardBody).getText());
+
+        // Check the forward headers
+        assertEquals("Fwd: " + envelope.subject, forwardEnvelope.subject);
+        assertNull(forwardEnvelope.sender);
+        assertNull(forwardEnvelope.from);
+        assertNull(forwardEnvelope.to);
+        assertNull(forwardEnvelope.cc);
+        assertNull(forwardEnvelope.inReplyTo);
     }
     
     public Test suite() {

@@ -55,6 +55,7 @@ ExcludeFromBuildAll=0
 ..\src\org\logicprobe\LogicMail\message\ImagePart.java
 ..\src\org\logicprobe\LogicMail\message\Message.java
 ..\src\org\logicprobe\LogicMail\message\MessageEnvelope.java
+..\src\org\logicprobe\LogicMail\message\MessageForwardConverter.java
 ..\src\org\logicprobe\LogicMail\message\MessageMimeConverter.java
 ..\src\org\logicprobe\LogicMail\message\MessagePart.java
 ..\src\org\logicprobe\LogicMail\message\MessagePartFactory.java
