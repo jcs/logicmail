@@ -139,6 +139,7 @@ public class StringParserTest extends TestCase {
 
         assertEquals("ENVELOPE", (String)result.elementAt(2));
         Vector envelope = (Vector)result.elementAt(3);
+        assertNotNull(envelope);
         assertEquals("Mon, 12 Mar 2007 19:38:31 -0700", (String)envelope.elementAt(0));
         assertEquals("Re: Calm down! :-)", (String)envelope.elementAt(1));
         
@@ -199,6 +200,7 @@ public class StringParserTest extends TestCase {
 
         assertEquals("ENVELOPE", (String)result.elementAt(2));
         Vector envelope = (Vector)result.elementAt(3);
+        assertNotNull(envelope);
         assertEquals("Sun, 18 Mar 2007 09:04:29 -0700", (String)envelope.elementAt(0));
         assertEquals("[list] \"this is a test\"", (String)envelope.elementAt(1));
         
@@ -234,6 +236,69 @@ public class StringParserTest extends TestCase {
         assertEquals("NIL", (String)envelope.elementAt(7));
         assertEquals("NIL", (String)envelope.elementAt(8));
         assertEquals("<45FD630D.1040808@XXXXX>", (String)envelope.elementAt(9));
+    }
+    
+    /**
+     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testNestedParenStringLexerEnvelope3() {
+        System.out.println("nestedParenStringLexer (Envelope3)");
+        String rawText =
+                "(FLAGS (\\Seen) " +
+                "ENVELOPE (\"Fri, 15 Jun 2007 12:37:27 -0400\" {42}\r\n"+
+                "[Theelist] 19\" monitor free to a good home " +
+                "((\"Jim Smith\" NIL \"jsmith\" \"smith.test\")) " +
+                "((NIL NIL \"thelist-bounces\" \"thelist.test\")) " +
+                "((\"This is the list\" NIL \"thelist\" \"thelist.test\")) " +
+                "((\"This is the list\" NIL \"thelist\" \"thelist.test\")) " +
+                "NIL NIL NIL " +
+                "\"<1ECCDABD-5242-4180-9584-E5873C3FEA17@smith.test>\"))";
+
+        Vector result = StringParser.nestedParenStringLexer(rawText);
+        Vector temp;
+        //printTree(result, 0);
+        assertEquals("FLAGS", (String)result.elementAt(0));
+        Vector flags = (Vector)result.elementAt(1);
+        assertEquals("\\Seen", (String)flags.elementAt(0));
+
+        assertEquals("ENVELOPE", (String)result.elementAt(2));
+        Vector envelope = (Vector)result.elementAt(3);
+        assertNotNull(envelope);
+        assertEquals("Fri, 15 Jun 2007 12:37:27 -0400", (String)envelope.elementAt(0));
+        assertEquals("[Theelist] 19\" monitor free to a good home", (String)envelope.elementAt(1));
+        
+        temp = (Vector)envelope.elementAt(2);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("Jim Smith", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("jsmith", (String)temp.elementAt(2));
+        assertEquals("smith.test", (String)temp.elementAt(3));
+        
+        temp = (Vector)envelope.elementAt(3);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("NIL", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("thelist-bounces", (String)temp.elementAt(2));
+        assertEquals("thelist.test", (String)temp.elementAt(3));
+
+        temp = (Vector)envelope.elementAt(4);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("This is the list", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("thelist", (String)temp.elementAt(2));
+        assertEquals("thelist.test", (String)temp.elementAt(3));
+
+        temp = (Vector)envelope.elementAt(5);
+        temp = (Vector)temp.elementAt(0);
+        assertEquals("This is the list", (String)temp.elementAt(0));
+        assertEquals("NIL", (String)temp.elementAt(1));
+        assertEquals("thelist", (String)temp.elementAt(2));
+        assertEquals("thelist.test", (String)temp.elementAt(3));
+        
+        assertEquals("NIL", (String)envelope.elementAt(6));
+        assertEquals("NIL", (String)envelope.elementAt(7));
+        assertEquals("NIL", (String)envelope.elementAt(8));
+        assertEquals("<1ECCDABD-5242-4180-9584-E5873C3FEA17@smith.test>", (String)envelope.elementAt(9));
     }
     
     /**
@@ -310,8 +375,13 @@ public class StringParserTest extends TestCase {
             buf.append(level+">");
             for(int i=0; i<level; i++)
                 buf.append("    ");
-            buf.append(node.toString());
-            System.out.println(buf.toString());
+            if(node != null) {
+                buf.append(node.toString());
+            }
+            else {
+                buf.append("null");
+            }
+            System.err.println(buf.toString());
         }
     }
 
@@ -480,6 +550,10 @@ public class StringParserTest extends TestCase {
         testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope2", new TestMethod() {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testNestedParenStringLexerEnvelope2();
+        }}));
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope3", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testNestedParenStringLexerEnvelope3();
         }}));
         testSuite.addTest(new StringParserTest("nestedParenStringLexerBodyStructure", new TestMethod() {
             public void run(TestCase tc) {

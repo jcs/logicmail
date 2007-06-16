@@ -240,7 +240,7 @@ public class StringParser {
      * @return A tree of Vector and String objects
      */
     public static Vector nestedParenStringLexer(String rawText) {
-	Vector parsedText = new Vector();
+        Vector parsedText = new Vector();
 	// Sanity checking
 	if(!(rawText.charAt(0) == '(' &&
 	     rawText.charAt(rawText.length()-1) == ')')) {
@@ -252,7 +252,7 @@ public class StringParser {
         int len;
         String tmpText;
 	boolean inQuote = false;
-	while(q < rawText.length()) {
+        while(q < rawText.length()) {
 	    if(rawText.charAt(q) == '\"') {
                 if(!inQuote) {
 		    inQuote = true;
@@ -292,7 +292,7 @@ public class StringParser {
             }
 	    else if((rawText.charAt(q) == ' ' && !inQuote) || (q == rawText.length() - 1)) {
 		if(q-p > 0) {
-		    parsedText.addElement(rawText.substring(p, q).trim());
+                    parsedText.addElement(rawText.substring(p, q).trim());
 		    p = q;
 		}
 		else {
@@ -305,6 +305,17 @@ public class StringParser {
 		int level = 0;
                 boolean subInQuote = false;
 		for(int i=q+1;i<rawText.length();i++) {
+                    if(rawText.charAt(i) == '{' && !subInQuote) {
+                        int matchIndex = rawText.indexOf('}', i);
+                        if(matchIndex > i+1 && rawText.charAt(matchIndex+1) != ' ') {
+                            int matchLen = Integer.parseInt(rawText.substring(i+1, matchIndex));
+                            matchIndex++;
+                            while(rawText.charAt(matchIndex) == '\r' || rawText.charAt(matchIndex) == '\n') {
+                                matchIndex++;
+                            }
+                            i = matchIndex + matchLen;
+                        }
+                    }
                     if(rawText.charAt(i) == '\"' && !subInQuote) {
                         subInQuote = true;
                     }
@@ -330,7 +341,7 @@ public class StringParser {
 		    return null;
 		}
 		else {
-		    parsedText.addElement(nestedParenStringLexer(rawText.substring(p, q+1)));
+                    parsedText.addElement(nestedParenStringLexer(rawText.substring(p, q+1)));
 		}
 		p = q+1;
 	    }
