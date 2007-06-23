@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,22 +29,24 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail;
+package org.logicprobe.LogicMail.mail.imap;
 
-public class LogicMailTests {
-    public LogicMailTests() {
+import j2meunit.framework.Test;
+import j2meunit.framework.TestCase;
+import j2meunit.framework.TestSuite;
+
+/**
+ * Unit test suite for the LogicMail.mail.imap classes
+ */
+public class ImapTests extends TestCase {
+    
+    public ImapTests() {
+        super();
     }
-
-    public static void main(String[] args) {
-        j2meunit.rimui.TestRunner instance =
-                new j2meunit.rimui.TestRunner(new String[] {
-            "org.logicprobe.LogicMail.util.UtilTests",
-            "org.logicprobe.LogicMail.message.MessageTests",
-            "org.logicprobe.LogicMail.mail.MailTests",
-            "org.logicprobe.LogicMail.ui.UiTests"
-        });
-        instance.enterEventDispatcher();
+    
+    public Test suite() {
+        TestSuite suite = new TestSuite("LogicMail.mail.imap");
+        suite.addTest(new ImapProtocolTest().suite());
+        return suite;
     }
 }
-
-
