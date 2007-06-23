@@ -193,10 +193,12 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     
     public void generateFolderTreeHelper(TreeField tree, int parent, FolderTreeItem item) {
         int id = (item.getParent() == null) ? 0 : tree.addChildNode(parent, item);
+
         if(item.hasChildren()) {
             FolderTreeItem[] children = item.children();
-            for(int i=0;i<children.length;i++)
+            for(int i=children.length-1; i >= 0; i--) {
                 generateFolderTreeHelper(tree, id, children[i]);
+            }
         }
     }
     
