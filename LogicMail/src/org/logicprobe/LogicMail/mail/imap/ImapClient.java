@@ -71,6 +71,11 @@ public class ImapClient implements IncomingMailClient {
     private String folderDelim = "";
 
     /**
+     * Personal namespace from the IMAP server
+     */
+    private ImapProtocol.Namespace nsPersonal;
+    
+    /**
      * Active mailbox path, so most commands do not need
      * to take a mailbox path parameter.  This makes it easier
      * to provide a common front-end that still works for
@@ -97,6 +102,10 @@ public class ImapClient implements IncomingMailClient {
             if(!openStarted) {
                 connection.open();
                 activeMailbox = null;
+                
+                // Swallow the initial "* OK" line from the server
+                connection.receive();
+
                 // Find out server capabilities
                 capabilities = imapProtocol.executeCapability();
                 openStarted = true;
@@ -106,10 +115,28 @@ public class ImapClient implements IncomingMailClient {
                 return false;
             }
 
-            // Discover folder delim
-            Vector resp = imapProtocol.executeList("", "");
-            if(resp.size() > 0) {
-                folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
+            // Get the namespaces, if supported
+            if(capabilities.containsKey("NAMESPACE")) {
+                ImapProtocol.NamespaceResponse nsResponse = imapProtocol.executeNamespace();
+
+                if(nsResponse.personal != null &&
+                   nsResponse.personal.length > 0 &&
+                   nsResponse.personal[0] != null &&
+                   nsResponse.personal[0].delimiter != null &&
+                   nsResponse.personal[0].prefix != null) {
+                    // We got a valid personal namespace, so proceed
+                    nsPersonal = nsResponse.personal[0];
+                    folderDelim = nsPersonal.delimiter;
+                }
+            }
+            // We could not get valid personal namespace information,
+            // so the folder delim will be aquired differently.
+            if(nsPersonal == null) {
+                // Discover folder delim
+                Vector resp = imapProtocol.executeList("", "");
+                if(resp.size() > 0) {
+                    folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
+                }
             }
             openStarted = false;
         } catch (MailException exp) {
@@ -170,10 +197,12 @@ public class ImapClient implements IncomingMailClient {
 
     private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth) throws IOException, MailException {
         Vector respList;
-        if(depth == 0)
+        if(depth == 0) {
             respList = imapProtocol.executeList(baseFolder.getPath(), "%");
-        else
+        }
+        else {
             respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%");
+        }
 
         int size = respList.size();
         for(int i=0;i<size;++i) {
@@ -182,9 +211,19 @@ public class ImapClient implements IncomingMailClient {
                 FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
                 baseFolder.addChild(childItem);
                 if(resp.hasChildren) {
+                    // The folder has children, so lets go and list them
                     if(depth+1 < globalConfig.getImapMaxFolderDepth()) {
                         getFolderTreeImpl(childItem, depth+1);
                     }
+                }
+                else if(depth == 0 &&
+                        nsPersonal != null &&
+                        (resp.name + nsPersonal.delimiter).equals(nsPersonal.prefix) &&
+                        globalConfig.getImapMaxFolderDepth() > 1) {
+                    // The folder claims to have no children, but it is a root
+                    // folder that matches the personal namespace prefix, so
+                    // look for children anyways.
+                    getFolderTreeImpl(childItem, depth+1);
                 }
             }
         }
@@ -206,6 +245,11 @@ public class ImapClient implements IncomingMailClient {
     }
 
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
+        // Make sure we do not FETCH an empty folder
+        if(firstIndex > lastIndex) {
+            return new FolderMessage[0];
+        }
+        
         ImapProtocol.FetchEnvelopeResponse[] response =
                 imapProtocol.executeFetchEnvelope(firstIndex, lastIndex);
         

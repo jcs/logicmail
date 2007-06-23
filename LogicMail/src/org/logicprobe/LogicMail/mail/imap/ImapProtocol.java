@@ -121,13 +121,126 @@ public class ImapProtocol {
         
         Hashtable table = new Hashtable();
 
-        String[] tokens = StringParser.parseTokenString(replyText[0], "");
+        String[] tokens = StringParser.parseTokenString(replyText[0], " ");
         if(tokens.length > 2 && tokens[1].equals("CAPABILITY")) {
             for(int i=2;i<tokens.length;i++)
                 table.put(tokens[i], Boolean.TRUE);
         }
         
         return table;
+    }
+    
+    /**
+     * Container for a single namespace entry
+     */
+    public static class Namespace {
+        /** Namespace prefix */
+        public String prefix;
+        /** Hierarchy delimiter */
+        public String delimiter;
+        // Extensions not currently parsed
+    }
+    
+    /**
+     * Container for a NAMESPACE response
+     */
+    public static class NamespaceResponse {
+        /** Personal Namespace(s) */
+        public Namespace personal[];
+        /** Other Users' Namespace(s) */
+        public Namespace other[];
+        /** Shared Namespace(s) */
+        public Namespace shared[];
+    }
+    
+    /**
+     * Execute the "NAMESPACE" command
+     * @return A fully populated Namespace object
+     */
+    public NamespaceResponse executeNamespace() throws IOException, MailException {
+        String replyText[] = execute("NAMESPACE", null);
+        if(replyText == null || replyText.length < 1) {
+            throw new MailException("Unable to query server namespaces");
+        }
+        
+        // Assume a single-line reply
+        Vector tokens = StringParser.nestedParenStringLexer("("+replyText[0].substring(replyText[0].indexOf('('))+")");
+        
+        // Sanity check on results
+        if(tokens == null || tokens.size() < 3) {
+            return new NamespaceResponse();
+        }
+
+        NamespaceResponse response = new NamespaceResponse();
+        Vector nsTokens;
+        Vector temp;
+        int size;
+        int i;
+        
+        // Parse personal namespace(s)
+        if(tokens.elementAt(0) instanceof Vector) {
+            nsTokens = (Vector)tokens.elementAt(0);
+            size = nsTokens.size();
+            response.personal = new Namespace[size];
+            for(i = 0; i < nsTokens.size(); i++) {
+                if(nsTokens.elementAt(i) instanceof Vector) {
+                    temp = (Vector)(nsTokens.elementAt(i));
+                    response.personal[i] = new Namespace();
+                    if(temp.size() >= 2) {
+                        if(temp.elementAt(0) instanceof String) {
+                            response.personal[i].prefix = (String)temp.elementAt(0);
+                        }
+                        if(temp.elementAt(1) instanceof String) {
+                            response.personal[i].delimiter = (String)temp.elementAt(1);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Parse other users' namespace(s)
+        if(tokens.elementAt(1) instanceof Vector) {
+            nsTokens = (Vector)tokens.elementAt(1);
+            size = nsTokens.size();
+            response.other = new Namespace[size];
+            for(i = 0; i < nsTokens.size(); i++) {
+                if(nsTokens.elementAt(i) instanceof Vector) {
+                    temp = (Vector)(nsTokens.elementAt(i));
+                    response.other[i] = new Namespace();
+                    if(temp.size() >= 2) {
+                        if(temp.elementAt(0) instanceof String) {
+                            response.other[i].prefix = (String)temp.elementAt(0);
+                        }
+                        if(temp.elementAt(1) instanceof String) {
+                            response.other[i].delimiter = (String)temp.elementAt(1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Parse shared namespace(s)
+        if(tokens.elementAt(2) instanceof Vector) {
+            nsTokens = (Vector)tokens.elementAt(2);
+            size = nsTokens.size();
+            response.shared = new Namespace[size];
+            for(i = 0; i < nsTokens.size(); i++) {
+                if(nsTokens.elementAt(i) instanceof Vector) {
+                    temp = (Vector)(nsTokens.elementAt(i));
+                    response.shared[i] = new Namespace();
+                    if(temp.size() >= 2) {
+                        if(temp.elementAt(0) instanceof String) {
+                            response.shared[i].prefix = (String)temp.elementAt(0);
+                        }
+                        if(temp.elementAt(1) instanceof String) {
+                            response.shared[i].delimiter = (String)temp.elementAt(1);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return response;
     }
     
     /**
@@ -459,7 +572,7 @@ public class ImapProtocol {
      * @param arguments Arguments for the command
      * @return List of returned strings
      */
-    private String[] execute(String command, String arguments)
+    protected String[] execute(String command, String arguments)
         throws IOException, MailException
     {
         String[] result = new String[0];
