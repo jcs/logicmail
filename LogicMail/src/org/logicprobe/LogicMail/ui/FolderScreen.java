@@ -135,6 +135,10 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     {
         boolean retval = false;
         switch(key) {
+            case Keypad.KEY_SPACE:
+                toggleSelectedFolder();
+                retval = true;
+                break;
             case Keypad.KEY_ENTER:
                 openSelectedFolder();
                 retval = true;
@@ -184,7 +188,29 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, (FolderTreeItem)cookie));
         }
     }
-    
+
+    private void toggleSelectedFolder() {
+        // Make sure the tree is valid
+    	if(treeField == null) {
+            return;
+        }
+        
+        int curNode = treeField.getCurrentNode();
+        
+        // Make sure a node is selected
+        if(curNode == -1) {
+            return;
+        }
+        
+        // Make sure the selected node has children
+        if(treeField.getFirstChild(curNode) == -1) {
+            return;
+        }
+
+        // Toggle the expansion state of the current node
+        treeField.setExpanded(curNode, !treeField.getExpanded(curNode));
+    }
+
     private synchronized void generateFolderTree(FolderTreeItem folderRoot) {
         treeField.deleteAll();
         generateFolderTreeHelper(treeField, 0, folderRoot);
