@@ -34,7 +34,9 @@ package org.logicprobe.LogicMail.conf;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.util.Hashtable;
 import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
  * Store the global configuration for LogicMail.
@@ -56,6 +58,18 @@ public class GlobalConfig implements Serializable {
     private String msgSignature;
 
     public GlobalConfig() {
+        setDefaults();
+    }
+    
+    public GlobalConfig(DataInputStream input) {
+        try {
+            deserialize(input);
+        } catch (IOException ex) {
+            setDefaults();
+        }
+    }
+
+    private void setDefaults() {
         this.fullname = "";
         this.retMsgCount = 30;
         this.dispOrder = false;
@@ -65,20 +79,6 @@ public class GlobalConfig implements Serializable {
         this.msgSignature = "";
     }
     
-    public GlobalConfig(DataInputStream input) {
-        try {
-            deserialize(input);
-        } catch (IOException ex) {
-            this.fullname = "";
-            this.retMsgCount = 30;
-            this.dispOrder = false;
-            this.imapMaxMsgSize = 32768;
-            this.imapMaxFolderDepth = 4;
-            this.popMaxLines = 400;
-            this.msgSignature = "";
-        }
-    }
-
     public void setFullname(String fullname) {
         this.fullname = fullname;
     }
@@ -136,23 +136,53 @@ public class GlobalConfig implements Serializable {
     }
 
     public void serialize(DataOutputStream output) throws IOException {
-        output.writeUTF(fullname);
-        output.writeInt(retMsgCount);
-        output.writeBoolean(dispOrder);
-        output.writeInt(imapMaxMsgSize);
-        output.writeInt(imapMaxFolderDepth);
-        output.writeInt(popMaxLines);
-        output.writeUTF(msgSignature);
+        SerializableHashtable table = new SerializableHashtable();
+        
+        table.put("global_fullname", fullname);
+        table.put("global_retMsgCount", new Integer(retMsgCount));
+        table.put("global_dispOrder", new Boolean(dispOrder));
+        table.put("global_imapMaxMsgSize", new Integer(imapMaxMsgSize));
+        table.put("global_imapMaxFolderDepth", new Integer(imapMaxFolderDepth));
+        table.put("global_popMaxLines", new Integer(popMaxLines));
+        table.put("global_msgSignature", msgSignature);
+        
+        table.serialize(output);
     }
 
     public void deserialize(DataInputStream input) throws IOException {
-        fullname = input.readUTF();
-        retMsgCount = input.readInt();
-        dispOrder = input.readBoolean();
-        imapMaxMsgSize = input.readInt();
-        imapMaxFolderDepth = input.readInt();
-        popMaxLines = input.readInt();
-        msgSignature = input.readUTF();
+        setDefaults();
+        SerializableHashtable table = new SerializableHashtable();
+        table.deserialize(input);
+        Object value;
+
+        value = table.get("global_fullname");
+        if(value != null && value instanceof String) {
+            fullname = (String)value;
+        }
+        value = table.get("global_retMsgCount");
+        if(value != null && value instanceof Integer) {
+            retMsgCount = ((Integer)value).intValue();
+        }
+        value = table.get("global_dispOrder");
+        if(value != null && value instanceof Boolean) {
+            dispOrder = ((Boolean)value).booleanValue();
+        }
+        value = table.get("global_imapMaxMsgSize");
+        if(value != null && value instanceof Integer) {
+            imapMaxMsgSize = ((Integer)value).intValue();
+        }
+        value = table.get("global_imapMaxFolderDepth");
+        if(value != null && value instanceof Integer) {
+            imapMaxFolderDepth = ((Integer)value).intValue();
+        }
+        value = table.get("global_popMaxLines");
+        if(value != null && value instanceof Integer) {
+            popMaxLines = ((Integer)value).intValue();
+        }
+        value = table.get("global_msgSignature");
+        if(value != null && value instanceof String) {
+            msgSignature = (String)value;
+        }
     }
 }
 

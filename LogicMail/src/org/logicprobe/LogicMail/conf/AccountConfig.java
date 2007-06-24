@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
  * Store account configuration for LogicMail
@@ -60,6 +61,18 @@ public class AccountConfig implements Serializable {
     private String smtpPass;
 
     public AccountConfig() {
+            setDefaults();
+    }
+    
+    public AccountConfig(DataInputStream input) {
+        try {
+            deserialize(input);
+        } catch (IOException ex) {
+            setDefaults();
+        }
+    }
+
+    private void setDefaults() {
         acctName = "";
         serverName = "";
         serverType = TYPE_POP;
@@ -75,64 +88,6 @@ public class AccountConfig implements Serializable {
         smtpUser = "";
         smtpPass = "";
         smtpFromAddress = "";
-    }
-    
-    public AccountConfig(DataInputStream input) {
-        try {
-            deserialize(input);
-        } catch (IOException ex) {
-            acctName = "";
-            serverName = "";
-            serverType = TYPE_POP;
-            serverSSL = false;
-            serverUser = "";
-            serverPass = "";
-            serverPort = 110;
-            deviceSide = false;
-            smtpServerName = "";
-            smtpServerPort = 25;
-            smtpServerSSL = false;
-            smtpUseAuth = 0;
-            smtpUser = "";
-            smtpPass = "";
-            smtpFromAddress = "";
-        }
-    }
-
-    public void serialize(DataOutputStream output) throws IOException {
-        output.writeUTF(acctName);
-        output.writeUTF(serverName);
-        output.writeInt(serverType);
-        output.writeBoolean(serverSSL);
-        output.writeUTF(serverUser);
-        output.writeUTF(serverPass);
-        output.writeInt(serverPort);
-        output.writeBoolean(deviceSide);
-        output.writeUTF(smtpServerName);
-        output.writeInt(smtpServerPort);
-        output.writeBoolean(smtpServerSSL);
-        output.writeInt(smtpUseAuth);
-        output.writeUTF(smtpUser);
-        output.writeUTF(smtpPass);
-        output.writeUTF(smtpFromAddress);
-    }
-
-    public void deserialize(DataInputStream input) throws IOException {
-        acctName = input.readUTF();
-        serverName = input.readUTF();
-        serverType = input.readInt();
-        serverSSL = input.readBoolean();
-        serverUser = input.readUTF();
-        serverPass = input.readUTF();
-        serverPort = input.readInt();
-        deviceSide = input.readBoolean();
-        smtpServerName = input.readUTF();
-        smtpServerPort = input.readInt();
-        smtpServerSSL = input.readBoolean();
-        smtpUseAuth = input.readInt();
-        smtpUser = input.readUTF();
-        smtpPass = input.readUTF();
-        smtpFromAddress = input.readUTF();
     }
 
     public String getAcctName() {
@@ -253,6 +208,96 @@ public class AccountConfig implements Serializable {
 
     public void setSmtpFromAddress(String smtpFromAddress) {
         this.smtpFromAddress = smtpFromAddress;
+    }
+
+    public void serialize(DataOutputStream output) throws IOException {
+        SerializableHashtable table = new SerializableHashtable();
+        
+        table.put("account_acctName", acctName);
+        table.put("account_serverName", serverName);
+        table.put("account_serverType", new Integer(serverType));
+        table.put("account_serverSSL", new Boolean(serverSSL));
+        table.put("account_serverUser", serverUser);
+        table.put("account_serverPass", serverPass);
+        table.put("account_serverPort", new Integer(serverPort));
+        table.put("account_deviceSide", new Boolean(deviceSide));
+        table.put("account_smtpServerName", smtpServerName);
+        table.put("account_smtpServerPort", new Integer(smtpServerPort));
+        table.put("account_smtpServerSSL", new Boolean(smtpServerSSL));
+        table.put("account_smtpUseAuth", new Integer(smtpUseAuth));
+        table.put("account_smtpUser", smtpUser);
+        table.put("account_smtpPass", smtpPass);
+        table.put("account_smtpFromAddress", smtpFromAddress);
+        
+        table.serialize(output);        
+    }
+
+    public void deserialize(DataInputStream input) throws IOException {
+        setDefaults();
+        SerializableHashtable table = new SerializableHashtable();
+        table.deserialize(input);
+        Object value;
+
+        value = table.get("account_acctName");
+        if(value != null && value instanceof String) {
+            acctName = (String)value;
+        }
+        value = table.get("account_serverName");
+        if(value != null && value instanceof String) {
+            serverName = (String)value;
+        }
+        value = table.get("account_serverType");
+        if(value != null && value instanceof Integer) {
+            serverType = ((Integer)value).intValue();
+        }
+        value = table.get("account_serverSSL");
+        if(value != null && value instanceof Boolean) {
+            serverSSL = ((Boolean)value).booleanValue();
+        }
+        value = table.get("account_serverUser");
+        if(value != null && value instanceof String) {
+            serverUser = (String)value;
+        }
+        value = table.get("account_serverPass");
+        if(value != null && value instanceof String) {
+            serverPass = (String)value;
+        }
+        value = table.get("account_serverPort");
+        if(value != null && value instanceof Integer) {
+            serverPort = ((Integer)value).intValue();
+        }
+        value = table.get("account_deviceSide");
+        if(value != null && value instanceof Boolean) {
+            deviceSide = ((Boolean)value).booleanValue();
+        }
+        value = table.get("account_smtpServerName");
+        if(value != null && value instanceof String) {
+            smtpServerName = (String)value;
+        }
+        value = table.get("account_smtpServerPort");
+        if(value != null && value instanceof Integer) {
+            smtpServerPort = ((Integer)value).intValue();
+        }
+        value = table.get("account_smtpServerSSL");
+        if(value != null && value instanceof Boolean) {
+            smtpServerSSL = ((Boolean)value).booleanValue();
+        }
+        value = table.get("account_smtpUseAuth");
+        if(value != null && value instanceof Integer) {
+            smtpUseAuth = ((Integer)value).intValue();
+        }
+        value = table.get("account_smtpUser");
+        if(value != null && value instanceof String) {
+            smtpUser = (String)value;
+        }
+        value = table.get("account_smtpPass");
+        if(value != null && value instanceof String) {
+            smtpPass = (String)value;
+        }
+        value = table.get("account_smtpFromAddress");
+        if(value != null && value instanceof String) {
+            smtpFromAddress = (String)value;
+        }
     }
 }
 
