@@ -42,8 +42,6 @@ import java.util.Hashtable;
  * LogicMail.util.Serializable interface.
  */
 public class SerializableHashtable extends Hashtable implements Serializable {
-    private Hashtable table;
-    
     final private static int TYPE_NULL    = 0;
     final private static int TYPE_BOOLEAN = 1;
     final private static int TYPE_BYTE    = 2;
@@ -63,10 +61,22 @@ public class SerializableHashtable extends Hashtable implements Serializable {
      *
      * @param table The instance of Hashtable to wrap
      */
-    public SerializableHashtable(Hashtable table) {
-        this.table = table;
+    public SerializableHashtable() {
+        super();
     }
 
+    /**
+     * Creates a new instance of SerializableHashtable.
+     * This class only supports hash tables containing objects which
+     * wrap the various primitive types supported by DataOutputStream
+     * and DataInputStream.
+     *
+     * @param initialCapacity Initial capacity of the hashtable.
+     */
+    public SerializableHashtable(int initialCapacity) {
+        super(initialCapacity);
+    }
+    
     private void writeObject(DataOutputStream output, Object item) throws IOException {
         if(item instanceof Boolean) {
             output.write(TYPE_BOOLEAN);
@@ -139,18 +149,18 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     }
     
     public void serialize(DataOutputStream output) throws IOException {
-        output.writeInt(table.size());
-        Enumeration e = table.keys();
+        output.writeInt(this.size());
+        Enumeration e = this.keys();
         Object key;
         while(e.hasMoreElements()) {
             key = e.nextElement();
             writeObject(output, key);
-            writeObject(output, table.get(key));
+            writeObject(output, this.get(key));
         }
     }
 
     public void deserialize(DataInputStream input) throws IOException {
-        table.clear();
+        this.clear();
         int size = input.readInt();
         Object key;
         Object value;
@@ -158,7 +168,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             key = readObject(input);
             value = readObject(input);
             if(key != null && value != null) {
-                table.put(key, value);
+                this.put(key, value);
             }
         }
     }    

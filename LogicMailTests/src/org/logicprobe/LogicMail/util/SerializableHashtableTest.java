@@ -90,7 +90,7 @@ public class SerializableHashtableTest extends TestCase {
 
     public void testSerialization() {
         try {
-            Hashtable table = new Hashtable();
+            SerializableHashtable table = new SerializableHashtable();
             table.put("One", "One");
             table.put("Two", new Integer(2));
             table.put("Three", new Long(3));
@@ -103,14 +103,13 @@ public class SerializableHashtableTest extends TestCase {
             int size = table.size();
             
             // Serialize
-            SerializableHashtable instance = new SerializableHashtable(table);
             TestOutputStream testOutput = new TestOutputStream();
-            instance.serialize(new DataOutputStream(testOutput));
+            table.serialize(new DataOutputStream(testOutput));
             
             // Deserialize
             TestInputStream testInput = new TestInputStream(testOutput.getBuffer());
-            instance = new SerializableHashtable(new Hashtable());
-            instance.deserialize(new DataInputStream(testInput));
+            table = new SerializableHashtable();
+            table.deserialize(new DataInputStream(testInput));
             
             // Verify results
             assertEquals(size, table.size());
