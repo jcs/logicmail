@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,24 +28,25 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.logicprobe.LogicMail.conf;
 
-package org.logicprobe.LogicMail;
+import j2meunit.framework.Test;
+import j2meunit.framework.TestCase;
+import j2meunit.framework.TestSuite;
 
-public class LogicMailTests {
-    public LogicMailTests() {
+/**
+ * Unit test suite for the LogicMail.conf classes.
+ */
+public class ConfTests extends TestCase {
+    
+    public ConfTests() {
+        super();
     }
-
-    public static void main(String[] args) {
-        j2meunit.rimui.TestRunner instance =
-                new j2meunit.rimui.TestRunner(new String[] {
-            "org.logicprobe.LogicMail.conf.ConfTests",
-            "org.logicprobe.LogicMail.mail.MailTests",
-            "org.logicprobe.LogicMail.message.MessageTests",
-            "org.logicprobe.LogicMail.ui.UiTests",
-            "org.logicprobe.LogicMail.util.UtilTests"
-        });
-        instance.enterEventDispatcher();
+    
+    public Test suite() {
+        TestSuite suite = new TestSuite("LogicMail.conf");
+        suite.addTest(new GlobalConfigTest().suite());
+        suite.addTest(new AccountConfigTest().suite());
+        return suite;
     }
 }
-
-
