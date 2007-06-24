@@ -1,0 +1,19 @@
+2007-07-24  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Changed configuration serialization from the original simple format
+        into a serialized hashtable format.
+        : This will break all existing stored configurations, but should limit
+        : breakage due to future changes of the configuration parameters.
+        : The simpler format had a side-effect of breaking stored configurations
+        : with every single change.
+
+=== LogicMail 0.2.20070723 (snapshot) ===
+2007-07-23  Derek Konigsberg  <octo@logicprobe.org>
+
+	* IMAP: Fixed a bug with empty folders
+	* IMAP: Implemented rudimentary NAMESPACE support to make it possible to
+        fix a compatability issue with Dovecot IMAP servers.
+	: This implementation only uses the NAMESPACE results, if available,
+	: to handle the case where the server pretends the INBOX has no subfolders.
+	* IMAP: Fixed a parsing bug which occured when the E-Mail subject
+	contains a single '"' character
