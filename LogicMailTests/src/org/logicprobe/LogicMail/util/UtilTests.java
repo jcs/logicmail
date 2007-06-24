@@ -47,6 +47,7 @@ public class UtilTests extends TestCase {
     public Test suite() {
         TestSuite testSuite = new TestSuite("LogicMail.util");
         testSuite.addTest(new StringParserTest().suite());
+        testSuite.addTest(new SerializableHashtableTest().suite());
         return testSuite;
     }
 }
