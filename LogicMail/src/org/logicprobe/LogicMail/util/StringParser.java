@@ -156,13 +156,13 @@ public class StringParser {
                 buf.append("Mon, ");
                 break;
             case Calendar.TUESDAY:
-                buf.append("Tues, ");
+                buf.append("Tue, ");
                 break;
             case Calendar.WEDNESDAY:
                 buf.append("Wed, ");
                 break;
             case Calendar.THURSDAY:
-                buf.append("Thur, ");
+                buf.append("Thu, ");
                 break;
             case Calendar.FRIDAY:
                 buf.append("Fri, ");
@@ -224,7 +224,15 @@ public class StringParser {
         buf.append(NumberUtilities.toString(cal.get(Calendar.SECOND), 10, 2));
         
         buf.append(' ');
-        buf.append(cal.getTimeZone().getID());
+        
+        int tzOffset = (cal.getTimeZone().getRawOffset())/36000;
+        if(tzOffset < 0) {
+            buf.append(NumberUtilities.toString(tzOffset, 10, 5));
+        }
+        else {
+            buf.append("+");
+            buf.append(NumberUtilities.toString(tzOffset, 10, 4));
+        }
         
         return buf.toString();
     }

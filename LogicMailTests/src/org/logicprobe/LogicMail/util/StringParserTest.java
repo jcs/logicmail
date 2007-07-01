@@ -97,8 +97,9 @@ public class StringParserTest extends TestCase {
      */
     public void testCreateDateString() {
         System.out.println("createDateString");
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("America/Los_Angeles"));
         
+        // Test for time zone GMT-5
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT-5"));
         cal.set(Calendar.YEAR, 2007);
         cal.set(Calendar.MONTH, 1);
         cal.set(Calendar.DAY_OF_MONTH, 10);
@@ -106,11 +107,35 @@ public class StringParserTest extends TestCase {
         cal.set(Calendar.MINUTE, 27);
         cal.set(Calendar.SECOND, 1);
         
-        String expected = "Sat, 10 Feb 2007 21:27:01 America/Los_Angeles";
+        String expected = "Sat, 10 Feb 2007 21:27:01 -0500";
+        String actual = StringParser.createDateString(cal.getTime(), TimeZone.getTimeZone("GMT-5"));
+        assertEquals("GMT-5", expected, actual);
+
+        // Test for time zone GMT+2
+        cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+2"));
+        cal.set(Calendar.YEAR, 2007);
+        cal.set(Calendar.MONTH, 1);
+        cal.set(Calendar.DAY_OF_MONTH, 10);
+        cal.set(Calendar.HOUR_OF_DAY, 21);
+        cal.set(Calendar.MINUTE, 27);
+        cal.set(Calendar.SECOND, 1);
         
-        String actual = StringParser.createDateString(cal.getTime(), TimeZone.getTimeZone("America/Los_Angeles"));
+        expected = "Sat, 10 Feb 2007 21:27:01 +0200";
+        actual = StringParser.createDateString(cal.getTime(), TimeZone.getTimeZone("GMT+2"));
+        assertEquals("GMT+2", expected, actual);
+
+        // Test for time zone GMT
+        cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        cal.set(Calendar.YEAR, 2007);
+        cal.set(Calendar.MONTH, 1);
+        cal.set(Calendar.DAY_OF_MONTH, 10);
+        cal.set(Calendar.HOUR_OF_DAY, 21);
+        cal.set(Calendar.MINUTE, 27);
+        cal.set(Calendar.SECOND, 1);
         
-        assertEquals(expected, actual);
+        expected = "Sat, 10 Feb 2007 21:27:01 +0000";
+        actual = StringParser.createDateString(cal.getTime(), TimeZone.getTimeZone("GMT"));
+        assertEquals("GMT", expected, actual);
     }
     
     /**
