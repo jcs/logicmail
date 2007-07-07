@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
  * Mail folder listing
@@ -55,6 +56,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     private TreeField treeField;
     private IncomingMailClient client;
     private RefreshFolderTreeHandler refreshFolderTreeHandler;
+    private AccountCache acctCache;
     
     public FolderScreen(IncomingMailClient client) {
         super("Folders");
@@ -67,14 +69,16 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         
         add(treeField);
         
-        AccountCache acctCache =
-                new AccountCache(this.client.getAcctConfig().getAcctName());
+        acctCache = new AccountCache(this.client.getAcctConfig().getAcctName());
 
         FolderTreeItem treeRoot = acctCache.loadFolderTree();
-        if(treeRoot != null && treeRoot.hasChildren())
+        if(treeRoot != null && treeRoot.hasChildren()) {
             generateFolderTree(treeRoot);
-        else
+            loadFolderMetadata();
+        }
+        else {
             refreshFolderTree();
+        }
     }
 
     protected boolean onSavePrompt() {
@@ -83,6 +87,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
 
     public boolean onClose() {
         if(checkClose()) {
+            saveFolderMetadata();
             close();
             return true;
         }
@@ -159,6 +164,54 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         else {
             return true;
         }
+    }
+
+    /**
+     * Load metadata on folder state, and update the folder tree
+     */
+    public void loadFolderMetadata() {
+        SerializableHashtable folderMetadata;
+        folderMetadata = acctCache.loadAccountMetadata("ui_folder");
+
+        if(folderMetadata != null) {
+            int curNode = treeField.nextNode(0, 0, true);
+            Object cookie;
+            Object value;
+            while(curNode > 0) {
+                if(treeField.getFirstChild(curNode) != -1) {
+                    cookie = treeField.getCookie(curNode);
+                    if(cookie instanceof FolderTreeItem) {
+                        value = folderMetadata.get(((FolderTreeItem)cookie).getPath());
+                        if(value instanceof Boolean) {
+                            treeField.setExpanded(curNode, ((Boolean)value).booleanValue());
+                        }
+                    }
+                }
+                curNode = treeField.nextNode(curNode, 0, true);
+            }
+        }
+        treeField.setCurrentNode(treeField.getFirstChild(0));
+    }
+    
+    /**
+     * Save metadata on folder state
+     */
+    public void saveFolderMetadata() {
+        SerializableHashtable folderMetadata = new SerializableHashtable();
+        int curNode = treeField.nextNode(0, 0, true);
+        Object cookie;
+        while(curNode > 0) {
+            if(treeField.getFirstChild(curNode) != -1) {
+                cookie = treeField.getCookie(curNode);
+                if(cookie instanceof FolderTreeItem) {
+                    folderMetadata.put(
+                            ((FolderTreeItem)cookie).getPath(),
+                            new Boolean(treeField.getExpanded(curNode)));
+                }
+            }
+            curNode = treeField.nextNode(curNode, 0, true);
+        }
+        acctCache.saveAccountMetadata("ui_folder", folderMetadata);
     }
     
     /**
