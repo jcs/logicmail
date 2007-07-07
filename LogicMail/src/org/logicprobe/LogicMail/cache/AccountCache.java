@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.cache;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 public class AccountCache {
     private String _acctName;
@@ -65,5 +66,40 @@ public class AccountCache {
         FolderTreeItem folderRoot = new FolderTreeItem();
         reader.getItem(0, folderRoot);
         return folderRoot;
+    }
+    
+    /**
+     * Save metadata associated with an account.
+     * This is intended to be used for saving things not relating
+     * to the mail protocols specifically, such as UI state.
+     *
+     * @param key The key to save metadata under
+     * @param metadata A serializable hashtable containing the metadata to save
+     */
+    public void saveAccountMetadata(String key, SerializableHashtable metadata) {
+        String writerKey = "acct_" + _acctName + "_metadata_" + key;
+        CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(writerKey.hashCode()));
+        writer.addItem(metadata);
+        writer.store();
+    }
+    
+    /**
+     * Load metadata associated with an account.
+     * This is intended to be used for loading things not relating
+     * to the mail protocols specifically, such as UI state.
+     *
+     * @param key The key that the metadata was saved under
+     * @return A serializable hashtable containing the saved metadata
+     */
+    public SerializableHashtable loadAccountMetadata(String key) {
+        String readerKey = "acct_" + _acctName + "_metadata_" + key;
+        CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(readerKey.hashCode()));
+        reader.load();
+        if(reader.getNumItems() < 1) {
+            return null;
+        }
+        SerializableHashtable hashtable = new SerializableHashtable();
+        reader.getItem(0, hashtable);
+        return hashtable;
     }
 }
