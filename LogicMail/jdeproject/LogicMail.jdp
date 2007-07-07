@@ -80,6 +80,7 @@ ExcludeFromBuildAll=0
 ..\src\org\logicprobe\LogicMail\util\Connection.java
 ..\src\org\logicprobe\LogicMail\util\MD5.java
 ..\src\org\logicprobe\LogicMail\util\Serializable.java
+..\src\org\logicprobe\LogicMail\util\SerializableHashtable.java
 ..\src\org\logicprobe\LogicMail\util\StringParser.java
 ..\src\org\logicprobe\LogicMail\util\UtilProxy.java
 ..\src\org\logicprobe\LogicMail\util\UtilProxyBB41.java
