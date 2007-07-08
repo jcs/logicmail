@@ -168,7 +168,7 @@
         </xmltask>
         
         <!-- Create the distribution archive -->
-        <zip destfile="${basedir}/dist/LogicMail-${build.version}.zip"
+        <zip destfile="${basedir}/dist/LogicMail.zip"
              basedir="${basedir}/${dist.dir}"/>
     </target>
 </project>
