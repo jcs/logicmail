@@ -102,4 +102,73 @@
             </fileset>
         </delete>
     </target>
+    <!--
+    This is the target used to create automated builds of LogicMail.
+    It currently only supports building one configuration.
+
+    This target depends upon the external xmltask library, which can
+    be found here:
+    http://www.oopsconsultancy.com/software/xmltask/
+
+    It is intended to be called from a build server, and expects the
+    following properties to be set:
+        config.active=BB41Configuration
+        user.properties.file=../../build.properties
+        libs.j2me_ant_ext.classpath=../../mobility7.3/modules/org-netbeans-modules-kjava-antext.jar
+        platform.home=../../platform
+        platform.preverifycommandline=
+        build.version.major=0
+        build.version.minor=2
+        build.version.micro=0
+
+    The "user.properties.file" is a self-reference, and points to
+    the file that itself and all the other above properties are in.
+
+    The "libs.j2me_ant_ext.classpath" property references a JAR
+    that is distributed in the NetBeans 5.5.1 mobility pack.
+
+    The "platform.home" property references the location of the BlackBerry JDE
+    installation, or some minimalist subset thereof.
+    -->
+    <target name="snapshot" depends="load-properties">
+        <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask"/>
+        <!-- Build the application -->
+        <antcall target="clean" inheritall="true" inheritrefs="true"/>
+        <deltree dir="${basedir}/dist"/>
+        <antcall target="jar" inheritall="true" inheritrefs="true"/>
+
+        <!-- Create the build version number -->
+        <tstamp/>
+        <property name="build.version" value="${build.version.major}.${build.version.minor}.${build.version.micro}${DSTAMP}${TSTAMP}"/>
+
+        <!-- Modify the version in the JAD file -->
+        <manifest file="${basedir}/${dist.dir}/${dist.jad}" mode="update">
+            <attribute name="MIDlet-Version" value="${build.version}"/>
+        </manifest>
+
+        <!-- Edit the JAD file to bring its format back in line with the original -->
+        <replaceregexp file="${basedir}/${dist.dir}/${dist.jad}"
+            match="Ant-Version(.*)\r\n"
+            replace=""
+            byline="false"/>
+        <replaceregexp file="${basedir}/${dist.dir}/${dist.jad}"
+            match="Created-By(.*)\r\n"
+            replace=""
+            byline="false"/>
+        <replaceregexp file="${basedir}/${dist.dir}/${dist.jad}"
+            match="\r\n  "
+            replace=" "
+            byline="false"/>
+
+        <!-- Modify the version in the ALX file -->
+        <xmltask
+            source="${basedir}/${dist.dir}/LogicMail.alx"
+            dest="${basedir}/${dist.dir}/LogicMail.alx">
+            <replace path="loader/application/version/text()" withText="${build.version}"/>
+        </xmltask>
+        
+        <!-- Create the distribution archive -->
+        <zip destfile="${basedir}/dist/LogicMail-${build.version}.zip"
+             basedir="${basedir}/${dist.dir}"/>
+    </target>
 </project>
