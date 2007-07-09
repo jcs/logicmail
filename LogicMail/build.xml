@@ -120,6 +120,7 @@
         build.version.major=0
         build.version.minor=2
         build.version.micro=0
+        build.version.tstamp=200707081450
 
     The "user.properties.file" is a self-reference, and points to
     the file that itself and all the other above properties are in.
@@ -138,8 +139,7 @@
         <antcall target="jar" inheritall="true" inheritrefs="true"/>
 
         <!-- Create the build version number -->
-        <tstamp/>
-        <property name="build.version" value="${build.version.major}.${build.version.minor}.${build.version.micro}${DSTAMP}${TSTAMP}"/>
+        <property name="build.version" value="${build.version.major}.${build.version.minor}.${build.version.micro}${build.version.tstamp}"/>
 
         <!-- Modify the version in the JAD file -->
         <manifest file="${basedir}/${dist.dir}/${dist.jad}" mode="update">
