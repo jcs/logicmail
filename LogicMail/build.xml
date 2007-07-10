@@ -133,33 +133,15 @@
     -->
     <target name="snapshot" depends="load-properties">
         <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask"/>
-        <!-- Build the application -->
-        <antcall target="clean" inheritall="true" inheritrefs="true"/>
-        <deltree dir="${basedir}/dist"/>
-        <antcall target="jar" inheritall="true" inheritrefs="true"/>
-
+        
         <!-- Create the build version number -->
         <property name="build.version" value="${build.version.major}.${build.version.minor}.${build.version.micro}${build.version.tstamp}"/>
-
-        <!-- Modify the version in the JAD file -->
-        <manifest file="${basedir}/${dist.dir}/${dist.jad}" mode="update">
-            <attribute name="MIDlet-Version" value="${build.version}"/>
-        </manifest>
-
-        <!-- Edit the JAD file to bring its format back in line with the original -->
-        <replaceregexp file="${basedir}/${dist.dir}/${dist.jad}"
-            match="Ant-Version(.*)\r\n"
-            replace=""
-            byline="false"/>
-        <replaceregexp file="${basedir}/${dist.dir}/${dist.jad}"
-            match="Created-By(.*)\r\n"
-            replace=""
-            byline="false"/>
-        <replaceregexp file="${basedir}/${dist.dir}/${dist.jad}"
-            match="\r\n  "
-            replace=" "
-            byline="false"/>
-
+ 
+        <!-- Build the application -->
+        <antcall target="clean" inheritall="true" inheritrefs="true"/>
+        <delete failonerror="false" dir="${basedir}/dist"/>
+        <antcall target="snapshot-jar" inheritall="true" inheritrefs="true"/>
+        
         <!-- Modify the version in the ALX file -->
         <xmltask
             source="${basedir}/${dist.dir}/LogicMail.alx"
@@ -170,5 +152,44 @@
         <!-- Create the distribution archive -->
         <zip destfile="${basedir}/dist/LogicMail.zip"
              basedir="${basedir}/${dist.dir}"/>
+     </target>
+     <!--
+     This is a special version of the "create-jad" task.
+     It wraps the original task from build-impl.xml, then
+     it edits the output files to contain the correct
+     version numbers.
+     -->
+     <target name="snapshot-create-jad" depends="init">
+        <!-- Create the original JAD file -->
+        <antcall target="create-jad" inheritall="true" inheritrefs="true"/>
+
+        <!-- Modify the output to contain the correct version number -->
+        <replaceregexp file="${dist.dir}/${dist.jad}"
+            match="MIDlet-Version:(.*)"
+            replace="MIDlet-Version: ${build.version}"
+            byline="false"/>
+        <replaceregexp file="${build.dir}/manifest.mf"
+            match="MIDlet-Version:(.*)"
+            replace="MIDlet-Version: ${build.version}"
+            byline="false"/>
+     </target>
+     <!--
+     This is a special version of the "jar" task.
+     It is identical in every way to the original task
+     from build-impl.xml, except that it references the
+     above "snapshot-create-jad" task instead of the
+     original "create-jad" task.
+     -->
+     <target name="snapshot-jar" depends="init,preverify,snapshot-create-jad,set-keystore-password,set-alias-password,pre-jar" description="Build jar and application descriptor for snapshot builds.">
+        <dirname file="${dist.dir}/${dist.jar}" property="dist.jar.dir"/>
+        <mkdir dir="${dist.jar.dir}"/>
+        <jar compress="${jar.compress}" jarfile="${dist.dir}/${dist.jar}" manifest="${build.dir}/manifest.mf" manifestencoding="UTF-8">
+            <fileset dir="${preverify.classes.dir}"/>
+            <fileset dir="${obfuscated.classes.dir}">
+                <exclude name="**/*.class"/>
+            </fileset>
+        </jar>
+        <nb-jad jadfile="${dist.dir}/${dist.jad}" jarfile="${dist.dir}/${dist.jar}" url="${dist.jar}" sign="${sign.enabled}" keystore="${sign.keystore}" keystorepassword="${sign.keystore.password}" alias="${sign.alias}" aliaspassword="${sign.alias.password}" encoding="${javac.encoding}"/>
+        <antcall target="post-jar" inheritall="true" inheritrefs="true"/>
     </target>
 </project>
