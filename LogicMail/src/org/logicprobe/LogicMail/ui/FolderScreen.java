@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import java.io.IOException;
+import java.util.Vector;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
@@ -177,17 +178,30 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             int curNode = treeField.nextNode(0, 0, true);
             Object cookie;
             Object value;
+            Vector actions = new Vector();
+            
+            // Walk the folder tree and build a depth-first list of
+            // nodes we need to set the expansion state for
             while(curNode > 0) {
                 if(treeField.getFirstChild(curNode) != -1) {
                     cookie = treeField.getCookie(curNode);
                     if(cookie instanceof FolderTreeItem) {
                         value = folderMetadata.get(((FolderTreeItem)cookie).getPath());
                         if(value instanceof Boolean) {
-                            treeField.setExpanded(curNode, ((Boolean)value).booleanValue());
+                            actions.addElement(new Object[] { new Integer(curNode), value } );
                         }
                     }
                 }
                 curNode = treeField.nextNode(curNode, 0, true);
+            }
+            
+            // Iterate backwards across the results from above, and set
+            // the appropriate node expansion states.  This approach is
+            // necessary so complex trees will be configured properly.
+            Object[] action;
+            for(int i = actions.size() - 1; i >= 0; i--) {
+                action = (Object[])actions.elementAt(i);
+                treeField.setExpanded(((Integer)action[0]).intValue(), ((Boolean)action[1]).booleanValue());
             }
         }
         treeField.setCurrentNode(treeField.getFirstChild(0));
