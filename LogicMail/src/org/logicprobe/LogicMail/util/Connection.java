@@ -145,8 +145,8 @@ public class Connection {
             System.out.println("[OPEN] " + connectStr);
         }
         socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
-        input = socket.openInputStream();
-        output = socket.openOutputStream();
+        input = socket.openDataInputStream();
+        output = socket.openDataOutputStream();
         localAddress = ((SocketConnection)socket).getLocalAddress();
     }
     
