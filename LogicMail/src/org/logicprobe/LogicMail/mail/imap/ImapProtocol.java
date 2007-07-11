@@ -376,7 +376,7 @@ public class ImapProtocol {
             try {
                 String rawText = (String)rawList2.elementAt(i);
 
-                MessageEnvelope env;
+                MessageEnvelope env = null;
                 Vector parsedText = null;
                 try {
                     parsedText = StringParser.nestedParenStringLexer(rawText.substring(rawText.indexOf('(')));
@@ -385,34 +385,36 @@ public class ImapProtocol {
                 }
 
                 FetchEnvelopeResponse envRespItem = new FetchEnvelopeResponse();
-
-                if(parsedText.size() > 3) {
-                    if((parsedText.elementAt(0) instanceof String) &&
-                            ((String)parsedText.elementAt(0)).equals("FLAGS")) {
-                        if(parsedText.elementAt(1) instanceof Vector) {
-                            // Violates the token structure, but avoids having
-                            // to fix some strange behavior in the lexer
-                            String flagText = rawText.substring(rawText.indexOf('('), rawText.indexOf(')'));
-                            envRespItem.flags = ImapParser.parseMessageFlags(flagText);
+                envRespItem.flags = null;
+                
+                // Iterate through results, locating and parsing the
+                // FLAGS and ENVELOPE sections in an order-independent way.
+                int parsedSize = parsedText.size();
+                for(int j = 0; j < parsedSize; j++) {
+                    if(parsedText.elementAt(j) instanceof String) {
+                        if(((String)parsedText.elementAt(j)).equals("FLAGS") &&
+                           parsedSize > j+1 &&
+                           parsedText.elementAt(j+1) instanceof Vector) {
+                            envRespItem.flags = ImapParser.parseMessageFlags((Vector)parsedText.elementAt(j+1));
                         }
-                        if((parsedText.elementAt(2) instanceof String) &&
-                                ((String)parsedText.elementAt(2)).equals("ENVELOPE") &&
-                                (parsedText.elementAt(3) instanceof Vector))
-                        {
-                            env = ImapParser.parseMessageEnvelope((Vector)parsedText.elementAt(3));
+                        else if(((String)parsedText.elementAt(j)).equals("ENVELOPE") &&
+                                parsedSize > j+1 &&
+                                parsedText.elementAt(j+1) instanceof Vector) {
+                            env = ImapParser.parseMessageEnvelope((Vector)parsedText.elementAt(j+1));
                         }
-                        else {
-                            env = ImapParser.generateDummyEnvelope();
-                        }
-                    }
-                    else {
-                        env = ImapParser.generateDummyEnvelope();
                     }
                 }
-                else {
+
+                // If either of the above sections were not found, then populate
+                // the reply with the relevant dummy data.
+                if(env == null) {
                     env = ImapParser.generateDummyEnvelope();
                 }
-                
+                if(envRespItem.flags == null) {
+                    envRespItem.flags = new MessageFlags();
+                }
+
+                // Find the message index in the reply
                 int midx = Integer.parseInt(rawText.substring(rawText.indexOf(' '), rawText.indexOf("FETCH")-1).trim());
                 
                 envRespItem.index = midx;

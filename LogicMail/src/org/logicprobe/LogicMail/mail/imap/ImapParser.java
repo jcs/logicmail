@@ -59,18 +59,36 @@ class ImapParser {
     
     private static String strNIL = "NIL";
     
-    static ImapProtocol.MessageFlags parseMessageFlags(String rawText) {
+    static ImapProtocol.MessageFlags parseMessageFlags(Vector flagsVec) {
         ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
-        flags.seen     = (rawText.indexOf("\\Seen") != -1);
-        flags.answered = (rawText.indexOf("\\Answered") != -1);
-        flags.flagged  = (rawText.indexOf("\\Flagged") != -1);
-        flags.deleted  = (rawText.indexOf("\\Deleted") != -1);
-        flags.draft    = (rawText.indexOf("\\Draft") != -1);
-        flags.recent   = (rawText.indexOf("\\Recent") != -1);
+        
+        String text;
+        int size = flagsVec.size();
+        for(int i = 0; i < size; i++) {
+            if(flagsVec.elementAt(i) instanceof String) {
+                text = (String)flagsVec.elementAt(i);
+                if(text.equalsIgnoreCase("\\Seen")) {
+                    flags.seen = true;
+                }
+                else if(text.equalsIgnoreCase("\\Answered")) {
+                    flags.answered = true;
+                }
+                else if(text.equalsIgnoreCase("\\Flagged")) {
+                    flags.flagged = true;
+                }
+                else if(text.equalsIgnoreCase("\\Deleted")) {
+                    flags.deleted = true;
+                }
+                else if(text.equalsIgnoreCase("\\Draft")) {
+                    flags.draft = true;
+                }
+                else if(text.equalsIgnoreCase("\\Recent")) {
+                    flags.recent = true;
+                }
+            }
+        }
         return flags;
     }
-
-    
     
     static MessageEnvelope parseMessageEnvelope(Vector parsedEnv) {
         // Sanity checking

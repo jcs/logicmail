@@ -35,8 +35,14 @@ import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
+import java.io.IOException;
+import java.util.Calendar;
 import java.util.Hashtable;
+import java.util.TimeZone;
 import java.util.Vector;
+import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Unit test for ImapProtocol
@@ -151,6 +157,161 @@ public class ImapProtocolTest extends TestCase {
         }
     }
     
+    public void testExecuteFetchEnvelope1() {
+        try {
+            instance.addExecuteExpectation(
+                "FETCH", "1:1 (FLAGS ENVELOPE)",
+                new String[] {
+                    "* 1 FETCH (FLAGS (\\Answered \\Seen) " +
+                    "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
+                    "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                    "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                    "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                    "((\"John Doe\" NIL \"jdoe\" \"generic.test\")) " +
+                    "NIL NIL " +
+                    "\"<200703121933.25327.jdoe@generic.test>\" " +
+                    "\"<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>\"))"
+                });
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
+            assertNotNull(result);
+            assertEquals(1, result.length);
+            assertNotNull(result[0]);
+            
+            assertEquals(1, result[0].index);
+            assertNotNull(result[0].flags);
+            assertTrue(result[0].flags.answered);
+            assertTrue(result[0].flags.seen);
+            assertTrue(!result[0].flags.deleted);
+            assertTrue(!result[0].flags.draft);
+            assertTrue(!result[0].flags.flagged);
+            assertTrue(!result[0].flags.recent);
+            
+            assertNotNull(result[0].envelope);
+            MessageEnvelope env = result[0].envelope;
+            Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT-7"));
+            cal.set(Calendar.YEAR, 2007);
+            cal.set(Calendar.MONTH, 2);
+            cal.set(Calendar.DAY_OF_MONTH, 12);
+            cal.set(Calendar.HOUR_OF_DAY, 19);
+            cal.set(Calendar.MINUTE, 38);
+            cal.set(Calendar.SECOND, 31);
+            assertEquals(StringParser.createDateString(cal.getTime()), StringParser.createDateString(env.date));
+            
+            assertEquals("Re: Calm down! :-)", env.subject);
+
+            assertNotNull(env.from);
+            assertEquals(1, env.from.length);
+            assertNotNull(env.from[0]);
+            assertEquals("jim smith <jsmith@scratch.test>", env.from[0]);
+            
+            assertNotNull(env.sender);
+            assertEquals(1, env.sender.length);
+            assertNotNull(env.sender[0]);
+            assertEquals("jim smith <jsmith@scratch.test>", env.sender[0]);
+
+            assertNotNull(env.replyTo);
+            assertEquals(1, env.replyTo.length);
+            assertNotNull(env.replyTo[0]);
+            assertEquals("jim smith <jsmith@scratch.test>", env.replyTo[0]);
+            
+            assertNotNull(env.to);
+            assertEquals(1, env.to.length);
+            assertNotNull(env.to[0]);
+            assertEquals("John Doe <jdoe@generic.test>", env.to[0]);
+            
+            assertNull(env.cc);
+            assertNull(env.bcc);
+            
+            assertEquals("<200703121933.25327.jdoe@generic.test>", env.inReplyTo);
+            assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>", env.messageId);
+            
+        } catch (MailException e) {
+            fail("MailException thrown during test: "+e.toString());
+            e.printStackTrace();
+        } catch (IOException e) {
+            fail("IOException thrown during test: "+e.toString());
+            e.printStackTrace();
+        }
+    }
+    
+    public void testExecuteFetchEnvelope2() {
+        try {
+            instance.addExecuteExpectation(
+                "FETCH", "1:1 (FLAGS ENVELOPE)",
+                new String[] {
+                    "* 1 FETCH (" +
+                    "ENVELOPE (\"Sun, 08 Jul 2007 09:48:47 +0100\" \"A Test\" " +
+                    "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                    "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                    "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                    "((\"\" NIL \"test\" \"generic.test\")) " +
+                    "NIL NIL " +
+                    "NIL " +
+                    "\"<4690A4EF.3070302@mail.scratch.test>\") " +
+                    "FLAGS (\\Seen))"
+                });
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
+            assertNotNull(result);
+            assertEquals(1, result.length);
+            assertNotNull(result[0]);
+            
+            assertEquals(1, result[0].index);
+            assertNotNull(result[0].flags);
+            assertTrue(result[0].flags.seen);
+            assertTrue(!result[0].flags.answered);
+            assertTrue(!result[0].flags.deleted);
+            assertTrue(!result[0].flags.draft);
+            assertTrue(!result[0].flags.flagged);
+            assertTrue(!result[0].flags.recent);
+            
+            assertNotNull(result[0].envelope);
+            MessageEnvelope env = result[0].envelope;
+            Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+1"));
+            cal.set(Calendar.YEAR, 2007);
+            cal.set(Calendar.MONTH, 6);
+            cal.set(Calendar.DAY_OF_MONTH, 8);
+            cal.set(Calendar.HOUR_OF_DAY, 9);
+            cal.set(Calendar.MINUTE, 48);
+            cal.set(Calendar.SECOND, 47);
+            assertEquals(StringParser.createDateString(cal.getTime()), StringParser.createDateString(env.date));
+            
+            assertEquals("A Test", env.subject);
+
+            assertNotNull(env.from);
+            assertEquals(1, env.from.length);
+            assertNotNull(env.from[0]);
+            assertEquals("jim smith <jsmith@scratch.test>", env.from[0]);
+            
+            assertNotNull(env.sender);
+            assertEquals(1, env.sender.length);
+            assertNotNull(env.sender[0]);
+            assertEquals("jim smith <jsmith@scratch.test>", env.sender[0]);
+
+            assertNotNull(env.replyTo);
+            assertEquals(1, env.replyTo.length);
+            assertNotNull(env.replyTo[0]);
+            assertEquals("jim smith <jsmith@scratch.test>", env.replyTo[0]);
+            
+            assertNotNull(env.to);
+            assertEquals(1, env.to.length);
+            assertNotNull(env.to[0]);
+            assertEquals("test@generic.test", env.to[0]);
+            
+            assertNull(env.cc);
+            assertNull(env.bcc);
+            
+            assertEquals("", env.inReplyTo);
+            assertEquals("<4690A4EF.3070302@mail.scratch.test>", env.messageId);
+            
+        } catch (MailException e) {
+            fail("MailException thrown during test: "+e.toString());
+            e.printStackTrace();
+        } catch (IOException e) {
+            fail("IOException thrown during test: "+e.toString());
+            e.printStackTrace();
+        }
+    }
+
     public Test suite() {
         TestSuite suite = new TestSuite("ImapProtocol");
 
@@ -158,6 +319,10 @@ public class ImapProtocolTest extends TestCase {
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteCapability(); } }));
         suite.addTest(new ImapProtocolTest("executeNamespace", new TestMethod()
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteNamespace(); } }));
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelope1", new TestMethod()
+        { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteFetchEnvelope1(); } }));
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelope2", new TestMethod()
+        { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteFetchEnvelope2(); } }));
 
         return suite;
     }
