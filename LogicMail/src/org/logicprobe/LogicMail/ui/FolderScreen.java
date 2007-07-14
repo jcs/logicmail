@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.Vector;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
@@ -57,7 +58,9 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     private TreeField treeField;
     private IncomingMailClient client;
     private RefreshFolderTreeHandler refreshFolderTreeHandler;
+    private RefreshFolderStatusHandler refreshFolderStatusHandler;
     private AccountCache acctCache;
+    private FolderTreeItem folderTreeRoot;
     
     public FolderScreen(IncomingMailClient client) {
         super("Folders");
@@ -72,9 +75,9 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         
         acctCache = new AccountCache(this.client.getAcctConfig().getAcctName());
 
-        FolderTreeItem treeRoot = acctCache.loadFolderTree();
-        if(treeRoot != null && treeRoot.hasChildren()) {
-            generateFolderTree(treeRoot);
+        folderTreeRoot = acctCache.loadFolderTree();
+        if(folderTreeRoot != null && folderTreeRoot.hasChildren()) {
+            generateFolderTree(folderTreeRoot);
             loadFolderMetadata();
         }
         else {
@@ -101,13 +104,16 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             openSelectedFolder();
         }
     };
-
-    private MenuItem refreshItem = new MenuItem("Refresh", 110, 10) {
+    private MenuItem refreshStatusItem = new MenuItem("Refresh status", 110, 10) {
+        public void run() {
+            refreshFolderStatus();
+        }
+    };
+    private MenuItem refreshItem = new MenuItem("Refresh folders", 111, 10) {
         public void run() {
             refreshFolderTree();
         }
     };
-    
     private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
         public void run() {
             UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
@@ -116,6 +122,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
 
     protected void makeMenu(Menu menu, int instance) {
         menu.add(folderItem);
+        menu.add(refreshStatusItem);
         menu.add(refreshItem);
         menu.add(compositionItem);
         super.makeMenu(menu, instance);
@@ -129,9 +136,21 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
                              int indent)
     {
         Object cookie = treeField.getCookie( node );
+        Font origFont = graphics.getFont();
         if( cookie instanceof FolderTreeItem ) {
             FolderTreeItem item = (FolderTreeItem)cookie;
-            graphics.drawText( item.getName(), indent, y, Graphics.ELLIPSIS, width );
+            StringBuffer buf = new StringBuffer();
+            buf.append(item.getName());
+            if(item.getUnseenCount() > 0) {
+                buf.append(" (");
+                buf.append(Integer.toString(item.getUnseenCount()));
+                buf.append(")");
+                graphics.setFont(origFont.derive(Font.BOLD));
+            }
+            else {
+                graphics.setFont(origFont.derive(Font.PLAIN));
+            }
+            graphics.drawText( buf.toString(), indent, y, Graphics.ELLIPSIS, width );
         }
     }
     
@@ -242,6 +261,20 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         refreshFolderTreeHandler.start();
     }
 
+    /**
+     * Kick off the folder status refresh process
+     */
+    public void refreshFolderStatus() {
+        // Initialize the handler on demand
+        if(refreshFolderStatusHandler == null) {
+            refreshFolderStatusHandler = new RefreshFolderStatusHandler(folderTreeRoot);
+            refreshFolderStatusHandler.setListener(this);
+        }
+        
+        // Start the background process
+        refreshFolderStatusHandler.start();
+    }
+
     private void openSelectedFolder() {
     	if(treeField == null) {
             return;
@@ -286,6 +319,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     
     public void generateFolderTreeHelper(TreeField tree, int parent, FolderTreeItem item) {
         int id = (item.getParent() == null) ? 0 : tree.addChildNode(parent, item);
+        treeField.invalidateNode(id);
 
         if(item.hasChildren()) {
             FolderTreeItem[] children = item.children();
@@ -299,7 +333,15 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         if(source.equals(refreshFolderTreeHandler)) {
             if(refreshFolderTreeHandler.getFolderRoot() != null) {
                 synchronized(Application.getEventLock()) {
-                    generateFolderTree(refreshFolderTreeHandler.getFolderRoot());
+                    folderTreeRoot = refreshFolderTreeHandler.getFolderRoot();
+                    generateFolderTree(folderTreeRoot);
+                }
+            }
+        }
+        else if(source.equals(refreshFolderStatusHandler)) {
+            synchronized(Application.getEventLock()) {
+                if(folderTreeRoot != null) {
+                    generateFolderTree(folderTreeRoot);
                 }
             }
         }
@@ -337,4 +379,23 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         }
     }
 
+    /**
+     * Implements the folder status refresh action
+     */
+    private class RefreshFolderStatusHandler extends MailClientHandler {
+        private FolderTreeItem folderRoot;
+        public RefreshFolderStatusHandler(FolderTreeItem folderRoot) {
+            super(FolderScreen.this.client, "Refreshing folder status");
+            this.folderRoot = folderRoot;
+        }
+        public void runSession() throws IOException, MailException {
+            // Open a connection to the IMAP server, and update
+            // the folder status
+            try {
+                ((IncomingMailClient)client).refreshFolderStatus(folderRoot);
+            } catch (MailException exp) {
+                throw exp;
+            }
+        }
+    }
 }

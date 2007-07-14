@@ -258,6 +258,27 @@ public class Connection {
     }
     
     /**
+     * Sends a string to the server. This method is used to bypass all
+     * the processing done by the normal send method, and is most useful
+     * for bulk transmissions.  It writes the provided string to the socket
+     * in a single command, followed by a flush.
+     *
+     * @see #send
+     */
+    public void sendRaw(String s) throws IOException {
+        byte[] bytes = s.getBytes();
+        int length = bytes.length;
+        
+        if (debug) {
+            System.out.println("[SEND] " + s);
+        }
+
+        output.write(bytes, 0, bytes.length);
+        
+        output.flush();
+    }
+
+    /**
      * Receives a string from the server. This method is used internally for
      * incoming communication from the server. The main thing it does is
      * ensuring that only complete lines are returned to the application, that is,

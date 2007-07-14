@@ -47,6 +47,7 @@ public class FolderTreeItem implements Serializable {
     private String path;
     private String delim;
     private int msgCount;
+    private int unseenCount;
 
     /**
      * Create a root folder tree item.
@@ -60,6 +61,7 @@ public class FolderTreeItem implements Serializable {
         this.path = path;
         this.delim = delim;
         this.msgCount = -1;
+        this.unseenCount = -1;
         this.children = null;
     }
     
@@ -76,6 +78,7 @@ public class FolderTreeItem implements Serializable {
         this.path = path;
         this.delim = delim;
         this.msgCount = -1;
+        this.unseenCount = -1;
         this.children = null;
     }
     
@@ -156,5 +159,13 @@ public class FolderTreeItem implements Serializable {
 
     public void setMsgCount(int msgCount) {
         this.msgCount = msgCount;
+    }
+    
+    public int getUnseenCount() {
+        return unseenCount;
+    }
+    
+    public void setUnseenCount(int unseenCount) {
+        this.unseenCount = unseenCount;
     }
 }

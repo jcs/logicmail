@@ -328,6 +328,63 @@ public class ImapProtocol {
     }
     
     /**
+     * Container for a STATUS response
+     */
+    public static class StatusResponse {
+        public int exists;
+        public int unseen;
+    }
+    
+    public StatusResponse[] executeStatus(String[] mboxpaths) throws IOException, MailException {
+        StatusResponse[] response = new StatusResponse[mboxpaths.length];
+        String[] arguments = new String[mboxpaths.length];
+        
+        int i;
+        for(i = 0; i < mboxpaths.length; i++) {
+            arguments[i] = "\""+mboxpaths[i]+"\" (MESSAGES UNSEEN)";
+        }
+        String[] result = executeBatch("STATUS", arguments);
+        if(result == null || result.length != arguments.length) {
+            throw new MailException("Unable to query folder status");
+        }
+        
+        for(i = 0; i < arguments.length; i++) {
+            response[i] = new StatusResponse();
+
+            if(result[i] == null) {
+                continue;
+            }
+            
+            int p = result[i].indexOf('(');
+            int q = result[i].indexOf(')');
+            
+            if(p == -1 || q == -1 || p >= q) {
+                continue;
+            }
+
+            String[] fields = StringParser.parseTokenString(result[i].substring(p+1, q), " ");
+            if(fields.length != 4) {
+                continue;
+            }
+
+            for(int j = 0; j < fields.length; j+=2) {
+                if(fields[j].equalsIgnoreCase("MESSAGES")) {
+                    try {
+                        response[i].exists = Integer.parseInt(fields[j+1]);
+                    } catch (NumberFormatException e) { }
+                }
+                else if(fields[j].equalsIgnoreCase("UNSEEN")) {
+                    try {
+                        response[i].unseen = Integer.parseInt(fields[j+1]);
+                    } catch (NumberFormatException e) { }
+                }
+            }
+        }
+        
+        return response;
+    }
+    
+    /**
      * Container for a FETCH (ENVELOPE) response
      */
     public static class FetchEnvelopeResponse {
@@ -565,6 +622,57 @@ public class ImapProtocol {
         }
         
         return retVec;
+    }
+
+    /**
+     * Executes an IMAP command several times, with different arguments,
+     * and return the replies as an array of strings.
+     * @param command IMAP command
+     * @param arguments Arguments for the commands
+     * @return List of returned strings
+     */
+    protected String[] executeBatch(String command, String[] arguments)
+        throws IOException, MailException
+    {
+        String[] result = new String[arguments.length];
+        int count = 0;
+        
+        Hashtable commandMap = new Hashtable();
+        StringBuffer commandBuf = new StringBuffer();
+        
+        for(int i = 0; i < arguments.length; i++) {
+            String tag = "A" + (commandCount++);
+            commandMap.put(tag, new Integer(i));
+            commandBuf.append(tag);
+            commandBuf.append(' ');
+            commandBuf.append(command);
+            commandBuf.append((arguments[i] == null ? "" : " " + arguments[i]));
+            commandBuf.append("\r\n");
+        }
+        connection.sendRaw(commandBuf.toString());
+
+        String temp;
+        String tempResult = "";
+        int p;
+        
+        while (count < arguments.length) {
+            temp = connection.receive();
+            if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
+                throw new MailException(temp);
+            }
+            
+            p = temp.indexOf(" ");
+            if(p != -1 && commandMap.containsKey(temp.substring(0, p))) {
+                result[((Integer)commandMap.get(temp.substring(0, p))).intValue()] = tempResult;
+                tempResult = "";
+                count++;
+            }
+            else {
+                tempResult = temp;
+            }
+        }
+
+        return result;
     }
 
     /**

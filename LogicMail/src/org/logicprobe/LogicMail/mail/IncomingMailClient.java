@@ -72,6 +72,16 @@ public interface IncomingMailClient extends MailClient {
         throws IOException, MailException;
     
     /**
+     * Refresh the folder status across the folder tree.
+     *
+     * @param root The root of the folder tree
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract void refreshFolderStatus(FolderTreeItem root)
+        throws IOException, MailException;
+    
+    /**
      * Get the active mail folder.
      * This method is only useful if the protocol supports
      * folders, and should otherwise return null or
