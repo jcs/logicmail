@@ -1,25 +1,25 @@
 <loader version="1.0">
 	<application id="LogicMail">
-		<name >
+		<name>
 			LogicMail
 		</name>
-		<description >
-			
+		<description>
+			LogicMail for BlackBerry
 		</description>
-		<version >
-			0.2.20070623
+		<version>
+			0.3.0
 		</version>
-		<vendor >
-			Logicprobe
+		<vendor>
+			Derek Konigsberg
 		</vendor>
-		<copyright >
+		<copyright>
 			Copyright (c) 2007, Derek Konigsberg
 		</copyright>
 		<fileset Java="1.24">
-			<directory >
+			<directory>
 				
 			</directory>
-			<files >
+			<files>
 				LogicMail.cod
 			</files>
 		</fileset>

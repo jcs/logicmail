@@ -1,0 +1,128 @@
+******************************************************************************
+ Copyright (c) 2006, Derek Konigsberg
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met: 
+
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer. 
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution. 
+ 3. Neither the name of the project nor the names of its
+    contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ OF THE POSSIBILITY OF SUCH DAMAGE.
+
+******************************************************************************
+
+ File: LogicMail/src/org/logicprobe/LogicMail/util/Connection.java
+
+ ----------------------------------------------------------------------------
+
+ Portions of this file originated from:
+ 
+  Mail4ME - Mail for the Java 2 Micro Edition
+ 
+  A lightweight, J2ME- (and also J2SE-) compatible package for sending and
+  receiving Internet mail messages using the SMTP and POP3 protocols.
+ 
+  Copyright (c) 2000-2002 Jorg Pleumann <joerg@pleumann.de>
+ 
+  Mail4ME is part of the EnhydraME family of projects. See the following web
+  sites for more information:
+ 
+  -> http://mail4me.enhydra.org
+  -> http://me.enhydra.org
+ 
+  Mail4ME is distributed under the Enhydra Public License (EPL)
+
+******************************************************************************
+
+ File: LogicMail/src/org/logicprobe/LogicMail/util/MD5.java
+
+ This file is a modified version of the one covered by the license below.
+ The modifications involved changes in the public interface, general
+ formatting, and size reduction.
+ While the RIM API includes an MD5Digest class, it requires a digitally signed
+ binary to be usable.  Since requiring code signing would impose an undesirable
+ restriction on this project, this alternative implementation is provided.
+
+ ----------------------------------------------------------------------------
+
+ Fast implementation of RSA's MD5 hash generator in Java JDK Beta-2 or higher.
+
+ Originally written by Santeri Paavolainen, Helsinki Finland 1996.
+ (c) Santeri Paavolainen, Helsinki Finland 1996<br>
+ Many changes Copyright (c) 2002 - 2005 Timothy W Macinta<br>
+
+ This library is free software; you can redistribute it and/or modify it under
+ the terms of the GNU Library General Public License as published by the Free
+ Software Foundation; either version 2.1 of the License, or (at your option)
+ any later version.
+
+ This library is distributed in the hope that it will be useful, but WITHOUT
+ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ FOR A PARTICULAR PURPOSE. See the GNU Library General Public License for more
+ details.
+
+ You should have received a copy of the GNU Library General Public License
+ along with this library; if not, write to the Free Software Foundation, Inc.,
+ 675 Mass Ave, Cambridge, MA 02139, USA.
+
+ See http://www.twmacinta.com/myjava/fast_md5.php for more information on this
+ file and the related files.
+
+ This was originally a rather straight re-implementation of the reference
+ implementation given in RFC1321 by RSA. It passes the MD5 test suite as
+ defined in RFC1321.
+
+ Many optimizations made by Timothy W Macinta. Reduced time to checksum a test
+ file in Java alone to roughly half the time taken compared with
+ java.security.MessageDigest (within an intepretter). Also added an optional
+ native method to reduce the time even further. See
+ http://www.twmacinta.com/myjava/fast_md5.php for further information on the
+ time improvements achieved.
+
+ Some bug fixes also made by Timothy W Macinta.
+
+ This Java class has been derived from the RSA Data Security, Inc. MD5
+ Message-Digest Algorithm and its reference implementation.
+
+******************************************************************************
+
+ File: LogicMail/src/org/logicprobe/LogicMail/util/bb40/Base64.java
+
+ This file is a modified version of the one covered by the comments below.
+ The modifications involved removing unused functionality and general formatting.
+ While the BB v4.1 API includes a Base64 encoder and decoder, the v4.0 API does
+ not.  This class exists to provide support for BB v4.0 devices.
+
+ ----------------------------------------------------------------------------
+
+ Encodes and decodes to and from Base64 notation.
+ Homepage: http://iharder.net/base64
+ Author: Robert Harder <rob@iharder.net>
+ Version 2.2.1
+
+ I am placing this code in the Public Domain. Do with it as you will.
+ This software comes with no guarantees or warranties but with
+ plenty of well-wishing instead!
+ Please visit http://iharder.net/base64
+ periodically to check for updates or to contribute improvements.
+
+******************************************************************************

@@ -1,4 +1,18 @@
-2007-07-24  Derek Konigsberg  <octo@logicprobe.org>
+2007-07-15  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Remember folder expansion state (#7)
+	* Compatability fixes for servers which reply to FETCH arguments out-of-order (#29)
+	* Cleanup after open connections upon exit (#28)
+	* Added ability to show unread counts in folder tree (#27)
+	* Fixed date format in E-Mail headers (#26)
+	* Intelligent bad password handling (#19)
+	* Login-time password prompts (#18)
+	* Message forward capability (#16)
+	* Message reply capability (#15)
+	* Configure message "Signature" (#14)
+	* Configure "From" address (#13)
+
+2007-06-24  Derek Konigsberg  <octo@logicprobe.org>
 
 	* Changed configuration serialization from the original simple format
         into a serialized hashtable format.
@@ -7,8 +21,8 @@
         : The simpler format had a side-effect of breaking stored configurations
         : with every single change.
 
-=== LogicMail 0.2.20070723 (snapshot) ===
-2007-07-23  Derek Konigsberg  <octo@logicprobe.org>
+=== LogicMail 0.2.20070623 (snapshot) ===
+2007-06-23  Derek Konigsberg  <octo@logicprobe.org>
 
 	* IMAP: Fixed a bug with empty folders
 	* IMAP: Implemented rudimentary NAMESPACE support to make it possible to
