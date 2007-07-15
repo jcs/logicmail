@@ -38,6 +38,7 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.util.Connection;
 
 /**
  * This class is the base for all screens in LogicMail.
@@ -77,7 +78,15 @@ public abstract class BaseScreen extends MainScreen {
     };
     private MenuItem exitItem = new MenuItem("Exit", 200001, 10) {
         public void run() {
-            System.exit(0);
+            if(Connection.hasOpenConnections()) {
+                if(Dialog.ask(Dialog.D_YES_NO, "Close active connections and exit?") == Dialog.YES) {
+                    Connection.closeAllConnections();
+                    System.exit(0);
+                }
+            }
+            else {
+                System.exit(0);
+            }
         }
     };
 

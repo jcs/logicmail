@@ -62,6 +62,7 @@ package org.logicprobe.LogicMail.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Vector;
 import javax.microedition.io.SocketConnection;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.Connector;
@@ -113,11 +114,11 @@ public class Connection {
      * Holds the actual number of bytes in the buffer.
      */
     private int count;
-    
+
     /**
-     * Holds the position of the next byte to be read from the buffer.
+     * Holds a list of open connections
      */
-    //private int position;
+    private static Vector openConnections = new Vector();
     
     public Connection(String serverName, int serverPort, boolean useSSL, boolean deviceSide) {
         this.serverName = serverName;
@@ -135,6 +136,13 @@ public class Connection {
      */
     public void open() throws IOException {
         close();
+
+        synchronized(openConnections) {
+            if(!openConnections.contains(this)) {
+                openConnections.addElement(this);
+            }
+        }
+        
         String protocolStr = (useSSL ? "ssl" : "socket");
         // This param, which allows bypassing the MDS proxy, should probably
         // be a global user configurable option
@@ -165,6 +173,40 @@ public class Connection {
         if(socket != null) {
             socket.close();
             socket = null;
+        }
+
+        synchronized(openConnections) {
+            if(openConnections.contains(this)) {
+                openConnections.removeElement(this);
+            }
+        }
+    }
+    
+    /**
+     * Determine whether open connections exist
+     *
+     * @return True if there are open connections
+     */
+    public static boolean hasOpenConnections() {
+        boolean result;
+        synchronized(openConnections) {
+            result = !openConnections.isEmpty();
+        }
+        return result;
+    }
+    
+    /**
+     * Close all open connections
+     */
+    public static void closeAllConnections() {
+        synchronized(openConnections) {
+            int size = openConnections.size();
+            for(int i = 0; i < size; i++) {
+                try {
+                    ((Connection)openConnections.elementAt(i)).close();
+                } catch (IOException e) { }
+            }
+            openConnections.removeAllElements();
         }
     }
     
