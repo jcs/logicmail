@@ -148,9 +148,9 @@ public class Connection {
         String connectStr = protocolStr + "://" + serverName +
                 ":" + serverPort + paramStr;
         
-        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
             String msg = "Opening connection:\r\n"+connectStr+"\r\n";
-            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.DEBUG_INFO);
+            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.INFORMATION);
         }
         
         socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
@@ -158,13 +158,12 @@ public class Connection {
         output = socket.openDataOutputStream();
         localAddress = ((SocketConnection)socket).getLocalAddress();
 
-        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
             String msg =
                 "Connection established:\r\n"+
-                "Input: "+input.getClass().toString()+"\r\n"+
-                "Output: "+input.getClass().toString()+"\r\n"+
+                "Socket: "+socket.getClass().toString()+"\r\n"+
                 "Local address: "+localAddress+"\r\n";
-            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.DEBUG_INFO);
+            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.INFORMATION);
         }
     }
     
@@ -191,7 +190,7 @@ public class Connection {
             }
         }
         
-        EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(), EventLogger.DEBUG_INFO);
+        EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(), EventLogger.INFORMATION);
     }
     
     /**
