@@ -39,6 +39,9 @@ import net.rim.device.api.system.ApplicationDescriptor;
  * should come from the deployment descriptor.
  */
 public class AppInfo {
+    /** System event log GUID */
+    public static long GUID = 0x6bc611e33074e780L;
+    
     public static String getName() {
         ApplicationDescriptor appDesc =
                 ApplicationDescriptor.currentApplicationDescriptor();

@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 
 import java.io.IOException;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
@@ -45,6 +46,7 @@ import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.component.LabelField;
+import org.logicprobe.LogicMail.AppInfo;
 
 /**
  * Handle network interaction, wrapping with the appropriate
@@ -214,7 +216,7 @@ public abstract class MailClientHandler {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, true);
                     }
                 } catch (IOException exp) {
-                    System.out.println(exp);
+                    EventLogger.logEvent(AppInfo.GUID, exp.toString().getBytes(), EventLogger.ERROR);
                     showStatus("I/O Error", 2000);
                     try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
                     // Notify the listener of failure
@@ -222,14 +224,14 @@ public abstract class MailClientHandler {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, false);
                     }
                 } catch (MailException exp) {
-                    System.out.println("Protocol error: " + exp);
+                    EventLogger.logEvent(AppInfo.GUID, exp.toString().getBytes(), EventLogger.ERROR);
                     showStatus(exp.getMessage(), 10000);
                     // Notify the listener of failure
                     if(MailClientHandler.this.handlerListener != null) {
                         MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, false);
                     }
                 } catch (Exception exp) {
-                    System.out.println("Unknown error: " + exp);
+                    EventLogger.logEvent(AppInfo.GUID, exp.toString().getBytes(), EventLogger.ERROR);
                     showStatus("Unknown error", 2000);
                     try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
                     // Notify the listener of failure

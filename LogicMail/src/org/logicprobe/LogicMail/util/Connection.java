@@ -42,7 +42,7 @@
  * A lightweight, J2ME- (and also J2SE-) compatible package for sending and
  * receiving Internet mail messages using the SMTP and POP3 protocols.
  *
- * Copyright (c) 2000-2002 Jrg Pleumann <joerg@pleumann.de>
+ * Copyright (c) 2000-2002 Jorg Pleumann <joerg@pleumann.de>
  *
  * Mail4ME is part of the EnhydraME family of projects. See the following web
  * sites for more information:
@@ -66,6 +66,8 @@ import java.util.Vector;
 import javax.microedition.io.SocketConnection;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.Connector;
+import net.rim.device.api.system.EventLogger;
+import org.logicprobe.LogicMail.AppInfo;
 
 /**
  * Is the abstract base class for socket connections used inside the SMTP,
@@ -101,11 +103,6 @@ public class Connection {
     private static final byte[] CRLF = new byte[] {13, 10};
     
     /**
-     * If true, protocol debugging information is written to standard output.
-     */
-    private boolean debug;
-    
-    /**
      * Provides a buffer used for incoming data.
      */
     private byte[] buffer = new byte[128];
@@ -125,7 +122,6 @@ public class Connection {
         this.serverPort = serverPort;
         this.useSSL = useSSL;
         this.deviceSide = deviceSide;
-        this.debug = false;
         this.input = null;
         this.output = null;
         this.socket = null;
@@ -135,7 +131,9 @@ public class Connection {
      * Opens a connection.
      */
     public void open() throws IOException {
-        close();
+        if(input != null || output != null || socket != null) {
+            close();
+        }
 
         synchronized(openConnections) {
             if(!openConnections.contains(this)) {
@@ -149,13 +147,25 @@ public class Connection {
         String paramStr = (deviceSide ? ";deviceside=true" : "");
         String connectStr = protocolStr + "://" + serverName +
                 ":" + serverPort + paramStr;
-        if (debug) {
-            System.out.println("[OPEN] " + connectStr);
+        
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            String msg = "Opening connection:\r\n"+connectStr+"\r\n";
+            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.DEBUG_INFO);
         }
+        
         socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
         input = socket.openDataInputStream();
         output = socket.openDataOutputStream();
         localAddress = ((SocketConnection)socket).getLocalAddress();
+
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            String msg =
+                "Connection established:\r\n"+
+                "Input: "+input.getClass().toString()+"\r\n"+
+                "Output: "+input.getClass().toString()+"\r\n"+
+                "Local address: "+localAddress+"\r\n";
+            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.DEBUG_INFO);
+        }
     }
     
     /**
@@ -180,6 +190,8 @@ public class Connection {
                 openConnections.removeElement(this);
             }
         }
+        
+        EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(), EventLogger.DEBUG_INFO);
     }
     
     /**
@@ -254,9 +266,7 @@ public class Connection {
          * Special case for empty strings: Only CR/LF is sent.
          */
         if (s.length() == 0) {
-            if (debug) {
-                System.out.println("[SEND]");
-            }
+            EventLogger.logEvent(AppInfo.GUID, "[SEND]".getBytes(), EventLogger.DEBUG_INFO);
             
             output.write(CRLF, 0, 2);
         }
@@ -276,9 +286,7 @@ public class Connection {
                     j++;
                 }
                 
-                if (debug) {
-                    System.out.println("[SEND] " + s.substring(i, j));
-                }
+                EventLogger.logEvent(AppInfo.GUID, ("[SEND] " + s.substring(i, j)).getBytes(), EventLogger.DEBUG_INFO);
                 
                 /**
                  * Write the string up to there and terminate it properly.
@@ -296,7 +304,7 @@ public class Connection {
                 i = j + 1;
             }
         }
-        output.flush(); // I can't believe this wasn't here before (DK)
+        output.flush();
     }
     
     /**
@@ -311,9 +319,7 @@ public class Connection {
         byte[] bytes = s.getBytes();
         int length = bytes.length;
         
-        if (debug) {
-            System.out.println("[SEND] " + s);
-        }
+        EventLogger.logEvent(AppInfo.GUID, ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
 
         output.write(bytes, 0, bytes.length);
         
@@ -385,8 +391,7 @@ public class Connection {
                 if (actual == -1) {
                     try {
                         close();
-                    } catch (IOException ignored) {
-                    }
+                    } catch (IOException e) { }
                     
                     throw new IOException("Connection closed");
                 }
@@ -398,8 +403,7 @@ public class Connection {
                 else if (actual == 0) {
                     try {
                         Thread.yield();
-                    } catch (Exception ignored) {
-                    }
+                    } catch (Exception e) { }
                 }
                 
                 /**
@@ -438,30 +442,9 @@ public class Connection {
             resultBuffer.append(new String(buffer, 0, count));
         }
         
-        if (debug) {
-            System.out.println("[RECV] " + resultBuffer.toString());
-        }
+        EventLogger.logEvent(AppInfo.GUID, ("[RECV] " + resultBuffer.toString()).getBytes(), EventLogger.DEBUG_INFO);
         
         return resultBuffer.toString();
-    }
-    
-    /**
-     * Controls the output of debugging information to standard output. Set it to
-     * true to see all protocol information exchanged.
-     *
-     * @see #getDebug
-     */
-    public void setDebug(boolean debug) {
-        this.debug = debug;
-    }
-    
-    /**
-     * Queries the current value of the debugging flag.
-     *
-     * @see #setDebug
-     */
-    public boolean getDebug() {
-        return debug;
     }
 }
 

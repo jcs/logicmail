@@ -31,15 +31,31 @@
 
 package org.logicprobe.LogicMail;
 
+import java.util.Calendar;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.UiApplication;
 import org.logicprobe.LogicMail.ui.AccountScreen;
 import org.logicprobe.LogicMail.conf.MailSettings;
+
+/*
+ * Logging levels:
+ *  EventLogger.ALWAYS_LOG   = 0
+ *  EventLogger.SEVERE_ERROR = 1
+ *  EventLogger.ERROR        = 2
+ *  EventLogger.WARNING      = 3
+ *  EventLogger.INFORMATION  = 4
+ *  EventLogger.DEBUG_INFO   = 5
+ */
 
 /**
  * Main class for the application
  */
 public class LogicMail extends UiApplication {
     public static void main(String argv[]) {
+        // Register with the event logger
+        EventLogger.register(AppInfo.GUID, "LogicMail", EventLogger.VIEWER_STRING);
+        
+        // Start the application
         LogicMail app = new LogicMail();
         app.enterEventDispatcher();
     }
@@ -48,6 +64,22 @@ public class LogicMail extends UiApplication {
         // Load the configuration
         MailSettings.getInstance().loadSettings();
 
+        // Log application startup information
+        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("Application startup\r\n");
+            buf.append("Date: ");
+            buf.append(Calendar.getInstance().getTime().toString());
+            buf.append("\r\n");
+            buf.append("Name: ");
+            buf.append(AppInfo.getName());
+            buf.append("\r\n");
+            buf.append("Version: ");
+            buf.append(AppInfo.getVersion());
+            buf.append("\r\n");
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
+        }
+        
         pushScreen(new AccountScreen());
     }
 } 
