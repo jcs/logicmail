@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail.mail.imap;
 
 import java.util.Calendar;
 import java.util.Vector;
+import net.rim.device.api.system.EventLogger;
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.*;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
@@ -93,6 +95,10 @@ class ImapParser {
     static MessageEnvelope parseMessageEnvelope(Vector parsedEnv) {
         // Sanity checking
         if(parsedEnv.size() < 10) {
+           EventLogger.logEvent(
+               AppInfo.GUID,
+               "ImapParser.parseMessageEnvelope: Sanity check failed".getBytes(),
+               EventLogger.WARNING);
            return generateDummyEnvelope();
         }
             
@@ -205,12 +211,22 @@ class ImapParser {
         try {
             parsedText = StringParser.nestedParenStringLexer(rawText.substring(rawText.indexOf('(')));
         } catch (Exception exp) {
+            EventLogger.logEvent(
+                AppInfo.GUID,
+                ("ImapParser.parseMessageStructure: " +
+                "Caught exception when parsing input:\r\n"+
+                exp.toString()).getBytes(),
+                EventLogger.WARNING);
             return null;
         }
 
         // Sanity checking
         if(parsedText.size() < 2 ||
            !(parsedText.elementAt(1) instanceof Vector)) {
+           EventLogger.logEvent(
+               AppInfo.GUID,
+               "ImapParser.parseMessageStructure: Sanity check failed".getBytes(),
+               EventLogger.WARNING);
            return null;
         }
         

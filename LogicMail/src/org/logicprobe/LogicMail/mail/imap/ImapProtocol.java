@@ -34,7 +34,9 @@ package org.logicprobe.LogicMail.mail.imap;
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.Connection;
@@ -83,6 +85,13 @@ public class ImapProtocol {
      * @return True on success, false on authentication failures
      */
     public boolean executeLogin(String username, String password) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeLogin(\""+username+"\", \""+password+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
         // Authenticate with the server
         try {
             execute("LOGIN", "\""+ username + "\" \"" + password + "\"");
@@ -98,6 +107,13 @@ public class ImapProtocol {
      * Execute the "LOGOUT" command
      */
     public void executeLogout() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeLogout()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+       
         execute("LOGOUT", null);
     }
     
@@ -105,6 +121,13 @@ public class ImapProtocol {
      * Execute the "CLOSE" command
      */
     public void executeClose() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeClose()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+
         execute("CLOSE", null);
     }
     
@@ -114,6 +137,13 @@ public class ImapProtocol {
      * value "true" for every capability that exists in the reply.
      */
     public Hashtable executeCapability() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeCapability()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+
         String replyText[] = execute("CAPABILITY", null);
         if(replyText == null || replyText.length < 1) {
             throw new MailException("Unable to query server capabilities");
@@ -158,6 +188,13 @@ public class ImapProtocol {
      * @return A fully populated Namespace object
      */
     public NamespaceResponse executeNamespace() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeNamespace()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+
         String replyText[] = execute("NAMESPACE", null);
         if(replyText == null || replyText.length < 1) {
             throw new MailException("Unable to query server namespaces");
@@ -262,6 +299,13 @@ public class ImapProtocol {
      * @return Parsed response object
      */
     public SelectResponse executeSelect(String mboxpath) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeSelect(\""+mboxpath+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+
         String replyText[] = execute("SELECT", "\""+mboxpath+"\"");
         SelectResponse response = new SelectResponse();
 
@@ -336,6 +380,24 @@ public class ImapProtocol {
     }
     
     public StatusResponse[] executeStatus(String[] mboxpaths) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("ImapProtocol.executeStatus({\r\n");
+            if(mboxpaths == null) {
+                buf.append("  null\r\n");
+            }
+            else {
+                for(int i=0; i<mboxpaths.length; i++) {
+                    buf.append("  \""+mboxpaths[i]+"\"\r\n");
+                }
+            }
+            buf.append("})");
+            EventLogger.logEvent(
+                AppInfo.GUID,
+                buf.toString().getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
         StatusResponse[] response = new StatusResponse[mboxpaths.length];
         String[] arguments = new String[mboxpaths.length];
         
@@ -400,6 +462,13 @@ public class ImapProtocol {
      * @return Array of FetchEnvelopeResponse objects
      */
     public FetchEnvelopeResponse[] executeFetchEnvelope(int firstIndex, int lastIndex) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeFetchEnvelope("+firstIndex+", "+lastIndex+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
         String[] rawList = execute("FETCH",
                                    Integer.toString(firstIndex) + ":" +
                                    Integer.toString(lastIndex) +
@@ -491,6 +560,13 @@ public class ImapProtocol {
      * @return Body structure tree
      */
     public ImapParser.MessageSection executeFetchBodystructure(int index) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeFetchBodyStructure("+index+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
         String[] rawList = execute("FETCH", index + " (BODYSTRUCTURE)");
 
         // Pre-process the returned text to clean up mid-field line breaks
@@ -533,6 +609,13 @@ public class ImapProtocol {
      * @return Body text as a string
      */
     public String executeFetchBody(int index, String address) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeFetchBody("+index+", \""+address+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+
         String[] rawList = execute("FETCH", index + " (BODY["+ address +"])");
 
         if(rawList.length <= 1) {
@@ -566,6 +649,13 @@ public class ImapProtocol {
      * @return Vector of ListResponse objects
      */
     public Vector executeList(String refName, String mboxName) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeList(\""+refName+"\", \""+mboxName+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
         String[] results;
         results = execute("LIST", "\""+refName+"\" \""+mboxName+"\"");
         

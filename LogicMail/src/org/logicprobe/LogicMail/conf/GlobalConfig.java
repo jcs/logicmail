@@ -56,6 +56,8 @@ public class GlobalConfig implements Serializable {
     private int popMaxLines;
     /** Message signature */
     private String msgSignature;
+    /** Connection debugging */
+    private boolean connDebug;
 
     public GlobalConfig() {
         setDefaults();
@@ -135,6 +137,14 @@ public class GlobalConfig implements Serializable {
         this.msgSignature = msgSignature;
     }
 
+    public boolean getConnDebug() {
+        return connDebug;
+    }
+    
+    public void setConnDebug(boolean connDebug) {
+        this.connDebug = connDebug;
+    }
+    
     public void serialize(DataOutputStream output) throws IOException {
         SerializableHashtable table = new SerializableHashtable();
         
@@ -145,6 +155,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_imapMaxFolderDepth", new Integer(imapMaxFolderDepth));
         table.put("global_popMaxLines", new Integer(popMaxLines));
         table.put("global_msgSignature", msgSignature);
+        table.put("global_connDebug", new Boolean(connDebug));
         
         table.serialize(output);
     }
@@ -182,6 +193,10 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_msgSignature");
         if(value != null && value instanceof String) {
             msgSignature = (String)value;
+        }
+        value = table.get("global_connDebug");
+        if(value != null && value instanceof Boolean) {
+            connDebug = ((Boolean)value).booleanValue();
         }
     }
 }

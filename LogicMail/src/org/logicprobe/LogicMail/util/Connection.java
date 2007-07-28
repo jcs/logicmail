@@ -68,6 +68,8 @@ import javax.microedition.io.StreamConnection;
 import javax.microedition.io.Connector;
 import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
 
 /**
  * Is the abstract base class for socket connections used inside the SMTP,
@@ -94,6 +96,7 @@ public class Connection {
     private boolean deviceSide;
     private StreamConnection socket;
     private String localAddress;
+    private GlobalConfig globalConfig;
     protected InputStream input;
     protected OutputStream output;
     
@@ -125,6 +128,7 @@ public class Connection {
         this.input = null;
         this.output = null;
         this.socket = null;
+        this.globalConfig = MailSettings.getInstance().getGlobalConfig();
     }
     
     /**
@@ -265,7 +269,9 @@ public class Connection {
          * Special case for empty strings: Only CR/LF is sent.
          */
         if (s.length() == 0) {
-            EventLogger.logEvent(AppInfo.GUID, "[SEND]".getBytes(), EventLogger.DEBUG_INFO);
+            if(globalConfig.getConnDebug()) {
+                EventLogger.logEvent(AppInfo.GUID, "[SEND]".getBytes(), EventLogger.DEBUG_INFO);
+            }
             
             output.write(CRLF, 0, 2);
         }
@@ -285,7 +291,9 @@ public class Connection {
                     j++;
                 }
                 
-                EventLogger.logEvent(AppInfo.GUID, ("[SEND] " + s.substring(i, j)).getBytes(), EventLogger.DEBUG_INFO);
+                if(globalConfig.getConnDebug()) {
+                    EventLogger.logEvent(AppInfo.GUID, ("[SEND] " + s.substring(i, j)).getBytes(), EventLogger.DEBUG_INFO);
+                }
                 
                 /**
                  * Write the string up to there and terminate it properly.
@@ -318,8 +326,10 @@ public class Connection {
         byte[] bytes = s.getBytes();
         int length = bytes.length;
         
-        EventLogger.logEvent(AppInfo.GUID, ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
-
+        if(globalConfig.getConnDebug()) {
+            EventLogger.logEvent(AppInfo.GUID, ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
+        }
+        
         output.write(bytes, 0, bytes.length);
         
         output.flush();
@@ -388,6 +398,7 @@ public class Connection {
                  * any errors that might result from this.
                  */
                 if (actual == -1) {
+                    EventLogger.logEvent(AppInfo.GUID, "Unable to read from socket, closing connection".getBytes(), EventLogger.INFORMATION);
                     try {
                         close();
                     } catch (IOException e) { }
@@ -441,7 +452,9 @@ public class Connection {
             resultBuffer.append(new String(buffer, 0, count));
         }
         
-        EventLogger.logEvent(AppInfo.GUID, ("[RECV] " + resultBuffer.toString()).getBytes(), EventLogger.DEBUG_INFO);
+        if(globalConfig.getConnDebug()) {
+            EventLogger.logEvent(AppInfo.GUID, ("[RECV] " + resultBuffer.toString()).getBytes(), EventLogger.DEBUG_INFO);
+        }
         
         return resultBuffer.toString();
     }

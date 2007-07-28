@@ -36,6 +36,7 @@ import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.ButtonField;
+import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
@@ -54,6 +55,7 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     private BasicEditField fldImapMaxMsgSize;
     private BasicEditField fldImapMaxFolderDepth;
     private BasicEditField fldPopMaxLines;
+    private CheckboxField fldConnDebug;
     private AutoTextEditField fldSignature;
     
     private ButtonField btSave;
@@ -95,6 +97,9 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
         fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldPopMaxLines);
 
+        fldConnDebug = new CheckboxField("Connection debugging", config.getConnDebug());
+        add(fldConnDebug);
+        
         add(new SeparatorField());
         add(new RichTextField("Signature:", Field.NON_FOCUSABLE));
         add(fldSignature = new AutoTextEditField());
@@ -134,6 +139,7 @@ public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
         try {
             config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
         } catch (Exception e) { }
+        config.setConnDebug(fldConnDebug.getChecked());
         config.setMsgSignature(fldSignature.getText());
         mailSettings.saveSettings();
     }
