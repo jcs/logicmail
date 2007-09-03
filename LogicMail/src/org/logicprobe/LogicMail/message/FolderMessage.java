@@ -31,12 +31,15 @@
 
 package org.logicprobe.LogicMail.message;
 
+import org.logicprobe.LogicMail.util.EventListenerList;
+
 /**
  * This class provides a message in the context of a folder.
  * It contains the message's envelope, along with other information
  * only relevant when looking at a view of the folder.
  */
 public class FolderMessage {
+    EventListenerList listenerList = new EventListenerList();
     private MessageEnvelope envelope;
     private int index;
     private boolean seen;
@@ -83,7 +86,10 @@ public class FolderMessage {
      * Set the flag indicating whether this message has been previously viewed
      */
     public void setSeen(boolean seen) {
-        this.seen = seen;
+        if(this.seen != seen) {
+            this.seen = seen;
+            fireFlagsChanged();
+        }
     }
 
     /**
@@ -97,7 +103,10 @@ public class FolderMessage {
      * Set the flag indicating whether this message has been replied to
      */
     public void setAnswered(boolean answered) {
-        this.answered = answered;
+        if(this.answered != answered) {
+            this.answered = answered;
+            fireFlagsChanged();
+        }
     }
 
     /**
@@ -111,7 +120,10 @@ public class FolderMessage {
      * Set the flag indicating whether this message has been flagged
      */
     public void setFlagged(boolean flagged) {
-        this.flagged = flagged;
+        if(this.flagged != flagged) {
+            this.flagged = flagged;
+            fireFlagsChanged();
+        }
     }
 
     /**
@@ -125,7 +137,10 @@ public class FolderMessage {
      * Set the flag indicating whether this message has been marked as deleted
      */
     public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
+        if(this.deleted != deleted) {
+            this.deleted = deleted;
+            fireFlagsChanged();
+        }
     }
 
     /**
@@ -139,7 +154,10 @@ public class FolderMessage {
      * Set the flag indicating whether this message is a draft
      */
     public void setDraft(boolean draft) {
-        this.draft = draft;
+        if(this.draft != draft) {
+            this.draft = draft;
+            fireFlagsChanged();
+        }
     }
 
     /**
@@ -153,7 +171,32 @@ public class FolderMessage {
      * Set the flag indicating whether this message has recently arrived
      */
     public void setRecent(boolean recent) {
-        this.recent = recent;
+        if(this.recent != recent) {
+            this.recent = recent;
+            fireFlagsChanged();
+        }
     }
     
+    public void addFolderMessageListener(FolderMessageListener l) {
+        listenerList.add(FolderMessageListener.class, l);
+    }
+
+    public void removeFolderMessageListener(FolderMessageListener l) {
+        listenerList.remove(FolderMessageListener.class, l);
+    }
+    
+    public FolderMessageListener[] getFolderMessageListeners() {
+        return (FolderMessageListener[])listenerList.getListeners(FolderMessageListener.class);
+    }
+    
+    protected void fireFlagsChanged() {
+        Object[] listeners = listenerList.getListeners(FolderMessageListener.class);
+        FolderMessageEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderMessageEvent(this);
+            }
+            ((FolderMessageListener)listeners[i]).flagsChanged(e);
+        }
+    }
 }

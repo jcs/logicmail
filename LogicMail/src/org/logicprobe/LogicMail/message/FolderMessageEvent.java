@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,26 +29,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.util;
+package org.logicprobe.LogicMail.message;
 
-import j2meunit.framework.Test;
-import j2meunit.framework.TestCase;
-import j2meunit.framework.TestSuite;
+import org.logicprobe.LogicMail.util.EventObject;
 
 /**
- * Unit test suite for the LogicMail.util classes
+ * Object for FolderMessage events
  */
-public class UtilTests extends TestCase {
-    
-    public UtilTests() {
-        super();
-    }
-    
-    public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.util");
-        testSuite.addTest(new StringParserTest().suite());
-        testSuite.addTest(new SerializableHashtableTest().suite());
-        testSuite.addTest(new EventListenerListTest().suite());
-        return testSuite;
+public class FolderMessageEvent extends EventObject {
+    /** Creates a new instance of FolderMessageEvent */
+    public FolderMessageEvent(Object source) {
+        super(source);
     }
 }

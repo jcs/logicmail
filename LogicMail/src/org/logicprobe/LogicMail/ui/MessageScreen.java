@@ -248,6 +248,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
                 msgFields = updateMessageHandler.getMessageFields();
                 msg = updateMessageHandler.getMessage();
                 drawMessageFields();
+                folderMessage.setSeen(true);
             }
         }
     }

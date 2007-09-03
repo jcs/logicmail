@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,24 +31,22 @@
 
 package org.logicprobe.LogicMail.util;
 
-import j2meunit.framework.Test;
-import j2meunit.framework.TestCase;
-import j2meunit.framework.TestSuite;
-
 /**
- * Unit test suite for the LogicMail.util classes
+ * The root class from which all event state objects shall be derived.
+ * Based on the interface of java.util.EventObject
  */
-public class UtilTests extends TestCase {
+public class EventObject {
+    protected Object source;
     
-    public UtilTests() {
-        super();
+    public EventObject(Object source) {
+        this.source = source;
     }
     
-    public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.util");
-        testSuite.addTest(new StringParserTest().suite());
-        testSuite.addTest(new SerializableHashtableTest().suite());
-        testSuite.addTest(new EventListenerListTest().suite());
-        return testSuite;
+    public Object getSource() {
+        return source;
+    }
+    
+    public String toString() {
+        return getClass().getName() + "[source=" + source + "]";
     }
 }

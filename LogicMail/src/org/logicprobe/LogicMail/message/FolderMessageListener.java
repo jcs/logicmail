@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,26 +29,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.util;
+package org.logicprobe.LogicMail.message;
 
-import j2meunit.framework.Test;
-import j2meunit.framework.TestCase;
-import j2meunit.framework.TestSuite;
+import org.logicprobe.LogicMail.util.EventListener;
 
 /**
- * Unit test suite for the LogicMail.util classes
+ * Listener for folder message events
  */
-public class UtilTests extends TestCase {
-    
-    public UtilTests() {
-        super();
-    }
-    
-    public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.util");
-        testSuite.addTest(new StringParserTest().suite());
-        testSuite.addTest(new SerializableHashtableTest().suite());
-        testSuite.addTest(new EventListenerListTest().suite());
-        return testSuite;
-    }
+public interface FolderMessageListener extends EventListener {
+    /**
+     * Invoked when the message flags change.
+     */
+    public void flagsChanged(FolderMessageEvent e);
 }
