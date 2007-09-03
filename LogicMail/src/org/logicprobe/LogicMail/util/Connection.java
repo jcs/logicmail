@@ -298,8 +298,7 @@ public class Connection {
                 /**
                  * Write the string up to there and terminate it properly.
                  */
-                output.write(bytes, i, j - i);
-                output.write(CRLF, 0, 2);
+                output.write((s.substring(i, j)+"\r\n").getBytes());
                 
                 /**
                  * If we stopped at a CR, ignore a possibly following LF.
@@ -310,6 +309,25 @@ public class Connection {
                 
                 i = j + 1;
             }
+        }
+        output.flush();
+    }
+    
+    /**
+     * Sends a string to the server, terminating it with a CRLF.
+     * No cleanup is performed, as it is expected that the string
+     * is a prepared protocol command.
+     */
+    public void sendCommand(String s) throws IOException {
+        if (debug) {
+            System.out.println("[SEND] " + s);
+        }
+
+        if(s == null) {
+            output.write(CRLF, 0, 2);
+        }
+        else {
+            output.write((s+"\r\n").getBytes());
         }
         output.flush();
     }

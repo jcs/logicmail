@@ -778,7 +778,7 @@ public class ImapProtocol {
         String[] result = new String[0];
 
         String tag = "A" + commandCount++ + " ";
-        connection.send(tag + command + (arguments == null ? "" : " " + arguments));
+        connection.sendCommand(tag + command + (arguments == null ? "" : " " + arguments));
 
         String temp = connection.receive();
         while (!temp.startsWith(tag)) {

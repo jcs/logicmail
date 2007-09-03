@@ -381,7 +381,7 @@ public class SmtpProtocol {
      */
     private String execute(String command) throws IOException, MailException {
         if(command != null) {
-            connection.send(command);
+            connection.sendCommand(command);
         }
         
         String result = connection.receive();
