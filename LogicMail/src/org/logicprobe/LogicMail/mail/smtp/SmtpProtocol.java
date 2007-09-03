@@ -33,7 +33,9 @@ package org.logicprobe.LogicMail.mail.smtp;
 
 import java.io.IOException;
 import java.util.Vector;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.MD5;
@@ -68,6 +70,12 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeAuth(int mech, String username, String password) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeAuth("+mech+", \""+username+"\", \""+password+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         UtilProxy utilProxy = UtilProxy.getInstance();
         String result;
         byte[] data;
@@ -260,6 +268,12 @@ public class SmtpProtocol {
      * @return List of returned strings
      */
     public Vector executeExtendedHello(String domain) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeExtendedHello(\""+domain+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String[] result = executeFollow("EHLO " + domain);
         Vector items = new Vector();
         for(int i=0; i<result.length; i++) {
@@ -277,6 +291,12 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeMail(String sender) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeMain(\""+sender+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String result = execute("MAIL FROM:<" + sender + ">");
         return result.startsWith("250");
     }
@@ -288,6 +308,12 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeRecipient(String recipient) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeRecipient(\""+recipient+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String result = execute("RCPT TO:<" + recipient + ">");
         return result.startsWith("250");
     }
@@ -298,6 +324,12 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeData(String message) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeData(\""+message+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String result = execute("DATA");
         if(!result.startsWith("354")) {
             return false;
@@ -314,6 +346,12 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeReset() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeReset()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String result = execute("RSET");
         return result.startsWith("250");
     }
@@ -323,6 +361,12 @@ public class SmtpProtocol {
      * @return True if successful, false on failure
      */
     public boolean executeQuit() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.executeQuit()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String result = execute("QUIT");
         return result.startsWith("221");
     }

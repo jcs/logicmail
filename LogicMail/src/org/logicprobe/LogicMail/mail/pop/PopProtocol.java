@@ -32,7 +32,9 @@
 package org.logicprobe.LogicMail.mail.pop;
 
 import java.io.IOException;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
 
@@ -52,6 +54,12 @@ public class PopProtocol {
      * @param username Username to login with
      */
     public void executeUser(String username) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeUser(\""+username+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         execute("USER " + username);
         // Invalid users are caught by execute()
         // and a MailException is thrown
@@ -62,6 +70,12 @@ public class PopProtocol {
      * @param password Password to login with
      */
     public void executePass(String password) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executePass(\""+password+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         execute("PASS " + password);
         // Invalid users are caught by execute()
         // and a MailException is thrown
@@ -71,6 +85,12 @@ public class PopProtocol {
      * Execute the "QUIT" command
      */
     public void executeQuit() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeQuit()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         execute("QUIT");
     }
     
@@ -79,6 +99,12 @@ public class PopProtocol {
      * @return The number of messages in the inbox
      */
     public int executeStat() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeStat()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         String result = execute("STAT");
         int p = result.indexOf(' ');
         int q = result.indexOf(' ', p+1);
@@ -95,6 +121,12 @@ public class PopProtocol {
      * @param lines Number of lines to retrieve
      */
     public String[] executeTop(int index, int lines) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeTop("+index+", "+lines+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         return executeFollow("TOP " + index + " " + lines);
     }
 
