@@ -319,8 +319,8 @@ public class Connection {
      * is a prepared protocol command.
      */
     public void sendCommand(String s) throws IOException {
-        if (debug) {
-            System.out.println("[SEND] " + s);
+        if(globalConfig.getConnDebug()) {
+            EventLogger.logEvent(AppInfo.GUID, ("[SEND CMD] " + s).getBytes(), EventLogger.DEBUG_INFO);
         }
 
         if(s == null) {
