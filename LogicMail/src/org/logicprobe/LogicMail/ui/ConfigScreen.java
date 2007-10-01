@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,115 +32,119 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.FieldChangeListener;
-import net.rim.device.api.ui.component.AutoTextEditField;
-import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.ButtonField;
-import net.rim.device.api.ui.component.CheckboxField;
-import net.rim.device.api.ui.component.ObjectChoiceField;
-import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.ui.component.SeparatorField;
-import net.rim.device.api.ui.text.TextFilter;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.TreeField;
+import net.rim.device.api.ui.component.TreeFieldCallback;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.conf.GlobalConfig;
 
 /**
- * Configuration screen
+ * This screen is the main entry point to all the
+ * other configuration screens.
  */
-public class ConfigScreen extends BaseCfgScreen implements FieldChangeListener {
+public class ConfigScreen extends BaseCfgScreen {
     private MailSettings mailSettings;
-    private BasicEditField fldFullname;
-    private BasicEditField fldRetMsgCount;
-    private ObjectChoiceField fldDispOrder;
-    private BasicEditField fldImapMaxMsgSize;
-    private BasicEditField fldImapMaxFolderDepth;
-    private BasicEditField fldPopMaxLines;
-    private CheckboxField fldConnDebug;
-    private AutoTextEditField fldSignature;
+    private TreeField configTreeField;
+    private int globalId;
+    private int accountsId;
+    private int outgoingId;
     
-    private ButtonField btSave;
-
     public ConfigScreen() {
-        super("LogicMail - Config");
-
+        super("LogicMail - Configuration");
         mailSettings = MailSettings.getInstance();
-        GlobalConfig config = mailSettings.getGlobalConfig();
-
-        add(new RichTextField("Global settings:", Field.NON_FOCUSABLE));
+        configTreeField = new TreeField(
+            new TreeFieldCallback() {
+                public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
+                    configTreeFieldDrawTreeItem(treeField, graphics, node, y, width, indent);
+                }
+            },
+            Field.FOCUSABLE);
+        configTreeField.setDefaultExpanded(true);
+        configTreeField.setIndentWidth(20);
         
-        fldFullname = new BasicEditField("  Full name: ", config.getFullname());
-        add(fldFullname);
-
-        fldRetMsgCount = new BasicEditField("  Message count: ",
-                                            Integer.toString(config.getRetMsgCount()));
-        fldRetMsgCount.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldRetMsgCount);
-
-        String[] orderTypes = { "Ascending", "Descending" };
-        if(!config.getDispOrder())
-            fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 0);
-        else
-            fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 1);            
-        add(fldDispOrder);
-        
-        add(new RichTextField("IMAP settings:", Field.NON_FOCUSABLE));
-        fldImapMaxMsgSize = new BasicEditField("  Max size to dl per msg (kb): ", Integer.toString(config.getImapMaxMsgSize()/1024));
-        fldImapMaxMsgSize.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldImapMaxMsgSize);
-        
-        fldImapMaxFolderDepth = new BasicEditField("  Max folder depth: ", Integer.toString(config.getImapMaxFolderDepth()));
-        fldImapMaxFolderDepth.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldImapMaxFolderDepth);
-
-        add(new RichTextField("POP settings:", Field.NON_FOCUSABLE));
-        fldPopMaxLines = new BasicEditField("  Max lines to dl per msg: ", Integer.toString(config.getPopMaxLines()));
-        fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldPopMaxLines);
-
-        fldConnDebug = new CheckboxField("Connection debugging", config.getConnDebug());
-        add(fldConnDebug);
-        
-        add(new SeparatorField());
-        add(new RichTextField("Signature:", Field.NON_FOCUSABLE));
-        add(fldSignature = new AutoTextEditField());
-        fldSignature.setText(config.getMsgSignature());
-        add(new SeparatorField());
-
-        btSave = new ButtonField("Save", Field.FIELD_HCENTER);
-        btSave.setChangeListener(this);
-        add(btSave);
+        globalId = configTreeField.addChildNode(0, "Global settings");
+        accountsId = configTreeField.addSiblingNode(globalId, "Accounts");        
+        outgoingId = configTreeField.addSiblingNode(accountsId, "Outgoing servers");
+        buildAccountsList();
+        add(configTreeField);
     }
+    
+    public void configTreeFieldDrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
+        Object cookie = treeField.getCookie(node);
+        graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
+    }
+    
+    private MenuItem selectItem = new MenuItem("Select", 100, 10) {
+        public void run() {
+            openSelectedNode();
+        }
+    };
 
-    public void fieldChanged(Field field, int context) {
-        if(field == btSave) {
-            onClose();
+    protected void makeMenu(Menu menu, int instance) {
+        menu.add(selectItem);
+        super.makeMenu(menu, instance);
+    }
+    
+    public boolean keyChar(char key, int status, int time)
+    {
+        boolean retval = false;
+        switch(key) {
+            case Keypad.KEY_SPACE:
+                toggleSelectedNode();
+                retval = true;
+                break;
+            case Keypad.KEY_ENTER:
+                openSelectedNode();
+                retval = true;
+                break;
+        }
+        return retval;
+    }
+    
+    private void toggleSelectedNode() {
+        int curNode = configTreeField.getCurrentNode();
+        
+        // Make sure a node is selected
+        if(curNode == -1) {
+            return;
+        }
+        
+        // Make sure the selected node has children
+        if(configTreeField.getFirstChild(curNode) == -1) {
+            return;
+        }
+
+        // Toggle the expansion state of the current node
+        configTreeField.setExpanded(curNode, !configTreeField.getExpanded(curNode));
+    }
+    
+    private void openSelectedNode() {
+        int curNode = configTreeField.getCurrentNode();
+        if(curNode == globalId) {
+            UiApplication.getUiApplication().pushScreen(new GlobalConfigScreen());
+        }
+        else {
+            int parentNode = configTreeField.getParent(curNode);
+            if(parentNode == accountsId) {
+                AccountConfig acctConfig = (AccountConfig)configTreeField.getCookie(curNode);
+                AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
+                UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
+                if(acctCfgScreen.acctSaved()) {
+                    mailSettings.saveSettings();
+                }
+            }
         }
     }
 
-    public void save() {
-        GlobalConfig config = mailSettings.getGlobalConfig();
-        config.setFullname(fldFullname.getText());
-
-        try {
-            config.setRetMsgCount(Integer.parseInt(fldRetMsgCount.getText()));
-        } catch (Exception e) { }
-
-        if(fldDispOrder.getSelectedIndex() == 0)
-            config.setDispOrder(false);
-        else
-            config.setDispOrder(true);
-
-        try {
-            config.setImapMaxMsgSize(Integer.parseInt(fldImapMaxMsgSize.getText())*1024);
-        } catch (Exception e) { }
-        try {
-            config.setImapMaxFolderDepth(Integer.parseInt(fldImapMaxFolderDepth.getText()));
-        } catch (Exception e) { }
-        try {
-            config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
-        } catch (Exception e) { }
-        config.setConnDebug(fldConnDebug.getChecked());
-        config.setMsgSignature(fldSignature.getText());
-        mailSettings.saveSettings();
+    private void buildAccountsList() {
+        int numAccounts = mailSettings.getNumAccounts();
+        
+        for(int i = numAccounts-1; i >= 0; i--) {
+            configTreeField.addChildNode(accountsId, mailSettings.getAccountConfig(i));
+        }
     }
 }

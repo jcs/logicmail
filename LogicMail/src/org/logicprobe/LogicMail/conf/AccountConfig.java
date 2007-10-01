@@ -90,6 +90,18 @@ public class AccountConfig implements Serializable {
         smtpFromAddress = "";
     }
 
+    public String toString() {
+        String text = this.acctName;
+        if(serverType == TYPE_POP) {
+            text = text.concat(" (POP)");
+        }
+        else if(serverType == TYPE_IMAP) {
+            text = text.concat(" (IMAP)");
+        }
+        
+        return text;
+    }
+    
     public String getAcctName() {
         return acctName;
     }
