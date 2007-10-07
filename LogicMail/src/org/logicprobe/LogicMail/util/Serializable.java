@@ -50,4 +50,13 @@ public interface Serializable {
      * @param byteArray Byte array containing the data for this class to represent
      */
     public void deserialize(DataInputStream input) throws IOException;
+    
+    /**
+     * Gets the unique ID for this class.
+     * This ID should be generated the first time a new class is created,
+     * and should be persisted during serialization.  This enableds references
+     * between serialized objects to be recreated.
+     * @return Unique ID
+     */
+    public long getUniqueId();
 }

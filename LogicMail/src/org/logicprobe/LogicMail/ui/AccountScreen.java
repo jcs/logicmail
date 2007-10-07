@@ -72,27 +72,9 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     }
     
     // menu items
-    private MenuItem selectAcctItem = new MenuItem("Select account", 100, 10) {
+    private MenuItem selectAcctItem = new MenuItem("Select", 100, 10) {
         public void run() {
             selectAccount(accountList.getSelectedIndex());
-        }
-    };
-
-    private MenuItem editAcctItem = new MenuItem("Edit account", 110, 10) {
-        public void run() {
-            editAccount(accountList.getSelectedIndex());
-        }
-    };
-
-    private MenuItem addAcctItem = new MenuItem("Add account", 120, 10) {
-        public void run() {
-            addAccount();
-        }
-    };
-
-    private MenuItem deleteAcctItem = new MenuItem("Delete account", 130, 10) {
-        public void run() {
-            deleteAccount(accountList.getSelectedIndex());
         }
     };
 
@@ -100,12 +82,6 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
     protected void makeMenu(Menu menu, int instance) {
         if(mailSettings.getNumAccounts() > 0) {
             menu.add(selectAcctItem);
-            menu.addSeparator();
-            menu.add(editAcctItem);
-        }
-        menu.add(addAcctItem);
-        if(mailSettings.getNumAccounts() > 0) {
-            menu.add(deleteAcctItem);
         }
         super.makeMenu(menu, instance);
     }
@@ -115,14 +91,8 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
                             int index,
                             int y, int w)
     {
-        String text = mailSettings.getAccountConfig(index).getAcctName();
-        if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_POP) {
-            text = text.concat(" (POP)");
-        }
-        else if(mailSettings.getAccountConfig(index).getServerType() == AccountConfig.TYPE_IMAP) {
-            text = text.concat(" (IMAP)");
-        }
-            
+        String text = mailSettings.getAccountConfig(index).toString();
+
         // In the future, consider icons or font size changes
         // to indicate the runtime status of an account on
         // the listing screen.
@@ -156,42 +126,6 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
                 break;
         }
         return retval;
-    }
-
-    private void addAccount() {
-        AccountConfig acctConfig = new AccountConfig();
-        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
-        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-        if(acctCfgScreen.acctSaved()) {
-            mailSettings.addAccountConfig(acctConfig);
-            mailSettings.saveSettings();
-        }
-        updateAccountList();
-    }
-
-    private void editAccount(int index) {
-        if(index == -1) {
-            return;
-        }
-        AccountConfig acctConfig = mailSettings.getAccountConfig(index);
-        AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
-        UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-        if(acctCfgScreen.acctSaved()) {
-            mailSettings.saveSettings();
-        }
-        updateAccountList();
-    }
-    
-    private void deleteAccount(int index) {
-        if(index == -1) {
-            return;
-        }
-        int response = Dialog.ask(Dialog.D_DELETE);
-        if(response == Dialog.DELETE) {
-            mailSettings.removeAccountConfig(index);
-            mailSettings.saveSettings();
-        }            
-        updateAccountList();
     }
 
     private void updateAccountList() {

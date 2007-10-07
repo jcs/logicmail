@@ -31,27 +31,19 @@
 
 package org.logicprobe.LogicMail.conf;
 
-import java.io.IOException;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
  * Store account configuration for LogicMail
  */
-public class AccountConfig implements Serializable {
+public class AccountConfig extends ConnectionConfig {
     final public static int TYPE_POP = 0;
     final public static int TYPE_IMAP = 1;
     
-    private String acctName;
-    private String serverName;
     private int serverType;
-    private boolean serverSSL;
     private String serverUser;
     private String serverPass;
-    private int serverPort;
-    private boolean deviceSide;
     private String smtpServerName;
     private int smtpServerPort;
     private boolean smtpServerSSL;
@@ -61,26 +53,19 @@ public class AccountConfig implements Serializable {
     private String smtpPass;
 
     public AccountConfig() {
-            setDefaults();
+        super();
     }
     
     public AccountConfig(DataInputStream input) {
-        try {
-            deserialize(input);
-        } catch (IOException ex) {
-            setDefaults();
-        }
+        super(input);
     }
 
-    private void setDefaults() {
-        acctName = "";
-        serverName = "";
+    protected void setDefaults() {
+        super.setDefaults();
         serverType = TYPE_POP;
-        serverSSL = false;
         serverUser = "";
         serverPass = "";
-        serverPort = 110;
-        deviceSide = false;
+        setServerPort(110);
         smtpServerName = "";
         smtpServerPort = 25;
         smtpServerSSL = false;
@@ -91,7 +76,7 @@ public class AccountConfig implements Serializable {
     }
 
     public String toString() {
-        String text = this.acctName;
+        String text = getAcctName();
         if(serverType == TYPE_POP) {
             text = text.concat(" (POP)");
         }
@@ -101,23 +86,7 @@ public class AccountConfig implements Serializable {
         
         return text;
     }
-    
-    public String getAcctName() {
-        return acctName;
-    }
-    
-    public void setAcctName(String acctName) {
-        this.acctName = acctName;
-    }
-    
-    public String getServerName() {
-        return serverName;
-    }
-    
-    public void setServerName(String serverName) {
-        this.serverName = serverName;
-    }
-    
+
     public int getServerType() {
         return serverType;
     }
@@ -126,22 +95,7 @@ public class AccountConfig implements Serializable {
         this.serverType = serverType;
     }
     
-    public boolean getServerSSL() {
-        return serverSSL;
-    }
-    
-    public void setServerSSL(boolean serverSSL) {
-        this.serverSSL = serverSSL;
-    }
-
-    public int getServerPort() {
-        return serverPort;
-    }
-
-    public void setServerPort(int serverPort) {
-        this.serverPort = serverPort;
-    }
-    
+   
     public String getServerUser() {
         return serverUser;
     }
@@ -156,14 +110,6 @@ public class AccountConfig implements Serializable {
     
     public void setServerPass(String serverPass) {
         this.serverPass = serverPass;
-    }
-
-    public boolean getDeviceSide() {
-        return deviceSide;
-    }
-    
-    public void setDeviceSide(boolean deviceSide) {
-        this.deviceSide = deviceSide;
     }
 
     public String getSmtpServerName() {
@@ -222,17 +168,11 @@ public class AccountConfig implements Serializable {
         this.smtpFromAddress = smtpFromAddress;
     }
 
-    public void serialize(DataOutputStream output) throws IOException {
-        SerializableHashtable table = new SerializableHashtable();
-        
-        table.put("account_acctName", acctName);
-        table.put("account_serverName", serverName);
+    public void writeConfigItems(SerializableHashtable table) {
+        super.writeConfigItems(table);
         table.put("account_serverType", new Integer(serverType));
-        table.put("account_serverSSL", new Boolean(serverSSL));
         table.put("account_serverUser", serverUser);
         table.put("account_serverPass", serverPass);
-        table.put("account_serverPort", new Integer(serverPort));
-        table.put("account_deviceSide", new Boolean(deviceSide));
         table.put("account_smtpServerName", smtpServerName);
         table.put("account_smtpServerPort", new Integer(smtpServerPort));
         table.put("account_smtpServerSSL", new Boolean(smtpServerSSL));
@@ -240,31 +180,15 @@ public class AccountConfig implements Serializable {
         table.put("account_smtpUser", smtpUser);
         table.put("account_smtpPass", smtpPass);
         table.put("account_smtpFromAddress", smtpFromAddress);
-        
-        table.serialize(output);        
     }
 
-    public void deserialize(DataInputStream input) throws IOException {
-        setDefaults();
-        SerializableHashtable table = new SerializableHashtable();
-        table.deserialize(input);
+    public void readConfigItems(SerializableHashtable table) {
+        super.readConfigItems(table);
         Object value;
 
-        value = table.get("account_acctName");
-        if(value != null && value instanceof String) {
-            acctName = (String)value;
-        }
-        value = table.get("account_serverName");
-        if(value != null && value instanceof String) {
-            serverName = (String)value;
-        }
         value = table.get("account_serverType");
         if(value != null && value instanceof Integer) {
             serverType = ((Integer)value).intValue();
-        }
-        value = table.get("account_serverSSL");
-        if(value != null && value instanceof Boolean) {
-            serverSSL = ((Boolean)value).booleanValue();
         }
         value = table.get("account_serverUser");
         if(value != null && value instanceof String) {
@@ -273,14 +197,6 @@ public class AccountConfig implements Serializable {
         value = table.get("account_serverPass");
         if(value != null && value instanceof String) {
             serverPass = (String)value;
-        }
-        value = table.get("account_serverPort");
-        if(value != null && value instanceof Integer) {
-            serverPort = ((Integer)value).intValue();
-        }
-        value = table.get("account_deviceSide");
-        if(value != null && value instanceof Boolean) {
-            deviceSide = ((Boolean)value).booleanValue();
         }
         value = table.get("account_smtpServerName");
         if(value != null && value instanceof String) {

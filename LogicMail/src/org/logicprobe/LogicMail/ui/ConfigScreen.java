@@ -31,16 +31,19 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Hashtable;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
 
 /**
  * This screen is the main entry point to all the
@@ -52,10 +55,21 @@ public class ConfigScreen extends BaseCfgScreen {
     private int globalId;
     private int accountsId;
     private int outgoingId;
+    private Hashtable accountIndexMap;
+    private Hashtable outgoingIndexMap;
     
     public ConfigScreen() {
         super("LogicMail - Configuration");
         mailSettings = MailSettings.getInstance();
+        accountIndexMap = new Hashtable();
+        outgoingIndexMap = new Hashtable();
+        
+        initFields();
+        
+        buildAccountsList();
+    }
+    
+    private void initFields() {
         configTreeField = new TreeField(
             new TreeFieldCallback() {
                 public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
@@ -69,7 +83,7 @@ public class ConfigScreen extends BaseCfgScreen {
         globalId = configTreeField.addChildNode(0, "Global settings");
         accountsId = configTreeField.addSiblingNode(globalId, "Accounts");        
         outgoingId = configTreeField.addSiblingNode(accountsId, "Outgoing servers");
-        buildAccountsList();
+
         add(configTreeField);
     }
     
@@ -78,14 +92,55 @@ public class ConfigScreen extends BaseCfgScreen {
         graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
     }
     
-    private MenuItem selectItem = new MenuItem("Select", 100, 10) {
+    private MenuItem selectItem = new MenuItem("Edit", 100, 10) {
         public void run() {
             openSelectedNode();
         }
     };
 
+    private MenuItem addAcctItem = new MenuItem("Add account", 120, 10) {
+        public void run() {
+            addAccount();
+        }
+    };
+
+    private MenuItem deleteAcctItem = new MenuItem("Delete account", 130, 10) {
+        public void run() {
+            deleteSelectedAccount();
+        }
+    };
+
+    private MenuItem addOutgoingItem = new MenuItem("Add outgoing server", 120, 10) {
+        public void run() {
+            addOutgoingServer();
+        }
+    };
+
+    private MenuItem deleteOutgoingItem = new MenuItem("Delete outgoing server", 130, 10) {
+        public void run() {
+            deleteSelectedOutgoingServer();
+        }
+    };
+
     protected void makeMenu(Menu menu, int instance) {
-        menu.add(selectItem);
+        int id = configTreeField.getCurrentNode();
+        if(id != accountsId && id != outgoingId) {
+            menu.add(selectItem);
+        }
+        if(id == accountsId) {
+            menu.add(addAcctItem);
+        }
+        else if(configTreeField.getCookie(id) instanceof AccountConfig) {
+            menu.add(addAcctItem);
+            menu.add(deleteAcctItem);
+        }
+        else if(id == outgoingId) {
+            menu.add(addOutgoingItem);
+        }
+        else if(configTreeField.getCookie(id) instanceof OutgoingConfig) {
+            menu.add(addOutgoingItem);
+            menu.add(deleteOutgoingItem);
+        }
         super.makeMenu(menu, instance);
     }
     
@@ -142,9 +197,82 @@ public class ConfigScreen extends BaseCfgScreen {
 
     private void buildAccountsList() {
         int numAccounts = mailSettings.getNumAccounts();
+        accountIndexMap.clear();
+        int numOutgoing = mailSettings.getNumOutgoing();
+        outgoingIndexMap.clear();
+        int id;
+        while((id = configTreeField.getFirstChild(accountsId)) != -1) {
+            configTreeField.deleteSubtree(id);
+        }
+        while((id = configTreeField.getFirstChild(outgoingId)) != -1) {
+            configTreeField.deleteSubtree(id);
+        }
         
+        AccountConfig acctConfig;
         for(int i = numAccounts-1; i >= 0; i--) {
-            configTreeField.addChildNode(accountsId, mailSettings.getAccountConfig(i));
+            acctConfig = mailSettings.getAccountConfig(i);
+            configTreeField.addChildNode(accountsId, acctConfig);
+            accountIndexMap.put(acctConfig, new Integer(i));
+        }
+
+        OutgoingConfig outgoingConfig;
+        for(int i = numOutgoing-1; i >= 0; i--) {
+            outgoingConfig = mailSettings.getOutgoingConfig(i);
+            configTreeField.addChildNode(outgoingId, outgoingConfig);
+            outgoingIndexMap.put(outgoingConfig, new Integer(i));
+        }
+    }
+    
+    private void addAccount() {
+        int response = Dialog.ask("What type of account?", new String[] { "IMAP", "POP" }, 0);
+        if(response != Dialog.CANCEL) {
+            AccountConfig acctConfig = new AccountConfig();
+            AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
+            UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
+            if(acctCfgScreen.acctSaved()) {
+                mailSettings.addAccountConfig(acctConfig);
+                mailSettings.saveSettings();
+                buildAccountsList();
+            }
+        }
+    }
+
+    private void deleteSelectedAccount() {
+        AccountConfig acctConfig =
+            (AccountConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
+        
+        int index = ((Integer)accountIndexMap.get(acctConfig)).intValue();
+        int response = Dialog.ask(Dialog.D_DELETE);
+        if(response == Dialog.DELETE) {
+            mailSettings.removeAccountConfig(index);
+            mailSettings.saveSettings();
+            configTreeField.deleteSubtree(configTreeField.getCurrentNode());
+            accountIndexMap.remove(acctConfig);
+        }            
+    }
+
+    private void addOutgoingServer() {
+        OutgoingConfig outgoingConfig = new OutgoingConfig();
+        OutgoingConfigScreen outgoingConfigScreen = new OutgoingConfigScreen(outgoingConfig);
+        UiApplication.getUiApplication().pushModalScreen(outgoingConfigScreen);
+        if(outgoingConfigScreen.acctSaved()) {
+            mailSettings.addOutgoingConfig(outgoingConfig);
+            mailSettings.saveSettings();
+            buildAccountsList();
+        }
+    }
+    
+    private void deleteSelectedOutgoingServer() {
+        OutgoingConfig outgoingConfig =
+            (OutgoingConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
+        
+        int index = ((Integer)outgoingIndexMap.get(outgoingConfig)).intValue();
+        int response = Dialog.ask(Dialog.D_DELETE);
+        if(response == Dialog.DELETE) {
+            mailSettings.removeOutgoingConfig(index);
+            mailSettings.saveSettings();
+            configTreeField.deleteSubtree(configTreeField.getCurrentNode());
+            outgoingIndexMap.remove(outgoingConfig);
         }
     }
 }

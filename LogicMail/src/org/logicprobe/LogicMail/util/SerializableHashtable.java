@@ -40,6 +40,9 @@ import java.util.Hashtable;
 /**
  * Provides a wrapper for java.util.Hashtable that implements the
  * LogicMail.util.Serializable interface.
+ * The maximum number of items that can be stored is 1000.
+ * This limit exists so that the deserialization code can quickly
+ * handle data corruption that could result in a bad size value.
  */
 public class SerializableHashtable extends Hashtable implements Serializable {
     final private static int TYPE_NULL    = 0;
@@ -52,6 +55,10 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     final private static int TYPE_INT     = 7;
     final private static int TYPE_LONG    = 8;
     final private static int TYPE_SHORT   = 9;
+
+    final private static int MAX_ITEMS = 1000;
+    
+    private long uniqueId;
     
     /**
      * Creates a new instance of SerializableHashtable.
@@ -63,6 +70,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
      */
     public SerializableHashtable() {
         super();
+        uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
 
     /**
@@ -75,6 +83,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
      */
     public SerializableHashtable(int initialCapacity) {
         super(initialCapacity);
+        uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
     
     private void writeObject(DataOutputStream output, Object item) throws IOException {
@@ -149,6 +158,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     }
     
     public void serialize(DataOutputStream output) throws IOException {
+        output.writeLong(uniqueId);
         output.writeInt(this.size());
         Enumeration e = this.keys();
         Object key;
@@ -161,7 +171,11 @@ public class SerializableHashtable extends Hashtable implements Serializable {
 
     public void deserialize(DataInputStream input) throws IOException {
         this.clear();
+        uniqueId = input.readLong();
         int size = input.readInt();
+        if(size > MAX_ITEMS) {
+            throw new IOException();
+        }
         Object key;
         Object value;
         for(int i=0; i<size; i++) {
@@ -172,4 +186,8 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             }
         }
     }    
+
+    public long getUniqueId() {
+        return uniqueId;
+    }
 }

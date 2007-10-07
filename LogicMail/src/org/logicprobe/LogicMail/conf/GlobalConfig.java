@@ -34,14 +34,15 @@ package org.logicprobe.LogicMail.conf;
 import java.io.IOException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.util.Hashtable;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
  * Store the global configuration for LogicMail.
  */
 public class GlobalConfig implements Serializable {
+    private long uniqueId;
     /** full name of the user */
     private String fullname;
     /** number of message headers to retrieve */
@@ -72,6 +73,7 @@ public class GlobalConfig implements Serializable {
     }
 
     private void setDefaults() {
+        uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.fullname = "";
         this.retMsgCount = 30;
         this.dispOrder = false;
@@ -146,6 +148,8 @@ public class GlobalConfig implements Serializable {
     }
     
     public void serialize(DataOutputStream output) throws IOException {
+        output.writeLong(uniqueId);
+        
         SerializableHashtable table = new SerializableHashtable();
         
         table.put("global_fullname", fullname);
@@ -162,6 +166,8 @@ public class GlobalConfig implements Serializable {
 
     public void deserialize(DataInputStream input) throws IOException {
         setDefaults();
+        uniqueId = input.readLong();
+        
         SerializableHashtable table = new SerializableHashtable();
         table.deserialize(input);
         Object value;
@@ -198,6 +204,10 @@ public class GlobalConfig implements Serializable {
         if(value != null && value instanceof Boolean) {
             connDebug = ((Boolean)value).booleanValue();
         }
+    }
+
+    public long getUniqueId() {
+        return uniqueId;
     }
 }
 

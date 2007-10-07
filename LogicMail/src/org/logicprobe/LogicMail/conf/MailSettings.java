@@ -38,6 +38,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Vector;
 import javax.microedition.rms.*;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
  * Provide an interface to global and account-specific
@@ -47,39 +48,91 @@ public class MailSettings {
     private static MailSettings instance;
     private GlobalConfig globalConfig;
     private Vector accountConfigs;
+    private Vector outgoingConfigs;
     
     private MailSettings() {
         globalConfig = new GlobalConfig();
         accountConfigs = new Vector();
+        outgoingConfigs = new Vector();
     }
     
+    /**
+     * Gets the mail settings instance.
+     * @return Instance
+     */
     public static synchronized MailSettings getInstance() {
         if(instance == null) {
             instance = new MailSettings();
         }
         return instance;
     }
-    
+
+    /**
+     * Gets the global configuration
+     */
     public GlobalConfig getGlobalConfig() {
         return globalConfig;
     }
-    
+
+    /**
+     * Gets the number of account configurations
+     */
     public int getNumAccounts() {
         return accountConfigs.size();
     }
     
+    /**
+     * Gets the account configuration at the specified index
+     */
     public AccountConfig getAccountConfig(int index) {
         return (AccountConfig)accountConfigs.elementAt(index);
     }
     
+    /**
+     * Add a new account configuration
+     */
     public void addAccountConfig(AccountConfig accountConfig) {
         accountConfigs.addElement(accountConfig);
     }
     
+    /**
+     * Remove the account configuration at the specified index
+     */
     public void removeAccountConfig(int index) {
         accountConfigs.removeElementAt(index);
     }
+
+    /**
+     * Gets the number of outgoing server configurations
+     */
+    public int getNumOutgoing() {
+        return outgoingConfigs.size();
+    }
     
+    /**
+     * Gets the outgoing server configuration at the specified index
+     */
+    public OutgoingConfig getOutgoingConfig(int index) {
+        return (OutgoingConfig)outgoingConfigs.elementAt(index);
+    }
+    
+    /**
+     * Add a new outgoing server configuration
+     */
+    public void addOutgoingConfig(OutgoingConfig outgoingConfig) {
+        outgoingConfigs.addElement(outgoingConfig);
+    }
+    
+    /**
+     * Remove the outgoing server configuration at the specified index
+     */
+    public void removeOutgoingConfig(int index) {
+        outgoingConfigs.removeElementAt(index);
+    }
+    
+    /**
+     * Save the configurations to persistent storage.
+     */
     public void saveSettings() {
         try {
             RecordStore.deleteRecordStore("LogicMail_config");
@@ -90,25 +143,19 @@ public class MailSettings {
         RecordStore store = null;
         try {
             store = RecordStore.openRecordStore("LogicMail_config", true);
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            DataOutputStream output = new DataOutputStream(buffer);
-            try {
-                globalConfig.serialize(output);
-            } catch (IOException ex) {
-                // do nothing
-            }
-            byte[] byteArray = buffer.toByteArray();
+            byte[] byteArray;
+            
+            byteArray = serializeClass(globalConfig);
             store.addRecord(byteArray, 0, byteArray.length);
-        
-            for(int i=0;i<accountConfigs.size();i++) {
-                buffer = new ByteArrayOutputStream();
-                output = new DataOutputStream(buffer);
-                try {
-                    ((AccountConfig)accountConfigs.elementAt(i)).serialize(output);
-                } catch (IOException ex) {
-                    // do nothing
-                }
-                byteArray = buffer.toByteArray();
+            
+            int size = accountConfigs.size();
+            for(int i=0;i<size;i++) {
+                byteArray = serializeClass((Serializable)accountConfigs.elementAt(i));
+                store.addRecord(byteArray, 0, byteArray.length);
+            }
+            size = outgoingConfigs.size();
+            for(int i=0;i<size;i++) {
+                byteArray = serializeClass((Serializable)outgoingConfigs.elementAt(i));
                 store.addRecord(byteArray, 0, byteArray.length);
             }
         } catch (RecordStoreException exp) {
@@ -124,28 +171,59 @@ public class MailSettings {
         }
     }
     
+    /**
+     * Utility method to serialize any serializable class.
+     * The returned buffer consists of the fully qualified class name,
+     * followed by the serialized contents of the class.
+     */
+    private byte[] serializeClass(Serializable input) {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        DataOutputStream output = new DataOutputStream(buffer);
+        try {
+            output.writeUTF(input.getClass().getName());
+            input.serialize(output);
+        } catch (IOException ex) {
+            // do nothing
+        }
+        return buffer.toByteArray();
+    }
+    
+    /**
+     * Load the configurations from persistent storage.
+     * This method should only be called once in the lifetime of
+     * the application, preferably at the very start.
+     */
     public void loadSettings() {
+        System.err.println("loadSettings() ENTRY");
         accountConfigs.removeAllElements();
+        outgoingConfigs.removeAllElements();
         RecordStore store = null;
+        Object deserializedObject;
         try {
             store = RecordStore.openRecordStore("LogicMail_config", false);
             
             int records = store.getNumRecords();
             
             if(records >= 1) {
-                ByteArrayInputStream buffer = new ByteArrayInputStream(store.getRecord(1));
-                DataInputStream input = new DataInputStream(buffer);
-                try {
-                    globalConfig.deserialize(input);
-                } catch (IOException ex) {
+                deserializedObject = deserializeClass(store.getRecord(1));
+                if(deserializedObject instanceof GlobalConfig) {
+                    globalConfig = (GlobalConfig)deserializedObject;
+                }
+                else {
                     globalConfig = new GlobalConfig();
                 }
             
                 if(records > 1) {
                     for(int i=2;i<=store.getNumRecords();i++) {
-                        buffer = new ByteArrayInputStream(store.getRecord(i));
-                        input = new DataInputStream(buffer);
-                        accountConfigs.addElement(new AccountConfig(input));
+                        deserializedObject = deserializeClass(store.getRecord(i));
+                        if(deserializedObject instanceof AccountConfig)
+                        {
+                            accountConfigs.addElement(deserializedObject);
+                        }
+                        else if(deserializedObject instanceof OutgoingConfig)
+                        {
+                            outgoingConfigs.addElement(deserializedObject);
+                        }
                     }
                 }
             }
@@ -160,6 +238,37 @@ public class MailSettings {
         } catch (RecordStoreException exp) {
             // do nothing
         }
+        System.err.println("loadSettings() EXIT");
+    }
+    
+    /**
+     * Utility method to deserialize any class.
+     * First, the fully qualified class name is read from the
+     * input stream.  Then, if a class matching that name exists,
+     * it is instantiated.  Finally, if that class implements the
+     * Serializable interface, the input stream is passed on
+     * to its deserialize method.
+     */
+    private Object deserializeClass(byte[] data) {
+        System.err.println("deserializeClass() ENTRY");
+        DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
+        Object result = null;
+        try {
+            String classType = input.readUTF();
+            result = Class.forName(classType).newInstance();
+            if(result instanceof Serializable) {
+                ((Serializable)result).deserialize(input);
+            }
+        } catch (IOException ex) {
+            result = null;
+        } catch (ClassNotFoundException ex) {
+            result = null;
+        } catch (InstantiationException ex) {
+            result = null;
+        } catch (IllegalAccessException ex) {
+            result = null;
+        }
+        System.err.println("deserializeClass() EXIT");
+        return result;
     }
 }
-

@@ -36,11 +36,13 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
  * Relevant information describing a folder tree.
  */
 public class FolderTreeItem implements Serializable {
+    private long uniqueId;
     private FolderTreeItem parent;
     private FolderTreeItem[] children;
     private String name;
@@ -56,6 +58,7 @@ public class FolderTreeItem implements Serializable {
      * @param delim The path deliminator
      */
     public FolderTreeItem(String name, String path, String delim) {
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.parent = null;
         this.name = name;
         this.path = path;
@@ -73,6 +76,7 @@ public class FolderTreeItem implements Serializable {
      * @param delim The path deliminator
      */
     public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim) {
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.parent = parent;
         this.name = name;
         this.path = path;
@@ -87,9 +91,13 @@ public class FolderTreeItem implements Serializable {
      * Only for use during deserialization.
      */
     public FolderTreeItem() {
+        // Possibly redundant, but we want to ensure that
+        // this is created even if deserialization fails.
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
     
     public void serialize(DataOutputStream output) throws IOException {
+        output.writeLong(uniqueId);
         output.writeUTF(name);
         output.writeUTF(path);
         output.writeUTF(delim);
@@ -104,6 +112,7 @@ public class FolderTreeItem implements Serializable {
     }
     
     public void deserialize(DataInputStream input) throws IOException {
+        uniqueId = input.readLong();
         name = input.readUTF();
         path = input.readUTF();
         delim = input.readUTF();
@@ -117,6 +126,10 @@ public class FolderTreeItem implements Serializable {
                 addChild(item);
             }
         }
+    }
+
+    public long getUniqueId() {
+        return uniqueId;
     }
     
     public FolderTreeItem[] children() {

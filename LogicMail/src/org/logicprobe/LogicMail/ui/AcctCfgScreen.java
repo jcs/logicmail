@@ -36,6 +36,7 @@ import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
@@ -136,6 +137,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
 
     public void fieldChanged(Field field, int context) {
         if(field == btSave) {
+            field.setDirty(false);
             onClose();
         }
         else if(field == fldServerType || field == fldServerSSL) {
@@ -170,6 +172,23 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
                 fldSmtpPass.setEditable(false);
                 fldSmtpUser.setText("");
                 fldSmtpPass.setText("");
+            }
+        }
+    }
+
+    protected boolean onSavePrompt() {
+        if(fldAcctName.getText().length() > 0 &&
+           fldServerName.getText().length() > 0 &&
+           fldServerPort.getText().length() > 0) {
+            return super.onSavePrompt();
+        }
+        else {
+            int result = Dialog.ask("Configuration incomplete!", new String[] { "Discard", "Cancel" }, 0);
+            if(result == 0) {
+                return true;
+            }
+            else {
+                return false;
             }
         }
     }
