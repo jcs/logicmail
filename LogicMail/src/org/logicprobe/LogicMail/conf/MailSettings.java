@@ -194,7 +194,6 @@ public class MailSettings {
      * the application, preferably at the very start.
      */
     public void loadSettings() {
-        System.err.println("loadSettings() ENTRY");
         accountConfigs.removeAllElements();
         outgoingConfigs.removeAllElements();
         RecordStore store = null;
@@ -238,7 +237,6 @@ public class MailSettings {
         } catch (RecordStoreException exp) {
             // do nothing
         }
-        System.err.println("loadSettings() EXIT");
     }
     
     /**
@@ -250,7 +248,6 @@ public class MailSettings {
      * to its deserialize method.
      */
     private Object deserializeClass(byte[] data) {
-        System.err.println("deserializeClass() ENTRY");
         DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
         Object result = null;
         try {
@@ -268,7 +265,6 @@ public class MailSettings {
         } catch (IllegalAccessException ex) {
             result = null;
         }
-        System.err.println("deserializeClass() EXIT");
         return result;
     }
 }

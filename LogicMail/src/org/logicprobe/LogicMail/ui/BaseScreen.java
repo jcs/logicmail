@@ -61,7 +61,7 @@ public abstract class BaseScreen extends MainScreen {
     // Create menu items
     private MenuItem configItem = new MenuItem("Config", 10020, 10) {
         public void run() {
-            configGlobal();
+            showConfigScreen();
         }
     };
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
@@ -90,7 +90,13 @@ public abstract class BaseScreen extends MainScreen {
         }
     };
 
-    private void configGlobal() {
+    /**
+     * Shows the configuration screen.
+     * Subclasses should override this method if they need to
+     * refresh their view of the configuration after the screen
+     * is closed.
+     */
+    protected void showConfigScreen() {
         UiApplication.getUiApplication().pushModalScreen(new ConfigScreen());
     }
     

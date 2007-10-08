@@ -64,9 +64,8 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         for(int i=0;i<mailSettings.getNumAccounts();i++)
             accountList.insert(i);
         add(accountList);
-        
     }
-
+    
     protected boolean onSavePrompt() {
         return true;
     }
@@ -77,7 +76,6 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
             selectAccount(accountList.getSelectedIndex());
         }
     };
-
 
     protected void makeMenu(Menu menu, int instance) {
         if(mailSettings.getNumAccounts() > 0) {
@@ -128,6 +126,11 @@ public class AccountScreen extends BaseScreen implements ListFieldCallback {
         return retval;
     }
 
+    protected void showConfigScreen() {
+        super.showConfigScreen();
+        updateAccountList();
+    }
+    
     private void updateAccountList() {
         int numAcct = mailSettings.getNumAccounts();
         int selItem = accountList.getSelectedIndex();
