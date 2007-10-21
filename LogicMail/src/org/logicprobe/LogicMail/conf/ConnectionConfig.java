@@ -42,7 +42,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 /**
  * Store connection configuration for LogicMail
  */
-public class ConnectionConfig implements Serializable {
+public abstract class ConnectionConfig implements Serializable {
     private long uniqueId;
     private String acctName;
     private String serverName;

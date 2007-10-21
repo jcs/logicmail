@@ -42,8 +42,10 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
+import org.logicprobe.LogicMail.conf.PopConfig;
 
 /**
  * This screen is the main entry point to all the
@@ -226,7 +228,13 @@ public class ConfigScreen extends BaseCfgScreen {
     private void addAccount() {
         int response = Dialog.ask("What type of account?", new String[] { "IMAP", "POP" }, 0);
         if(response != Dialog.CANCEL) {
-            AccountConfig acctConfig = new AccountConfig();
+            AccountConfig acctConfig;
+            if(response == 0) {
+                acctConfig = new ImapConfig();
+            }
+            else {
+                acctConfig = new PopConfig();
+            }
             AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
             UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
             if(acctCfgScreen.acctSaved()) {

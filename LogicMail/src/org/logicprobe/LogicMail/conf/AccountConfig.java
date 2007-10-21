@@ -37,7 +37,7 @@ import org.logicprobe.LogicMail.util.SerializableHashtable;
 /**
  * Store account configuration for LogicMail
  */
-public class AccountConfig extends ConnectionConfig {
+public abstract class AccountConfig extends ConnectionConfig {
     final public static int TYPE_POP = 0;
     final public static int TYPE_IMAP = 1;
     

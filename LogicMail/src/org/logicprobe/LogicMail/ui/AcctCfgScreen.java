@@ -45,20 +45,22 @@ import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
+import org.logicprobe.LogicMail.conf.PopConfig;
 
 /**
  * Configuration screen
  */
-public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener {
-    private BasicEditField fldAcctName;
-    private BasicEditField fldServerName;
-    private ObjectChoiceField fldServerType;
-    private CheckboxField fldServerSSL;
-    private BasicEditField fldServerPort;
-    private BasicEditField fldServerUser;
-    private PasswordEditField fldServerPass;
-    private CheckboxField fldUseMDS;
-    private ButtonField btSave;
+public class AcctCfgScreen extends BaseCfgScreen {
+    private BasicEditField acctNameField;
+    private BasicEditField serverNameField;
+    private CheckboxField serverSslField;
+    private BasicEditField serverPortField;
+    private BasicEditField serverUserField;
+    private PasswordEditField serverPassField;
+    private CheckboxField useMdsField;
+    private ButtonField saveButton;
+    
     private BasicEditField fldSmtpServerName;
     private BasicEditField fldSmtpServerPort;
     private CheckboxField fldSmtpServerSSL;
@@ -69,6 +71,7 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
 
     private boolean acctSaved;
     private AccountConfig acctConfig;
+    private FieldChangeListener fieldChangeListener;
     
     public AcctCfgScreen(AccountConfig acctConfig) {
         super("LogicMail - Account");
@@ -76,82 +79,106 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
         this.acctConfig = acctConfig;
         acctSaved = false;
         
-        add(fldAcctName = new BasicEditField("Account name: ",
-                                             acctConfig.getAcctName()));
-        add(new SeparatorField());
-        add(new RichTextField("Incoming server:", Field.NON_FOCUSABLE));
-        add(fldServerName = new BasicEditField("Server: ",
-                                               acctConfig.getServerName()));
-        String[] serverTypes = { "POP", "IMAP" };
-        add(fldServerType = new ObjectChoiceField("Protocol: ",
-                                                  serverTypes,
-                                                  acctConfig.getServerType()));
-        fldServerType.setChangeListener(this);
-        fldServerSSL = new CheckboxField("SSL",
-                                         acctConfig.getServerSSL());
-        fldServerSSL.setChangeListener(this);
-        add(fldServerSSL);
-        fldServerPort = new BasicEditField("Port: ",
-                                           Integer.toString(acctConfig.getServerPort()));
-        fldServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldServerPort);
-        add(fldServerUser = new BasicEditField("Username: ",
-                                               acctConfig.getServerUser()));
-        add(fldServerPass = new PasswordEditField("Password: ",
-                                                  acctConfig.getServerPass()));
+        fieldChangeListener = new FieldChangeListener() {
+            public void fieldChanged(Field field, int context) {
+                AcctCfgScreen_fieldChanged(field, context);
+            }};
+        
+        initFields();
 
-        fldUseMDS = new CheckboxField("Use MDS proxy",
-                                      !acctConfig.getDeviceSide());
-        add(fldUseMDS);
-
-        add(new SeparatorField());
-        add(new RichTextField("Outgoing server:", Field.NON_FOCUSABLE));
-        add(fldSmtpServerName = new BasicEditField("SMTP server: ", acctConfig.getSmtpServerName()));
-        fldSmtpServerPort = new BasicEditField("Port: ", Integer.toString(acctConfig.getSmtpServerPort()));
-        fldSmtpServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldSmtpServerPort);
-        
-        add(fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL()));
-        fldSmtpServerSSL.setChangeListener(this);
-        
-        add(fldSmtpFromAddress = new EmailAddressEditField("E-Mail address: ", acctConfig.getSmtpFromAddress()));
-        
-        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
-        add(fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth()));
-        add(fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser()));
-        add(fldSmtpPass = new PasswordEditField("Password: ", acctConfig.getSmtpPass()));
         if(acctConfig.getSmtpUseAuth() == 0) {
             fldSmtpUser.setEditable(false);
             fldSmtpPass.setEditable(false);
             fldSmtpUser.setText("");
             fldSmtpPass.setText("");
         }
-        fldSmtpUseAuth.setChangeListener(this);
-        
-        add(new LabelField(null, Field.NON_FOCUSABLE));
-        
-        btSave = new ButtonField("Save", Field.FIELD_HCENTER);
-        btSave.setChangeListener(this);
-        add(btSave);
     }
 
-    public void fieldChanged(Field field, int context) {
-        if(field == btSave) {
+    private void initFields() {
+        acctNameField = new BasicEditField("Account name: ", acctConfig.getAcctName());
+        serverNameField = new BasicEditField("Server: ", acctConfig.getServerName());
+        
+        serverSslField = new CheckboxField("SSL", acctConfig.getServerSSL());
+        serverSslField.setChangeListener(fieldChangeListener);
+        serverPortField = new BasicEditField("Port: ", Integer.toString(acctConfig.getServerPort()));
+        serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        serverUserField = new BasicEditField("Username: ", acctConfig.getServerUser());
+        serverPassField = new PasswordEditField("Password: ", acctConfig.getServerPass());
+        
+        useMdsField = new CheckboxField("Use MDS proxy", !acctConfig.getDeviceSide());
+        fldSmtpServerName = new BasicEditField("SMTP server: ", acctConfig.getSmtpServerName());
+        
+        fldSmtpServerPort = new BasicEditField("Port: ", Integer.toString(acctConfig.getSmtpServerPort()));
+        fldSmtpServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        
+        fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL());
+        fldSmtpServerSSL.setChangeListener(fieldChangeListener);
+        
+        fldSmtpFromAddress = new EmailAddressEditField("E-Mail address: ", acctConfig.getSmtpFromAddress());
+        
+        
+        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
+        fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth());
+        
+        fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser());
+        fldSmtpPass = new PasswordEditField("Password: ", acctConfig.getSmtpPass());
+        
+        fldSmtpUseAuth.setChangeListener(fieldChangeListener);
+        
+        saveButton = new ButtonField("Save", Field.FIELD_HCENTER);
+        saveButton.setChangeListener(fieldChangeListener);
+        
+        add(acctNameField);
+        add(new SeparatorField());
+        add(new RichTextField("Incoming server:", Field.NON_FOCUSABLE));
+        add(serverNameField);
+        
+        if(acctConfig instanceof ImapConfig) {
+            add(new RichTextField("Protocol: IMAP", Field.NON_FOCUSABLE));
+        }
+        else if(acctConfig instanceof PopConfig) {
+            add(new RichTextField("Protocol: POP", Field.NON_FOCUSABLE));
+        }
+        
+        add(serverSslField);
+        add(serverPortField);
+        add(serverUserField);
+        add(serverPassField);
+        add(useMdsField);
+        add(new SeparatorField());
+        add(new RichTextField("Outgoing server:", Field.NON_FOCUSABLE));
+        add(fldSmtpServerName);
+        add(fldSmtpServerPort);
+        add(fldSmtpServerSSL);
+        add(fldSmtpFromAddress);
+        add(fldSmtpUseAuth);
+        add(fldSmtpUser);
+        add(fldSmtpPass);
+        add(new LabelField(null, Field.NON_FOCUSABLE));
+        add(saveButton);
+    }
+    
+    public void AcctCfgScreen_fieldChanged(Field field, int context) {
+        if(field == saveButton) {
             field.setDirty(false);
             onClose();
         }
-        else if(field == fldServerType || field == fldServerSSL) {
-            if(fldServerType.getSelectedIndex() == 0) {
-                if(fldServerSSL.getChecked())
-                    fldServerPort.setText("995");
-                else
-                    fldServerPort.setText("110");
+        else if(field == serverSslField) {
+            if(acctConfig instanceof PopConfig) {
+                if(serverSslField.getChecked()) {
+                    serverPortField.setText("995");
+                }
+                else {
+                    serverPortField.setText("110");
+                }
             }
-            else if(fldServerType.getSelectedIndex() == 1) {
-                if(fldServerSSL.getChecked())
-                    fldServerPort.setText("993");
-                else
-                    fldServerPort.setText("143");
+            else if(acctConfig instanceof ImapConfig) {
+                if(serverSslField.getChecked()) {
+                    serverPortField.setText("993");
+                }
+                else {
+                    serverPortField.setText("143");
+                }
             }
         }
         else if(field == fldSmtpServerSSL) {
@@ -177,9 +204,9 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     }
 
     protected boolean onSavePrompt() {
-        if(fldAcctName.getText().length() > 0 &&
-           fldServerName.getText().length() > 0 &&
-           fldServerPort.getText().length() > 0) {
+        if(acctNameField.getText().length() > 0 &&
+           serverNameField.getText().length() > 0 &&
+           serverPortField.getText().length() > 0) {
             return super.onSavePrompt();
         }
         else {
@@ -194,14 +221,13 @@ public class AcctCfgScreen extends BaseCfgScreen implements FieldChangeListener 
     }
 
     public void save() {
-        this.acctConfig.setAcctName(fldAcctName.getText());
-        this.acctConfig.setServerName(fldServerName.getText());
-        this.acctConfig.setServerType(fldServerType.getSelectedIndex());
-        this.acctConfig.setServerSSL(fldServerSSL.getChecked());
-        this.acctConfig.setServerPort(Integer.parseInt(fldServerPort.getText()));
-        this.acctConfig.setServerUser(fldServerUser.getText());
-        this.acctConfig.setServerPass(fldServerPass.getText());
-        this.acctConfig.setDeviceSide(!fldUseMDS.getChecked());
+        this.acctConfig.setAcctName(acctNameField.getText());
+        this.acctConfig.setServerName(serverNameField.getText());
+        this.acctConfig.setServerSSL(serverSslField.getChecked());
+        this.acctConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
+        this.acctConfig.setServerUser(serverUserField.getText());
+        this.acctConfig.setServerPass(serverPassField.getText());
+        this.acctConfig.setDeviceSide(!useMdsField.getChecked());
         this.acctConfig.setSmtpServerName(fldSmtpServerName.getText());
         this.acctConfig.setSmtpServerPort(Integer.parseInt(fldSmtpServerPort.getText()));
         this.acctConfig.setSmtpServerSSL(fldSmtpServerSSL.getChecked());
