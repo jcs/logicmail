@@ -78,12 +78,7 @@ public class StringParser {
         // Set the time zone
         Calendar cal;
         String tz = rawDate.substring(rawDate.lastIndexOf(' ')+1);
-        if(tz.startsWith("-") || tz.startsWith("+")) {
-            cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"+tz));
-        }
-        else {
-            cal = Calendar.getInstance(TimeZone.getTimeZone(tz));
-        }
+        cal = Calendar.getInstance(createTimeZone(tz));
 
         p = 0;
         q = rawDate.indexOf(" ", p+1);
@@ -115,15 +110,87 @@ public class StringParser {
         
         p = q+1;
         q = rawDate.indexOf(":", p+1);
-        fields[4] = Integer.parseInt(rawDate.substring(p, q));
+        if(q == -1)
+        {
+            // The second field is missing, so handle accordingly
+            q = rawDate.indexOf(" ", p+1);
+            fields[4] = Integer.parseInt(rawDate.substring(p, q));
+            fields[5] = 0;
+            fields[6] = 0;
+        }
+        else
+        {
+            // Otherwise parse minutes and seconds as normal
+            fields[4] = Integer.parseInt(rawDate.substring(p, q));
 
-        p = q+1;
-        q = rawDate.indexOf(" ", p+1);
-        fields[5] = Integer.parseInt(rawDate.substring(p, q));
-        fields[6] = 0;
+            p = q+1;
+            q = rawDate.indexOf(" ", p+1);
+            fields[5] = Integer.parseInt(rawDate.substring(p, q));
+            fields[6] = 0;
+        }
 
         DateTimeUtilities.setCalendarFields(cal, fields);
         return cal.getTime();
+    }
+    
+    /**
+     * Create a TimeZone object from an input string.
+     *
+     * @param tz Input string
+     * @return TimeZone object
+     */
+    private static TimeZone createTimeZone(String tz) {
+        TimeZone result;
+        if(tz.startsWith("-") || tz.startsWith("+")) {
+            result = TimeZone.getTimeZone("GMT"+tz);
+        }
+        else if(tz.indexOf('/') != -1) { result = TimeZone.getTimeZone(tz); }
+        else if(tz.equals("MIT")) { result = TimeZone.getTimeZone("GMT-11:00"); }
+        else if(tz.equals("HST")) { result = TimeZone.getTimeZone("GMT-10:00"); }
+        else if(tz.equals("AST")) { result = TimeZone.getTimeZone("GMT-9:00"); }
+        else if(tz.equals("PST")) { result = TimeZone.getTimeZone("GMT-8:00"); }
+        else if(tz.equals("PDT")) { result = TimeZone.getTimeZone("GMT-7:00"); }
+        else if(tz.equals("PST8PDT")) { result = TimeZone.getTimeZone("GMT-8:00"); }
+        else if(tz.equals("MST")) { result = TimeZone.getTimeZone("GMT-7:00"); }
+        else if(tz.equals("MDT")) { result = TimeZone.getTimeZone("GMT-6:00"); }
+        else if(tz.equals("MST7MDT")) { result = TimeZone.getTimeZone("GMT-7:00"); }
+        else if(tz.equals("PNT")) { result = TimeZone.getTimeZone("GMT-7:00"); }
+        else if(tz.equals("CST")) { result = TimeZone.getTimeZone("GMT-6:00"); }
+        else if(tz.equals("CDT")) { result = TimeZone.getTimeZone("GMT-5:00"); }
+        else if(tz.equals("CST6CDT")) { result = TimeZone.getTimeZone("GMT-6:00"); }
+        else if(tz.equals("EST")) { result = TimeZone.getTimeZone("GMT-5:00"); }
+        else if(tz.equals("EDT")) { result = TimeZone.getTimeZone("GMT-4:00"); }
+        else if(tz.equals("EST5EDT")) { result = TimeZone.getTimeZone("GMT-5:00"); }
+        else if(tz.equals("IET")) { result = TimeZone.getTimeZone("GMT-5:00"); }
+        else if(tz.equals("PRT")) { result = TimeZone.getTimeZone("GMT-4:00"); }
+        else if(tz.equals("CNT")) { result = TimeZone.getTimeZone("GMT-3:5"); }
+        else if(tz.equals("AGT")) { result = TimeZone.getTimeZone("GMT-3:00"); }
+        else if(tz.equals("BET")) { result = TimeZone.getTimeZone("GMT-3:00"); }
+        else if(tz.equals("UCT")) { result = TimeZone.getTimeZone("GMT"); }
+        else if(tz.equals("UTC")) { result = TimeZone.getTimeZone("GMT"); }
+        else if(tz.equals("WET")) { result = TimeZone.getTimeZone("GMT"); }
+        else if(tz.equals("CET")) { result = TimeZone.getTimeZone("GMT+1:00"); }
+        else if(tz.equals("ECT")) { result = TimeZone.getTimeZone("GMT+1:00"); }
+        else if(tz.equals("MET")) { result = TimeZone.getTimeZone("GMT+1:00"); }
+        else if(tz.equals("ART")) { result = TimeZone.getTimeZone("GMT+2:00"); }
+        else if(tz.equals("CAT")) { result = TimeZone.getTimeZone("GMT+2:00"); }
+        else if(tz.equals("EET")) { result = TimeZone.getTimeZone("GMT+2:00"); }
+        else if(tz.equals("EAT")) { result = TimeZone.getTimeZone("GMT+3:00"); }
+        else if(tz.equals("NET")) { result = TimeZone.getTimeZone("GMT+4:00"); }
+        else if(tz.equals("PLT")) { result = TimeZone.getTimeZone("GMT+5:00"); }
+        else if(tz.equals("IST")) { result = TimeZone.getTimeZone("GMT+5:30"); }
+        else if(tz.equals("BST")) { result = TimeZone.getTimeZone("GMT+6:00"); }
+        else if(tz.equals("VST")) { result = TimeZone.getTimeZone("GMT+7:00"); }
+        else if(tz.equals("CTT")) { result = TimeZone.getTimeZone("GMT+8:00"); }
+        else if(tz.equals("PRC")) { result = TimeZone.getTimeZone("GMT+8:00"); }
+        else if(tz.equals("JST")) { result = TimeZone.getTimeZone("GMT+9:00"); }
+        else if(tz.equals("ROK")) { result = TimeZone.getTimeZone("GMT+9:00"); }
+        else if(tz.equals("ACT")) { result = TimeZone.getTimeZone("GMT+9:30"); }
+        else if(tz.equals("AET")) { result = TimeZone.getTimeZone("GMT+10:00"); }
+        else if(tz.equals("SST")) { result = TimeZone.getTimeZone("GMT+11:00"); }
+        else if(tz.equals("NST")) { result = TimeZone.getTimeZone("GMT+12:00"); }
+        else { result = TimeZone.getTimeZone(tz); }
+        return result;
     }
     
     /**

@@ -70,7 +70,7 @@ public class StringParserTest extends TestCase {
         rawDate = "Sat, 10 Feb 2007 21:27:01 -0800";
         result = StringParser.parseDateString(rawDate);
         cal.setTime(result);
-        cal.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+        cal.setTimeZone(TimeZone.getTimeZone("GMT-08:00"));
         
         assertEquals("Test 1", 2007, cal.get(Calendar.YEAR));
         assertEquals("Test 1", 1, cal.get(Calendar.MONTH));
@@ -83,13 +83,25 @@ public class StringParserTest extends TestCase {
         result = StringParser.parseDateString(rawDate);
         cal = Calendar.getInstance();
         cal.setTime(result);
-        cal.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+        cal.setTimeZone(TimeZone.getTimeZone("GMT-08:00"));
         assertEquals("Test 2", 2007, cal.get(Calendar.YEAR));
         assertEquals("Test 2", 1, cal.get(Calendar.MONTH));
         assertEquals("Test 2", 10, cal.get(Calendar.DAY_OF_MONTH));
         assertEquals("Test 2", 21, cal.get(Calendar.HOUR_OF_DAY));
         assertEquals("Test 2", 30, cal.get(Calendar.MINUTE));
         assertEquals("Test 2", 37, cal.get(Calendar.SECOND));
+        
+        rawDate = "Tue, 23 Oct 2007 18:01 EST";
+        result = StringParser.parseDateString(rawDate);
+        cal = Calendar.getInstance();
+        cal.setTime(result);
+        cal.setTimeZone(TimeZone.getTimeZone("GMT-05:00"));
+        assertEquals("Test 3", 2007, cal.get(Calendar.YEAR));
+        assertEquals("Test 3", 9, cal.get(Calendar.MONTH));
+        assertEquals("Test 3", 23, cal.get(Calendar.DAY_OF_MONTH));
+        assertEquals("Test 3", 18, cal.get(Calendar.HOUR_OF_DAY));
+        assertEquals("Test 3", 01, cal.get(Calendar.MINUTE));
+        assertEquals("Test 3", 00, cal.get(Calendar.SECOND));
     }
 
     /**
