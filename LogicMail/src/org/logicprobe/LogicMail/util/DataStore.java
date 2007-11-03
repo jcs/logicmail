@@ -45,14 +45,14 @@ public interface DataStore {
      * @param name Name for the object
      * @return Matching object
      */
-    public abstract Object getNamedObject(String name);
+    public abstract Serializable getNamedObject(String name);
     
     /**
      * Gets an object by unique id lookup.
      * @param id Unique id for the object
      * @return Matching object
      */
-    public abstract Object getObject(long id);
+    public abstract Serializable getObject(long id);
     
     /**
      * Puts an object into the store with a name mapping.

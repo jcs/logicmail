@@ -37,6 +37,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 import javax.microedition.rms.RecordStore;
 import javax.microedition.rms.RecordStoreException;
@@ -49,9 +50,12 @@ import javax.microedition.rms.RecordStoreException;
  * not been implemented.
  */
 public class RmsDataStore implements DataStore {
+    /** Name of the RMS store */
     private String storeName;
-    private SerializableHashtable objectMap;
-    private Vector storeObjects;
+    /** Name to UID mappings */
+    private SerializableHashtable nameMap;
+    /** UID to Object mappings */
+    private Hashtable objectMap;
     
     /**
      * Creates a new instance of RmsDataStore.
@@ -59,58 +63,43 @@ public class RmsDataStore implements DataStore {
      */
     public RmsDataStore(String storeName) {
         this.storeName = storeName;
-        this.objectMap = new SerializableHashtable();
-        this.storeObjects = new Vector();
+        this.objectMap = new Hashtable();
+        this.nameMap = new SerializableHashtable();
     }
 
-    public Object getNamedObject(String name) {
+    public Serializable getNamedObject(String name) {
         // Get the ID that matches the name
-        Object value = objectMap.get(name);
+        Object value = nameMap.get(name);
         if(value instanceof Long) {
-            // Now get the index that matches the ID
+            // Now get the object that matches the ID
             value = objectMap.get(value);
-            if(value instanceof Integer) {
-                return storeObjects.elementAt(((Integer)value).intValue());
-            }
-            else {
-                return null;
-            }
+            return (Serializable)value;
         }
         else {
             return null;
         }
     }
 
-    public Object getObject(long id) {
-        Object value = objectMap.get(new Long(id));
-        if(value instanceof Integer) {
-            return storeObjects.elementAt(((Integer)value).intValue());
-        }
-        else {
-            return null;
-        }
+    public Serializable getObject(long id) {
+        return (Serializable)objectMap.get(new Long(id));
     }
 
     public void putNamedObject(String name, Serializable object) {
-        objectMap.put(name, new Long(object.getUniqueId()));
+        nameMap.put(name, new Long(object.getUniqueId()));
         putObject(object);
     }
 
     public void putObject(Serializable object) {
-        Long keyObj = new Long(object.getUniqueId());
-        if(objectMap.containsKey(keyObj)) {
-            storeObjects.setElementAt(object, ((Integer)objectMap.get(keyObj)).intValue());
-        }
-        else {
-            storeObjects.addElement(object);
-            objectMap.put(keyObj, new Integer(storeObjects.size() - 1));
-        }
+        objectMap.put(new Long(object.getUniqueId()), object);
     }
 
     public void removeNamedObject(String name) {
+        removeObject(getNamedObject(name));
+        nameMap.remove(name);
     }
 
     public void removeObject(Serializable object) {
+        objectMap.remove(new Long(object.getUniqueId()));
     }
 
     public void save() {
@@ -127,13 +116,13 @@ public class RmsDataStore implements DataStore {
             RecordStore store = RecordStore.openRecordStore(storeName, true);
             byte[] byteArray;
             
-            // Serialize the object map, and store
+            // Serialize the name map, and store
             // it at the first index.
-            byteArray = serializeClass(objectMap);
+            byteArray = serializeClass(nameMap);
             store.addRecord(byteArray, 0, byteArray.length);
             
-            // Store all the objects in the vector
-            Enumeration e = storeObjects.elements();
+            // Store all the objects in the object map
+            Enumeration e = objectMap.elements();
             while (e.hasMoreElements()) {
                 byteArray = serializeClass((Serializable)e.nextElement());
                 store.addRecord(byteArray, 0, byteArray.length);
@@ -152,10 +141,10 @@ public class RmsDataStore implements DataStore {
             int records = store.getNumRecords();
             
             if(records >= 1) {
-                // Deserialize the object map
+                // Deserialize the name map
                 deserializedObject = deserializeClass(store.getRecord(1));
                 if(deserializedObject instanceof SerializableHashtable) {
-                    objectMap = (SerializableHashtable)deserializedObject;
+                    nameMap = (SerializableHashtable)deserializedObject;
                 }
                 else {
                     return;
@@ -165,7 +154,9 @@ public class RmsDataStore implements DataStore {
                 if(records > 1) {
                     for(int i=2;i<=records;i++) {
                         deserializedObject = deserializeClass(store.getRecord(i));
-                        storeObjects.addElement(deserializedObject);
+                        if(deserializedObject instanceof Serializable) {
+                            objectMap.put(new Long(((Serializable)deserializedObject).getUniqueId()), deserializedObject);
+                        }
                     }
                 }
             }
@@ -201,14 +192,16 @@ public class RmsDataStore implements DataStore {
      * Serializable interface, the input stream is passed on
      * to its deserialize method.
      */
-    private Object deserializeClass(byte[] data) {
+    private Serializable deserializeClass(byte[] data) {
         DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
-        Object result = null;
+        Object deserializedObject;
+        Serializable result = null;
         try {
             String classType = input.readUTF();
-            result = Class.forName(classType).newInstance();
-            if(result instanceof Serializable) {
-                ((Serializable)result).deserialize(input);
+            deserializedObject = Class.forName(classType).newInstance();
+            if(deserializedObject instanceof Serializable) {
+                result = (Serializable)deserializedObject;
+                result.deserialize(input);
             }
         } catch (IOException ex) {
             result = null;

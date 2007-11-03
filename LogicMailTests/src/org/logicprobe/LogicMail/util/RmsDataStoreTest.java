@@ -88,6 +88,9 @@ public class RmsDataStoreTest extends TestCase {
         assertSame(testObject1, instance.getObject(testId1));
         assertSame(testObject2, instance.getObject(testId2));
     
+        instance.removeObject(testObject1);
+        assertNull(instance.getObject(testId1));
+        assertSame(testObject2, instance.getObject(testId2));
     }
 
     public void testNamedObject() {
@@ -108,6 +111,12 @@ public class RmsDataStoreTest extends TestCase {
         instance.putNamedObject("Test 2", testObject2);
         assertSame(testObject1, instance.getObject(testId1));
         assertSame(testObject1, instance.getNamedObject("Test 1"));
+        assertSame(testObject2, instance.getObject(testId2));
+        assertSame(testObject2, instance.getNamedObject("Test 2"));
+
+        instance.removeNamedObject("Test 1");
+        assertNull(instance.getObject(testId1));
+        assertNull(instance.getNamedObject("Test 1"));
         assertSame(testObject2, instance.getObject(testId2));
         assertSame(testObject2, instance.getNamedObject("Test 2"));
     }
