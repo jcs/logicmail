@@ -31,14 +31,10 @@
 
 package org.logicprobe.LogicMail.conf;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Vector;
-import javax.microedition.rms.*;
-import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.DataStore;
+import org.logicprobe.LogicMail.util.DataStoreFactory;
+import org.logicprobe.LogicMail.util.SerializableVector;
 
 /**
  * Provide an interface to global and account-specific
@@ -49,11 +45,17 @@ public class MailSettings {
     private GlobalConfig globalConfig;
     private Vector accountConfigs;
     private Vector outgoingConfigs;
+    private DataStore configStore;
     
+    private static String GLOBAL_CONFIG = "global_config";
+    private static String ACCOUNT_CONFIGS = "account_configs";
+    private static String OUTGOING_CONFIGS = "outgoing_configs";
+
     private MailSettings() {
         globalConfig = new GlobalConfig();
         accountConfigs = new Vector();
         outgoingConfigs = new Vector();
+        configStore = DataStoreFactory.getConfigurationStore();
     }
     
     /**
@@ -134,137 +136,75 @@ public class MailSettings {
      * Save the configurations to persistent storage.
      */
     public void saveSettings() {
-        try {
-            RecordStore.deleteRecordStore("LogicMail_config");
-        } catch (RecordStoreException exp) {
-            // do nothing
-        }
+        SerializableVector accountConfigIds = new SerializableVector();
+        SerializableVector outgoingConfigIds = new SerializableVector();
+
+        configStore.putNamedObject(GLOBAL_CONFIG, globalConfig);
+        configStore.putNamedObject(ACCOUNT_CONFIGS, accountConfigIds);
+        configStore.putNamedObject(OUTGOING_CONFIGS, outgoingConfigIds);
         
-        RecordStore store = null;
-        try {
-            store = RecordStore.openRecordStore("LogicMail_config", true);
-            byte[] byteArray;
-            
-            byteArray = serializeClass(globalConfig);
-            store.addRecord(byteArray, 0, byteArray.length);
-            
-            int size = accountConfigs.size();
-            for(int i=0;i<size;i++) {
-                byteArray = serializeClass((Serializable)accountConfigs.elementAt(i));
-                store.addRecord(byteArray, 0, byteArray.length);
-            }
-            size = outgoingConfigs.size();
-            for(int i=0;i<size;i++) {
-                byteArray = serializeClass((Serializable)outgoingConfigs.elementAt(i));
-                store.addRecord(byteArray, 0, byteArray.length);
-            }
-        } catch (RecordStoreException exp) {
-            // do nothing
+        int i;
+        int size = accountConfigs.size();
+        for(i=0; i<size; ++i) {
+            AccountConfig config = (AccountConfig)accountConfigs.elementAt(i);
+            accountConfigIds.addElement(new Long(config.getUniqueId()));
+            configStore.putObject(config);
         }
+
+        size = outgoingConfigs.size();
+        for(i=0; i<size; ++i) {
+            OutgoingConfig config = (OutgoingConfig)outgoingConfigs.elementAt(i);
+            outgoingConfigIds.addElement(new Long(config.getUniqueId()));
+            configStore.putObject(config);
+        }
+
+        configStore.save();
+    }
         
-        try {
-            if(store != null) {
-                store.closeRecordStore();
-            }
-        } catch (RecordStoreException exp) {
-            // do nothing
-        }
-    }
-    
-    /**
-     * Utility method to serialize any serializable class.
-     * The returned buffer consists of the fully qualified class name,
-     * followed by the serialized contents of the class.
-     */
-    private byte[] serializeClass(Serializable input) {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        DataOutputStream output = new DataOutputStream(buffer);
-        try {
-            output.writeUTF(input.getClass().getName());
-            input.serialize(output);
-        } catch (IOException ex) {
-            // do nothing
-        }
-        return buffer.toByteArray();
-    }
-    
     /**
      * Load the configurations from persistent storage.
      * This method should only be called once in the lifetime of
      * the application, preferably at the very start.
      */
     public void loadSettings() {
-        accountConfigs.removeAllElements();
-        outgoingConfigs.removeAllElements();
-        RecordStore store = null;
-        Object deserializedObject;
-        try {
-            store = RecordStore.openRecordStore("LogicMail_config", false);
-            
-            int records = store.getNumRecords();
-            
-            if(records >= 1) {
-                deserializedObject = deserializeClass(store.getRecord(1));
-                if(deserializedObject instanceof GlobalConfig) {
-                    globalConfig = (GlobalConfig)deserializedObject;
-                }
-                else {
-                    globalConfig = new GlobalConfig();
-                }
-            
-                if(records > 1) {
-                    for(int i=2;i<=store.getNumRecords();i++) {
-                        deserializedObject = deserializeClass(store.getRecord(i));
-                        if(deserializedObject instanceof AccountConfig)
-                        {
-                            accountConfigs.addElement(deserializedObject);
-                        }
-                        else if(deserializedObject instanceof OutgoingConfig)
-                        {
-                            outgoingConfigs.addElement(deserializedObject);
-                        }
-                    }
-                }
-            }
-        } catch (RecordStoreException exp) {
-            // do nothing
+        configStore.load();
+        
+        Object loadedObj;
+        loadedObj = configStore.getNamedObject(GLOBAL_CONFIG);
+        if(loadedObj instanceof GlobalConfig) {
+            globalConfig = (GlobalConfig)loadedObj;
+        }
+        else {
+            globalConfig = new GlobalConfig();
         }
         
-        try {
-            if(store != null) {
-                store.closeRecordStore();
+        accountConfigs.removeAllElements();
+        outgoingConfigs.removeAllElements();
+        SerializableVector configIds;
+        int size;
+        
+        loadedObj = configStore.getNamedObject(ACCOUNT_CONFIGS);
+        if(loadedObj instanceof SerializableVector) {
+            configIds = (SerializableVector)loadedObj;
+            size = configIds.size();
+            for(int i=0; i<size; ++i) {
+                loadedObj = configStore.getObject(((Long)configIds.elementAt(i)).longValue());
+                if(loadedObj instanceof AccountConfig) {
+                    accountConfigs.addElement(loadedObj);
+                }
             }
-        } catch (RecordStoreException exp) {
-            // do nothing
         }
-    }
-    
-    /**
-     * Utility method to deserialize any class.
-     * First, the fully qualified class name is read from the
-     * input stream.  Then, if a class matching that name exists,
-     * it is instantiated.  Finally, if that class implements the
-     * Serializable interface, the input stream is passed on
-     * to its deserialize method.
-     */
-    private Object deserializeClass(byte[] data) {
-        DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
-        Object result = null;
-        try {
-            String classType = input.readUTF();
-            result = Class.forName(classType).newInstance();
-            if(result instanceof Serializable) {
-                ((Serializable)result).deserialize(input);
+
+        loadedObj = configStore.getNamedObject(OUTGOING_CONFIGS);
+        if(loadedObj instanceof SerializableVector) {
+            configIds = (SerializableVector)loadedObj;
+            size = configIds.size();
+            for(int i=0; i<size; ++i) {
+                loadedObj = configStore.getObject(((Long)configIds.elementAt(i)).longValue());
+                if(loadedObj instanceof OutgoingConfig) {
+                    outgoingConfigs.addElement(loadedObj);
+                }
             }
-        } catch (IOException ex) {
-            result = null;
-        } catch (ClassNotFoundException ex) {
-            result = null;
-        } catch (InstantiationException ex) {
-            result = null;
-        } catch (IllegalAccessException ex) {
-            result = null;
         }
-        return result;
     }
 }

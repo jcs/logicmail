@@ -37,6 +37,7 @@ import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -56,7 +57,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class PopClient implements IncomingMailClient {
     private GlobalConfig globalConfig;
-    private AccountConfig acctCfg;
+    private PopConfig acctCfg;
     private Connection connection;
     private PopProtocol popProtocol;
     private String username;
@@ -71,7 +72,7 @@ public class PopClient implements IncomingMailClient {
     private FolderTreeItem activeMailbox = null;
     
     /** Creates a new instance of PopClient */
-    public PopClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
+    public PopClient(GlobalConfig globalConfig, PopConfig acctCfg) {
         this.acctCfg = acctCfg;
         this.globalConfig = globalConfig;
         connection = new Connection(

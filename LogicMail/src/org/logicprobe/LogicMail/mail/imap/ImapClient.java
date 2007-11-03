@@ -36,6 +36,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -53,7 +54,7 @@ import org.logicprobe.LogicMail.util.Connection;
  */
 public class ImapClient implements IncomingMailClient {
     private GlobalConfig globalConfig;
-    private AccountConfig acctCfg;
+    private ImapConfig acctCfg;
     private Connection connection;
     private ImapProtocol imapProtocol;
     private String username;
@@ -83,7 +84,7 @@ public class ImapClient implements IncomingMailClient {
      */
     private FolderTreeItem activeMailbox = null;
 
-    public ImapClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
+    public ImapClient(GlobalConfig globalConfig, ImapConfig acctCfg) {
         this.acctCfg = acctCfg;
         this.globalConfig = globalConfig;
         connection = new Connection(
