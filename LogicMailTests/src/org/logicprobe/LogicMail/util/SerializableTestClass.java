@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2007, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,25 +31,37 @@
 
 package org.logicprobe.LogicMail.util;
 
-import j2meunit.framework.Test;
-import j2meunit.framework.TestCase;
-import j2meunit.framework.TestSuite;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
 /**
- * Unit test suite for the LogicMail.util classes
+ * Test class for serialization.
+ * Has to be public so it can be instantiated by
+ * the DataStore implementations.
  */
-public class UtilTests extends TestCase {
-    
-    public UtilTests() {
-        super();
+public class SerializableTestClass implements Serializable {
+    private long uniqueId;
+    private int value;
+
+    public SerializableTestClass() {
+        uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
-    
-    public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.util");
-        testSuite.addTest(new StringParserTest().suite());
-        testSuite.addTest(new SerializableHashtableTest().suite());
-        testSuite.addTest(new EventListenerListTest().suite());
-        testSuite.addTest(new RmsDataStoreTest().suite());
-        return testSuite;
+
+    public int getValue() { return value; }
+    public void setValue(int value) { this.value = value; }
+
+    public void serialize(DataOutputStream output) throws IOException {
+        output.writeLong(uniqueId);
+        output.writeInt(value);
+    }
+
+    public void deserialize(DataInputStream input) throws IOException {
+        uniqueId = input.readLong();
+        value = input.readInt();
+    }
+
+    public long getUniqueId() {
+        return uniqueId;
     }
 }

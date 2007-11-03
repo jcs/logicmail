@@ -88,7 +88,7 @@ public class AccountConfigTest extends TestCase {
     }
     
     public void testInitialization() {
-        AccountConfig instance = new AccountConfig();
+        AccountConfig instance = new ImapConfig();
         assertEquals("", instance.getAcctName());
         assertEquals("", instance.getServerName());
         assertEquals(AccountConfig.TYPE_POP, instance.getServerType());
@@ -109,7 +109,7 @@ public class AccountConfigTest extends TestCase {
     public void testSerialization() {
         try {
             // Initialize the configuration
-            AccountConfig instance = new AccountConfig();
+            AccountConfig instance = new ImapConfig();
             instance.setAcctName("FooMail");
             instance.setServerName("mail.foomail.test");
             instance.setServerType(AccountConfig.TYPE_IMAP);
@@ -132,7 +132,7 @@ public class AccountConfigTest extends TestCase {
             
             // Deserialize
             TestInputStream testInput = new TestInputStream(testOutput.getBuffer());
-            instance = new AccountConfig();
+            instance = new ImapConfig();
             instance.deserialize(new DataInputStream(testInput));
             
             // Verify results
