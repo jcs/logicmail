@@ -151,6 +151,7 @@ public class RmsDataStore implements DataStore {
                 }
             
                 // Populate the vector
+                objectMap.clear();
                 if(records > 1) {
                     for(int i=2;i<=records;i++) {
                         deserializedObject = deserializeClass(store.getRecord(i));

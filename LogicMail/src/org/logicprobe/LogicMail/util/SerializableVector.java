@@ -34,17 +34,16 @@ package org.logicprobe.LogicMail.util;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.Vector;
 
 /**
- * Provides an implementation of java.util.Hashtable that implements
+ * Provides an implementation of java.util.Vector that implements
  * the LogicMail.util.Serializable interface.
  * The maximum number of items that can be stored is 1000.
  * This limit exists so that the deserialization code can quickly
  * handle data corruption that could result in a bad size value.
  */
-public class SerializableHashtable extends Hashtable implements Serializable {
+public class SerializableVector extends Vector implements Serializable {
     final private static int TYPE_NULL    = 0;
     final private static int TYPE_BOOLEAN = 1;
     final private static int TYPE_BYTE    = 2;
@@ -61,29 +60,31 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     private long uniqueId;
     
     /**
-     * Creates a new instance of SerializableHashtable.
-     * This class only supports hash tables containing objects which
+     * Creates a new instance of SerializableVector.
+     * This class only supports vectors containing objects which
      * wrap the various primitive types supported by DataOutputStream
      * and DataInputStream.
+     *
+     * @param table The instance of Hashtable to wrap
      */
-    public SerializableHashtable() {
+    public SerializableVector() {
         super();
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
 
     /**
-     * Creates a new instance of SerializableHashtable.
-     * This class only supports hash tables containing objects which
+     * Creates a new instance of SerializableVector.
+     * This class only supports vectors containing objects which
      * wrap the various primitive types supported by DataOutputStream
      * and DataInputStream.
      *
-     * @param initialCapacity Initial capacity of the hashtable.
+     * @param initialCapacity Initial capacity of the vector.
      */
-    public SerializableHashtable(int initialCapacity) {
+    public SerializableVector(int initialCapacity) {
         super(initialCapacity);
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
-    
+
     private static void writeObject(DataOutputStream output, Object item) throws IOException {
         if(item instanceof Boolean) {
             output.write(TYPE_BOOLEAN);
@@ -154,38 +155,30 @@ public class SerializableHashtable extends Hashtable implements Serializable {
                 return null;
         }
     }
-    
+
     public void serialize(DataOutputStream output) throws IOException {
         output.writeLong(uniqueId);
-        output.writeInt(this.size());
-        Enumeration e = this.keys();
-        Object key;
-        while(e.hasMoreElements()) {
-            key = e.nextElement();
-            writeObject(output, key);
-            writeObject(output, this.get(key));
+        int size = this.size();
+        output.writeInt(size);
+        for(int i=0; i<size; ++i) {
+            writeObject(output, this.elementAt(i));
         }
     }
 
     public void deserialize(DataInputStream input) throws IOException {
-        this.clear();
+        this.removeAllElements();
         uniqueId = input.readLong();
         int size = input.readInt();
         if(size > MAX_ITEMS) {
             throw new IOException();
         }
-        Object key;
-        Object value;
+        
         for(int i=0; i<size; i++) {
-            key = readObject(input);
-            value = readObject(input);
-            if(key != null && value != null) {
-                this.put(key, value);
-            }
+            this.addElement(readObject(input));
         }
-    }    
+    }
 
     public long getUniqueId() {
         return uniqueId;
-    }
+    }    
 }
