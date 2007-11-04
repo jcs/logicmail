@@ -67,10 +67,10 @@ public final class DataStoreFactory {
      * @return Metadata store
      */
     public static synchronized DataStore getMetadataStore() {
-        if(configurationStore == null) {
-            configurationStore = new RmsDataStore("metadata");
+        if(metadataStore == null) {
+            metadataStore = new RmsDataStore("metadata");
         }
-        return configurationStore;
+        return metadataStore;
     }
     
     /**

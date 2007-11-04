@@ -79,6 +79,16 @@ public class RmsDataStore implements DataStore {
             return null;
         }
     }
+    
+    public String[] getNamedObjects() {
+        String[] result = new String[nameMap.size()];
+        Enumeration e = nameMap.keys();
+        int i = 0;
+        while(e.hasMoreElements()) {
+            result[i++] = (String)e.nextElement();
+        }
+        return result;
+    }
 
     public Serializable getObject(long id) {
         return (Serializable)objectMap.get(new Long(id));
@@ -168,6 +178,14 @@ public class RmsDataStore implements DataStore {
         }
     }
 
+    public void delete() {
+        try {
+            RecordStore.deleteRecordStore(storeName);
+        } catch (RecordStoreException exp) {
+            // do nothing
+        }
+    }
+    
     /**
      * Utility method to serialize any serializable class.
      * The returned buffer consists of the fully qualified class name,

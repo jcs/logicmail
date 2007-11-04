@@ -48,6 +48,12 @@ public interface DataStore {
     public abstract Serializable getNamedObject(String name);
     
     /**
+     * Gets an array of all the named objects available.
+     * @return Array of available named objects
+     */
+    public abstract String[] getNamedObjects();
+    
+    /**
      * Gets an object by unique id lookup.
      * @param id Unique id for the object
      * @return Matching object
@@ -94,4 +100,11 @@ public interface DataStore {
      * Load the contents of the store from persistent memory.
      */
     public abstract void load();
+    
+    /**
+     * Delete this store from the device.
+     * Calling save() or load() after this method may result
+     * in the store being recreated.
+     */
+    public abstract void delete();
 }

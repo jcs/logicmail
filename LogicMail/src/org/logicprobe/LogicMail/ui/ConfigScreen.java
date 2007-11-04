@@ -41,6 +41,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
+import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -252,11 +253,12 @@ public class ConfigScreen extends BaseCfgScreen {
         int index = ((Integer)accountIndexMap.get(acctConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
+            (new AccountCache(acctConfig)).delete();
             mailSettings.removeAccountConfig(index);
             mailSettings.saveSettings();
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             accountIndexMap.remove(acctConfig);
-        }            
+        }
     }
 
     private void addOutgoingServer() {

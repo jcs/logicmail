@@ -37,6 +37,9 @@ import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
+/**
+ * Provides a front-end to account-specific metadata and cache storage.
+ */
 public class AccountCache {
     /** The global metadata store */
     private DataStore metadataStore;
@@ -50,11 +53,37 @@ public class AccountCache {
     private boolean cacheLoaded;
     
     private static String FOLDER_TREE = "folder_tree";
+    private static String METADATA_LIST = "metadata_list";
     
     public AccountCache(AccountConfig accountConfig) {
         accountId = accountConfig.getUniqueId();
         metadataStore = DataStoreFactory.getMetadataStore();
         cacheStore = DataStoreFactory.getConnectionCacheStore(accountId);
+    }
+    
+    /**
+     * Delete all persistent data associated with an account.
+     * This method should be called as part of deleting an
+     * account configuration, for cleanup purposes.
+     */
+    public void delete() {
+        // Delete the account-specific cache store
+        cacheStore.delete();
+        cacheLoaded = false;
+        
+        // Find any metadata named objects matching the prefix
+        // for this account, and remove them.
+        if(!metadataLoaded) {
+            metadataStore.load();
+        }
+        String[] names = metadataStore.getNamedObjects();
+        String prefix = Long.toString(accountId)+"_";
+        for(int i=0; i<names.length; ++i) {
+            if(names[i].startsWith(prefix)) {
+                metadataStore.removeNamedObject(names[i]);
+            }
+        }
+        metadataStore.save();
     }
     
     /**
