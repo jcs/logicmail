@@ -31,41 +31,64 @@
 
 package org.logicprobe.LogicMail.cache;
 
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.util.DataStore;
+import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 public class AccountCache {
-    private String _acctName;
+    /** The global metadata store */
+    private DataStore metadataStore;
+    /** The per-account cache store */
+    private DataStore cacheStore;
+    /** Unique id for the account */
+    private long accountId;
+    /** Flag to prevent redundant loading */
+    private boolean metadataLoaded;
+    /** Flag to prevent redundant loading */
+    private boolean cacheLoaded;
     
-    public AccountCache(String acctName) {
-        _acctName = acctName;
+    private static String FOLDER_TREE = "folder_tree";
+    
+    public AccountCache(AccountConfig accountConfig) {
+        accountId = accountConfig.getUniqueId();
+        metadataStore = DataStoreFactory.getMetadataStore();
+        cacheStore = DataStoreFactory.getConnectionCacheStore(accountId);
     }
     
-    public String getAcctName() {
-        return _acctName;
-    }
-    
-    public void setAcctName(String acctName) {
-        _acctName = acctName;
-    }
-
+    /**
+     * Save the folder tree for the account.
+     *
+     * @param folderRoot Root item of the tree.
+     */
     public void saveFolderTree(FolderTreeItem folderRoot) {
-        String key = "acct_" + _acctName + "_folders";
-        CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(key.hashCode()));
-        writer.addItem(folderRoot);
-        writer.store();
+        if(!cacheLoaded) {
+            cacheStore.load();
+        }
+
+        cacheStore.putNamedObject(FOLDER_TREE, folderRoot);
+        cacheStore.save();
     }
 
+    /**
+     * Load the folder tree for the account.
+     *
+     * @return Root item of the tree.
+     */
     public FolderTreeItem loadFolderTree() {
-        String key = "acct_" + _acctName + "_folders";
-        CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(key.hashCode()));
-        reader.load();
-        if(reader.getNumItems() < 1) {
+        if(!cacheLoaded) {
+            cacheStore.load();
+        }
+        
+        Object loadedObj = cacheStore.getNamedObject(FOLDER_TREE);
+        
+        if(loadedObj instanceof FolderTreeItem) {
+            return (FolderTreeItem)loadedObj;
+        }
+        else {
             return null;
         }
-        FolderTreeItem folderRoot = new FolderTreeItem();
-        reader.getItem(0, folderRoot);
-        return folderRoot;
     }
     
     /**
@@ -77,10 +100,13 @@ public class AccountCache {
      * @param metadata A serializable hashtable containing the metadata to save
      */
     public void saveAccountMetadata(String key, SerializableHashtable metadata) {
-        String writerKey = "acct_" + _acctName + "_metadata_" + key;
-        CacheWriter writer = new CacheWriter("LogicMail_acct_" + Integer.toString(writerKey.hashCode()));
-        writer.addItem(metadata);
-        writer.store();
+        if(!metadataLoaded) {
+            metadataStore.load();
+        }
+        
+        metadataStore.putNamedObject(Long.toString(accountId)+"_"+key, metadata);
+
+        metadataStore.save();
     }
     
     /**
@@ -92,14 +118,16 @@ public class AccountCache {
      * @return A serializable hashtable containing the saved metadata
      */
     public SerializableHashtable loadAccountMetadata(String key) {
-        String readerKey = "acct_" + _acctName + "_metadata_" + key;
-        CacheReader reader = new CacheReader("LogicMail_acct_" + Integer.toString(readerKey.hashCode()));
-        reader.load();
-        if(reader.getNumItems() < 1) {
+        if(!metadataLoaded) {
+            metadataStore.load();
+        }
+
+        Object loadedObj = metadataStore.getNamedObject(Long.toString(accountId)+"_"+key);
+        if(loadedObj instanceof SerializableHashtable) {
+            return (SerializableHashtable)loadedObj;
+        }
+        else {
             return null;
         }
-        SerializableHashtable hashtable = new SerializableHashtable();
-        reader.getItem(0, hashtable);
-        return hashtable;
     }
 }

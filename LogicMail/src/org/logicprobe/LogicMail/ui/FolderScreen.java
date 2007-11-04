@@ -73,7 +73,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         
         add(treeField);
         
-        acctCache = new AccountCache(this.client.getAcctConfig().getAcctName());
+        acctCache = new AccountCache(this.client.getAcctConfig());
 
         folderTreeRoot = acctCache.loadFolderTree();
         if(folderTreeRoot != null && folderTreeRoot.hasChildren()) {
@@ -368,7 +368,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
 
             // Save the results to the cache
             AccountCache acctCache =
-                new AccountCache(((IncomingMailClient)client).getAcctConfig().getAcctName());
+                new AccountCache(((IncomingMailClient)client).getAcctConfig());
             acctCache.saveFolderTree(folderItem);
 
             this.folderRoot = folderItem;
