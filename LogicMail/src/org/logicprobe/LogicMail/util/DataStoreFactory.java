@@ -55,7 +55,7 @@ public final class DataStoreFactory {
      */
     public static synchronized DataStore getConfigurationStore() {
         if(configurationStore == null) {
-            configurationStore = new RmsDataStore("LogicMail_config");
+            configurationStore = new RmsDataStore("configuration");
         }
         return configurationStore;
     }
@@ -68,7 +68,7 @@ public final class DataStoreFactory {
      */
     public static synchronized DataStore getMetadataStore() {
         if(configurationStore == null) {
-            configurationStore = new RmsDataStore("LogicMail_metadata");
+            configurationStore = new RmsDataStore("metadata");
         }
         return configurationStore;
     }
@@ -91,7 +91,7 @@ public final class DataStoreFactory {
             return (DataStore)value;
         }
         else {
-            DataStore cacheStore = new RmsDataStore("LogicMail_c_"+idObj.toString());
+            DataStore cacheStore = new RmsDataStore("cache_"+idObj.toString());
             connectionCacheStoreTable.put(idObj, cacheStore);
             return cacheStore;
         }
