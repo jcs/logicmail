@@ -48,6 +48,7 @@ public class PopConfig extends AccountConfig {
     
     protected void setDefaults() {
         super.setDefaults();
+        setServerPort(110);
     }    
 
     public String toString() {

@@ -48,6 +48,7 @@ public class ImapConfig extends AccountConfig {
     
     protected void setDefaults() {
         super.setDefaults();
+        setServerPort(143);
     }    
 
     public String toString() {
