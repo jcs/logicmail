@@ -169,7 +169,7 @@ public class PopClient implements IncomingMailClient {
         String[] headerText;
         MessageEnvelope env;
         for(int i=firstIndex; i<=lastIndex; i++) {
-            headerText = popProtocol.executeTop(index+1, 0);
+            headerText = popProtocol.executeTop(i, 0);
             env = PopParser.parseMessageEnvelope(headerText);
             folderMessages[index++] = new FolderMessage(env, i);
         }
