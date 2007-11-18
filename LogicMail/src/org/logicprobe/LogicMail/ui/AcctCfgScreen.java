@@ -46,6 +46,8 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
 
 /**
@@ -59,8 +61,10 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
     private CheckboxField useMdsField;
+    private ObjectChoiceField outgoingServerField;
     private ButtonField saveButton;
     
+    // BEGIN: SMTP
     private BasicEditField fldSmtpServerName;
     private BasicEditField fldSmtpServerPort;
     private CheckboxField fldSmtpServerSSL;
@@ -68,9 +72,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private ObjectChoiceField fldSmtpUseAuth;
     private BasicEditField fldSmtpUser;
     private PasswordEditField fldSmtpPass;
-
+    // END: SMTP
+    
     private boolean acctSaved;
     private AccountConfig acctConfig;
+    private OutgoingConfig[] outgoingConfigs;
     private FieldChangeListener fieldChangeListener;
     
     public AcctCfgScreen(AccountConfig acctConfig) {
@@ -79,11 +85,18 @@ public class AcctCfgScreen extends BaseCfgScreen {
         this.acctConfig = acctConfig;
         acctSaved = false;
         
+        MailSettings mailSettings = MailSettings.getInstance();
+        int numOutgoing = mailSettings.getNumOutgoing();
+        outgoingConfigs = new OutgoingConfig[numOutgoing];
+        for(int i=0; i<numOutgoing; ++i) {
+            outgoingConfigs[i] = mailSettings.getOutgoingConfig(i);
+        }
+        
         fieldChangeListener = new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
                 AcctCfgScreen_fieldChanged(field, context);
             }};
-        
+
         initFields();
 
         if(acctConfig.getSmtpUseAuth() == 0) {
@@ -106,6 +119,16 @@ public class AcctCfgScreen extends BaseCfgScreen {
         serverPassField = new PasswordEditField("Password: ", acctConfig.getServerPass());
         
         useMdsField = new CheckboxField("Use MDS proxy", !acctConfig.getDeviceSide());
+        
+        if(outgoingConfigs.length > 0) {
+            outgoingServerField = new ObjectChoiceField("Outgoing server: ", outgoingConfigs, 0);
+        }
+        else {
+            outgoingServerField = new ObjectChoiceField("Outgoing server: ", new String[] {"None configured"}, 0);
+            outgoingServerField.setEditable(false);
+        }
+
+        // BEGIN: SMTP (remove)
         fldSmtpServerName = new BasicEditField("SMTP server: ", acctConfig.getSmtpServerName());
         
         fldSmtpServerPort = new BasicEditField("Port: ", Integer.toString(acctConfig.getSmtpServerPort()));
@@ -124,6 +147,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         fldSmtpPass = new PasswordEditField("Password: ", acctConfig.getSmtpPass());
         
         fldSmtpUseAuth.setChangeListener(fieldChangeListener);
+        // END: SMTP (remove)
         
         saveButton = new ButtonField("Save", Field.FIELD_HCENTER);
         saveButton.setChangeListener(fieldChangeListener);
@@ -145,7 +169,9 @@ public class AcctCfgScreen extends BaseCfgScreen {
         add(serverUserField);
         add(serverPassField);
         add(useMdsField);
+        add(outgoingServerField);
         add(new SeparatorField());
+        // BEGIN: SMTP
         add(new RichTextField("Outgoing server:", Field.NON_FOCUSABLE));
         add(fldSmtpServerName);
         add(fldSmtpServerPort);
@@ -154,6 +180,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         add(fldSmtpUseAuth);
         add(fldSmtpUser);
         add(fldSmtpPass);
+        // END: SMTP
         add(new LabelField(null, Field.NON_FOCUSABLE));
         add(saveButton);
     }

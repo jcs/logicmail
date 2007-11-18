@@ -688,27 +688,52 @@ public class ImapProtocol {
             response.canSelect = !(flagStr.indexOf("\\Noselect") != -1);
             response.hasChildren = (flagStr.indexOf("\\HasChildren") != -1);
             response.marked = (flagStr.indexOf("\\Marked") != -1);
-            
-            
-            p = argStr.indexOf('\"');
-            q = argStr.indexOf('\"', p + 1);
-            
-            // Store the delimiter
-            if((p != -1) && (q > p)) {
-                response.delim = argStr.substring(p+1, q);
-            }
-            
-            // Store the name, strip off quotes if necessary
-            if(argStr.length() > q+2) {
-                response.name = argStr.substring(q+2);
-                p = response.name.indexOf('\"');
-                q = response.name.indexOf('\"', p + 1);
-                if((p != -1) && (q > p)) {
-                    response.name = response.name.substring(p+1, q);
+
+            try {
+                p = 0;
+                q = 0;
+                int size = argStr.length();
+                if(argStr.charAt(p) == '"') {
+                    p++;
+                    q = p+1;
+                    while(q < size && argStr.charAt(q) != '"') {
+                        q++;
+                    }
+                    response.delim = argStr.substring(p, q);
+                    p = q+2;
                 }
+                else {
+                    q = p+1;
+                    while(q < size && argStr.charAt(q) != ' ') {
+                        q++;
+                    }
+                    response.delim = argStr.substring(p, q);
+                    p = q+1;
+                }
+
+                if(response.delim.equalsIgnoreCase("NIL")) {
+                    response.delim = "";
+                }
+
+                if(argStr.charAt(p) == '"') {
+                    p++;
+                    q = p+1;
+                    while(q < size && argStr.charAt(q) != '"') {
+                        q++;
+                    }
+                    response.name = argStr.substring(p, q);
+                }
+                else {
+                    q = p+1;
+                    while(q < size && argStr.charAt(q) != ' ') {
+                        q++;
+                    }
+                    response.name = argStr.substring(p, q);
+                }
+                retVec.addElement(response);
+            } catch (Exception e) {
+                // Prevent parse errors from being fatal
             }
-            
-            retVec.addElement(response);
         }
         
         return retVec;

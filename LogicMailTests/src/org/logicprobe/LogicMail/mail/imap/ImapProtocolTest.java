@@ -157,6 +157,84 @@ public class ImapProtocolTest extends TestCase {
         }
     }
     
+    public void testExecuteList() {
+        try {
+            // Test top-level inbox
+            instance.addExecuteExpectation(
+                    "LIST", "\"\" \"%\"",
+                    new String[] { "* LIST (\\HasChildren) \".\" \"INBOX\"" });
+            Vector result = instance.executeList("", "%");
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            ImapProtocol.ListResponse result1 = (ImapProtocol.ListResponse)result.elementAt(0);
+            
+            assertTrue(result1.hasChildren);
+            assertTrue(result1.canSelect);
+            assertTrue(!result1.marked);
+            assertEquals(".", result1.delim);
+            assertEquals("INBOX", result1.name);
+            
+            // Test subfolders of inbox
+            instance.addExecuteExpectation(
+                    "LIST", "\"INBOX.\" \"%\"",
+                    new String[] {
+                        "* LIST (\\HasNoChildren) \".\" \"INBOX.Saved\"",
+                        "* LIST (\\HasNoChildren) \".\" \"INBOX.Sent\"",
+                    });
+        
+            result = instance.executeList("INBOX.", "%");
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
+            result1 = (ImapProtocol.ListResponse)result.elementAt(0);
+            ImapProtocol.ListResponse result2 = (ImapProtocol.ListResponse)result.elementAt(1);
+
+            assertTrue(!result1.hasChildren);
+            assertTrue(result1.canSelect);
+            assertTrue(!result1.marked);
+            assertEquals(".", result1.delim);
+            assertEquals("INBOX.Saved", result1.name);
+        
+            assertTrue(!result2.hasChildren);
+            assertTrue(result2.canSelect);
+            assertTrue(!result2.marked);
+            assertEquals(".", result2.delim);
+            assertEquals("INBOX.Sent", result2.name);
+
+            // Test inbox with a NIL delimiter
+            instance.addExecuteExpectation(
+                    "LIST", "\"\" \"%\"",
+                    new String[] {
+                        "* LIST (\\HasNoChildren) NIL INBOX",
+                        "* LIST (\\HasNoChildren) \"/\" Sent"
+                    });
+            result = instance.executeList("", "%");
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
+            result1 = (ImapProtocol.ListResponse)result.elementAt(0);
+            result2 = (ImapProtocol.ListResponse)result.elementAt(1);
+
+            assertTrue(!result1.hasChildren);
+            assertTrue(result1.canSelect);
+            assertTrue(!result1.marked);
+            assertEquals("", result1.delim);
+            assertEquals("INBOX", result1.name);
+            
+            assertTrue(!result2.hasChildren);
+            assertTrue(result2.canSelect);
+            assertTrue(!result2.marked);
+            assertEquals("/", result2.delim);
+            assertEquals("Sent", result2.name);
+        } catch (Throwable t) {
+            fail("Exception thrown during test: "+t.toString());
+            t.printStackTrace();
+        }
+    }
+    
     public void testExecuteFetchEnvelope1() {
         try {
             instance.addExecuteExpectation(
@@ -319,6 +397,8 @@ public class ImapProtocolTest extends TestCase {
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteCapability(); } }));
         suite.addTest(new ImapProtocolTest("executeNamespace", new TestMethod()
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteNamespace(); } }));
+        suite.addTest(new ImapProtocolTest("executeList", new TestMethod()
+        { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteList(); } }));
         suite.addTest(new ImapProtocolTest("executeFetchEnvelope1", new TestMethod()
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteFetchEnvelope1(); } }));
         suite.addTest(new ImapProtocolTest("executeFetchEnvelope2", new TestMethod()
