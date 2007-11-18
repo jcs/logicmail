@@ -82,7 +82,7 @@ public class StringParser {
 
         p = 0;
         q = rawDate.indexOf(" ", p+1);
-        fields[2] = Integer.parseInt(rawDate.substring(p, q));
+        fields[2] = Integer.parseInt(rawDate.substring(p, q).trim());
         
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
@@ -102,11 +102,11 @@ public class StringParser {
         
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
-        fields[0]=Integer.parseInt(rawDate.substring(p, q));
+        fields[0]=Integer.parseInt(rawDate.substring(p, q).trim());
         
         p = q+1;
         q = rawDate.indexOf(":", p+1);
-        fields[3]=Integer.parseInt(rawDate.substring(p, q));
+        fields[3]=Integer.parseInt(rawDate.substring(p, q).trim());
         
         p = q+1;
         q = rawDate.indexOf(":", p+1);
@@ -114,18 +114,18 @@ public class StringParser {
         {
             // The second field is missing, so handle accordingly
             q = rawDate.indexOf(" ", p+1);
-            fields[4] = Integer.parseInt(rawDate.substring(p, q));
+            fields[4] = Integer.parseInt(rawDate.substring(p, q).trim());
             fields[5] = 0;
             fields[6] = 0;
         }
         else
         {
             // Otherwise parse minutes and seconds as normal
-            fields[4] = Integer.parseInt(rawDate.substring(p, q));
+            fields[4] = Integer.parseInt(rawDate.substring(p, q).trim());
 
             p = q+1;
             q = rawDate.indexOf(" ", p+1);
-            fields[5] = Integer.parseInt(rawDate.substring(p, q));
+            fields[5] = Integer.parseInt(rawDate.substring(p, q).trim());
             fields[6] = 0;
         }
 
