@@ -105,7 +105,11 @@ class ImapParser {
         MessageEnvelope env = new MessageEnvelope();
 
         if(parsedEnv.elementAt(0) instanceof String) {
-            env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
+            try {
+                env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
+            } catch (Exception e) {
+                env.date = Calendar.getInstance().getTime();
+            }
         }
         
         if(parsedEnv.elementAt(1) instanceof String) {

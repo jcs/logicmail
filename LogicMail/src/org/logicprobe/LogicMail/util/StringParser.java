@@ -78,12 +78,20 @@ public class StringParser {
         // Set the time zone
         Calendar cal;
         String tz = rawDate.substring(rawDate.lastIndexOf(' ')+1);
-        cal = Calendar.getInstance(createTimeZone(tz));
-
+        p = tz.indexOf(':');
+        if(p == -1 || tz.indexOf(':', p) == -1) {
+            cal = Calendar.getInstance(createTimeZone(tz));
+        }
+        else {
+            cal = Calendar.getInstance(TimeZone.getDefault());
+        }
+        
+        // Day
         p = 0;
         q = rawDate.indexOf(" ", p+1);
         fields[2] = Integer.parseInt(rawDate.substring(p, q).trim());
         
+        // Month
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
         String monthStr = rawDate.substring(p, q);
@@ -100,14 +108,28 @@ public class StringParser {
         else if(monthStr.equals("Nov")) { fields[1]=10; }
         else if(monthStr.equals("Dec")) { fields[1]=11; }
         
+        // Year
         p = q+1;
         q = rawDate.indexOf(" ", p+1);
         fields[0]=Integer.parseInt(rawDate.substring(p, q).trim());
-        
+        if(fields[0] < 100) {
+            // Handle 2-digit years with a simple kludge:
+            // 80-99 is assumed to be 19xx
+            // 00-79 is assumed to be 20xx
+            if(fields[0] >= 80) {
+                fields[0] += 1900;
+            }
+            else {
+                fields[0] += 2000;
+            }
+        }
+
+        // Hour
         p = q+1;
         q = rawDate.indexOf(":", p+1);
         fields[3]=Integer.parseInt(rawDate.substring(p, q).trim());
         
+        // Minute and Second
         p = q+1;
         q = rawDate.indexOf(":", p+1);
         if(q == -1)
@@ -125,6 +147,9 @@ public class StringParser {
 
             p = q+1;
             q = rawDate.indexOf(" ", p+1);
+            if(q == -1) {
+                q = rawDate.length();
+            }
             fields[5] = Integer.parseInt(rawDate.substring(p, q).trim());
             fields[6] = 0;
         }

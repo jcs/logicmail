@@ -126,6 +126,18 @@ public class StringParserTest extends TestCase {
         assertEquals("Test 5", 16, cal.get(Calendar.HOUR_OF_DAY));
         assertEquals("Test 5", 19, cal.get(Calendar.MINUTE));
         assertEquals("Test 5", 23, cal.get(Calendar.SECOND));
+        
+        rawDate = "08 Nov 07 17:37:45";
+        result = StringParser.parseDateString(rawDate);
+        cal = Calendar.getInstance();
+        cal.setTime(result);
+        cal.setTimeZone(TimeZone.getDefault());
+        assertEquals("Test 6", 2007, cal.get(Calendar.YEAR));
+        assertEquals("Test 6", 10, cal.get(Calendar.MONTH));
+        assertEquals("Test 6", 8, cal.get(Calendar.DAY_OF_MONTH));
+        assertEquals("Test 6", 17, cal.get(Calendar.HOUR_OF_DAY));
+        assertEquals("Test 6", 37, cal.get(Calendar.MINUTE));
+        assertEquals("Test 6", 45, cal.get(Calendar.SECOND));
     }
 
     /**

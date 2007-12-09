@@ -31,6 +31,7 @@
 
 package org.logicprobe.LogicMail.mail.pop;
 
+import java.util.Calendar;
 import java.util.Hashtable;
 import org.logicprobe.LogicMail.mail.*;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -56,7 +57,11 @@ class PopParser {
         env.to = StringParser.parseTokenString((String)headers.get("to"), ", ");
         env.cc = StringParser.parseTokenString((String)headers.get("cc"), ", ");
         env.bcc = StringParser.parseTokenString((String)headers.get("bcc"), ", ");
-        env.date = StringParser.parseDateString((String)headers.get("date"));
+        try {
+            env.date = StringParser.parseDateString((String)headers.get("date"));
+        } catch (Exception e) {
+            env.date = Calendar.getInstance().getTime();
+        }
         env.replyTo = StringParser.parseTokenString((String)headers.get("reply-to"), ", ");
         env.messageId = (String)headers.get("message-id");
         env.inReplyTo = (String)headers.get("in-reply-to");
