@@ -95,15 +95,8 @@ public class AccountConfigTest extends TestCase {
         assertTrue(!instance.getServerSSL());
         assertEquals("", instance.getServerUser());
         assertEquals("", instance.getServerPass());
-        assertEquals(110, instance.getServerPort());
+        assertEquals(143, instance.getServerPort());
         assertTrue(!instance.getDeviceSide());
-        assertEquals("", instance.getSmtpServerName());
-        assertEquals(25, instance.getSmtpServerPort());
-        assertTrue(!instance.getSmtpServerSSL());
-        assertEquals(0, instance.getSmtpUseAuth());
-        assertEquals("", instance.getSmtpUser());
-        assertEquals("", instance.getSmtpPass());
-        assertEquals("", instance.getSmtpFromAddress());
     }
 
     public void testSerialization() {
@@ -118,13 +111,6 @@ public class AccountConfigTest extends TestCase {
             instance.setServerPass("12345");
             instance.setServerPort(995);
             instance.setDeviceSide(true);
-            instance.setSmtpServerName("smtp.foomail.test");
-            instance.setSmtpServerPort(465);
-            instance.setSmtpServerSSL(true);
-            instance.setSmtpUseAuth(1);
-            instance.setSmtpUser("jdoe@foomail.test");
-            instance.setSmtpPass("qwerty");
-            instance.setSmtpFromAddress("jdoe@othermail.test");
             
             // Serialize
             TestOutputStream testOutput = new TestOutputStream();
@@ -144,13 +130,6 @@ public class AccountConfigTest extends TestCase {
             assertEquals("12345", instance.getServerPass());
             assertEquals(995, instance.getServerPort());
             assertTrue(instance.getDeviceSide());
-            assertEquals("smtp.foomail.test", instance.getSmtpServerName());
-            assertEquals(465, instance.getSmtpServerPort());
-            assertTrue(instance.getSmtpServerSSL());
-            assertEquals(1, instance.getSmtpUseAuth());
-            assertEquals("jdoe@foomail.test", instance.getSmtpUser());
-            assertEquals("qwerty", instance.getSmtpPass());
-            assertEquals("jdoe@othermail.test", instance.getSmtpFromAddress());
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
             t.printStackTrace();
