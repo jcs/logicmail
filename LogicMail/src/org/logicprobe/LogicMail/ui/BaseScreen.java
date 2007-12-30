@@ -59,7 +59,7 @@ public abstract class BaseScreen extends MainScreen {
     }
 
     // Create menu items
-    private MenuItem configItem = new MenuItem("Config", 10020, 10) {
+    private MenuItem configItem = new MenuItem("Configuration", 10020, 10) {
         public void run() {
             showConfigScreen();
         }

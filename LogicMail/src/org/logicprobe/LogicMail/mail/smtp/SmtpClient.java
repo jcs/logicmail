@@ -35,8 +35,8 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Vector;
 import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.OutgoingMailClient;
 import org.logicprobe.LogicMail.message.Message;
@@ -50,7 +50,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class SmtpClient implements OutgoingMailClient {
     private GlobalConfig globalConfig;
-    private AccountConfig acctCfg;
+    private OutgoingConfig outgoingConfig;
     private Connection connection;
     private SmtpProtocol smtpProtocol;
     private Vector helloResult;
@@ -61,19 +61,19 @@ public class SmtpClient implements OutgoingMailClient {
     private static String strCRLF = "\r\n";
     
     /** Creates a new instance of SmtpClient */
-    public SmtpClient(GlobalConfig globalConfig, AccountConfig acctCfg) {
-        this.acctCfg = acctCfg;
+    public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
+        this.outgoingConfig = outgoingConfig;
         this.globalConfig = globalConfig;
         connection = new Connection(
-            acctCfg.getSmtpServerName(),
-            acctCfg.getSmtpServerPort(),
-            acctCfg.getSmtpServerSSL(),
-            acctCfg.getDeviceSide());
+            outgoingConfig.getServerName(),
+            outgoingConfig.getServerPort(),
+            outgoingConfig.getServerSSL(),
+            outgoingConfig.getDeviceSide());
         smtpProtocol = new SmtpProtocol(connection);
 
-        if(acctCfg.getSmtpUseAuth() > 0) {
-            username = acctCfg.getSmtpUser();
-            password = acctCfg.getSmtpPass();
+        if(outgoingConfig.getUseAuth() > 0) {
+            username = outgoingConfig.getServerUser();
+            password = outgoingConfig.getServerPass();
         }
         else {
             username = null;
@@ -96,8 +96,8 @@ public class SmtpClient implements OutgoingMailClient {
             helloResult = smtpProtocol.executeExtendedHello(hostname);
             openStarted = true;
         }
-        if(acctCfg.getSmtpUseAuth() > 0) {
-            boolean result = smtpProtocol.executeAuth(acctCfg.getSmtpUseAuth(), username, password);
+        if(outgoingConfig.getUseAuth() > 0) {
+            boolean result = smtpProtocol.executeAuth(outgoingConfig.getUseAuth(), username, password);
             if(!result) {
                 return false;
             }

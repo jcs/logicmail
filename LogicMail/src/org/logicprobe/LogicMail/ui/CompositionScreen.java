@@ -217,7 +217,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         // Set the sender
         // (this should come from global or account settings)
         env.from = new String[1];
-        String fromAddress = acctConfig.getSmtpFromAddress();
+        String fromAddress = acctConfig.getOutgoingConfig().getFromAddress();
         if(fromAddress == null || fromAddress.length() == 0) {
             fromAddress = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
         }

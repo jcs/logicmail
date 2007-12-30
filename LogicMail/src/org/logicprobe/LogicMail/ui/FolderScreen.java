@@ -124,7 +124,9 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         menu.add(folderItem);
         menu.add(refreshStatusItem);
         menu.add(refreshItem);
-        menu.add(compositionItem);
+        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
+            menu.add(compositionItem);
+        }
         super.makeMenu(menu, instance);
     }
 

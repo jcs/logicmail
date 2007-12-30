@@ -173,7 +173,9 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
 
     protected void makeMenu(Menu menu, int instance) {
         menu.add(selectItem);
-        menu.add(compositionItem);
+        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
+            menu.add(compositionItem);
+        }
         super.makeMenu(menu, instance);
     }
     

@@ -44,13 +44,8 @@ public abstract class AccountConfig extends ConnectionConfig {
     private int serverType;
     private String serverUser;
     private String serverPass;
-    private String smtpServerName;
-    private int smtpServerPort;
-    private boolean smtpServerSSL;
-    private String smtpFromAddress;
-    private int smtpUseAuth;
-    private String smtpUser;
-    private String smtpPass;
+    private OutgoingConfig outgoingConfig;
+    private long outgoingConfigId;
 
     public AccountConfig() {
         super();
@@ -66,13 +61,8 @@ public abstract class AccountConfig extends ConnectionConfig {
         serverUser = "";
         serverPass = "";
         setServerPort(110);
-        smtpServerName = "";
-        smtpServerPort = 25;
-        smtpServerSSL = false;
-        smtpUseAuth = 0;
-        smtpUser = "";
-        smtpPass = "";
-        smtpFromAddress = "";
+        outgoingConfig = null;
+        outgoingConfigId = -1L;
     }
 
     public String toString() {
@@ -112,60 +102,22 @@ public abstract class AccountConfig extends ConnectionConfig {
         this.serverPass = serverPass;
     }
 
-    public String getSmtpServerName() {
-        return smtpServerName;
+    public OutgoingConfig getOutgoingConfig() {
+        if(outgoingConfig == null && outgoingConfigId != -1L) {
+            outgoingConfig = MailSettings.getInstance().getOutgoingConfigByUniqueId(outgoingConfigId);
+        }
+        return outgoingConfig;
     }
-
-    public void setSmtpServerName(String smtpServerName) {
-        this.smtpServerName = smtpServerName;
-    }
-
-    public int getSmtpUseAuth() {
-        return smtpUseAuth;
-    }
-
-    public void setSmtpUseAuth(int smtpUseAuth) {
-        this.smtpUseAuth = smtpUseAuth;
-    }
-
-    public String getSmtpUser() {
-        return smtpUser;
-    }
-
-    public void setSmtpUser(String smtpUser) {
-        this.smtpUser = smtpUser;
-    }
-
-    public String getSmtpPass() {
-        return smtpPass;
-    }
-
-    public void setSmtpPass(String smtpPass) {
-        this.smtpPass = smtpPass;
-    }
-
-    public int getSmtpServerPort() {
-        return smtpServerPort;
-    }
-
-    public void setSmtpServerPort(int smtpServerPort) {
-        this.smtpServerPort = smtpServerPort;
-    }
-
-    public boolean getSmtpServerSSL() {
-        return smtpServerSSL;
-    }
-
-    public void setSmtpServerSSL(boolean smtpServerSSL) {
-        this.smtpServerSSL = smtpServerSSL;
-    }
-
-    public String getSmtpFromAddress() {
-        return smtpFromAddress;
-    }
-
-    public void setSmtpFromAddress(String smtpFromAddress) {
-        this.smtpFromAddress = smtpFromAddress;
+    
+    public void setOutgoingConfig(OutgoingConfig outgoingConfig) {
+        if(outgoingConfig == null) {
+            this.outgoingConfig = null;
+            this.outgoingConfigId = -1L;
+        }
+        else {
+            this.outgoingConfig = outgoingConfig;
+            this.outgoingConfigId = outgoingConfig.getUniqueId();
+        }
     }
 
     public void writeConfigItems(SerializableHashtable table) {
@@ -173,13 +125,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_serverType", new Integer(serverType));
         table.put("account_serverUser", serverUser);
         table.put("account_serverPass", serverPass);
-        table.put("account_smtpServerName", smtpServerName);
-        table.put("account_smtpServerPort", new Integer(smtpServerPort));
-        table.put("account_smtpServerSSL", new Boolean(smtpServerSSL));
-        table.put("account_smtpUseAuth", new Integer(smtpUseAuth));
-        table.put("account_smtpUser", smtpUser);
-        table.put("account_smtpPass", smtpPass);
-        table.put("account_smtpFromAddress", smtpFromAddress);
+        table.put("account_outgoingConfigId", new Long(outgoingConfigId));
     }
 
     public void readConfigItems(SerializableHashtable table) {
@@ -198,34 +144,13 @@ public abstract class AccountConfig extends ConnectionConfig {
         if(value != null && value instanceof String) {
             serverPass = (String)value;
         }
-        value = table.get("account_smtpServerName");
-        if(value != null && value instanceof String) {
-            smtpServerName = (String)value;
+        value = table.get("account_outgoingConfigId");
+        if(value != null && value instanceof Long) {
+            outgoingConfigId = ((Long)value).longValue();
         }
-        value = table.get("account_smtpServerPort");
-        if(value != null && value instanceof Integer) {
-            smtpServerPort = ((Integer)value).intValue();
+        else {
+            outgoingConfigId = -1;
         }
-        value = table.get("account_smtpServerSSL");
-        if(value != null && value instanceof Boolean) {
-            smtpServerSSL = ((Boolean)value).booleanValue();
-        }
-        value = table.get("account_smtpUseAuth");
-        if(value != null && value instanceof Integer) {
-            smtpUseAuth = ((Integer)value).intValue();
-        }
-        value = table.get("account_smtpUser");
-        if(value != null && value instanceof String) {
-            smtpUser = (String)value;
-        }
-        value = table.get("account_smtpPass");
-        if(value != null && value instanceof String) {
-            smtpPass = (String)value;
-        }
-        value = table.get("account_smtpFromAddress");
-        if(value != null && value instanceof String) {
-            smtpFromAddress = (String)value;
-        }
+        outgoingConfig = null;
     }
 }
-

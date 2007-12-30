@@ -195,6 +195,14 @@ public class ConfigScreen extends BaseCfgScreen {
                     mailSettings.saveSettings();
                 }
             }
+            else if(parentNode == outgoingId) {
+                OutgoingConfig outgoingConfig = (OutgoingConfig)configTreeField.getCookie(curNode);
+                OutgoingConfigScreen outgoingConfigScreen = new OutgoingConfigScreen(outgoingConfig);
+                UiApplication.getUiApplication().pushModalScreen(outgoingConfigScreen);
+                if(outgoingConfigScreen.acctSaved()) {
+                    mailSettings.saveSettings();
+                }
+            }
         }
     }
 

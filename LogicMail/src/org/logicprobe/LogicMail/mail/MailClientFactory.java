@@ -35,6 +35,7 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.imap.ImapClient;
 import org.logicprobe.LogicMail.mail.pop.PopClient;
@@ -74,6 +75,12 @@ public class MailClientFactory {
      */
     public static OutgoingMailClient createOutgoingMailClient(AccountConfig acctConfig) {
         GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
-        return new SmtpClient(globalConfig, acctConfig);
+        OutgoingConfig outgoingConfig = acctConfig.getOutgoingConfig();
+        if(outgoingConfig != null) {
+            return new SmtpClient(globalConfig, outgoingConfig);
+        }
+        else {
+            return null;
+        }
     }
 }

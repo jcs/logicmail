@@ -130,7 +130,7 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
                 UiApplication.getUiApplication().pushScreen(
                         new CompositionScreen(
                             client.getAcctConfig(),
-                            msg.toReplyAllMessage(client.getAcctConfig().getSmtpFromAddress())));
+                            msg.toReplyAllMessage(client.getAcctConfig().getOutgoingConfig().getFromAddress())));
             }
         }
     };
@@ -157,11 +157,13 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
         menu.addSeparator();
-        menu.add(replyItem);
-        menu.add(replyAllItem);
-        menu.add(forwardItem);
-        menu.add(compositionItem);
-        menu.addSeparator();
+        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
+            menu.add(replyItem);
+            menu.add(replyAllItem);
+            menu.add(forwardItem);
+            menu.add(compositionItem);
+            menu.addSeparator();
+        }
         menu.add(closeItem);
     }
 

@@ -117,6 +117,21 @@ public class MailSettings {
     public OutgoingConfig getOutgoingConfig(int index) {
         return (OutgoingConfig)outgoingConfigs.elementAt(index);
     }
+
+    /**
+     * Gets the outgoing server configuration by unique ID.
+     * Will return null if no config is found matching that ID.
+     */
+    public OutgoingConfig getOutgoingConfigByUniqueId(long uniqueId) {
+        int size = getNumOutgoing();
+        for(int i=0; i<size; i++) {
+            OutgoingConfig tmpConfig = getOutgoingConfig(i);
+            if(tmpConfig.getUniqueId() == uniqueId) {
+                return tmpConfig;
+            }
+        }
+        return null;
+    }
     
     /**
      * Add a new outgoing server configuration

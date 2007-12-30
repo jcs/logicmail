@@ -64,20 +64,29 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private ObjectChoiceField outgoingServerField;
     private ButtonField saveButton;
     
-    // BEGIN: SMTP
-    private BasicEditField fldSmtpServerName;
-    private BasicEditField fldSmtpServerPort;
-    private CheckboxField fldSmtpServerSSL;
-    private EmailAddressEditField fldSmtpFromAddress;
-    private ObjectChoiceField fldSmtpUseAuth;
-    private BasicEditField fldSmtpUser;
-    private PasswordEditField fldSmtpPass;
-    // END: SMTP
+//    // BEGIN: SMTP
+//    private BasicEditField fldSmtpServerName;
+//    private BasicEditField fldSmtpServerPort;
+//    private CheckboxField fldSmtpServerSSL;
+//    private EmailAddressEditField fldSmtpFromAddress;
+//    private ObjectChoiceField fldSmtpUseAuth;
+//    private BasicEditField fldSmtpUser;
+//    private PasswordEditField fldSmtpPass;
+//    // END: SMTP
     
     private boolean acctSaved;
     private AccountConfig acctConfig;
     private OutgoingConfig[] outgoingConfigs;
     private FieldChangeListener fieldChangeListener;
+    
+    private class NullOutgoingConfig extends OutgoingConfig {
+        public String toString() {
+            return "None";
+        }
+        public long getUniqueId() {
+            return -1;
+        }
+    }
     
     public AcctCfgScreen(AccountConfig acctConfig) {
         super("LogicMail - Account");
@@ -87,9 +96,10 @@ public class AcctCfgScreen extends BaseCfgScreen {
         
         MailSettings mailSettings = MailSettings.getInstance();
         int numOutgoing = mailSettings.getNumOutgoing();
-        outgoingConfigs = new OutgoingConfig[numOutgoing];
+        outgoingConfigs = new OutgoingConfig[numOutgoing+1];
+        outgoingConfigs[0] = new NullOutgoingConfig();
         for(int i=0; i<numOutgoing; ++i) {
-            outgoingConfigs[i] = mailSettings.getOutgoingConfig(i);
+            outgoingConfigs[i+1] = mailSettings.getOutgoingConfig(i);
         }
         
         fieldChangeListener = new FieldChangeListener() {
@@ -99,12 +109,16 @@ public class AcctCfgScreen extends BaseCfgScreen {
 
         initFields();
 
-        if(acctConfig.getSmtpUseAuth() == 0) {
-            fldSmtpUser.setEditable(false);
-            fldSmtpPass.setEditable(false);
-            fldSmtpUser.setText("");
-            fldSmtpPass.setText("");
+        OutgoingConfig selectedOutgoingConfig = acctConfig.getOutgoingConfig();
+        if(selectedOutgoingConfig != null) {
+            outgoingServerField.setSelectedIndex(selectedOutgoingConfig);
         }
+//        if(acctConfig.getSmtpUseAuth() == 0) {
+//            fldSmtpUser.setEditable(false);
+//            fldSmtpPass.setEditable(false);
+//            fldSmtpUser.setText("");
+//            fldSmtpPass.setText("");
+//        }
     }
 
     private void initFields() {
@@ -119,35 +133,28 @@ public class AcctCfgScreen extends BaseCfgScreen {
         serverPassField = new PasswordEditField("Password: ", acctConfig.getServerPass());
         
         useMdsField = new CheckboxField("Use MDS proxy", !acctConfig.getDeviceSide());
-        
-        if(outgoingConfigs.length > 0) {
-            outgoingServerField = new ObjectChoiceField("Outgoing server: ", outgoingConfigs, 0);
-        }
-        else {
-            outgoingServerField = new ObjectChoiceField("Outgoing server: ", new String[] {"None configured"}, 0);
-            outgoingServerField.setEditable(false);
-        }
+        outgoingServerField = new ObjectChoiceField("Outgoing server: ", outgoingConfigs, 0);
 
-        // BEGIN: SMTP (remove)
-        fldSmtpServerName = new BasicEditField("SMTP server: ", acctConfig.getSmtpServerName());
-        
-        fldSmtpServerPort = new BasicEditField("Port: ", Integer.toString(acctConfig.getSmtpServerPort()));
-        fldSmtpServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        
-        fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL());
-        fldSmtpServerSSL.setChangeListener(fieldChangeListener);
-        
-        fldSmtpFromAddress = new EmailAddressEditField("E-Mail address: ", acctConfig.getSmtpFromAddress());
-        
-        
-        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
-        fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth());
-        
-        fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser());
-        fldSmtpPass = new PasswordEditField("Password: ", acctConfig.getSmtpPass());
-        
-        fldSmtpUseAuth.setChangeListener(fieldChangeListener);
-        // END: SMTP (remove)
+//        // BEGIN: SMTP (remove)
+//        fldSmtpServerName = new BasicEditField("SMTP server: ", acctConfig.getSmtpServerName());
+//        
+//        fldSmtpServerPort = new BasicEditField("Port: ", Integer.toString(acctConfig.getSmtpServerPort()));
+//        fldSmtpServerPort.setFilter(TextFilter.get(TextFilter.NUMERIC));
+//        
+//        fldSmtpServerSSL = new CheckboxField("SSL", acctConfig.getSmtpServerSSL());
+//        fldSmtpServerSSL.setChangeListener(fieldChangeListener);
+//        
+//        fldSmtpFromAddress = new EmailAddressEditField("E-Mail address: ", acctConfig.getSmtpFromAddress());
+//        
+//        
+//        String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
+//        fldSmtpUseAuth = new ObjectChoiceField("Authentication: ", authTypes, acctConfig.getSmtpUseAuth());
+//        
+//        fldSmtpUser = new BasicEditField("Username: ", acctConfig.getSmtpUser());
+//        fldSmtpPass = new PasswordEditField("Password: ", acctConfig.getSmtpPass());
+//        
+//        fldSmtpUseAuth.setChangeListener(fieldChangeListener);
+//        // END: SMTP (remove)
         
         saveButton = new ButtonField("Save", Field.FIELD_HCENTER);
         saveButton.setChangeListener(fieldChangeListener);
@@ -169,18 +176,20 @@ public class AcctCfgScreen extends BaseCfgScreen {
         add(serverUserField);
         add(serverPassField);
         add(useMdsField);
+        add(new LabelField());
         add(outgoingServerField);
+        add(new LabelField());
         add(new SeparatorField());
-        // BEGIN: SMTP
-        add(new RichTextField("Outgoing server:", Field.NON_FOCUSABLE));
-        add(fldSmtpServerName);
-        add(fldSmtpServerPort);
-        add(fldSmtpServerSSL);
-        add(fldSmtpFromAddress);
-        add(fldSmtpUseAuth);
-        add(fldSmtpUser);
-        add(fldSmtpPass);
-        // END: SMTP
+//        // BEGIN: SMTP
+//        add(new RichTextField("Outgoing server:", Field.NON_FOCUSABLE));
+//        add(fldSmtpServerName);
+//        add(fldSmtpServerPort);
+//        add(fldSmtpServerSSL);
+//        add(fldSmtpFromAddress);
+//        add(fldSmtpUseAuth);
+//        add(fldSmtpUser);
+//        add(fldSmtpPass);
+//        // END: SMTP
         add(new LabelField(null, Field.NON_FOCUSABLE));
         add(saveButton);
     }
@@ -208,26 +217,26 @@ public class AcctCfgScreen extends BaseCfgScreen {
                 }
             }
         }
-        else if(field == fldSmtpServerSSL) {
-            if(fldSmtpServerSSL.getChecked())
-                fldSmtpServerPort.setText("465");
-            else
-                fldSmtpServerPort.setText("25");
-        }
-        else if(field == fldSmtpUseAuth) {
-            if(fldSmtpUseAuth.getSelectedIndex() > 0) {
-                fldSmtpUser.setEditable(true);
-                fldSmtpPass.setEditable(true);
-                fldSmtpUser.setText(acctConfig.getSmtpUser());
-                fldSmtpPass.setText(acctConfig.getSmtpPass());
-            }
-            else {
-                fldSmtpUser.setEditable(false);
-                fldSmtpPass.setEditable(false);
-                fldSmtpUser.setText("");
-                fldSmtpPass.setText("");
-            }
-        }
+//        else if(field == fldSmtpServerSSL) {
+//            if(fldSmtpServerSSL.getChecked())
+//                fldSmtpServerPort.setText("465");
+//            else
+//                fldSmtpServerPort.setText("25");
+//        }
+//        else if(field == fldSmtpUseAuth) {
+//            if(fldSmtpUseAuth.getSelectedIndex() > 0) {
+//                fldSmtpUser.setEditable(true);
+//                fldSmtpPass.setEditable(true);
+//                fldSmtpUser.setText(acctConfig.getSmtpUser());
+//                fldSmtpPass.setText(acctConfig.getSmtpPass());
+//            }
+//            else {
+//                fldSmtpUser.setEditable(false);
+//                fldSmtpPass.setEditable(false);
+//                fldSmtpUser.setText("");
+//                fldSmtpPass.setText("");
+//            }
+//        }
     }
 
     protected boolean onSavePrompt() {
@@ -255,15 +264,23 @@ public class AcctCfgScreen extends BaseCfgScreen {
         this.acctConfig.setServerUser(serverUserField.getText());
         this.acctConfig.setServerPass(serverPassField.getText());
         this.acctConfig.setDeviceSide(!useMdsField.getChecked());
-        this.acctConfig.setSmtpServerName(fldSmtpServerName.getText());
-        this.acctConfig.setSmtpServerPort(Integer.parseInt(fldSmtpServerPort.getText()));
-        this.acctConfig.setSmtpServerSSL(fldSmtpServerSSL.getChecked());
-        this.acctConfig.setSmtpFromAddress(fldSmtpFromAddress.getText());
-        this.acctConfig.setSmtpUseAuth(fldSmtpUseAuth.getSelectedIndex());
-        if(fldSmtpUseAuth.getSelectedIndex() > 0) {
-            this.acctConfig.setSmtpUser(fldSmtpUser.getText());
-            this.acctConfig.setSmtpPass(fldSmtpPass.getText());
+        
+        OutgoingConfig selectedOutgoingConfig = (OutgoingConfig)outgoingServerField.getChoice(outgoingServerField.getSelectedIndex());
+        if(selectedOutgoingConfig.getUniqueId() == -1) {
+            this.acctConfig.setOutgoingConfig(null);
         }
+        else {
+            this.acctConfig.setOutgoingConfig(selectedOutgoingConfig);
+        }
+//        this.acctConfig.setSmtpServerName(fldSmtpServerName.getText());
+//        this.acctConfig.setSmtpServerPort(Integer.parseInt(fldSmtpServerPort.getText()));
+//        this.acctConfig.setSmtpServerSSL(fldSmtpServerSSL.getChecked());
+//        this.acctConfig.setSmtpFromAddress(fldSmtpFromAddress.getText());
+//        this.acctConfig.setSmtpUseAuth(fldSmtpUseAuth.getSelectedIndex());
+//        if(fldSmtpUseAuth.getSelectedIndex() > 0) {
+//            this.acctConfig.setSmtpUser(fldSmtpUser.getText());
+//            this.acctConfig.setSmtpPass(fldSmtpPass.getText());
+//        }
         acctSaved = true;
     }
     
