@@ -145,6 +145,10 @@ public class PopClient implements IncomingMailClient {
         return false;
     }
 
+    public boolean hasUndelete() {
+        return false;
+    }
+
     public FolderTreeItem getFolderTree() throws IOException, MailException {
         return null;
     }
@@ -244,5 +248,14 @@ public class PopClient implements IncomingMailClient {
                 return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer));
             }
         }
+    }
+
+    public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+        popProtocol.executeDele(folderMessage.getIndex());
+        folderMessage.setDeleted(true);
+    }
+
+    public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+        // Undelete is not supported, so we do nothing here.
     }
 }

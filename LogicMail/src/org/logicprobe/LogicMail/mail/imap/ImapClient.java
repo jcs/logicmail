@@ -153,9 +153,10 @@ public class ImapClient implements IncomingMailClient {
     
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
-            if(activeMailbox != null && !activeMailbox.equals("")) {
-                imapProtocol.executeClose();
-            }
+            // Not closing to avoid expunging deleted messages
+            //if(activeMailbox != null && !activeMailbox.equals("")) {
+            //    imapProtocol.executeClose();
+            //}
             imapProtocol.executeLogout();
         }
         activeMailbox = null;
@@ -190,6 +191,10 @@ public class ImapClient implements IncomingMailClient {
         return true;
     }
 
+    public boolean hasUndelete() {
+        return true;
+    }
+    
     public FolderTreeItem getFolderTree() throws IOException, MailException {
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
         getFolderTreeImpl(rootItem, 0);
@@ -394,5 +399,31 @@ public class ImapClient implements IncomingMailClient {
         }
         
         return imapProtocol.executeFetchBody(index, address);
+    }
+    
+    public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+        ImapProtocol.MessageFlags updatedFlags =
+            imapProtocol.executeStore(folderMessage.getIndex(), true, new String[] { "\\Deleted" });
+        if(updatedFlags != null) {
+            folderMessage.setAnswered(updatedFlags.answered);
+            folderMessage.setDeleted(updatedFlags.deleted);
+            folderMessage.setDraft(updatedFlags.draft);
+            folderMessage.setFlagged(updatedFlags.draft);
+            folderMessage.setRecent(updatedFlags.recent);
+            folderMessage.setSeen(updatedFlags.seen);
+        }
+    }
+
+    public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+        ImapProtocol.MessageFlags updatedFlags =
+            imapProtocol.executeStore(folderMessage.getIndex(), false, new String[] { "\\Deleted" });
+        if(updatedFlags != null) {
+            folderMessage.setAnswered(updatedFlags.answered);
+            folderMessage.setDeleted(updatedFlags.deleted);
+            folderMessage.setDraft(updatedFlags.draft);
+            folderMessage.setFlagged(updatedFlags.draft);
+            folderMessage.setRecent(updatedFlags.recent);
+            folderMessage.setSeen(updatedFlags.seen);
+        }
     }
 }

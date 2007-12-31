@@ -56,7 +56,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 /**
  * Display the active mailbox listing
  */
-public class MailboxScreen extends BaseScreen implements ListFieldCallback, MailClientHandlerListener {
+public class MailboxScreen extends BaseScreen {
     private FolderMessage[] messages;
     private ListField msgList;
     
@@ -101,7 +101,22 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         msgList = new ListField();
         lineHeight = msgList.getRowHeight();
         msgList.setRowHeight(lineHeight * 2);
-        msgList.setCallback(this);
+        
+        msgList.setCallback(new ListFieldCallback() {
+            public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
+                msgList_drawListRow(listField, graphics, index, y, width);
+            }
+            public int getPreferredWidth(ListField listField) {
+                return msgList_getPreferredWidth(listField);
+            }
+            public Object get(ListField listField, int index) {
+                return msgList_get(listField, index);
+            }
+            public int indexOfList(ListField listField, String prefix, int start) {
+                return msgList_indexOfList(listField, prefix, start);
+            }
+        });
+        
         add(msgList);
         
         // Determine field sizes
@@ -118,7 +133,11 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         // Initialize the handler on demand
         if(refreshMessageListHandler == null) {
             refreshMessageListHandler = new RefreshMessageListHandler(folderItem);
-            refreshMessageListHandler.setListener(this);
+            refreshMessageListHandler.setListener(new MailClientHandlerListener() {
+                public void mailActionComplete(MailClientHandler source, boolean result) {
+                    refreshMessageListHandler_mailActionComplete(source, result);
+                }
+            });
         }
 
         // Start the background process
@@ -170,11 +189,56 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
             UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
         }
     };
+    private MenuItem deleteItem = new MenuItem("Delete", 130, 10) {
+        public void run() {
+            if(Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to delete this message?") == Dialog.YES) {
+                int index = msgList.getSelectedIndex();
+                if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
+                    DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], true);
+                    deleteMessageHandler.setListener(new MailClientHandlerListener() {
+                        public void mailActionComplete(MailClientHandler source, boolean result) {
+                            source.setListener(null);
+                            msgList.setDirty(true);
+                            msgList.invalidate();
+                        }
+                    });
+                    deleteMessageHandler.start();
+                }
+            }
+        }
+    };
+    private MenuItem undeleteItem = new MenuItem("Undelete", 135, 10) {
+        public void run() {
+            int index = msgList.getSelectedIndex();
+            if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
+                DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], false);
+                deleteMessageHandler.setListener(new MailClientHandlerListener() {
+                    public void mailActionComplete(MailClientHandler source, boolean result) {
+                        source.setListener(null);
+                        msgList.setDirty(true);
+                        msgList.invalidate();
+                    }
+                });
+                deleteMessageHandler.start();
+            }
+        }
+    };
 
     protected void makeMenu(Menu menu, int instance) {
         menu.add(selectItem);
         if(this.client.getAcctConfig().getOutgoingConfig() != null) {
             menu.add(compositionItem);
+        }
+        int index = msgList.getSelectedIndex();
+        if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
+            if(messages[index].isDeleted()) {
+                if(client.hasUndelete()) {
+                    menu.add(undeleteItem);
+                }
+            }
+            else {
+                menu.add(deleteItem);
+            }
         }
         super.makeMenu(menu, instance);
     }
@@ -186,11 +250,11 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
      * Actual rendering is crude at the moment, and needs to
      * be reworked to use relative positioning for everything.
      */
-    public void drawListRow(ListField listField,
-                            Graphics graphics,
-                            int index,
-                            int y,
-                            int width)
+    public void msgList_drawListRow(ListField listField,
+                                    Graphics graphics,
+                                    int index,
+                                    int y,
+                                    int width)
     {
         // sanity check
         if(index >= messages.length) {
@@ -264,17 +328,17 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
             return bmapUnknown;
     }
     
-    public int getPreferredWidth(ListField listField) {
+    public int msgList_getPreferredWidth(ListField listField) {
         return Graphics.getScreenWidth();
     }
     
-    public Object get(ListField listField, int index) {
+    public Object msgList_get(ListField listField, int index) {
         return (Object)messages[index];
     }
     
-    public int indexOfList(ListField listField,
-                           String prefix,
-                           int start)
+    public int msgList_indexOfList(ListField listField,
+                                   String prefix,
+                                   int start)
     {
         return 0;
     }
@@ -303,7 +367,7 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         return retval;
     }
 
-    public void mailActionComplete(MailClientHandler source, boolean result) {
+    public void refreshMessageListHandler_mailActionComplete(MailClientHandler source, boolean result) {
         if(source.equals(refreshMessageListHandler)) {
             if(refreshMessageListHandler.getFolderMessages() != null) {
                 FolderMessage[] folderMessages = refreshMessageListHandler.getFolderMessages();
@@ -362,5 +426,36 @@ public class MailboxScreen extends BaseScreen implements ListFieldCallback, Mail
         }
     }
     
-}
+    /**
+     * Implements message flag changes
+     */
+    private class DeleteMessageHandler extends MailClientHandler {
+        private FolderMessage folderMessage;
+        private boolean delete;
+        
+        public DeleteMessageHandler(FolderMessage folderMessage, boolean delete) {
+            super(MailboxScreen.this.client, "");
+            if(delete) {
+                this.changeStatusMessage("Deleting message");
+            }
+            else {
+                this.changeStatusMessage("Undeleting message");
+            }
+            this.folderMessage = folderMessage;
+            this.delete = delete;
+        }
 
+        public void runSession() throws IOException, MailException {
+            if(delete) {
+                ((IncomingMailClient)client).deleteMessage(folderMessage);
+            }
+            else {
+                ((IncomingMailClient)client).undeleteMessage(folderMessage);
+            }
+        }
+        
+        public FolderMessage getFolderMessage() {
+            return folderMessage;
+        }
+    }
+}

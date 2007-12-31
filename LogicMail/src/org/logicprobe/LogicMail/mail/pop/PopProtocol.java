@@ -131,6 +131,23 @@ public class PopProtocol {
     }
 
     /**
+     * Execute the "DELE" command.
+     * This will mark the message at the specified index as deleted, but will
+     * not reindex the messages immediately.  Therefore, it is safe to keep
+     * existing message indicies for the rest of the session.
+     * @param index Message index to delete
+     */
+    public void executeDele(int index) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeDele("+index+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        execute("DELE " + index);
+    }
+
+    /**
      * Execute a POP3 command that returns multiple lines.
      * This works by running the normal execute() and then
      * receiving every new line until a lone "." is encountered.

@@ -37,8 +37,12 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 
 /**
- * Create a generic interface to different incoming mail protocols.
+ * Provides a generic interface to different incoming mail protocols.
  * This class allows most of the UI code to be protocol-agnostic.
+ *
+ * Since a number of features may not be supported by all protocols,
+ * a variety of hasXXXX() methods are provided by this interface to
+ * determine whether those features exist.
  */
 public interface IncomingMailClient extends MailClient {
     /**
@@ -55,6 +59,13 @@ public interface IncomingMailClient extends MailClient {
      * @return True if folders supported, false otherwise
      */
     public abstract boolean hasFolders();
+
+    /**
+     * Return whether the underlying protocol supports undeletion of messages.
+     *
+     * @return True if undelete supported, false otherwise
+     */
+    public abstract boolean hasUndelete();
     
     /**
      * Get the mail folder tree.
@@ -126,4 +137,24 @@ public interface IncomingMailClient extends MailClient {
      * @throw MailException on protocol errors
      */
     public abstract Message getMessage(FolderMessage folderMessage) throws IOException, MailException;
+    
+    /**
+     * Deletes a particular message from the selected folder.
+     * If the protocol supports a two-stage (mark and expunge)
+     * deletion process, then this command should only mark the
+     * message as deleted.
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract void deleteMessage(FolderMessage folderMessage) throws IOException, MailException;
+    
+    /**
+     * Undeletes a particular message from the selected folder.
+     * This should do nothing if the underlying protocol does not support undeletion.
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException;
 }

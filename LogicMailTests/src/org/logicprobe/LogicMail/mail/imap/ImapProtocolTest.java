@@ -390,6 +390,46 @@ public class ImapProtocolTest extends TestCase {
         }
     }
 
+    public void testExecuteStore1() {
+        try {
+            instance.addExecuteExpectation(
+                    "STORE", "5 +FLAGS (\\Answered)",
+                    new String[] { "* 5 FETCH (FLAGS (\\Seen \\Answered))" });
+            ImapProtocol.MessageFlags result = instance.executeStore(5, true, new String[] { "\\Answered" });
+            assertNotNull(result);
+            
+            assertTrue(result.seen);
+            assertTrue(result.answered);
+            assertTrue(!result.deleted);
+            assertTrue(!result.draft);
+            assertTrue(!result.flagged);
+            assertTrue(!result.recent);
+        } catch (Throwable t) {
+            fail("Exception thrown during test: "+t.toString());
+            t.printStackTrace();
+        }
+    }
+
+    public void testExecuteStore2() {
+        try {
+            instance.addExecuteExpectation(
+                    "STORE", "5 -FLAGS (\\Answered)",
+                    new String[] { "* 5 FETCH (FLAGS ())" });
+            ImapProtocol.MessageFlags result = instance.executeStore(5, false, new String[] { "\\Answered" });
+            assertNotNull(result);
+            
+            assertTrue(!result.seen);
+            assertTrue(!result.answered);
+            assertTrue(!result.deleted);
+            assertTrue(!result.draft);
+            assertTrue(!result.flagged);
+            assertTrue(!result.recent);
+        } catch (Throwable t) {
+            fail("Exception thrown during test: "+t.toString());
+            t.printStackTrace();
+        }
+    }
+
     public Test suite() {
         TestSuite suite = new TestSuite("ImapProtocol");
 
@@ -403,6 +443,10 @@ public class ImapProtocolTest extends TestCase {
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteFetchEnvelope1(); } }));
         suite.addTest(new ImapProtocolTest("executeFetchEnvelope2", new TestMethod()
         { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteFetchEnvelope2(); } }));
+        suite.addTest(new ImapProtocolTest("executeStore1", new TestMethod()
+        { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteStore1(); } }));
+        suite.addTest(new ImapProtocolTest("executeStore2", new TestMethod()
+        { public void run(TestCase tc) {((ImapProtocolTest)tc).testExecuteStore2(); } }));
 
         return suite;
     }

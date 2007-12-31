@@ -632,6 +632,71 @@ public class ImapProtocol {
     }
 
     /**
+     * Execute the "STORE" command to update message flags.
+     * @param index The message index to modify.
+     * @param addOrRemove True to add flags, false to remove them.
+     * @param flags Array of flags to change.  (i.e. "\Seen", "\Answered")
+     * @return Updated standard message flags, or null if there was a parse error.
+     */
+    public MessageFlags executeStore(int index, boolean addOrRemove, String[] flags) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            StringBuffer buf = new StringBuffer();
+            for(int i=0; i<flags.length; i++) {
+                buf.append('\"');
+                buf.append(flags[i]);
+                buf.append('\"');
+                if(i < flags.length - 1) {
+                    buf.append(", ");
+                }
+            }
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeStore("+index+", "+(addOrRemove?"add":"remove")+", {"+buf.toString()+"})").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+
+        StringBuffer buf = new StringBuffer();
+        buf.append(index);
+        buf.append(' ');
+        buf.append(addOrRemove?'+':'-');
+        buf.append("FLAGS (");
+        for(int i=0; i<flags.length; i++) {
+            buf.append(flags[i]);
+            if(i < flags.length - 1) {
+                buf.append(' ');
+            }
+        }
+        buf.append(')');
+        String[] rawList = execute("STORE", buf.toString());
+        if(rawList.length < 1) {
+            throw new MailException("Unable to set message flags");
+        }
+        
+        try {
+            int p = rawList[0].indexOf(' ');
+            int q = rawList[0].indexOf(' ', p+1);
+            int fetchIndex = Integer.parseInt(rawList[0].substring(p+1, q));
+            if(fetchIndex != index) {
+                return null;
+            }
+            p = rawList[0].indexOf("FLAGS (");
+            q = rawList[0].indexOf("))");
+            if(p == -1 || q == -1) {
+                return null;
+            }
+            String[] tokens = StringParser.parseTokenString(rawList[0].substring(p+7, q), " ");
+            Vector tokenVec = new Vector(tokens.length);
+            for(int i=0; i<tokens.length; i++) {
+                tokenVec.addElement(tokens[i]);
+            }
+            return ImapParser.parseMessageFlags(tokenVec);
+        } catch (Exception e) {
+            EventLogger.logEvent(AppInfo.GUID, ("Unable to parse STORE response: "+e.toString()).getBytes(), EventLogger.ERROR);
+            return null;
+        }
+    }
+    
+    /**
      * Container for a LIST response
      */
     public static class ListResponse {
