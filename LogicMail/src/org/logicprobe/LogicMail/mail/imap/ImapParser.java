@@ -113,7 +113,7 @@ class ImapParser {
         }
         
         if(parsedEnv.elementAt(1) instanceof String) {
-            env.subject = (String)parsedEnv.elementAt(1);
+            env.subject = StringParser.parseEncodedHeader((String)parsedEnv.elementAt(1));
         }
 
         if(parsedEnv.elementAt(2) instanceof Vector) {
@@ -169,7 +169,7 @@ class ImapParser {
 
                 String realName = strNIL;
                 if(entry.elementAt(0) instanceof String) {
-                    realName = (String)entry.elementAt(0);
+                    realName = StringParser.parseEncodedHeader((String)entry.elementAt(0));
                 }
 
                 String mbName = strNIL;

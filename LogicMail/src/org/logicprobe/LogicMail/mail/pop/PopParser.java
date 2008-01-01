@@ -49,22 +49,30 @@ class PopParser {
         MessageEnvelope env = new MessageEnvelope();
         
         // Populate the common header field bits of the envelope
-        env.subject = (String)headers.get("subject");
+        env.subject = StringParser.parseEncodedHeader((String)headers.get("subject"));
         if(env.subject == null) {
             env.subject = "<subject>";
         }
-        env.from = StringParser.parseTokenString((String)headers.get("from"), ", ");
-        env.to = StringParser.parseTokenString((String)headers.get("to"), ", ");
-        env.cc = StringParser.parseTokenString((String)headers.get("cc"), ", ");
-        env.bcc = StringParser.parseTokenString((String)headers.get("bcc"), ", ");
+        env.from = parseAddressList((String)headers.get("from"));
+        env.to = parseAddressList((String)headers.get("to"));
+        env.cc = parseAddressList((String)headers.get("cc"));
+        env.bcc = parseAddressList((String)headers.get("bcc"));
         try {
             env.date = StringParser.parseDateString((String)headers.get("date"));
         } catch (Exception e) {
             env.date = Calendar.getInstance().getTime();
         }
-        env.replyTo = StringParser.parseTokenString((String)headers.get("reply-to"), ", ");
+        env.replyTo = parseAddressList((String)headers.get("reply-to"));
         env.messageId = (String)headers.get("message-id");
         env.inReplyTo = (String)headers.get("in-reply-to");
         return env;
+    }
+    
+    static String[] parseAddressList(String text) {
+        String[] addresses = StringParser.parseTokenString(text, ", ");
+        for(int i=0; i<addresses.length; i++) {
+            addresses[i] = StringParser.parseEncodedHeader(addresses[i]);
+        }
+        return addresses;
     }
 }

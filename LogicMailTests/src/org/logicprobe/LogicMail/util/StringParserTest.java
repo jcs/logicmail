@@ -509,6 +509,27 @@ public class StringParserTest extends TestCase {
     }
 
     /**
+     * Test of parseEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testParseEncodedHeader() {
+        System.out.println("parseEncodedHeader");
+        String text = "Hello World";
+        String expectedResult = "Hello World";
+        String result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+        
+        text = "=?iso-8859-1?q?=A1Hol=E1=20Se=F1or!?=";
+        expectedResult = "¡Holá Señor!";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+
+        text = "Foo =?iso-8859-1?q?=A1Hol=E1=20Se=F1or!?= Bar";
+        expectedResult = "Foo ¡Holá Señor! Bar";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+    }
+    
+    /**
      * Test of parseTokenString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseTokenString() {
@@ -635,6 +656,10 @@ public class StringParserTest extends TestCase {
         testSuite.addTest(new StringParserTest("parseMailHeaders", new TestMethod() {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testParseMailHeaders();
+        }}));
+        testSuite.addTest(new StringParserTest("parseEncodedHeader", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testParseEncodedHeader();
         }}));
         testSuite.addTest(new StringParserTest("parseTokenString", new TestMethod() {
             public void run(TestCase tc) {

@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.Calendar;
 import java.util.Hashtable;
@@ -482,6 +483,115 @@ public class StringParser {
             }
         }
         return table;
+    }
+    
+    /**
+     * Scans the provided string for blocks of text encoded according
+     * to RFC2047, decodes them accordingly, and returns a new Unicode
+     * string usable in the rest of the application.  If the charset for
+     * a block of text is not supported, then that block is not included
+     * in the result.
+     *
+     * @param text The text to scan.
+     * @return Processed unicode string
+     */
+    public static String parseEncodedHeader(String text) {
+        int size = text.length();
+        // Shortcut to avoid processing strings too short
+        // to contain encoded sections.  ("=?X?B??=")
+        if(size < 8) {
+            return text;
+        }
+        
+        StringBuffer buf = new StringBuffer();
+        int index = 0;
+        int qcount;
+        boolean flag = false;
+        while(index < size - 1) {
+            flag = false;
+            qcount = 0;
+            // Match on "=?"
+            if(text.charAt(index) == '=' && text.charAt(index+1) == '?' && (index + 2) < size) {
+                qcount++;
+                // Scan for the closing "?="
+                for(int i = index + 2; i < size - 1; i++) {
+                    if(text.charAt(i) == '?') {
+                        qcount++;
+                    }
+                    if(qcount == 4 && text.charAt(i) == '?' && text.charAt(i+1) == '=') {
+                        buf.append(parseEncodedWord(text.substring(index, i+2)));
+                        index = i + 1;
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+
+            // Handle the case that an encoded word was not found
+            if(!flag) {
+                buf.append(text.charAt(index));
+            }
+            index++;
+        }
+        
+        // Append the last character, if applicable
+        if(!flag) {
+            buf.append(text.charAt(index));
+        }
+        
+        return buf.toString();
+    }
+
+    /**
+     * Parses an encoded word, per RFC2047.
+     * Assumes that the input has already been separated out from the
+     * source, and is of valid structure.  If the input is invalid
+     * or cannot be parsed, an empty string is returned.
+     *
+     * @param text Text to decode
+     * @return Decoded text
+     */
+    private static String parseEncodedWord(String text) {
+        // Parse according to the format:
+        //   encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
+        
+        String[] sections = parseTokenString(text, "?");
+        
+        // Ensure that there are 3 sections
+        if(sections.length != 5) {
+            return "";
+        }
+        
+        String charset = sections[1].toUpperCase();
+        String encoding = sections[2].toUpperCase();
+        String encodedText = sections[3];
+        
+        if(encoding.length() != 1) {
+            return "";
+        }
+        
+        String result;
+        if(encoding.charAt(0) == 'Q') {
+            try {
+                // Quoted-Printable
+                result = new String(decodeQuotedPrintable(encodedText).getBytes(), charset);
+            } catch (UnsupportedEncodingException ex) {
+                result = "";
+            }
+        }
+        else if(encoding.charAt(0) == 'B') {
+            // Base64
+            try {
+                result = new String(UtilProxy.getInstance().Base64Decode(encodedText), charset);
+            } catch (Exception e) {
+                result = "";
+            }
+        }
+        else {
+            result = "";
+        }
+        
+        return result;
     }
     
     public static String[] parseTokenString(String text, String token) {
