@@ -34,7 +34,6 @@ package org.logicprobe.LogicMail.ui;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.MainScreen;
 import org.logicprobe.LogicMail.AppInfo;
@@ -53,9 +52,8 @@ public abstract class BaseScreen extends MainScreen {
     public BaseScreen(String title) {
         super();
         // Create screen elements
-        LabelField titleField = new LabelField
-         ("LogicMail - "+title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
-        setTitle(titleField);
+        HeaderField headerField = new HeaderField("LogicMail - " + title);
+        setTitle(headerField);
     }
 
     // Create menu items
