@@ -148,10 +148,21 @@
             dest="${basedir}/${dist.dir}/LogicMail.alx">
             <replace path="loader/application/version/text()" withText="${build.version}"/>
         </xmltask>
-        
+
+        <!-- Split the COD file as necessary to match the JAD file -->
+        <mkdir dir="${basedir}/${dist.dir}/tmp"/>
+        <unzip
+            src="${basedir}/${dist.dir}/LogicMail.cod"
+            dest="${basedir}/${dist.dir}/tmp"
+            overwrite="true" />
+        <move todir="${basedir}/${dist.dir}">
+            <fileset dir="${basedir}/${dist.dir}/tmp"/>
+        </move>
+        <delete dir="${basedir}/${dist.dir}/tmp"/>
+
         <!-- Create the distribution archive -->
         <zip destfile="${basedir}/dist/LogicMail.zip"
-             basedir="${basedir}/${dist.dir}"/>
+            basedir="${basedir}/${dist.dir}"/>
      </target>
      <!--
      This is a special version of the "create-jad" task.
