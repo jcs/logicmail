@@ -35,7 +35,7 @@ import java.io.IOException;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.component.EditField;
+import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
@@ -49,7 +49,6 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
-import org.logicprobe.LogicMail.message.MessageReplyConverter;
 import org.logicprobe.LogicMail.message.TextPart;
 
 /**
@@ -59,8 +58,8 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
     private AccountConfig acctConfig;
     private OutgoingMailClient client;
     private VerticalFieldManager vfmRecipients;
-    private EditField fldSubject;
-    private EditField fldEdit;
+    private AutoTextEditField fldSubject;
+    private AutoTextEditField fldEdit;
     private String inReplyTo;
     
     /**
@@ -75,10 +74,10 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, ""));
         vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, ""));
         add(vfmRecipients);
-        fldSubject = new EditField("Subject: ", "");
+        fldSubject = new AutoTextEditField("Subject: ", "");
         add(fldSubject);
         add(new SeparatorField());
-        fldEdit = new EditField();
+        fldEdit = new AutoTextEditField();
         
         // Add the signature if available
         String sig = MailSettings.getInstance().getGlobalConfig().getMsgSignature();
