@@ -36,6 +36,7 @@ import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.AutoTextEditField;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
@@ -61,6 +62,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
     private AutoTextEditField fldSubject;
     private AutoTextEditField fldEdit;
     private String inReplyTo;
+    private boolean messageSent;
     
     /**
      * Creates a new instance of CompositionScreen.
@@ -133,6 +135,23 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         inReplyTo = env.inReplyTo;
     }
 
+    public boolean onClose() {
+        if(!messageSent && (fldSubject.getText().length() > 0 || fldEdit.getText().length() > 0)) {
+            if(Dialog.ask(Dialog.D_YES_NO, "Discard unsent message?") == Dialog.YES) {
+                close();
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            close();
+            return true;
+        }
+    }
+    
+    
     private MenuItem sendMenuItem = new MenuItem("Send", 200000, 10) {
         public void run() {
             sendMessage();
@@ -156,6 +175,13 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         }
     };
 
+    /**
+     * Get whether the composed message was sent.
+     * @return True if sent, false otherwise.
+     */
+    public boolean getMessageSent() {
+        return messageSent;
+    }
 
     protected void makeMenu(Menu menu, int instance) {
         if(((EmailAddressBookEditField)vfmRecipients.getField(0)).getText().length() > 0) {
@@ -245,6 +271,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         // configured sent-messages folder on the outgoing
         // mail server if applicable.
         if(result == true) {
+            messageSent = true;
             synchronized(Application.getEventLock()) {
                 this.close();
             }

@@ -47,6 +47,7 @@ import net.rim.device.api.ui.component.SeparatorField;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.imap.ImapClient;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -55,7 +56,7 @@ import org.logicprobe.LogicMail.util.StringParser;
 /**
  * Display an E-Mail message
  */
-public class MessageScreen extends BaseScreen implements MailClientHandlerListener {
+public class MessageScreen extends BaseScreen {
     private IncomingMailClient client;
     private FolderTreeItem folderItem;
     private FolderMessage folderMessage;
@@ -117,30 +118,41 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
     private MenuItem replyItem = new MenuItem("Reply...", 110, 10) {
         public void run() {
             if(msg != null) {
-                UiApplication.getUiApplication().pushScreen(
-                        new CompositionScreen(
-                            client.getAcctConfig(),
-                            msg.toReplyMessage()));
+                CompositionScreen screen =
+                    new CompositionScreen(
+                        client.getAcctConfig(),
+                        msg.toReplyMessage());
+                UiApplication.getUiApplication().pushModalScreen(screen);
+                
+                if(screen.getMessageSent()) {
+                    updateMessageAnswered();
+                }
             }
         }
     };
     private MenuItem replyAllItem = new MenuItem("Reply to all...", 115, 10) {
         public void run() {
             if(msg != null) {
-                UiApplication.getUiApplication().pushScreen(
-                        new CompositionScreen(
-                            client.getAcctConfig(),
-                            msg.toReplyAllMessage(client.getAcctConfig().getOutgoingConfig().getFromAddress())));
+                CompositionScreen screen =
+                    new CompositionScreen(
+                        client.getAcctConfig(),
+                        msg.toReplyAllMessage(client.getAcctConfig().getOutgoingConfig().getFromAddress()));
+                UiApplication.getUiApplication().pushModalScreen(screen);
+
+                if(screen.getMessageSent()) {
+                    updateMessageAnswered();
+                }
             }
         }
     };
     private MenuItem forwardItem = new MenuItem("Forward...", 120, 10) {
         public void run() {
             if(msg != null) {
-                UiApplication.getUiApplication().pushScreen(
-                        new CompositionScreen(
-                            client.getAcctConfig(),
-                            msg.toForwardMessage()));
+                CompositionScreen screen =
+                    new CompositionScreen(
+                        client.getAcctConfig(),
+                        msg.toForwardMessage());
+                UiApplication.getUiApplication().pushModalScreen(screen);
             }
         }
     };
@@ -233,26 +245,38 @@ public class MessageScreen extends BaseScreen implements MailClientHandlerListen
         dialog.show();
     }
 
-    private void updateMessage() {
-        // Initialize the handler on demand
-        if(updateMessageHandler == null) {
-            updateMessageHandler = new UpdateMessageHandler();
-            updateMessageHandler.setListener(this);
+    /**
+     * Flags the currently viewed message as answered.
+     */
+    private void updateMessageAnswered() {
+        if(client instanceof ImapClient) {
+            MailClientHandler flagMessageHandler = new MailClientHandler(client, "Updating message status") {
+                public void runSession() throws IOException, MailException {
+                    ((ImapClient)client).messageAnswered(folderMessage);
+                }
+            };
+            // Start the background process
+            flagMessageHandler.start();
         }
+    }
+    
+    private void updateMessage() {
+        UpdateMessageHandler updateMessageHandler = new UpdateMessageHandler();
+        updateMessageHandler.setListener(new MailClientHandlerListener() {
+            public void mailActionComplete(MailClientHandler source, boolean result) {
+                source.setListener(null);
+                UpdateMessageHandler updateMessageHandler = (UpdateMessageHandler)source;
+                if(updateMessageHandler.getMessageFields() != null) {
+                    msgFields = updateMessageHandler.getMessageFields();
+                    msg = updateMessageHandler.getMessage();
+                    drawMessageFields();
+                    folderMessage.setSeen(true);
+                }
+            }
+        });
 
         // Start the background process
         updateMessageHandler.start();
-    }
-
-    public void mailActionComplete(MailClientHandler source, boolean result) {
-        if(source.equals(updateMessageHandler)) {
-            if(updateMessageHandler.getMessageFields() != null) {
-                msgFields = updateMessageHandler.getMessageFields();
-                msg = updateMessageHandler.getMessage();
-                drawMessageFields();
-                folderMessage.setSeen(true);
-            }
-        }
     }
     
     private class UpdateMessageHandler extends MailClientHandler {

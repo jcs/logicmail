@@ -404,19 +404,29 @@ public class ImapClient implements IncomingMailClient {
     public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {
         ImapProtocol.MessageFlags updatedFlags =
             imapProtocol.executeStore(folderMessage.getIndex(), true, new String[] { "\\Deleted" });
-        if(updatedFlags != null) {
-            folderMessage.setAnswered(updatedFlags.answered);
-            folderMessage.setDeleted(updatedFlags.deleted);
-            folderMessage.setDraft(updatedFlags.draft);
-            folderMessage.setFlagged(updatedFlags.draft);
-            folderMessage.setRecent(updatedFlags.recent);
-            folderMessage.setSeen(updatedFlags.seen);
-        }
+        refreshMessageFlags(updatedFlags, folderMessage);
     }
+
 
     public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
         ImapProtocol.MessageFlags updatedFlags =
             imapProtocol.executeStore(folderMessage.getIndex(), false, new String[] { "\\Deleted" });
+        refreshMessageFlags(updatedFlags, folderMessage);
+    }
+    
+    /**
+     * Sets the flags on a message so the server knows it was answered.
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public void messageAnswered(FolderMessage folderMessage) throws IOException, MailException {
+        ImapProtocol.MessageFlags updatedFlags =
+            imapProtocol.executeStore(folderMessage.getIndex(), true, new String[] { "\\Answered" });
+        refreshMessageFlags(updatedFlags, folderMessage);
+    }
+    
+    private void refreshMessageFlags(ImapProtocol.MessageFlags updatedFlags, FolderMessage folderMessage) {
         if(updatedFlags != null) {
             folderMessage.setAnswered(updatedFlags.answered);
             folderMessage.setDeleted(updatedFlags.deleted);
