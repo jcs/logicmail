@@ -44,6 +44,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -64,6 +65,7 @@ public class MessageScreen extends BaseScreen {
     private Vector msgFields;
     private Message msg;
     private UpdateMessageHandler updateMessageHandler;
+    private boolean isSentFolder;
     
     public MessageScreen(IncomingMailClient client,
                          FolderTreeItem folderItem,
@@ -75,13 +77,38 @@ public class MessageScreen extends BaseScreen {
         this.folderMessage = folderMessage;
         this.envelope = folderMessage.getEnvelope();
         
+        // Determine if this screen is viewing a sent message
+        if(client.getAcctConfig() instanceof ImapConfig) {
+            String sentFolderPath = ((ImapConfig)client.getAcctConfig()).getSentFolder();
+            if(sentFolderPath != null) {
+                this.isSentFolder = folderItem.getPath().equals(sentFolderPath);
+            }
+        }
+        else {
+            this.isSentFolder = false;
+        }
+        
         // Create screen elements
-        if(envelope.from != null && envelope.from.length > 0) {
-            add(new RichTextField("From: " + envelope.from[0]));
-            if(envelope.from.length > 1) {
-                for(int i=1;i<envelope.from.length;i++) {
-                    if(envelope.from[i] != null) {
-                        add(new RichTextField("      " + envelope.from[i]));
+        if(isSentFolder) {
+            if(envelope.to != null && envelope.to.length > 0) {
+                add(new RichTextField("To: " + envelope.to[0]));
+                if(envelope.to.length > 1) {
+                    for(int i=1;i<envelope.to.length;i++) {
+                        if(envelope.to[i] != null) {
+                            add(new RichTextField("    " + envelope.to[i]));
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            if(envelope.from != null && envelope.from.length > 0) {
+                add(new RichTextField("From: " + envelope.from[0]));
+                if(envelope.from.length > 1) {
+                    for(int i=1;i<envelope.from.length;i++) {
+                        if(envelope.from[i] != null) {
+                            add(new RichTextField("      " + envelope.from[i]));
+                        }
                     }
                 }
             }

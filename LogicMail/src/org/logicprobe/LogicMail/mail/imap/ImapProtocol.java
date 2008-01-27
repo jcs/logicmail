@@ -695,6 +695,25 @@ public class ImapProtocol {
             return null;
         }
     }
+
+    /**
+     * Execute the "APPEND" command to add a message to an existing mailbox.
+     * @param mboxName Mailbox name.
+     * @param rawMessage The raw message text, in RFC2822-compliant format.
+     * @param flags Flags to store the message with.
+     */
+    public void executeAppend(String mboxName, String rawMessage, MessageFlags flags) throws IOException, MailException {
+        String flagsString = ImapParser.createMessageFlagsString(flags);
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeAppend(rawMessage, \""+flagsString+"\")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
+        executeContinue("APPEND", "\""+mboxName+"\" ("+flagsString+") {"+rawMessage.length()+"}", rawMessage,
+                "Unable to append message to "+mboxName);
+    }
     
     /**
      * Container for a LIST response
@@ -871,6 +890,44 @@ public class ImapProtocol {
         connection.sendCommand(tag + command + (arguments == null ? "" : " " + arguments));
 
         String temp = connection.receive();
+        while (!temp.startsWith(tag)) {
+            Arrays.add(result, temp);
+            temp = connection.receive();
+        }
+
+        temp = temp.substring(tag.length());
+        if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
+            throw new MailException(temp);
+        }
+        return result;
+    }
+
+    /**
+     * Executes an IMAP command, waits for a reply starting with a "+",
+     * then sends more text, and ultimately returns the reply as an
+     * array of strings.
+     * This method is designed specifically for executeAppend().
+     * @param command IMAP command
+     * @param arguments Arguments for the command
+     * @param errorMsg Error message if we get back something other than a continue
+     * @return List of returned strings
+     */
+    protected String[] executeContinue(String command, String arguments, String text, String errorMsg)
+        throws IOException, MailException
+    {
+        String[] result = new String[0];
+
+        String tag = "A" + commandCount++ + " ";
+        connection.sendCommand(tag + command + (arguments == null ? "" : " " + arguments));
+
+        String temp = connection.receive();
+        if(!temp.startsWith("+")) {
+            throw new MailException(errorMsg);
+        }
+        connection.sendRaw(text);
+        connection.sendRaw("\r\n");
+
+        temp = connection.receive();
         while (!temp.startsWith(tag)) {
             Arrays.add(result, temp);
             temp = connection.receive();

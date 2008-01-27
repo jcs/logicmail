@@ -31,6 +31,7 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import java.util.Hashtable;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
@@ -46,41 +47,55 @@ import org.logicprobe.LogicMail.mail.smtp.SmtpClient;
  * concrete IncomingMailClient instances
  */
 public class MailClientFactory {
+    private static Hashtable incomingClientTable = new Hashtable();
+    private static Hashtable outgoingClientTable = new Hashtable();
+    
     private MailClientFactory() { }
     
     /**
-     * Get a new concrete mail client instance.
+     * Get a concrete mail client instance.
+     * If a client already exists for the provided configuration,
+     * it will be provided instead of a new one.
      *
      * @param acctConfig User account configuration
      * @return Usable mail client instance
      */
     public static IncomingMailClient createMailClient(AccountConfig acctConfig) {
-        GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
-        if(acctConfig instanceof PopConfig) {
-            return new PopClient(globalConfig, (PopConfig)acctConfig);
+        IncomingMailClient client = (IncomingMailClient)incomingClientTable.get(acctConfig);
+        
+        if(client == null) {
+            GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
+            if(acctConfig instanceof PopConfig) {
+                client = new PopClient(globalConfig, (PopConfig)acctConfig);
+                incomingClientTable.put(acctConfig, client);
+            }
+            else if(acctConfig instanceof ImapConfig) {
+                client = new ImapClient(globalConfig, (ImapConfig)acctConfig);
+                incomingClientTable.put(acctConfig, client);
+            }
         }
-        else if(acctConfig instanceof ImapConfig) {
-            return new ImapClient(globalConfig, (ImapConfig)acctConfig);
-        }
-        else {
-            return null;
-        }
+        return client;
     }
     
     /**
-     * Get a new concrete outgoing mail client instance.
+     * Get a concrete outgoing mail client instance.
+     * If a client already exists for the provided configuration,
+     * it will be provided instead of a new one.
      *
      * @param acctConfig User account configuration
      * @return Usable outgoing mail client instance
      */
     public static OutgoingMailClient createOutgoingMailClient(AccountConfig acctConfig) {
-        GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
+        OutgoingMailClient client = null;
         OutgoingConfig outgoingConfig = acctConfig.getOutgoingConfig();
         if(outgoingConfig != null) {
-            return new SmtpClient(globalConfig, outgoingConfig);
+            client = (OutgoingMailClient)outgoingClientTable.get(outgoingConfig);
+
+            if(client == null) {
+                GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
+                    client = new SmtpClient(globalConfig, outgoingConfig);
+            }
         }
-        else {
-            return null;
-        }
+        return client;
     }
 }

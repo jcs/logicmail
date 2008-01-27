@@ -46,6 +46,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
@@ -54,11 +55,15 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 
 /**
- * Display the active mailbox listing
+ * Display the active mailbox listing.
+ * If the supplied folder matches the configured sent folder
+ * for the provided account, then the display fields will be
+ * adjusted accordingly.
  */
 public class MailboxScreen extends BaseScreen {
     private FolderMessage[] messages;
     private ListField msgList;
+    private boolean isSentFolder;
     
     // Message icons
     private Bitmap bmapOpened;
@@ -124,6 +129,17 @@ public class MailboxScreen extends BaseScreen {
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
 
+        // Determine if this screen is viewing the sent folder
+        if(client.getAcctConfig() instanceof ImapConfig) {
+            String sentFolderPath = ((ImapConfig)client.getAcctConfig()).getSentFolder();
+            if(sentFolderPath != null) {
+                this.isSentFolder = folderItem.getPath().equals(sentFolderPath);
+            }
+        }
+        else {
+            this.isSentFolder = false;
+        }
+        
         if(client != null) {
             refreshMessageList();
         }
@@ -266,10 +282,20 @@ public class MailboxScreen extends BaseScreen {
             
         Font origFont = graphics.getFont();
         graphics.setFont(origFont.derive(Font.BOLD));
-        if(env.from != null && env.from.length > 0) {
-            graphics.drawText((String)env.from[0], 20, y,
-                              (int)(getStyle() | DrawStyle.ELLIPSIS),
-                               senderWidth);
+
+        if(isSentFolder) {
+            if(env.to != null && env.to.length > 0) {
+                graphics.drawText((String)env.to[0], 20, y,
+                                  (int)(getStyle() | DrawStyle.ELLIPSIS),
+                                   senderWidth);
+            }
+        }
+        else {
+            if(env.from != null && env.from.length > 0) {
+                graphics.drawText((String)env.from[0], 20, y,
+                                  (int)(getStyle() | DrawStyle.ELLIPSIS),
+                                   senderWidth);
+            }
         }
         graphics.setFont(origFont.derive(Font.PLAIN));
         if(env.subject != null) {

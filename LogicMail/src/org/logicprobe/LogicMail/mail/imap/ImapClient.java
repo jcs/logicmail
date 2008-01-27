@@ -436,4 +436,18 @@ public class ImapClient implements IncomingMailClient {
             folderMessage.setSeen(updatedFlags.seen);
         }
     }
+    
+    /**
+     * Appends a message to the specified folder, and flags it as seen.
+     * This is intended for use when saving sent or draft messages.
+     *
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public void appendMessage(FolderTreeItem folder, String rawMessage, boolean isSeen, boolean isDraft) throws IOException, MailException {
+        ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
+        flags.seen = isSeen;
+        flags.draft = isDraft;
+        imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
+    }
 }

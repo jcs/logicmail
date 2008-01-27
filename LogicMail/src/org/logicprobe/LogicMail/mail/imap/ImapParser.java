@@ -92,6 +92,34 @@ class ImapParser {
         return flags;
     }
     
+    static String createMessageFlagsString(ImapProtocol.MessageFlags flags) {
+        StringBuffer buf = new StringBuffer();
+        if(flags.seen) {
+            buf.append("\\Seen");
+        }
+        if(flags.answered) {
+            if(buf.length() > 0) { buf.append(' '); }
+            buf.append("\\Answered");
+        }
+        if(flags.flagged) {
+            if(buf.length() > 0) { buf.append(' '); }
+            buf.append("\\Flagged");
+        }
+        if(flags.deleted) {
+            if(buf.length() > 0) { buf.append(' '); }
+            buf.append("\\Deleted");
+        }
+        if(flags.draft) {
+            if(buf.length() > 0) { buf.append(' '); }
+            buf.append("\\Draft");
+        }
+        if(flags.recent) {
+            if(buf.length() > 0) { buf.append(' '); }
+            buf.append("\\Recent");
+        }
+        return buf.toString();
+    }
+    
     static MessageEnvelope parseMessageEnvelope(Vector parsedEnv) {
         // Sanity checking
         if(parsedEnv.size() < 10) {

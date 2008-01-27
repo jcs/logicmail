@@ -132,7 +132,7 @@ public class SmtpClient implements OutgoingMailClient {
         this.password = password;
     }
 
-    public void sendMessage(Message message) throws IOException, MailException {
+    public String sendMessage(Message message) throws IOException, MailException {
         if(!isFresh) {
             smtpProtocol.executeReset();
         }
@@ -176,9 +176,12 @@ public class SmtpClient implements OutgoingMailClient {
         if(!smtpProtocol.executeRecipient(stripEmail(env.to[0]))) {
             throw new MailException("Error with recipient");
         }
-        if(!smtpProtocol.executeData(buffer.toString())) {
+        String rawMessage = buffer.toString();
+        if(!smtpProtocol.executeData(rawMessage)) {
             throw new MailException("Error sending message");
         }
+        
+        return rawMessage;
     }
     
     private static String makeCsvString(String[] input) {

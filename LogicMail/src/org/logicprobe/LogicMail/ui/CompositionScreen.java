@@ -42,10 +42,14 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailClientFactory;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.OutgoingMailClient;
+import org.logicprobe.LogicMail.mail.imap.ImapClient;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
@@ -266,18 +270,68 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
      * Handle completion of sending a message.
      */
     public void mailActionComplete(MailClientHandler source, boolean result) {
-        // If the mail sent successfully, close the screen.
-        // Ideally, this should also store the message in a
+        // This should also store the message in a
         // configured sent-messages folder on the outgoing
-        // mail server if applicable.
+        // mail server if applicable, then close the screen.
         if(result == true) {
             messageSent = true;
+            // The following method is now responsible for closing the screen
+            appendMessage(((SendMessageHandler)source).getRawMessage());
+        }
+    }
+
+    /**
+     * Append the sent message to the sent messages folder, if available.
+     * This method will not return until the operation has completed.
+     */
+    private void appendMessage(String rawMessage) {
+        IncomingMailClient incomingClient = MailClientFactory.createMailClient(acctConfig);
+        if(incomingClient instanceof ImapClient) {
+            String sentFolderPath = ((ImapConfig)incomingClient.getAcctConfig()).getSentFolder();
+            if(sentFolderPath != null) {
+                // The append methods require a FolderTreeItem, but only care about
+                // the path.  Since the path is the only thing easily available here,
+                // we construct a simple instance that only contains the path.
+                FolderTreeItem folderItem = new FolderTreeItem(null, sentFolderPath, null);
+
+                MailClientHandler appendMessageHandler = new AppendMessageHandler((ImapClient)incomingClient, folderItem, rawMessage);
+                appendMessageHandler.setListener(new MailClientHandlerListener() {
+                    public void mailActionComplete(MailClientHandler source, boolean result) {
+                        source.setListener(null);
+                        synchronized(Application.getEventLock()) {
+                            CompositionScreen.this.close();
+                        }
+                    }
+                });
+                appendMessageHandler.start();
+            }
+            else {
+                synchronized(Application.getEventLock()) {
+                    this.close();
+                }
+            }
+        }
+        else {
             synchronized(Application.getEventLock()) {
                 this.close();
             }
         }
     }
-
+    
+    private class AppendMessageHandler extends MailClientHandler {
+        private FolderTreeItem folderItem;
+        private String rawMessage;
+        
+        public AppendMessageHandler(ImapClient imapClient, FolderTreeItem folderItem, String rawMessage) {
+            super(imapClient, "Storing to sent folder");
+            this.folderItem = folderItem;
+            this.rawMessage = rawMessage;
+        }
+        public void runSession() throws IOException, MailException {
+            ((ImapClient)client).appendMessage(folderItem, rawMessage, true, false);
+        }
+    }
+    
     /**
      * Insert a new recipient field.
      * @param addressType The type of address this field will hold
@@ -361,15 +415,20 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
      */
     private class SendMessageHandler extends MailClientHandler {
         private Message message;
-
+        private String rawMessage;
+        
         public SendMessageHandler(Message message) {
             super(CompositionScreen.this.client, "Sending message");
             this.message = message;
         }
 
         public void runSession() throws IOException, MailException {
-            ((OutgoingMailClient)client).sendMessage(message);
+            rawMessage = ((OutgoingMailClient)client).sendMessage(message);
             client.close();
+        }
+        
+        public String getRawMessage() {
+            return rawMessage;
         }
     }
 }

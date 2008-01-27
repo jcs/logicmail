@@ -38,6 +38,8 @@ import org.logicprobe.LogicMail.util.SerializableHashtable;
  * Store account configuration for IMAP
  */
 public class ImapConfig extends AccountConfig {
+    private String sentFolder;
+    
     public ImapConfig() {
         super();
     }
@@ -49,6 +51,7 @@ public class ImapConfig extends AccountConfig {
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(143);
+        sentFolder = null;
     }    
 
     public String toString() {
@@ -56,11 +59,34 @@ public class ImapConfig extends AccountConfig {
         return text;
     }
 
+    public String getSentFolder() {
+        return sentFolder;
+    }
+
+    public void setSentFolder(String sentFolder) {
+        this.sentFolder = sentFolder;
+    }
+
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
+        if(sentFolder != null) {
+            table.put("account_imap_sentFolder", sentFolder);
+        }
+        else {
+            table.put("account_imap_sentFolder", "");
+        }
     }
     
     public void readConfigItems(SerializableHashtable table) {
         super.readConfigItems(table);
-    }    
+        Object value;
+
+        value = table.get("account_imap_sentFolder");
+        if(value != null && value instanceof String) {
+            sentFolder = (String)value;
+            if(sentFolder.length() == 0) {
+                sentFolder = null;
+            }
+        }
+    }
 }

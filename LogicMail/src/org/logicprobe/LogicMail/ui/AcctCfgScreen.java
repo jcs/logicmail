@@ -31,6 +31,7 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Vector;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
@@ -44,11 +45,13 @@ import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
+import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
 
 /**
  * Configuration screen
@@ -62,12 +65,14 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private PasswordEditField serverPassField;
     private CheckboxField useMdsField;
     private ObjectChoiceField outgoingServerField;
+    private ObjectChoiceField sentFolderChoiceField;
     private ButtonField saveButton;
     
     private boolean acctSaved;
     private AccountConfig acctConfig;
     private OutgoingConfig[] outgoingConfigs;
     private FieldChangeListener fieldChangeListener;
+    private AccountCache acctCache;
     
     private class NullOutgoingConfig extends OutgoingConfig {
         public String toString() {
@@ -77,12 +82,29 @@ public class AcctCfgScreen extends BaseCfgScreen {
             return -1;
         }
     }
+
+    /**
+     * Simple container class to use for ObjectChoiceField items
+     * where the desired display text is different from the item
+     * object's toString result.
+     */
+    private class ObjectChoiceItem {
+        private String text;
+        private Object item;
+        public ObjectChoiceItem(String text, Object item) {
+            this.text = text;
+            this.item = item;
+        }
+        public Object getItem() { return item; }
+        public String toString() { return text; }
+    }
     
     public AcctCfgScreen(AccountConfig acctConfig) {
         super("LogicMail - Account");
         
         this.acctConfig = acctConfig;
-        acctSaved = false;
+        this.acctCache = new AccountCache(this.acctConfig);
+        this.acctSaved = false;
         
         MailSettings mailSettings = MailSettings.getInstance();
         int numOutgoing = mailSettings.getNumOutgoing();
@@ -124,15 +146,16 @@ public class AcctCfgScreen extends BaseCfgScreen {
         
         add(acctNameField);
         add(new SeparatorField());
-        add(new RichTextField("Incoming server:", Field.NON_FOCUSABLE));
-        add(serverNameField);
-        
+
         if(acctConfig instanceof ImapConfig) {
             add(new RichTextField("Protocol: IMAP", Field.NON_FOCUSABLE));
         }
         else if(acctConfig instanceof PopConfig) {
             add(new RichTextField("Protocol: POP", Field.NON_FOCUSABLE));
         }
+
+        add(new RichTextField("Incoming server:", Field.NON_FOCUSABLE));
+        add(serverNameField);
         
         add(serverSslField);
         add(serverPortField);
@@ -142,9 +165,65 @@ public class AcctCfgScreen extends BaseCfgScreen {
         add(new LabelField());
         add(outgoingServerField);
         add(new LabelField());
+
+        if(acctConfig instanceof ImapConfig) {
+            ImapConfig imapConfig = (ImapConfig)acctConfig;
+            ObjectChoiceItem[] folderChoices = getFolderChoices();
+
+            // Select the default choice based on the currently configured folder
+            int defaultFolder = 0;
+            String sentFolder = imapConfig.getSentFolder();
+            if(sentFolder != null && folderChoices.length > 0) {
+                for(int i=1; i<folderChoices.length; i++) {
+                    if(sentFolder.equals(((FolderTreeItem)folderChoices[i].getItem()).getPath())) {
+                        defaultFolder = i;
+                        break;
+                    }
+                }
+            }
+            sentFolderChoiceField = new ObjectChoiceField("Sent message folder: ", folderChoices, defaultFolder, Field.FIELD_LEFT);
+            add(sentFolderChoiceField);
+        }
+        
         add(new SeparatorField());
         add(new LabelField(null, Field.NON_FOCUSABLE));
         add(saveButton);
+    }
+    
+    private ObjectChoiceItem[] getFolderChoices() {
+        FolderTreeItem folderTreeRoot = acctCache.loadFolderTree();
+
+        Vector choices = new Vector();
+        choices.addElement(new ObjectChoiceItem("<None>", null));
+        
+        if(folderTreeRoot != null && folderTreeRoot.hasChildren()) {
+            FolderTreeItem[] children = folderTreeRoot.children();
+            for(int i=0; i<children.length; i++) {
+                folderChoicesHelper(choices, 0, children[i]);
+            }
+        }
+        
+        int size = choices.size();
+        ObjectChoiceItem[] result = new ObjectChoiceItem[size];
+        for(int i=0; i<size; i++) {
+            result[i] = (ObjectChoiceItem)choices.elementAt(i);
+        }
+        return result;
+    }
+    
+    private void folderChoicesHelper(Vector choices, int level, FolderTreeItem currentItem) {
+        StringBuffer buf = new StringBuffer();
+        for(int i=0; i<level; i++) {
+            buf.append("  ");
+        }
+        buf.append(currentItem.getName());
+        choices.addElement(new ObjectChoiceItem(buf.toString(), currentItem));
+        if(currentItem.hasChildren()) {
+            FolderTreeItem[] children = currentItem.children();
+            for(int i=0; i<children.length; i++) {
+                folderChoicesHelper(choices, level+1, children[i]);
+            }
+        }
     }
     
     public void AcctCfgScreen_fieldChanged(Field field, int context) {
@@ -205,6 +284,19 @@ public class AcctCfgScreen extends BaseCfgScreen {
         else {
             this.acctConfig.setOutgoingConfig(selectedOutgoingConfig);
         }
+
+        if(acctConfig instanceof ImapConfig) {
+            ImapConfig imapConfig = (ImapConfig)acctConfig;
+            ObjectChoiceItem sentFolderChoice =
+                    (ObjectChoiceItem)sentFolderChoiceField.getChoice(sentFolderChoiceField.getSelectedIndex());
+            if(sentFolderChoice.getItem() == null) {
+                imapConfig.setSentFolder(null);
+            }
+            else {
+                imapConfig.setSentFolder(((FolderTreeItem)sentFolderChoice.getItem()).getPath());
+            }
+        }
+        
         acctSaved = true;
     }
     

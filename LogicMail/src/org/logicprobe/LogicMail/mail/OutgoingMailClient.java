@@ -41,8 +41,10 @@ public interface OutgoingMailClient extends MailClient {
     /**
      * Send a message
      *
+     * @param message Message to send.
+     * @return Actual raw message text that was sent.
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-    public abstract void sendMessage(Message message) throws IOException, MailException;
+    public abstract String sendMessage(Message message) throws IOException, MailException;
 }
