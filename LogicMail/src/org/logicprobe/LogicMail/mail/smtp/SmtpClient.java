@@ -152,9 +152,6 @@ public class SmtpClient implements OutgoingMailClient {
         if(env.cc != null && env.cc.length > 0) {
             buffer.append("Cc: " + makeCsvString(env.cc) + strCRLF);
         }
-        if(env.bcc != null && env.bcc.length > 0) {
-            buffer.append("Bcc: " + makeCsvString(env.bcc) + strCRLF);
-        }
         if(env.replyTo != null && env.replyTo.length > 0) {
             buffer.append("Reply-To: " + makeCsvString(env.replyTo) + strCRLF);
         }
@@ -173,9 +170,26 @@ public class SmtpClient implements OutgoingMailClient {
         if(!smtpProtocol.executeMail(stripEmail(env.from[0]))) {
             throw new MailException("Error with sender");
         }
-        if(!smtpProtocol.executeRecipient(stripEmail(env.to[0]))) {
-            throw new MailException("Error with recipient");
+        for(int i=0; i<env.to.length; i++) {
+            if(!smtpProtocol.executeRecipient(stripEmail(env.to[i]))) {
+                throw new MailException("Error with recipient");
+            }
         }
+        if(env.cc != null) {
+            for(int i=0; i<env.cc.length; i++) {
+                if(!smtpProtocol.executeRecipient(stripEmail(env.cc[i]))) {
+                    throw new MailException("Error with recipient");
+                }
+            }
+        }
+        if(env.bcc != null) {
+            for(int i=0; i<env.bcc.length; i++) {
+                if(!smtpProtocol.executeRecipient(stripEmail(env.bcc[i]))) {
+                    throw new MailException("Error with recipient");
+                }
+            }
+        }
+        
         String rawMessage = buffer.toString();
         if(!smtpProtocol.executeData(rawMessage)) {
             throw new MailException("Error sending message");

@@ -114,15 +114,19 @@ public class StringParser {
         q = rawDate.indexOf(" ", p+1);
         fields[0]=Integer.parseInt(rawDate.substring(p, q).trim());
         if(fields[0] < 100) {
-            // Handle 2-digit years with a simple kludge:
-            // 80-99 is assumed to be 19xx
-            // 00-79 is assumed to be 20xx
-            if(fields[0] >= 80) {
+            // Handle 2-digit years according to RFC 2822:
+            // 50-99 is assumed to be 19xx
+            // 00-49 is assumed to be 20xx
+            if(fields[0] >= 50) {
                 fields[0] += 1900;
             }
             else {
                 fields[0] += 2000;
             }
+        }
+        else if(fields[0] >= 100 && fields[0] < 1000) {
+            // Handle 3-digit years according to RFC 2822
+            fields[0] += 2000;
         }
 
         // Hour
