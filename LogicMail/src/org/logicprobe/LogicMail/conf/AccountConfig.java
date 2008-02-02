@@ -44,6 +44,8 @@ public abstract class AccountConfig extends ConnectionConfig {
     private int serverType;
     private String serverUser;
     private String serverPass;
+    private IdentityConfig identityConfig;
+    private long identityConfigId;
     private OutgoingConfig outgoingConfig;
     private long outgoingConfigId;
 
@@ -61,6 +63,8 @@ public abstract class AccountConfig extends ConnectionConfig {
         serverUser = "";
         serverPass = "";
         setServerPort(110);
+        identityConfig = null;
+        identityConfigId = -1L;
         outgoingConfig = null;
         outgoingConfigId = -1L;
     }
@@ -102,6 +106,24 @@ public abstract class AccountConfig extends ConnectionConfig {
         this.serverPass = serverPass;
     }
 
+    public IdentityConfig getIdentityConfig() {
+        if(identityConfig == null && identityConfigId != -1L) {
+            identityConfig = MailSettings.getInstance().getIdentityConfigByUniqueId(identityConfigId);
+        }
+        return identityConfig;
+    }
+    
+    public void setIdentityConfig(IdentityConfig identityConfig) {
+        if(identityConfig == null) {
+            this.identityConfig = null;
+            this.identityConfigId = -1L;
+        }
+        else {
+            this.identityConfig = identityConfig;
+            this.identityConfigId = identityConfig.getUniqueId();
+        }
+    }
+
     public OutgoingConfig getOutgoingConfig() {
         if(outgoingConfig == null && outgoingConfigId != -1L) {
             outgoingConfig = MailSettings.getInstance().getOutgoingConfigByUniqueId(outgoingConfigId);
@@ -125,6 +147,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_serverType", new Integer(serverType));
         table.put("account_serverUser", serverUser);
         table.put("account_serverPass", serverPass);
+        table.put("account_identityConfigId", new Long(identityConfigId));
         table.put("account_outgoingConfigId", new Long(outgoingConfigId));
     }
 
@@ -144,6 +167,14 @@ public abstract class AccountConfig extends ConnectionConfig {
         if(value != null && value instanceof String) {
             serverPass = (String)value;
         }
+        value = table.get("account_identityConfigId");
+        if(value != null && value instanceof Long) {
+            identityConfigId = ((Long)value).longValue();
+        }
+        else {
+            identityConfigId = -1;
+        }
+        identityConfig = null;
         value = table.get("account_outgoingConfigId");
         if(value != null && value instanceof Long) {
             outgoingConfigId = ((Long)value).longValue();

@@ -43,16 +43,19 @@ import org.logicprobe.LogicMail.util.SerializableVector;
 public class MailSettings {
     private static MailSettings instance;
     private GlobalConfig globalConfig;
+    private Vector identityConfigs;
     private Vector accountConfigs;
     private Vector outgoingConfigs;
     private DataStore configStore;
     
     private static String GLOBAL_CONFIG = "global_config";
+    private static String IDENTITY_CONFIGS = "identity_configs";
     private static String ACCOUNT_CONFIGS = "account_configs";
     private static String OUTGOING_CONFIGS = "outgoing_configs";
 
     private MailSettings() {
         globalConfig = new GlobalConfig();
+        identityConfigs = new Vector();
         accountConfigs = new Vector();
         outgoingConfigs = new Vector();
         configStore = DataStoreFactory.getConfigurationStore();
@@ -74,6 +77,49 @@ public class MailSettings {
      */
     public GlobalConfig getGlobalConfig() {
         return globalConfig;
+    }
+
+    /**
+     * Gets the number of identity configurations
+     */
+    public int getNumIdentities() {
+        return identityConfigs.size();
+    }
+    
+    /**
+     * Gets the identity configuration at the specified index
+     */
+    public IdentityConfig getIdentityConfig(int index) {
+        return (IdentityConfig)identityConfigs.elementAt(index);
+    }
+
+    /**
+     * Gets the identity configuration by unique ID.
+     * Will return null if no identity is found matching that ID.
+     */
+    public IdentityConfig getIdentityConfigByUniqueId(long uniqueId) {
+        int size = getNumIdentities();
+        for(int i=0; i<size; i++) {
+            IdentityConfig tmpConfig = getIdentityConfig(i);
+            if(tmpConfig.getUniqueId() == uniqueId) {
+                return tmpConfig;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Add a new identity configuration
+     */
+    public void addIdentityConfig(IdentityConfig identityConfig) {
+        identityConfigs.addElement(identityConfig);
+    }
+    
+    /**
+     * Remove the identity configuration at the specified index
+     */
+    public void removeIdentityConfig(int index) {
+        identityConfigs.removeElementAt(index);
     }
 
     /**
@@ -151,15 +197,24 @@ public class MailSettings {
      * Save the configurations to persistent storage.
      */
     public void saveSettings() {
+        SerializableVector identityConfigIds = new SerializableVector();
         SerializableVector accountConfigIds = new SerializableVector();
         SerializableVector outgoingConfigIds = new SerializableVector();
 
         configStore.putNamedObject(GLOBAL_CONFIG, globalConfig);
+        configStore.putNamedObject(IDENTITY_CONFIGS, identityConfigIds);
         configStore.putNamedObject(ACCOUNT_CONFIGS, accountConfigIds);
         configStore.putNamedObject(OUTGOING_CONFIGS, outgoingConfigIds);
         
         int i;
-        int size = accountConfigs.size();
+        int size = identityConfigs.size();
+        for(i=0; i<size; ++i) {
+            IdentityConfig config = (IdentityConfig)identityConfigs.elementAt(i);
+            identityConfigIds.addElement(new Long(config.getUniqueId()));
+            configStore.putObject(config);
+        }
+
+        size = accountConfigs.size();
         for(i=0; i<size; ++i) {
             AccountConfig config = (AccountConfig)accountConfigs.elementAt(i);
             accountConfigIds.addElement(new Long(config.getUniqueId()));
@@ -193,11 +248,24 @@ public class MailSettings {
             globalConfig = new GlobalConfig();
         }
         
+        identityConfigs.removeAllElements();
         accountConfigs.removeAllElements();
         outgoingConfigs.removeAllElements();
         SerializableVector configIds;
         int size;
         
+        loadedObj = configStore.getNamedObject(IDENTITY_CONFIGS);
+        if(loadedObj instanceof SerializableVector) {
+            configIds = (SerializableVector)loadedObj;
+            size = configIds.size();
+            for(int i=0; i<size; ++i) {
+                loadedObj = configStore.getObject(((Long)configIds.elementAt(i)).longValue());
+                if(loadedObj instanceof IdentityConfig) {
+                    identityConfigs.addElement(loadedObj);
+                }
+            }
+        }
+
         loadedObj = configStore.getNamedObject(ACCOUNT_CONFIGS);
         if(loadedObj instanceof SerializableVector) {
             configIds = (SerializableVector)loadedObj;

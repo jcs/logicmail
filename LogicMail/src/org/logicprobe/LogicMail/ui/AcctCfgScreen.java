@@ -38,7 +38,6 @@ import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
@@ -47,6 +46,7 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
@@ -64,12 +64,15 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
     private CheckboxField useMdsField;
+    private ObjectChoiceField identityField;
     private ObjectChoiceField outgoingServerField;
     private ObjectChoiceField sentFolderChoiceField;
     private ButtonField saveButton;
     
     private boolean acctSaved;
+    private boolean createDefaultIdentity;
     private AccountConfig acctConfig;
+    private IdentityConfig[] identityConfigs;
     private OutgoingConfig[] outgoingConfigs;
     private FieldChangeListener fieldChangeListener;
     private AccountCache acctCache;
@@ -107,6 +110,23 @@ public class AcctCfgScreen extends BaseCfgScreen {
         this.acctSaved = false;
         
         MailSettings mailSettings = MailSettings.getInstance();
+
+        int numIdentities = mailSettings.getNumIdentities();
+        if(numIdentities > 0) {
+            identityConfigs = new IdentityConfig[numIdentities];
+            for(int i=0; i<numIdentities; ++i) {
+                identityConfigs[i] = mailSettings.getIdentityConfig(i);
+            }
+            createDefaultIdentity = false;
+        }
+        else {
+            identityConfigs = new IdentityConfig[1];
+            identityConfigs[0] = new IdentityConfig();
+            identityConfigs[0].setIdentityName("Default");
+            createDefaultIdentity = true;
+            this.setDirty(true);
+        }
+        
         int numOutgoing = mailSettings.getNumOutgoing();
         outgoingConfigs = new OutgoingConfig[numOutgoing+1];
         outgoingConfigs[0] = new NullOutgoingConfig();
@@ -120,6 +140,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
             }};
 
         initFields();
+
+        IdentityConfig selectedIdentityConfig = acctConfig.getIdentityConfig();
+        if(selectedIdentityConfig != null) {
+            identityField.setSelectedIndex(selectedIdentityConfig);
+        }
 
         OutgoingConfig selectedOutgoingConfig = acctConfig.getOutgoingConfig();
         if(selectedOutgoingConfig != null) {
@@ -139,6 +164,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         serverPassField = new PasswordEditField("Password: ", acctConfig.getServerPass());
         
         useMdsField = new CheckboxField("Use MDS proxy", !acctConfig.getDeviceSide());
+        identityField = new ObjectChoiceField("Identity: ", identityConfigs, 0);
         outgoingServerField = new ObjectChoiceField("Outgoing server: ", outgoingConfigs, 0);
         
         saveButton = new ButtonField("Save", Field.FIELD_HCENTER);
@@ -163,6 +189,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         add(serverPassField);
         add(useMdsField);
         add(new LabelField());
+        add(identityField);
         add(outgoingServerField);
         add(new LabelField());
 
@@ -277,6 +304,18 @@ public class AcctCfgScreen extends BaseCfgScreen {
         this.acctConfig.setServerPass(serverPassField.getText());
         this.acctConfig.setDeviceSide(!useMdsField.getChecked());
         
+        IdentityConfig selectedIdentityConfig = (IdentityConfig)identityField.getChoice(identityField.getSelectedIndex());
+        if(createDefaultIdentity) {
+            String userName = serverUserField.getText();
+            if(userName.length() == 0) {
+                userName = "user";
+            }
+            selectedIdentityConfig.setEmailAddress(userName + "@" + serverNameField.getText());
+            MailSettings.getInstance().addIdentityConfig(selectedIdentityConfig);
+            createDefaultIdentity = false;
+        }
+        this.acctConfig.setIdentityConfig(selectedIdentityConfig);
+
         OutgoingConfig selectedOutgoingConfig = (OutgoingConfig)outgoingServerField.getChoice(outgoingServerField.getSelectedIndex());
         if(selectedOutgoingConfig.getUniqueId() == -1) {
             this.acctConfig.setOutgoingConfig(null);

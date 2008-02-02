@@ -163,7 +163,7 @@ public class MessageScreen extends BaseScreen {
                 CompositionScreen screen =
                     new CompositionScreen(
                         client.getAcctConfig(),
-                        msg.toReplyAllMessage(client.getAcctConfig().getOutgoingConfig().getFromAddress()));
+                        msg.toReplyAllMessage(client.getAcctConfig().getIdentityConfig().getEmailAddress()));
                 UiApplication.getUiApplication().pushModalScreen(screen);
 
                 if(screen.getMessageSent()) {

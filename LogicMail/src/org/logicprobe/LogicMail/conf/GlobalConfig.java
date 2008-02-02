@@ -43,8 +43,6 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  */
 public class GlobalConfig implements Serializable {
     private long uniqueId;
-    /** full name of the user */
-    private String fullname;
     /** number of message headers to retrieve */
     private int retMsgCount;
     /** true for ascending, false for decending */
@@ -55,8 +53,6 @@ public class GlobalConfig implements Serializable {
     private int imapMaxFolderDepth;
     /** POP: maximum message lines */
     private int popMaxLines;
-    /** Message signature */
-    private String msgSignature;
     /** Connection debugging */
     private boolean connDebug;
 
@@ -74,23 +70,13 @@ public class GlobalConfig implements Serializable {
 
     private void setDefaults() {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
-        this.fullname = "";
         this.retMsgCount = 30;
         this.dispOrder = false;
         this.imapMaxMsgSize = 32768;
         this.imapMaxFolderDepth = 4;
         this.popMaxLines = 400;
-        this.msgSignature = "";
     }
     
-    public void setFullname(String fullname) {
-        this.fullname = fullname;
-    }
-    
-    public String getFullname() {
-        return fullname;
-    }
-
     public void setRetMsgCount(int retMsgCount) {
         this.retMsgCount = retMsgCount;
     }
@@ -131,14 +117,6 @@ public class GlobalConfig implements Serializable {
         this.popMaxLines = popMaxLines;
     }
     
-    public String getMsgSignature() {
-        return msgSignature;
-    }
-
-    public void setMsgSignature(String msgSignature) {
-        this.msgSignature = msgSignature;
-    }
-
     public boolean getConnDebug() {
         return connDebug;
     }
@@ -152,13 +130,11 @@ public class GlobalConfig implements Serializable {
         
         SerializableHashtable table = new SerializableHashtable();
         
-        table.put("global_fullname", fullname);
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_imapMaxMsgSize", new Integer(imapMaxMsgSize));
         table.put("global_imapMaxFolderDepth", new Integer(imapMaxFolderDepth));
         table.put("global_popMaxLines", new Integer(popMaxLines));
-        table.put("global_msgSignature", msgSignature);
         table.put("global_connDebug", new Boolean(connDebug));
         
         table.serialize(output);
@@ -172,10 +148,6 @@ public class GlobalConfig implements Serializable {
         table.deserialize(input);
         Object value;
 
-        value = table.get("global_fullname");
-        if(value != null && value instanceof String) {
-            fullname = (String)value;
-        }
         value = table.get("global_retMsgCount");
         if(value != null && value instanceof Integer) {
             retMsgCount = ((Integer)value).intValue();
@@ -196,10 +168,6 @@ public class GlobalConfig implements Serializable {
         if(value != null && value instanceof Integer) {
             popMaxLines = ((Integer)value).intValue();
         }
-        value = table.get("global_msgSignature");
-        if(value != null && value instanceof String) {
-            msgSignature = (String)value;
-        }
         value = table.get("global_connDebug");
         if(value != null && value instanceof Boolean) {
             connDebug = ((Boolean)value).booleanValue();
@@ -210,4 +178,3 @@ public class GlobalConfig implements Serializable {
         return uniqueId;
     }
 }
-

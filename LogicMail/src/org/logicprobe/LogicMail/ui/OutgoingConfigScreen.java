@@ -55,7 +55,6 @@ public class OutgoingConfigScreen extends BaseCfgScreen {
     private BasicEditField serverNameField;
     private CheckboxField serverSslField;
     private BasicEditField serverPortField;
-    private EmailAddressEditField fromAddressField;
     private ObjectChoiceField useAuthField;
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
@@ -103,9 +102,6 @@ public class OutgoingConfigScreen extends BaseCfgScreen {
             new BasicEditField("Port: ", Integer.toString(outgoingConfig.getServerPort()));
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
         
-        fromAddressField =
-            new EmailAddressEditField("E-Mail address: ", outgoingConfig.getFromAddress());
-        
         String authTypes[] = { "NONE", "PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
         useAuthField =
             new ObjectChoiceField("Authentication: ", authTypes, outgoingConfig.getUseAuth());
@@ -137,7 +133,6 @@ public class OutgoingConfigScreen extends BaseCfgScreen {
         add(serverNameField);
         add(serverSslField);
         add(serverPortField);
-        add(fromAddressField);
         add(useAuthField);
         add(serverUserField);
         add(serverPassField);
@@ -201,7 +196,6 @@ public class OutgoingConfigScreen extends BaseCfgScreen {
         this.outgoingConfig.setServerUser(serverUserField.getText());
         this.outgoingConfig.setServerPass(serverPassField.getText());
         this.outgoingConfig.setDeviceSide(!useMdsField.getChecked());
-        this.outgoingConfig.setFromAddress(fromAddressField.getText());
         this.outgoingConfig.setUseAuth(useAuthField.getSelectedIndex());
         if(useAuthField.getSelectedIndex() > 0) {
             this.outgoingConfig.setServerUser(serverUserField.getText());

@@ -86,7 +86,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         fldEdit = new AutoTextEditField();
         
         // Add the signature if available
-        String sig = MailSettings.getInstance().getGlobalConfig().getMsgSignature();
+        String sig = acctConfig.getIdentityConfig().getMsgSignature();
         if(sig != null && sig.length() > 0) {
             fldEdit.insert("\r\n--\r\n"+sig);
             fldEdit.setCursorPosition(0);
@@ -243,16 +243,22 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
             }
         }
         
-        // Set the sender
-        // (this should come from global or account settings)
+        // Set the sender and reply-to addresses
+        // (this comes from identity settings)
         env.from = new String[1];
-        String fromAddress = acctConfig.getOutgoingConfig().getFromAddress();
+        String fromAddress = acctConfig.getIdentityConfig().getEmailAddress();
         if(fromAddress == null || fromAddress.length() == 0) {
             fromAddress = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
         }
         
-        env.from[0] = MailSettings.getInstance().getGlobalConfig().getFullname() +
+        env.from[0] = acctConfig.getIdentityConfig().getFullName() +
                       " <" + fromAddress + ">";
+
+        String replyToAddress = acctConfig.getIdentityConfig().getReplyToAddress();
+        if(replyToAddress != null && replyToAddress.length() > 0) {
+            env.replyTo = new String[1];
+            env.replyTo[0] = replyToAddress;
+        }
         
         // Set the subject
         env.subject = fldSubject.getText();

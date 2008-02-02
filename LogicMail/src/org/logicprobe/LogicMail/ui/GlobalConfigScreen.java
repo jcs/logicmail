@@ -49,14 +49,12 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
  */
 public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     private MailSettings mailSettings;
-    private BasicEditField fldFullname;
     private BasicEditField fldRetMsgCount;
     private ObjectChoiceField fldDispOrder;
     private BasicEditField fldImapMaxMsgSize;
     private BasicEditField fldImapMaxFolderDepth;
     private BasicEditField fldPopMaxLines;
     private CheckboxField fldConnDebug;
-    private AutoTextEditField fldSignature;
     
     private ButtonField btSave;
 
@@ -68,9 +66,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 
         add(new RichTextField("Global settings:", Field.NON_FOCUSABLE));
         
-        fldFullname = new BasicEditField("  Full name: ", config.getFullname());
-        add(fldFullname);
-
         fldRetMsgCount = new BasicEditField("  Message count: ",
                                             Integer.toString(config.getRetMsgCount()));
         fldRetMsgCount.setFilter(TextFilter.get(TextFilter.NUMERIC));
@@ -101,10 +96,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
         add(fldConnDebug);
         
         add(new SeparatorField());
-        add(new RichTextField("Signature:", Field.NON_FOCUSABLE));
-        add(fldSignature = new AutoTextEditField());
-        fldSignature.setText(config.getMsgSignature());
-        add(new SeparatorField());
 
         btSave = new ButtonField("Save", Field.FIELD_HCENTER);
         btSave.setChangeListener(this);
@@ -119,7 +110,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 
     public void save() {
         GlobalConfig config = mailSettings.getGlobalConfig();
-        config.setFullname(fldFullname.getText());
 
         try {
             config.setRetMsgCount(Integer.parseInt(fldRetMsgCount.getText()));
@@ -140,7 +130,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
             config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
         } catch (Exception e) { }
         config.setConnDebug(fldConnDebug.getChecked());
-        config.setMsgSignature(fldSignature.getText());
         mailSettings.saveSettings();
     }
 }

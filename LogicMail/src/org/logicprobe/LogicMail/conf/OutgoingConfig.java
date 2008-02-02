@@ -38,7 +38,6 @@ import org.logicprobe.LogicMail.util.SerializableHashtable;
  * Store account configuration for outgoing (SMTP) connections.
  */
 public class OutgoingConfig extends ConnectionConfig {
-    private String fromAddress;
     private int useAuth;
     private String serverUser;
     private String serverPass;
@@ -60,14 +59,6 @@ public class OutgoingConfig extends ConnectionConfig {
     public String toString() {
         String text = getAcctName().concat(" (SMTP)");
         return text;
-    }
-
-    public String getFromAddress() {
-        return fromAddress;
-    }
-
-    public void setFromAddress(String fromAddress) {
-        this.fromAddress = fromAddress;
     }
 
     public int getUseAuth() {
@@ -99,7 +90,6 @@ public class OutgoingConfig extends ConnectionConfig {
         table.put("account_smtpUseAuth", new Integer(useAuth));
         table.put("account_smtpUser", serverUser);
         table.put("account_smtpPass", serverPass);
-        table.put("account_smtpFromAddress", fromAddress);
     }
     
     public void readConfigItems(SerializableHashtable table) {
@@ -117,10 +107,6 @@ public class OutgoingConfig extends ConnectionConfig {
         value = table.get("account_smtpPass");
         if(value != null && value instanceof String) {
             serverPass = (String)value;
-        }
-        value = table.get("account_smtpFromAddress");
-        if(value != null && value instanceof String) {
-            fromAddress = (String)value;
         }
     }    
 }
