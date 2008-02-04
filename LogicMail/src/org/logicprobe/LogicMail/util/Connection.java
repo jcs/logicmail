@@ -66,7 +66,10 @@ import java.util.Vector;
 import javax.microedition.io.SocketConnection;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.Connector;
+import net.rim.device.api.system.Application;
 import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -99,6 +102,7 @@ public class Connection {
     private GlobalConfig globalConfig;
     protected InputStream input;
     protected OutputStream output;
+    private boolean useWiFi;
     
     /**
      * Byte array holding carriage return and line feed
@@ -149,8 +153,24 @@ public class Connection {
         // This param, which allows bypassing the MDS proxy, should probably
         // be a global user configurable option
         String paramStr = (deviceSide ? ";deviceside=true" : "");
-        String connectStr = protocolStr + "://" + serverName +
-                ":" + serverPort + paramStr;
+
+        useWiFi = false;
+        if(globalConfig.getWifiMode() == GlobalConfig.WIFI_PROMPT) {
+            UiApplication.getUiApplication().invokeAndWait(new Runnable() {
+                public void run() {
+                    useWiFi = (Dialog.ask(Dialog.D_YES_NO, "Connect through WiFi?") == Dialog.YES);
+                }
+            });
+        }
+        else if(globalConfig.getWifiMode() == GlobalConfig.WIFI_ALWAYS) {
+            useWiFi = true;
+        }
+        
+        if(useWiFi) {
+            paramStr = paramStr + ";ConnectionUID=S TCP-WiFi;ConnectionSetup=delayed;retrynocontext=true";
+        }
+        
+        String connectStr = protocolStr + "://" + serverName + ":" + serverPort + paramStr;
         
         if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
             String msg = "Opening connection:\r\n"+connectStr+"\r\n";

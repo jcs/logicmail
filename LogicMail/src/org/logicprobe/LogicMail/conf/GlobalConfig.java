@@ -53,9 +53,19 @@ public class GlobalConfig implements Serializable {
     private int imapMaxFolderDepth;
     /** POP: maximum message lines */
     private int popMaxLines;
+    /** Mode for WiFi support */
+    private int wifiMode;
     /** Connection debugging */
     private boolean connDebug;
 
+    /** WiFi support is disabled, best for non-WiFi devices */
+    final public static int WIFI_DISABLED = 0;
+    /** Prompt for WiFi use whenever establishing a connection */
+    final public static int WIFI_PROMPT = 1;
+    /** Always use WiFi */
+    final public static int WIFI_ALWAYS = 2;
+    
+    
     public GlobalConfig() {
         setDefaults();
     }
@@ -75,6 +85,7 @@ public class GlobalConfig implements Serializable {
         this.imapMaxMsgSize = 32768;
         this.imapMaxFolderDepth = 4;
         this.popMaxLines = 400;
+        this.wifiMode = GlobalConfig.WIFI_DISABLED;
     }
     
     public void setRetMsgCount(int retMsgCount) {
@@ -117,6 +128,14 @@ public class GlobalConfig implements Serializable {
         this.popMaxLines = popMaxLines;
     }
     
+    public int getWifiMode() {
+        return wifiMode;
+    }
+
+    public void setWifiMode(int wifiMode) {
+        this.wifiMode = wifiMode;
+    }
+
     public boolean getConnDebug() {
         return connDebug;
     }
@@ -135,6 +154,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_imapMaxMsgSize", new Integer(imapMaxMsgSize));
         table.put("global_imapMaxFolderDepth", new Integer(imapMaxFolderDepth));
         table.put("global_popMaxLines", new Integer(popMaxLines));
+        table.put("global_wifiMode", new Integer(wifiMode));
         table.put("global_connDebug", new Boolean(connDebug));
         
         table.serialize(output);
@@ -167,6 +187,11 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_popMaxLines");
         if(value != null && value instanceof Integer) {
             popMaxLines = ((Integer)value).intValue();
+        }
+        value = table.get("global_wifiMode");
+        if(value != null && value instanceof Integer) {
+            wifiMode = ((Integer)value).intValue();
+            if(wifiMode < 0 || wifiMode > 2) { wifiMode = GlobalConfig.WIFI_DISABLED; }
         }
         value = table.get("global_connDebug");
         if(value != null && value instanceof Boolean) {

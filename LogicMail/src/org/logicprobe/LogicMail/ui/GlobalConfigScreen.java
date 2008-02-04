@@ -54,6 +54,7 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     private BasicEditField fldImapMaxMsgSize;
     private BasicEditField fldImapMaxFolderDepth;
     private BasicEditField fldPopMaxLines;
+    private ObjectChoiceField fldWifiMode;
     private CheckboxField fldConnDebug;
     
     private ButtonField btSave;
@@ -77,6 +78,10 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
         else
             fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 1);            
         add(fldDispOrder);
+
+        String[] wifiModes = { "Disabled", "Prompt", "Always" };
+        fldWifiMode = new ObjectChoiceField("  WiFi mode: ", wifiModes, config.getWifiMode());
+        add(fldWifiMode);
         
         add(new RichTextField("IMAP settings:", Field.NON_FOCUSABLE));
         fldImapMaxMsgSize = new BasicEditField("  Max size to dl per msg (kb): ", Integer.toString(config.getImapMaxMsgSize()/1024));
@@ -119,6 +124,8 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
             config.setDispOrder(false);
         else
             config.setDispOrder(true);
+
+        config.setWifiMode(fldWifiMode.getSelectedIndex());
 
         try {
             config.setImapMaxMsgSize(Integer.parseInt(fldImapMaxMsgSize.getText())*1024);
