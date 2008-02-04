@@ -42,6 +42,7 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -67,6 +68,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
     private AutoTextEditField fldEdit;
     private String inReplyTo;
     private boolean messageSent;
+    private IdentityConfig identityConfig;
     
     /**
      * Creates a new instance of CompositionScreen.
@@ -85,11 +87,15 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         add(new SeparatorField());
         fldEdit = new AutoTextEditField();
         
+        this.identityConfig = acctConfig.getIdentityConfig();
+        
         // Add the signature if available
-        String sig = acctConfig.getIdentityConfig().getMsgSignature();
-        if(sig != null && sig.length() > 0) {
-            fldEdit.insert("\r\n--\r\n"+sig);
-            fldEdit.setCursorPosition(0);
+        if(identityConfig != null) {
+            String sig = identityConfig.getMsgSignature();
+            if(sig != null && sig.length() > 0) {
+                fldEdit.insert("\r\n--\r\n"+sig);
+                fldEdit.setCursorPosition(0);
+            }
         }
         add(fldEdit);
     }
@@ -245,19 +251,25 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         
         // Set the sender and reply-to addresses
         // (this comes from identity settings)
-        env.from = new String[1];
-        String fromAddress = acctConfig.getIdentityConfig().getEmailAddress();
-        if(fromAddress == null || fromAddress.length() == 0) {
-            fromAddress = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
-        }
-        
-        env.from[0] = acctConfig.getIdentityConfig().getFullName() +
-                      " <" + fromAddress + ">";
+        if(identityConfig != null) {
+            env.from = new String[1];
+            env.from[0] = identityConfig.getFullName() +
+                          " <" + identityConfig.getEmailAddress() + ">";
 
-        String replyToAddress = acctConfig.getIdentityConfig().getReplyToAddress();
-        if(replyToAddress != null && replyToAddress.length() > 0) {
-            env.replyTo = new String[1];
-            env.replyTo[0] = replyToAddress;
+            String replyToAddress = identityConfig.getReplyToAddress();
+            if(replyToAddress != null && replyToAddress.length() > 0) {
+                env.replyTo = new String[1];
+                env.replyTo[0] = replyToAddress;
+            }
+        }
+        else {
+            // There are rare situations where the IdentityConfig could be null,
+            // such as if the user deleted their identity configuration without
+            // editing their account again to force the creation of a default identity.
+            // Eventually this should be prevented, but for now we will just elegantly
+            // handle the case of missing identity information.
+            env.from = new String[1];
+            env.from[0] = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
         }
         
         // Set the subject

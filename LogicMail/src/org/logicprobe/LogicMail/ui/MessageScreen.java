@@ -198,7 +198,9 @@ public class MessageScreen extends BaseScreen {
         menu.addSeparator();
         if(this.client.getAcctConfig().getOutgoingConfig() != null) {
             menu.add(replyItem);
-            menu.add(replyAllItem);
+            if(client.getAcctConfig().getIdentityConfig() != null) {
+                menu.add(replyAllItem);
+            }
             menu.add(forwardItem);
             menu.add(compositionItem);
             menu.addSeparator();
