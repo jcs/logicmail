@@ -300,6 +300,7 @@ public class MessageScreen extends BaseScreen {
                     msg = updateMessageHandler.getMessage();
                     drawMessageFields();
                     folderMessage.setSeen(true);
+                    folderMessage.setRecent(false);
                 }
             }
         });
