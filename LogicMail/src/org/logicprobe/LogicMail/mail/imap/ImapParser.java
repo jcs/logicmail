@@ -35,7 +35,6 @@ import java.util.Calendar;
 import java.util.Vector;
 import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.mail.*;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
 

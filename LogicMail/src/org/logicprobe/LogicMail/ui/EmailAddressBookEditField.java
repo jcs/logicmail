@@ -51,9 +51,6 @@ import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.LabelField;
-import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.ui.container.DialogFieldManager;
-import net.rim.device.api.ui.container.PopupScreen;
 import net.rim.device.api.util.Arrays;
 
 /**
