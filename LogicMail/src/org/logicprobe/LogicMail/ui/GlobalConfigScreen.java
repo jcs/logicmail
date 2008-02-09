@@ -56,7 +56,7 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     private BasicEditField fldPopMaxLines;
     private ObjectChoiceField fldWifiMode;
     private CheckboxField fldConnDebug;
-    
+    private CheckboxField fldHideDeletedMsg;
     private ButtonField btSave;
 
     public GlobalConfigScreen() {
@@ -79,6 +79,9 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
             fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 1);            
         add(fldDispOrder);
 
+        fldHideDeletedMsg = new CheckboxField("Hide deleted messages", config.getHideDeletedMsg());
+        add(fldHideDeletedMsg);
+
         String[] wifiModes = { "Disabled", "Prompt", "Always" };
         fldWifiMode = new ObjectChoiceField("  WiFi mode: ", wifiModes, config.getWifiMode());
         add(fldWifiMode);
@@ -99,7 +102,7 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 
         fldConnDebug = new CheckboxField("Connection debugging", config.getConnDebug());
         add(fldConnDebug);
-        
+
         add(new SeparatorField());
 
         btSave = new ButtonField("Save", Field.FIELD_HCENTER);
@@ -124,6 +127,8 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
             config.setDispOrder(false);
         else
             config.setDispOrder(true);
+
+        config.setHideDeletedMsg(fldHideDeletedMsg.getChecked());
 
         config.setWifiMode(fldWifiMode.getSelectedIndex());
 

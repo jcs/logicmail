@@ -71,6 +71,8 @@ public class ImapProtocol {
         public boolean draft;
         /** Message has recently arrived */
         public boolean recent;
+        /** Message has been flagged as junk */
+        public boolean junk;
     }
     
     /** Creates a new instance of ImapProtocol */

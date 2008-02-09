@@ -314,6 +314,7 @@ public class ImapClient implements IncomingMailClient {
             folderMessages[i].setRecent(response[i].flags.recent);
             folderMessages[i].setFlagged(response[i].flags.flagged);
             folderMessages[i].setDraft(response[i].flags.draft);
+            folderMessages[i].setJunk(response[i].flags.junk);
         }
         
         return folderMessages;

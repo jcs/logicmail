@@ -87,11 +87,14 @@ class ImapParser {
                 else if(text.equalsIgnoreCase("\\Recent")) {
                     flags.recent = true;
                 }
+                else if(text.equalsIgnoreCase("Junk") || text.equalsIgnoreCase("$Junk")) {
+                    flags.junk = true;
+                }
             }
         }
         return flags;
     }
-    
+
     static String createMessageFlagsString(ImapProtocol.MessageFlags flags) {
         StringBuffer buf = new StringBuffer();
         if(flags.seen) {

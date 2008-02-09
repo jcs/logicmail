@@ -73,6 +73,7 @@ public class MailboxScreen extends BaseScreen {
     private Bitmap bmapDraft;
     private Bitmap bmapDeleted;
     private Bitmap bmapUnknown;
+    private Bitmap bmapJunk;
 
     private MailSettings mailSettings;
     private FolderTreeItem folderItem;
@@ -99,6 +100,7 @@ public class MailboxScreen extends BaseScreen {
         bmapDraft = Bitmap.getBitmapResource("mail_draft.png");
         bmapDeleted = Bitmap.getBitmapResource("mail_deleted.png");
         bmapUnknown = Bitmap.getBitmapResource("mail_unknown.png");
+        bmapJunk = Bitmap.getBitmapResource("mail_junk.png");
 
         messages = new FolderMessage[0];
         
@@ -340,6 +342,8 @@ public class MailboxScreen extends BaseScreen {
     private Bitmap getIconForMessage(FolderMessage message) {
         if(message.isDeleted())
             return bmapDeleted;
+        else if(message.isJunk())
+            return bmapJunk;
         else if(message.isAnswered())
             return bmapReplied;
         else if(message.isFlagged())
@@ -397,15 +401,37 @@ public class MailboxScreen extends BaseScreen {
         if(source.equals(refreshMessageListHandler)) {
             if(refreshMessageListHandler.getFolderMessages() != null) {
                 FolderMessage[] folderMessages = refreshMessageListHandler.getFolderMessages();
+                boolean hideDeleted = mailSettings.getGlobalConfig().getHideDeletedMsg();
+                
+                // Count the number of deleted messages
+                int numDeleted = 0;
+                if(hideDeleted) {
+                    for(int i=0; i<folderMessages.length; i++) {
+                        if(folderMessages[i].isDeleted()) {
+                            numDeleted++;
+                        }
+                    }
+                }
+                
                 synchronized(Application.getEventLock()) {
+                    int junks = 0;
                     if(mailSettings.getGlobalConfig().getDispOrder()) {
-                        messages = folderMessages;
+                        messages = new FolderMessage[folderMessages.length - numDeleted];
+                        int j = 0;
+                        for(int i=0; i<folderMessages.length; i++) {
+                            if(!hideDeleted || !folderMessages[i].isDeleted()) {
+                                messages[j++] = folderMessages[i];
+                            }
+                        }
                     }
                     else {
-                        messages = new FolderMessage[folderMessages.length];
+                        messages = new FolderMessage[folderMessages.length - numDeleted];
                         int j = 0;
-                        for(int i=folderMessages.length-1;i>=0;i--)
-                            messages[j++] = folderMessages[i];
+                        for(int i=folderMessages.length-1;i>=0;i--) {
+                            if(!hideDeleted || !folderMessages[i].isDeleted()) {
+                                messages[j++] = folderMessages[i];
+                            }
+                        }
                     }
                     int size = msgList.getSize();
                     for(int i=0;i<size;i++)

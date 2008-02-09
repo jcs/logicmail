@@ -57,6 +57,8 @@ public class GlobalConfig implements Serializable {
     private int wifiMode;
     /** Connection debugging */
     private boolean connDebug;
+    /** Hide deleted messages */
+    private boolean hideDeletedMsg;
 
     /** WiFi support is disabled, best for non-WiFi devices */
     final public static int WIFI_DISABLED = 0;
@@ -86,6 +88,7 @@ public class GlobalConfig implements Serializable {
         this.imapMaxFolderDepth = 4;
         this.popMaxLines = 400;
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
+        this.hideDeletedMsg = true;
     }
     
     public void setRetMsgCount(int retMsgCount) {
@@ -143,7 +146,15 @@ public class GlobalConfig implements Serializable {
     public void setConnDebug(boolean connDebug) {
         this.connDebug = connDebug;
     }
-    
+   
+    public boolean getHideDeletedMsg() {
+	return hideDeletedMsg;
+    }
+
+    public void setHideDeletedMsg(boolean hideDeletedMsg) {
+	this.hideDeletedMsg = hideDeletedMsg;
+    }
+     
     public void serialize(DataOutputStream output) throws IOException {
         output.writeLong(uniqueId);
         
@@ -156,7 +167,8 @@ public class GlobalConfig implements Serializable {
         table.put("global_popMaxLines", new Integer(popMaxLines));
         table.put("global_wifiMode", new Integer(wifiMode));
         table.put("global_connDebug", new Boolean(connDebug));
-        
+        table.put("global_hideDeletedMsg", new Boolean(hideDeletedMsg));
+
         table.serialize(output);
     }
 
@@ -196,6 +208,10 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_connDebug");
         if(value != null && value instanceof Boolean) {
             connDebug = ((Boolean)value).booleanValue();
+        }
+        value = table.get("global_hideDeletedMsg");
+        if(value != null && value instanceof Boolean) {
+            hideDeletedMsg = ((Boolean)value).booleanValue();
         }
     }
 

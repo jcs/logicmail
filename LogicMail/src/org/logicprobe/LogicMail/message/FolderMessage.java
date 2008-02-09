@@ -48,6 +48,7 @@ public class FolderMessage {
     private boolean deleted;
     private boolean draft;
     private boolean recent;
+    private boolean junk;
     
     /**
      * Creates a new instance of FolderMessage.
@@ -173,6 +174,23 @@ public class FolderMessage {
     public void setRecent(boolean recent) {
         if(this.recent != recent) {
             this.recent = recent;
+            fireFlagsChanged();
+        }
+    }
+    
+    /**
+     * Find out whether this message has been flaged as junk
+     */
+    public boolean isJunk() {
+        return junk;
+    }
+
+    /**
+     * Set the flag indicating whether this message has been flagged as junk
+     */
+    public void setJunk(boolean junk) {
+        if(this.junk != junk) {
+            this.junk = junk;
             fireFlagsChanged();
         }
     }
