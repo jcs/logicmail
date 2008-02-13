@@ -213,7 +213,11 @@ public abstract class MailClientHandler {
                     showStatus(null, 0); // remove any status screens
                     // Notify the listener of completion
                     if(MailClientHandler.this.handlerListener != null) {
-                        MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, true);
+                        try {
+                            MailClientHandler.this.handlerListener.mailActionComplete(MailClientHandler.this, true);
+                        } catch (Exception exp) {
+                            showStatus("Error processing result", 2000);
+                        }
                     }
                 } catch (IOException exp) {
                     EventLogger.logEvent(AppInfo.GUID, exp.toString().getBytes(), EventLogger.ERROR);

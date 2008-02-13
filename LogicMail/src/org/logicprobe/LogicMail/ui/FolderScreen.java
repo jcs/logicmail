@@ -320,6 +320,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
     }
     
     public void generateFolderTreeHelper(TreeField tree, int parent, FolderTreeItem item) {
+
         int id = (item.getParent() == null) ? 0 : tree.addChildNode(parent, item);
         treeField.invalidateNode(id);
 
@@ -367,7 +368,6 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
                 folderItem = null;
                 throw exp;
             }
-
             // Save the results to the cache
             AccountCache acctCache =
                 new AccountCache(((IncomingMailClient)client).getAcctConfig());

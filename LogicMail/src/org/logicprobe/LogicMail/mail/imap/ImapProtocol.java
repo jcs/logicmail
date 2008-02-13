@@ -858,7 +858,9 @@ public class ImapProtocol {
         
         while (count < arguments.length) {
             temp = connection.receive();
-            if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
+            
+            String temp2 = temp.substring(temp.indexOf(" ")+1);
+            if (temp2.startsWith("BAD ") || temp2.startsWith("NO ")) {
                 throw new MailException(temp);
             }
             

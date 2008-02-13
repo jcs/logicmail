@@ -67,6 +67,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private ObjectChoiceField identityField;
     private ObjectChoiceField outgoingServerField;
     private ObjectChoiceField sentFolderChoiceField;
+    private BasicEditField folderPrefixField;
     private ButtonField saveButton;
     
     private boolean acctSaved;
@@ -210,6 +211,9 @@ public class AcctCfgScreen extends BaseCfgScreen {
             }
             sentFolderChoiceField = new ObjectChoiceField("Sent message folder: ", folderChoices, defaultFolder, Field.FIELD_LEFT);
             add(sentFolderChoiceField);
+            
+            folderPrefixField = new BasicEditField("Folder prefix: ", imapConfig.getFolderPrefix());
+            add(folderPrefixField);
         }
         
         add(new SeparatorField());
@@ -333,6 +337,14 @@ public class AcctCfgScreen extends BaseCfgScreen {
             }
             else {
                 imapConfig.setSentFolder(((FolderTreeItem)sentFolderChoice.getItem()).getPath());
+            }
+            
+            String folderPrefix = folderPrefixField.getText().trim();
+            if(folderPrefix.length() == 0) {
+                imapConfig.setFolderPrefix(null);
+            }
+            else {
+                imapConfig.setFolderPrefix(folderPrefix);
             }
         }
         

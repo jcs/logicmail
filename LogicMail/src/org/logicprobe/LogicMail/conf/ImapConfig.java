@@ -39,6 +39,7 @@ import org.logicprobe.LogicMail.util.SerializableHashtable;
  */
 public class ImapConfig extends AccountConfig {
     private String sentFolder;
+    private String folderPrefix;
     
     public ImapConfig() {
         super();
@@ -52,6 +53,7 @@ public class ImapConfig extends AccountConfig {
         super.setDefaults();
         setServerPort(143);
         sentFolder = null;
+        folderPrefix = null;
     }    
 
     public String toString() {
@@ -67,6 +69,14 @@ public class ImapConfig extends AccountConfig {
         this.sentFolder = sentFolder;
     }
 
+    public String getFolderPrefix() {
+        return folderPrefix;
+    }
+
+    public void setFolderPrefix(String folderPrefix) {
+        this.folderPrefix = folderPrefix;
+    }
+
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
         if(sentFolder != null) {
@@ -74,6 +84,13 @@ public class ImapConfig extends AccountConfig {
         }
         else {
             table.put("account_imap_sentFolder", "");
+        }
+        
+        if(folderPrefix != null) {
+            table.put("account_imap_folderPrefix", folderPrefix);
+        }
+        else {
+            table.put("account_imap_folderPrefix", "");
         }
     }
     
@@ -86,6 +103,14 @@ public class ImapConfig extends AccountConfig {
             sentFolder = (String)value;
             if(sentFolder.length() == 0) {
                 sentFolder = null;
+            }
+        }
+
+        value = table.get("account_imap_folderPrefix");
+        if(value != null && value instanceof String) {
+            folderPrefix = (String)value;
+            if(folderPrefix.length() == 0) {
+                folderPrefix = null;
             }
         }
     }

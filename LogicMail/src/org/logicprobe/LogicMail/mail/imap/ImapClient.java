@@ -139,6 +139,7 @@ public class ImapClient implements IncomingMailClient {
                     folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
                 }
             }
+            
             openStarted = false;
         } catch (MailException exp) {
             close();
@@ -197,7 +198,36 @@ public class ImapClient implements IncomingMailClient {
     
     public FolderTreeItem getFolderTree() throws IOException, MailException {
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
-        getFolderTreeImpl(rootItem, 0);
+        
+        // Special logic to handle a user-specified folder prefix
+        String folderPrefix = acctCfg.getFolderPrefix();
+        if(folderPrefix != null && folderPrefix.length() > 0) {
+            FolderTreeItem fakeRootItem = new FolderTreeItem("", folderPrefix, folderDelim);
+            getFolderTreeImpl(fakeRootItem, 0);
+            
+            // Since we have no way to find the inbox with a hard-coded prefix,
+            // assume it to be there and then do a STATUS to verify.
+            // If the STATUS fails, a MailException will be thrown, which we can
+            // safely ignore.  Otherwise, create a folder item and add it.
+            try {
+                imapProtocol.executeStatus(new String[] { "INBOX" });
+                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, "INBOX", "INBOX", folderDelim);
+                rootItem.addChild(inboxItem);
+            } catch (MailException exp) { }
+            
+            if(fakeRootItem.hasChildren()) {
+                FolderTreeItem[] children = fakeRootItem.children();
+                for(int i=0; i<children.length; i++) {
+                    if(children[i].getName().trim().length() > 0) {
+                        rootItem.addChild(children[i]);
+                    }
+                }
+            }
+        }
+        else {
+            getFolderTreeImpl(rootItem, 0);
+        }
+
         return rootItem;
     }
 
