@@ -462,9 +462,8 @@ public class MailboxScreen extends BaseScreen {
             try {
                 ((IncomingMailClient)client).setActiveFolder(folderItem);
                 int firstIndex = folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
-                if(firstIndex < 0) {
-                    firstIndex = 1;
-                }
+                firstIndex = Math.max(1, firstIndex);
+                
                 folderMessages = ((IncomingMailClient)client).getFolderMessages(firstIndex, folderItem.getMsgCount());
             } catch (MailException exp) {
                 folderMessages = null;
