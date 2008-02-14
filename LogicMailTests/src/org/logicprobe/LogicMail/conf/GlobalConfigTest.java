@@ -90,26 +90,26 @@ public class GlobalConfigTest extends TestCase {
     public void testInitialization() {
         GlobalConfig instance = new GlobalConfig();
 
-        assertEquals("", instance.getFullname());
         assertEquals(30, instance.getRetMsgCount());
         assertTrue(!instance.getDispOrder());
         assertEquals(32768, instance.getImapMaxMsgSize());
         assertEquals(4, instance.getImapMaxFolderDepth());
         assertEquals(400, instance.getPopMaxLines());
-        assertEquals("", instance.getMsgSignature());
+        assertEquals(0, instance.getWifiMode());
+        assertTrue(instance.getHideDeletedMsg());
     }
 
     public void testSerialization() {
         try {
             // Initialize the configuration
             GlobalConfig instance = new GlobalConfig();
-            instance.setFullname("John Doe");
             instance.setRetMsgCount(20);
             instance.setDispOrder(true);
             instance.setImapMaxMsgSize(16384);
             instance.setImapMaxFolderDepth(8);
             instance.setPopMaxLines(200);
-            instance.setMsgSignature("--------\r\n John Doe \r\n--------");
+            instance.setWifiMode(1);
+            instance.setHideDeletedMsg(false);
             
             // Serialize
             TestOutputStream testOutput = new TestOutputStream();
@@ -121,13 +121,13 @@ public class GlobalConfigTest extends TestCase {
             instance.deserialize(new DataInputStream(testInput));
             
             // Verify results
-            assertEquals("John Doe", instance.getFullname());
             assertEquals(20, instance.getRetMsgCount());
             assertTrue(instance.getDispOrder());
             assertEquals(16384, instance.getImapMaxMsgSize());
             assertEquals(8, instance.getImapMaxFolderDepth());
             assertEquals(200, instance.getPopMaxLines());
-            assertEquals("--------\r\n John Doe \r\n--------", instance.getMsgSignature());
+            assertEquals(1, instance.getWifiMode());
+            assertTrue(!instance.getHideDeletedMsg());
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
             t.printStackTrace();
