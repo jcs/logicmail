@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2007, Derek Konigsberg
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,21 +33,47 @@ package org.logicprobe.LogicMail.mail.imap;
 
 import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
+import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 
 /**
- * Unit test suite for the LogicMail.mail.imap classes
+ * Unit test for ImapParser
  */
-public class ImapTests extends TestCase {
+public class ImapParserTest extends TestCase {
     
-    public ImapTests() {
-        super();
+    public ImapParserTest() {
+    }
+
+    public ImapParserTest(String testName, TestMethod testMethod) {
+        super(testName, testMethod);
+    }
+    
+    public void setUp() {
+    }
+    
+    public void tearDown() {
+    }
+    
+    public void testParseFolderName() {
+        String result = ImapParser.parseFolderName("Hello");
+        assertEquals("US-ASCII Test 1", "Hello", result);
+
+        result = ImapParser.parseFolderName("Hello &- Goodbye");
+        assertEquals("US-ASCII Test 2", "Hello & Goodbye", result);
+
+        result = ImapParser.parseFolderName("Entw&APw-rfe");
+        assertEquals("Umlaut Test 1", "Entwürfe", result);
+
+        result = ImapParser.parseFolderName("Gel&APY-schte Objekte");
+        assertEquals("Umlaut Test 2", "Gelöschte Objekte", result);
     }
     
     public Test suite() {
-        TestSuite suite = new TestSuite("LogicMail.mail.imap");
-        suite.addTest(new ImapParserTest().suite());
-        suite.addTest(new ImapProtocolTest().suite());
+        TestSuite suite = new TestSuite("ImapParser");
+
+        suite.addTest(new ImapParserTest("parseFolderName", new TestMethod()
+        { public void run(TestCase tc) {((ImapParserTest)tc).testParseFolderName(); } }));
+
         return suite;
-    }
+    }    
 }

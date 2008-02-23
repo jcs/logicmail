@@ -31,12 +31,14 @@
 
 package org.logicprobe.LogicMail.mail.imap;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Vector;
 import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.UtilProxy;
 
 /**
  * This class contains all static parser functions
@@ -365,5 +367,65 @@ class ImapParser {
         }
 
         return sec;
+    }
+    
+    /**
+     * Takes in the raw IMAP folder name, and outputs a string that
+     * has been properly decoded according to section 5.1.3 of
+     * RFC 3501.
+     *
+     * @param rawText Text from the server.
+     * @return Decoded result.
+     */
+    static String parseFolderName(String rawText) {
+        StringBuffer buf = new StringBuffer();
+        StringBuffer intlBuf = null;
+        int index = 0;
+        int len = rawText.length();
+        boolean usMode = true;
+        while(index < len) {
+            char ch = rawText.charAt(index);
+            if(usMode) {
+                if(ch != '&') {
+                    buf.append(ch);
+                    index++;
+                }
+                else if(ch == '&' && index < len - 1 && rawText.charAt(index+1) == '-') {
+                    buf.append(ch);
+                    index += 2;
+                }
+                else {
+                    usMode = false;
+                    index++;
+                }
+            }
+            else {
+                if(intlBuf == null) {
+                    intlBuf = new StringBuffer();
+                }
+                
+                if(ch == '-') {
+//                    System.err.println("Decoding: \""+intlBuf.toString()+"\"");
+//                    try {
+//                        byte[] bytes = UtilProxy.getInstance().Base64Decode(intlBuf.toString());
+//                        buf.append(new String(bytes, "UTF-16BE"));
+//                    } catch (IOException ex) { }
+                    intlBuf = null;
+                    usMode = true;
+                    index++;
+                }
+                else {
+                    if(ch == ',') {
+                        intlBuf.append('/');
+                    }
+                    else {
+                        intlBuf.append(ch);
+                    }
+                    index++;
+                }
+            }
+        }
+        
+        return buf.toString();
     }
 }
