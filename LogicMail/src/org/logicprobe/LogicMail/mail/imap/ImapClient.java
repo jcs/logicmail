@@ -419,7 +419,8 @@ public class ImapClient implements IncomingMailClient {
         while((i = folderPath.indexOf(folderDelim, i)) != -1) {
             if(i != -1) { pos = i+1; i++; }
         }
-        FolderTreeItem item = new FolderTreeItem(parent, folderPath.substring(pos), folderPath, folderDelim);
+        String decodedName = ImapParser.parseFolderName(folderPath.substring(pos));
+        FolderTreeItem item = new FolderTreeItem(parent, decodedName, folderPath, folderDelim);
         item.setMsgCount(0);
         return item;
     }

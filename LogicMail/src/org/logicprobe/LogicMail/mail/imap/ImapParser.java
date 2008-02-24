@@ -31,14 +31,13 @@
 
 package org.logicprobe.LogicMail.mail.imap;
 
-import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 import java.util.Vector;
 import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
-import org.logicprobe.LogicMail.util.UtilProxy;
 
 /**
  * This class contains all static parser functions
@@ -405,27 +404,68 @@ class ImapParser {
                 }
                 
                 if(ch == '-') {
-//                    System.err.println("Decoding: \""+intlBuf.toString()+"\"");
-//                    try {
-//                        byte[] bytes = UtilProxy.getInstance().Base64Decode(intlBuf.toString());
-//                        buf.append(new String(bytes, "UTF-16BE"));
-//                    } catch (IOException ex) { }
+                    buf.append(decodeModifiedBase64(intlBuf.toString()));
                     intlBuf = null;
                     usMode = true;
                     index++;
                 }
                 else {
-                    if(ch == ',') {
-                        intlBuf.append('/');
-                    }
-                    else {
-                        intlBuf.append(ch);
-                    }
+                    intlBuf.append(ch);
                     index++;
                 }
             }
         }
         
         return buf.toString();
+    }
+    
+    private static final String MODIFIED_BASE64_ALPHABET =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
+    
+    /**
+     * Decodes the IMAP modification of the UTF-7 modification of Base64.
+     * 
+     * This is probably a very sloppy and inefficient implementation,
+     * which is why it is only used for decoding folder names.  This operation
+     * is extremely infrequent, and usually only happens on select characters.
+     * While the code should be improved a bit, it is hopefully sufficient
+     * for now.  Propper Base64 decoding will still be used everywhere else.
+     * 
+     * @param input Encoded string
+     * @return Decoded string
+     */
+    private static String decodeModifiedBase64(String input) {
+        boolean[] bits = new boolean[input.length() * 6];
+        int len = input.length();
+        int bitsIndex = 0;
+        for (int i = 0; i < len; i++) {
+            byte val = (byte) MODIFIED_BASE64_ALPHABET.indexOf(input.charAt(i));
+            bits[bitsIndex++] = (val & (byte) 0x20) != 0;
+            bits[bitsIndex++] = (val & (byte) 0x10) != 0;
+            bits[bitsIndex++] = (val & (byte) 0x08) != 0;
+            bits[bitsIndex++] = (val & (byte) 0x04) != 0;
+            bits[bitsIndex++] = (val & (byte) 0x02) != 0;
+            bits[bitsIndex++] = (val & (byte) 0x01) != 0;
+        }
+
+        byte[] decodeData = new byte[(bits.length - (bits.length % 16)) / 8];
+        bitsIndex = 0;
+        for (int i = 0; i < decodeData.length; i++) {
+            decodeData[i] = 0;
+            for (int j = 7; j >= 0; j--) {
+                decodeData[i] += (bits[bitsIndex] ? (1 << j) : 0);
+                bitsIndex++;
+                if (bitsIndex >= bits.length) {
+                    break;
+                }
+            }
+        }
+        
+        try {
+            String result = new String(decodeData, "UTF-16BE");
+            return result;
+        } catch (UnsupportedEncodingException e) {
+            return input;
+        }
     }
 }
