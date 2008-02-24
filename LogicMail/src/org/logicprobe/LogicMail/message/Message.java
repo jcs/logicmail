@@ -103,9 +103,17 @@ public class Message {
         // Set the message recipient
         int i;
         if(envelope.replyTo == null || envelope.replyTo.length == 0) {
-            replyEnvelope.to = new String[envelope.sender.length];
-            for(i=0; i<envelope.sender.length; i++) {
-                replyEnvelope.to[i] = envelope.sender[i];
+            if(envelope.sender == null || envelope.sender.length == 0) {
+                replyEnvelope.to = new String[envelope.from.length];
+                for(i=0; i<envelope.from.length; i++) {
+                    replyEnvelope.to[i] = envelope.from[i];
+                }
+            }
+            else {
+                replyEnvelope.to = new String[envelope.sender.length];
+                for(i=0; i<envelope.sender.length; i++) {
+                    replyEnvelope.to[i] = envelope.sender[i];
+                }
             }
         }
         else {

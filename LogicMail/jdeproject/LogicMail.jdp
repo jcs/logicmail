@@ -35,6 +35,7 @@ ExcludeFromBuildAll=0
 ..\src\org\logicprobe\LogicMail\conf\AccountConfig.java
 ..\src\org\logicprobe\LogicMail\conf\ConnectionConfig.java
 ..\src\org\logicprobe\LogicMail\conf\GlobalConfig.java
+..\src\org\logicprobe\LogicMail\conf\IdentityConfig.java
 ..\src\org\logicprobe\LogicMail\conf\ImapConfig.java
 ..\src\org\logicprobe\LogicMail\conf\MailSettings.java
 ..\src\org\logicprobe\LogicMail\conf\OutgoingConfig.java
@@ -81,6 +82,7 @@ ExcludeFromBuildAll=0
 ..\src\org\logicprobe\LogicMail\ui\FolderScreen.java
 ..\src\org\logicprobe\LogicMail\ui\GlobalConfigScreen.java
 ..\src\org\logicprobe\LogicMail\ui\HeaderField.java
+..\src\org\logicprobe\LogicMail\ui\IdentityConfigScreen.java
 ..\src\org\logicprobe\LogicMail\ui\MailboxScreen.java
 ..\src\org\logicprobe\LogicMail\ui\MailClientHandler.java
 ..\src\org\logicprobe\LogicMail\ui\MailClientHandlerListener.java

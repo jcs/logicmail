@@ -548,6 +548,47 @@ public class StringParserTest extends TestCase {
     }
 
     /**
+     * Test of parseCsvString method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testParseCsvString() {
+        System.out.println("parseCsvString");
+        String text = "One, Two, Three";
+        String[] expectedResult = {"One", "Two", "Three"};
+        String[] result = StringParser.parseCsvString(text);
+        assertEquals("First test failed", expectedResult, result);
+
+        text = "One,Two, Three";
+        expectedResult = new String[] {"One", "Two", "Three"};
+        result = StringParser.parseCsvString(text);
+        assertEquals("Second test failed", expectedResult, result);
+        
+        text = "One, \"Two, Three\" Four, Five";
+        expectedResult = new String[] {"One", "\"Two, Three\" Four", "Five"};
+        result = StringParser.parseCsvString(text);
+        assertEquals("Third test failed", expectedResult, result);
+        
+        text = "One";
+        expectedResult = new String[] {"One"};
+        result = StringParser.parseCsvString(text);
+        assertEquals("Fourth test failed", expectedResult, result);
+
+        text = "One, Two,";
+        expectedResult = new String[] {"One", "Two"};
+        result = StringParser.parseCsvString(text);
+        assertEquals("Fifth test failed", expectedResult, result);
+
+        text = "\"User, Test\" <test@generic.org>";
+        expectedResult = new String[] {"\"User, Test\" <test@generic.org>"};
+        result = StringParser.parseCsvString(text);
+        assertEquals("Sixth test failed", expectedResult, result);
+
+        text = "\"User, Test\" <test@generic.org>, \"Doe, John\" <jdoe@generic.org>";
+        expectedResult = new String[] {"\"User, Test\" <test@generic.org>", "\"Doe, John\" <jdoe@generic.org>"};
+        result = StringParser.parseCsvString(text);
+        assertEquals("Seventh test failed", expectedResult, result);
+    }
+    
+    /**
      * Special assertion for arrays
      */
     private void assertEquals(String message, Object[] expected, Object[] actual) {
@@ -664,6 +705,10 @@ public class StringParserTest extends TestCase {
         testSuite.addTest(new StringParserTest("parseTokenString", new TestMethod() {
             public void run(TestCase tc) {
                 ((StringParserTest)tc).testParseTokenString();
+        }}));
+        testSuite.addTest(new StringParserTest("parseCsvString", new TestMethod() {
+            public void run(TestCase tc) {
+                ((StringParserTest)tc).testParseCsvString();
         }}));
         testSuite.addTest(new StringParserTest("parseValidCharsetString", new TestMethod() {
             public void run(TestCase tc) {

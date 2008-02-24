@@ -53,6 +53,7 @@ class PopParser {
             env.subject = "<subject>";
         }
         env.from = parseAddressList((String)headers.get("from"));
+        env.sender = parseAddressList((String)headers.get("sender"));
         env.to = parseAddressList((String)headers.get("to"));
         env.cc = parseAddressList((String)headers.get("cc"));
         env.bcc = parseAddressList((String)headers.get("bcc"));
@@ -68,9 +69,16 @@ class PopParser {
     }
     
     static String[] parseAddressList(String text) {
-        String[] addresses = StringParser.parseTokenString(text, ", ");
+        String[] addresses = StringParser.parseCsvString(text);
         for(int i=0; i<addresses.length; i++) {
             addresses[i] = StringParser.parseEncodedHeader(addresses[i]);
+            if(addresses[i].length() > 0 && addresses[i].charAt(0) == '"') {
+                int p = addresses[i].indexOf('<');
+                while(p > 0 && addresses[i].charAt(p) != '"') p--;
+                if(p > 0 && p+1 < addresses[i].length()) {
+                    addresses[i] = addresses[i].substring(1, p) + addresses[i].substring(p+1);
+                }
+            }
         }
         return addresses;
     }

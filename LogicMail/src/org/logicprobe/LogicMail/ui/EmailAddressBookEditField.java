@@ -95,8 +95,14 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
     }
 
     public String getText() {
-        if(name != null)
-            return address;
+        if(name != null) {
+            if(name.length() == 0) {
+                return address;
+            }
+            else {
+                return "\"" + name + "\" <" + address + ">";
+            }
+        }
         else
             return super.getText();
     }

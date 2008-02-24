@@ -618,6 +618,36 @@ public class StringParser {
     }
     
     /**
+     * Parse a CSV string, where commas inside quotes or
+     * excaped with a backslash aren't considered separators,
+     * and whitespace is trimmed.
+     */
+    public static String[] parseCsvString(String text) {
+        String[] tok = new String[0];
+        if(text == null) {
+            return tok;
+        }
+        int p = 0;
+        int q = 0;
+        boolean inQuote = false;
+        while(q < text.length()) {
+            if(text.charAt(q) == '"' && (q == 0 || (q > 0 && text.charAt(q-1) != '\\'))) {
+                inQuote = !inQuote;
+            }
+            if(text.charAt(q) == ',' && !inQuote) {
+                Arrays.add(tok, text.substring(p, q).trim());
+                p = q+1;
+                q++;
+            }
+            q++;
+        }
+        if(p + 1 < q) {
+            Arrays.add(tok, text.substring(p, q).trim());
+        }
+        return tok;
+    }
+    
+    /**
      * Parse an input string that contains an encoding type,
      * and return a valid encoding type supported by RIM.
      */

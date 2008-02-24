@@ -414,7 +414,6 @@ public class MailboxScreen extends BaseScreen {
                 }
                 
                 synchronized(Application.getEventLock()) {
-                    int junks = 0;
                     if(mailSettings.getGlobalConfig().getDispOrder()) {
                         messages = new FolderMessage[folderMessages.length - numDeleted];
                         int j = 0;

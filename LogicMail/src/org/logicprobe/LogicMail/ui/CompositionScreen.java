@@ -252,8 +252,14 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
         // (this comes from identity settings)
         if(identityConfig != null) {
             env.from = new String[1];
-            env.from[0] = identityConfig.getFullName() +
+            String fullName = identityConfig.getFullName();
+            if(fullName != null && fullName.length() > 0) {
+                env.from[0] = "\"" + fullName + "\"" +
                           " <" + identityConfig.getEmailAddress() + ">";
+            }
+            else {
+                env.from[0] = identityConfig.getEmailAddress();
+            }
 
             String replyToAddress = identityConfig.getReplyToAddress();
             if(replyToAddress != null && replyToAddress.length() > 0) {
