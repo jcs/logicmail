@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail.imap;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -199,11 +200,13 @@ public class ImapClient implements IncomingMailClient {
     public FolderTreeItem getFolderTree() throws IOException, MailException {
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
         
+        boolean childrenExtension = capabilities.containsKey("CHILDREN");
+        
         // Special logic to handle a user-specified folder prefix
         String folderPrefix = acctCfg.getFolderPrefix();
         if(folderPrefix != null && folderPrefix.length() > 0) {
             FolderTreeItem fakeRootItem = new FolderTreeItem("", folderPrefix, folderDelim);
-            getFolderTreeImpl(fakeRootItem, 0);
+            getFolderTreeImpl(fakeRootItem, 0, childrenExtension);
             
             // Since we have no way to find the inbox with a hard-coded prefix,
             // assume it to be there and then do a STATUS to verify.
@@ -225,13 +228,13 @@ public class ImapClient implements IncomingMailClient {
             }
         }
         else {
-            getFolderTreeImpl(rootItem, 0);
+            getFolderTreeImpl(rootItem, 0, childrenExtension);
         }
 
         return rootItem;
     }
 
-    private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth) throws IOException, MailException {
+    private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth, boolean childrenExtension) throws IOException, MailException {
         Vector respList;
         if(depth == 0) {
             respList = imapProtocol.executeList(baseFolder.getPath(), "%");
@@ -246,10 +249,10 @@ public class ImapClient implements IncomingMailClient {
             if(resp.canSelect) {
                 FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
                 baseFolder.addChild(childItem);
-                if(resp.hasChildren) {
+                if(resp.hasChildren || !childrenExtension) {
                     // The folder has children, so lets go and list them
                     if(depth+1 < globalConfig.getImapMaxFolderDepth()) {
-                        getFolderTreeImpl(childItem, depth+1);
+                        getFolderTreeImpl(childItem, depth+1, childrenExtension);
                     }
                 }
                 else if(depth == 0 &&
@@ -259,7 +262,7 @@ public class ImapClient implements IncomingMailClient {
                     // The folder claims to have no children, but it is a root
                     // folder that matches the personal namespace prefix, so
                     // look for children anyways.
-                    getFolderTreeImpl(childItem, depth+1);
+                    getFolderTreeImpl(childItem, depth+1, childrenExtension);
                 }
             }
         }
