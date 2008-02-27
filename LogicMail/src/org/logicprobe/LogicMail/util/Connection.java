@@ -194,16 +194,28 @@ public class Connection {
      * Closes a connection.
      */
     public void close() throws IOException {
-        if(input != null) {
-            input.close();
+        try {
+            if(input != null) {
+                input.close();
+                input = null;
+            }
+        } catch (Exception exp) {
             input = null;
         }
-        if(output != null) {
-            output.close();
+        try {
+            if(output != null) {
+                output.close();
+                output = null;
+            }
+        } catch (Exception exp) {
             output = null;
         }
-        if(socket != null) {
-            socket.close();
+        try {
+            if(socket != null) {
+                socket.close();
+                socket = null;
+            }
+        } catch (Exception exp) {
             socket = null;
         }
 

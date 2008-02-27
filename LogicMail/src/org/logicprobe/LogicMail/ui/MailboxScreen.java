@@ -456,7 +456,7 @@ public class MailboxScreen extends BaseScreen {
             this.folderItem = folderItem;
         }
 
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             FolderMessage[] folderMessages;
             try {
                 ((IncomingMailClient)client).setActiveFolder(folderItem);
@@ -495,7 +495,7 @@ public class MailboxScreen extends BaseScreen {
             this.delete = delete;
         }
 
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             if(delete) {
                 ((IncomingMailClient)client).deleteMessage(folderMessage);
             }

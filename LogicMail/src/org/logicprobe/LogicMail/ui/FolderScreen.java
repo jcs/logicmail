@@ -358,7 +358,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         public RefreshFolderTreeHandler() {
             super(FolderScreen.this.client, "Refreshing folder tree");
         }
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             // Open a connection to the IMAP server, and retrieve
             // the folder tree as a list of delimited items
             FolderTreeItem folderItem;
@@ -390,7 +390,7 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             super(FolderScreen.this.client, "Refreshing folder status");
             this.folderRoot = folderRoot;
         }
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             // Open a connection to the IMAP server, and update
             // the folder status
             try {

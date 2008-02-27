@@ -280,7 +280,7 @@ public class MessageScreen extends BaseScreen {
     private void updateMessageAnswered() {
         if(client instanceof ImapClient) {
             MailClientHandler flagMessageHandler = new MailClientHandler(client, "Updating message status") {
-                public void runSession() throws IOException, MailException {
+                public void runSession(boolean retry) throws IOException, MailException {
                     ((ImapClient)client).messageAnswered(folderMessage);
                 }
             };
@@ -317,7 +317,7 @@ public class MessageScreen extends BaseScreen {
             super(MessageScreen.this.client, "Retrieving message");
         }
 
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             // Set the active folder
             ((IncomingMailClient)client).setActiveFolder(MessageScreen.this.folderItem);
 

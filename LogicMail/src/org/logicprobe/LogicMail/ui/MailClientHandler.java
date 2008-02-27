@@ -185,31 +185,52 @@ public abstract class MailClientHandler {
         Thread thread = new Thread() {
             public void run() {
                 try {
-                    if(!MailClientHandler.this.client.isConnected()) {
-                        // Connect if necessary
-                        showStatus("Connecting to server", 100000);
-                        while(!MailClientHandler.this.client.open()) {
-                            // Show the login dialog on the UI thread, and
-                            // wait for it to complete before continuing
-                            loginDialog = new LoginDialog(client.getUsername(), client.getPassword());
-                            UiApplication.getUiApplication().invokeAndWait(new Runnable() {
-                                public void run() {
-                                    MailClientHandler.this.loginDialog.doModal();
+                    // Run the server interaction session
+                    int numRetries = 0;
+                    while(numRetries <= 2) {
+                        if(numRetries == 2) {
+                            throw new MailException("Unable to reopen connection");
+                        }
+                        try {
+                            if(!MailClientHandler.this.client.isConnected()) {
+                                // Connect if necessary
+                                showStatus("Connecting to server", 100000);
+                                while(!MailClientHandler.this.client.open()) {
+                                    // Show the login dialog on the UI thread, and
+                                    // wait for it to complete before continuing
+                                    loginDialog = new LoginDialog(client.getUsername(), client.getPassword());
+                                    UiApplication.getUiApplication().invokeAndWait(new Runnable() {
+                                        public void run() {
+                                            MailClientHandler.this.loginDialog.doModal();
+                                        }
+                                    });
+                                    if(loginDialog.getSelectedValue() == Dialog.OK) {
+                                        client.setUsername(loginDialog.getUsername());
+                                        client.setPassword(loginDialog.getPassword());
+                                    }
+                                    else {
+                                        try { MailClientHandler.this.client.close(); } catch (Exception exp) { }
+                                        throw new MailException("Authentication failure");
+                                    }
                                 }
-                            });
-                            if(loginDialog.getSelectedValue() == Dialog.OK) {
-                                client.setUsername(loginDialog.getUsername());
-                                client.setPassword(loginDialog.getPassword());
+                            }
+                            showStatus(MailClientHandler.this.taskText, 100000);
+                            runSession(numRetries > 0);
+                            break;
+                        } catch (IOException exp) {
+                            // Look for strings like:
+                            //   "Connection closed"
+                            //   "OutputStream closed"
+                            if(exp.getMessage().endsWith("closed")) {
+                                showStatus("Reopening connection", 2000);
+                                try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
+                                numRetries++;
                             }
                             else {
-                                try { MailClientHandler.this.client.close(); } catch (Exception exp) { }
-                                throw new MailException("Authentication failure");
+                                throw exp;
                             }
                         }
                     }
-                    // Run the server interaction session
-                    showStatus(MailClientHandler.this.taskText, 100000);
-                    runSession();
                     showStatus(null, 0); // remove any status screens
                     // Notify the listener of completion
                     if(MailClientHandler.this.handlerListener != null) {
@@ -251,6 +272,7 @@ public abstract class MailClientHandler {
     /**
      * Override this method to define the particular MailClient
      * task to be executed.
+     * @param retry True if this is a retry due to connection failure.
      */
-    public abstract void runSession() throws IOException, MailException;
+    public abstract void runSession(boolean retry) throws IOException, MailException;
 }

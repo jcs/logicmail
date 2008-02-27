@@ -350,7 +350,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
             this.folderItem = folderItem;
             this.rawMessage = rawMessage;
         }
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             ((ImapClient)client).appendMessage(folderItem, rawMessage, true, false);
         }
     }
@@ -445,7 +445,7 @@ public class CompositionScreen extends BaseScreen implements MailClientHandlerLi
             this.message = message;
         }
 
-        public void runSession() throws IOException, MailException {
+        public void runSession(boolean retry) throws IOException, MailException {
             rawMessage = ((OutgoingMailClient)client).sendMessage(message);
             client.close();
         }

@@ -159,7 +159,9 @@ public class ImapClient implements IncomingMailClient {
             //if(activeMailbox != null && !activeMailbox.equals("")) {
             //    imapProtocol.executeClose();
             //}
-            imapProtocol.executeLogout();
+            try {
+                imapProtocol.executeLogout();
+            } catch (Exception exp) { }
         }
         activeMailbox = null;
         connection.close();
