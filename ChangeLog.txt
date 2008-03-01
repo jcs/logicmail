@@ -1,3 +1,66 @@
+=== LogicMail 0.4 (branched) ===
+2008-02-29  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Stale connections cause I/O Errors (#65)
+	* Add support for IMAP servers that don't implement RFC 3348 (#63)
+
+2008-02-26  Derek Konigsberg  <octo@logicprobe.org>
+
+	* International charcters in folder names not showing correctly (#62)
+	* Comma in full name associated with E-Mail addresses causes parse problems (#64)
+
+2008-02-12  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Implement support for a configurable base folder (#59)
+
+2008-02-09  Harry Li  <harryl.byread@gmail.com>
+
+	* Hide deleted messages (#52)
+
+2008-02-03  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Wi-Fi connection support (#34)
+	* Identity configuration (#41)
+
+2008-01-29  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Date parse error (#51)
+	* CC recipients do not receive sent messages (#57)
+
+2008-01-27  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Rudimentary "Sent" folder (IMAP only) (#17)
+
+2008-01-26  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Update mailbox screen based on message actions (#35)
+
+2008-01-01  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Subject decoding (#43)
+
+2007-12-31  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Reorganize account configuration to allow protocol-specific configurations (#25)
+	* Implement "Delete" message functionality (#31)
+
+2007-11-18  Derek Konigsberg  <octo@logicprobe.org>
+
+	* IMAP parser incorrectly handling NIL heirarchy delimiter in LIST response (#44)
+	* Date parse error when seconds are missing (#45)
+	* Date parser does not handle 3-letter timezone IDs (#46)
+	* POP message listing only shows oldest messages (#48)
+
+2007-09-16  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Implement debugging data capture (#30)
+
+2007-07-28  Derek Konigsberg  <octo@logicprobe.org>
+
+	* Improved connection code for performance and reliability
+	* Fixed a bug with pressing ENTER on an empty account screen
+
+=== LogicMail 0.3 (branched) ===
 2007-07-15  Derek Konigsberg  <octo@logicprobe.org>
 
 	* Remember folder expansion state (#7)
