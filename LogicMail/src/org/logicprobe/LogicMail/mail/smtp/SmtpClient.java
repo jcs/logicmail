@@ -108,7 +108,9 @@ public class SmtpClient implements OutgoingMailClient {
     }
 
     public void close() throws IOException, MailException {
-        smtpProtocol.executeQuit();
+        try {
+           smtpProtocol.executeQuit();
+        } catch (Exception exp) { }
         connection.close();
     }
 

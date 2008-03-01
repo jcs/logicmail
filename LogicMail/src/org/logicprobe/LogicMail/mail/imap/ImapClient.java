@@ -32,7 +32,6 @@
 package org.logicprobe.LogicMail.mail.imap;
 
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -321,10 +320,10 @@ public class ImapClient implements IncomingMailClient {
     }
 
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
-        this.activeMailbox = mailbox;
         // change active mailbox
-        ImapProtocol.SelectResponse response = imapProtocol.executeSelect(activeMailbox.getPath());
-        
+        ImapProtocol.SelectResponse response = imapProtocol.executeSelect(mailbox.getPath());
+
+        this.activeMailbox = mailbox;
         activeMailbox.setMsgCount(response.exists);
         
         // ideally, this should parse out the message counts

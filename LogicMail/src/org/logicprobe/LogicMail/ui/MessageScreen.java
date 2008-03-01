@@ -318,11 +318,15 @@ public class MessageScreen extends BaseScreen {
         }
 
         public void runSession(boolean retry) throws IOException, MailException {
+            IncomingMailClient incomingClient = (IncomingMailClient)client;
+            
             // Set the active folder
-            ((IncomingMailClient)client).setActiveFolder(MessageScreen.this.folderItem);
-
+            if(incomingClient.hasFolders() && !(incomingClient.getActiveFolder() == MessageScreen.this.folderItem)) {
+                incomingClient.setActiveFolder(MessageScreen.this.folderItem);
+            }
+            
             // Download the message
-            msg = ((IncomingMailClient)client).getMessage(MessageScreen.this.folderMessage);
+            msg = incomingClient.getMessage(MessageScreen.this.folderMessage);
 
             // Prepare the UI elements
             if(msg.getBody() != null) {

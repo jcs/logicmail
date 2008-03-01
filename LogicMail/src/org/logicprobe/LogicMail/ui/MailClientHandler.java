@@ -218,10 +218,7 @@ public abstract class MailClientHandler {
                             runSession(numRetries > 0);
                             break;
                         } catch (IOException exp) {
-                            // Look for strings like:
-                            //   "Connection closed"
-                            //   "OutputStream closed"
-                            if(exp.getMessage().endsWith("closed")) {
+                            if(numRetries < 2) {
                                 showStatus("Reopening connection", 2000);
                                 try { MailClientHandler.this.client.close(); } catch (Exception exp2) { }
                                 numRetries++;

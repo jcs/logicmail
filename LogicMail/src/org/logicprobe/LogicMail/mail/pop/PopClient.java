@@ -115,7 +115,9 @@ public class PopClient implements IncomingMailClient {
 
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
-            popProtocol.executeQuit();
+            try {
+                popProtocol.executeQuit();
+            } catch (Exception exp) { }
         }
         activeMailbox = null;
         connection.close();
