@@ -75,7 +75,9 @@ public class Message {
     public Message toReplyMessage() {
         // Generate the reply message body
         MessageReplyConverter replyConverter = new MessageReplyConverter(this.envelope);
-        this.body.accept(replyConverter);
+        if(this.body != null) {
+            this.body.accept(replyConverter);
+        }
         MessagePart replyBody = replyConverter.toReplyBody();
         MessageEnvelope replyEnvelope = createReplyEnvelope();
 
@@ -138,7 +140,9 @@ public class Message {
     public Message toReplyAllMessage(String myAddress) {
         // Generate the reply message body
         MessageReplyConverter replyConverter = new MessageReplyConverter(this.envelope);
-        this.body.accept(replyConverter);
+        if(this.body != null) {
+            this.body.accept(replyConverter);
+        }
         MessagePart replyBody = replyConverter.toReplyBody();
         MessageEnvelope replyEnvelope = createReplyEnvelope();
         
@@ -188,7 +192,9 @@ public class Message {
     public Message toForwardMessage() {
         // Generate the forward message body
         MessageForwardConverter forwardConverter = new MessageForwardConverter(this.envelope);
-        this.body.accept(forwardConverter);
+        if(this.body != null) {
+            this.body.accept(forwardConverter);
+        }
         MessagePart forwardBody = forwardConverter.toForwardBody();
 
         MessageEnvelope forwardEnvelope = new MessageEnvelope();

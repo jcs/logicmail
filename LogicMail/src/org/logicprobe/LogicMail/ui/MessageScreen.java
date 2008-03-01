@@ -335,7 +335,9 @@ public class MessageScreen extends BaseScreen {
                 msgFields = msgRenderer.getMessageFields();
             }
             else {
-                msgFields = null;
+                msgFields = new Vector();
+                    msgFields.addElement(
+                        new RichTextField("This message does not contain any sections that could be displayed."));
             }
         }
 
