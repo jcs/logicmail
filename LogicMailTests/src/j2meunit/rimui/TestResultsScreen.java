@@ -11,7 +11,6 @@ package j2meunit.rimui;
 
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestFailure;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.MainScreen;

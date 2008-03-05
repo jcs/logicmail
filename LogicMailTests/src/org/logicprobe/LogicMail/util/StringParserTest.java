@@ -435,28 +435,33 @@ public class StringParserTest extends TestCase {
 
         assertEquals("NIL", (String)temp1.elementAt(5));
     }
-    
-    private void printTree(Object node, int level) {
-        if(node instanceof Vector) {
-            Vector vec = (Vector)node;
-            int size = vec.size();
-            for(int i=0; i<size; i++)
-                printTree(vec.elementAt(i), level + 1);
-        }
-        else {
-            StringBuffer buf = new StringBuffer();
-            buf.append(level+">");
-            for(int i=0; i<level; i++)
-                buf.append("    ");
-            if(node != null) {
-                buf.append(node.toString());
-            }
-            else {
-                buf.append("null");
-            }
-            System.err.println(buf.toString());
-        }
-    }
+
+//    /**
+//     * This method prints the parse tree for debugging purposes.
+//     * @param node Node to start at.
+//     * @param level Level to print from.
+//     */
+//    private void printTree(Object node, int level) {
+//        if(node instanceof Vector) {
+//            Vector vec = (Vector)node;
+//            int size = vec.size();
+//            for(int i=0; i<size; i++)
+//                printTree(vec.elementAt(i), level + 1);
+//        }
+//        else {
+//            StringBuffer buf = new StringBuffer();
+//            buf.append(level+">");
+//            for(int i=0; i<level; i++)
+//                buf.append("    ");
+//            if(node != null) {
+//                buf.append(node.toString());
+//            }
+//            else {
+//                buf.append("null");
+//            }
+//            System.err.println(buf.toString());
+//        }
+//    }
 
     /**
      * Test of parseMailHeaders method, of class org.logicprobe.LogicMail.util.StringParser.

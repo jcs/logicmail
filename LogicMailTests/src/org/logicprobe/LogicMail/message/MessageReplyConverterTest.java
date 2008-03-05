@@ -35,10 +35,6 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 import java.util.Calendar;
-import java.util.Vector;
-import net.rim.device.api.ui.component.RichTextField;
-import org.logicprobe.LogicMail.ui.MessageRenderer;
-import org.logicprobe.LogicMail.ui.MessageRendererTest;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**

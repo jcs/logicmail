@@ -227,22 +227,23 @@ public class TestSuite implements Test
 			return super.toString();
 	}
 
-	/***************************************
-	 * Internal method to returns a test which will fail and log a warning
-	 * message.
-	 *
-	 * @param message The message to display
-	 *
-	 * @return A new TestCase instance
-	 */
-	private Test warning(final String message)
-	{
-		return new TestCase("warning")
-			{
-				protected void runTest()
-				{
-					fail(message);
-				}
-			};
-	}
+// Commented to avoid warnings from unused code
+//	/***************************************
+//	 * Internal method to returns a test which will fail and log a warning
+//	 * message.
+//	 *
+//	 * @param message The message to display
+//	 *
+//	 * @return A new TestCase instance
+//	 */
+//	private Test warning(final String message)
+//	{
+//		return new TestCase("warning")
+//			{
+//				protected void runTest()
+//				{
+//					fail(message);
+//				}
+//			};
+//	}
 }

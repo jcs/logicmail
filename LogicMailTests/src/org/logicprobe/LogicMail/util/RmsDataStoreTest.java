@@ -35,9 +35,6 @@ import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import javax.microedition.rms.RecordStore;
 import javax.microedition.rms.RecordStoreException;
 
