@@ -126,11 +126,8 @@ public class SmtpProtocol {
                 throw new MailException(result.substring(4));
             }
             
-            int i;
             byte[] challenge = utilProxy.Base64Decode(result.substring(4));
            
-            byte[] passData = password.getBytes();
-
             byte[] s = password.getBytes("US-ASCII");
             byte[] digest = hmac_md5(s, challenge);
             StringBuffer buf = new StringBuffer();

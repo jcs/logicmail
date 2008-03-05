@@ -57,7 +57,7 @@ public class MessageReplyConverter implements MessagePartVisitor {
      */
     public MessagePart toReplyBody() {
         StringBuffer buf = new StringBuffer();
-        int p, q;
+        int p;
         
         // Create the first line of the reply text
         buf.append("On ");

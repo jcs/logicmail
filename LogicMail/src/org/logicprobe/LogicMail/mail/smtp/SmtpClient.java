@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.mail.smtp;
 
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.Vector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
@@ -49,11 +48,9 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements an SMTP client
  */
 public class SmtpClient implements OutgoingMailClient {
-    private GlobalConfig globalConfig;
     private OutgoingConfig outgoingConfig;
     private Connection connection;
     private SmtpProtocol smtpProtocol;
-    private Vector helloResult;
     private boolean isFresh;
     private boolean openStarted;
     private String username;
@@ -63,7 +60,6 @@ public class SmtpClient implements OutgoingMailClient {
     /** Creates a new instance of SmtpClient */
     public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
         this.outgoingConfig = outgoingConfig;
-        this.globalConfig = globalConfig;
         connection = new Connection(
             outgoingConfig.getServerName(),
             outgoingConfig.getServerPort(),
@@ -93,7 +89,7 @@ public class SmtpClient implements OutgoingMailClient {
                 hostname = "localhost";
             }
 
-            helloResult = smtpProtocol.executeExtendedHello(hostname);
+            smtpProtocol.executeExtendedHello(hostname);
             openStarted = true;
         }
         if(outgoingConfig.getUseAuth() > 0) {

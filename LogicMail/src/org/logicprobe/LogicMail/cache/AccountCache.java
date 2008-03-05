@@ -53,7 +53,6 @@ public class AccountCache {
     private boolean cacheLoaded;
     
     private static String FOLDER_TREE = "folder_tree";
-    private static String METADATA_LIST = "metadata_list";
     
     public AccountCache(AccountConfig accountConfig) {
         accountId = accountConfig.getUniqueId();

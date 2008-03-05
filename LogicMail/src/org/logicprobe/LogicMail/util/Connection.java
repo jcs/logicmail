@@ -373,7 +373,6 @@ public class Connection {
      */
     public void sendRaw(String s) throws IOException {
         byte[] bytes = s.getBytes();
-        int length = bytes.length;
         
         if(globalConfig.getConnDebug()) {
             EventLogger.logEvent(AppInfo.GUID, ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);

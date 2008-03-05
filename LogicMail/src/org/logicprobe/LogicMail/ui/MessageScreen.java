@@ -64,7 +64,6 @@ public class MessageScreen extends BaseScreen {
     private MessageEnvelope envelope;
     private Vector msgFields;
     private Message msg;
-    private UpdateMessageHandler updateMessageHandler;
     private boolean isSentFolder;
     
     public MessageScreen(IncomingMailClient client,
