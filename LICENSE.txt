@@ -137,3 +137,22 @@
  https://addons.mozilla.org/themes/moreinfo.php?id=2258&application=thunderbird
 
 ******************************************************************************
+
+ Files: LogicMailTests/src/j2meunit/framework/*.java
+        LogicMailTests/src/j2meunit/util/*.java
+
+ These files contain the sources to J2MEUnit 1.1.1, minus any UI packages or
+ classes containing a main() method.
+
+ ----------------------------------------------------------------------------
+
+ Starting with version 1.1 J2MEUnit is distributed unter the Common 
+ Public License Version 1.0. The text of this license can be found
+ at www.opensource.org.
+
+ J2MEUnit was originally written by RoleModel Software Inc. and 
+ distributed under a similar but less detailed license.
+
+ http://j2meunit.sourceforge.net/
+
+******************************************************************************

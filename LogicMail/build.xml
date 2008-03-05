@@ -1,206 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- You may freely edit this file. See commented blocks below for -->
-<!-- some examples of how to customize the build. -->
-<!-- (If you delete it and reopen the project it will be recreated.) -->
-<project name="" default="jar" basedir=".">
-    <description>Builds, tests, and runs the project .</description>
-    <import file="nbproject/build-impl.xml"/>
-    <!--
+<!--
+ Ant build file for the LogicMail application
+-->
+<project name="LogicMail" default="build" basedir=".">
+    <!-- Properties -->
+    <property name="src.dir" location="src"/>
+    <property name="dist.dir" location="dist"/>
+	<property file="project.properties"/>
 
-    There exist several targets which are by default empty and which can be
-    used for execution of your tasks. These targets are usually executed
-    before and after some main targets. They are:
+    <!-- Task definitions -->
+    <taskdef name="rapc" classname="ca.slashdev.bb.RapcTask">
+        <classpath>
+            <pathelement location="../lib/bb-ant-tools.jar"/>
+        </classpath>
+    </taskdef>
+    <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask">
+        <classpath>
+            <pathelement location="../lib/xmltask.jar"/>
+        </classpath>
+    </taskdef>
 
-      pre-init:                 called before initialization of project properties
-      post-init:                called after initialization of project properties
-      pre-preprocess:           called before text preprocessing of sources
-      post-preprocess:          called after text preprocessing of sources
-      pre-compile:              called before source compilation
-      post-compile:             called after source compilation
-      pre-obfuscate:            called before obfuscation 
-      post-obfuscate:           called after obfuscation
-      pre-preverify:            called before preverification
-      post-preverify:           called after preverification
-      pre-jar:                  called before jar building
-      post-jar:                 called after jar building
-      pre-clean:                called before cleaning build products
-      post-clean:               called after cleaning build products
+	<!-- Build the application -->
+    <target name="build">
+        <mkdir dir="${dist.dir}"/>
+        <copy file="${src.dir}/icons/logicmail.png" todir="${dist.dir}"/>
+        <rapc output="${module.name}"
+              srcdir="${src.dir}"
+              destdir="${dist.dir}"
+              jdehome="${jde.home}">
+              <jdp title="${module.title}"
+                 vendor="${module.vendor}"
+                 version="${module.version}"
+                 type="cldc"
+                 midletclass="org.logicprobe.LogicMail.LogicMail"
+                 icon="logicmail.png"/>
+            <src>
+                <fileset dir="${src.dir}">
+                    <include name="**/*.java"/>
+					<exclude name="**/bb40"/>
+					<exclude name="**/*BB40.java"/>
+                    <include name="**/*.png"/>
+                </fileset>
+            </src>
+        </rapc>
+        <delete file="${dist.dir}/logicmail.png"/>
+	</target>
 
-    Example of pluging a my-special-task after the compilation could look like
+	<!-- Load the build output into the simulator -->
+	<target name="load-simulator" depends="build">
+		<copy todir="${simulator.home}">
+			<fileset dir="${dist.dir}" includes="*.cod,*.csl,*.cso,*.debug,*.jar"/>
+		</copy>
+	</target>
+	
+	<!-- Run the application in the simulator -->
+	<target name="run-simulator" depends="load-simulator">
+		<exec
+			dir="${simulator.home}"
+			executable="${simulator.home}/${simulator.exec}"
+			spawn="true"/>
+	</target>
 
-        <target name="post-compile">
-            <my-special-task>
-                <fileset dir="${build.classes.dir}"/>
-            </my-special-task>
-        </target>
-
-    For list of available properties check the imported
-    nbproject/build-impl.xml file.
-
-    Other way how to customize the build is by overriding existing main targets.
-    The target of interest are:
-
-      preprocess:               preprocessing
-      extract-libs:             extraction of libraries and resources
-      compile:                  compilation
-      create-jad:               construction of jad and jar manifest source
-      obfuscate:                obfuscation
-      preverify:                preverification
-      jar:                      jar archive building
-      run:                      execution
-      debug:                    execution in debug mode
-      javadoc:                  javadoc generation
-
-    Example of overriding the target for project execution could look like
-
-        <target name="run" depends="init,jar">
-            <my-special-exec jadfile="${dist.dir}/${dist.jad}"/>
-        </target>
-
-    Be careful about correct dependencies when overriding original target. 
-    Again, for list of available properties which you can use check the target 
-    you are overriding in nbproject/build-impl.xml file.
-
-    A special target for-all-configs can be used to run some specific targets for
-    all project configurations in a sequence. File nbproject/build-impl.xml 
-    already contains some "for-all" targets:
-    
-      jar-all
-      javadoc-all
-      clean-all
-      
-    Example of definition of target iterating over all project configurations:
-    
-        <target name="jar-all">
-            <property name="target.to.call" value="jar"/>
-            <antcall target="for-all-configs"/>
-        </target>
-    -->
-        
-    <target name="pre-jar">
-        <available file="${platform.home}/bin/rapc.exe" property="do.rapc"/>
-        <condition property="jpda.port" value="8000">
-            <isset property="do.rapc"/>
-        </condition>
-    </target>
-    <target name="post-jar">
-        <copy file="${basedir}/${src.dir}/icons/logicmail.png" todir="${basedir}/${dist.dir}"/>
-        <exec dir="${platform.home}/simulator" executable="${platform.home}/bin/rapc.exe" failonerror="true">
-            <arg value="import=${platform.bootclasspath}"/>
-            <arg value="codename=${name}"/>
-            <arg value="${basedir}/${dist.dir}/${dist.jad}"/>
-            <arg value="${basedir}/${dist.dir}/${dist.jar}"/>
-        </exec>
-        <copy file="${platform.home}/simulator/${name}.cod" todir="${basedir}/${dist.dir}"/>
-        <delete file="${basedir}/${dist.dir}/logicmail.png"/>
-        <copy file="${basedir}/LogicMail.alx" todir="${basedir}/${dist.dir}"/>
-    </target>
-    <target name="post-clean">
-        <delete failonerror="false">
-            <fileset dir="${platform.home}/simulator">
-                <include name="**/${name}.*"/>
-            </fileset>
-        </delete>
-    </target>
-    <!--
-    This is the target used to create automated builds of LogicMail.
-    It currently only supports building one configuration.
-
-    This target depends upon the external xmltask library, which can
-    be found here:
-    http://www.oopsconsultancy.com/software/xmltask/
-
-    It is intended to be called from a build server, and expects the
-    following properties to be set:
-        config.active=BB41Configuration
-        user.properties.file=../../build.properties
-        libs.j2me_ant_ext.classpath=../../mobility7.3/modules/org-netbeans-modules-kjava-antext.jar
-        platform.home=../../platform
-        platform.preverifycommandline=
-        build.version.major=0
-        build.version.minor=2
-        build.version.micro=0
-        build.version.tstamp=200707081450
-
-    The "user.properties.file" is a self-reference, and points to
-    the file that itself and all the other above properties are in.
-
-    The "libs.j2me_ant_ext.classpath" property references a JAR
-    that is distributed in the NetBeans 5.5.1 mobility pack.
-
-    The "platform.home" property references the location of the BlackBerry JDE
-    installation, or some minimalist subset thereof.
-    -->
-    <target name="snapshot" depends="load-properties">
-        <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask"/>
-        
-        <!-- Create the build version number -->
-        <property name="build.version" value="${build.version.major}.${build.version.minor}.${build.version.micro}${build.version.tstamp}"/>
- 
-        <!-- Build the application -->
-        <antcall target="clean" inheritall="true" inheritrefs="true"/>
-        <delete failonerror="false" dir="${basedir}/dist"/>
-        <antcall target="snapshot-jar" inheritall="true" inheritrefs="true"/>
-        
-        <!-- Modify the version in the ALX file -->
+	<!-- Prepare the distribution -->
+	<target name="dist" depends="build">
+        <!-- Modify and copy the ALX file -->
         <xmltask
-            source="${basedir}/${dist.dir}/LogicMail.alx"
-            dest="${basedir}/${dist.dir}/LogicMail.alx">
-            <replace path="loader/application/version/text()" withText="${build.version}"/>
+            source="LogicMail.alx"
+            dest="${dist.dir}/${module.name}.alx">
+			<replace path="loader/application/version/text()" withText="${module.version}"/>
+			<replace path="loader/application/fileset/files/text()" withText="${module.name}.cod"/>
         </xmltask>
 
-        <!-- Split the COD file as necessary to match the JAD file -->
-        <mkdir dir="${basedir}/${dist.dir}/tmp"/>
-        <unzip
-            src="${basedir}/${dist.dir}/LogicMail.cod"
-            dest="${basedir}/${dist.dir}/tmp"
-            overwrite="true" />
-        <move todir="${basedir}/${dist.dir}">
-            <fileset dir="${basedir}/${dist.dir}/tmp"/>
-        </move>
-        <delete dir="${basedir}/${dist.dir}/tmp"/>
-
         <!-- Create the distribution archive -->
-        <zip destfile="${basedir}/dist/LogicMail.zip"
-            basedir="${basedir}/${dist.dir}"/>
-     </target>
-     <!--
-     This is a special version of the "create-jad" task.
-     It wraps the original task from build-impl.xml, then
-     it edits the output files to contain the correct
-     version numbers.
-     -->
-     <target name="snapshot-create-jad" depends="init">
-        <!-- Create the original JAD file -->
-        <antcall target="create-jad" inheritall="true" inheritrefs="true"/>
+		<zip destfile="${dist.dir}/LogicMail-${module.version}.zip">
+            <fileset dir="${dist.dir}" includes="*.jar, *.jad, *.cod, *.alx"/>
+            <fileset dir=".." includes="README.txt, LICENSE.txt, ChangeLog.txt"/>
+        </zip>
 
-        <!-- Modify the output to contain the correct version number -->
-        <replaceregexp file="${dist.dir}/${dist.jad}"
-            match="MIDlet-Version:(.*)"
-            replace="MIDlet-Version: ${build.version}"
-            byline="false"/>
-        <replaceregexp file="${build.dir}/manifest.mf"
-            match="MIDlet-Version:(.*)"
-            replace="MIDlet-Version: ${build.version}"
-            byline="false"/>
-     </target>
-     <!--
-     This is a special version of the "jar" task.
-     It is identical in every way to the original task
-     from build-impl.xml, except that it references the
-     above "snapshot-create-jad" task instead of the
-     original "create-jad" task.
-     -->
-     <target name="snapshot-jar" depends="init,preverify,snapshot-create-jad,set-keystore-password,set-alias-password,pre-jar" description="Build jar and application descriptor for snapshot builds.">
-        <dirname file="${dist.dir}/${dist.jar}" property="dist.jar.dir"/>
-        <mkdir dir="${dist.jar.dir}"/>
-        <jar compress="${jar.compress}" jarfile="${dist.dir}/${dist.jar}" manifest="${build.dir}/manifest.mf" manifestencoding="UTF-8">
-            <fileset dir="${preverify.classes.dir}"/>
-            <fileset dir="${obfuscated.classes.dir}">
-                <exclude name="**/*.class"/>
-            </fileset>
-        </jar>
-        <nb-jad jadfile="${dist.dir}/${dist.jad}" jarfile="${dist.dir}/${dist.jar}" url="${dist.jar}" sign="${sign.enabled}" keystore="${sign.keystore}" keystorepassword="${sign.keystore.password}" alias="${sign.alias}" aliaspassword="${sign.alias.password}" encoding="${javac.encoding}"/>
-        <antcall target="post-jar" inheritall="true" inheritrefs="true"/>
-    </target>
+		<!-- Prepare the OTA installation files -->
+        <mkdir dir="${dist.dir}/ota"/>
+        <unzip
+            src="${dist.dir}/${module.name}.cod"
+            dest="${dist.dir}/ota"/>
+		<copy todir="${dist.dir}/ota">
+			<fileset dir="${dist.dir}" includes="*.jar, *.jad"/>
+		</copy>
+	</target>
+
+	<target name="clean">
+		<delete dir="${dist.dir}"/>
+	</target>
 </project>

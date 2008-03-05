@@ -7,13 +7,13 @@
 			LogicMail for BlackBerry
 		</description>
 		<version>
-			0.3.0
+			X.Y.Z
 		</version>
 		<vendor>
 			Derek Konigsberg
 		</vendor>
 		<copyright>
-			Copyright (c) 2007, Derek Konigsberg
+			Copyright (c) 2008, Derek Konigsberg
 		</copyright>
 		<fileset Java="1.24">
 			<directory>
