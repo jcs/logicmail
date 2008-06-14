@@ -215,7 +215,7 @@ public class ImapClient implements IncomingMailClient {
             // safely ignore.  Otherwise, create a folder item and add it.
             try {
                 imapProtocol.executeStatus(new String[] { "INBOX" });
-                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, "INBOX", "INBOX", folderDelim);
+                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, "INBOX", "INBOX", folderDelim, true);
                 rootItem.addChild(inboxItem);
             } catch (MailException exp) { }
             
@@ -247,8 +247,7 @@ public class ImapClient implements IncomingMailClient {
         int size = respList.size();
         for(int i=0;i<size;++i) {
             ImapProtocol.ListResponse resp = (ImapProtocol.ListResponse)respList.elementAt(i);
-            if(resp.canSelect) {
-                FolderTreeItem childItem = getFolderItem(baseFolder, resp.name);
+            FolderTreeItem childItem = getFolderItem(baseFolder, resp.name, resp.canSelect);
                 baseFolder.addChild(childItem);
                 if(resp.hasChildren || !childrenExtension) {
                     // The folder has children, so lets go and list them
@@ -267,7 +266,6 @@ public class ImapClient implements IncomingMailClient {
                 }
             }
         }
-    }
 
     public void refreshFolderStatus(FolderTreeItem root) throws IOException, MailException {
         // Flatten the tree for easy batching of the status refresh
@@ -415,16 +413,17 @@ public class ImapClient implements IncomingMailClient {
      * Create a new folder item, doing the relevant parsing on the path.
      * @param parent Parent folder
      * @param folderPath Folder path string
+     * @param canSelect Whether the folder is selectable
      * @return Folder item object
      */
-    private FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath) throws IOException, MailException {
+    private FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath, boolean canSelect) throws IOException, MailException {
         int pos = 0;
         int i = 0;
         while((i = folderPath.indexOf(folderDelim, i)) != -1) {
             if(i != -1) { pos = i+1; i++; }
         }
         String decodedName = ImapParser.parseFolderName(folderPath.substring(pos));
-        FolderTreeItem item = new FolderTreeItem(parent, decodedName, folderPath, folderDelim);
+        FolderTreeItem item = new FolderTreeItem(parent, decodedName, folderPath, folderDelim, canSelect);
         item.setMsgCount(0);
         return item;
     }

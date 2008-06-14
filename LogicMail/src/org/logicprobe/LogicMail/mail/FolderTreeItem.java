@@ -48,6 +48,7 @@ public class FolderTreeItem implements Serializable {
     private String name;
     private String path;
     private String delim;
+    private boolean selectable;
     private int msgCount;
     private int unseenCount;
 
@@ -63,6 +64,7 @@ public class FolderTreeItem implements Serializable {
         this.name = name;
         this.path = path;
         this.delim = delim;
+        this.selectable = true;
         this.msgCount = -1;
         this.unseenCount = -1;
         this.children = null;
@@ -75,12 +77,13 @@ public class FolderTreeItem implements Serializable {
      * @param path The full path to this folder
      * @param delim The path deliminator
      */
-    public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim) {
+    public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim, boolean selectable) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.parent = parent;
         this.name = name;
         this.path = path;
         this.delim = delim;
+        this.selectable = selectable;
         this.msgCount = -1;
         this.unseenCount = -1;
         this.children = null;
@@ -101,6 +104,7 @@ public class FolderTreeItem implements Serializable {
         output.writeUTF(name);
         output.writeUTF(path);
         output.writeUTF(delim);
+        output.writeBoolean(selectable);
         output.writeInt(msgCount);
         if(children != null && children.length > 0) {
             output.writeInt(children.length);
@@ -116,6 +120,7 @@ public class FolderTreeItem implements Serializable {
         name = input.readUTF();
         path = input.readUTF();
         delim = input.readUTF();
+        selectable = input.readBoolean();
         msgCount = input.readInt();
         int childCount = input.readInt();
         if(childCount > 0) {
@@ -166,6 +171,10 @@ public class FolderTreeItem implements Serializable {
         return delim;
     }
 
+    public boolean isSelectable() {
+        return selectable;
+    }
+    
     public int getMsgCount() {
         return msgCount;
     }

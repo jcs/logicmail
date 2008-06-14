@@ -143,7 +143,10 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
             FolderTreeItem item = (FolderTreeItem)cookie;
             StringBuffer buf = new StringBuffer();
             buf.append(item.getName());
-            if(item.getUnseenCount() > 0) {
+            if(!item.isSelectable()) {
+                graphics.setFont(origFont.derive(Font.ITALIC));
+            }
+            else if(item.getUnseenCount() > 0) {
                 buf.append(" (");
                 buf.append(Integer.toString(item.getUnseenCount()));
                 buf.append(")");
@@ -287,7 +290,10 @@ public class FolderScreen extends BaseScreen implements TreeFieldCallback, MailC
         }
         Object cookie = treeField.getCookie(curNode);
         if(cookie instanceof FolderTreeItem) {
-            UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, (FolderTreeItem)cookie));
+            FolderTreeItem folderTreeItem = (FolderTreeItem)cookie;
+            if(folderTreeItem.isSelectable()) {
+                UiApplication.getUiApplication().pushScreen(new MailboxScreen(client, folderTreeItem));
+            }
         }
     }
 
