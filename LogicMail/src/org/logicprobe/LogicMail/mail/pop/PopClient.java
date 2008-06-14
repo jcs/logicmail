@@ -216,6 +216,11 @@ public class PopClient implements IncomingMailClient {
         String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
         String charset = mimeInputStream.getContentTypeParameter("charset");
         
+        // Default parameters used when headers are missing
+        if(encoding == null) {
+            encoding = "7bit";
+        }
+        
         // Handle the multi-part case
         if(mimeInputStream.isMultiPart() && type.equalsIgnoreCase("multipart")) {
             MessagePart part = MessagePartFactory.createMessagePart(type, subtype, null, null, null);
