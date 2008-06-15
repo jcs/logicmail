@@ -91,26 +91,61 @@ public class MessageMimeConverter implements MessagePartVisitor {
     }
 
     public void visitTextPart(TextPart part) {
-        String charset = part.getCharset();
+        String charset; /* = part.getCharset(); */
         boolean isBinary;
         boolean isQP;
         String encoding;
+        String text = part.getText();
         
-        if(charset.equalsIgnoreCase("US-ASCII")) {
-            isBinary = false;
-            isQP = false;
-            encoding = "7bit";
+        // Find the maximum character value in the text
+        char maxChar = 0;
+        for(int i = text.length() - 1; i != 0; --i) {
+            char ch = text.charAt(i);
+            if(ch > maxChar) {
+                maxChar = ch;
+            }
         }
-        else if(charset.equalsIgnoreCase("ISO-8859-1")) {
+        
+        // Determine the charset and encoding from the characteristics of the
+        // text, instead of the properties of the TextPart.  We do it this way
+        // because the TextPart already contains decoded text that could be
+        // reencoded in a variety of ways, and because there is no way to
+        // easily create a TextPart from a local unencoded String that has the
+        // charset and encoding properties set correctly.
+        if(maxChar > 255) {
+            charset = "UTF-8";
+            isBinary = true;
+            isQP = false;
+            encoding = "base64";
+        }
+        else if(maxChar > 127) {
+            charset = "ISO-8859-1";
             isBinary = false;
             isQP = true;
             encoding = "quoted-printable";
         }
         else {
-            isBinary = true;
+            charset = "US-ASCII";
+            isBinary = false;
             isQP = false;
-            encoding = "base64";
+            encoding = "7bit";
         }
+        
+//        if(charset.equalsIgnoreCase("US-ASCII")) {
+//            isBinary = false;
+//            isQP = false;
+//            encoding = "7bit";
+//        }
+//        else if(charset.equalsIgnoreCase("ISO-8859-1")) {
+//            isBinary = false;
+//            isQP = true;
+//            encoding = "quoted-printable";
+//        }
+//        else {
+//            isBinary = true;
+//            isQP = false;
+//            encoding = "base64";
+//        }
         
         MIMEOutputStream currentStream;
         if(mimeOutputStream == null) {
@@ -129,12 +164,12 @@ public class MessageMimeConverter implements MessagePartVisitor {
         try {
             if(!isBinary) {
                 if(isQP)
-                    currentStream.write(StringParser.encodeQuotedPrintable(part.getText()).getBytes(charset));
+                    currentStream.write(StringParser.encodeQuotedPrintable(text).getBytes(charset));
                 else
-                    currentStream.write(part.getText().getBytes(charset));
+                    currentStream.write(text.getBytes(charset));
             }
             else {
-                byte[] data = part.getText().getBytes(charset);
+                byte[] data = text.getBytes(charset);
                 currentStream.write(utilProxy.Base64Encode(data, 0, data.length, true, true));
             }
         } catch (IOException e) {
