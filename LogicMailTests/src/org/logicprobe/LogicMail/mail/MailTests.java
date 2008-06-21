@@ -46,6 +46,7 @@ public class MailTests extends TestCase {
     
     public Test suite() {
         TestSuite suite = new TestSuite("LogicMail.mail");
+        suite.addTest(new NetworkMailStoreTest().suite());
         suite.addTest(new ImapTests().suite());
         return suite;
     }
