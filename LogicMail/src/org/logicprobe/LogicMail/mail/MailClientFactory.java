@@ -78,6 +78,18 @@ public class MailClientFactory {
     }
     
     /**
+     * Explicitly set a particular incoming client instance to
+     * match a particular account configuration.
+     * This method is intended to be used only for testing.
+     * 
+     * @param acctConfig User account configuration
+     * @param client Usable mail client instance
+     */
+    static void setIncomingMailClient(AccountConfig acctConfig, IncomingMailClient client) {
+    	incomingClientTable.put(acctConfig, client);
+    }
+    
+    /**
      * Get a concrete outgoing mail client instance.
      * If a client already exists for the provided configuration,
      * it will be provided instead of a new one.
@@ -97,5 +109,17 @@ public class MailClientFactory {
             }
         }
         return client;
+    }
+
+    /**
+     * Explicitly set a particular outgoing client instance to
+     * match a particular account configuration.
+     * This method is intended to be used only for testing.
+     * 
+     * @param acctConfig User account configuration
+     * @param client Usable mail client instance
+     */
+    static void setOutgoingMailClient(AccountConfig acctConfig, OutgoingMailClient client) {
+    	outgoingClientTable.put(acctConfig, client);
     }
 }
