@@ -50,6 +50,7 @@ public class UtilTests extends TestCase {
         testSuite.addTest(new SerializableHashtableTest().suite());
         testSuite.addTest(new EventListenerListTest().suite());
         testSuite.addTest(new RmsDataStoreTest().suite());
+        testSuite.addTest(new QueueTest().suite());
         return testSuite;
     }
 }
