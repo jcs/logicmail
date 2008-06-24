@@ -210,7 +210,7 @@ public abstract class AbstractMailStore {
      * @return All the <tt>FolderListener</tt>s that have been added,
      * or an empty array if no listeners have been added.
      */
-    public FolderListener[] getFolderListener() {
+    public FolderListener[] getFolderListeners() {
         return (FolderListener[])listenerList.getListeners(FolderListener.class);
     }
 
@@ -225,6 +225,7 @@ public abstract class AbstractMailStore {
 
     /**
      * Removes a <tt>MessageListener</tt> from the mail store.
+     * 
      * @param l The <tt>MessageListener</tt> to be removed.
      */
     public void removeMessageListener(MessageListener l) {
@@ -238,7 +239,7 @@ public abstract class AbstractMailStore {
      * @return All the <tt>MessageListener</tt>s that have been added,
      * or an empty array if no listeners have been added.
      */
-    public MessageListener[] getMessageListener() {
+    public MessageListener[] getMessageListeners() {
         return (MessageListener[])listenerList.getListeners(MessageListener.class);
     }
     

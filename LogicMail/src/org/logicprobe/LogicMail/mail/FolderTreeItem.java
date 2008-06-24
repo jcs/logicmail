@@ -56,7 +56,7 @@ public class FolderTreeItem implements Serializable {
      * Create a root folder tree item.
      * @param name The name of the folder
      * @param path The full path to this folder
-     * @param delim The path deliminator
+     * @param delim The path delimiter
      */
     public FolderTreeItem(String name, String path, String delim) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
@@ -75,7 +75,7 @@ public class FolderTreeItem implements Serializable {
      * @param parent The parent of this item
      * @param name The name of the folder
      * @param path The full path to this folder
-     * @param delim The path deliminator
+     * @param delim The path delimiter
      */
     public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim, boolean selectable) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
