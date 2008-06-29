@@ -65,7 +65,10 @@ public abstract class BaseScreen extends MainScreen {
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
         public void run() {
             // Show the about dialog
-            String aboutMsg = AppInfo.getName() + "\nVersion " + AppInfo.getVersion();
+            String aboutMsg =
+            	AppInfo.getName() + "\n" +
+            	"Version " + AppInfo.getVersion() + "\n" +
+            	"http://logicmail.sf.net/";
             Dialog.inform(aboutMsg);
         }
     };
