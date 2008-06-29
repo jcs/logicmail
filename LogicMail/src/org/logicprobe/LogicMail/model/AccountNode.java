@@ -1,18 +1,62 @@
+/*-
+ * Copyright (c) 2008, Derek Konigsberg
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution. 
+ * 3. Neither the name of the project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.mail.AbstractMailStore;
+import org.logicprobe.LogicMail.mail.FolderEvent;
+import org.logicprobe.LogicMail.mail.FolderListener;
+import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreListener;
+import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
  * Account node for the mail data model.
- * This node contains only <tt>MailboxNode</tt> instances
- * as its children.
+ * This node contains only the root <tt>MailboxNode</tt> instance.
+ * Currently the type of mail store backing this node is
+ * determined by the constructor that is called.
+ * Eventually a more elegant approach will need to
+ * be implemented.
  */
 public class AccountNode implements Node {
+	private AbstractMailStore mailStore;
 	private MailRootNode parent;
-	private Vector mailboxes;
+	private MailboxNode rootMailbox;
+	private Hashtable pathMailboxMap;
+	private Object rootMailboxLock = new Object();
 	private EventListenerList listenerList = new EventListenerList();
 	private AccountConfig accountConfig;
 	private int status;
@@ -21,10 +65,49 @@ public class AccountNode implements Node {
 	public final static int STATUS_OFFLINE = 1;
 	public final static int STATUS_ONLINE  = 2;
 	
+	/**
+	 * Construct a new node for a network account.
+	 * 
+	 * @param accountConfig Account configuration.
+	 */
 	AccountNode(AccountConfig accountConfig) {
 		this.accountConfig = accountConfig;
-		this.mailboxes = new Vector();
-		this.status = STATUS_OFFLINE; //quick for now
+		this.rootMailbox = null;
+		this.pathMailboxMap = new Hashtable();
+		this.status = STATUS_OFFLINE;
+		this.mailStore = new NetworkMailStore(accountConfig);
+		
+		this.mailStore.addMailStoreListener(new MailStoreListener() {
+			public void folderTreeUpdated(FolderEvent e) {
+				mailStore_FolderTreeUpdated(e);
+			}
+		});
+		
+		this.mailStore.addFolderListener(new FolderListener() {
+			public void folderStatusChanged(FolderEvent e) {
+				mailStore_FolderStatusChanged(e);
+			}
+			public void folderMessagesAvailable(FolderMessagesEvent e) {
+				mailStore_FolderMessagesAvailable(e);
+			}
+		});
+		
+		if(!mailStore.hasFolders()) {
+			// Create the fake INBOX node for non-folder-capable mail stores
+			this.rootMailbox = new MailboxNode(new FolderTreeItem("", "", ""), -1);
+			MailboxNode inboxNode = new MailboxNode(new FolderTreeItem("INBOX", "INBOX", ""), MailboxNode.TYPE_INBOX);
+			this.rootMailbox.addMailbox(inboxNode);
+			pathMailboxMap.put("INBOX", inboxNode);
+		}
+	}
+	
+	/**
+	 * Construct a new node for a local account.
+	 */
+	AccountNode() {
+		this.accountConfig = null;
+		this.rootMailbox = null;
+		this.status = STATUS_LOCAL;
 	}
 	
 	public void accept(NodeVisitor visitor) {
@@ -50,48 +133,16 @@ public class AccountNode implements Node {
 	}
 	
 	/**
-	 * Get the top-level mailboxes contained within this account.
-	 * This method returns an array that is a shallow copy of the
-	 * live mailbox list.  It is primarily intended for use
-	 * during initialization.
+	 * Get the top-level mailbox contained within this account.
+	 * This mailbox typically exists only for the purpose of
+	 * containing other mailboxes, and is not normally shown
+	 * to the user.
 	 *  
-	 * @return Mailbox nodes.
+	 * @return Root mailbox node.
 	 */
-	public MailboxNode[] getMailboxes() {
-		MailboxNode[] result;
-		synchronized(mailboxes) {
-			int size = mailboxes.size();
-			result = new MailboxNode[size];
-			for(int i=0; i<size; i++) {
-				result[i] = (MailboxNode)mailboxes.elementAt(i);
-			}
-		}
-		return result;
-	}
-	
-	/**
-	 * Adds a mailbox to this account.
-	 * 
-	 * @param mailbox The mailbox to add.
-	 */
-	void addMailbox(MailboxNode mailbox) {
-		synchronized(mailboxes) {
-			if(!mailboxes.contains(mailbox)) {
-				mailboxes.addElement(mailbox);
-			}
-		}
-	}
-	
-	/**
-	 * Removes a mailbox from this account.
-	 * 
-	 * @param mailbox The mailbox to remove.
-	 */
-	void removeMailbox(MailboxNode mailbox) {
-		synchronized(mailboxes) {
-			if(mailboxes.contains(mailbox)) {
-				mailboxes.removeElement(mailbox);
-			}
+	public MailboxNode getRootMailbox() {
+		synchronized(rootMailboxLock) {
+			return this.rootMailbox;
 		}
 	}
 	
@@ -101,13 +152,18 @@ public class AccountNode implements Node {
 	 * @return The name.
 	 */
 	public String getName() {
-		return this.accountConfig.toString();
+		if(accountConfig != null) {
+			return this.accountConfig.toString();
+		}
+		else {
+			return "Local Folders";
+		}
 	}
 
 	/**
 	 * Gets the account configuration.
 	 * 
-	 * @return The account configuration.
+	 * @return The account configuration, or null for local accounts.
 	 */
 	AccountConfig getAccountConfig() {
 		return this.accountConfig;
@@ -121,7 +177,7 @@ public class AccountNode implements Node {
 	void setStatus(int status) {
 		if(this.status != status) {
 			this.status = status;
-			fireAccountStatusChanged();
+			fireAccountStatusChanged(AccountNodeEvent.TYPE_CONNECTION);
 		}
 	}
 	
@@ -134,6 +190,159 @@ public class AccountNode implements Node {
 		return this.status;
 	}
 	
+	/**
+	 * Called to trigger a refresh of the mailboxes under
+	 * this account.  Completion is signaled by an
+	 * AccountStatusChanged event.
+	 */
+	public void refreshMailboxes() {
+		if(mailStore.hasFolders()) {
+			mailStore.requestFolderTree();
+		}
+	}
+	
+	public void refreshMailboxStatus() {
+		MailboxNode mailbox;
+		synchronized(rootMailboxLock) {
+			mailbox = this.rootMailbox;
+		}
+		mailStore.requestFolderStatus(mailbox.getFolderTreeItem());
+	}
+	
+	/**
+	 * Handles folder tree updates.
+	 * 
+	 * @param e Event data.
+	 */
+	private void mailStore_FolderTreeUpdated(FolderEvent e) {
+		FolderTreeItem rootFolder = e.getFolder();
+
+		synchronized(rootMailboxLock) {
+			Hashtable remainingMailboxMap = new Hashtable();
+			if(rootMailbox != null) {
+				// Disassemble the model tree into a flat collection of nodes
+				Vector flatMailboxes = new Vector();
+				populateFlatMailboxes(flatMailboxes, rootMailbox);
+				rootMailbox = null;
+				
+				// Prune the collection to only include nodes that are still valid,
+				// and make them reference the new FolderTreeItem objects.
+				Hashtable folderPathMap = new Hashtable();
+				populateFolderPathMap(folderPathMap, rootFolder);
+				
+				int size = flatMailboxes.size();
+				for(int i=0; i<size; i++) {
+					MailboxNode mailboxNode = (MailboxNode)flatMailboxes.elementAt(i);
+					String path = mailboxNode.getFolderTreeItem().getPath();
+					if(folderPathMap.containsKey(path)) {
+						mailboxNode.setFolderTreeItem((FolderTreeItem)folderPathMap.get(path));
+						remainingMailboxMap.put(path, mailboxNode);
+					}
+				}
+			}
+			
+			// Build a new tree from the FolderTreeItem, using the collected
+			// nodes where possible, and new nodes when necessary.
+			this.pathMailboxMap.clear();
+			this.rootMailbox = new MailboxNode(rootFolder, -1);
+			populateMailboxNodes(rootFolder, rootMailbox, remainingMailboxMap);
+		}
+		
+		fireAccountStatusChanged(AccountNodeEvent.TYPE_MAILBOX_TREE);
+	}
+	
+	private void populateFlatMailboxes(Vector flatMailboxes, MailboxNode currentMailbox) {
+		flatMailboxes.addElement(currentMailbox);
+		MailboxNode[] childNodes = currentMailbox.getMailboxes();
+		for(int i=0; i<childNodes.length; i++) {
+			populateFlatMailboxes(flatMailboxes, childNodes[i]);
+		}
+		currentMailbox.clearMailboxes();
+	}
+	
+	private void populateFolderPathMap(Hashtable folderPathMap, FolderTreeItem folderTreeItem) {
+		if(folderTreeItem != null) {
+			folderPathMap.put(folderTreeItem.getPath(), folderTreeItem);
+			if(folderTreeItem.hasChildren()) {
+				FolderTreeItem[] children = folderTreeItem.children();
+				for(int i=0; i<children.length; i++) {
+					populateFolderPathMap(folderPathMap, children[i]);
+				}
+			}
+		}
+	}
+	
+	private void populateMailboxNodes(FolderTreeItem folderTreeItem, MailboxNode currentMailbox, Hashtable remainingMailboxMap) {
+		pathMailboxMap.put(folderTreeItem.getPath(), currentMailbox);
+		if(folderTreeItem.hasChildren()) {
+			FolderTreeItem[] folderTreeItemChildren = folderTreeItem.children();
+			for(int i=0; i<folderTreeItemChildren.length; i++) {
+				MailboxNode childMailbox;
+				if(remainingMailboxMap.containsKey(folderTreeItemChildren[i].getPath())) {
+					childMailbox = (MailboxNode)remainingMailboxMap.get(folderTreeItemChildren[i].getPath());
+				}
+				else {
+					childMailbox = new MailboxNode(folderTreeItemChildren[i], getMailboxType(folderTreeItemChildren[i]));
+				}
+				populateMailboxNodes(folderTreeItemChildren[i], childMailbox, remainingMailboxMap);
+				currentMailbox.addMailbox(childMailbox);
+			}
+		}
+	}
+	
+	/**
+	 * Handles folder status changes.
+	 * 
+	 * @param e Event data.
+	 */
+	private void mailStore_FolderStatusChanged(FolderEvent e) {
+		updateMailboxStatus(e.getFolder());
+	}
+	
+	/**
+	 * Recursively update mailbox status.
+	 * 
+	 * @param currentFolder Folder item to start from.
+	 */
+	private void updateMailboxStatus(FolderTreeItem currentFolder) {
+		MailboxNode mailboxNode = (MailboxNode)pathMailboxMap.get(currentFolder.getPath());
+		if(mailboxNode != null) {
+			FolderTreeItem mailboxFolder = mailboxNode.getFolderTreeItem();
+			mailboxFolder.setMsgCount(currentFolder.getMsgCount());
+			mailboxFolder.setUnseenCount(currentFolder.getUnseenCount());
+			mailboxNode.fireMailboxStatusChanged();
+		}
+		if(currentFolder.hasChildren()) {
+			FolderTreeItem[] children = currentFolder.children();
+			for(int i=0; i<children.length; i++) {
+				updateMailboxStatus(children[i]);
+			}
+		}
+	}
+	
+	/**
+	 * Handles folder messages becoming available.
+	 * 
+	 * @param e Event data.
+	 */
+	private void mailStore_FolderMessagesAvailable(FolderMessagesEvent e) {
+	}
+	
+	/**
+	 * Attempts to determine the folder type based on its name,
+	 * and any configuration options.
+	 * @param folderTreeItem Source folder tree item.
+	 * @return Mailbox type
+	 */
+	private int getMailboxType(FolderTreeItem folderTreeItem) {
+		if(folderTreeItem.getPath().equalsIgnoreCase("INBOX")) {
+			return MailboxNode.TYPE_INBOX;
+		}
+		else {
+			return MailboxNode.TYPE_NORMAL;
+		}
+	}
+
 	/**
      * Adds a <tt>AccountNodeListener</tt> to the account node.
      * 
@@ -166,13 +375,15 @@ public class AccountNode implements Node {
     /**
      * Notifies all registered <tt>AccountNodeListener</tt>s that
      * the account status has changed. 
+     * 
+     * @param type Event type.
      */
-    protected void fireAccountStatusChanged() {
+    protected void fireAccountStatusChanged(int type) {
         Object[] listeners = listenerList.getListeners(AccountNodeListener.class);
         AccountNodeEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new AccountNodeEvent(this);
+                e = new AccountNodeEvent(this, type);
             }
             ((AccountNodeListener)listeners[i]).accountStatusChanged(e);
         }

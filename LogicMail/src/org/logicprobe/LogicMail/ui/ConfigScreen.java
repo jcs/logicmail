@@ -48,6 +48,7 @@ import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.model.MailManager;
 
 /**
  * This screen is the main entry point to all the
@@ -63,6 +64,7 @@ public class ConfigScreen extends BaseCfgScreen {
     private Hashtable identityIndexMap;
     private Hashtable accountIndexMap;
     private Hashtable outgoingIndexMap;
+    private boolean configurationChanged;
     
     public ConfigScreen() {
         super("LogicMail - Configuration");
@@ -94,6 +96,19 @@ public class ConfigScreen extends BaseCfgScreen {
 
         add(configTreeField);
     }
+
+    protected void onDisplay() {
+		configurationChanged = false;
+    	super.onDisplay();
+	}
+	
+	protected void onUndisplay() {
+		if(configurationChanged) {
+			MailManager.getInstance().configurationChanged();
+			configurationChanged = false;
+		}
+		super.onUndisplay();
+	}
     
     public void configTreeFieldDrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
         Object cookie = treeField.getCookie(node);
@@ -217,6 +232,7 @@ public class ConfigScreen extends BaseCfgScreen {
                 UiApplication.getUiApplication().pushModalScreen(identityConfigScreen);
                 if(identityConfigScreen.configSaved()) {
                     mailSettings.saveSettings();
+                    configurationChanged = true;
                 }
             }
             else if(parentNode == accountsId) {
@@ -225,6 +241,7 @@ public class ConfigScreen extends BaseCfgScreen {
                 UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
                 if(acctCfgScreen.acctSaved()) {
                     mailSettings.saveSettings();
+                    configurationChanged = true;
                 }
             }
             else if(parentNode == outgoingId) {
@@ -233,6 +250,7 @@ public class ConfigScreen extends BaseCfgScreen {
                 UiApplication.getUiApplication().pushModalScreen(outgoingConfigScreen);
                 if(outgoingConfigScreen.acctSaved()) {
                     mailSettings.saveSettings();
+                    configurationChanged = true;
                 }
             }
         }
@@ -286,6 +304,7 @@ public class ConfigScreen extends BaseCfgScreen {
         if(identityConfigScreen.configSaved()) {
             mailSettings.addIdentityConfig(identityConfig);
             mailSettings.saveSettings();
+            configurationChanged = true;
             buildAccountsList();
         }
     }
@@ -299,6 +318,7 @@ public class ConfigScreen extends BaseCfgScreen {
         if(response == Dialog.DELETE) {
             mailSettings.removeIdentityConfig(index);
             mailSettings.saveSettings();
+            configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             identityIndexMap.remove(identityConfig);
         }
@@ -319,6 +339,7 @@ public class ConfigScreen extends BaseCfgScreen {
             if(acctCfgScreen.acctSaved()) {
                 mailSettings.addAccountConfig(acctConfig);
                 mailSettings.saveSettings();
+                configurationChanged = true;
                 buildAccountsList();
             }
         }
@@ -334,6 +355,7 @@ public class ConfigScreen extends BaseCfgScreen {
             (new AccountCache(acctConfig)).delete();
             mailSettings.removeAccountConfig(index);
             mailSettings.saveSettings();
+            configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             accountIndexMap.remove(acctConfig);
         }
@@ -346,6 +368,7 @@ public class ConfigScreen extends BaseCfgScreen {
         if(outgoingConfigScreen.acctSaved()) {
             mailSettings.addOutgoingConfig(outgoingConfig);
             mailSettings.saveSettings();
+            configurationChanged = true;
             buildAccountsList();
         }
     }
@@ -359,6 +382,7 @@ public class ConfigScreen extends BaseCfgScreen {
         if(response == Dialog.DELETE) {
             mailSettings.removeOutgoingConfig(index);
             mailSettings.saveSettings();
+            configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             outgoingIndexMap.remove(outgoingConfig);
         }

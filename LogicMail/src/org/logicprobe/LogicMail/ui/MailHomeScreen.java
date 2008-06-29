@@ -1,0 +1,368 @@
+/*-
+ * Copyright (c) 2008, Derek Konigsberg
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution. 
+ * 3. Neither the name of the project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package org.logicprobe.LogicMail.ui;
+
+import java.util.Hashtable;
+import java.util.Vector;
+import java.util.Enumeration;
+
+import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.ui.Font;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.TreeField;
+import net.rim.device.api.ui.component.TreeFieldCallback;
+import net.rim.device.api.ui.Field;
+
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.AccountNodeEvent;
+import org.logicprobe.LogicMail.model.AccountNodeListener;
+import org.logicprobe.LogicMail.model.MailManagerEvent;
+import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.MailboxNodeEvent;
+import org.logicprobe.LogicMail.model.MailboxNodeListener;
+import org.logicprobe.LogicMail.model.Node;
+import org.logicprobe.LogicMail.model.MailRootNode;
+import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.MailManagerListener;
+import org.logicprobe.LogicMail.util.EventObject;
+
+/**
+ * Main screen for the application, providing a unified
+ * view of accounts and folders.
+ * 
+ * Note: Currently a UI mock-up
+ */
+public class MailHomeScreen extends BaseScreen {
+	private TreeField treeField;
+	private LabelField statusLabel;
+	private MailManager mailManager;
+	private MailRootNode mailRootNode;
+	private Hashtable nodeIdMap;
+	private MailManagerListener mailManagerListener;
+	
+	/** Tree node data class */
+	private static class TreeNode {
+		public Node node;
+		
+		public TreeNode(Node node) {
+			this.node = node;
+		}
+	}
+	
+	public MailHomeScreen() {
+		super("Home");
+	
+		initFields();
+		nodeIdMap = new Hashtable();
+		mailManager = MailManager.getInstance();
+		mailRootNode = mailManager.getMailRootNode();
+		
+		mailManagerListener = new MailManagerListener() {
+			public void mailConfigurationChanged(MailManagerEvent e) {
+				mailManager_MailConfigurationChanged(e);
+			}
+		};
+	}
+
+	private void initFields() {
+		treeField = new TreeField(new TreeFieldCallback() {
+			public void drawTreeItem(TreeField treeField, Graphics graphics,
+					int node, int y, int width, int indent) {
+				treeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
+			}
+		}, Field.FOCUSABLE);
+		treeField.setEmptyString("No accounts", 0);
+		treeField.setDefaultExpanded(true);
+		treeField.setIndentWidth(20);
+		
+		statusLabel = new LabelField();
+		
+		add(treeField);
+		setStatus(statusLabel);
+	}
+	
+	/**
+	 * Convenience class to make it easier for event handlers to pass
+	 * the EventObject onto an event handler method that runs on a
+	 * different thread.
+	 */
+	private abstract class EventObjectRunnable implements Runnable {
+		private EventObject event;
+		public EventObjectRunnable(EventObject event) {
+			this.event = event;
+		}
+		public EventObject getEvent() { return this.event; }
+		
+		public abstract void run();
+	}
+	
+	private AccountNodeListener accountNodeListener = new AccountNodeListener() {
+		public void accountStatusChanged(AccountNodeEvent e) {
+			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+				public void run() {
+					accountNodeListener_AccountStatusChanged((AccountNodeEvent)getEvent());
+				}
+			});
+		}
+	};
+	
+	private void accountNodeListener_AccountStatusChanged(AccountNodeEvent e) {
+		if(nodeIdMap.containsKey(e.getSource())) {
+			if(e.getType() == AccountNodeEvent.TYPE_CONNECTION) {
+				treeField.invalidateNode(((Integer)nodeIdMap.get(e.getSource())).intValue());
+			}
+			else if(e.getType() == AccountNodeEvent.TYPE_MAILBOX_TREE) {
+						refreshAccountFolders((AccountNode)e.getSource());
+			}
+		}
+	}
+	
+    private MenuItem selectFolderItem = new MenuItem("Select", 100, 10) {
+        public void run() {
+        }
+    };
+    
+    private MenuItem refreshItem = new MenuItem("Refresh folders", 111, 10) {
+        public void run() {
+        	// Assume this will only be called when a valid AccountNode is selected.
+        	// Later we need to modify it to deal with being called from MailboxNodes.
+      		AccountNode accountNode = (AccountNode)((TreeNode)treeField.getCookie(treeField.getCurrentNode())).node;
+      		accountNode.refreshMailboxes();
+        }
+    };
+    
+    private MenuItem refreshStatusItem = new MenuItem("Refresh status", 110, 10) {
+        public void run() {
+        	// Assume this will only be called when a valid AccountNode is selected.
+        	// Later we need to modify it to deal with being called from MailboxNodes.
+      		AccountNode accountNode = (AccountNode)((TreeNode)treeField.getCookie(treeField.getCurrentNode())).node;
+      		accountNode.refreshMailboxStatus();
+        }
+    };
+    
+	private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
+		public void mailboxStatusChanged(MailboxNodeEvent e) {
+			if(nodeIdMap.containsKey(e.getSource())) {
+				treeField.invalidateNode(((Integer)nodeIdMap.get(e.getSource())).intValue());
+			}
+		}
+	};
+	
+	protected void onDisplay() {
+		populateTreeField();
+		mailManager.addMailManagerListener(mailManagerListener);
+		super.onDisplay();
+	}
+	
+	protected void onUndisplay() {
+		clearTreeField();
+		mailManager.removeMailManagerListener(mailManagerListener);
+		super.onUndisplay();
+	}
+	
+    protected void makeMenu(Menu menu, int instance) {
+    	int id = treeField.getCurrentNode();
+    	if(id != -1) {
+    		Node node = ((TreeNode)treeField.getCookie(id)).node;
+    		if(node instanceof MailboxNode) {
+    			menu.add(selectFolderItem);
+    		}
+    		else if(node instanceof AccountNode) {
+    			menu.add(refreshStatusItem);
+    			menu.add(refreshItem);
+    		}
+    	}
+        super.makeMenu(menu, instance);
+    }
+
+	/**
+	 * Handles the configuration change event from the mail manager.
+	 * 
+	 * @param e Event data.
+	 */
+	private void mailManager_MailConfigurationChanged(MailManagerEvent e) {
+		// This really should take a more efficient approach,
+		// but since this screen usually isn't visible when
+		// this event is fired, it shouldn't be a problem.
+		clearTreeField();
+		populateTreeField();
+	}
+	
+	/**
+	 * Reads the mail data model tree, and creates the initial structure
+	 * of the tree field.
+	 */
+	private synchronized void populateTreeField() {
+		int firstNode = -1;
+		AccountNode[] accounts = mailRootNode.getAccounts();
+		for(int i=accounts.length - 1; i >= 0; --i) {
+			int id = treeField.addChildNode(0, new TreeNode(accounts[i]));
+			if(i == 0) { firstNode = id; }
+			nodeIdMap.put(accounts[i], new Integer(id));
+			
+			MailboxNode rootMailbox = accounts[i].getRootMailbox();
+			if(rootMailbox != null) {
+				MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
+				for(int j=mailboxNodes.length - 1; j>=0; --j) {
+					populateTreeFieldMailbox(id, mailboxNodes[j]);
+				}
+			}
+			accounts[i].addAccountNodeListener(accountNodeListener);
+		}
+		treeField.setCurrentNode(firstNode);
+	}
+	
+	private void populateTreeFieldMailbox(int parent, MailboxNode mailboxNode) {
+		int id = treeField.addChildNode(parent, new TreeNode(mailboxNode));
+		nodeIdMap.put(mailboxNode, new Integer(id));
+		
+		MailboxNode[] mailboxes = mailboxNode.getMailboxes();
+		for(int i=mailboxes.length - 1; i >= 0; --i) {
+			populateTreeFieldMailbox(id, mailboxes[i]);
+		}
+		mailboxNode.addMailboxNodeListener(mailboxNodeListener);
+	}
+	
+	/**
+	 * Clears the structure of the tree field.
+	 */
+	private synchronized void clearTreeField() {
+		for (Enumeration e = nodeIdMap.keys(); e.hasMoreElements() ;) {
+			Node node = (Node)e.nextElement();
+			if(node instanceof AccountNode) {
+				((AccountNode)node).removeAccountNodeListener(accountNodeListener);
+			}
+			else if(node instanceof MailboxNode) {
+				((MailboxNode)node).removeMailboxNodeListener(mailboxNodeListener);
+			}
+	    }
+		treeField.deleteAll();
+		nodeIdMap.clear();
+	}
+
+	/**
+	 * Refreshes the mailbox nodes for a specific account.
+	 * 
+	 * @param account The account node.
+	 */
+	private synchronized void refreshAccountFolders(AccountNode account) {
+		if(nodeIdMap.containsKey(account)) {
+			int accountId = ((Integer)nodeIdMap.get(account)).intValue();
+			
+			// Unsubscribe from all existing mailbox nodes, remove them
+			// from the node-id map, and remove them from the tree.
+			Vector mailboxes = new Vector();
+			getMailboxNodes(mailboxes, accountId);
+			int size = mailboxes.size();
+			for(int i=0; i<size; i++) {
+				MailboxNode mailboxNode = (MailboxNode)mailboxes.elementAt(i);
+				if(nodeIdMap.containsKey(mailboxNode)) {
+					mailboxNode.removeMailboxNodeListener(mailboxNodeListener);
+					nodeIdMap.remove(mailboxNode);
+				}
+			}
+			int nextId = treeField.getFirstChild(accountId);
+			while(nextId != -1) {
+				int id = nextId;
+				nextId = treeField.getNextSibling(nextId);
+				treeField.deleteSubtree(id);
+			}
+			
+			// Now get the new mailbox list for the account
+			// and repopulate the tree.
+			MailboxNode rootMailbox = account.getRootMailbox();
+			if(rootMailbox != null) {
+				MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
+				for(int i=mailboxNodes.length - 1; i>=0; --i) {
+					populateTreeFieldMailbox(accountId, mailboxNodes[i]);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Recursively traverse the TreeField from a node and build a
+	 * linear vector of all the mailboxes contained within.
+	 * 
+	 * @param result Result vector to add to.
+	 * @param nodeId Starting node.
+	 */
+	private void getMailboxNodes(Vector result, int nodeId) {
+		int id = treeField.getFirstChild(nodeId);
+		while(id != -1) {
+			TreeNode treeNode = (TreeNode)treeField.getCookie(id);
+			if(treeNode.node instanceof MailboxNode) {
+				result.addElement(treeNode.node);
+			}
+			getMailboxNodes(result, id);
+			id = treeField.getNextSibling(id);
+		}
+	}
+
+	private void treeField_DrawTreeItem(
+			TreeField treeField,
+			Graphics graphics,
+			int node, int y, int width, int indent) {
+		TreeNode treeNode = (TreeNode)treeField.getCookie(node);
+		int height = treeField.getRowHeight();
+		
+		Bitmap icon = NodeIcons.getIcon(treeNode.node);
+		
+		graphics.drawBitmap(indent, y+1, height-2, height-2, icon, 0, 0);
+		
+		Font origFont = graphics.getFont();
+		StringBuffer buf = new StringBuffer();
+		buf.append(treeNode.node.getName());
+		if(treeNode.node instanceof MailboxNode) {
+			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
+			
+			if(!mailboxNode.isSelectable()) {
+                graphics.setFont(origFont.derive(Font.ITALIC));
+			}
+			
+			int unseenCount = mailboxNode.getUnseenMessageCount();
+			if(unseenCount > 0) {
+                buf.append(" (");
+                buf.append(unseenCount);
+                buf.append(")");
+                graphics.setFont(origFont.derive(Font.BOLD));
+			}
+			else {
+                graphics.setFont(origFont.derive(Font.PLAIN));
+			}
+		}
+		graphics.drawText(buf.toString(), indent + height, y, Graphics.ELLIPSIS, width);
+	}
+}
