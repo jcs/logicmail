@@ -34,6 +34,7 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -104,7 +105,7 @@ public class MailManager {
 				}
 			}
 			if(!accountExists) {
-				AccountNode newAccountNode = new AccountNode(accountConfig);
+				AccountNode newAccountNode = new AccountNode(new NetworkMailStore(accountConfig));
 				newAccounts.addElement(newAccountNode);
 			}
 		}

@@ -38,21 +38,32 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 
 public class NetworkMailStore extends AbstractMailStore {
-	IncomingMailClient client;
-	IncomingMailConnectionHandler connectionHandler;
+	private IncomingMailClient client;
+	private IncomingMailConnectionHandler connectionHandler;
+	private AccountConfig accountConfig;
 	
 	public NetworkMailStore(AccountConfig accountConfig) {
 		super();
-		client = MailClientFactory.createMailClient(accountConfig);
-		connectionHandler = new IncomingMailConnectionHandler(client);
-		connectionHandler.setListener(new MailConnectionHandlerListener() {
+		this.client = MailClientFactory.createMailClient(accountConfig);
+		this.accountConfig = accountConfig;
+		this.connectionHandler = new IncomingMailConnectionHandler(client);
+		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
 			public void mailConnectionRequestComplete(int type, Object result) {
 				connectionHandler_mailConnectionRequestComplete(type, result);
 			}
 		});
-		connectionHandler.start();
+		this.connectionHandler.start();
 	}
 
+	/**
+	 * Gets the account configuration associated with this network mail store.
+	 * 
+	 * @return Account configuration.
+	 */
+	public AccountConfig getAccountConfig() {
+		return this.accountConfig;
+	}
+	
 	public void shutdown(boolean wait) {
 		connectionHandler.shutdown(wait);
 	}

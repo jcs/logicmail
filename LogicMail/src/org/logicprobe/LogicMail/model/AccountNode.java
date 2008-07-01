@@ -70,12 +70,20 @@ public class AccountNode implements Node {
 	 * 
 	 * @param accountConfig Account configuration.
 	 */
-	AccountNode(AccountConfig accountConfig) {
-		this.accountConfig = accountConfig;
+	AccountNode(AbstractMailStore mailStore) {
 		this.rootMailbox = null;
 		this.pathMailboxMap = new Hashtable();
-		this.status = STATUS_OFFLINE;
-		this.mailStore = new NetworkMailStore(accountConfig);
+		
+		this.mailStore = mailStore;
+		
+		// TODO: Have a better way to deal with network vs. local
+		if(mailStore instanceof NetworkMailStore) {
+			this.accountConfig = ((NetworkMailStore)mailStore).getAccountConfig();
+			this.status = STATUS_OFFLINE;
+		}
+		else {
+			this.status = STATUS_LOCAL;
+		}
 		
 		this.mailStore.addMailStoreListener(new MailStoreListener() {
 			public void folderTreeUpdated(FolderEvent e) {
@@ -99,15 +107,6 @@ public class AccountNode implements Node {
 			this.rootMailbox.addMailbox(inboxNode);
 			pathMailboxMap.put("INBOX", inboxNode);
 		}
-	}
-	
-	/**
-	 * Construct a new node for a local account.
-	 */
-	AccountNode() {
-		this.accountConfig = null;
-		this.rootMailbox = null;
-		this.status = STATUS_LOCAL;
 	}
 	
 	public void accept(NodeVisitor visitor) {
