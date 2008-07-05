@@ -30,8 +30,10 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Hashtable;
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
@@ -45,6 +47,7 @@ public class MailboxNode implements Node {
 	private MailboxNode parentMailbox;
 	private Vector mailboxes;
 	private Vector messages;
+	private Hashtable messageMap;
 	private EventListenerList listenerList = new EventListenerList();
 	private int type;
 	private FolderTreeItem folderTreeItem;
@@ -58,6 +61,7 @@ public class MailboxNode implements Node {
 	MailboxNode(FolderTreeItem folderTreeItem, int type) {
 		this.mailboxes = new Vector();
 		this.messages = new Vector();
+		this.messageMap = new Hashtable();
 		this.folderTreeItem = folderTreeItem;
 		this.type = type;
 	}
@@ -183,6 +187,7 @@ public class MailboxNode implements Node {
 		synchronized(mailboxes) {
 			if(!mailboxes.contains(mailbox)) {
 				mailboxes.addElement(mailbox);
+				mailbox.setParentMailbox(this);
 			}
 		}
 	}
@@ -196,6 +201,7 @@ public class MailboxNode implements Node {
 		synchronized(mailboxes) {
 			if(mailboxes.contains(mailbox)) {
 				mailboxes.removeElement(mailbox);
+				mailbox.setParentMailbox(null);
 			}
 		}
 	}
@@ -216,9 +222,50 @@ public class MailboxNode implements Node {
 	 */
 	void addMessage(MessageNode message) {
 		synchronized(messages) {
-			if(!messages.contains(message)) {
+			addMessageImpl(message);
+		}
+		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, new MessageNode[] { message });
+	}
+	
+	/**
+	 * Adds messages to this mailbox.
+	 * 
+	 * @param messages The messages to add.
+	 */
+	void addMessages(MessageNode[] messages) {
+		synchronized(messages) {
+			for(int i=0; i<messages.length; i++) {
+				addMessageImpl(messages[i]);
+			}
+		}
+		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, messages);
+	}
+	
+	/**
+	 * Adds a message to this mailbox using a sorted insertion
+	 * based on message id.  Since this is intended to be used
+	 * from within other visible methods, it should only be
+	 * called from within a "synchronized(messages)" block.
+	 *  
+	 * @param message The message to add.
+	 */
+	private void addMessageImpl(MessageNode message) {
+		if(!messageMap.containsKey(new Integer(message.getId()))) {
+			if(messages.size() > 0) {
+				int msgId = message.getId();
+				int index = messages.size();
+				MessageNode lastMessage = (MessageNode)messages.lastElement();
+				while(index > 0 && lastMessage.getId() > msgId) {
+					index--;
+					if(index > 0) { lastMessage = (MessageNode)messages.elementAt(index - 1); }
+				}
+				
+				messages.insertElementAt(message, index);
+			}
+			else {
 				messages.addElement(message);
 			}
+			messageMap.put(new Integer(message.getId()), message);
 		}
 	}
 	
@@ -229,9 +276,32 @@ public class MailboxNode implements Node {
 	 */
 	void removeMessage(MessageNode message) {
 		synchronized(messages) {
-			if(messages.contains(message)) {
+			if(messageMap.containsKey(new Integer(message.getId()))) {
 				messages.removeElement(message);
+				messageMap.remove(new Integer(message.getId()));
 			}
+		}
+	}
+
+	/**
+	 * Removes all messages from this mailbox.
+	 */
+	void clearMessages() {
+		synchronized(messages) {
+			messages.removeAllElements();
+			messageMap.clear();
+		}
+	}
+	
+	/**
+	 * Gets whether this mailbox contains a particular message.
+	 * 
+	 * @param id The message ID to look for.
+	 * @return True if it exists, false otherwise.
+	 */
+	boolean containsMessage(int id) {
+		synchronized(messages) {
+			return messageMap.containsKey(new Integer(id));
 		}
 	}
 	
@@ -294,6 +364,21 @@ public class MailboxNode implements Node {
         return this.folderTreeItem.getUnseenCount();
     }
 	
+    /**
+     * Called to refresh the message list contained within this mailbox.
+     * This currently replaces the existing message list with the N most
+     * recent messages, as defined in the configuration options.
+     * 
+     * Eventually, this needs to replaced or supplemented with a more
+     * sophisticated version that can selectively load additional
+     * messages without replacing the existing ones. 
+     */
+    public void refreshMessages() {
+    	parentAccount.getMailStore().requestFolderMessagesRecent(
+    			this.folderTreeItem,
+    			MailSettings.getInstance().getGlobalConfig().getRetMsgCount());
+    }
+    
 	/**
      * Adds a <tt>MailboxNodeListener</tt> to the mailbox node.
      * 
@@ -325,14 +410,17 @@ public class MailboxNode implements Node {
     
     /**
      * Notifies all registered <tt>MailboxNodeListener</tt>s that
-     * the mailbox status has changed. 
+     * the mailbox status has changed.
+     * 
+     * @param type The type of this event.
+     * @param affectedMessages The affected messages. 
      */
-    void fireMailboxStatusChanged() {
+    void fireMailboxStatusChanged(int type, MessageNode[] affectedMessages) {
         Object[] listeners = listenerList.getListeners(MailboxNodeListener.class);
         MailboxNodeEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MailboxNodeEvent(this);
+                e = new MailboxNodeEvent(this, type, affectedMessages);
             }
             ((MailboxNodeListener)listeners[i]).mailboxStatusChanged(e);
         }

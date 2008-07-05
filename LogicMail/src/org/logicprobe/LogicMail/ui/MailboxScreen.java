@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,28 +31,28 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import java.io.IOException;
 import java.util.Calendar;
+import java.util.Vector;
 import net.rim.device.api.system.Application;
-import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.i18n.SimpleDateFormat;
 import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.UiApplication;
-import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
-import org.logicprobe.LogicMail.conf.ImapConfig;
+import net.rim.device.api.system.UnsupportedOperationException;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.MailboxNodeEvent;
+import org.logicprobe.LogicMail.model.MailboxNodeListener;
+import org.logicprobe.LogicMail.model.MessageNode;
 
 /**
  * Display the active mailbox listing.
@@ -61,140 +61,99 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
  * adjusted accordingly.
  */
 public class MailboxScreen extends BaseScreen {
-    private FolderMessage[] messages;
-    private ListField msgList;
-    private boolean isSentFolder;
-    
-    // Message icons
-    private Bitmap bmapOpened;
-    private Bitmap bmapUnopened;
-    private Bitmap bmapReplied;
-    private Bitmap bmapFlagged;
-    private Bitmap bmapDraft;
-    private Bitmap bmapDeleted;
-    private Bitmap bmapUnknown;
-    private Bitmap bmapJunk;
-
+	private MailboxNode mailboxNode;
+    private ListField messageListField;
+    private Vector knownMessages;
+    private Vector displayedMessages;
+    private boolean firstDisplay = true;
     private MailSettings mailSettings;
-    private FolderTreeItem folderItem;
-    private IncomingMailClient client;
-    private RefreshMessageListHandler refreshMessageListHandler;
-    
+	
     // Things to calculate in advance
-    private static int lineHeight;
-    private static int dateWidth;
-    private static int senderWidth;
-    private static int maxWidth;
+    private int lineHeight;
+    private int dateWidth;
+    private int senderWidth;
+    private int maxWidth;
     
-    public MailboxScreen(IncomingMailClient client, FolderTreeItem folderItem) {
-        super(folderItem.getName());
-        mailSettings = MailSettings.getInstance();
-        this.folderItem = folderItem;
-        this.client = client;
-
-        // Load message icons
-        bmapOpened = Bitmap.getBitmapResource("mail_opened.png");
-        bmapUnopened = Bitmap.getBitmapResource("mail_unopened.png");
-        bmapReplied = Bitmap.getBitmapResource("mail_replied.png");
-        bmapFlagged = Bitmap.getBitmapResource("mail_flagged.png");
-        bmapDraft = Bitmap.getBitmapResource("mail_draft.png");
-        bmapDeleted = Bitmap.getBitmapResource("mail_deleted.png");
-        bmapUnknown = Bitmap.getBitmapResource("mail_unknown.png");
-        bmapJunk = Bitmap.getBitmapResource("mail_junk.png");
-
-        messages = new FolderMessage[0];
-        
-        // add field elements
-        msgList = new ListField();
-        lineHeight = msgList.getRowHeight();
-        msgList.setRowHeight(lineHeight * 2);
-        
-        msgList.setCallback(new ListFieldCallback() {
-            public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
-                msgList_drawListRow(listField, graphics, index, y, width);
-            }
-            public int getPreferredWidth(ListField listField) {
-                return msgList_getPreferredWidth(listField);
-            }
-            public Object get(ListField listField, int index) {
-                return msgList_get(listField, index);
-            }
-            public int indexOfList(ListField listField, String prefix, int start) {
-                return msgList_indexOfList(listField, prefix, start);
-            }
-        });
-        
-        add(msgList);
-        
+    // TODO: Register listeners with all known messages and handle status changes
+    
+    /**
+     * Initializes a new MailboxScreen to view the provided mailbox.
+     * 
+     * @param mailboxNode Mailbox node to view.
+     */
+    public MailboxScreen(MailboxNode mailboxNode) {
+    	super(mailboxNode.getName());
+    	this.mailboxNode = mailboxNode;
+    	this.knownMessages = new Vector();
+    	this.displayedMessages = new Vector();
+    	mailSettings = MailSettings.getInstance();
+    	
+    	initFields();
+    	
         // Determine field sizes
         maxWidth = Graphics.getScreenWidth();
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
+    }
 
-        // Determine if this screen is viewing the sent folder
-        if(client.getAcctConfig() instanceof ImapConfig) {
-            String sentFolderPath = ((ImapConfig)client.getAcctConfig()).getSentFolder();
-            if(sentFolderPath != null) {
-                this.isSentFolder = folderItem.getPath().equals(sentFolderPath);
+    public MailboxScreen(IncomingMailClient client, FolderTreeItem item) {
+    	// Kept so the code still compiles before the other UI classes are updated.
+    	throw new UnsupportedOperationException("Dummy constructor");
+    }
+
+    private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
+		public void mailboxStatusChanged(MailboxNodeEvent e) {
+			mailboxNode_MailboxStatusChanged(e);
+		}
+    };
+
+    protected void onDisplay() {
+    	super.onDisplay();
+        this.mailboxNode.addMailboxNodeListener(mailboxNodeListener);
+        if(firstDisplay) {
+            MessageNode[] initialMessages = this.mailboxNode.getMessages();
+            for(int i=0; i<initialMessages.length; i++) {
+            	knownMessages.addElement(initialMessages[i]);
+            	insertDisplayableMessage(initialMessages[i]);
             }
+            
+        	this.mailboxNode.refreshMessages();
+        	firstDisplay = false;
         }
-        else {
-            this.isSentFolder = false;
-        }
+        // TODO: Support message list changes between display pushing
+    }
+    
+	protected void onUndisplay() {
+        this.mailboxNode.removeMailboxNodeListener(mailboxNodeListener);
+    	super.onUndisplay();
+    }
+    
+    
+	private void initFields() {
+        messageListField = new ListField();
+        lineHeight = messageListField.getRowHeight();
+        messageListField.setRowHeight(lineHeight * 2);
         
-        if(client != null) {
-            refreshMessageList();
-        }
-    }
-
-    private void refreshMessageList() {
-        // Initialize the handler on demand
-        if(refreshMessageListHandler == null) {
-            refreshMessageListHandler = new RefreshMessageListHandler(folderItem);
-            refreshMessageListHandler.setListener(new MailClientHandlerListener() {
-                public void mailActionComplete(MailClientHandler source, boolean result) {
-                    refreshMessageListHandler_mailActionComplete(source, result);
-                }
-            });
-        }
-
-        // Start the background process
-        refreshMessageListHandler.start();
-    }
+        messageListField.setCallback(new ListFieldCallback() {
+            public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
+            	messageListField_drawListRow(listField, graphics, index, y, width);
+            }
+            public int getPreferredWidth(ListField listField) {
+                return messageListField_getPreferredWidth(listField);
+            }
+            public Object get(ListField listField, int index) {
+                return messageListField_get(listField, index);
+            }
+            public int indexOfList(ListField listField, String prefix, int start) {
+                return messageListField_indexOfList(listField, prefix, start);
+            }
+        });
+        
+        add(messageListField);
+	}    
 
     protected boolean onSavePrompt() {
         return true;
-    }
-
-    public boolean onClose() {
-        if(checkClose()) {
-            close();
-            return true;
-        }
-        else
-            return false;
-    }
-
-    private boolean checkClose() {
-        // Immediately close without prompting if we are
-        // using a protocol that supports folders.
-        if(client.hasFolders()) {
-            return true;
-        }
-        
-        // Otherwise we are on the main screen for the account, so prompt
-        // before closing the connection
-        if(client.isConnected()) {
-            if(Dialog.ask(Dialog.D_YES_NO, "Disconnect from server?") == Dialog.YES) {
-                try { client.close(); } catch (Exception exp) { }
-                return true;
-            }
-            else
-                return false;
-        }
-        else {
-            return true;
-        }
     }
 
     private MenuItem selectItem = new MenuItem("Select", 100, 10) {
@@ -202,63 +161,151 @@ public class MailboxScreen extends BaseScreen {
             openSelectedMessage();
         }
     };
-    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
+    private MenuItem propertiesItem = new MenuItem("Properties", 105, 10) {
         public void run() {
-            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
+            openSelectedMessageProperties();
         }
     };
-    private MenuItem deleteItem = new MenuItem("Delete", 130, 10) {
-        public void run() {
-            if(Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to delete this message?") == Dialog.YES) {
-                int index = msgList.getSelectedIndex();
-                if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
-                    DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], true);
-                    deleteMessageHandler.setListener(new MailClientHandlerListener() {
-                        public void mailActionComplete(MailClientHandler source, boolean result) {
-                            source.setListener(null);
-                            msgList.setDirty(true);
-                            msgList.invalidate();
-                        }
-                    });
-                    deleteMessageHandler.start();
-                }
-            }
-        }
-    };
-    private MenuItem undeleteItem = new MenuItem("Undelete", 135, 10) {
-        public void run() {
-            int index = msgList.getSelectedIndex();
-            if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
-                DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], false);
-                deleteMessageHandler.setListener(new MailClientHandlerListener() {
-                    public void mailActionComplete(MailClientHandler source, boolean result) {
-                        source.setListener(null);
-                        msgList.setDirty(true);
-                        msgList.invalidate();
-                    }
-                });
-                deleteMessageHandler.start();
-            }
-        }
-    };
+//    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
+//        public void run() {
+//            //UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
+//        }
+//    };
+//    private MenuItem deleteItem = new MenuItem("Delete", 130, 10) {
+//        public void run() {
+//            if(Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to delete this message?") == Dialog.YES) {
+//                int index = msgList.getSelectedIndex();
+//                if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
+//                    DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], true);
+//                    deleteMessageHandler.setListener(new MailClientHandlerListener() {
+//                        public void mailActionComplete(MailClientHandler source, boolean result) {
+//                            source.setListener(null);
+//                            msgList.setDirty(true);
+//                            msgList.invalidate();
+//                        }
+//                    });
+//                    deleteMessageHandler.start();
+//                }
+//            }
+//        }
+//    };
+//    private MenuItem undeleteItem = new MenuItem("Undelete", 135, 10) {
+//        public void run() {
+//            int index = msgList.getSelectedIndex();
+//            if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
+//                DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], false);
+//                deleteMessageHandler.setListener(new MailClientHandlerListener() {
+//                    public void mailActionComplete(MailClientHandler source, boolean result) {
+//                        source.setListener(null);
+//                        msgList.setDirty(true);
+//                        msgList.invalidate();
+//                    }
+//                });
+//                deleteMessageHandler.start();
+//            }
+//        }
+//    };
 
     protected void makeMenu(Menu menu, int instance) {
-        menu.add(selectItem);
-        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
-            menu.add(compositionItem);
-        }
-        int index = msgList.getSelectedIndex();
-        if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
-            if(messages[index].isDeleted()) {
-                if(client.hasUndelete()) {
-                    menu.add(undeleteItem);
-                }
-            }
-            else {
-                menu.add(deleteItem);
-            }
-        }
+    	if(messageListField.getSelectedIndex() != -1) {
+    		menu.add(selectItem);
+    		menu.add(propertiesItem);
+    	}
+//        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
+//            menu.add(compositionItem);
+//        }
+//        int index = msgList.getSelectedIndex();
+//        if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
+//            if(messages[index].isDeleted()) {
+//                if(client.hasUndelete()) {
+//                    menu.add(undeleteItem);
+//                }
+//            }
+//            else {
+//                menu.add(deleteItem);
+//            }
+//        }
         super.makeMenu(menu, instance);
+    }
+
+    /**
+     * Handles mailbox status change events.
+     * 
+     * @param e Event data.
+     */
+    private void mailboxNode_MailboxStatusChanged(MailboxNodeEvent e) {
+    	if(e.getType() == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
+    		MessageNode[] messageNodes = e.getAffectedMessages();
+    		synchronized(Application.getEventLock()) {
+	    		for(int i=0; i<messageNodes.length; i++) {
+	    			knownMessages.addElement(messageNodes[i]);
+	    			
+	    			if(isMessageDisplayable(messageNodes[i])) {
+	    				// Insert the message
+		    			insertDisplayableMessage(messageNodes[i]);
+	    			}
+	    		}
+    		}
+    	}
+	}
+    
+    /**
+     * Determines whether a message should be displayed,
+     * per the configuration.
+     * 
+     * @param messageNode Message to check.
+     * @return True if it should be displayed, false otherwise.
+     */
+    private boolean isMessageDisplayable(MessageNode messageNode) {
+    	if(messageNode.getFolderMessage().isDeleted() &&
+    	   mailSettings.getGlobalConfig().getHideDeletedMsg()) {
+    		return false;
+    	}
+    	else {
+    		return true;
+    	}
+    }
+    
+    /**
+     * Insert a message into the list and associated data structures.
+     * This will insert into the correct order, per the configuration.
+     * 
+     * @param messageNode Message to insert.
+     */
+    private void insertDisplayableMessage(MessageNode messageNode) {
+    	int selectedIndex = messageListField.getSelectedIndex();
+    	
+		if(displayedMessages.size() > 0) {
+			int msgId = messageNode.getId();
+			int index = displayedMessages.size();
+			
+			if(mailSettings.getGlobalConfig().getDispOrder()) {
+				// Ascending order
+				MessageNode lastMessage = (MessageNode)displayedMessages.lastElement();
+				while(index > 0 && lastMessage.getId() > msgId) {
+					index--;
+					if(index > 0) { lastMessage = (MessageNode)displayedMessages.elementAt(index - 1); }
+				}
+			}
+			else {
+				// Descending order
+				MessageNode lastMessage = (MessageNode)displayedMessages.lastElement();
+				while(index > 0 && lastMessage.getId() < msgId) {
+					index--;
+					if(index > 0) { lastMessage = (MessageNode)displayedMessages.elementAt(index - 1); }
+				}
+			}
+			displayedMessages.insertElementAt(messageNode, index);
+			messageListField.insert(index);
+			if(selectedIndex != -1) { messageListField.setSelectedIndex(selectedIndex); }
+			messageListField.invalidate(index);
+		}
+		else {
+			displayedMessages.addElement(messageNode);
+			messageListField.insert(0);
+			if(selectedIndex != -1) { messageListField.setSelectedIndex(selectedIndex); }
+			messageListField.invalidate(0);
+		}
     }
     
     /**
@@ -268,24 +315,27 @@ public class MailboxScreen extends BaseScreen {
      * Actual rendering is crude at the moment, and needs to
      * be reworked to use relative positioning for everything.
      */
-    public void msgList_drawListRow(ListField listField,
-                                    Graphics graphics,
-                                    int index,
-                                    int y,
-                                    int width)
+    private void messageListField_drawListRow(
+    		ListField listField,
+            Graphics graphics,
+            int index,
+            int y,
+            int width)
     {
+    	MessageNode messageNode = (MessageNode)displayedMessages.elementAt(index);
         // sanity check
-        if(index >= messages.length) {
+        if(messageNode == null) {
             return;
         }
-        FolderMessage entry = (FolderMessage)messages[index];
+        
+        FolderMessage entry = (FolderMessage)messageNode.getFolderMessage();
         MessageEnvelope env = entry.getEnvelope();
-        graphics.drawBitmap(1, y, 20, lineHeight*2, getIconForMessage(entry), 0, 0);
+        graphics.drawBitmap(1, y, 20, lineHeight*2, NodeIcons.getIcon(messageNode), 0, 0);
             
         Font origFont = graphics.getFont();
         graphics.setFont(origFont.derive(Font.BOLD));
 
-        if(isSentFolder) {
+        if(mailboxNode.getType() == MailboxNode.TYPE_SENT) {
             if(env.to != null && env.to.length > 0) {
                 graphics.drawText((String)env.to[0], 20, y,
                                   (int)(getStyle() | DrawStyle.ELLIPSIS),
@@ -339,48 +389,42 @@ public class MailboxScreen extends BaseScreen {
         }
     }
     
-    private Bitmap getIconForMessage(FolderMessage message) {
-        if(message.isDeleted())
-            return bmapDeleted;
-        else if(message.isJunk())
-            return bmapJunk;
-        else if(message.isAnswered())
-            return bmapReplied;
-        else if(message.isFlagged())
-            return bmapFlagged;
-        else if(message.isDraft())
-            return bmapDraft;
-        else if(message.isRecent())
-            return bmapUnopened;
-        else if(message.isSeen())
-            return bmapOpened;
-        else
-            return bmapUnknown;
-    }
-    
-    public int msgList_getPreferredWidth(ListField listField) {
+    public int messageListField_getPreferredWidth(ListField listField) {
         return Graphics.getScreenWidth();
     }
     
-    public Object msgList_get(ListField listField, int index) {
-        return (Object)messages[index];
+    public Object messageListField_get(ListField listField, int index) {
+        return this.displayedMessages.elementAt(index);
     }
     
-    public int msgList_indexOfList(ListField listField,
-                                   String prefix,
-                                   int start)
+    public int messageListField_indexOfList(
+    		ListField listField,
+            String prefix,
+            int start)
     {
-        return 0;
+        return -1;
     }
 
     private void openSelectedMessage()
     {
-        int index = msgList.getSelectedIndex();
-        if(index < 0 || index > messages.length) {
+//	        int index = messageListField.getSelectedIndex();
+//	        if(index < 0 || index > displayedMessages.size()) {
+//	            return;
+//	        }
+//	        
+//        UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, messages[index]));
+    }
+
+    private void openSelectedMessageProperties()
+    {
+        int index = messageListField.getSelectedIndex();
+        if(index < 0 || index > displayedMessages.size()) {
             return;
         }
         
-        UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, messages[index]));
+        MessagePropertiesDialog dialog =
+        	new MessagePropertiesDialog((MessageNode)displayedMessages.elementAt(index));
+        dialog.doModal();
     }
 
     public boolean keyChar(char key,
@@ -395,117 +439,5 @@ public class MailboxScreen extends BaseScreen {
                 break;
         }
         return retval;
-    }
-
-    public void refreshMessageListHandler_mailActionComplete(MailClientHandler source, boolean result) {
-        if(source.equals(refreshMessageListHandler)) {
-            if(refreshMessageListHandler.getFolderMessages() != null) {
-                FolderMessage[] folderMessages = refreshMessageListHandler.getFolderMessages();
-                boolean hideDeleted = mailSettings.getGlobalConfig().getHideDeletedMsg();
-                
-                // Count the number of deleted messages
-                int numDeleted = 0;
-                if(hideDeleted) {
-                    for(int i=0; i<folderMessages.length; i++) {
-                        if(folderMessages[i].isDeleted()) {
-                            numDeleted++;
-                        }
-                    }
-                }
-                
-                synchronized(Application.getEventLock()) {
-                    if(mailSettings.getGlobalConfig().getDispOrder()) {
-                        messages = new FolderMessage[folderMessages.length - numDeleted];
-                        int j = 0;
-                        for(int i=0; i<folderMessages.length; i++) {
-                            if(!hideDeleted || !folderMessages[i].isDeleted()) {
-                                messages[j++] = folderMessages[i];
-                            }
-                        }
-                    }
-                    else {
-                        messages = new FolderMessage[folderMessages.length - numDeleted];
-                        int j = 0;
-                        for(int i=folderMessages.length-1;i>=0;i--) {
-                            if(!hideDeleted || !folderMessages[i].isDeleted()) {
-                                messages[j++] = folderMessages[i];
-                            }
-                        }
-                    }
-                    int size = msgList.getSize();
-                    for(int i=0;i<size;i++)
-                        msgList.delete(0);
-                    for(int i=0;i<messages.length;i++)
-                        msgList.insert(i);
-
-                    msgList.setDirty(true);
-                }
-            }
-        }
-    }
-
-    /**
-     * Implements the message list refresh action
-     */
-    private class RefreshMessageListHandler extends MailClientHandler {
-        private FolderTreeItem folderItem;
-        private FolderMessage[] folderMessages;
-        
-        public RefreshMessageListHandler(FolderTreeItem folderItem) {
-            super(MailboxScreen.this.client, "Retrieving message list");
-            this.folderItem = folderItem;
-        }
-
-        public void runSession(boolean retry) throws IOException, MailException {
-            FolderMessage[] folderMessages;
-            try {
-                ((IncomingMailClient)client).setActiveFolder(folderItem);
-                int firstIndex = folderItem.getMsgCount() - mailSettings.getGlobalConfig().getRetMsgCount();
-                firstIndex = Math.max(1, firstIndex);
-                
-                folderMessages = ((IncomingMailClient)client).getFolderMessages(firstIndex, folderItem.getMsgCount());
-            } catch (MailException exp) {
-                folderMessages = null;
-                throw exp;
-            }
-            this.folderMessages = folderMessages;
-        }
-        
-        public FolderMessage[] getFolderMessages() {
-            return folderMessages;
-        }
-    }
-    
-    /**
-     * Implements message flag changes
-     */
-    private class DeleteMessageHandler extends MailClientHandler {
-        private FolderMessage folderMessage;
-        private boolean delete;
-        
-        public DeleteMessageHandler(FolderMessage folderMessage, boolean delete) {
-            super(MailboxScreen.this.client, "");
-            if(delete) {
-                this.changeStatusMessage("Deleting message");
-            }
-            else {
-                this.changeStatusMessage("Undeleting message");
-            }
-            this.folderMessage = folderMessage;
-            this.delete = delete;
-        }
-
-        public void runSession(boolean retry) throws IOException, MailException {
-            if(delete) {
-                ((IncomingMailClient)client).deleteMessage(folderMessage);
-            }
-            else {
-                ((IncomingMailClient)client).undeleteMessage(folderMessage);
-            }
-        }
-        
-        public FolderMessage getFolderMessage() {
-            return folderMessage;
-        }
     }
 }

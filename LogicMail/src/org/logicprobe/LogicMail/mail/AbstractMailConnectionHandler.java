@@ -131,11 +131,9 @@ public abstract class AbstractMailConnectionHandler {
 	 *               AbstractMailStore.requestXXXX() method. 
 	 */
 	public void addRequest(int type, Object[] params) {
-		if(type >= 0 && type <= 5) {
-			synchronized(requestQueue) {
-				requestQueue.add(new Object[] {new Integer(type), params});
-				requestQueue.notifyAll();
-			}
+		synchronized(requestQueue) {
+			requestQueue.add(new Object[] {new Integer(type), params});
+			requestQueue.notifyAll();
 		}
 	}
 	

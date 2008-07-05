@@ -41,6 +41,7 @@ import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -104,6 +105,7 @@ public class AccountNode implements Node {
 			// Create the fake INBOX node for non-folder-capable mail stores
 			this.rootMailbox = new MailboxNode(new FolderTreeItem("", "", ""), -1);
 			MailboxNode inboxNode = new MailboxNode(new FolderTreeItem("INBOX", "INBOX", ""), MailboxNode.TYPE_INBOX);
+			inboxNode.setParentAccount(this);
 			this.rootMailbox.addMailbox(inboxNode);
 			pathMailboxMap.put("INBOX", inboxNode);
 		}
@@ -169,6 +171,15 @@ public class AccountNode implements Node {
 	}
 	
 	/**
+	 * Gets the mail store associated with this account.
+	 * 
+	 * @return The mail store.
+	 */
+	AbstractMailStore getMailStore() {
+		return this.mailStore;
+	}
+	
+	/**
 	 * Sets the status of this account.
 	 * 
 	 * @param status The status.
@@ -200,6 +211,12 @@ public class AccountNode implements Node {
 		}
 	}
 	
+	/**
+	 * Called to trigger a refresh of message count status
+	 * for mailboxes under this account.  Completion is
+	 * signaled by MailboxStatusChanged events on the
+	 * updated mailboxes.
+	 */
 	public void refreshMailboxStatus() {
 		MailboxNode mailbox;
 		synchronized(rootMailboxLock) {
@@ -282,6 +299,7 @@ public class AccountNode implements Node {
 				}
 				else {
 					childMailbox = new MailboxNode(folderTreeItemChildren[i], getMailboxType(folderTreeItemChildren[i]));
+					childMailbox.setParentAccount(this);
 				}
 				populateMailboxNodes(folderTreeItemChildren[i], childMailbox, remainingMailboxMap);
 				currentMailbox.addMailbox(childMailbox);
@@ -309,7 +327,7 @@ public class AccountNode implements Node {
 			FolderTreeItem mailboxFolder = mailboxNode.getFolderTreeItem();
 			mailboxFolder.setMsgCount(currentFolder.getMsgCount());
 			mailboxFolder.setUnseenCount(currentFolder.getUnseenCount());
-			mailboxNode.fireMailboxStatusChanged();
+			mailboxNode.fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 		}
 		if(currentFolder.hasChildren()) {
 			FolderTreeItem[] children = currentFolder.children();
@@ -325,6 +343,24 @@ public class AccountNode implements Node {
 	 * @param e Event data.
 	 */
 	private void mailStore_FolderMessagesAvailable(FolderMessagesEvent e) {
+		// Find the MailboxNode that this event applies to.
+		// If none apply, then shortcut out of here.
+		if(!pathMailboxMap.containsKey(e.getFolder().getPath())) {
+			return;
+		}
+		MailboxNode mailboxNode = (MailboxNode)pathMailboxMap.get(e.getFolder().getPath());
+		
+		// Determine what MessageNodes need to be created, and add them.
+		FolderMessage[] folderMessages = e.getMessages();
+		Vector addedMessages = new Vector();
+		for(int i=0; i<folderMessages.length; i++) {
+			if(!mailboxNode.containsMessage(folderMessages[i].getIndex())) {
+				addedMessages.addElement(new MessageNode(folderMessages[i]));
+			}
+		}
+		MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
+		addedMessages.copyInto(addedMessagesArray);
+		mailboxNode.addMessages(addedMessagesArray);
 	}
 	
 	/**

@@ -36,8 +36,45 @@ import org.logicprobe.LogicMail.util.EventObject;
  * Object for MailboxNode events.
  */
 public class MailboxNodeEvent extends EventObject {
+	private int type;
+	private MessageNode[] affectedMessages;
+	
+	/**
+	 * The counts for this mailbox have changed.
+	 * The <tt>getAffectedMessages()</tt> method will return null;
+	 */
+	public final static int TYPE_STATUS = 0;
+	
+	/**
+	 * New messages are available.
+	 * The <tt>getAffectedMessages()</tt> method will return
+	 * a list of new messages.
+	 */
+	public final static int TYPE_NEW_MESSAGES = 1;
+	
 	/** Creates a new instance of MailboxNodeEvent */
-	public MailboxNodeEvent(Object source) {
+	public MailboxNodeEvent(Object source, int type, MessageNode[] affectedMessages) {
 		super(source);
+		this.type = type;
+		this.affectedMessages = affectedMessages;
+	}
+	
+	/**
+	 * Gets the type of this status change.
+	 * 
+	 * @return Event type.
+	 */
+	public int getType() {
+		return this.type;
+	}
+	
+	/**
+	 * Gets the messages that have been affected by whatever
+	 * fired this event.
+	 * 
+	 * @return Affected messages.
+	 */
+	public MessageNode[] getAffectedMessages() {
+		return this.affectedMessages;
 	}
 }

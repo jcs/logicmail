@@ -151,6 +151,7 @@ public class MailHomeScreen extends BaseScreen {
 	
     private MenuItem selectFolderItem = new MenuItem("Select", 100, 10) {
         public void run() {
+        	openSelectedItem();
         }
     };
     
@@ -200,13 +201,19 @@ public class MailHomeScreen extends BaseScreen {
     			menu.add(selectFolderItem);
     		}
     		else if(node instanceof AccountNode) {
-    			menu.add(refreshStatusItem);
+    			if(((AccountNode)node).getRootMailbox() != null) {
+    				menu.add(refreshStatusItem);
+    			}
     			menu.add(refreshItem);
     		}
     	}
         super.makeMenu(menu, instance);
     }
 
+    protected boolean trackwheelClick(int status, int time) {
+    	return openSelectedItem();
+    }
+    
 	/**
 	 * Handles the configuration change event from the mail manager.
 	 * 
@@ -241,7 +248,9 @@ public class MailHomeScreen extends BaseScreen {
 			}
 			accounts[i].addAccountNodeListener(accountNodeListener);
 		}
-		treeField.setCurrentNode(firstNode);
+		if(firstNode != -1) {
+			treeField.setCurrentNode(firstNode);
+		}
 	}
 	
 	private void populateTreeFieldMailbox(int parent, MailboxNode mailboxNode) {
@@ -364,5 +373,24 @@ public class MailHomeScreen extends BaseScreen {
 			}
 		}
 		graphics.drawText(buf.toString(), indent + height, y, Graphics.ELLIPSIS, width);
+	}
+	
+	/**
+	 * Opens the selected item in the tree.
+	 * 
+	 * @return True if the item was opened, false otherwise.
+	 */
+	private boolean openSelectedItem() {
+		int id = treeField.getCurrentNode();
+		if(id != -1) {
+			Node node = ((TreeNode)treeField.getCookie(id)).node;
+			if(node instanceof MailboxNode) {
+				MailboxNode mailboxNode = (MailboxNode)node;
+				MailboxScreen mailboxScreen = new MailboxScreen(mailboxNode);
+				UiApplication.getUiApplication().pushScreen(mailboxScreen);
+				return true;
+			}
+		}
+		return false;
 	}
 }

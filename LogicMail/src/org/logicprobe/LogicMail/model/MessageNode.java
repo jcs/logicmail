@@ -44,14 +44,9 @@ public class MessageNode implements Node {
 	private FolderMessage folderMessage;
 	private Message message;
 	private EventListenerList listenerList = new EventListenerList();
-	private String name;
 
-	MessageNode() {
-	}
-	
-	MessageNode(String name) {
-		this();
-		this.name = name;
+	MessageNode(FolderMessage folderMessage) {
+		this.folderMessage = folderMessage;
 	}
 	
 	public void accept(NodeVisitor visitor) {
@@ -73,15 +68,6 @@ public class MessageNode implements Node {
 	 */
 	public MailboxNode getParent() {
 		return this.parent;
-	}
-	
-	/**
-	 * Sets the folder message data associated with this node.
-	 * 
-	 * @param folderMessage Folder message data.
-	 */
-	void setFolderMessage(FolderMessage folderMessage) {
-		this.folderMessage = folderMessage;
 	}
 	
 	/**
@@ -114,25 +100,27 @@ public class MessageNode implements Node {
 	}
 	
 	/**
-	 * Sets the name of this message, which should
-	 * be set to the subject text.
-	 * 
-	 * @param name The name.
-	 */
-	void setName(String name) {
-		this.name = name;
-	}
-	
-	/**
 	 * Gets the name of this message, which should
 	 * be set to the subject text.
 	 * 
 	 * @return The name.
 	 */
 	public String getName() {
-		return this.name;
+		return this.folderMessage.getEnvelope().subject;
 	}
 
+	/**
+	 * Gets the ID of this message.
+	 * 
+	 * This is currently the index within the mailbox, but it really
+	 * should be changed to be the UID of the message.
+	 * 
+	 * @return Message ID.
+	 */
+	public int getId() {
+		return this.folderMessage.getIndex();
+	}
+	
 	/**
      * Adds a <tt>MessageNodeListener</tt> to the message node.
      * 

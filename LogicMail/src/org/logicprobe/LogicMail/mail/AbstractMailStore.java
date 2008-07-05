@@ -116,10 +116,32 @@ public abstract class AbstractMailStore {
      * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
      * 
      * @param folder The folder to request a message listing for.
-     * @param firstIndex The index of the first message to get headers for
-     * @param lastIndex The index of the last message to get headers for
+     * @param firstIndex The index of the first message to get headers for.
+     * @param lastIndex The index of the last message to get headers for.
      */
-    public abstract void requestFolderMessages(FolderTreeItem folder, int firstIndex, int lastIndex);
+    public abstract void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex);
+    
+    /**
+     * Requests the message listing from a particular folder.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param indices The set of indices for the messages to get headers for.
+     */
+    public abstract void requestFolderMessagesSet(FolderTreeItem folder, int[] indices);
+    
+    /**
+     * Requests the recent message listing from a particular folder.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param count The maximum number of messages to get headers for.
+     */
+    public abstract void requestFolderMessagesRecent(FolderTreeItem folder, int count);
     
     /**
      * Requests a particular message to be loaded.

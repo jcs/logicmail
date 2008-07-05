@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 
+import net.rim.device.api.system.UnsupportedOperationException;
+
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.util.Queue;
@@ -42,12 +44,14 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	
 	// The various mail store requests, mirroring the
 	// "requestXXXX()" methods from AbstractMailStore
-	public static final int REQUEST_FOLDER_TREE      = 0;
-	public static final int REQUEST_FOLDER_STATUS    = 1;
-	public static final int REQUEST_FOLDER_MESSAGES  = 2;
-	public static final int REQUEST_MESSAGE          = 3;
-	public static final int REQUEST_MESSAGE_DELETE   = 4;
-	public static final int REQUEST_MESSAGE_UNDELETE = 5;
+	public static final int REQUEST_FOLDER_TREE             = 10;
+	public static final int REQUEST_FOLDER_STATUS           = 11;
+	public static final int REQUEST_FOLDER_MESSAGES_RANGE   = 12;
+	public static final int REQUEST_FOLDER_MESSAGES_SET     = 13;
+	public static final int REQUEST_FOLDER_MESSAGES_RECENT  = 14;
+	public static final int REQUEST_MESSAGE                 = 20;
+	public static final int REQUEST_MESSAGE_DELETE          = 21;
+	public static final int REQUEST_MESSAGE_UNDELETE        = 22;
 	
 	public IncomingMailConnectionHandler(IncomingMailClient client) {
 		super(client);
@@ -81,11 +85,21 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			case REQUEST_FOLDER_STATUS:
 				handleRequestFolderStatus((FolderTreeItem)params[0]);
 				break;
-			case REQUEST_FOLDER_MESSAGES:
-				handleRequestFolderMessages(
+			case REQUEST_FOLDER_MESSAGES_RANGE:
+				handleRequestFolderMessagesRange(
 						(FolderTreeItem)params[0],
 						((Integer)params[1]).intValue(),
 						((Integer)params[2]).intValue());
+				break;
+			case REQUEST_FOLDER_MESSAGES_SET:
+				handleRequestFolderMessagesSet(
+						(FolderTreeItem)params[0],
+						(int[])params[1]);
+				break;
+			case REQUEST_FOLDER_MESSAGES_RECENT:
+				handleRequestFolderMessagesRecent(
+						(FolderTreeItem)params[0],
+						((Integer)params[1]).intValue());
 				break;
 			case REQUEST_MESSAGE:
 				handleRequestMessage((FolderTreeItem)params[0], (FolderMessage)params[1]);
@@ -122,14 +136,39 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
-	private void handleRequestFolderMessages(FolderTreeItem folder, int firstIndex, int lastIndex) throws IOException, MailException {
+	private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) throws IOException, MailException {
 		checkActiveFolder(folder);
 		
 		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messages != null && messages.length > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES, new Object[] { folder, messages });
+			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_RANGE, new Object[] { folder, messages });
+		}
+	}
+	
+	private void handleRequestFolderMessagesSet(FolderTreeItem folder, int[] indices) throws IOException, MailException {
+		throw new UnsupportedOperationException("Not yet implemented");
+//		checkActiveFolder(folder);
+//		
+//		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex);
+//		
+//		MailConnectionHandlerListener listener = getListener();
+//		if(messages != null && messages.length > 0 && listener != null) {
+//			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_SET, new Object[] { folder, messages });
+//		}
+	}
+	
+	private void handleRequestFolderMessagesRecent(FolderTreeItem folder, int count) throws IOException, MailException {
+		checkActiveFolder(folder);
+		int msgCount = incomingClient.getActiveFolder().getMsgCount();
+        int firstIndex = Math.max(1, msgCount - count);
+        
+		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, msgCount);
+		
+		MailConnectionHandlerListener listener = getListener();
+		if(messages != null && messages.length > 0 && listener != null) {
+			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_RECENT, new Object[] { folder, messages });
 		}
 	}
 	

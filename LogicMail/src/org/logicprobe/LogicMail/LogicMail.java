@@ -34,7 +34,7 @@ package org.logicprobe.LogicMail;
 import java.util.Calendar;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.UiApplication;
-import org.logicprobe.LogicMail.ui.AccountScreen;
+import org.logicprobe.LogicMail.ui.MailHomeScreen;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
 /*
@@ -80,6 +80,6 @@ public class LogicMail extends UiApplication {
             EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
         }
         
-        pushScreen(new AccountScreen());
+        pushScreen(new MailHomeScreen());
     }
 } 
