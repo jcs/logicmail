@@ -230,15 +230,12 @@ public class AccountNodeTest extends TestCase {
 			fireFolderStatusChanged(statusUpdatedRootFolder);
 		}
 		
-		public void requestFolderMessages(FolderTreeItem folder, int firstIndex, int lastIndex) {
-		}
-		public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) {
-		}
-		public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) {
-		}
-		public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) {
-		}
-		public void shutdown(boolean wait) {
-		}
+		public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) { }
+		public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) { }
+		public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) { }
+		public void shutdown(boolean wait) { }
+		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) { }
+		public void requestFolderMessagesRecent(FolderTreeItem folder, int count) { }
+		public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) { }
     }
 }

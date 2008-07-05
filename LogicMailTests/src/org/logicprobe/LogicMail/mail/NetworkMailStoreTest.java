@@ -144,7 +144,7 @@ public class NetworkMailStoreTest extends TestCase {
     		new FolderMessage(new MessageEnvelope(), 43),
     	};
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	instance.requestFolderMessages(folder, 42, 43);
+    	instance.requestFolderMessagesRange(folder, 42, 43);
     	instance.shutdown(true);
     	
     	assertNotNull(eventFolderMessagesAvailable);
@@ -207,7 +207,7 @@ public class NetworkMailStoreTest extends TestCase {
     	// sure the queue is working correctly.
     	instance.requestFolderTree();
     	instance.requestFolderStatus(folder);
-    	instance.requestFolderMessages(folder, 42, 43);
+    	instance.requestFolderMessagesRange(folder, 42, 43);
     	instance.requestMessage(folder, fakeIncomingMailClient.folderMessages[0]);
     	instance.shutdown(true);
     	
