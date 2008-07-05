@@ -59,30 +59,24 @@ public class MessagePropertiesDialog extends Dialog {
 		MessageEnvelope envelope = folderMessage.getEnvelope();
 		add(new LabelField("Subject: " + envelope.subject, Field.FOCUSABLE));
 		add(new LabelField("Date: " + envelope.date, Field.FOCUSABLE));
-		if(envelope.from != null && envelope.from.length > 0) {
-			add(new LabelField("From:", Field.FOCUSABLE));
-			for(int i=0; i<envelope.from.length; i++) {
-				add(new LabelField("  " + envelope.from[i], Field.FOCUSABLE));
+		
+		initFieldAddress("From:", envelope.from);
+		initFieldAddress("Reply To:", envelope.replyTo);
+		initFieldAddress("To:", envelope.to);
+		initFieldAddress("Cc:", envelope.cc);
+	}
+	
+	private void initFieldAddress(String prefix, String[] addresses) {
+		if(addresses != null) {
+			if(addresses.length == 1) {
+				add(new LabelField(prefix + " " + addresses[0], Field.FOCUSABLE));
 			}
-		}
-		if(envelope.replyTo != null && envelope.replyTo.length > 0) {
-			add(new LabelField("Reply To:", Field.FOCUSABLE));
-			for(int i=0; i<envelope.replyTo.length; i++) {
-				add(new LabelField("  " + envelope.replyTo[i], Field.FOCUSABLE));
-			}
-		}
-		if(envelope.to != null && envelope.to.length > 0) {
-			add(new LabelField("To:", Field.FOCUSABLE));
-			for(int i=0; i<envelope.to.length; i++) {
-				add(new LabelField("  " + envelope.to[i], Field.FOCUSABLE));
-			}
-		}
-		if(envelope.cc != null && envelope.cc.length > 0) {
-			add(new LabelField("Cc:", Field.FOCUSABLE));
-			for(int i=0; i<envelope.cc.length; i++) {
-				add(new LabelField("  " + envelope.cc[i], Field.FOCUSABLE));
+			else if(addresses.length > 1) {
+				add(new LabelField(prefix));
+				for(int i=0; i<addresses.length; i++) {
+					add(new LabelField("  " + addresses[i], Field.FOCUSABLE));
+				}
 			}
 		}
 	}
-	
 }
