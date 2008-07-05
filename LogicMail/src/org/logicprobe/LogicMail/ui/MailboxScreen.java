@@ -43,6 +43,7 @@ import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.system.UnsupportedOperationException;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -407,12 +408,11 @@ public class MailboxScreen extends BaseScreen {
 
     private void openSelectedMessage()
     {
-//	        int index = messageListField.getSelectedIndex();
-//	        if(index < 0 || index > displayedMessages.size()) {
-//	            return;
-//	        }
-//	        
-//        UiApplication.getUiApplication().pushScreen(new MessageScreen(client, folderItem, messages[index]));
+        int index = messageListField.getSelectedIndex();
+        if(index < 0 || index > displayedMessages.size()) {
+            return;
+        }
+        UiApplication.getUiApplication().pushScreen(new MessageScreen((MessageNode)displayedMessages.elementAt(index)));
     }
 
     private void openSelectedMessageProperties()

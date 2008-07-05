@@ -36,8 +36,23 @@ import org.logicprobe.LogicMail.util.EventObject;
  * Object for MessageNode events.
  */
 public class MessageNodeEvent extends EventObject {
+	private int type;
+	
+	public final static int TYPE_LOADED = 0;
+	public final static int TYPE_FLAGS  = 1;
+	
 	/** Creates a new instance of MessageNodeEvent */
-	public MessageNodeEvent(Object source) {
+	public MessageNodeEvent(Object source, int type) {
 		super(source);
+		this.type = type;
+	}
+
+	/**
+	 * Gets the type of this status change.
+	 * 
+	 * @return Event type.
+	 */
+	public int getType() {
+		return this.type;
 	}
 }

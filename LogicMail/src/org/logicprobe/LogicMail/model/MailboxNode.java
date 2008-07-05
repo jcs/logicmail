@@ -265,6 +265,7 @@ public class MailboxNode implements Node {
 			else {
 				messages.addElement(message);
 			}
+			message.setParent(this);
 			messageMap.put(new Integer(message.getId()), message);
 		}
 	}
@@ -302,6 +303,19 @@ public class MailboxNode implements Node {
 	boolean containsMessage(int id) {
 		synchronized(messages) {
 			return messageMap.containsKey(new Integer(id));
+		}
+	}
+	
+	/**
+	 * Gets a particular message.
+	 * 
+	 * @param id The message ID to look for.
+	 * @return The message if it exists, null otherwise.
+	 */
+	MessageNode getMessage(int id) {
+		synchronized(messages) {
+			MessageNode message = (MessageNode)messageMap.get(new Integer(id));
+			return message;
 		}
 	}
 	

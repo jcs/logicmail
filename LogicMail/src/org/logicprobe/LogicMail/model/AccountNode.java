@@ -40,6 +40,8 @@ import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
+import org.logicprobe.LogicMail.mail.MessageEvent;
+import org.logicprobe.LogicMail.mail.MessageListener;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -98,6 +100,21 @@ public class AccountNode implements Node {
 			}
 			public void folderMessagesAvailable(FolderMessagesEvent e) {
 				mailStore_FolderMessagesAvailable(e);
+			}
+		});
+		
+		this.mailStore.addMessageListener(new MessageListener() {
+			public void messageAvailable(MessageEvent e) {
+				mailStore_messageAvailable(e);
+			}
+			public void messageFlagsChanged(MessageEvent e) {
+				mailStore_messageFlagsChanged(e);
+			}
+			public void messageDeleted(MessageEvent e) {
+				mailStore_messageDeleted(e);
+			}
+			public void messageUndeleted(MessageEvent e) {
+				mailStore_messageUndeleted(e);
 			}
 		});
 		
@@ -166,7 +183,7 @@ public class AccountNode implements Node {
 	 * 
 	 * @return The account configuration, or null for local accounts.
 	 */
-	AccountConfig getAccountConfig() {
+	public AccountConfig getAccountConfig() {
 		return this.accountConfig;
 	}
 	
@@ -361,6 +378,68 @@ public class AccountNode implements Node {
 		MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
 		addedMessages.copyInto(addedMessagesArray);
 		mailboxNode.addMessages(addedMessagesArray);
+	}
+
+	/**
+	 * Handles a message being loaded.
+	 * 
+	 * @param e Event data.
+	 */
+	public void mailStore_messageAvailable(MessageEvent e) {
+		MessageNode messageNode = findMessageForEvent(e);
+		if(messageNode != null) {
+			messageNode.setMessage(e.getMessage());
+		}
+	}
+	
+	/**
+	 * Handles a message flags changing.
+	 * 
+	 * @param e Event data.
+	 */
+	public void mailStore_messageFlagsChanged(MessageEvent e) {
+		MessageNode messageNode = findMessageForEvent(e);
+		if(messageNode != null) {
+		}
+	}
+	
+	/**
+	 * Handles a message being deleted.
+	 * 
+	 * @param e Event data.
+	 */
+	public void mailStore_messageDeleted(MessageEvent e) {
+		MessageNode messageNode = findMessageForEvent(e);
+		if(messageNode != null) {
+		}
+	}
+	
+	/**
+	 * Handles a message being undeleted.
+	 * 
+	 * @param e Event data.
+	 */
+	public void mailStore_messageUndeleted(MessageEvent e) {
+		MessageNode messageNode = findMessageForEvent(e);
+		if(messageNode != null) {
+		}
+	}
+	
+	/**
+	 * Finds the message node matching a particular event.
+	 * 
+	 * @param e Event data.
+	 * @return Message node, or null if none was found.
+	 */
+	private MessageNode findMessageForEvent(MessageEvent e) {
+		MailboxNode mailboxNode = (MailboxNode)pathMailboxMap.get(e.getFolder().getPath());
+		if(mailboxNode != null) {
+			// Change this to use the UID once implemented
+			return mailboxNode.getMessage(e.getFolderMessage().getIndex());
+		}
+		else {
+			return null;
+		}
 	}
 	
 	/**

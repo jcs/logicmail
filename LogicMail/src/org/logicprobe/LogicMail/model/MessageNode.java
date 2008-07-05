@@ -87,6 +87,9 @@ public class MessageNode implements Node {
 	 */
 	void setMessage(Message message) {
 		this.message = message;
+		if(this.message != null) {
+			fireMessageStatusChanged(MessageNodeEvent.TYPE_LOADED);
+		}
 	}
 	
 	/**
@@ -121,6 +124,17 @@ public class MessageNode implements Node {
 		return this.folderMessage.getIndex();
 	}
 	
+    /**
+     * Called to load the message data for this node.
+     * This loads as much of the message as allowed within
+     * the limits defined in the configuration options.
+     */
+	public void refreshMessage() {
+		parent.getParentAccount().getMailStore().requestMessage(
+				parent.getFolderTreeItem(),
+				folderMessage);
+	}
+	
 	/**
      * Adds a <tt>MessageNodeListener</tt> to the message node.
      * 
@@ -152,14 +166,16 @@ public class MessageNode implements Node {
     
     /**
      * Notifies all registered <tt>MessageNodeListener</tt>s that
-     * the message status has changed. 
+     * the message status has changed.
+     * 
+     * @param type The type of the status change.
      */
-    protected void fireMessageStatusChanged() {
+    protected void fireMessageStatusChanged(int type) {
         Object[] listeners = listenerList.getListeners(MessageNodeListener.class);
         MessageNodeEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageNodeEvent(this);
+                e = new MessageNodeEvent(this, type);
             }
             ((MessageNodeListener)listeners[i]).messageStatusChanged(e);
         }

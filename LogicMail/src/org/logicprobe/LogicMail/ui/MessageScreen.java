@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,6 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import java.io.IOException;
 import java.util.Vector;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.KeypadListener;
@@ -39,53 +38,36 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.UiApplication;
-import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
-import org.logicprobe.LogicMail.conf.ImapConfig;
-import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.IncomingMailClient;
-import org.logicprobe.LogicMail.mail.MailException;
-import org.logicprobe.LogicMail.mail.imap.ImapClient;
-import org.logicprobe.LogicMail.message.FolderMessage;
+import net.rim.device.api.ui.component.NullField;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.MessageNodeEvent;
+import org.logicprobe.LogicMail.model.MessageNodeListener;
 
 /**
  * Display an E-Mail message
  */
 public class MessageScreen extends BaseScreen {
-    private IncomingMailClient client;
-    private FolderTreeItem folderItem;
-    private FolderMessage folderMessage;
+	private AccountConfig accountConfig;
+    private MessageNode messageNode;
     private MessageEnvelope envelope;
-    private Vector msgFields;
-    private Message msg;
     private boolean isSentFolder;
     
-    public MessageScreen(IncomingMailClient client,
-                         FolderTreeItem folderItem,
-                         FolderMessage folderMessage)
+    public MessageScreen(MessageNode messageNode)
     {
         super();
-        this.client = client;
-        this.folderItem = folderItem;
-        this.folderMessage = folderMessage;
-        this.envelope = folderMessage.getEnvelope();
+        this.messageNode = messageNode;
+        this.accountConfig = messageNode.getParent().getParentAccount().getAccountConfig();
+        this.envelope = messageNode.getFolderMessage().getEnvelope();
         
         // Determine if this screen is viewing a sent message
-        if(client.getAcctConfig() instanceof ImapConfig) {
-            String sentFolderPath = ((ImapConfig)client.getAcctConfig()).getSentFolder();
-            if(sentFolderPath != null) {
-                this.isSentFolder = folderItem.getPath().equals(sentFolderPath);
-            }
-        }
-        else {
-            this.isSentFolder = false;
-        }
+        this.isSentFolder = (messageNode.getParent().getType() == MailboxNode.TYPE_SENT);
         
         // Create screen elements
         if(isSentFolder) {
@@ -116,75 +98,78 @@ public class MessageScreen extends BaseScreen {
             add(new RichTextField("Subject: " + envelope.subject));
         }
         add(new SeparatorField());
-        updateMessage();
+    }
+    
+    private MessageNodeListener messageNodeListener = new MessageNodeListener() {
+		public void messageStatusChanged(MessageNodeEvent e) {
+			messageNode_MessageStatusChanged(e);
+		}
+    };
+    
+    protected void onDisplay() {
+    	super.onDisplay();
+    	messageNode.addMessageNodeListener(messageNodeListener);
+    	if(messageNode.getMessage() == null) {
+    		// TODO: Don't refresh the message if another refresh is currently in progress
+    		messageNode.refreshMessage();
+    	}
     }
 
-    private void drawMessageFields() {
-        if(msgFields == null) {
-            return;
-        }
-        synchronized(Application.getEventLock()) {
-            int size = msgFields.size();
-            for(int i=0;i<size;++i) {
-                if(msgFields.elementAt(i) != null) {
-                    add((Field)msgFields.elementAt(i));
-                }
-                if(i != size-1) {
-                    add(new SeparatorField());
-                }
-            }
-        }
+    protected void onUndisplay() {
+    	messageNode.removeMessageNodeListener(messageNodeListener);
+    	super.onUndisplay();
     }
-
+    
     private MenuItem propsItem = new MenuItem("Properties", 100, 10) {
         public void run() {
-            showMsgProperties();
+        	MessagePropertiesDialog dialog = new MessagePropertiesDialog(messageNode);
+        	dialog.doModal();
         }
     };
     private MenuItem replyItem = new MenuItem("Reply...", 110, 10) {
         public void run() {
-            if(msg != null) {
-                CompositionScreen screen =
-                    new CompositionScreen(
-                        client.getAcctConfig(),
-                        msg.toReplyMessage());
-                UiApplication.getUiApplication().pushModalScreen(screen);
-                
-                if(screen.getMessageSent()) {
-                    updateMessageAnswered();
-                }
-            }
+//            if(msg != null) {
+//                CompositionScreen screen =
+//                    new CompositionScreen(
+//                        client.getAcctConfig(),
+//                        msg.toReplyMessage());
+//                UiApplication.getUiApplication().pushModalScreen(screen);
+//                
+//                if(screen.getMessageSent()) {
+//                    updateMessageAnswered();
+//                }
+//            }
         }
     };
     private MenuItem replyAllItem = new MenuItem("Reply to all...", 115, 10) {
         public void run() {
-            if(msg != null) {
-                CompositionScreen screen =
-                    new CompositionScreen(
-                        client.getAcctConfig(),
-                        msg.toReplyAllMessage(client.getAcctConfig().getIdentityConfig().getEmailAddress()));
-                UiApplication.getUiApplication().pushModalScreen(screen);
-
-                if(screen.getMessageSent()) {
-                    updateMessageAnswered();
-                }
-            }
+//            if(msg != null) {
+//                CompositionScreen screen =
+//                    new CompositionScreen(
+//                        client.getAcctConfig(),
+//                        msg.toReplyAllMessage(client.getAcctConfig().getIdentityConfig().getEmailAddress()));
+//                UiApplication.getUiApplication().pushModalScreen(screen);
+//
+//                if(screen.getMessageSent()) {
+//                    updateMessageAnswered();
+//                }
+//            }
         }
     };
     private MenuItem forwardItem = new MenuItem("Forward...", 120, 10) {
         public void run() {
-            if(msg != null) {
-                CompositionScreen screen =
-                    new CompositionScreen(
-                        client.getAcctConfig(),
-                        msg.toForwardMessage());
-                UiApplication.getUiApplication().pushModalScreen(screen);
-            }
+//            if(msg != null) {
+//                CompositionScreen screen =
+//                    new CompositionScreen(
+//                        client.getAcctConfig(),
+//                        msg.toForwardMessage());
+//                UiApplication.getUiApplication().pushModalScreen(screen);
+//            }
         }
     };
     private MenuItem compositionItem = new MenuItem("Compose E-Mail", 150, 10) {
         public void run() {
-            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
+//            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
         }
     };
     private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
@@ -195,9 +180,9 @@ public class MessageScreen extends BaseScreen {
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
         menu.addSeparator();
-        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
+        if(accountConfig.getOutgoingConfig() != null) {
             menu.add(replyItem);
-            if(client.getAcctConfig().getIdentityConfig() != null) {
+            if(accountConfig.getIdentityConfig() != null) {
                 menu.add(replyAllItem);
             }
             menu.add(forwardItem);
@@ -227,125 +212,76 @@ public class MessageScreen extends BaseScreen {
         }
         return retval;
     }
-
-    private void showMsgProperties() {
-        int i;
-        StringBuffer msg = new StringBuffer();
-        msg.append("Subject:\n  " + ((envelope.subject!=null) ? envelope.subject : "") + "\n");
-        msg.append("Date:\n  " + ((envelope.date!=null) ? StringParser.createDateString(envelope.date) : "") + "\n");
-
-        if(envelope.from != null && envelope.from.length > 0) {
-            msg.append("From:\n");
-            for(i=0;i<envelope.from.length;i++) {
-                msg.append("  " + ((envelope.from[i]!=null) ? envelope.from[i] : "") + "\n");
-            }
-        }
-        
-        if(envelope.to != null && envelope.to.length > 0) {
-            msg.append("To:\n");
-            for(i=0;i<envelope.to.length;i++) {
-                if(envelope.to[i].length() > 0) {
-                    msg.append("  " + ((envelope.to[i]!=null) ? envelope.to[i] : "") + "\n");
-                }
-            }
-        }
-
-        if(envelope.cc != null && envelope.cc.length > 0) {
-            msg.append("CC:\n");
-            for(i=0;i<envelope.cc.length;i++) {
-                if(envelope.cc[i].length() > 0) {
-                    msg.append("  " + ((envelope.cc[i]!=null) ? envelope.cc[i] : "") + "\n");
-                }
-            }
-        }
-        
-        if(envelope.bcc != null && envelope.bcc.length > 0) {
-            msg.append("BCC:\n");
-            for(i=0;i<envelope.bcc.length;i++) {
-                if(envelope.bcc[i].length() > 0) {
-                    msg.append("  " + ((envelope.bcc[i]!=null) ? envelope.bcc[i] : "") + "\n");
-                }
-            }
-        }
-
-        Dialog dialog = new Dialog(Dialog.D_OK, msg.toString(),
-                                   0, null, Dialog.GLOBAL_STATUS);
-        dialog.show();
-    }
-
-    /**
-     * Flags the currently viewed message as answered.
-     */
-    private void updateMessageAnswered() {
-        if(client instanceof ImapClient) {
-            MailClientHandler flagMessageHandler = new MailClientHandler(client, "Updating message status") {
-                public void runSession(boolean retry) throws IOException, MailException {
-                    ((ImapClient)client).messageAnswered(folderMessage);
-                }
-            };
-            // Start the background process
-            flagMessageHandler.start();
-        }
-    }
     
-    private void updateMessage() {
-        UpdateMessageHandler updateMessageHandler = new UpdateMessageHandler();
-        updateMessageHandler.setListener(new MailClientHandlerListener() {
-            public void mailActionComplete(MailClientHandler source, boolean result) {
-                source.setListener(null);
-                UpdateMessageHandler updateMessageHandler = (UpdateMessageHandler)source;
-                if(updateMessageHandler.getMessageFields() != null) {
-                    msgFields = updateMessageHandler.getMessageFields();
-                    msg = updateMessageHandler.getMessage();
-                    drawMessageFields();
-                    folderMessage.setSeen(true);
-                    folderMessage.setRecent(false);
+    private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
+    	Message message = messageNode.getMessage();
+    	if(e.getType() == MessageNodeEvent.TYPE_LOADED && message != null) {
+    		// Prepare the UI elements
+    		Vector messageFields;
+    		if(message.getBody() != null) {
+    			MessageRenderer messageRenderer = new MessageRenderer();
+    			message.getBody().accept(messageRenderer);
+    			messageFields = messageRenderer.getMessageFields();
+    		}
+    		else {
+    			messageFields = new Vector();
+    			messageFields.addElement(
+    					new RichTextField("This message does not contain any sections that could be displayed."));
+    		}
+    		drawMessageFields(messageFields);
+    	}
+    }
+
+    private void drawMessageFields(Vector messageFields) {
+        if(messageFields == null) {
+            return;
+        }
+        synchronized(Application.getEventLock()) {
+            int size = messageFields.size();
+            for(int i=0;i<size;++i) {
+                if(messageFields.elementAt(i) != null) {
+                    add((Field)messageFields.elementAt(i));
+                }
+                if(i != size-1) {
+                    add(new SeparatorField(Field.FOCUSABLE));
                 }
             }
-        });
-
-        // Start the background process
-        updateMessageHandler.start();
+            add(new NullField(Field.FOCUSABLE));
+        }
     }
+
+//    /**
+//     * Flags the currently viewed message as answered.
+//     */
+//    private void updateMessageAnswered() {
+//        if(client instanceof ImapClient) {
+//            MailClientHandler flagMessageHandler = new MailClientHandler(client, "Updating message status") {
+//                public void runSession(boolean retry) throws IOException, MailException {
+//                    ((ImapClient)client).messageAnswered(folderMessage);
+//                }
+//            };
+//            // Start the background process
+//            flagMessageHandler.start();
+//        }
+//    }
     
-    private class UpdateMessageHandler extends MailClientHandler {
-        private Vector msgFields;
-        private Message msg;
-
-        public UpdateMessageHandler() {
-            super(MessageScreen.this.client, "Retrieving message");
-        }
-
-        public void runSession(boolean retry) throws IOException, MailException {
-            IncomingMailClient incomingClient = (IncomingMailClient)client;
-            
-            // Set the active folder
-            if(incomingClient.hasFolders() && !(incomingClient.getActiveFolder() == MessageScreen.this.folderItem)) {
-                incomingClient.setActiveFolder(MessageScreen.this.folderItem);
-            }
-            
-            // Download the message
-            msg = incomingClient.getMessage(MessageScreen.this.folderMessage);
-
-            // Prepare the UI elements
-            if(msg.getBody() != null) {
-                MessageRenderer msgRenderer = new MessageRenderer();
-                msg.getBody().accept(msgRenderer);
-                msgFields = msgRenderer.getMessageFields();
-            }
-            else {
-                msgFields = new Vector();
-                    msgFields.addElement(
-                        new RichTextField("This message does not contain any sections that could be displayed."));
-            }
-        }
-
-        public Vector getMessageFields() {
-            return msgFields;
-        }
-        
-        public Message getMessage() {
-            return msg;
-        }
-    }
+//    private void updateMessage() {
+//        UpdateMessageHandler updateMessageHandler = new UpdateMessageHandler();
+//        updateMessageHandler.setListener(new MailClientHandlerListener() {
+//            public void mailActionComplete(MailClientHandler source, boolean result) {
+//                source.setListener(null);
+//                UpdateMessageHandler updateMessageHandler = (UpdateMessageHandler)source;
+//                if(updateMessageHandler.getMessageFields() != null) {
+//                    msgFields = updateMessageHandler.getMessageFields();
+//                    msg = updateMessageHandler.getMessage();
+//                    drawMessageFields();
+//                    folderMessage.setSeen(true);
+//                    folderMessage.setRecent(false);
+//                }
+//            }
+//        });
+//
+//        // Start the background process
+//        updateMessageHandler.start();
+//    }
 }
