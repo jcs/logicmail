@@ -92,27 +92,44 @@ public class MailConnectionManager {
      * 
      * @param message The status message.
      */
-     void fireMailConnectionStatus(String message) {
-        Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
-        MailConnectionStatusEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MailConnectionStatusEvent(this, message);
-            }
-            ((MailConnectionListener)listeners[i]).mailConnectionStatus(e);
-        }
+    void fireMailConnectionStatus(String message) {
+    	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
+    	MailConnectionStatusEvent e = null;
+    	for(int i=0; i<listeners.length; i++) {
+    		if(e == null) {
+    			e = new MailConnectionStatusEvent(this, message);
+    		}
+    		((MailConnectionListener)listeners[i]).mailConnectionStatus(e);
+    	}
     }
 
-     /**
-      * Notifies all registered <tt>MailConnectionListener</tt>s
-      * of an updated status message.
-      * 
-      * @param e Event data object
-      */
-      void fireMailConnectionLogin(MailConnectionLoginEvent e) {
-         Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
-         for(int i=0; i<listeners.length; i++) {
-             ((MailConnectionListener)listeners[i]).mailConnectionLogin(e);
-         }
-     }
+    /**
+     * Notifies all registered <tt>MailConnectionListener</tt>s
+     * of an error with the mail connection.
+     * 
+     * @param message The error message.
+     */
+    void fireMailConnectionError(String message) {
+    	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
+    	MailConnectionStatusEvent e = null;
+    	for(int i=0; i<listeners.length; i++) {
+    		if(e == null) {
+    			e = new MailConnectionStatusEvent(this, message);
+    		}
+    		((MailConnectionListener)listeners[i]).mailConnectionError(e);
+    	}
+    }
+
+    /**
+     * Requests registered <tt>MailConnectionListener</tt>s
+     * for handling of a login operation.
+     * 
+     * @param e Event data object
+     */
+    void fireMailConnectionLogin(MailConnectionLoginEvent e) {
+    	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
+    	for(int i=0; i<listeners.length; i++) {
+    		((MailConnectionListener)listeners[i]).mailConnectionLogin(e);
+    	}
+    }
 }

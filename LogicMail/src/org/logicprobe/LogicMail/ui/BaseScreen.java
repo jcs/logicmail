@@ -32,12 +32,20 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.EventObject;
+import org.logicprobe.LogicMail.mail.MailConnectionManager;
+import org.logicprobe.LogicMail.mail.MailConnectionListener;
+import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
+import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 
 /**
  * This class is the base for all screens in LogicMail.
@@ -45,8 +53,13 @@ import org.logicprobe.LogicMail.util.Connection;
  * handler interfaces across the application.
  */
 public abstract class BaseScreen extends MainScreen {
+	private LabelField statusLabel;
+	private boolean isExposed = false;
+	
     public BaseScreen() {
         super();
+		statusLabel = new LabelField();
+		setStatus(null);
     }
 
     public BaseScreen(String title) {
@@ -54,8 +67,50 @@ public abstract class BaseScreen extends MainScreen {
         // Create screen elements
         HeaderField headerField = new HeaderField("LogicMail - " + title);
         setTitle(headerField);
+		statusLabel = new LabelField();
+		setStatus(null);
     }
+    
+    private MailConnectionListener mailConnectionListener = new MailConnectionListener() {
+		public void mailConnectionStatus(MailConnectionStatusEvent e) {
+			if(isExposed) {
+				mailConnectionListener_MailConnectionStatus(e);
+			}
+		}
+		public void mailConnectionError(MailConnectionStatusEvent e) {
+			if(isExposed) {
+				mailConnectionListener_MailConnectionError(e);
+			}
+		}
+		public void mailConnectionLogin(MailConnectionLoginEvent e) {
+			if(isExposed) {
+				mailConnectionListener_MailConnectionLogin(e);
+			}
+		}
+    };
 
+    protected void onDisplay() {
+    	super.onDisplay();
+    	isExposed = true;
+    	MailConnectionManager.getInstance().addMailConnectionListener(mailConnectionListener);
+    }
+    
+    protected void onUndisplay() {
+    	isExposed = false;
+    	MailConnectionManager.getInstance().removeMailConnectionListener(mailConnectionListener);
+    	super.onUndisplay();
+    }
+    
+    protected void onExposed() {
+    	super.onExposed();
+    	isExposed = true;
+    }
+    
+    protected void onObscured() {
+    	super.onObscured();
+    	isExposed = false;
+    }
+    
     // Create menu items
     private MenuItem configItem = new MenuItem("Configuration", 10020, 10) {
         public void run() {
@@ -117,5 +172,85 @@ public abstract class BaseScreen extends MainScreen {
     protected boolean onSavePrompt() {
         return true;
     }
+    
+	/**
+	 * Convenience class to make it easier for event handlers to pass
+	 * the EventObject onto an event handler method that runs on a
+	 * different thread.
+	 */
+	protected abstract class EventObjectRunnable implements Runnable {
+		private EventObject event;
+		public EventObjectRunnable(EventObject event) {
+			this.event = event;
+		}
+		public EventObject getEvent() { return this.event; }
+		
+		public abstract void run();
+	}
+	
+	/**
+	 * Invoked when there is a change in status from
+	 * the mail connection.
+	 *
+	 * @param e Status event data
+	 */
+    protected void mailConnectionListener_MailConnectionStatus(MailConnectionStatusEvent e) {
+		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			public void run() {
+		    	String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
+		    	if(message != null) {
+		    		statusLabel.setText(message);
+		    		setStatus(statusLabel);
+		    	}
+		    	else {
+		    		statusLabel.setText("");
+		    		setStatus(null);
+		    	}
+			}
+		});
+    }
+    
+	/**
+	 * Invoked when an error occurs with the mail connection.
+	 *
+	 * @param e Error event data
+	 */
+    protected void mailConnectionListener_MailConnectionError(MailConnectionStatusEvent e) {
+		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			public void run() {
+				String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
+				if(message == null) { message = "Unknown error"; }
+	            try {
+	                Screen activeScreen =
+	                        UiApplication.getUiApplication().getActiveScreen();
+	                if(activeScreen instanceof Status) {
+	                    UiApplication.getUiApplication().popScreen(activeScreen);
+	                }
+	            } catch (Exception e) { }
+	            Status.show(message, 5000);
+			}
+		});
+    }
+    
+	/**
+	 * Invoked when the mail connection needs login
+	 * information to be provided by the user interface.
+	 * 
+	 * @param e Login event data
+	 */
+    protected void mailConnectionListener_MailConnectionLogin(MailConnectionLoginEvent e) {
+		UiApplication.getUiApplication().invokeAndWait(new EventObjectRunnable(e) {
+			public void run() {
+				MailConnectionLoginEvent e = (MailConnectionLoginEvent)getEvent();
+				LoginDialog dialog = new LoginDialog(e.getUsername(), e.getPassword());
+				if(dialog.doModal() == Dialog.OK) {
+					e.setUsername(dialog.getUsername());
+					e.setPassword(dialog.getPassword());
+				}
+				else {
+					e.setCanceled(true);
+				}
+			}
+		});
+    }
 }
-

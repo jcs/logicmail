@@ -44,6 +44,13 @@ public interface MailConnectionListener extends EventListener {
 	 * @param e Status event data
 	 */
 	public void mailConnectionStatus(MailConnectionStatusEvent e);
+
+	/**
+	 * Invoked when an error occurs with the mail connection.
+	 *
+	 * @param e Error event data
+	 */
+	public void mailConnectionError(MailConnectionStatusEvent e);
 	
 	/**
 	 * Invoked when the mail connection needs login

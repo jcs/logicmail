@@ -39,7 +39,6 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
@@ -56,7 +55,6 @@ import org.logicprobe.LogicMail.model.Node;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailManagerListener;
-import org.logicprobe.LogicMail.util.EventObject;
 
 /**
  * Main screen for the application, providing a unified
@@ -66,7 +64,6 @@ import org.logicprobe.LogicMail.util.EventObject;
  */
 public class MailHomeScreen extends BaseScreen {
 	private TreeField treeField;
-	private LabelField statusLabel;
 	private MailManager mailManager;
 	private MailRootNode mailRootNode;
 	private Hashtable nodeIdMap;
@@ -107,25 +104,7 @@ public class MailHomeScreen extends BaseScreen {
 		treeField.setDefaultExpanded(true);
 		treeField.setIndentWidth(20);
 		
-		statusLabel = new LabelField();
-		
 		add(treeField);
-		setStatus(statusLabel);
-	}
-	
-	/**
-	 * Convenience class to make it easier for event handlers to pass
-	 * the EventObject onto an event handler method that runs on a
-	 * different thread.
-	 */
-	private abstract class EventObjectRunnable implements Runnable {
-		private EventObject event;
-		public EventObjectRunnable(EventObject event) {
-			this.event = event;
-		}
-		public EventObject getEvent() { return this.event; }
-		
-		public abstract void run();
 	}
 	
 	private AccountNodeListener accountNodeListener = new AccountNodeListener() {
@@ -139,14 +118,19 @@ public class MailHomeScreen extends BaseScreen {
 	};
 	
 	private void accountNodeListener_AccountStatusChanged(AccountNodeEvent e) {
-		if(nodeIdMap.containsKey(e.getSource())) {
-			if(e.getType() == AccountNodeEvent.TYPE_CONNECTION) {
-				treeField.invalidateNode(((Integer)nodeIdMap.get(e.getSource())).intValue());
-			}
-			else if(e.getType() == AccountNodeEvent.TYPE_MAILBOX_TREE) {
+		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			public void run() {
+				AccountNodeEvent e = (AccountNodeEvent)getEvent();
+				if(nodeIdMap.containsKey(e.getSource())) {
+					if(e.getType() == AccountNodeEvent.TYPE_CONNECTION) {
+						treeField.invalidateNode(((Integer)nodeIdMap.get(e.getSource())).intValue());
+					}
+					else if(e.getType() == AccountNodeEvent.TYPE_MAILBOX_TREE) {
 						refreshAccountFolders((AccountNode)e.getSource());
+					}
+				}
 			}
-		}
+		});
 	}
 	
     private MenuItem selectFolderItem = new MenuItem("Select", 100, 10) {

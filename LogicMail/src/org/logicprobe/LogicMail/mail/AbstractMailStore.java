@@ -53,8 +53,6 @@ public abstract class AbstractMailStore {
 	protected AbstractMailStore() {
 	}
 
-	//TODO: requestFolderMessages() needs a better way to specify a range 
-	//TODO: FolderTreeItem needs to reference a FolderTreeNode
 	//TODO: Mechanism for changing message flags for Reply/Forward/etc.
 	
 	public abstract void shutdown(boolean wait);

@@ -37,7 +37,6 @@ import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.util.Queue;
 
 public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler {
 	private IncomingMailClient incomingClient;
@@ -59,63 +58,49 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 
 	/**
-     * Handles the REQUESTS state to process any pending server requests.
-     * 
+	 * Handles a specific request during the REQUESTS state.
+	 * Subclasses should implement this to dispatch requests for all
+	 * the request types they know how to handle.
+	 * 
+	 * @param type Type identifier for the request.
+	 * @param params Parameters for the request.
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
-     */
-	protected void handlePendingRequests() throws IOException, MailException {
-		Queue requestQueue = getRequestQueue();
-		Object element;
-		synchronized(requestQueue) {
-			element = requestQueue.element();
+	 */
+	protected void handleRequest(int type, Object[] params) throws IOException, MailException {
+		switch(type) {
+		case REQUEST_FOLDER_TREE:
+			handleRequestFolderTree();
+			break;
+		case REQUEST_FOLDER_STATUS:
+			handleRequestFolderStatus((FolderTreeItem)params[0]);
+			break;
+		case REQUEST_FOLDER_MESSAGES_RANGE:
+			handleRequestFolderMessagesRange(
+					(FolderTreeItem)params[0],
+					((Integer)params[1]).intValue(),
+					((Integer)params[2]).intValue());
+			break;
+		case REQUEST_FOLDER_MESSAGES_SET:
+			handleRequestFolderMessagesSet(
+					(FolderTreeItem)params[0],
+					(int[])params[1]);
+			break;
+		case REQUEST_FOLDER_MESSAGES_RECENT:
+			handleRequestFolderMessagesRecent(
+					(FolderTreeItem)params[0],
+					((Integer)params[1]).intValue());
+			break;
+		case REQUEST_MESSAGE:
+			handleRequestMessage((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			break;
+		case REQUEST_MESSAGE_DELETE:
+			handleRequestMessageDelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			break;
+		case REQUEST_MESSAGE_UNDELETE:
+			handleRequestMessageUndelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			break;
 		}
-		while(element != null) {
-			synchronized (requestQueue) {
-				requestQueue.remove();
-			}
-			Object[] request = (Object[])element;
-			int type = ((Integer)request[0]).intValue();
-			Object[] params = (Object[])request[1];
-			
-			switch(type) {
-			case REQUEST_FOLDER_TREE:
-				handleRequestFolderTree();
-				break;
-			case REQUEST_FOLDER_STATUS:
-				handleRequestFolderStatus((FolderTreeItem)params[0]);
-				break;
-			case REQUEST_FOLDER_MESSAGES_RANGE:
-				handleRequestFolderMessagesRange(
-						(FolderTreeItem)params[0],
-						((Integer)params[1]).intValue(),
-						((Integer)params[2]).intValue());
-				break;
-			case REQUEST_FOLDER_MESSAGES_SET:
-				handleRequestFolderMessagesSet(
-						(FolderTreeItem)params[0],
-						(int[])params[1]);
-				break;
-			case REQUEST_FOLDER_MESSAGES_RECENT:
-				handleRequestFolderMessagesRecent(
-						(FolderTreeItem)params[0],
-						((Integer)params[1]).intValue());
-				break;
-			case REQUEST_MESSAGE:
-				handleRequestMessage((FolderTreeItem)params[0], (FolderMessage)params[1]);
-				break;
-			case REQUEST_MESSAGE_DELETE:
-				handleRequestMessageDelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
-				break;
-			case REQUEST_MESSAGE_UNDELETE:
-				handleRequestMessageUndelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
-				break;
-			}
-			synchronized(requestQueue) {
-				element = requestQueue.element();
-			}
-		}
-		setConnectionState(STATE_IDLE);
 	}
 
 	private void handleRequestFolderTree() throws IOException, MailException {

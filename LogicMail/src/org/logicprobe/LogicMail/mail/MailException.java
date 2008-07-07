@@ -35,8 +35,47 @@ package org.logicprobe.LogicMail.mail;
  * Exception class for protocol errors
  */
 public class MailException extends Exception {
-    public MailException(String message) {
+	private boolean fatal;
+	private int cause;
+
+	/**
+	 * Initialize a new MailException.
+	 * 
+	 * @param message Error message.
+	 * @param fatal True if fatal, false if recoverable.
+	 * @param cause Error cause, useful for recovery.
+	 */
+    public MailException(String message, boolean fatal, int cause) {
         super(message);
+        this.fatal = fatal;
+        this.cause = cause;
+    }
+    
+    /**
+     * Initialize a new MailException for a fatal error with an unspecified cause.
+     * 
+     * @param message Error message.
+     */
+    public MailException(String message) {
+        this(message, true, -1);
+    }
+    
+    /**
+     * Gets whether this exception is fatal.
+     * 
+     * @return True if fatal, false if recoverable.
+     */
+    public boolean isFatal() {
+    	return this.fatal;
+    }
+    
+    /**
+     * Gets the cause of this exception.
+     * 
+     * @return Cause identifier, or -1 if unspecified.
+     */
+    public int getCause() {
+    	return this.cause;
     }
 }
 
