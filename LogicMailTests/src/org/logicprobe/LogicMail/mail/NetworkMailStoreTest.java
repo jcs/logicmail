@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.mail;
 import java.io.IOException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -277,5 +278,6 @@ public class NetworkMailStoreTest extends TestCase {
 		throws IOException, MailException { folderMessage.setDeleted(true); this.deletedMessage = folderMessage; }
 		public void undeleteMessage(FolderMessage folderMessage)
 				throws IOException, MailException { folderMessage.setDeleted(false); this.undeletedMessage = folderMessage; }
+		public ConnectionConfig getConnectionConfig() { return null; }
 	};
 }
