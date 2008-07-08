@@ -34,7 +34,11 @@ package org.logicprobe.LogicMail.mail.smtp;
 import java.io.IOException;
 import java.util.Calendar;
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.OutgoingMailClient;
@@ -55,6 +59,7 @@ public class SmtpClient implements OutgoingMailClient {
     private boolean openStarted;
     private String username;
     private String password;
+    private boolean configChanged;
     private static String strCRLF = "\r\n";
     
     /** Creates a new instance of SmtpClient */
@@ -76,6 +81,41 @@ public class SmtpClient implements OutgoingMailClient {
             password = null;
         }
         openStarted = false;
+        configChanged = false;
+        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+    }
+    private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
+		public void mailSettingsSaved(MailSettingsEvent e) {
+			mailSettings_MailSettingsSaved(e);
+		}
+    };
+    
+    private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
+		if(MailSettings.getInstance().containsOutgoingConfig(outgoingConfig)) {
+			// Refresh authentication information from the configuration
+	        username = outgoingConfig.getServerUser();
+	        password = outgoingConfig.getServerPass();
+	        
+	        if(!isConnected()) {
+	        	// Rebuild the connection to include new settings
+	            connection = new Connection(
+	            		outgoingConfig.getServerName(),
+	            		outgoingConfig.getServerPort(),
+	            		outgoingConfig.getServerSSL(),
+	            		outgoingConfig.getDeviceSide());
+	            smtpProtocol = new SmtpProtocol(connection);
+	        }
+	        else {
+		        // Set a flag to make sure we rebuild the Connection object
+		        // the next time we close the connection.
+		        configChanged = true;
+	        }
+		}
+		else {
+			// We have been deleted, so unregister to make sure we
+			// no longer affect the system and can be garbage collected.
+			MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
+		}
     }
 
     public boolean open() throws IOException, MailException {
@@ -108,7 +148,22 @@ public class SmtpClient implements OutgoingMailClient {
            smtpProtocol.executeQuit();
         } catch (Exception exp) { }
         connection.close();
+        
+        if(configChanged) {
+        	// Rebuild the connection to include new settings
+            connection = new Connection(
+            		outgoingConfig.getServerName(),
+            		outgoingConfig.getServerPort(),
+            		outgoingConfig.getServerSSL(),
+            		outgoingConfig.getDeviceSide());
+            smtpProtocol = new SmtpProtocol(connection);
+            configChanged = false;
+        }
     }
+
+    public ConnectionConfig getConnectionConfig() {
+		return outgoingConfig;
+	}
 
     public boolean isConnected() {
         return connection.isConnected();

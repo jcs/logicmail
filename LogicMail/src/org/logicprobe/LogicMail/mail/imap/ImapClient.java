@@ -35,8 +35,12 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -54,12 +58,13 @@ import org.logicprobe.LogicMail.util.Connection;
  */
 public class ImapClient implements IncomingMailClient {
     private GlobalConfig globalConfig;
-    private ImapConfig acctCfg;
+    private ImapConfig accountConfig;
     private Connection connection;
     private ImapProtocol imapProtocol;
     private String username;
     private String password;
     private boolean openStarted;
+    private boolean configChanged;
 
     /**
      * Table of supported server capabilities
@@ -67,7 +72,7 @@ public class ImapClient implements IncomingMailClient {
     private Hashtable capabilities;
     
     /**
-     * Delmiter between folder names in the hierarchy
+     * Delimiter between folder names in the hierarchy
      */
     private String folderDelim = "";
 
@@ -84,20 +89,56 @@ public class ImapClient implements IncomingMailClient {
      */
     private FolderTreeItem activeMailbox = null;
 
-    public ImapClient(GlobalConfig globalConfig, ImapConfig acctCfg) {
-        this.acctCfg = acctCfg;
+    public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
+        this.accountConfig = accountConfig;
         this.globalConfig = globalConfig;
         connection = new Connection(
-                acctCfg.getServerName(),
-                acctCfg.getServerPort(),
-                acctCfg.getServerSSL(),
-                acctCfg.getDeviceSide());
+                accountConfig.getServerName(),
+                accountConfig.getServerPort(),
+                accountConfig.getServerSSL(),
+                accountConfig.getDeviceSide());
         imapProtocol = new ImapProtocol(connection);
-        username = acctCfg.getServerUser();
-        password = acctCfg.getServerPass();
+        username = accountConfig.getServerUser();
+        password = accountConfig.getServerPass();
         openStarted = false;
+        configChanged = false;
+        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
     }
 
+    private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
+		public void mailSettingsSaved(MailSettingsEvent e) {
+			mailSettings_MailSettingsSaved(e);
+		}
+    };
+    
+    private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
+		if(MailSettings.getInstance().containsAccountConfig(accountConfig)) {
+			// Refresh authentication information from the configuration
+	        username = accountConfig.getServerUser();
+	        password = accountConfig.getServerPass();
+	        
+	        if(!isConnected()) {
+	        	// Rebuild the connection to include new settings
+	            connection = new Connection(
+	                    accountConfig.getServerName(),
+	                    accountConfig.getServerPort(),
+	                    accountConfig.getServerSSL(),
+	                    accountConfig.getDeviceSide());
+	            imapProtocol = new ImapProtocol(connection);
+	        }
+	        else {
+		        // Set a flag to make sure we rebuild the Connection object
+		        // the next time we close the connection.
+		        configChanged = true;
+	        }
+		}
+		else {
+			// We have been deleted, so unregister to make sure we
+			// no longer affect the system and can be garbage collected.
+			MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
+		}
+    }
+    
     public boolean open() throws IOException, MailException {
         try {
             if(!openStarted) {
@@ -131,9 +172,9 @@ public class ImapClient implements IncomingMailClient {
                 }
             }
             // We could not get valid personal namespace information,
-            // so the folder delim will be aquired differently.
+            // so the folder delimiter will be acquired differently.
             if(nsPersonal == null) {
-                // Discover folder delim
+                // Discover folder delimiter
                 Vector resp = imapProtocol.executeList("", "");
                 if(resp.size() > 0) {
                     folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
@@ -164,6 +205,17 @@ public class ImapClient implements IncomingMailClient {
         }
         activeMailbox = null;
         connection.close();
+        
+        if(configChanged) {
+        	// Rebuild the connection to include new settings
+            connection = new Connection(
+                    accountConfig.getServerName(),
+                    accountConfig.getServerPort(),
+                    accountConfig.getServerSSL(),
+                    accountConfig.getDeviceSide());
+            imapProtocol = new ImapProtocol(connection);
+        	configChanged = false;
+        }
     }
 
     public boolean isConnected() {
@@ -171,8 +223,12 @@ public class ImapClient implements IncomingMailClient {
     }
 
     public AccountConfig getAcctConfig() {
-        return acctCfg;
+        return accountConfig;
     }
+
+    public ConnectionConfig getConnectionConfig() {
+		return getAcctConfig();
+	}
 
     public String getUsername() {
         return username;
@@ -204,7 +260,7 @@ public class ImapClient implements IncomingMailClient {
         boolean childrenExtension = capabilities.containsKey("CHILDREN");
         
         // Special logic to handle a user-specified folder prefix
-        String folderPrefix = acctCfg.getFolderPrefix();
+        String folderPrefix = accountConfig.getFolderPrefix();
         if(folderPrefix != null && folderPrefix.length() > 0) {
             FolderTreeItem fakeRootItem = new FolderTreeItem("", folderPrefix, folderDelim);
             getFolderTreeImpl(fakeRootItem, 0, childrenExtension);

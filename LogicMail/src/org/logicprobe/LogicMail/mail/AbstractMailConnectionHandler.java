@@ -173,6 +173,9 @@ public abstract class AbstractMailConnectionHandler {
 			if(client.open()) {
 				invalidLogin = false;
 				setConnectionState(STATE_OPENED);
+				MailConnectionManager.getInstance().fireMailConnectionStateChanged(
+						client.getConnectionConfig(),
+						MailConnectionStateEvent.STATE_CONNECTED);
 				return;
 			}
 			else {
@@ -180,8 +183,11 @@ public abstract class AbstractMailConnectionHandler {
 				return;
 			}
 		}
-		// Unable to open, so transition to closing
+		// Unable to open, so transition to closing and clear the queue
         setConnectionState(STATE_CLOSING);
+        synchronized(requestQueue) {
+        	requestQueue.clear();
+        }
 	}
     
 	/**
@@ -232,7 +238,6 @@ public abstract class AbstractMailConnectionHandler {
 			}
 		}
 		setConnectionState(STATE_IDLE);
-		
 	}
 
 	/**
@@ -285,8 +290,11 @@ public abstract class AbstractMailConnectionHandler {
      */
 	private void handleClosingConnection() throws IOException, MailException {
 		showStatus("Closing connection...");
-		client.close();
+		try { client.close(); } catch (IOException e) {} catch (MailException e) {}
 		setConnectionState(STATE_CLOSED);
+		MailConnectionManager.getInstance().fireMailConnectionStateChanged(
+				client.getConnectionConfig(),
+				MailConnectionStateEvent.STATE_DISCONNECTED);
 	}
 
 	/**
@@ -325,7 +333,7 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param message The message to show
 	 */
 	private void showStatus(String message) {
-		MailConnectionManager.getInstance().fireMailConnectionStatus(message);
+		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), message);
 	}
 	
 	/**
@@ -334,7 +342,7 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param message The message to show
 	 */
 	private void showError(String message) {
-		MailConnectionManager.getInstance().fireMailConnectionError(message);
+		MailConnectionManager.getInstance().fireMailConnectionError(client.getConnectionConfig(), message);
 	}
 	
 	/**
@@ -350,7 +358,11 @@ public abstract class AbstractMailConnectionHandler {
         if(invalidLogin || ((username != null && password != null) &&
            (username.trim().equals("") || password.trim().equals("")))) {
 
-        	MailConnectionLoginEvent e = new MailConnectionLoginEvent(this, username, password);
+        	MailConnectionLoginEvent e = new MailConnectionLoginEvent(
+        			this,
+        			client.getConnectionConfig(),
+        			username,
+        			password);
     		MailConnectionManager.getInstance().fireMailConnectionLogin(e);
         	
            if(!e.isCanceled()) {

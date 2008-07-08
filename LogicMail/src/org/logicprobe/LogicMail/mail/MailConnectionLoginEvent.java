@@ -31,19 +31,19 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.util.EventObject;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 
 /**
  * Object for mail connection status events.
  */
-public class MailConnectionLoginEvent extends EventObject {
+public class MailConnectionLoginEvent extends MailConnectionEvent {
 	private String username;
 	private String password;
 	private boolean canceled;
 	
 	/** Creates a new instance of MailConnectionStatusEvent */
-	public MailConnectionLoginEvent(Object source, String username, String password) {
-		super(source);
+	public MailConnectionLoginEvent(Object source, ConnectionConfig connectionConfig, String username, String password) {
+		super(source, connectionConfig);
 		this.username = username;
 		this.password = password;
 		this.canceled = false;

@@ -31,6 +31,7 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -85,19 +86,38 @@ public class MailConnectionManager {
     public MailConnectionListener[] getMailConnectionListener() {
         return (MailConnectionListener[])listenerList.getListeners(MailConnectionListener.class);
     }
+
+    /**
+     * Notifies all registered <tt>MailConnectionListener</tt>s
+     * of a connection state change.
+     * 
+     * @param connectionConfig The configuration for the connection that generated this event.
+     * @param state The new connection state.
+     */
+    void fireMailConnectionStateChanged(ConnectionConfig connectionConfig, int state) {
+    	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
+    	MailConnectionStateEvent e = null;
+    	for(int i=0; i<listeners.length; i++) {
+    		if(e == null) {
+    			e = new MailConnectionStateEvent(this, connectionConfig, state);
+    		}
+    		((MailConnectionListener)listeners[i]).mailConnectionStateChanged(e);
+    	}
+    }
     
     /**
      * Notifies all registered <tt>MailConnectionListener</tt>s
      * of an updated status message.
      * 
+     * @param connectionConfig The configuration for the connection that generated this event.
      * @param message The status message.
      */
-    void fireMailConnectionStatus(String message) {
+    void fireMailConnectionStatus(ConnectionConfig connectionConfig, String message) {
     	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
     	MailConnectionStatusEvent e = null;
     	for(int i=0; i<listeners.length; i++) {
     		if(e == null) {
-    			e = new MailConnectionStatusEvent(this, message);
+    			e = new MailConnectionStatusEvent(this, connectionConfig, message);
     		}
     		((MailConnectionListener)listeners[i]).mailConnectionStatus(e);
     	}
@@ -107,14 +127,15 @@ public class MailConnectionManager {
      * Notifies all registered <tt>MailConnectionListener</tt>s
      * of an error with the mail connection.
      * 
+     * @param connectionConfig The configuration for the connection that generated this event.
      * @param message The error message.
      */
-    void fireMailConnectionError(String message) {
+    void fireMailConnectionError(ConnectionConfig connectionConfig, String message) {
     	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
     	MailConnectionStatusEvent e = null;
     	for(int i=0; i<listeners.length; i++) {
     		if(e == null) {
-    			e = new MailConnectionStatusEvent(this, message);
+    			e = new MailConnectionStatusEvent(this, connectionConfig, message);
     		}
     		((MailConnectionListener)listeners[i]).mailConnectionError(e);
     	}

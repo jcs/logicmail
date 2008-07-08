@@ -32,8 +32,10 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.util.Vector;
+
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
+import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.SerializableVector;
 
 /**
@@ -42,6 +44,7 @@ import org.logicprobe.LogicMail.util.SerializableVector;
  */
 public class MailSettings {
     private static MailSettings instance;
+	private EventListenerList listenerList = new EventListenerList();
     private GlobalConfig globalConfig;
     private Vector identityConfigs;
     private Vector accountConfigs;
@@ -151,6 +154,14 @@ public class MailSettings {
     }
 
     /**
+     * Gets whether the provided account configuration exists
+     * within the mail settings.
+     */
+    public boolean containsAccountConfig(AccountConfig accountConfig) {
+    	return accountConfigs.contains(accountConfig);
+    }
+    
+    /**
      * Gets the number of outgoing server configurations
      */
     public int getNumOutgoing() {
@@ -192,6 +203,14 @@ public class MailSettings {
     public void removeOutgoingConfig(int index) {
         outgoingConfigs.removeElementAt(index);
     }
+
+    /**
+     * Gets whether the provided outgoing configuration exists
+     * within the mail settings.
+     */
+    public boolean containsOutgoingConfig(OutgoingConfig outgoingConfig) {
+    	return outgoingConfigs.contains(outgoingConfig);
+    }
     
     /**
      * Save the configurations to persistent storage.
@@ -229,6 +248,7 @@ public class MailSettings {
         }
 
         configStore.save();
+        fireMailSettingsSaved();
     }
         
     /**
@@ -288,6 +308,50 @@ public class MailSettings {
                     outgoingConfigs.addElement(loadedObj);
                 }
             }
+        }
+    }
+    
+	/**
+     * Adds a <tt>MailSettingsListener</tt> to the mail settings container.
+     * 
+     * @param l The <tt>MailSettingsListener</tt> to be added.
+     */
+    public void addMailSettingsListener(MailSettingsListener l) {
+        listenerList.add(MailSettingsListener.class, l);
+    }
+
+    /**
+     * Removes a <tt>MailSettingsListener</tt> from the mail settings container.
+     * 
+     * @param l The <tt>MailSettingsListener</tt> to be removed.
+     */
+    public void removeMailSettingsListener(MailSettingsListener l) {
+        listenerList.remove(MailSettingsListener.class, l);
+    }
+    
+    /**
+     * Returns an array of all <tt>MailSettingsListener</tt>s
+     * that have been added to the mail settings container.
+     * 
+     * @return All the <tt>MailSettingsListener</tt>s that have been added,
+     * or an empty array if no listeners have been added.
+     */
+    public MailSettingsListener[] getMailSettingsListener() {
+        return (MailSettingsListener[])listenerList.getListeners(MailSettingsListener.class);
+    }
+    
+    /**
+     * Notifies all registered <tt>MailSettingsListener</tt>s that
+     * the mail settings have been saved. 
+     */
+    protected void fireMailSettingsSaved() {
+        Object[] listeners = listenerList.getListeners(MailSettingsListener.class);
+        MailSettingsEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new MailSettingsEvent(this);
+            }
+            ((MailSettingsListener)listeners[i]).mailSettingsSaved(e);
         }
     }
 }

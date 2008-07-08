@@ -34,6 +34,11 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.MailConnectionListener;
+import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
+import org.logicprobe.LogicMail.mail.MailConnectionManager;
+import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
+import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
@@ -56,6 +61,15 @@ public class MailManager {
 		mailRootNode = new MailRootNode();
 		// Make sure the initial configuration is loaded
 		configurationChanged();
+		
+		MailConnectionManager.getInstance().addMailConnectionListener(new MailConnectionListener() {
+			public void mailConnectionStateChanged(MailConnectionStateEvent e) {
+				mailConnectionManager_MailConnectionStateChanged(e);
+			}
+			public void mailConnectionStatus(MailConnectionStatusEvent e) { }
+			public void mailConnectionError(MailConnectionStatusEvent e) { }
+			public void mailConnectionLogin(MailConnectionLoginEvent e) { }
+		});
 	}
 	
 	/**
@@ -123,6 +137,35 @@ public class MailManager {
 		
 		// Notify any listeners
 		fireMailConfigurationChanged();
+	}
+
+	/**
+	 * Handle connection state changes by updating the
+	 * appropriate account nodes.
+	 * 
+	 * @param e Event data.
+	 */
+	private void mailConnectionManager_MailConnectionStateChanged(MailConnectionStateEvent e) {
+		// Find the account node associated with this event
+		AccountNode[] accounts = mailRootNode.getAccounts();
+		AccountNode matchingAccount = null;
+		for(int i=0; i<accounts.length; i++) {
+			if(accounts[i].getAccountConfig().equals(e.getConnectionConfig())) {
+				matchingAccount = accounts[i];
+				break;
+			}
+		}
+		
+		// Update account state
+		if(matchingAccount != null) {
+			int state = e.getState();
+			if(state == MailConnectionStateEvent.STATE_CONNECTED) {
+				matchingAccount.setStatus(AccountNode.STATUS_ONLINE);
+			}
+			else if(state == MailConnectionStateEvent.STATE_DISCONNECTED) {
+				matchingAccount.setStatus(AccountNode.STATUS_OFFLINE);
+			}
+		}
 	}
 	
 	/**

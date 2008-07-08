@@ -38,6 +38,14 @@ import org.logicprobe.LogicMail.util.EventListener;
  */
 public interface MailConnectionListener extends EventListener {
 	/**
+	 * Invoked when there is a change in the state of
+	 * the mail connection.
+	 * 
+	 * @param e State event data
+	 */
+	public void mailConnectionStateChanged(MailConnectionStateEvent e);
+	
+	/**
 	 * Invoked when there is a change in status from
 	 * the mail connection.
 	 *

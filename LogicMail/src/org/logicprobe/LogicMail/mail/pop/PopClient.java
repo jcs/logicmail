@@ -36,7 +36,11 @@ import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
@@ -57,12 +61,13 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class PopClient implements IncomingMailClient {
     private GlobalConfig globalConfig;
-    private PopConfig acctCfg;
+    private PopConfig accountConfig;
     private Connection connection;
     private PopProtocol popProtocol;
     private String username;
     private String password;
     private boolean openStarted;
+    private boolean configChanged;
     
     /**
      * Active mailbox.  Since POP3 does not support multiple
@@ -72,27 +77,67 @@ public class PopClient implements IncomingMailClient {
     private FolderTreeItem activeMailbox = null;
     
     /** Creates a new instance of PopClient */
-    public PopClient(GlobalConfig globalConfig, PopConfig acctCfg) {
-        this.acctCfg = acctCfg;
+    public PopClient(GlobalConfig globalConfig, PopConfig accountConfig) {
+        this.accountConfig = accountConfig;
         this.globalConfig = globalConfig;
         connection = new Connection(
-                acctCfg.getServerName(),
-                acctCfg.getServerPort(),
-                acctCfg.getServerSSL(),
-                acctCfg.getDeviceSide());
+                accountConfig.getServerName(),
+                accountConfig.getServerPort(),
+                accountConfig.getServerSSL(),
+                accountConfig.getDeviceSide());
         popProtocol = new PopProtocol(connection);
-        username = acctCfg.getServerUser();
-        password = acctCfg.getServerPass();
+        username = accountConfig.getServerUser();
+        password = accountConfig.getServerPass();
         
         // Create our dummy folder item for the inbox
         activeMailbox = new FolderTreeItem("INBOX", "INBOX", "");
         activeMailbox.setMsgCount(0);
         openStarted = false;
+        configChanged = false;
+        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+    }
+
+    private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
+		public void mailSettingsSaved(MailSettingsEvent e) {
+			mailSettings_MailSettingsSaved(e);
+		}
+    };
+    
+    private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
+		if(MailSettings.getInstance().containsAccountConfig(accountConfig)) {
+			// Refresh authentication information from the configuration
+	        username = accountConfig.getServerUser();
+	        password = accountConfig.getServerPass();
+	        
+	        if(!isConnected()) {
+	        	// Rebuild the connection to include new settings
+	            connection = new Connection(
+	                    accountConfig.getServerName(),
+	                    accountConfig.getServerPort(),
+	                    accountConfig.getServerSSL(),
+	                    accountConfig.getDeviceSide());
+	            popProtocol = new PopProtocol(connection);
+	        }
+	        else {
+		        // Set a flag to make sure we rebuild the Connection object
+		        // the next time we close the connection.
+		        configChanged = true;
+	        }
+		}
+		else {
+			// We have been deleted, so unregister to make sure we
+			// no longer affect the system and can be garbage collected.
+			MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
+		}
     }
 
     public AccountConfig getAcctConfig() {
-        return acctCfg;
+        return accountConfig;
     }
+
+    public ConnectionConfig getConnectionConfig() {
+		return getAcctConfig();
+	}
 
     public boolean open() throws IOException, MailException {
         if(!openStarted) {
@@ -121,6 +166,17 @@ public class PopClient implements IncomingMailClient {
         }
         activeMailbox = null;
         connection.close();
+        
+        if(configChanged) {
+        	// Rebuild the connection to include new settings
+            connection = new Connection(
+                    accountConfig.getServerName(),
+                    accountConfig.getServerPort(),
+                    accountConfig.getServerSSL(),
+                    accountConfig.getDeviceSide());
+            popProtocol = new PopProtocol(connection);
+            configChanged = false;
+        }
     }
 
     public boolean isConnected() {

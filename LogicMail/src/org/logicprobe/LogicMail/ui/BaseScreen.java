@@ -45,6 +45,7 @@ import org.logicprobe.LogicMail.util.EventObject;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
 import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
+import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 
 /**
@@ -72,6 +73,7 @@ public abstract class BaseScreen extends MainScreen {
     }
     
     private MailConnectionListener mailConnectionListener = new MailConnectionListener() {
+		public void mailConnectionStateChanged(MailConnectionStateEvent e) { }
 		public void mailConnectionStatus(MailConnectionStatusEvent e) {
 			if(isExposed) {
 				mailConnectionListener_MailConnectionStatus(e);

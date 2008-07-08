@@ -59,8 +59,6 @@ import org.logicprobe.LogicMail.model.MailManagerListener;
 /**
  * Main screen for the application, providing a unified
  * view of accounts and folders.
- * 
- * Note: Currently a UI mock-up
  */
 public class MailHomeScreen extends BaseScreen {
 	private TreeField treeField;

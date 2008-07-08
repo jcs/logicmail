@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
+
 /**
  * This is a generic interface to all mail protocols.
  * This class allows most of the background event handling
@@ -63,6 +65,12 @@ public interface MailClient {
      */
     public abstract void close() throws IOException, MailException;
 
+    /**
+     * Gets the connection configuration associated with this client.
+     * @return Connection configuration.
+     */
+    public abstract ConnectionConfig getConnectionConfig();
+    
     /**
      * Find out if the connection is active.
      * @return True if the connection is active, false otherwise

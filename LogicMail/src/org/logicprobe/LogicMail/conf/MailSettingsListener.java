@@ -29,27 +29,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.conf;
 
-import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.util.EventListener;
 
 /**
- * Object for mail connection status events.
+ * Listener for MailSettings events.
  */
-public class MailConnectionStatusEvent extends MailConnectionEvent {
-	private String message;
-	
-	/** Creates a new instance of MailConnectionStatusEvent */
-	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, String message) {
-		super(source, connectionConfig);
-		this.message = message;
-	}
-	
+public interface MailSettingsListener extends EventListener {
 	/**
-	 * Gets the status message.
-	 * @return Status message
+	 * Invoked when settings have been saved.
+	 * 
+	 * @param e Save event data.
 	 */
-	public String getMessage() {
-		return message;
-	}
+	public void mailSettingsSaved(MailSettingsEvent e);
 }

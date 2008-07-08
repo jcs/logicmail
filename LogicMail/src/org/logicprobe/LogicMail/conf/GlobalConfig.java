@@ -45,7 +45,7 @@ public class GlobalConfig implements Serializable {
     private long uniqueId;
     /** number of message headers to retrieve */
     private int retMsgCount;
-    /** true for ascending, false for decending */
+    /** true for ascending, false for descending */
     private boolean dispOrder;
     /** IMAP: maximum message size */
     private int imapMaxMsgSize;
