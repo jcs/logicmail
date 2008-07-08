@@ -39,7 +39,6 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
-import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.EventObject;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
@@ -122,11 +121,8 @@ public abstract class BaseScreen extends MainScreen {
     private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
         public void run() {
             // Show the about dialog
-            String aboutMsg =
-            	AppInfo.getName() + "\n" +
-            	"Version " + AppInfo.getVersion() + "\n" +
-            	"http://logicmail.sf.net/";
-            Dialog.inform(aboutMsg);
+        	AboutDialog dialog = new AboutDialog();
+        	dialog.doModal();
         }
     };
     private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
