@@ -46,7 +46,6 @@ public class MessageTest extends TestCase {
     private MessageEnvelope envelope;
     private MessagePart body;
     private Message message;
-    private MessageEvent messageEvent;
     
     public MessageTest() {
     }
@@ -77,13 +76,6 @@ public class MessageTest extends TestCase {
         envelope.messageId = "1234567890";
         
         message = new Message(envelope, body);
-        
-        messageEvent = null;
-        message.addMessageListener(new MessageListener() {
-            public void messageTransformed(MessageEvent e) {
-                messageEvent = e;
-            }
-        });
     }
 
     public void tearDown() {
@@ -91,7 +83,6 @@ public class MessageTest extends TestCase {
         envelope = null;
         body = null;
         message = null;
-        messageEvent = null;
     }
 
     public void testMessage() {
@@ -139,10 +130,6 @@ public class MessageTest extends TestCase {
         assertEquals(envelope.replyTo[0], replyEnvelope.to[0]);
         assertTrue(replyEnvelope.cc == null || replyEnvelope.cc.length == 0);
         assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
-        
-        assertNotNull(messageEvent);
-        assertEquals(MessageEvent.TO_REPLY, messageEvent.getAction());
-        assertEquals(replyMessage, messageEvent.getTransformedMessage());
     }
     
     public void testToReplyAllMessage() {
@@ -191,10 +178,6 @@ public class MessageTest extends TestCase {
         assertEquals(envelope.to[1], replyEnvelope.to[1]);
 
         assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
-
-        assertNotNull(messageEvent);
-        assertEquals(MessageEvent.TO_REPLYALL, messageEvent.getAction());
-        assertEquals(replyMessage, messageEvent.getTransformedMessage());
     }
     
     public void testToForwardMessage() {
@@ -228,10 +211,6 @@ public class MessageTest extends TestCase {
         assertNull(forwardEnvelope.to);
         assertNull(forwardEnvelope.cc);
         assertNull(forwardEnvelope.inReplyTo);
-
-        assertNotNull(messageEvent);
-        assertEquals(MessageEvent.TO_FORWARD, messageEvent.getAction());
-        assertEquals(forwardMessage, messageEvent.getTransformedMessage());
     }
     
     public Test suite() {
