@@ -117,6 +117,52 @@ public class NetworkMailStoreTest extends TestCase {
     public void testProperties() {
     	assertTrue(!instance.isLocal());
     }
+
+    /**
+     * Tests the mail store shutdown process
+     */
+    public void testShutdown() {
+    	// Make a fake request, then call for shutdown
+    	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
+    	instance.requestFolderTree();
+    	instance.shutdown(true);
+    	
+    	// Assert that both open and close were really called, and that
+    	// the request was processed.
+    	assertTrue("open", fakeIncomingMailClient.openCalled);
+    	assertNotNull("request", eventFolderTreeUpdated);
+    	assertTrue("close", fakeIncomingMailClient.closeCalled);
+	}
+    
+    /**
+     * Tests the mail store shutdown/restart process
+     */
+    public void testRestart() {
+    	// Make a fake request, then call for shutdown
+    	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
+    	instance.requestFolderTree();
+    	instance.shutdown(true);
+    	
+    	// Assert that both open and close were really called, and that
+    	// the request was processed.
+    	assertTrue("open", fakeIncomingMailClient.openCalled);
+    	assertNotNull("request", eventFolderTreeUpdated);
+    	assertTrue("close", fakeIncomingMailClient.closeCalled);
+    	
+    	// Reset the sense flags
+    	fakeIncomingMailClient.openCalled = false;
+    	eventFolderTreeUpdated = null;
+    	fakeIncomingMailClient.closeCalled = false;
+    	
+    	// Restart the thread and try again
+    	instance.restart();
+    	instance.requestFolderTree();
+    	instance.shutdown(true);
+    	
+    	assertTrue("restart open", fakeIncomingMailClient.openCalled);
+    	assertNotNull("restart request", eventFolderTreeUpdated);
+    	assertTrue("restart close", fakeIncomingMailClient.closeCalled);
+	}
     
     public void testRequestFolderTree() {
     	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
@@ -225,6 +271,10 @@ public class NetworkMailStoreTest extends TestCase {
 
         suite.addTest(new NetworkMailStoreTest("properties", new TestMethod()
         { public void run(TestCase tc) {((NetworkMailStoreTest)tc).testProperties(); } }));
+        suite.addTest(new NetworkMailStoreTest("shutdown", new TestMethod()
+        { public void run(TestCase tc) {((NetworkMailStoreTest)tc).testShutdown(); } }));
+        suite.addTest(new NetworkMailStoreTest("restart", new TestMethod()
+        { public void run(TestCase tc) {((NetworkMailStoreTest)tc).testRestart(); } }));
         suite.addTest(new NetworkMailStoreTest("requestFolderTree", new TestMethod()
         { public void run(TestCase tc) {((NetworkMailStoreTest)tc).testRequestFolderTree(); } }));
         suite.addTest(new NetworkMailStoreTest("requestFolderStatus", new TestMethod()
@@ -244,6 +294,8 @@ public class NetworkMailStoreTest extends TestCase {
     }
 
 	private class FakeIncomingMailClient implements IncomingMailClient {
+		public boolean openCalled = false;
+		public boolean closeCalled = false;
 		public FolderTreeItem activeFolder;
 		public int firstIndex;
 		public int lastIndex;
@@ -255,8 +307,8 @@ public class NetworkMailStoreTest extends TestCase {
 		public int refreshedMsgCount;
 		
 		public boolean isConnected() { return true; }
-		public boolean open() throws IOException, MailException { return true; }
-		public void close() throws IOException, MailException { }
+		public boolean open() throws IOException, MailException { openCalled = true; return true; }
+		public void close() throws IOException, MailException { closeCalled = true; }
 		public String getPassword() { return fakeAccountConfig.getServerPass(); }
 		public String getUsername() { return fakeAccountConfig.getServerUser(); }
 		public void setPassword(String password) { fakeAccountConfig.setServerPass(password); }
