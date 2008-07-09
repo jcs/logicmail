@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -88,6 +89,7 @@ public class MessageNode implements Node {
 	void setMessage(Message message) {
 		this.message = message;
 		if(this.message != null) {
+			folderMessage.setRecent(false);
 			fireMessageStatusChanged(MessageNodeEvent.TYPE_LOADED);
 		}
 	}
@@ -99,6 +101,9 @@ public class MessageNode implements Node {
 	 * @return The message.
 	 */
 	public Message getMessage() {
+		if(this.message != null) {
+			folderMessage.setSeen(true);
+		}
 		return this.message;
 	}
 	
@@ -133,6 +138,36 @@ public class MessageNode implements Node {
 		parent.getParentAccount().getMailStore().requestMessage(
 				parent.getFolderTreeItem(),
 				folderMessage);
+	}
+	
+	/**
+	 * Called to request that the message state be changed to deleted.
+	 * Completion of this request will be indicated by a status
+	 * change event for the message flags.
+	 */
+	public void deleteMessage() {
+		parent.getParentAccount().getMailStore().requestMessageDelete(
+				parent.getFolderTreeItem(),
+				folderMessage);
+	}
+	
+	/**
+	 * Called to request that the state of a deleted message be changed
+	 * back to normal.
+	 * Completion of this request will be indicated by a status
+	 * change event for the message flags.
+	 * <p>
+	 * If the mail store does not support undelete, then this method
+	 * will do nothing.
+	 * </p>
+	 */
+	public void undeleteMessage() {
+		AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+		if(mailStore.hasUndelete()) {
+			mailStore.requestMessageUndelete(
+					parent.getFolderTreeItem(),
+					folderMessage);
+		}
 	}
 	
 	/**

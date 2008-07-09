@@ -218,6 +218,15 @@ public class AccountNode implements Node {
 	}
 	
 	/**
+	 * Gets whether this account supports undelete.
+	 * 
+	 * @return True if supported, false otherwise.
+	 */
+	public boolean hasUndelete() {
+		return this.mailStore.hasUndelete();
+	}
+	
+	/**
 	 * Called to trigger a refresh of the mailboxes under
 	 * this account.  Completion is signaled by an
 	 * AccountStatusChanged event.
@@ -400,6 +409,7 @@ public class AccountNode implements Node {
 	public void mailStore_messageFlagsChanged(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
+			messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
 		}
 	}
 	
@@ -411,6 +421,7 @@ public class AccountNode implements Node {
 	public void mailStore_messageDeleted(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
+			messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
 		}
 	}
 	
@@ -422,6 +433,7 @@ public class AccountNode implements Node {
 	public void mailStore_messageUndeleted(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
+			messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
 		}
 	}
 	

@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Calendar;
 import java.util.Vector;
-import net.rim.device.api.system.Application;
 import net.rim.device.api.i18n.SimpleDateFormat;
 import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Font;
@@ -43,6 +42,7 @@ import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.system.UnsupportedOperationException;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -54,6 +54,8 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.MessageNodeEvent;
+import org.logicprobe.LogicMail.model.MessageNodeListener;
 
 /**
  * Display the active mailbox listing.
@@ -74,8 +76,6 @@ public class MailboxScreen extends BaseScreen {
     private int dateWidth;
     private int senderWidth;
     private int maxWidth;
-    
-    // TODO: Register listeners with all known messages and handle status changes
     
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
@@ -104,7 +104,21 @@ public class MailboxScreen extends BaseScreen {
 
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
 		public void mailboxStatusChanged(MailboxNodeEvent e) {
-			mailboxNode_MailboxStatusChanged(e);
+			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+				public void run() {
+					mailboxNode_MailboxStatusChanged((MailboxNodeEvent)getEvent());
+				}
+			});
+		}
+    };
+    
+    private MessageNodeListener messageNodeListener = new MessageNodeListener() {
+		public void messageStatusChanged(MessageNodeEvent e) {
+			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+				public void run() {
+					messageNode_MessageStatusChanged((MessageNodeEvent)getEvent());
+				}
+			});
 		}
     };
 
@@ -121,11 +135,21 @@ public class MailboxScreen extends BaseScreen {
         	this.mailboxNode.refreshMessages();
         	firstDisplay = false;
         }
+        int size = knownMessages.size();
+        for(int i=0; i<size; i++) {
+        	((MessageNode)knownMessages.elementAt(i)).addMessageNodeListener(messageNodeListener);
+        }
+        
         // TODO: Support message list changes between display pushing
     }
     
 	protected void onUndisplay() {
         this.mailboxNode.removeMailboxNodeListener(mailboxNodeListener);
+        int size = knownMessages.size();
+        for(int i=0; i<size; i++) {
+        	((MessageNode)knownMessages.elementAt(i)).removeMessageNodeListener(messageNodeListener);
+        }
+        
     	super.onUndisplay();
     }
     
@@ -172,40 +196,16 @@ public class MailboxScreen extends BaseScreen {
 //            //UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
 //        }
 //    };
-//    private MenuItem deleteItem = new MenuItem("Delete", 130, 10) {
-//        public void run() {
-//            if(Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to delete this message?") == Dialog.YES) {
-//                int index = msgList.getSelectedIndex();
-//                if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
-//                    DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], true);
-//                    deleteMessageHandler.setListener(new MailClientHandlerListener() {
-//                        public void mailActionComplete(MailClientHandler source, boolean result) {
-//                            source.setListener(null);
-//                            msgList.setDirty(true);
-//                            msgList.invalidate();
-//                        }
-//                    });
-//                    deleteMessageHandler.start();
-//                }
-//            }
-//        }
-//    };
-//    private MenuItem undeleteItem = new MenuItem("Undelete", 135, 10) {
-//        public void run() {
-//            int index = msgList.getSelectedIndex();
-//            if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
-//                DeleteMessageHandler deleteMessageHandler = new DeleteMessageHandler(messages[index], false);
-//                deleteMessageHandler.setListener(new MailClientHandlerListener() {
-//                    public void mailActionComplete(MailClientHandler source, boolean result) {
-//                        source.setListener(null);
-//                        msgList.setDirty(true);
-//                        msgList.invalidate();
-//                    }
-//                });
-//                deleteMessageHandler.start();
-//            }
-//        }
-//    };
+    private MenuItem deleteItem = new MenuItem("Delete", 130, 10) {
+        public void run() {
+        	deleteSelectedMessage();
+        }
+    };
+    private MenuItem undeleteItem = new MenuItem("Undelete", 135, 10) {
+        public void run() {
+        	undeleteSelectedMessage();
+        }
+    };
 
     protected void makeMenu(Menu menu, int instance) {
     	if(messageListField.getSelectedIndex() != -1) {
@@ -215,17 +215,18 @@ public class MailboxScreen extends BaseScreen {
 //        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
 //            menu.add(compositionItem);
 //        }
-//        int index = msgList.getSelectedIndex();
-//        if(index >= 0 && index < msgList.getSize() && messages[index] != null) {
-//            if(messages[index].isDeleted()) {
-//                if(client.hasUndelete()) {
-//                    menu.add(undeleteItem);
-//                }
-//            }
-//            else {
-//                menu.add(deleteItem);
-//            }
-//        }
+        int index = messageListField.getSelectedIndex();
+        if(index >= 0 && index < messageListField.getSize() && !displayedMessages.isEmpty()) {
+        	MessageNode messageNode = (MessageNode)displayedMessages.elementAt(index);
+            if(messageNode.getFolderMessage().isDeleted()) {
+                if(mailboxNode.getParentAccount().hasUndelete()) {
+                    menu.add(undeleteItem);
+                }
+            }
+            else {
+                menu.add(deleteItem);
+            }
+        }
         super.makeMenu(menu, instance);
     }
 
@@ -237,15 +238,17 @@ public class MailboxScreen extends BaseScreen {
     private void mailboxNode_MailboxStatusChanged(MailboxNodeEvent e) {
     	if(e.getType() == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
     		MessageNode[] messageNodes = e.getAffectedMessages();
-    		synchronized(Application.getEventLock()) {
-	    		for(int i=0; i<messageNodes.length; i++) {
-	    			knownMessages.addElement(messageNodes[i]);
-	    			
-	    			if(isMessageDisplayable(messageNodes[i])) {
-	    				// Insert the message
-		    			insertDisplayableMessage(messageNodes[i]);
-	    			}
-	    		}
+    		for(int i=0; i<messageNodes.length; i++) {
+    			knownMessages.addElement(messageNodes[i]);
+    			
+    			if(isMessageDisplayable(messageNodes[i])) {
+    				// Insert the message
+	    			insertDisplayableMessage(messageNodes[i]);
+    			}
+    			
+    			if(isDisplayed()) {
+    				messageNodes[i].addMessageNodeListener(messageNodeListener);
+    			}
     		}
     	}
 	}
@@ -309,6 +312,35 @@ public class MailboxScreen extends BaseScreen {
 		}
     }
     
+    /**
+     * Handles message status change events.
+     * 
+     * @param e Event data.
+     */
+	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
+		if(e.getType() == MessageNodeEvent.TYPE_FLAGS) {
+			MessageNode messageNode = (MessageNode)e.getSource();
+			boolean currentlyDisplayed = displayedMessages.contains(messageNode);
+			boolean displayable = isMessageDisplayable(messageNode);
+			
+			if(currentlyDisplayed && !displayable) {
+				// Remove from display
+				int index = displayedMessages.indexOf(messageNode);
+				displayedMessages.removeElementAt(index);
+				messageListField.delete(index);
+			}
+			else if(!currentlyDisplayed && displayable) {
+				// Add to display
+				insertDisplayableMessage(messageNode);
+			}
+			else if(currentlyDisplayed) {
+				// Just a visual flag update, so find and invalidate the item
+				int index = displayedMessages.indexOf(messageNode);
+				messageListField.invalidate(index);
+			}
+		}
+	}
+
     /**
      * Draw a row of the message list.
      * Currently using a double row so that more meaningful
@@ -406,27 +438,50 @@ public class MailboxScreen extends BaseScreen {
         return -1;
     }
 
-    private void openSelectedMessage()
-    {
+    private MessageNode getSelectedMessage() {
         int index = messageListField.getSelectedIndex();
         if(index < 0 || index > displayedMessages.size()) {
-            return;
+            return null;
         }
-        UiApplication.getUiApplication().pushScreen(new MessageScreen((MessageNode)displayedMessages.elementAt(index)));
+        else {
+        	return (MessageNode)displayedMessages.elementAt(index);
+        }
+    }
+    
+    private void openSelectedMessage()
+    {
+    	MessageNode messageNode = getSelectedMessage();
+    	if(messageNode != null) {
+    		UiApplication.getUiApplication().pushScreen(new MessageScreen(messageNode));
+    	}
     }
 
     private void openSelectedMessageProperties()
     {
-        int index = messageListField.getSelectedIndex();
-        if(index < 0 || index > displayedMessages.size()) {
-            return;
-        }
-        
-        MessagePropertiesDialog dialog =
-        	new MessagePropertiesDialog((MessageNode)displayedMessages.elementAt(index));
-        dialog.doModal();
+    	MessageNode messageNode = getSelectedMessage();
+    	if(messageNode != null) {
+	        MessagePropertiesDialog dialog =
+	        	new MessagePropertiesDialog(messageNode);
+	        dialog.doModal();
+    	}
     }
 
+    private void deleteSelectedMessage() {
+    	MessageNode messageNode = getSelectedMessage();
+    	if(messageNode != null) {
+	        if(Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to delete this message?") == Dialog.YES) {
+	        	messageNode.deleteMessage();
+	        }
+    	}
+    }
+    
+    private void undeleteSelectedMessage() {
+    	MessageNode messageNode = getSelectedMessage();
+    	if(messageNode != null) {
+    		messageNode.undeleteMessage();
+    	}
+    }
+    
     public boolean keyChar(char key,
                            int status,
                            int time)
@@ -437,6 +492,10 @@ public class MailboxScreen extends BaseScreen {
                 openSelectedMessage();
                 retval = true;
                 break;
+            case Keypad.KEY_BACKSPACE:
+            	deleteSelectedMessage();
+            	retval = true;
+            	break;
         }
         return retval;
     }
