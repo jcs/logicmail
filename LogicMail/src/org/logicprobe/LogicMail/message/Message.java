@@ -32,13 +32,11 @@
 package org.logicprobe.LogicMail.message;
 
 import net.rim.device.api.util.Arrays;
-import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
  * This class encapsulates all the data to represent an E-Mail message.
  */
 public class Message {
-    EventListenerList listenerList = new EventListenerList();
     private MessageEnvelope envelope;
     private MessagePart body;
     
@@ -82,7 +80,6 @@ public class Message {
         MessageEnvelope replyEnvelope = createReplyEnvelope();
 
         Message result = new Message(replyEnvelope, replyBody);
-        fireMessageTransformed(MessageEvent.TO_REPLY, result);
         return result;
     }
 
@@ -177,15 +174,14 @@ public class Message {
         }
         
         Message result = new Message(replyEnvelope, replyBody);
-        fireMessageTransformed(MessageEvent.TO_REPLYALL, result);
         return result;
     }
 
     /**
      * Get a message that represents a forwarding of the original message.
-     * The resulting header will be clean, asside from the subject.
+     * The resulting header will be clean, aside from the subject.
      * The resulting body will be the same as a reply message (single TextPart),
-     * asside from some of the original header fields being prepended.
+     * aside from some of the original header fields being prepended.
      *
      * @return Forwarded message
      */
@@ -208,31 +204,6 @@ public class Message {
         }
         
         Message result = new Message(forwardEnvelope, forwardBody);
-        fireMessageTransformed(MessageEvent.TO_FORWARD, result);
         return result;
-    }
-    
-    
-    public void addMessageListener(MessageListener l) {
-        listenerList.add(MessageListener.class, l);
-    }
-
-    public void removeMessageListener(MessageListener l) {
-        listenerList.remove(MessageListener.class, l);
-    }
-    
-    public MessageListener[] getMessageListeners() {
-        return (MessageListener[])listenerList.getListeners(MessageListener.class);
-    }
-    
-    protected void fireMessageTransformed(int action, Message transformedMessage) {
-        Object[] listeners = listenerList.getListeners(MessageListener.class);
-        MessageEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MessageEvent(this, action, transformedMessage);
-            }
-            ((MessageListener)listeners[i]).messageTransformed(e);
-        }
     }
 }
