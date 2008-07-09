@@ -154,6 +154,11 @@ public class MailHomeScreen extends BaseScreen {
       		accountNode.refreshMailboxStatus();
         }
     };
+    private MenuItem disconnectItem = new MenuItem("Disconnect", 200000, 9) {
+        public void run() {
+            disconnectSelectedAccount();
+        }
+    };
     
 	private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
 		public void mailboxStatusChanged(MailboxNodeEvent e) {
@@ -183,10 +188,14 @@ public class MailHomeScreen extends BaseScreen {
     			menu.add(selectFolderItem);
     		}
     		else if(node instanceof AccountNode) {
-    			if(((AccountNode)node).getRootMailbox() != null) {
+    			AccountNode accountNode = (AccountNode)node; 
+    			if(accountNode.getRootMailbox() != null) {
     				menu.add(refreshStatusItem);
     			}
     			menu.add(refreshItem);
+    			if(accountNode.getStatus() == AccountNode.STATUS_ONLINE) {
+    				menu.add(disconnectItem);
+    			}
     		}
     	}
         super.makeMenu(menu, instance);
@@ -374,5 +383,19 @@ public class MailHomeScreen extends BaseScreen {
 			}
 		}
 		return false;
+	}
+	
+	/**
+	 * Disconnect from the mail connection associated with
+	 * the selected account.
+	 */
+	private void disconnectSelectedAccount() {
+		int id = treeField.getCurrentNode();
+		if(id != -1) {
+			Node node = ((TreeNode)treeField.getCookie(id)).node;
+			if(node instanceof AccountNode) {
+				((AccountNode)node).requestDisconnect(false);
+			}
+		}
 	}
 }

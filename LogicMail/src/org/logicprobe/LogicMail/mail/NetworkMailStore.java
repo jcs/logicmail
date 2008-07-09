@@ -68,6 +68,15 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.shutdown(wait);
 	}
 
+	/**
+	 * Restarts the mail connection handler thread.
+	 */
+	public void restart() {
+		if(!connectionHandler.isRunning()) {
+			connectionHandler.start();
+		}
+	}
+	
 	public boolean isLocal() {
 		return false;
 	}

@@ -63,6 +63,7 @@ public class AccountNode implements Node {
 	private EventListenerList listenerList = new EventListenerList();
 	private AccountConfig accountConfig;
 	private int status;
+	private boolean shutdown = false;
 	
 	public final static int STATUS_LOCAL   = 0;
 	public final static int STATUS_OFFLINE = 1;
@@ -204,6 +205,9 @@ public class AccountNode implements Node {
 	void setStatus(int status) {
 		if(this.status != status) {
 			this.status = status;
+			if(this.status == STATUS_OFFLINE && !shutdown && mailStore instanceof NetworkMailStore) {
+				((NetworkMailStore)mailStore).restart();
+			}
 			fireAccountStatusChanged(AccountNodeEvent.TYPE_CONNECTION);
 		}
 	}
@@ -215,6 +219,22 @@ public class AccountNode implements Node {
 	 */
 	public int getStatus() {
 		return this.status;
+	}
+	
+	/**
+	 * Requests that this account be disconnected.
+	 * <p>
+	 * This method is only valid for the <tt>STATUS_ONLINE<tt>
+	 * status, and will do nothing in any other state.
+	 * </p>
+	 * 
+	 * @param shutdown True if the application is closing, false if the mail store should be usable again.
+	 */
+	public void requestDisconnect(boolean shutdown) {
+		if(status == STATUS_ONLINE && mailStore instanceof NetworkMailStore) {
+			((NetworkMailStore)mailStore).shutdown(false);
+			this.shutdown = shutdown;
+		}
 	}
 	
 	/**

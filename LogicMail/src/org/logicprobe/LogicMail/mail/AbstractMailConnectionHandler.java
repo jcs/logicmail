@@ -51,8 +51,7 @@ public abstract class AbstractMailConnectionHandler {
 	private MailConnectionHandlerListener listener;
 	private int retryCount;
 	private boolean invalidLogin;
-	
-	// TODO: Handle the state transitions for shutdown
+	private boolean shutdownInProgress;
 	
 	// The various states of a mail connection
 	public static final int STATE_CLOSED   = 0;
@@ -70,6 +69,7 @@ public abstract class AbstractMailConnectionHandler {
 		this.listener = null;
 		this.retryCount = 0;
 		this.invalidLogin = false;
+		this.shutdownInProgress = false;
 	}
 
 	/**
@@ -77,6 +77,9 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	public void start() {
 		if(!connectionThread.isAlive()) {
+			if(connectionThread.isShutdown()) {
+				connectionThread = new ConnectionThread();
+			}
 			connectionThread.start();
 		}
     }
@@ -90,6 +93,9 @@ public abstract class AbstractMailConnectionHandler {
 		if(!connectionThread.isAlive()) {
 			return;
 		}
+		synchronized(requestQueue) {
+			shutdownInProgress = true;
+		}
 		if(wait) {
 			Object element;
 			synchronized(requestQueue) {
@@ -102,12 +108,29 @@ public abstract class AbstractMailConnectionHandler {
 				Thread.yield();
 			}
 		}
+		setConnectionState(STATE_CLOSING);
 		connectionThread.shutdown();
 		try {
 			connectionThread.join();
 		} catch (InterruptedException e) { }
+		
+		synchronized(requestQueue) {
+			shutdownInProgress = false;
+		}
+		MailConnectionManager.getInstance().fireMailConnectionStateChanged(
+				client.getConnectionConfig(),
+				MailConnectionStateEvent.STATE_DISCONNECTED);
 	}
 
+	/**
+	 * Gets whether the connection thread is currently running.
+	 * 
+	 * @return True if running, false if shutdown.
+	 */
+	public boolean isRunning() {
+		return connectionThread.isAlive();
+	}
+	
 	/**
 	 * Sets the listener for events from this class.
 	 * The listener is the class that handles results from requests.
@@ -129,6 +152,7 @@ public abstract class AbstractMailConnectionHandler {
 	
 	/**
 	 * Add a request to the queue.
+	 * If the connection is shutting down, all requests will be ignored.
 	 * 
 	 * @param type Type of request
 	 * @param params Parameters passed to the corresponding
@@ -136,8 +160,10 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	public void addRequest(int type, Object[] params) {
 		synchronized(requestQueue) {
-			requestQueue.add(new Object[] {new Integer(type), params});
-			requestQueue.notifyAll();
+			if(!shutdownInProgress) {
+				requestQueue.add(new Object[] {new Integer(type), params});
+				requestQueue.notifyAll();
+			}
 		}
 	}
 	
@@ -292,9 +318,11 @@ public abstract class AbstractMailConnectionHandler {
 		showStatus("Closing connection...");
 		try { client.close(); } catch (IOException e) {} catch (MailException e) {}
 		setConnectionState(STATE_CLOSED);
-		MailConnectionManager.getInstance().fireMailConnectionStateChanged(
-				client.getConnectionConfig(),
-				MailConnectionStateEvent.STATE_DISCONNECTED);
+		if(!shutdownInProgress) {
+			MailConnectionManager.getInstance().fireMailConnectionStateChanged(
+					client.getConnectionConfig(),
+					MailConnectionStateEvent.STATE_DISCONNECTED);
+		}
 	}
 
 	/**
@@ -485,7 +513,7 @@ public abstract class AbstractMailConnectionHandler {
 	        		switch(state) {
 	        		case STATE_CLOSED:
 	        			handleClosedConnection();
-	        			if(state == STATE_CLOSED && shutdown) {
+	        			if(shutdown) {
 	        				shutdownComplete = true;
 	        			}
 	        			break;
@@ -506,14 +534,25 @@ public abstract class AbstractMailConnectionHandler {
 	        			break;
 	        		}
         		} catch (IOException e) {
-        			handleIOException(e);
-        		} catch (MailException e) {
-        			handleMailException(e);
-        		} catch (Throwable t) {
-        			handleThrowable(t);
-        		} finally {
-        			if(state == STATE_CLOSING && shutdown) {
+        			if(state == STATE_CLOSING) {
         				shutdownComplete = true;
+        			}
+        			else {
+        				handleIOException(e);
+        			}
+        		} catch (MailException e) {
+        			if(state == STATE_CLOSING) {
+        				shutdownComplete = true;
+        			}
+        			else {
+        				handleMailException(e);
+        			}
+        		} catch (Throwable t) {
+        			if(state == STATE_CLOSING) {
+        				shutdownComplete = true;
+        			}
+        			else {
+        				handleThrowable(t);
         			}
         		}
         	}

@@ -55,6 +55,14 @@ public abstract class AbstractMailStore {
 
 	//TODO: Mechanism for changing message flags for Reply/Forward/etc.
 	
+	/**
+	 * Shutdown the mail store.
+	 * <p>
+	 * Only relevant for non-local stores which have stateful connections.
+	 * </p>
+	 * 
+	 * @param wait If true, wait for all pending requests to finish.
+	 */
 	public abstract void shutdown(boolean wait);
 	
 	/**

@@ -39,13 +39,14 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
-import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.EventObject;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
 import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
 
 /**
  * This class is the base for all screens in LogicMail.
@@ -127,14 +128,33 @@ public abstract class BaseScreen extends MainScreen {
     };
     private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
         public void run() {
+        	// TODO: Deal with closing/hiding while still running
+        	
             onClose();
         }
     };
     private MenuItem exitItem = new MenuItem("Exit", 200001, 10) {
         public void run() {
-            if(Connection.hasOpenConnections()) {
+        	// Get all accounts
+        	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+        	
+        	// Find out of we still have an open connection
+        	boolean openConnection = false;
+        	for(int i=0; i<accounts.length; i++) {
+        		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+        			openConnection = true;
+        			break;
+        		}
+        	}
+        	
+            if(openConnection) {
                 if(Dialog.ask(Dialog.D_YES_NO, "Close active connections and exit?") == Dialog.YES) {
-                    Connection.closeAllConnections();
+                	for(int i=0; i<accounts.length; i++) {
+                		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+                			accounts[i].requestDisconnect(true);
+                		}
+                	}
+                    
                     System.exit(0);
                 }
             }
