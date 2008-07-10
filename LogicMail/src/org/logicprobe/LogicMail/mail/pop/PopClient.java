@@ -154,6 +154,9 @@ public class PopClient implements IncomingMailClient {
         } catch (MailException exp) {
             return false;
         }
+        // Update message counts
+        activeMailbox.setMsgCount(popProtocol.executeStat());
+        
         openStarted = false;
         return true;
     }
@@ -164,7 +167,6 @@ public class PopClient implements IncomingMailClient {
                 popProtocol.executeQuit();
             } catch (Exception exp) { }
         }
-        activeMailbox = null;
         connection.close();
         
         if(configChanged) {

@@ -236,6 +236,18 @@ public class AccountNode implements Node {
 			this.shutdown = shutdown;
 		}
 	}
+
+	/**
+	 * Gets whether this account supports folders.
+	 * If folders are not supported, then this account will automatically
+	 * present a single "INBOX" folder.  However, no other folder-related
+	 * operations will have any relevance.
+	 * 
+	 * @return True if supported, false otherwise.
+	 */
+	public boolean hasFolders() {
+		return this.mailStore.hasFolders();
+	}
 	
 	/**
 	 * Gets whether this account supports undelete.

@@ -135,35 +135,39 @@ public abstract class BaseScreen extends MainScreen {
     };
     private MenuItem exitItem = new MenuItem("Exit", 200001, 10) {
         public void run() {
-        	// Get all accounts
-        	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-        	
-        	// Find out of we still have an open connection
-        	boolean openConnection = false;
-        	for(int i=0; i<accounts.length; i++) {
-        		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
-        			openConnection = true;
-        			break;
-        		}
-        	}
-        	
-            if(openConnection) {
-                if(Dialog.ask(Dialog.D_YES_NO, "Close active connections and exit?") == Dialog.YES) {
-                	for(int i=0; i<accounts.length; i++) {
-                		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
-                			accounts[i].requestDisconnect(true);
-                		}
-                	}
-                    
-                    System.exit(0);
-                }
-            }
-            else {
-                System.exit(0);
-            }
+        	tryShutdownApplication();
         }
     };
 
+    protected void tryShutdownApplication() {
+    	// Get all accounts
+    	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+    	
+    	// Find out of we still have an open connection
+    	boolean openConnection = false;
+    	for(int i=0; i<accounts.length; i++) {
+    		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+    			openConnection = true;
+    			break;
+    		}
+    	}
+    	
+        if(openConnection) {
+            if(Dialog.ask(Dialog.D_YES_NO, "Close active connections and exit?") == Dialog.YES) {
+            	for(int i=0; i<accounts.length; i++) {
+            		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+            			accounts[i].requestDisconnect(true);
+            		}
+            	}
+                
+                System.exit(0);
+            }
+        }
+        else {
+            System.exit(0);
+        }
+    }
+    
     /**
      * Shows the configuration screen.
      * Subclasses should override this method if they need to

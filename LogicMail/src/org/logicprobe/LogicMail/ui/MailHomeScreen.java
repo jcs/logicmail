@@ -180,6 +180,11 @@ public class MailHomeScreen extends BaseScreen {
 		super.onUndisplay();
 	}
 	
+	public boolean onClose() {
+		tryShutdownApplication();
+		return false;
+	}
+	
     protected void makeMenu(Menu menu, int instance) {
     	int id = treeField.getCurrentNode();
     	if(id != -1) {
@@ -192,7 +197,9 @@ public class MailHomeScreen extends BaseScreen {
     			if(accountNode.getRootMailbox() != null) {
     				menu.add(refreshStatusItem);
     			}
-    			menu.add(refreshItem);
+    			if(accountNode.hasFolders()) {
+    				menu.add(refreshItem);
+    			}
     			if(accountNode.getStatus() == AccountNode.STATUS_ONLINE) {
     				menu.add(disconnectItem);
     			}
