@@ -41,6 +41,8 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
@@ -67,7 +69,7 @@ public class ConfigScreen extends BaseCfgScreen {
     private boolean configurationChanged;
     
     public ConfigScreen() {
-        super("LogicMail - Configuration");
+        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_TITLE));
         mailSettings = MailSettings.getInstance();
         identityIndexMap = new Hashtable();
         accountIndexMap = new Hashtable();
@@ -89,10 +91,10 @@ public class ConfigScreen extends BaseCfgScreen {
         configTreeField.setDefaultExpanded(true);
         configTreeField.setIndentWidth(20);
         
-        globalId = configTreeField.addChildNode(0, "Global settings");
-        identitiesId = configTreeField.addSiblingNode(globalId, "Identities");
-        accountsId = configTreeField.addSiblingNode(identitiesId, "Accounts");        
-        outgoingId = configTreeField.addSiblingNode(accountsId, "Outgoing servers");
+        globalId = configTreeField.addChildNode(0, resources.getString(LogicMailResource.CONFIG_GLOBAL_SETTINGS));
+        identitiesId = configTreeField.addSiblingNode(globalId, resources.getString(LogicMailResource.CONFIG_IDENTITIES));
+        accountsId = configTreeField.addSiblingNode(identitiesId, resources.getString(LogicMailResource.CONFIG_ACCOUNTS));
+        outgoingId = configTreeField.addSiblingNode(accountsId, resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS));
 
         add(configTreeField);
     }
@@ -115,43 +117,43 @@ public class ConfigScreen extends BaseCfgScreen {
         graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
     }
     
-    private MenuItem selectItem = new MenuItem("Edit", 100, 10) {
+    private MenuItem selectItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_EDIT), 100, 10) {
         public void run() {
             openSelectedNode();
         }
     };
 
-    private MenuItem addIdentItem = new MenuItem("Add identity", 120, 10) {
+    private MenuItem addIdentItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_IDENTITY), 120, 10) {
         public void run() {
             addIdentity();
         }
     };
 
-    private MenuItem deleteIdentItem = new MenuItem("Delete identity", 130, 10) {
+    private MenuItem deleteIdentItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_IDENTITY), 130, 10) {
         public void run() {
             deleteSelectedIdentity();
         }
     };
 
-    private MenuItem addAcctItem = new MenuItem("Add account", 120, 10) {
+    private MenuItem addAcctItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_ACCOUNT), 120, 10) {
         public void run() {
             addAccount();
         }
     };
 
-    private MenuItem deleteAcctItem = new MenuItem("Delete account", 130, 10) {
+    private MenuItem deleteAcctItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_ACCOUNT), 130, 10) {
         public void run() {
             deleteSelectedAccount();
         }
     };
 
-    private MenuItem addOutgoingItem = new MenuItem("Add outgoing server", 120, 10) {
+    private MenuItem addOutgoingItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER), 120, 10) {
         public void run() {
             addOutgoingServer();
         }
     };
 
-    private MenuItem deleteOutgoingItem = new MenuItem("Delete outgoing server", 130, 10) {
+    private MenuItem deleteOutgoingItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER), 130, 10) {
         public void run() {
             deleteSelectedOutgoingServer();
         }
@@ -325,7 +327,7 @@ public class ConfigScreen extends BaseCfgScreen {
     }
 
     private void addAccount() {
-        int response = Dialog.ask("What type of account?", new String[] { "IMAP", "POP" }, 0);
+        int response = Dialog.ask(resources.getString(LogicMailResource.CONFIG_WHAT_ACCOUNT_TYPE), new String[] { "IMAP", "POP" }, 0);
         if(response != Dialog.CANCEL) {
             AccountConfig acctConfig;
             if(response == 0) {

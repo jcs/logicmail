@@ -40,6 +40,8 @@ import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 
@@ -59,52 +61,71 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     private ButtonField btSave;
 
     public GlobalConfigScreen() {
-        super("LogicMail - Config");
+        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_GLOBAL_TITLE));
 
         mailSettings = MailSettings.getInstance();
         GlobalConfig config = mailSettings.getGlobalConfig();
 
-        add(new RichTextField("Global settings:", Field.NON_FOCUSABLE));
+        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS), Field.NON_FOCUSABLE));
         
-        fldRetMsgCount = new BasicEditField("  Message count: ",
+        fldRetMsgCount = new BasicEditField("  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + " ",
                                             Integer.toString(config.getRetMsgCount()));
         fldRetMsgCount.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldRetMsgCount);
 
-        String[] orderTypes = { "Ascending", "Descending" };
+        String[] orderTypes = {
+        		resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
+        		resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING) };
         if(!config.getDispOrder())
-            fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 0);
+            fldDispOrder = new ObjectChoiceField(
+            		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ", orderTypes, 0);
         else
-            fldDispOrder = new ObjectChoiceField("  Message order: ", orderTypes, 1);            
+            fldDispOrder = new ObjectChoiceField(
+            		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ", orderTypes, 1);
         add(fldDispOrder);
 
-        fldHideDeletedMsg = new CheckboxField("Hide deleted messages", config.getHideDeletedMsg());
+        fldHideDeletedMsg = new CheckboxField(
+        		resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
+        		config.getHideDeletedMsg());
         add(fldHideDeletedMsg);
 
-        String[] wifiModes = { "Disabled", "Prompt", "Always" };
-        fldWifiMode = new ObjectChoiceField("  WiFi mode: ", wifiModes, config.getWifiMode());
+        String[] wifiModes = {
+        		resources.getString(LogicMailResource.MENUITEM_DISABLED),
+        		resources.getString(LogicMailResource.MENUITEM_PROMPT),
+        		resources.getString(LogicMailResource.MENUITEM_ALWAYS) };
+        fldWifiMode = new ObjectChoiceField(
+        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + " ",
+        		wifiModes, config.getWifiMode());
         add(fldWifiMode);
         
-        add(new RichTextField("IMAP settings:", Field.NON_FOCUSABLE));
-        fldImapMaxMsgSize = new BasicEditField("  Max size to dl per msg (kb): ", Integer.toString(config.getImapMaxMsgSize()/1024));
+        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_SETTINGS), Field.NON_FOCUSABLE));
+        fldImapMaxMsgSize = new BasicEditField(
+        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_DOWNLOAD_LIMIT) + " ",
+        		Integer.toString(config.getImapMaxMsgSize()/1024));
         fldImapMaxMsgSize.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldImapMaxMsgSize);
         
-        fldImapMaxFolderDepth = new BasicEditField("  Max folder depth: ", Integer.toString(config.getImapMaxFolderDepth()));
+        fldImapMaxFolderDepth = new BasicEditField(
+        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_FOLDER_LIMIT) + " ",
+        		Integer.toString(config.getImapMaxFolderDepth()));
         fldImapMaxFolderDepth.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldImapMaxFolderDepth);
 
-        add(new RichTextField("POP settings:", Field.NON_FOCUSABLE));
-        fldPopMaxLines = new BasicEditField("  Max lines to dl per msg: ", Integer.toString(config.getPopMaxLines()));
+        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_SETTINGS), Field.NON_FOCUSABLE));
+        fldPopMaxLines = new BasicEditField(
+        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_DOWNLOAD_LIMIT) + " ",
+        		Integer.toString(config.getPopMaxLines()));
         fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldPopMaxLines);
 
-        fldConnDebug = new CheckboxField("Connection debugging", config.getConnDebug());
+        fldConnDebug = new CheckboxField(
+        		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
+        		config.getConnDebug());
         add(fldConnDebug);
 
         add(new SeparatorField());
 
-        btSave = new ButtonField("Save", Field.FIELD_HCENTER);
+        btSave = new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
         btSave.setChangeListener(this);
         add(btSave);
     }

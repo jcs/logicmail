@@ -32,8 +32,12 @@
 package org.logicprobe.LogicMail.ui;
 
 import java.util.Vector;
+
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.RichTextField;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.message.ImagePart;
 import org.logicprobe.LogicMail.message.MessagePartVisitor;
 import org.logicprobe.LogicMail.message.MultiPart;
@@ -45,6 +49,7 @@ import org.logicprobe.LogicMail.message.UnsupportedPart;
  * a message tree to the user.
  */
 public class MessageRenderer implements MessagePartVisitor {
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
     private Vector messageFields;
     
     /** Creates a new instance of MessageRenderer */
@@ -65,7 +70,7 @@ public class MessageRenderer implements MessagePartVisitor {
     }
 
     public void visitUnsupportedPart(UnsupportedPart part) {
-        messageFields.addElement(new RichTextField("Unsupported type: "+part.getMimeType()+"/"+part.getMimeSubtype()));
+        messageFields.addElement(new RichTextField(resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED) + " "+part.getMimeType()+"/"+part.getMimeSubtype()));
     }
 
     public Vector getMessageFields() {

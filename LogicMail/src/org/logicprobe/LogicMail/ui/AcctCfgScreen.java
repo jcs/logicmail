@@ -44,6 +44,8 @@ import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
@@ -104,7 +106,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
     }
     
     public AcctCfgScreen(AccountConfig acctConfig) {
-        super("LogicMail - Account");
+        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
         
         this.acctConfig = acctConfig;
         this.acctCache = new AccountCache(this.acctConfig);
@@ -154,34 +156,34 @@ public class AcctCfgScreen extends BaseCfgScreen {
     }
 
     private void initFields() {
-        acctNameField = new BasicEditField("Account name: ", acctConfig.getAcctName());
-        serverNameField = new BasicEditField("Server: ", acctConfig.getServerName());
+        acctNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + " ", acctConfig.getAcctName());
+        serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + " ", acctConfig.getServerName());
         
         serverSslField = new CheckboxField("SSL", acctConfig.getServerSSL());
         serverSslField.setChangeListener(fieldChangeListener);
-        serverPortField = new BasicEditField("Port: ", Integer.toString(acctConfig.getServerPort()));
+        serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + " ", Integer.toString(acctConfig.getServerPort()));
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        serverUserField = new BasicEditField("Username: ", acctConfig.getServerUser());
-        serverPassField = new PasswordEditField("Password: ", acctConfig.getServerPass());
+        serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + " ", acctConfig.getServerUser());
+        serverPassField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + " ", acctConfig.getServerPass());
         
-        useMdsField = new CheckboxField("Use MDS proxy", !acctConfig.getDeviceSide());
-        identityField = new ObjectChoiceField("Identity: ", identityConfigs, 0);
-        outgoingServerField = new ObjectChoiceField("Outgoing server: ", outgoingConfigs, 0);
+        useMdsField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !acctConfig.getDeviceSide());
+        identityField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + " ", identityConfigs, 0);
+        outgoingServerField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + " ", outgoingConfigs, 0);
         
-        saveButton = new ButtonField("Save", Field.FIELD_HCENTER);
+        saveButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
         saveButton.setChangeListener(fieldChangeListener);
         
         add(acctNameField);
         add(new SeparatorField());
 
         if(acctConfig instanceof ImapConfig) {
-            add(new RichTextField("Protocol: IMAP", Field.NON_FOCUSABLE));
+            add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PROTOCOL) + " IMAP", Field.NON_FOCUSABLE));
         }
         else if(acctConfig instanceof PopConfig) {
-            add(new RichTextField("Protocol: POP", Field.NON_FOCUSABLE));
+            add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PROTOCOL) + " POP", Field.NON_FOCUSABLE));
         }
 
-        add(new RichTextField("Incoming server:", Field.NON_FOCUSABLE));
+        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER), Field.NON_FOCUSABLE));
         add(serverNameField);
         
         add(serverSslField);
@@ -209,10 +211,10 @@ public class AcctCfgScreen extends BaseCfgScreen {
                     }
                 }
             }
-            sentFolderChoiceField = new ObjectChoiceField("Sent message folder: ", folderChoices, defaultFolder, Field.FIELD_LEFT);
+            sentFolderChoiceField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + " ", folderChoices, defaultFolder, Field.FIELD_LEFT);
             add(sentFolderChoiceField);
             
-            folderPrefixField = new BasicEditField("Folder prefix: ", imapConfig.getFolderPrefix());
+            folderPrefixField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_FOLDER_PREFIX) + " ", imapConfig.getFolderPrefix());
             add(folderPrefixField);
         }
         
@@ -225,7 +227,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         FolderTreeItem folderTreeRoot = acctCache.loadFolderTree();
 
         Vector choices = new Vector();
-        choices.addElement(new ObjectChoiceItem("<None>", null));
+        choices.addElement(new ObjectChoiceItem("<" + resources.getString(LogicMailResource.CONFIG_ACCOUNT_NONE) + ">", null));
         
         if(folderTreeRoot != null && folderTreeRoot.hasChildren()) {
             FolderTreeItem[] children = folderTreeRoot.children();
@@ -289,7 +291,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
             return super.onSavePrompt();
         }
         else {
-            int result = Dialog.ask("Configuration incomplete!", new String[] { "Discard", "Cancel" }, 0);
+            int result =
+            	Dialog.ask(resources.getString(LogicMailResource.CONFIG_PROMPT_INCOMPLETE),
+            			new String[] {
+            				resources.getString(LogicMailResource.MENUITEM_DISCARD),
+            				resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
             if(result == 0) {
                 return true;
             }

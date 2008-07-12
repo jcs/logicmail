@@ -30,6 +30,9 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.LogicMailResource;
+
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.component.LabelField;
 
@@ -39,12 +42,11 @@ import net.rim.device.api.ui.component.LabelField;
  * and event handler interfaces for those screens.
  */
 public abstract class BaseCfgScreen extends MainScreen {
-    
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
     /** Creates a new instance of BaseCfgScreen */
     public BaseCfgScreen(String title) {
         LabelField titleField =
                 new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleField);
     }
-    
 }

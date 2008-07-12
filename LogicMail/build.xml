@@ -37,6 +37,8 @@
             <src>
                 <fileset dir="${src.dir}">
                     <include name="**/*.java"/>
+                	<include name="**/*.rrc"/>
+                	<include name="**/*.rrh"/>
 					<exclude name="**/bb40"/>
 					<exclude name="**/*BB40.java"/>
                     <include name="**/*.png"/>

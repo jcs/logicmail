@@ -30,21 +30,24 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 
 public class MessagePropertiesDialog extends Dialog {
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private FolderMessage folderMessage;
 	
 	public MessagePropertiesDialog(MessageNode messageNode) {
 		super(
-			"Message Properties",
-			new Object[] { "Close" },
+			resources.getString(LogicMailResource.MESSAGEPROPERTIES_TITLE),
+			new Object[] { resources.getString(LogicMailResource.MENUITEM_CLOSE) },
 			new int[] { Dialog.OK },
 			Dialog.OK, NodeIcons.getIcon(messageNode),
 			VERTICAL_SCROLL | VERTICAL_SCROLLBAR);
@@ -57,13 +60,13 @@ public class MessagePropertiesDialog extends Dialog {
 	
 	private void initFields() {
 		MessageEnvelope envelope = folderMessage.getEnvelope();
-		add(new LabelField("Subject: " + envelope.subject, Field.FOCUSABLE));
-		add(new LabelField("Date: " + envelope.date, Field.FOCUSABLE));
+		add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + envelope.subject, Field.FOCUSABLE));
+		add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + " " + envelope.date, Field.FOCUSABLE));
 		
-		initFieldAddress("From:", envelope.from);
-		initFieldAddress("Reply To:", envelope.replyTo);
-		initFieldAddress("To:", envelope.to);
-		initFieldAddress("Cc:", envelope.cc);
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM), envelope.from);
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO), envelope.replyTo);
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO), envelope.to);
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC), envelope.cc);
 	}
 	
 	private void initFieldAddress(String prefix, String[] addresses) {

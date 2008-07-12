@@ -31,7 +31,9 @@
 package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
 
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.Field;
@@ -39,10 +41,12 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.SeparatorField;
 
 public class AboutDialog extends Dialog {
+	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+	
 	public AboutDialog() {
 		super(
-			"About LogicMail",
-			new Object[] { "Close" },
+			resources.getString(LogicMailResource.ABOUT_TITLE) + " " + AppInfo.getName(),
+			new Object[] { resources.getString(LogicMailResource.MENUITEM_CLOSE) },
 			new int[] { Dialog.OK },
 			Dialog.OK,
 			Bitmap.getBitmapResource("logicmail.png"));

@@ -30,6 +30,9 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.LogicMailResource;
+
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
@@ -40,13 +43,14 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.PasswordEditField;
 
 public class LoginDialog extends Dialog {
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
     private BasicEditField fldUser;
     private PasswordEditField fldPass;
     private String username;
     private String password;
     
     public LoginDialog(String username, String password) {
-        super("Authentication", null, null, 0,
+        super(resources.getString(LogicMailResource.LOGIN_TITLE), null, null, 0,
               Bitmap.getPredefinedBitmap(Bitmap.QUESTION),
               Field.FOCUSABLE | Field.FIELD_HCENTER);
         this.username = username;
@@ -55,13 +59,13 @@ public class LoginDialog extends Dialog {
     }
     
     private void initFields() {
-        fldUser = new BasicEditField("Username: ", username);
-        fldPass = new PasswordEditField("Password: ", password);
+        fldUser = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + " ", username);
+        fldPass = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + " ", password);
         this.add(fldUser);
         this.add(fldPass);
         this.add(new LabelField("", Field.NON_FOCUSABLE));
         
-        ButtonField btnOk = new ButtonField("OK", Field.FOCUSABLE | Field.FIELD_HCENTER);
+        ButtonField btnOk = new ButtonField(resources.getString(LogicMailResource.MENUITEM_OK), Field.FOCUSABLE | Field.FIELD_HCENTER);
         btnOk.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
                 if(fldUser.getText().length() > 0 && fldPass.getText().length() > 0) {
@@ -80,5 +84,4 @@ public class LoginDialog extends Dialog {
     public String getPassword() {
         return fldPass.getText();
     }
-
 }

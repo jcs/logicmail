@@ -31,6 +31,7 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
@@ -39,6 +40,7 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.EventObject;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
@@ -54,6 +56,7 @@ import org.logicprobe.LogicMail.model.MailManager;
  * handler interfaces across the application.
  */
 public abstract class BaseScreen extends MainScreen {
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private LabelField statusLabel;
 	private boolean isExposed = false;
 	
@@ -114,26 +117,26 @@ public abstract class BaseScreen extends MainScreen {
     }
     
     // Create menu items
-    private MenuItem configItem = new MenuItem("Configuration", 10020, 10) {
+    private MenuItem configItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_CONFIGURATION), 10020, 10) {
         public void run() {
             showConfigScreen();
         }
     };
-    private MenuItem aboutItem = new MenuItem("About", 10050, 10) {
+    private MenuItem aboutItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ABOUT), 10050, 10) {
         public void run() {
             // Show the about dialog
         	AboutDialog dialog = new AboutDialog();
         	dialog.doModal();
         }
     };
-    private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
+    private MenuItem closeItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_CLOSE), 200000, 10) {
         public void run() {
         	// TODO: Deal with closing/hiding while still running
         	
             onClose();
         }
     };
-    private MenuItem exitItem = new MenuItem("Exit", 200001, 10) {
+    private MenuItem exitItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_EXIT), 200001, 10) {
         public void run() {
         	tryShutdownApplication();
         }
@@ -153,7 +156,7 @@ public abstract class BaseScreen extends MainScreen {
     	}
     	
         if(openConnection) {
-            if(Dialog.ask(Dialog.D_YES_NO, "Close active connections and exit?") == Dialog.YES) {
+            if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.BASE_CLOSEANDEXIT)) == Dialog.YES) {
             	for(int i=0; i<accounts.length; i++) {
             		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
             			accounts[i].requestDisconnect(true);
@@ -241,7 +244,7 @@ public abstract class BaseScreen extends MainScreen {
 		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
 			public void run() {
 				String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
-				if(message == null) { message = "Unknown error"; }
+				if(message == null) { message = resources.getString(LogicMailResource.ERROR_UNKNOWN); }
 	            try {
 	                Screen activeScreen =
 	                        UiApplication.getUiApplication().getActiveScreen();

@@ -40,6 +40,8 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 
 /**
@@ -60,21 +62,21 @@ public class IdentityConfigScreen extends BaseCfgScreen {
      * Creates a new instance of IdentityConfigScreen
      */
     public IdentityConfigScreen(IdentityConfig identityConfig) {
-        super("LogicMail - Identity");
+        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_IDENTITY_TITLE));
         this.identityConfig = identityConfig;
         this.configSaved = false;
         initFields();
     }
 
     private void initFields() {
-        identityNameField = new BasicEditField("Identity: ", identityConfig.getIdentityName());
-        fullNameField = new BasicEditField("Full name: ", identityConfig.getFullName());
-        emailAddressField = new EmailAddressEditField("E-Mail address: ", identityConfig.getEmailAddress());
-        replyToAddressField = new EmailAddressEditField("Reply-To address: ", identityConfig.getReplyToAddress());
+        identityNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_IDENTITY) + " ", identityConfig.getIdentityName());
+        fullNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_FULL_NAME) + " ", identityConfig.getFullName());
+        emailAddressField = new EmailAddressEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_EMAIL_ADDRESS) + " ", identityConfig.getEmailAddress());
+        replyToAddressField = new EmailAddressEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_REPLYTO_ADDRESS) + " ", identityConfig.getReplyToAddress());
         msgSignatureField = new AutoTextEditField();
         msgSignatureField.setText(identityConfig.getMsgSignature());
 
-        saveButton = new ButtonField("Save", Field.FIELD_HCENTER);
+        saveButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
         saveButton.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
                 saveButton_FieldChanged(field, context);
@@ -103,7 +105,11 @@ public class IdentityConfigScreen extends BaseCfgScreen {
             return super.onSavePrompt();
         }
         else {
-            int result = Dialog.ask("Configuration incomplete!", new String[] { "Discard", "Cancel" }, 0);
+            int result = Dialog.ask(
+            		resources.getString(LogicMailResource.CONFIG_PROMPT_INCOMPLETE),
+            		new String[] {
+            			resources.getString(LogicMailResource.MENUITEM_DISCARD),
+            			resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
             if(result == 0) {
                 return true;
             }

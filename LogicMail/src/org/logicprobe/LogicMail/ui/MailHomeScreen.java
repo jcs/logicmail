@@ -44,6 +44,7 @@ import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.Field;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.AccountNodeEvent;
 import org.logicprobe.LogicMail.model.AccountNodeListener;
@@ -77,7 +78,7 @@ public class MailHomeScreen extends BaseScreen {
 	}
 	
 	public MailHomeScreen() {
-		super("Home");
+		super(resources.getString(LogicMailResource.MAILHOME_TITLE));
 	
 		initFields();
 		nodeIdMap = new Hashtable();
@@ -98,7 +99,7 @@ public class MailHomeScreen extends BaseScreen {
 				treeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
 			}
 		}, Field.FOCUSABLE);
-		treeField.setEmptyString("No accounts", 0);
+		treeField.setEmptyString(resources.getString(LogicMailResource.MAILHOME_NOACCOUNTS), 0);
 		treeField.setDefaultExpanded(true);
 		treeField.setIndentWidth(20);
 		
@@ -131,13 +132,13 @@ public class MailHomeScreen extends BaseScreen {
 		});
 	}
 	
-    private MenuItem selectFolderItem = new MenuItem("Select", 100, 10) {
+    private MenuItem selectFolderItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SELECT), 100, 10) {
         public void run() {
         	openSelectedItem();
         }
     };
     
-    private MenuItem refreshItem = new MenuItem("Refresh folders", 111, 10) {
+    private MenuItem refreshItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REFRESH_FOLDERS), 111, 10) {
         public void run() {
         	// Assume this will only be called when a valid AccountNode is selected.
         	// Later we need to modify it to deal with being called from MailboxNodes.
@@ -146,7 +147,7 @@ public class MailHomeScreen extends BaseScreen {
         }
     };
     
-    private MenuItem refreshStatusItem = new MenuItem("Refresh status", 110, 10) {
+    private MenuItem refreshStatusItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REFRESH_STATUS), 110, 10) {
         public void run() {
         	// Assume this will only be called when a valid AccountNode is selected.
         	// Later we need to modify it to deal with being called from MailboxNodes.
@@ -154,7 +155,7 @@ public class MailHomeScreen extends BaseScreen {
       		accountNode.refreshMailboxStatus();
         }
     };
-    private MenuItem disconnectItem = new MenuItem("Disconnect", 200000, 9) {
+    private MenuItem disconnectItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DISCONNECT), 200000, 9) {
         public void run() {
             disconnectSelectedAccount();
         }

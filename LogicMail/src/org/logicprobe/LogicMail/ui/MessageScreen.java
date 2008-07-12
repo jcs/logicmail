@@ -42,6 +42,8 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.NullField;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -72,7 +74,7 @@ public class MessageScreen extends BaseScreen {
         // Create screen elements
         if(isSentFolder) {
             if(envelope.to != null && envelope.to.length > 0) {
-                add(new RichTextField("To: " + envelope.to[0]));
+                add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + " " + envelope.to[0]));
                 if(envelope.to.length > 1) {
                     for(int i=1;i<envelope.to.length;i++) {
                         if(envelope.to[i] != null) {
@@ -84,7 +86,7 @@ public class MessageScreen extends BaseScreen {
         }
         else {
             if(envelope.from != null && envelope.from.length > 0) {
-                add(new RichTextField("From: " + envelope.from[0]));
+                add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + " " + envelope.from[0]));
                 if(envelope.from.length > 1) {
                     for(int i=1;i<envelope.from.length;i++) {
                         if(envelope.from[i] != null) {
@@ -95,7 +97,7 @@ public class MessageScreen extends BaseScreen {
             }
         }
         if(envelope.subject != null) {
-            add(new RichTextField("Subject: " + envelope.subject));
+            add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + envelope.subject));
         }
         add(new SeparatorField());
     }
@@ -120,13 +122,13 @@ public class MessageScreen extends BaseScreen {
     	super.onUndisplay();
     }
     
-    private MenuItem propsItem = new MenuItem("Properties", 100, 10) {
+    private MenuItem propsItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_PROPERTIES), 100, 10) {
         public void run() {
         	MessagePropertiesDialog dialog = new MessagePropertiesDialog(messageNode);
         	dialog.doModal();
         }
     };
-    private MenuItem replyItem = new MenuItem("Reply...", 110, 10) {
+    private MenuItem replyItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REPLY), 110, 10) {
         public void run() {
 //            if(msg != null) {
 //                CompositionScreen screen =
@@ -141,7 +143,7 @@ public class MessageScreen extends BaseScreen {
 //            }
         }
     };
-    private MenuItem replyAllItem = new MenuItem("Reply to all...", 115, 10) {
+    private MenuItem replyAllItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REPLYTOALL), 115, 10) {
         public void run() {
 //            if(msg != null) {
 //                CompositionScreen screen =
@@ -156,7 +158,7 @@ public class MessageScreen extends BaseScreen {
 //            }
         }
     };
-    private MenuItem forwardItem = new MenuItem("Forward...", 120, 10) {
+    private MenuItem forwardItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_FORWARD), 120, 10) {
         public void run() {
 //            if(msg != null) {
 //                CompositionScreen screen =
@@ -167,12 +169,12 @@ public class MessageScreen extends BaseScreen {
 //            }
         }
     };
-    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 150, 10) {
+    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 150, 10) {
         public void run() {
 //            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
         }
     };
-    private MenuItem closeItem = new MenuItem("Close", 200000, 10) {
+    private MenuItem closeItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_CLOSE), 200000, 10) {
         public void run() {
             onClose();
         }
@@ -226,7 +228,7 @@ public class MessageScreen extends BaseScreen {
     		else {
     			messageFields = new Vector();
     			messageFields.addElement(
-    					new RichTextField("This message does not contain any sections that could be displayed."));
+    					new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
     		}
     		drawMessageFields(messageFields);
     	}

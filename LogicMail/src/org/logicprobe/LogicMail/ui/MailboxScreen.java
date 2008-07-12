@@ -44,10 +44,9 @@ import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.UiApplication;
-import net.rim.device.api.system.UnsupportedOperationException;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -95,11 +94,6 @@ public class MailboxScreen extends BaseScreen {
         maxWidth = Graphics.getScreenWidth();
         dateWidth = Font.getDefault().getAdvance("00/0000");
         senderWidth = maxWidth - dateWidth - 20;
-    }
-
-    public MailboxScreen(IncomingMailClient client, FolderTreeItem item) {
-    	// Kept so the code still compiles before the other UI classes are updated.
-    	throw new UnsupportedOperationException("Dummy constructor");
     }
 
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
@@ -181,27 +175,27 @@ public class MailboxScreen extends BaseScreen {
         return true;
     }
 
-    private MenuItem selectItem = new MenuItem("Select", 100, 10) {
+    private MenuItem selectItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SELECT), 100, 10) {
         public void run() {
             openSelectedMessage();
         }
     };
-    private MenuItem propertiesItem = new MenuItem("Properties", 105, 10) {
+    private MenuItem propertiesItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_PROPERTIES), 105, 10) {
         public void run() {
             openSelectedMessageProperties();
         }
     };
-//    private MenuItem compositionItem = new MenuItem("Compose E-Mail", 120, 10) {
+//    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
 //        public void run() {
 //            //UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
 //        }
 //    };
-    private MenuItem deleteItem = new MenuItem("Delete", 130, 10) {
+    private MenuItem deleteItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE), 130, 10) {
         public void run() {
         	deleteSelectedMessage();
         }
     };
-    private MenuItem undeleteItem = new MenuItem("Undelete", 135, 10) {
+    private MenuItem undeleteItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_UNDELETE), 135, 10) {
         public void run() {
         	undeleteSelectedMessage();
         }
@@ -403,6 +397,7 @@ public class MailboxScreen extends BaseScreen {
 
             // Determine the date format to display,
             // based on the distance from the current time
+            // TODO: Implement localization for dates and times
             if(nowCal.get(Calendar.YEAR) == dispCal.get(Calendar.YEAR))
                 if((nowCal.get(Calendar.MONTH) == dispCal.get(Calendar.MONTH)) &&
                 (nowCal.get(Calendar.DAY_OF_MONTH) == dispCal.get(Calendar.DAY_OF_MONTH)))
@@ -469,7 +464,7 @@ public class MailboxScreen extends BaseScreen {
     private void deleteSelectedMessage() {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
-	        if(Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to delete this message?") == Dialog.YES) {
+	        if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT)) == Dialog.YES) {
 	        	messageNode.deleteMessage();
 	        }
     	}
