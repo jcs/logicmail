@@ -330,18 +330,25 @@ public class ImapClient implements IncomingMailClient {
         
         // Construct an array of mailbox paths to match the folder vector
         int size = folders.size();
-        String[] mboxpaths = new String[size];
+        Vector mboxPaths = new Vector();
+        Hashtable mboxMap = new Hashtable();
         int i;
         for(i=0; i<size; i++) {
-            mboxpaths[i] = ((FolderTreeItem)folders.elementAt(i)).getPath();
+            FolderTreeItem item = (FolderTreeItem)folders.elementAt(i);
+            if(item.isSelectable()) {
+                mboxPaths.addElement(item.getPath());
+                mboxMap.put(item.getPath(), item);
+            }
         }
+        String[] mboxPathsArray = new String[mboxPaths.size()];
+        mboxPaths.copyInto(mboxPathsArray);
         
         // Execute the STATUS command on the folders
-        ImapProtocol.StatusResponse[] response = imapProtocol.executeStatus(mboxpaths);
+        ImapProtocol.StatusResponse[] response = imapProtocol.executeStatus(mboxPathsArray);
         
         // Iterate through the results and update the FolderTreeItem objects
-        for(i=0; i<size; i++) {
-            FolderTreeItem item = (FolderTreeItem)folders.elementAt(i);
+        for(i=0; i<mboxPathsArray.length; i++) {
+            FolderTreeItem item = (FolderTreeItem)mboxMap.get(mboxPathsArray[i]);
             item.setMsgCount(response[i].exists);
             item.setUnseenCount(response[i].unseen);
         }

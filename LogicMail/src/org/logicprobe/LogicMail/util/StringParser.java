@@ -741,4 +741,38 @@ public class StringParser {
         }
         return buffer.toString();
     }
+    
+    /**
+     * Removes escaped characters from a string.
+     * Currently only implemented for double-quotes and backslashes.
+     */
+    public static String removeEscapedChars(String text) {
+        int size = text.length();
+        
+        // Shortcut out if this method cannot do anything.
+        if(size < 2) {
+            return text;
+        }
+        StringBuffer buf = new StringBuffer();
+        int i = 0;
+        while(i < size) {
+            char ch = text.charAt(i);
+            if(i < size - 1 && ch == '\\') {
+                char nextCh = text.charAt(i+1);
+                if(nextCh == '\\' || nextCh == '\"') {
+                    buf.append(nextCh);
+                    i+=2;
+                }
+                else {
+                    buf.append(ch);
+                    i++;
+                }
+            }
+            else {
+                buf.append(ch);
+                i++;
+            }
+        }
+        return buf.toString();
+    }
 }

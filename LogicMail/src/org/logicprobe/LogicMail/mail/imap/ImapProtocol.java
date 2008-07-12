@@ -227,10 +227,10 @@ public class ImapProtocol {
                     response.personal[i] = new Namespace();
                     if(temp.size() >= 2) {
                         if(temp.elementAt(0) instanceof String) {
-                            response.personal[i].prefix = (String)temp.elementAt(0);
+                            response.personal[i].prefix = StringParser.removeEscapedChars((String)temp.elementAt(0));
                         }
                         if(temp.elementAt(1) instanceof String) {
-                            response.personal[i].delimiter = (String)temp.elementAt(1);
+                            response.personal[i].delimiter = StringParser.removeEscapedChars((String)temp.elementAt(1));
                         }
                     }
                 }
@@ -248,10 +248,10 @@ public class ImapProtocol {
                     response.other[i] = new Namespace();
                     if(temp.size() >= 2) {
                         if(temp.elementAt(0) instanceof String) {
-                            response.other[i].prefix = (String)temp.elementAt(0);
+                            response.other[i].prefix = StringParser.removeEscapedChars((String)temp.elementAt(0));
                         }
                         if(temp.elementAt(1) instanceof String) {
-                            response.other[i].delimiter = (String)temp.elementAt(1);
+                            response.other[i].delimiter = StringParser.removeEscapedChars((String)temp.elementAt(1));
                         }
                     }
                 }
@@ -269,10 +269,10 @@ public class ImapProtocol {
                     response.shared[i] = new Namespace();
                     if(temp.size() >= 2) {
                         if(temp.elementAt(0) instanceof String) {
-                            response.shared[i].prefix = (String)temp.elementAt(0);
+                            response.shared[i].prefix = StringParser.removeEscapedChars((String)temp.elementAt(0));
                         }
                         if(temp.elementAt(1) instanceof String) {
-                            response.shared[i].delimiter = (String)temp.elementAt(1);
+                            response.shared[i].delimiter = StringParser.removeEscapedChars((String)temp.elementAt(1));
                         }
                     }
                 }
@@ -752,11 +752,30 @@ public class ImapProtocol {
         String argStr;
         int p;
         int q;
-        for(int i=0;i<results.length;i++) {
+        
+        // Preprocess the results for specified-length continuation lines
+        Vector resultsVec = new Vector();
+        int line = 0;
+        while(line < results.length) {
+            p = results[line].indexOf('{');
+            q = results[line].indexOf('}');
+            if(line < results.length - 1 && p != -1 && q != -1 && p < q && q == results[line].length() - 1) {
+                int len = Integer.parseInt(results[line].substring(p+1, q));
+                resultsVec.addElement(results[line].substring(0, p) + results[line+1].substring(0, len));
+                line += 2;
+            }
+            else {
+                resultsVec.addElement(results[line]);
+                line++;
+            }
+        }
+        
+        int resultsSize = resultsVec.size();
+        for(int i=0;i<resultsSize;i++) {
             // Separate out the flag and argument strings
             flagStr = null;
             argStr = null;
-            temp = results[i];
+            temp = (String)resultsVec.elementAt(i);
             p = temp.indexOf('(');
             q = temp.indexOf(')', p + 1);
             if((p != -1) && (q > p)) {
@@ -816,7 +835,15 @@ public class ImapProtocol {
                     }
                     response.name = argStr.substring(p, q);
                 }
-                retVec.addElement(response);
+                
+                // Strip any escaped characters
+                response.name = StringParser.removeEscapedChars(response.name);
+                response.delim = StringParser.removeEscapedChars(response.delim);
+                
+                // Only add if the response is not a duplicate of the request
+                if(!(refName.equals(response.name + response.delim) || refName.equals(response.name))) {
+                    retVec.addElement(response);
+                }
             } catch (Exception e) {
                 // Prevent parse errors from being fatal
             }
