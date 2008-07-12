@@ -133,6 +133,7 @@ public class ImapProtocolTest extends TestCase {
     
     public void testExecuteNamespace() {
         try {
+            // Normal namespace:
             // NAMESPACE (("" "/")) (("Other Users/" "/")) NIL
             instance.addExecuteExpectation(
                     "NAMESPACE", null,
@@ -151,6 +152,29 @@ public class ImapProtocolTest extends TestCase {
             assertEquals("/", result.other[0].delimiter);
 
             assertNull(result.shared);
+            
+            // Escaped delimiters:
+            // NAMESPACE (("" "\\")) (("Other Users\\" "\\")) (("Public Folders\\" "\\"))
+            instance.addExecuteExpectation(
+                    "NAMESPACE", null,
+                    new String[] { "* NAMESPACE ((\"\" \"\\\\\")) ((\"Other Users\\\\\" \"\\\\\")) ((\"Public Folders\\\\\" \"\\\\\"))" });
+            result = instance.executeNamespace();
+            assertNotNull(result);
+            
+            assertNotNull(result.personal);
+            assertEquals(1, result.personal.length);
+            assertEquals("", result.personal[0].prefix);
+            assertEquals("\\", result.personal[0].delimiter);
+            
+            assertNotNull(result.other);
+            assertEquals(1, result.other.length);
+            assertEquals("Other Users\\", result.other[0].prefix);
+            assertEquals("\\", result.other[0].delimiter);
+            
+            assertNotNull(result.shared);
+            assertEquals(1, result.shared.length);
+            assertEquals("Public Folders\\", result.shared[0].prefix);
+            assertEquals("\\", result.shared[0].delimiter);
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
             t.printStackTrace();
@@ -229,6 +253,94 @@ public class ImapProtocolTest extends TestCase {
             assertTrue(!result2.marked);
             assertEquals("/", result2.delim);
             assertEquals("Sent", result2.name);
+            
+            // Test parameter in response
+            instance.addExecuteExpectation(
+                    "LIST", "\"INBOX.\" \"%\"",
+                    new String[] {
+                        "* LIST (\\HasChildren) \".\" \"INBOX\"",
+                        "* LIST (\\HasNoChildren) \".\" \"INBOX.Saved\"",
+                        "* LIST (\\HasNoChildren) \".\" \"INBOX.Sent\"",
+                    });
+            
+            result = instance.executeList("INBOX.", "%");
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
+            result1 = (ImapProtocol.ListResponse)result.elementAt(0);
+            result2 = (ImapProtocol.ListResponse)result.elementAt(1);
+
+            assertTrue(!result1.hasChildren);
+            assertTrue(result1.canSelect);
+            assertTrue(!result1.marked);
+            assertEquals(".", result1.delim);
+            assertEquals("INBOX.Saved", result1.name);
+        
+            assertTrue(!result2.hasChildren);
+            assertTrue(result2.canSelect);
+            assertTrue(!result2.marked);
+            assertEquals(".", result2.delim);
+            assertEquals("INBOX.Sent", result2.name);
+
+            // Test escaped delimiter
+            instance.addExecuteExpectation(
+                    "LIST", "\"INBOX\\\" \"%\"",
+                    new String[] {
+                        "* LIST (\\HasNoChildren) \"\\\\\" \"INBOX\\Saved\\Stuff\"",
+                        "* LIST (\\HasNoChildren) \"\\\\\" \"INBOX\\Sent\"",
+                    });
+            
+            result = instance.executeList("INBOX\\", "%");
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
+            result1 = (ImapProtocol.ListResponse)result.elementAt(0);
+            result2 = (ImapProtocol.ListResponse)result.elementAt(1);
+
+            assertTrue(!result1.hasChildren);
+            assertTrue(result1.canSelect);
+            assertTrue(!result1.marked);
+            assertEquals("\\", result1.delim);
+            assertEquals("INBOX\\Saved\\Stuff", result1.name);
+        
+            assertTrue(!result2.hasChildren);
+            assertTrue(result2.canSelect);
+            assertTrue(!result2.marked);
+            assertEquals("\\", result2.delim);
+            assertEquals("INBOX\\Sent", result2.name);
+            
+            // Test specified-length encoding for path name
+            instance.addExecuteExpectation(
+                    "LIST", "\"2007\\\" \"%\"",
+                    new String[] {
+                        "* LIST (\\HasNoChildren) \"\\\\\" {12}",
+                        "2007\\Q3-2007",
+                        "* LIST (\\HasNoChildren) \"\\\\\" {12}",
+                        "2007\\Q4-2007"
+                    });
+
+            result = instance.executeList("2007\\", "%");
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
+            result1 = (ImapProtocol.ListResponse)result.elementAt(0);
+            result2 = (ImapProtocol.ListResponse)result.elementAt(1);
+
+            assertTrue(!result1.hasChildren);
+            assertTrue(result1.canSelect);
+            assertTrue(!result1.marked);
+            assertEquals("\\", result1.delim);
+            assertEquals("2007\\Q3-2007", result1.name);
+
+            assertTrue(!result2.hasChildren);
+            assertTrue(result2.canSelect);
+            assertTrue(!result2.marked);
+            assertEquals("\\", result2.delim);
+            assertEquals("2007\\Q4-2007", result2.name);
+            
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
             t.printStackTrace();
