@@ -36,6 +36,7 @@ import net.rim.device.api.system.UnsupportedOperationException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 public class NetworkMailStore extends AbstractMailStore {
 	private IncomingMailClient client;
@@ -89,6 +90,11 @@ public class NetworkMailStore extends AbstractMailStore {
 		// Fix this kludge later
 		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
 	}
+	
+	public boolean hasAppend() {
+		// Fix this kludge later
+		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
+	}
 
 	public boolean hasUndelete() {
 		return client.hasUndelete();
@@ -136,6 +142,20 @@ public class NetworkMailStore extends AbstractMailStore {
 		}
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { folder, folderMessage });
 	}
+
+	public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) {
+		if(!this.hasFlags()) {
+			throw new UnsupportedOperationException();
+		}
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { folder, folderMessage });
+	}
+
+	public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
+		if(!this.hasAppend()) {
+			throw new UnsupportedOperationException();
+		}
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND, new Object[] { folder, rawMessage, initialFlags });
+	}
 	
 	private void connectionHandler_mailConnectionRequestComplete(int type, Object result) {
 		Object[] results;
@@ -163,6 +183,14 @@ public class NetworkMailStore extends AbstractMailStore {
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
 			results = (Object[])result;
 			fireMessageUndeleted((FolderTreeItem)results[0], (FolderMessage)results[1]);
+			break;
+		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
+			results = (Object[])result;
+			fireMessageFlagsChanged((FolderTreeItem)results[0], (FolderMessage)results[1]);
+			break;
+		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
+			results = (Object[])result;
+			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1]);
 			break;
 		}
 	}

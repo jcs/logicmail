@@ -37,6 +37,7 @@ import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler {
 	private IncomingMailClient incomingClient;
@@ -51,6 +52,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	public static final int REQUEST_MESSAGE                 = 20;
 	public static final int REQUEST_MESSAGE_DELETE          = 21;
 	public static final int REQUEST_MESSAGE_UNDELETE        = 22;
+	public static final int REQUEST_MESSAGE_ANSWERED        = 23;
+	public static final int REQUEST_MESSAGE_APPEND          = 24;
 	
 	public IncomingMailConnectionHandler(IncomingMailClient client) {
 		super(client);
@@ -59,8 +62,6 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
 	/**
 	 * Handles a specific request during the REQUESTS state.
-	 * Subclasses should implement this to dispatch requests for all
-	 * the request types they know how to handle.
 	 * 
 	 * @param type Type identifier for the request.
 	 * @param params Parameters for the request.
@@ -100,7 +101,19 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		case REQUEST_MESSAGE_UNDELETE:
 			handleRequestMessageUndelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
 			break;
+		case REQUEST_MESSAGE_ANSWERED:
+			handleRequestMessageAnswered((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			break;
+		case REQUEST_MESSAGE_APPEND:
+			handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2]);
+			break;
 		}
+	}
+
+	/**
+	 * Handles the start of the IDLE state.
+	 */
+	protected void handleBeginIdle() {
 	}
 
 	private void handleRequestFolderTree() throws IOException, MailException {
@@ -187,6 +200,28 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
 			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, new Object[] { folder, folderMessage });
+		}
+	}
+	
+	private void handleRequestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) throws IOException, MailException {
+		// Replace this with a more general method:
+		((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).messageAnswered(folderMessage);
+		folderMessage.setAnswered(true);
+		
+		MailConnectionHandlerListener listener = getListener();
+		if(listener != null) {
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, new Object[] { folder, folderMessage });
+		}
+	}
+	
+	private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
+		// Clean up this interface:
+		((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).appendMessage(folder, rawMessage, initialFlags);
+		
+		MailConnectionHandlerListener listener = getListener();
+		if(listener != null) {
+			// Using a null FolderMessage since no information is returned on the appended message:
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_APPEND, new Object[] { folder, null });
 		}
 	}
 	

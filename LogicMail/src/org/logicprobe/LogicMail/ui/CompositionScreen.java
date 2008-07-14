@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.model.AccountNode;
 
 /**
  * This is the message composition screen.
@@ -65,8 +66,8 @@ public class CompositionScreen extends BaseScreen {
      *
      * @param acctConfig Account configuration
      */
-    public CompositionScreen(AccountConfig acctConfig) {
-        this.acctConfig = acctConfig;
+    public CompositionScreen(AccountNode accountNode) {
+        this.acctConfig = accountNode.getAccountConfig();
         //this.client = MailClientFactory.createOutgoingMailClient(acctConfig);
         vfmRecipients = new VerticalFieldManager();
         vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, ""));
@@ -98,8 +99,8 @@ public class CompositionScreen extends BaseScreen {
      * @param acctConfig Account configuration
      * @param message Message we are composing
      */
-    public CompositionScreen(AccountConfig acctConfig, Message message) {
-        this(acctConfig);
+    public CompositionScreen(AccountNode accountNode, Message message) {
+        this(accountNode);
         int i;
 
         MessagePart body = message.getBody();

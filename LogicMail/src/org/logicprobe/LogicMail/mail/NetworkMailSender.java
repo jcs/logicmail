@@ -1,0 +1,91 @@
+/*-
+ * Copyright (c) 2008, Derek Konigsberg
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution. 
+ * 3. Neither the name of the project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package org.logicprobe.LogicMail.mail;
+
+import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
+import org.logicprobe.LogicMail.message.Message;
+
+public class NetworkMailSender extends AbstractMailSender {
+	private OutgoingMailClient client;
+	private OutgoingMailConnectionHandler connectionHandler;
+	private OutgoingConfig outgoingConfig;
+
+	public NetworkMailSender(AccountConfig accountConfig) {
+		super();
+		this.client = MailClientFactory.createOutgoingMailClient(accountConfig);
+		this.outgoingConfig = accountConfig.getOutgoingConfig();
+		this.connectionHandler = new OutgoingMailConnectionHandler(client);
+		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
+			public void mailConnectionRequestComplete(int type, Object result) {
+				connectionHandler_mailConnectionRequestComplete(type, result);
+			}
+		});
+		this.connectionHandler.start();
+	}
+	
+	/**
+	 * Gets the outgoing account configuration associated with this network mail sender.
+	 * 
+	 * @return Outgoing account configuration.
+	 */
+	public OutgoingConfig getOutgoingConfig() {
+		return this.outgoingConfig;
+	}
+	
+	public void shutdown(boolean wait) {
+		connectionHandler.shutdown(wait);
+	}
+
+	/**
+	 * Restarts the mail connection handler thread.
+	 */
+	public void restart() {
+		if(!connectionHandler.isRunning()) {
+			connectionHandler.start();
+		}
+	}
+	
+	public void requestSendMessage(Message message) {
+		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { message });
+	}
+	
+	private void connectionHandler_mailConnectionRequestComplete(int type, Object result) {
+		Object[] results;
+		switch(type) {
+		case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
+			results = (Object[])result;
+			fireMessageSent((Message)results[0], (String)results[1]);
+			break;
+		}
+	}
+}

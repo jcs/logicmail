@@ -283,13 +283,12 @@ public abstract class AbstractMailConnectionHandler {
      * pending requests have been handled.  This method is called
      * at a periodic interval when no requests are pending.
      * 
-     * @param idleTime The amount of time this connection has been idle.
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-	private void handleIdleConnection(long idleTime) throws IOException, MailException {
+	private void handleIdleConnection() throws IOException, MailException {
 		showStatus(null);
-		// Do idle stuff
+		handleBeginIdle();
 		
 		synchronized(requestQueue) {
 			if(requestQueue.element() != null) {
@@ -306,6 +305,18 @@ public abstract class AbstractMailConnectionHandler {
 		}
 	}
     
+	/**
+	 * Handles the start of the IDLE state.
+	 * <p>
+	 * Subclasses should do anything they need to do when their connection
+	 * enters an idle state with the server.  This could involve sending
+	 * a command, initializing a timer, or doing nothing at all.
+	 * After this method completes, the connection handler will sleep until
+	 * a new request arrives, or it is commanded to shutdown.
+	 * </p>
+	 */
+	protected abstract void handleBeginIdle();
+	
     /**
      * Handles the CLOSING state to close an existing connection.
      * This method should send protocol-specific logout commands and
@@ -316,6 +327,7 @@ public abstract class AbstractMailConnectionHandler {
      */
 	private void handleClosingConnection() throws IOException, MailException {
 		showStatus("Closing connection...");
+		handleBeforeClosing();
 		try { client.close(); } catch (IOException e) {} catch (MailException e) {}
 		setConnectionState(STATE_CLOSED);
 		if(!shutdownInProgress) {
@@ -325,6 +337,13 @@ public abstract class AbstractMailConnectionHandler {
 		}
 	}
 
+	/**
+	 * Called at the start of the CLOSING state.
+	 * This method should be overridden if the subclass needs
+	 * to do any cleanup before its connection is closed.
+	 */
+	protected void handleBeforeClosing() { }
+	
 	/**
 	 * Gets the current connection state.
 	 * 
@@ -527,7 +546,7 @@ public abstract class AbstractMailConnectionHandler {
 	    				handlePendingRequests();
 	        			break;
 	        		case STATE_IDLE:
-	    				handleIdleConnection(1000);
+	    				handleIdleConnection();
 	        			break;
 	        		case STATE_CLOSING:
 	    				handleClosingConnection();

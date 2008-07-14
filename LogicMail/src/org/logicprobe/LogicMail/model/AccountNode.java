@@ -34,16 +34,22 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
+import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
+import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -56,6 +62,7 @@ import org.logicprobe.LogicMail.util.EventListenerList;
  */
 public class AccountNode implements Node {
 	private AbstractMailStore mailStore;
+	private AbstractMailSender mailSender;
 	private MailRootNode parent;
 	private MailboxNode rootMailbox;
 	private Hashtable pathMailboxMap;
@@ -64,6 +71,8 @@ public class AccountNode implements Node {
 	private AccountConfig accountConfig;
 	private int status;
 	private boolean shutdown = false;
+	private Vector outboundNewMessages = new Vector();
+	private Hashtable outboundMessageReplies = new Hashtable(); 
 	
 	public final static int STATUS_LOCAL   = 0;
 	public final static int STATUS_OFFLINE = 1;
@@ -132,6 +141,44 @@ public class AccountNode implements Node {
 	public void accept(NodeVisitor visitor) {
 		visitor.visit(this);
 	}
+
+	/**
+	 * Gets the mail sender associated with this account.
+	 * 
+	 * @return The mail sender.
+	 */
+	AbstractMailSender getMailSender() {
+		return this.mailSender;
+	}
+	
+	/**
+	 * Sets the mail sender associated with this account.
+	 * This is not set in the constructor since it can change
+	 * whenever account configuration changes.
+	 * 
+	 * @param mailSender The mail sender.
+	 */
+	void setMailSender(AbstractMailSender mailSender) {
+		if(this.mailSender != null && mailSender == null) {
+			this.mailSender.removeMailSenderListener(mailSenderListener);
+			this.mailSender = null;
+		}
+		else if(this.mailSender != null && this.mailSender != mailSender) {
+			this.mailSender.removeMailSenderListener(mailSenderListener);
+			this.mailSender = mailSender;
+			this.mailSender.addMailSenderListener(mailSenderListener);
+		}
+		else if(this.mailSender == null && mailSender != null) {
+			this.mailSender = mailSender;
+			this.mailSender.addMailSenderListener(mailSenderListener);
+		}
+	}
+	
+	private MailSenderListener mailSenderListener = new MailSenderListener() {
+		public void messageSent(MessageSentEvent e) {
+			mailSender_MessageSent(e);
+		}
+	};
 
 	/**
 	 * Sets the root node which is the parent of this account.
@@ -282,6 +329,35 @@ public class AccountNode implements Node {
 		}
 		mailStore.requestFolderStatus(mailbox.getFolderTreeItem());
 	}
+
+	/**
+	 * Sends a message from this account.
+	 *  
+	 * @param message Message to send.
+	 */
+	public void sendMessage(Message message) {
+		// TODO: Spool sent messages through an outbox
+		
+		if(mailSender != null) {
+			outboundNewMessages.addElement(message);
+			mailSender.requestSendMessage(message);
+		}
+	}
+
+	/**
+	 * Sends a reply message from this account.
+	 * 
+	 * @param message Message to send.
+	 * @param originalMessageNode Message node this was in reply to.
+	 */
+	public void sendMessageReply(Message message, MessageNode originalMessageNode) {
+		// TODO: Spool sent messages through an outbox
+		
+		if(mailSender != null) {
+			outboundMessageReplies.put(message, originalMessageNode);
+			mailSender.requestSendMessage(message);
+		}
+	}
 	
 	/**
 	 * Handles folder tree updates.
@@ -401,24 +477,26 @@ public class AccountNode implements Node {
 	 * @param e Event data.
 	 */
 	private void mailStore_FolderMessagesAvailable(FolderMessagesEvent e) {
-		// Find the MailboxNode that this event applies to.
-		// If none apply, then shortcut out of here.
-		if(!pathMailboxMap.containsKey(e.getFolder().getPath())) {
-			return;
-		}
-		MailboxNode mailboxNode = (MailboxNode)pathMailboxMap.get(e.getFolder().getPath());
-		
-		// Determine what MessageNodes need to be created, and add them.
-		FolderMessage[] folderMessages = e.getMessages();
-		Vector addedMessages = new Vector();
-		for(int i=0; i<folderMessages.length; i++) {
-			if(!mailboxNode.containsMessage(folderMessages[i].getIndex())) {
-				addedMessages.addElement(new MessageNode(folderMessages[i]));
+		if(e.getMessages() != null) {
+			// Find the MailboxNode that this event applies to.
+			// If none apply, then shortcut out of here.
+			if(!pathMailboxMap.containsKey(e.getFolder().getPath())) {
+				return;
 			}
+			MailboxNode mailboxNode = (MailboxNode)pathMailboxMap.get(e.getFolder().getPath());
+			
+			// Determine what MessageNodes need to be created, and add them.
+			FolderMessage[] folderMessages = e.getMessages();
+			Vector addedMessages = new Vector();
+			for(int i=0; i<folderMessages.length; i++) {
+				if(!mailboxNode.containsMessage(folderMessages[i].getIndex())) {
+					addedMessages.addElement(new MessageNode(folderMessages[i]));
+				}
+			}
+			MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
+			addedMessages.copyInto(addedMessagesArray);
+			mailboxNode.addMessages(addedMessagesArray);
 		}
-		MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
-		addedMessages.copyInto(addedMessagesArray);
-		mailboxNode.addMessages(addedMessagesArray);
 	}
 
 	/**
@@ -426,7 +504,7 @@ public class AccountNode implements Node {
 	 * 
 	 * @param e Event data.
 	 */
-	public void mailStore_messageAvailable(MessageEvent e) {
+	private void mailStore_messageAvailable(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
 			messageNode.setMessage(e.getMessage());
@@ -438,7 +516,7 @@ public class AccountNode implements Node {
 	 * 
 	 * @param e Event data.
 	 */
-	public void mailStore_messageFlagsChanged(MessageEvent e) {
+	private void mailStore_messageFlagsChanged(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
 			messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
@@ -450,7 +528,7 @@ public class AccountNode implements Node {
 	 * 
 	 * @param e Event data.
 	 */
-	public void mailStore_messageDeleted(MessageEvent e) {
+	private void mailStore_messageDeleted(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
 			messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
@@ -462,7 +540,7 @@ public class AccountNode implements Node {
 	 * 
 	 * @param e Event data.
 	 */
-	public void mailStore_messageUndeleted(MessageEvent e) {
+	private void mailStore_messageUndeleted(MessageEvent e) {
 		MessageNode messageNode = findMessageForEvent(e);
 		if(messageNode != null) {
 			messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
@@ -483,6 +561,51 @@ public class AccountNode implements Node {
 		}
 		else {
 			return null;
+		}
+	}
+	
+	/**
+	 * Handles a message being sent.
+	 * 
+	 * @param e Event data.
+	 */
+	private void mailSender_MessageSent(MessageSentEvent e) {
+		boolean messageSent;
+		MessageNode repliedMessageNode = null;
+		
+		// Find whether we have to deal with this event
+		if(outboundNewMessages.contains(e.getMessage())) {
+			messageSent = true;
+			outboundNewMessages.removeElement(e.getMessage());
+		}
+		else if(outboundMessageReplies.containsKey(e.getMessage())) {
+			messageSent = true;
+			repliedMessageNode = (MessageNode)outboundMessageReplies.get(e.getMessage());
+			outboundMessageReplies.remove(e.getMessage());
+		}
+		else {
+			messageSent = false;
+		}
+		
+		if(messageSent) {
+			// Store to the Sent folder
+			MailboxNode sentMailbox = null;
+			if(accountConfig instanceof ImapConfig) {
+				String sentFolderPath = ((ImapConfig)accountConfig).getSentFolder();
+				sentMailbox = (MailboxNode)pathMailboxMap.get(sentFolderPath);
+			}
+			
+			if(sentMailbox != null && mailStore.hasAppend()) {
+				MessageFlags initialFlags = new MessageFlags();
+				initialFlags.setSeen(true);
+				mailStore.requestMessageAppend(sentMailbox.getFolderTreeItem(), e.getMessageSource(), initialFlags);
+			}
+			// Update flags if necessary
+			if(repliedMessageNode != null && mailStore.hasFlags()) {
+				mailStore.requestMessageAnswered(
+						repliedMessageNode.getParent().getFolderTreeItem(),
+						repliedMessageNode.getFolderMessage());
+			}
 		}
 	}
 	

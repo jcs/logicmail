@@ -34,11 +34,14 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
+import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
 import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
+import org.logicprobe.LogicMail.mail.NetworkMailSender;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
@@ -133,6 +136,25 @@ public class MailManager {
 		num = newAccounts.size();
 		for(int i=0; i<num; i++) {
 			mailRootNode.addAccount((AccountNode)newAccounts.elementAt(i));
+		}
+		
+		// Get the newly updated account list, and determine whether
+		// we need to update any mail senders.
+		existingAccounts = mailRootNode.getAccounts();
+		for(int i=0; i<existingAccounts.length; i++) {
+			AbstractMailSender mailSender = existingAccounts[i].getMailSender();
+			OutgoingConfig outgoingConfig = existingAccounts[i].getAccountConfig().getOutgoingConfig();
+			if(outgoingConfig == null) {
+				if(mailSender != null) {
+					mailSender.shutdown(false);
+				}
+				existingAccounts[i].setMailSender(null);
+			}
+			else if(mailSender instanceof NetworkMailSender &&
+			   ((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig) {
+				mailSender.shutdown(false);
+				existingAccounts[i].setMailSender(new NetworkMailSender(existingAccounts[i].getAccountConfig()));
+			}
 		}
 		
 		// Notify any listeners

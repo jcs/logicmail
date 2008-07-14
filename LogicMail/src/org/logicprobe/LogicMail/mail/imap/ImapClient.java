@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
@@ -542,10 +543,16 @@ public class ImapClient implements IncomingMailClient {
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-    public void appendMessage(FolderTreeItem folder, String rawMessage, boolean isSeen, boolean isDraft) throws IOException, MailException {
+    public void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
         ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
-        flags.seen = isSeen;
-        flags.draft = isDraft;
+        flags.seen = initialFlags.isSeen();
+        flags.answered = initialFlags.isAnswered();
+        flags.flagged = initialFlags.isFlagged();
+        flags.deleted = initialFlags.isDeleted();
+        flags.draft = initialFlags.isDraft();
+        flags.recent = initialFlags.isRecent();
+        flags.junk = initialFlags.isJunk();
+
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
     }
 }

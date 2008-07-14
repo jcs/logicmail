@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -52,8 +53,6 @@ public abstract class AbstractMailStore {
 	
 	protected AbstractMailStore() {
 	}
-
-	//TODO: Mechanism for changing message flags for Reply/Forward/etc.
 	
 	/**
 	 * Shutdown the mail store.
@@ -85,6 +84,13 @@ public abstract class AbstractMailStore {
      * @return True if message flags supported, false otherwise
      */
     public abstract boolean hasFlags();
+    
+    /**
+     * Returns whether the mail store supports appending messages.
+     * 
+     * @return True if message appending supported, false otherwise
+     */
+    public abstract boolean hasAppend();
     
     /**
      * Returns whether the mail store supports undeletion of messages.
@@ -167,7 +173,7 @@ public abstract class AbstractMailStore {
      * {@link MessageListener#messageDeleted(MessageEvent)}.
      * 
      * @param folder The folder that the message is located in
-     * @param message The envelope information for the message to request
+     * @param message The envelope information for the message to delete
      */
     public abstract void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage);
     
@@ -182,9 +188,44 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param folder The folder that the message is located in
-     * @param message The envelope information for the message to request
+     * @param message The envelope information for the message to undelete
      */
     public abstract void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage);
+    
+    /**
+     * Requests a particular message to be marked as answered.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param folder The folder that the message is located in
+     * @param message The envelope information for the message to change
+     */
+    public abstract void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage);
+    
+    /**
+     * Requests a message to be appended to a folder.
+     * 
+     * <p>Unlike other methods, this method requires the raw source of a message
+     * in order to add it.  This is because we are often trying to save an
+     * exact message that was returned by an operation such as sending mail.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * 
+     * <p>If <tt>hasAppend()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param folder The folder to add the message to
+     * @param rawMessage The raw source of the message to add
+     * @param initialFlags The initial flags for the message
+     */
+    public abstract void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags);
     
     /**
      * Adds a <tt>MailStoreListener</tt> to the mail store.

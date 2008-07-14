@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,145 +32,134 @@
 package org.logicprobe.LogicMail.message;
 
 /**
- * This class provides a message in the context of a folder.
- * It contains the message's envelope, along with other information
- * only relevant when looking at a view of the folder.
+ * This class contains flags that may be associated with a message.
+ * These flags are normally part of a <tt>FolderMessage</tt>, however
+ * they sometimes need to be represented independently.
  */
-public class FolderMessage {
-    private MessageEnvelope envelope;
-    private int index;
-    private MessageFlags messageFlags;
+public class MessageFlags {
+    private boolean seen;
+    private boolean answered;
+    private boolean flagged;
+    private boolean deleted;
+    private boolean draft;
+    private boolean recent;
+    private boolean junk;
     
-    /**
-     * Creates a new instance of FolderMessage.
-     * @param envelope The message's envelope
-     * @param index The index of the message within the folder
-     */
-    public FolderMessage(MessageEnvelope envelope, int index) {
-        this.envelope = envelope;
-        this.index = index;
-        this.messageFlags = new MessageFlags();
-    }
-
-    /**
-     * Get the envelope associated with this message.
-     * @return Message envelope
-     */
-    public MessageEnvelope getEnvelope() {
-        return envelope;
-    }
-
-    /**
-     * Get the mailbox index of this message
-     * @return index
-     */
-    public int getIndex() {
-        return index;
-    }
-
-    /**
-     * Gets the flags associated with this message.
-     * @return Message flags
-     */
-    public MessageFlags getFlags() {
-    	return messageFlags;
-    }
-    
+	public MessageFlags() {
+	}
+	
+	public MessageFlags(
+		    boolean seen,
+		    boolean answered,
+		    boolean flagged,
+		    boolean deleted,
+		    boolean draft,
+		    boolean recent,
+		    boolean junk) {
+		this.seen = seen;
+		this.answered = answered;
+		this.flagged = flagged;
+		this.deleted = deleted;
+		this.draft = draft;
+		this.recent = recent;
+		this.junk = junk;
+	}
+	
     /**
      * Find out whether this message has been previously viewed
      */
     public boolean isSeen() {
-        return messageFlags.isSeen();
+        return seen;
     }
 
     /**
      * Set the flag indicating whether this message has been previously viewed
      */
     public void setSeen(boolean seen) {
-    	messageFlags.setSeen(seen);
+        this.seen = seen;
     }
 
     /**
      * Find out whether this message has been replied to
      */
     public boolean isAnswered() {
-        return messageFlags.isAnswered();
+        return answered;
     }
 
     /**
      * Set the flag indicating whether this message has been replied to
      */
     public void setAnswered(boolean answered) {
-    	messageFlags.setAnswered(answered);
+        this.answered = answered;
     }
 
     /**
      * Find out whether this message has been flagged
      */
     public boolean isFlagged() {
-        return messageFlags.isFlagged();
+        return flagged;
     }
 
     /**
      * Set the flag indicating whether this message has been flagged
      */
     public void setFlagged(boolean flagged) {
-    	messageFlags.setFlagged(flagged);
+        this.flagged = flagged;
     }
 
     /**
      * Find out whether this message has been marked as deleted
      */
     public boolean isDeleted() {
-        return messageFlags.isDeleted();
+        return deleted;
     }
 
     /**
      * Set the flag indicating whether this message has been marked as deleted
      */
     public void setDeleted(boolean deleted) {
-    	messageFlags.setDeleted(deleted);
+        this.deleted = deleted;
     }
 
     /**
      * Find out whether this message is a draft
      */
     public boolean isDraft() {
-        return messageFlags.isDraft();
+        return draft;
     }
 
     /**
      * Set the flag indicating whether this message is a draft
      */
     public void setDraft(boolean draft) {
-    	messageFlags.setDraft(draft);
+        this.draft = draft;
     }
 
     /**
      * Find out whether this message has recently arrived
      */
     public boolean isRecent() {
-        return messageFlags.isRecent();
+        return recent;
     }
 
     /**
      * Set the flag indicating whether this message has recently arrived
      */
     public void setRecent(boolean recent) {
-    	messageFlags.setRecent(recent);
+        this.recent = recent;
     }
     
     /**
      * Find out whether this message has been flagged as junk
      */
     public boolean isJunk() {
-        return messageFlags.isJunk();
+        return junk;
     }
 
     /**
      * Set the flag indicating whether this message has been flagged as junk
      */
     public void setJunk(boolean junk) {
-    	messageFlags.setJunk(junk);
+        this.junk = junk;
     }
 }
