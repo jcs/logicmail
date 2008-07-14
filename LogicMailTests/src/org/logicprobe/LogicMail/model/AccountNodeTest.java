@@ -35,6 +35,7 @@ import java.util.Hashtable;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
@@ -211,6 +212,10 @@ public class AccountNodeTest extends TestCase {
 			return true;
 		}
 
+		public boolean hasAppend() {
+			return true;
+		}
+		
 		public boolean hasUndelete() {
 			return false;
 		}
@@ -237,5 +242,7 @@ public class AccountNodeTest extends TestCase {
 		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) { }
 		public void requestFolderMessagesRecent(FolderTreeItem folder, int count) { }
 		public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) { }
+		public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) { }
+		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) { }
     }
 }
