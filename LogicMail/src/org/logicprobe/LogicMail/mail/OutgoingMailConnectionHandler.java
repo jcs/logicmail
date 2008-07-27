@@ -8,7 +8,7 @@ import org.logicprobe.LogicMail.message.Message;
 
 public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler {
 	private OutgoingMailClient outgoingClient;
-	private Timer connectionTimer;
+	private Timer connectionTimer = null;
 	
 	/** Two minute timeout */
 	private static final int CONNECTION_TIMEOUT = 120 * 1000;
@@ -20,7 +20,6 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	public OutgoingMailConnectionHandler(OutgoingMailClient client) {
 		super(client);
 		this.outgoingClient = client;
-		this.connectionTimer = new Timer();
 	}
 
 	private TimerTask connectionTimerTask = new TimerTask() {
@@ -38,7 +37,10 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
      * @throw MailException on protocol errors
 	 */
 	protected void handleRequest(int type, Object[] params) throws IOException, MailException {
-		connectionTimer.cancel();
+		if(connectionTimer != null) {
+			connectionTimer.cancel();
+			connectionTimer = null;
+		}
 		switch(type) {
 		case REQUEST_SEND_MESSAGE:
 			handleRequestSendMessage(
@@ -51,6 +53,10 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	 * Handles the start of the IDLE state.
 	 */
 	protected void handleBeginIdle() {
+		if(connectionTimer != null) {
+			connectionTimer.cancel();
+		}
+		connectionTimer = new Timer();
 		connectionTimer.schedule(connectionTimerTask, CONNECTION_TIMEOUT);
 	}
 	
@@ -58,7 +64,10 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	 * Called at the start of the CLOSING state.
 	 */
 	protected void handleBeforeClosing() {
-		connectionTimer.cancel();
+		if(connectionTimer != null) {
+			connectionTimer.cancel();
+			connectionTimer = null;
+		}
 	}
 	
 	private void handleRequestSendMessage(Message message) throws IOException, MailException {

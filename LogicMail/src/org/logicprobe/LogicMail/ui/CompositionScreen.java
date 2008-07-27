@@ -47,74 +47,88 @@ import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MessageNode;
 
 /**
  * This is the message composition screen.
  */
 public class CompositionScreen extends BaseScreen {
-    private AccountConfig acctConfig;
-    //private OutgoingMailClient client;
-    private VerticalFieldManager vfmRecipients;
-    private AutoTextEditField fldSubject;
-    private AutoTextEditField fldEdit;
+	private AccountNode accountNode;
+    private AccountConfig accountConfig;
+    private VerticalFieldManager recipientsFieldManager;
+    private AutoTextEditField subjectEditField;
+    private AutoTextEditField messageEditField;
     private String inReplyTo;
     private boolean messageSent;
     private IdentityConfig identityConfig;
+    private MessageNode replyToMessageNode;
+    
+    public final static int COMPOSE_NORMAL    = 0;
+    public final static int COMPOSE_REPLY     = 1;
+    public final static int COMPOSE_REPLY_ALL = 2;
+    public final static int COMPOSE_FORWARD   = 3;
     
     /**
      * Creates a new instance of CompositionScreen.
      *
-     * @param acctConfig Account configuration
+     * @param accountConfig Account configuration
      */
     public CompositionScreen(AccountNode accountNode) {
-        this.acctConfig = accountNode.getAccountConfig();
-        //this.client = MailClientFactory.createOutgoingMailClient(acctConfig);
-        vfmRecipients = new VerticalFieldManager();
-        vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, ""));
-        vfmRecipients.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, ""));
-        add(vfmRecipients);
-        fldSubject = new AutoTextEditField("Subject: ", "");
-        add(fldSubject);
-        add(new SeparatorField());
-        fldEdit = new AutoTextEditField();
+    	this.accountNode = accountNode;
+        this.accountConfig = accountNode.getAccountConfig();
+        this.identityConfig = accountConfig.getIdentityConfig();
         
-        this.identityConfig = acctConfig.getIdentityConfig();
+        initFields();
         
         // Add the signature if available
         if(identityConfig != null) {
             String sig = identityConfig.getMsgSignature();
             if(sig != null && sig.length() > 0) {
-                fldEdit.insert("\r\n--\r\n"+sig);
-                fldEdit.setCursorPosition(0);
+                messageEditField.insert("\r\n--\r\n"+sig);
+                messageEditField.setCursorPosition(0);
             }
         }
-        add(fldEdit);
     }
 
     /**
      * Creates a new instance of CompositionScreen.
      * Used for working with an already created message,
-     * such as a reply or forward.
+     * such as a draft, reply, or forward.
      *
-     * @param acctConfig Account configuration
-     * @param message Message we are composing
+     * @param accountConfig Account configuration
+     * @param messageNode Message we are composing
+     * @param composeType Type of message we are creating
      */
-    public CompositionScreen(AccountNode accountNode, Message message) {
+    public CompositionScreen(AccountNode accountNode, MessageNode messageNode, int composeType) {
         this(accountNode);
         int i;
-
+        this.replyToMessageNode = messageNode;
+        
+        Message message = replyToMessageNode.getMessage();
+        switch(composeType) {
+        case COMPOSE_REPLY:
+        	message = message.toReplyMessage();
+        	break;
+        case COMPOSE_REPLY_ALL:
+        	message = message.toReplyAllMessage(identityConfig.getEmailAddress());
+        	break;
+        case COMPOSE_FORWARD:
+        	message = message.toForwardMessage();
+        	break;
+        }
+        
         MessagePart body = message.getBody();
         MessageEnvelope env = message.getEnvelope();
         
         // Currently only all-text reply bodies are supported
         if(body instanceof TextPart) {
-            fldEdit.insert("\r\n");
-            fldEdit.insert(((TextPart)body).getText());
-            fldEdit.setCursorPosition(0);
+            messageEditField.insert("\r\n");
+            messageEditField.insert(((TextPart)body).getText());
+            messageEditField.setCursorPosition(0);
         }
 
         // Set the subject
-        fldSubject.setText(env.subject);
+        subjectEditField.setText(env.subject);
         
         // Set the recipients
         if(env.to != null) {
@@ -135,9 +149,22 @@ public class CompositionScreen extends BaseScreen {
         
         inReplyTo = env.inReplyTo;
     }
-
+    
+    private void initFields() {
+        recipientsFieldManager = new VerticalFieldManager();
+        recipientsFieldManager.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, ""));
+        recipientsFieldManager.add(new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, ""));
+        subjectEditField = new AutoTextEditField("Subject: ", "");
+        messageEditField = new AutoTextEditField();
+        
+        add(recipientsFieldManager);
+        add(subjectEditField);
+        add(new SeparatorField());
+        add(messageEditField);
+    }
+    
     public boolean onClose() {
-        if(!messageSent && (fldSubject.getText().length() > 0 || fldEdit.getText().length() > 0)) {
+        if(!messageSent && (subjectEditField.getText().length() > 0 || messageEditField.getText().length() > 0)) {
             if(Dialog.ask(Dialog.D_YES_NO, "Discard unsent message?") == Dialog.YES) {
                 close();
                 return true;
@@ -185,7 +212,7 @@ public class CompositionScreen extends BaseScreen {
     }
 
     protected void makeMenu(Menu menu, int instance) {
-        if(((EmailAddressBookEditField)vfmRecipients.getField(0)).getText().length() > 0) {
+        if(((EmailAddressBookEditField)recipientsFieldManager.getField(0)).getText().length() > 0) {
             menu.add(sendMenuItem);
             menu.addSeparator();
         }
@@ -205,9 +232,9 @@ public class CompositionScreen extends BaseScreen {
         
         // Build the recipients list
         EmailAddressBookEditField currentField;
-        int size = vfmRecipients.getFieldCount();
+        int size = recipientsFieldManager.getFieldCount();
         for(int i=0; i<size; i++) {
-            currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+            currentField = (EmailAddressBookEditField)recipientsFieldManager.getField(i);
             if(currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO &&
                currentField.getText().length() > 0) {
                 if(env.to == null) {
@@ -266,87 +293,24 @@ public class CompositionScreen extends BaseScreen {
             // Eventually this should be prevented, but for now we will just elegantly
             // handle the case of missing identity information.
             env.from = new String[1];
-            env.from[0] = acctConfig.getServerUser() + "@" + acctConfig.getServerName();
+            env.from[0] = accountConfig.getServerUser() + "@" + accountConfig.getServerName();
         }
         
         // Set the subject
-        env.subject = fldSubject.getText();
+        env.subject = subjectEditField.getText();
         
-        MessagePart bodyPart = MessagePartFactory.createMessagePart("text", "plain", "7bit", "us-ascii", fldEdit.getText());
+        MessagePart bodyPart = MessagePartFactory.createMessagePart("text", "plain", "7bit", "us-ascii", messageEditField.getText());
         
         Message message = new Message(env, bodyPart);
         
-        message.getBody(); // prevent unused warning for now
-//        SendMessageHandler sendHandler = new SendMessageHandler(message);
-//        sendHandler.setListener(this);
-//        sendHandler.start();
+        if(replyToMessageNode != null) {
+        	accountNode.sendMessageReply(message, replyToMessageNode);
+        }
+        else {
+        	accountNode.sendMessage(message);
+        }
+        messageSent = true;
     }
-    
-//    /**
-//     * Handle completion of sending a message.
-//     */
-//    public void mailActionComplete(MailClientHandler source, boolean result) {
-//        // This should also store the message in a
-//        // configured sent-messages folder on the outgoing
-//        // mail server if applicable, then close the screen.
-//        if(result == true) {
-//            messageSent = true;
-//            // The following method is now responsible for closing the screen
-//            appendMessage(((SendMessageHandler)source).getRawMessage());
-//        }
-//    }
-
-//    /**
-//     * Append the sent message to the sent messages folder, if available.
-//     * This method will not return until the operation has completed.
-//     */
-//    private void appendMessage(String rawMessage) {
-//        IncomingMailClient incomingClient = MailClientFactory.createMailClient(acctConfig);
-//        if(incomingClient instanceof ImapClient) {
-//            String sentFolderPath = ((ImapConfig)incomingClient.getAcctConfig()).getSentFolder();
-//            if(sentFolderPath != null) {
-//                // The append methods require a FolderTreeItem, but only care about
-//                // the path.  Since the path is the only thing easily available here,
-//                // we construct a simple instance that only contains the path.
-//                FolderTreeItem folderItem = new FolderTreeItem(null, sentFolderPath, null);
-//
-//                MailClientHandler appendMessageHandler = new AppendMessageHandler((ImapClient)incomingClient, folderItem, rawMessage);
-//                appendMessageHandler.setListener(new MailClientHandlerListener() {
-//                    public void mailActionComplete(MailClientHandler source, boolean result) {
-//                        source.setListener(null);
-//                        synchronized(Application.getEventLock()) {
-//                            CompositionScreen.this.close();
-//                        }
-//                    }
-//                });
-//                appendMessageHandler.start();
-//            }
-//            else {
-//                synchronized(Application.getEventLock()) {
-//                    this.close();
-//                }
-//            }
-//        }
-//        else {
-//            synchronized(Application.getEventLock()) {
-//                this.close();
-//            }
-//        }
-//    }
-    
-//    private class AppendMessageHandler extends MailClientHandler {
-//        private FolderTreeItem folderItem;
-//        private String rawMessage;
-//        
-//        public AppendMessageHandler(ImapClient imapClient, FolderTreeItem folderItem, String rawMessage) {
-//            super(imapClient, "Storing to sent folder");
-//            this.folderItem = folderItem;
-//            this.rawMessage = rawMessage;
-//        }
-//        public void runSession(boolean retry) throws IOException, MailException {
-//            ((ImapClient)client).appendMessage(folderItem, rawMessage, true, false);
-//        }
-//    }
     
     /**
      * Insert a new recipient field.
@@ -354,14 +318,14 @@ public class CompositionScreen extends BaseScreen {
      * @return The newly added field
      */
     private EmailAddressBookEditField insertRecipientField(int addressType) {
-        int size = vfmRecipients.getFieldCount();
+        int size = recipientsFieldManager.getFieldCount();
         EmailAddressBookEditField currentField;
         int i;
 
         // If a field of this type already exists, and is empty, move
         // focus there instead of adding a new field
         for(i=0; i<size; i++) {
-            currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+            currentField = (EmailAddressBookEditField)recipientsFieldManager.getField(i);
             if(currentField.getAddressType() == addressType &&
                currentField.getText().length() == 0) {
                 currentField.setFocus();
@@ -373,10 +337,10 @@ public class CompositionScreen extends BaseScreen {
         // and add a new field, and give it focus
         if(addressType == EmailAddressBookEditField.ADDRESS_TO) {
             for(i=0; i<size; i++) {
-                currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+                currentField = (EmailAddressBookEditField)recipientsFieldManager.getField(i);
                 if(currentField.getAddressType() != EmailAddressBookEditField.ADDRESS_TO) {
                     currentField = new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_TO, "");
-                    vfmRecipients.insert(currentField, i);
+                    recipientsFieldManager.insert(currentField, i);
                     currentField.setFocus();
                     return currentField;
                 }
@@ -385,20 +349,20 @@ public class CompositionScreen extends BaseScreen {
         else if(addressType == EmailAddressBookEditField.ADDRESS_CC) {
             i = 0;
             while(i < size) {
-                currentField = (EmailAddressBookEditField)vfmRecipients.getField(i);
+                currentField = (EmailAddressBookEditField)recipientsFieldManager.getField(i);
                 if(currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO ||
                    currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_CC)
                     i++;
                 else {
                     currentField = new EmailAddressBookEditField(EmailAddressBookEditField.ADDRESS_CC, "");
-                    vfmRecipients.insert(currentField, i);
+                    recipientsFieldManager.insert(currentField, i);
                     currentField.setFocus();
                     return currentField;
                 }
             }
         }
         currentField = new EmailAddressBookEditField(addressType, "");
-        vfmRecipients.add(currentField);
+        recipientsFieldManager.add(currentField);
         currentField.setFocus();
         return currentField;
     }
@@ -408,43 +372,21 @@ public class CompositionScreen extends BaseScreen {
         int index;
         switch(key) {
         case Keypad.KEY_BACKSPACE:
-            currentField = (EmailAddressBookEditField)vfmRecipients.getFieldWithFocus();
+            currentField = (EmailAddressBookEditField)recipientsFieldManager.getFieldWithFocus();
             if(currentField == null) {
                 break;
             }
-            if(vfmRecipients.getFieldWithFocusIndex() == 0) {
+            if(recipientsFieldManager.getFieldWithFocusIndex() == 0) {
                 break;
             }
             if(currentField.getText().length() > 0) {
                 break;
             }
             index = currentField.getIndex();
-            vfmRecipients.delete(currentField);
-            vfmRecipients.getField(index-1).setFocus();
+            recipientsFieldManager.delete(currentField);
+            recipientsFieldManager.getField(index-1).setFocus();
             return true;
         }
         return super.keyChar(key, status, time);
     }
-
-//    /**
-//     * Implements the handler for sending messages
-//     */
-//    private class SendMessageHandler extends MailClientHandler {
-//        private Message message;
-//        private String rawMessage;
-//        
-//        public SendMessageHandler(Message message) {
-//            super(CompositionScreen.this.client, "Sending message");
-//            this.message = message;
-//        }
-//
-//        public void runSession(boolean retry) throws IOException, MailException {
-//            rawMessage = ((OutgoingMailClient)client).sendMessage(message);
-//            client.close();
-//        }
-//        
-//        public String getRawMessage() {
-//            return rawMessage;
-//        }
-//    }
 }

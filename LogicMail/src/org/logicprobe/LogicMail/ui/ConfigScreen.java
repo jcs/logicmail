@@ -50,7 +50,6 @@ import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
-import org.logicprobe.LogicMail.model.MailManager;
 
 /**
  * This screen is the main entry point to all the
@@ -106,7 +105,6 @@ public class ConfigScreen extends BaseCfgScreen {
 	
 	protected void onUndisplay() {
 		if(configurationChanged) {
-			MailManager.getInstance().configurationChanged();
 			configurationChanged = false;
 		}
 		super.onUndisplay();

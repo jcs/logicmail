@@ -31,7 +31,6 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.message.Message;
 
@@ -40,10 +39,10 @@ public class NetworkMailSender extends AbstractMailSender {
 	private OutgoingMailConnectionHandler connectionHandler;
 	private OutgoingConfig outgoingConfig;
 
-	public NetworkMailSender(AccountConfig accountConfig) {
+	public NetworkMailSender(OutgoingConfig outgoingConfig) {
 		super();
-		this.client = MailClientFactory.createOutgoingMailClient(accountConfig);
-		this.outgoingConfig = accountConfig.getOutgoingConfig();
+		this.client = MailClientFactory.createOutgoingMailClient(outgoingConfig);
+		this.outgoingConfig = outgoingConfig;
 		this.connectionHandler = new OutgoingMailConnectionHandler(client);
 		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
 			public void mailConnectionRequestComplete(int type, Object result) {

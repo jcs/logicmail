@@ -94,18 +94,18 @@ public class MailClientFactory {
      * If a client already exists for the provided configuration,
      * it will be provided instead of a new one.
      *
-     * @param acctConfig User account configuration
+     * @param outgoingConfig Outgoing configuration
      * @return Usable outgoing mail client instance
      */
-    public static OutgoingMailClient createOutgoingMailClient(AccountConfig acctConfig) {
+    public static OutgoingMailClient createOutgoingMailClient(OutgoingConfig outgoingConfig) {
         OutgoingMailClient client = null;
-        OutgoingConfig outgoingConfig = acctConfig.getOutgoingConfig();
         if(outgoingConfig != null) {
             client = (OutgoingMailClient)outgoingClientTable.get(outgoingConfig);
 
             if(client == null) {
                 GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
-                    client = new SmtpClient(globalConfig, outgoingConfig);
+                client = new SmtpClient(globalConfig, outgoingConfig);
+                outgoingClientTable.put(outgoingConfig, client);
             }
         }
         return client;
@@ -116,10 +116,10 @@ public class MailClientFactory {
      * match a particular account configuration.
      * This method is intended to be used only for testing.
      * 
-     * @param acctConfig User account configuration
+     * @param outgoingConfig Outgoing configuration
      * @param client Usable mail client instance
      */
-    static void setOutgoingMailClient(AccountConfig acctConfig, OutgoingMailClient client) {
-    	outgoingClientTable.put(acctConfig, client);
+    static void setOutgoingMailClient(OutgoingConfig outgoingConfig, OutgoingMailClient client) {
+    	outgoingClientTable.put(outgoingConfig, client);
     }
 }

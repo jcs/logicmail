@@ -174,6 +174,15 @@ public class AccountNode implements Node {
 		}
 	}
 	
+	/**
+	 * Returns whether this account has a mail sender associated with it.
+	 * 
+	 * @return True if mail can be sent, false otherwise.
+	 */
+	public boolean hasMailSender() {
+		return (this.mailSender != null);
+	}
+	
 	private MailSenderListener mailSenderListener = new MailSenderListener() {
 		public void messageSent(MessageSentEvent e) {
 			mailSender_MessageSent(e);
@@ -592,7 +601,9 @@ public class AccountNode implements Node {
 			MailboxNode sentMailbox = null;
 			if(accountConfig instanceof ImapConfig) {
 				String sentFolderPath = ((ImapConfig)accountConfig).getSentFolder();
-				sentMailbox = (MailboxNode)pathMailboxMap.get(sentFolderPath);
+				if(sentFolderPath != null) {
+					sentMailbox = (MailboxNode)pathMailboxMap.get(sentFolderPath);
+				}
 			}
 			
 			if(sentMailbox != null && mailStore.hasAppend()) {

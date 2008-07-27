@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,14 +46,15 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
-import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.MailboxNode;
 
 /**
  * Configuration screen
@@ -78,7 +79,6 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private IdentityConfig[] identityConfigs;
     private OutgoingConfig[] outgoingConfigs;
     private FieldChangeListener fieldChangeListener;
-    private AccountCache acctCache;
     
     private class NullOutgoingConfig extends OutgoingConfig {
         public String toString() {
@@ -109,7 +109,6 @@ public class AcctCfgScreen extends BaseCfgScreen {
         super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
         
         this.acctConfig = acctConfig;
-        this.acctCache = new AccountCache(this.acctConfig);
         this.acctSaved = false;
         
         MailSettings mailSettings = MailSettings.getInstance();
@@ -205,7 +204,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
             String sentFolder = imapConfig.getSentFolder();
             if(sentFolder != null && folderChoices.length > 0) {
                 for(int i=1; i<folderChoices.length; i++) {
-                    if(sentFolder.equals(((FolderTreeItem)folderChoices[i].getItem()).getPath())) {
+                    if(sentFolder.equals(((MailboxNode)folderChoices[i].getItem()).getPath())) {
                         defaultFolder = i;
                         break;
                     }
@@ -224,38 +223,46 @@ public class AcctCfgScreen extends BaseCfgScreen {
     }
     
     private ObjectChoiceItem[] getFolderChoices() {
-        FolderTreeItem folderTreeRoot = acctCache.loadFolderTree();
-
         Vector choices = new Vector();
         choices.addElement(new ObjectChoiceItem("<" + resources.getString(LogicMailResource.CONFIG_ACCOUNT_NONE) + ">", null));
         
-        if(folderTreeRoot != null && folderTreeRoot.hasChildren()) {
-            FolderTreeItem[] children = folderTreeRoot.children();
-            for(int i=0; i<children.length; i++) {
-                folderChoicesHelper(choices, 0, children[i]);
-            }
+        // Find the account node matching this configuration, if it exists
+        AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+        AccountNode matchingAccount = null;
+        for(int i=0; i<accounts.length; i++) {
+        	if(accounts[i].getAccountConfig() == this.acctConfig) {
+        		matchingAccount = accounts[i];
+        		break;
+        	}
+        }
+        
+        // We found a matching account node, so build the choice list
+        if(matchingAccount != null) {
+        	MailboxNode rootMailbox = matchingAccount.getRootMailbox();
+        	if(rootMailbox != null) {
+        		MailboxNode[] children = rootMailbox.getMailboxes();
+        		for(int i=0; i<children.length; i++) {
+        			folderChoicesHelper(choices, 0, children[i]);
+        		}
+        	}
         }
         
         int size = choices.size();
         ObjectChoiceItem[] result = new ObjectChoiceItem[size];
-        for(int i=0; i<size; i++) {
-            result[i] = (ObjectChoiceItem)choices.elementAt(i);
-        }
+        choices.copyInto(result);
         return result;
     }
     
-    private void folderChoicesHelper(Vector choices, int level, FolderTreeItem currentItem) {
+    private void folderChoicesHelper(Vector choices, int level, MailboxNode currentNode) {
         StringBuffer buf = new StringBuffer();
         for(int i=0; i<level; i++) {
             buf.append("  ");
         }
-        buf.append(currentItem.getName());
-        choices.addElement(new ObjectChoiceItem(buf.toString(), currentItem));
-        if(currentItem.hasChildren()) {
-            FolderTreeItem[] children = currentItem.children();
-            for(int i=0; i<children.length; i++) {
-                folderChoicesHelper(choices, level+1, children[i]);
-            }
+        buf.append(currentNode.getName());
+        choices.addElement(new ObjectChoiceItem(buf.toString(), currentNode));
+        MailboxNode[] children = currentNode.getMailboxes();
+        for(int i=0; i<children.length; i++) {
+            folderChoicesHelper(choices, level+1, children[i]);
         }
     }
     
@@ -342,7 +349,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
                 imapConfig.setSentFolder(null);
             }
             else {
-                imapConfig.setSentFolder(((FolderTreeItem)sentFolderChoice.getItem()).getPath());
+                imapConfig.setSentFolder(((MailboxNode)sentFolderChoice.getItem()).getPath());
             }
             
             String folderPrefix = folderPrefixField.getText().trim();

@@ -137,16 +137,6 @@ public class MailHomeScreen extends BaseScreen {
         	openSelectedItem();
         }
     };
-    
-    private MenuItem refreshItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REFRESH_FOLDERS), 111, 10) {
-        public void run() {
-        	// Assume this will only be called when a valid AccountNode is selected.
-        	// Later we need to modify it to deal with being called from MailboxNodes.
-      		AccountNode accountNode = (AccountNode)((TreeNode)treeField.getCookie(treeField.getCurrentNode())).node;
-      		accountNode.refreshMailboxes();
-        }
-    };
-    
     private MenuItem refreshStatusItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REFRESH_STATUS), 110, 10) {
         public void run() {
         	// Assume this will only be called when a valid AccountNode is selected.
@@ -155,13 +145,42 @@ public class MailHomeScreen extends BaseScreen {
       		accountNode.refreshMailboxStatus();
         }
     };
+    private MenuItem refreshItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REFRESH_FOLDERS), 111, 10) {
+        public void run() {
+        	// Assume this will only be called when a valid AccountNode is selected.
+        	// Later we need to modify it to deal with being called from MailboxNodes.
+      		AccountNode accountNode = (AccountNode)((TreeNode)treeField.getCookie(treeField.getCurrentNode())).node;
+      		accountNode.refreshMailboxes();
+        }
+    };
+    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 120, 10) {
+        public void run() {
+        	int id = treeField.getCurrentNode();
+        	if(id != -1) {
+        		Node node = ((TreeNode)treeField.getCookie(id)).node;
+        		AccountNode accountNode;
+        		if(node instanceof MailboxNode) {
+        			accountNode = ((MailboxNode)node).getParentAccount();
+        		}
+        		else if(node instanceof AccountNode) {
+        			accountNode = (AccountNode)node; 
+        		}
+        		else {
+        			accountNode = null;
+        		}
+        		if(accountNode != null) {
+                    UiApplication.getUiApplication().pushScreen(new CompositionScreen(accountNode));
+        		}
+        	}
+        }
+    };
     private MenuItem disconnectItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DISCONNECT), 200000, 9) {
         public void run() {
             disconnectSelectedAccount();
         }
     };
-    
-	private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
+
+    private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
 		public void mailboxStatusChanged(MailboxNodeEvent e) {
 			if(nodeIdMap.containsKey(e.getSource())) {
 				treeField.invalidateNode(((Integer)nodeIdMap.get(e.getSource())).intValue());
@@ -191,7 +210,11 @@ public class MailHomeScreen extends BaseScreen {
     	if(id != -1) {
     		Node node = ((TreeNode)treeField.getCookie(id)).node;
     		if(node instanceof MailboxNode) {
+    			MailboxNode mailboxNode = (MailboxNode)node;
     			menu.add(selectFolderItem);
+    			if(mailboxNode.getParentAccount().hasMailSender()) {
+    				menu.add(compositionItem);
+    			}
     		}
     		else if(node instanceof AccountNode) {
     			AccountNode accountNode = (AccountNode)node; 
@@ -200,6 +223,9 @@ public class MailHomeScreen extends BaseScreen {
     			}
     			if(accountNode.hasFolders()) {
     				menu.add(refreshItem);
+    			}
+    			if(accountNode.hasMailSender()) {
+    				menu.add(compositionItem);
     			}
     			if(accountNode.getStatus() == AccountNode.STATUS_ONLINE) {
     				menu.add(disconnectItem);
@@ -210,6 +236,7 @@ public class MailHomeScreen extends BaseScreen {
     }
 
     protected boolean trackwheelClick(int status, int time) {
+    	// TODO: Fix track-wheel clicks for older devices
     	return openSelectedItem();
     }
     

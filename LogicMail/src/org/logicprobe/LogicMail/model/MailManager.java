@@ -34,6 +34,8 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
@@ -41,8 +43,8 @@ import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
+import org.logicprobe.LogicMail.mail.MailFactory;
 import org.logicprobe.LogicMail.mail.NetworkMailSender;
-import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -62,8 +64,16 @@ public class MailManager {
 	private MailManager() {
 		mailSettings = MailSettings.getInstance();
 		mailRootNode = new MailRootNode();
+
 		// Make sure the initial configuration is loaded
-		configurationChanged();
+		mailSettings_MailSettingsSaved(new MailSettingsEvent(this));
+		
+		// Register a listener for configuration changes
+		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
+			public void mailSettingsSaved(MailSettingsEvent e) {
+				mailSettings_MailSettingsSaved(e);
+			}
+		});
 		
 		MailConnectionManager.getInstance().addMailConnectionListener(new MailConnectionListener() {
 			public void mailConnectionStateChanged(MailConnectionStateEvent e) {
@@ -98,11 +108,12 @@ public class MailManager {
 		return mailRootNode;
 	}
 	
+	
 	/**
 	 * Called when the account configuration has changed,
 	 * to cause the mail model to update its account list.
 	 */
-	public synchronized void configurationChanged() {
+	private synchronized void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
 		// Build the new account list from the configuration and
 		// the existing account nodes.  This works by checking to see
 		// if an account already exists, and only creating new nodes
@@ -122,7 +133,7 @@ public class MailManager {
 				}
 			}
 			if(!accountExists) {
-				AccountNode newAccountNode = new AccountNode(new NetworkMailStore(accountConfig));
+				AccountNode newAccountNode = new AccountNode(MailFactory.createMailStore(accountConfig));
 				newAccounts.addElement(newAccountNode);
 			}
 		}
@@ -138,6 +149,8 @@ public class MailManager {
 			mailRootNode.addAccount((AccountNode)newAccounts.elementAt(i));
 		}
 		
+		//TODO: Clear deleted accounts from the MailFactory
+		
 		// Get the newly updated account list, and determine whether
 		// we need to update any mail senders.
 		existingAccounts = mailRootNode.getAccounts();
@@ -150,12 +163,17 @@ public class MailManager {
 				}
 				existingAccounts[i].setMailSender(null);
 			}
-			else if(mailSender instanceof NetworkMailSender &&
-			   ((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig) {
+			else if((mailSender instanceof NetworkMailSender
+			       &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
 				mailSender.shutdown(false);
-				existingAccounts[i].setMailSender(new NetworkMailSender(existingAccounts[i].getAccountConfig()));
+				existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
+			}
+			else if(mailSender == null) {
+				existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
 			}
 		}
+		
+		//TODO: Clear deleted senders from the MailFactory
 		
 		// Notify any listeners
 		fireMailConfigurationChanged();

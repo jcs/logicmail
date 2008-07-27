@@ -185,11 +185,11 @@ public class MailboxScreen extends BaseScreen {
             openSelectedMessageProperties();
         }
     };
-//    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
-//        public void run() {
-//            //UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
-//        }
-//    };
+    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 120, 10) {
+        public void run() {
+            UiApplication.getUiApplication().pushScreen(new CompositionScreen(mailboxNode.getParentAccount()));
+        }
+    };
     private MenuItem deleteItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE), 130, 10) {
         public void run() {
         	deleteSelectedMessage();
@@ -206,9 +206,9 @@ public class MailboxScreen extends BaseScreen {
     		menu.add(selectItem);
     		menu.add(propertiesItem);
     	}
-//        if(this.client.getAcctConfig().getOutgoingConfig() != null) {
-//            menu.add(compositionItem);
-//        }
+        if(mailboxNode.getParentAccount().hasMailSender()) {
+            menu.add(compositionItem);
+        }
         int index = messageListField.getSelectedIndex();
         if(index >= 0 && index < messageListField.getSize() && !displayedMessages.isEmpty()) {
         	MessageNode messageNode = (MessageNode)displayedMessages.elementAt(index);

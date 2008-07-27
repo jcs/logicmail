@@ -42,7 +42,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.NullField;
-
+import net.rim.device.api.ui.UiApplication;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.Message;
@@ -130,48 +130,43 @@ public class MessageScreen extends BaseScreen {
     };
     private MenuItem replyItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REPLY), 110, 10) {
         public void run() {
-//            if(msg != null) {
-//                CompositionScreen screen =
-//                    new CompositionScreen(
-//                        client.getAcctConfig(),
-//                        msg.toReplyMessage());
-//                UiApplication.getUiApplication().pushModalScreen(screen);
-//                
-//                if(screen.getMessageSent()) {
-//                    updateMessageAnswered();
-//                }
-//            }
+            if(messageNode.getMessage() != null) {
+                CompositionScreen screen =
+                    new CompositionScreen(
+                    		messageNode.getParent().getParentAccount(),
+                    		messageNode,
+                    		CompositionScreen.COMPOSE_REPLY);
+                UiApplication.getUiApplication().pushModalScreen(screen);
+            }
         }
     };
     private MenuItem replyAllItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REPLYTOALL), 115, 10) {
         public void run() {
-//            if(msg != null) {
-//                CompositionScreen screen =
-//                    new CompositionScreen(
-//                        client.getAcctConfig(),
-//                        msg.toReplyAllMessage(client.getAcctConfig().getIdentityConfig().getEmailAddress()));
-//                UiApplication.getUiApplication().pushModalScreen(screen);
-//
-//                if(screen.getMessageSent()) {
-//                    updateMessageAnswered();
-//                }
-//            }
+            if(messageNode.getMessage() != null) {
+                CompositionScreen screen =
+                    new CompositionScreen(
+                    		messageNode.getParent().getParentAccount(),
+                    		messageNode,
+                    		CompositionScreen.COMPOSE_REPLY_ALL);
+                UiApplication.getUiApplication().pushModalScreen(screen);
+            }
         }
     };
     private MenuItem forwardItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_FORWARD), 120, 10) {
         public void run() {
-//            if(msg != null) {
-//                CompositionScreen screen =
-//                    new CompositionScreen(
-//                        client.getAcctConfig(),
-//                        msg.toForwardMessage());
-//                UiApplication.getUiApplication().pushModalScreen(screen);
-//            }
+            if(messageNode.getMessage() != null) {
+                CompositionScreen screen =
+                    new CompositionScreen(
+                    		messageNode.getParent().getParentAccount(),
+                    		messageNode,
+                    		CompositionScreen.COMPOSE_FORWARD);
+                UiApplication.getUiApplication().pushModalScreen(screen);
+            }
         }
     };
     private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 150, 10) {
         public void run() {
-//            UiApplication.getUiApplication().pushScreen(new CompositionScreen(client.getAcctConfig()));
+            UiApplication.getUiApplication().pushScreen(new CompositionScreen(messageNode.getParent().getParentAccount()));
         }
     };
     private MenuItem closeItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_CLOSE), 200000, 10) {

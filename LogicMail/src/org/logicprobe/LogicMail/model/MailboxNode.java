@@ -329,6 +329,18 @@ public class MailboxNode implements Node {
 	}
 
 	/**
+	 * Gets the path of this mailbox.
+	 * <p>Once serialization and unique IDs are fully implemented, this should
+	 * be removed.  It exposes too much implementation detail to the upper
+	 * layers of the system.
+	 * 
+	 * @return The path.
+	 */
+	public String getPath() {
+		return this.folderTreeItem.getPath();
+	}
+	
+	/**
 	 * Sets the type of this mailbox.
 	 * 
 	 * @param type The type.
