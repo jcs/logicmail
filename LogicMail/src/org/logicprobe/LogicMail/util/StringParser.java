@@ -775,4 +775,23 @@ public class StringParser {
         }
         return buf.toString();
     }
+    
+    /**
+     * Adds escaped characters to a string.
+     * Currently only implemented for double-quotes and backslashes.
+     */
+    public static String addEscapedChars(String text) {
+        StringBuffer buf = new StringBuffer();
+        
+        int size = text.length();
+        for(int i=0; i<size; i++) {
+            char ch = text.charAt(i);
+            if(ch == '\\' || ch == '\"') {
+                buf.append('\\');
+            }
+            buf.append(ch);
+        }
+        
+        return buf.toString();
+    }
 }

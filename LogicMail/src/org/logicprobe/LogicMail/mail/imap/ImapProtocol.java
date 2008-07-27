@@ -96,7 +96,7 @@ public class ImapProtocol {
         
         // Authenticate with the server
         try {
-            execute("LOGIN", "\""+ username + "\" \"" + password + "\"");
+            execute("LOGIN", "\""+ StringParser.addEscapedChars(username) + "\" \"" + StringParser.addEscapedChars(password) + "\"");
         } catch (MailException exp) {
             // Invalid users are caught by execute()
             // and a MailException is thrown
@@ -201,7 +201,7 @@ public class ImapProtocol {
         if(replyText == null || replyText.length < 1) {
             throw new MailException("Unable to query server namespaces");
         }
-        
+
         // Assume a single-line reply
         Vector tokens = StringParser.nestedParenStringLexer("("+replyText[0].substring(replyText[0].indexOf('('))+")");
         
@@ -308,7 +308,7 @@ public class ImapProtocol {
             EventLogger.DEBUG_INFO);
         }
 
-        String replyText[] = execute("SELECT", "\""+mboxpath+"\"");
+        String replyText[] = execute("SELECT", "\""+StringParser.addEscapedChars(mboxpath)+"\"");
         SelectResponse response = new SelectResponse();
 
         int p, q;
@@ -405,7 +405,7 @@ public class ImapProtocol {
         
         int i;
         for(i = 0; i < mboxpaths.length; i++) {
-            arguments[i] = "\""+mboxpaths[i]+"\" (MESSAGES UNSEEN)";
+            arguments[i] = "\""+StringParser.addEscapedChars(mboxpaths[i])+"\" (MESSAGES UNSEEN)";
         }
         String[] result = executeBatch("STATUS", arguments);
         if(result == null || result.length != arguments.length) {
@@ -713,7 +713,7 @@ public class ImapProtocol {
             EventLogger.DEBUG_INFO);
         }
         
-        executeContinue("APPEND", "\""+mboxName+"\" ("+flagsString+") {"+rawMessage.length()+"}", rawMessage,
+        executeContinue("APPEND", "\""+StringParser.addEscapedChars(mboxName)+"\" ("+flagsString+") {"+rawMessage.length()+"}", rawMessage,
                 "Unable to append message to "+mboxName);
     }
     
@@ -743,7 +743,7 @@ public class ImapProtocol {
         }
         
         String[] results;
-        results = execute("LIST", "\""+refName+"\" \""+mboxName+"\"");
+        results = execute("LIST", "\""+StringParser.addEscapedChars(refName)+"\" \""+StringParser.addEscapedChars(mboxName)+"\"");
         
         Vector retVec = new Vector(results.length);
         ListResponse response;
