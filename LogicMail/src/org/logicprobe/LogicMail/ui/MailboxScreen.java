@@ -443,11 +443,15 @@ public class MailboxScreen extends BaseScreen {
         }
     }
     
-    private void openSelectedMessage()
+    private boolean openSelectedMessage()
     {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
     		UiApplication.getUiApplication().pushScreen(new MessageScreen(messageNode));
+    		return true;
+    	}
+    	else {
+    		return false;
     	}
     }
 
@@ -461,12 +465,16 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
 
-    private void deleteSelectedMessage() {
+    private boolean deleteSelectedMessage() {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
 	        if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT)) == Dialog.YES) {
 	        	messageNode.deleteMessage();
 	        }
+	        return true;
+    	}
+    	else {
+    		return false;
     	}
     }
     
@@ -477,6 +485,10 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
     
+    protected boolean onClick() {
+    	return openSelectedMessage();
+    }
+    
     public boolean keyChar(char key,
                            int status,
                            int time)
@@ -484,12 +496,10 @@ public class MailboxScreen extends BaseScreen {
         boolean retval = false;
         switch(key) {
             case Keypad.KEY_ENTER:
-                openSelectedMessage();
-                retval = true;
+                retval = openSelectedMessage();
                 break;
             case Keypad.KEY_BACKSPACE:
-            	deleteSelectedMessage();
-            	retval = true;
+            	retval = deleteSelectedMessage();
             	break;
         }
         return retval;

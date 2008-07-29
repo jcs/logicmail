@@ -235,8 +235,7 @@ public class MailHomeScreen extends BaseScreen {
         super.makeMenu(menu, instance);
     }
 
-    protected boolean trackwheelClick(int status, int time) {
-    	// TODO: Fix track-wheel clicks for older devices
+    protected boolean onClick() {
     	return openSelectedItem();
     }
     

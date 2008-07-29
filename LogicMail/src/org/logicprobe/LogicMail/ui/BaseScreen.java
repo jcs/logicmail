@@ -60,6 +60,9 @@ public abstract class BaseScreen extends MainScreen {
 	private LabelField statusLabel;
 	private boolean isExposed = false;
 	
+	private final static int MENU_CONTEXT = 0x10000;
+	private final static int MENU_MAIN = 0x40000000;
+	
     public BaseScreen() {
         super();
 		statusLabel = new LabelField();
@@ -114,6 +117,37 @@ public abstract class BaseScreen extends MainScreen {
     protected void onObscured() {
     	super.onObscured();
     	isExposed = false;
+    }
+    
+    public boolean onMenu(int instance) {
+		if (instance == MENU_MAIN) {
+			// Main menu button pressed, display menu
+			return super.onMenu(instance);
+		}
+		else if (instance == MENU_CONTEXT) {
+			// Trackball click, call override method
+			if(!onClick()) {
+				return super.onMenu(instance);
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			// Trackwheel click, display menu
+			return super.onMenu(instance);
+		}
+	}
+    
+    /**
+     * Invoked when the user clicks the trackball on
+     * devices that have a separate menu button.
+     * 
+     * @return True if the click was handled, false to fall
+     *         through and display the context menu.
+     */
+    protected boolean onClick() {
+    	return false;
     }
     
     // Create menu items
