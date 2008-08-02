@@ -74,7 +74,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			handleRequestFolderTree();
 			break;
 		case REQUEST_FOLDER_STATUS:
-			handleRequestFolderStatus((FolderTreeItem)params[0]);
+			handleRequestFolderStatus((FolderTreeItem[])params[0]);
 			break;
 		case REQUEST_FOLDER_MESSAGES_RANGE:
 			handleRequestFolderMessagesRange(
@@ -125,12 +125,12 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
-	private void handleRequestFolderStatus(FolderTreeItem root) throws IOException, MailException {
-		incomingClient.refreshFolderStatus(root);
+	private void handleRequestFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
+		incomingClient.refreshFolderStatus(folders);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_FOLDER_STATUS, root);
+			listener.mailConnectionRequestComplete(REQUEST_FOLDER_STATUS, folders);
 		}
 	}
 	

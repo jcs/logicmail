@@ -30,19 +30,25 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.util.EventListenerList;
+import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
  * Mailbox node for the mail data model.
  * This node contains both <tt>MailboxNode</tt> and
  * <tt>MessageNode</tt> instances as its children.
  */
-public class MailboxNode implements Node {
+public class MailboxNode implements Node, Serializable {
+	private long uniqueId;
 	private AccountNode parentAccount;
 	private MailboxNode parentMailbox;
 	private Vector mailboxes;
@@ -58,19 +64,40 @@ public class MailboxNode implements Node {
 	public final static int TYPE_SENT   = 3;
 	public final static int TYPE_TRASH  = 4;
 
+	/**
+	 * Initializes a new instance of <tt>MailboxNode</tt>.
+	 * 
+	 * @param folderTreeItem The folder item this node wraps.
+	 * @param type The type of mailbox this is representing.
+	 */
 	MailboxNode(FolderTreeItem folderTreeItem, int type) {
+		this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
 		this.mailboxes = new Vector();
 		this.messages = new Vector();
 		this.messageMap = new Hashtable();
-		this.folderTreeItem = folderTreeItem;
+		if(folderTreeItem != null) {
+			this.setFolderTreeItem(new FolderTreeItem(folderTreeItem));
+		}
 		this.type = type;
 	}
 	
+	/**
+	 * Initializes a new instance of <tt>MailboxNode</tt>.
+	 * 
+	 * @param folderTreeItem The folder item this node wraps.
+	 */
 	MailboxNode(FolderTreeItem folderTreeItem) {
 		this(folderTreeItem, TYPE_NORMAL);
 	}
 	
-	MailboxNode() {
+	/**
+	 * Initializes a new instance of <tt>MailboxNode</tt>.
+	 * 
+	 * <p><i>Note:</i> This constructor is only exposed for
+	 * serialization purposes, and should never be called from
+	 * outside this package for any other reason.
+	 */
+	public MailboxNode() {
 		this(null, TYPE_NORMAL);
 	}
 	
@@ -120,10 +147,16 @@ public class MailboxNode implements Node {
 	 * without having to recreate the <tt>MailboxNode</tt> instances
 	 * that maintain cache data for it.
 	 * 
+	 * <p><i>Note:</i> The actual <tt>FolderTreeItem</tt> used by this
+	 * class is a deep copy of the one passed to this method.  It is
+	 * implemented this way since we need a standalone object that
+	 * is not part of a tree.  This is necessary to avoid excessive
+	 * recursion during serialization.
+	 * 
 	 * @param folderTreeItem Folder tree item.
 	 */
 	void setFolderTreeItem(FolderTreeItem folderTreeItem) {
-		this.folderTreeItem = folderTreeItem;
+		this.folderTreeItem = new FolderTreeItem(folderTreeItem);
 	}
 	
 	/**
@@ -451,4 +484,37 @@ public class MailboxNode implements Node {
             ((MailboxNodeListener)listeners[i]).mailboxStatusChanged(e);
         }
     }
+
+	public long getUniqueId() {
+		return uniqueId;
+	}
+	
+	public void serialize(DataOutputStream output) throws IOException {
+		output.writeLong(uniqueId);
+		output.writeInt(type);
+		folderTreeItem.serialize(output);
+		synchronized(mailboxes) {
+			int size = mailboxes.size();
+			output.writeInt(size);
+			for(int i=0; i<size; i++) {
+				((MailboxNode)mailboxes.elementAt(i)).serialize(output);
+			}
+		}
+	}
+	
+	public void deserialize(DataInputStream input) throws IOException {
+		uniqueId = input.readLong();
+		type = input.readInt();
+		folderTreeItem = new FolderTreeItem();
+		folderTreeItem.deserialize(input);
+		synchronized(mailboxes) {
+			int size = input.readInt();
+			for(int i=0; i<size; i++) {
+				MailboxNode child = new MailboxNode();
+				child.deserialize(input);
+				child.parentMailbox = this;
+				mailboxes.addElement(child);
+			}
+		}
+	}
 }

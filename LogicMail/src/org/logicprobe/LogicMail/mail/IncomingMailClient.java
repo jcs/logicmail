@@ -83,13 +83,13 @@ public interface IncomingMailClient extends MailClient {
         throws IOException, MailException;
     
     /**
-     * Refresh the folder status across the folder tree.
+     * Refresh the folder status.
      *
-     * @param root The root of the folder tree
+     * @param folders The folders to refresh
      * @throw IOException on I/O errors
      * @throw MailException on protocol errors
      */
-    public abstract void refreshFolderStatus(FolderTreeItem root)
+    public abstract void refreshFolderStatus(FolderTreeItem[] folders)
         throws IOException, MailException;
     
     /**

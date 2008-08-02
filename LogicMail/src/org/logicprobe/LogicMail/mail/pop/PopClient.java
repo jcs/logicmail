@@ -213,9 +213,12 @@ public class PopClient implements IncomingMailClient {
         return null;
     }
 
-    public void refreshFolderStatus(FolderTreeItem root) throws IOException, MailException {
+    public void refreshFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
         // Only one mailbox can exist, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
+        if(folders.length == 1 && folders[0] != activeMailbox) {
+        	folders[0].setMsgCount(activeMailbox.getMsgCount());
+        }
     }
 
     public FolderTreeItem getActiveFolder() {

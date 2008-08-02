@@ -108,8 +108,8 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_TREE, new Object[] { });
 	}
 
-	public void requestFolderStatus(FolderTreeItem root) {
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS, new Object[] { root });
+	public void requestFolderStatus(FolderTreeItem[] folders) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS, new Object[] { folders });
 	}
 
 	public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) {
@@ -164,7 +164,10 @@ public class NetworkMailStore extends AbstractMailStore {
 			fireFolderTreeUpdated((FolderTreeItem)result);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
-			fireFolderStatusChanged((FolderTreeItem)result);
+			FolderTreeItem[] folders = (FolderTreeItem[])result;
+			for(int i=0; i<folders.length; i++) {
+				fireFolderStatusChanged(folders[i]);
+			}
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE:
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET:

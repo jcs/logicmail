@@ -90,6 +90,22 @@ public class FolderTreeItem implements Serializable {
     }
     
     /**
+     * Create a folder tree item that is a clone of the source item,
+     * but has none of the references to parent or children items.
+     * 
+     * @param source The source item.
+     */
+    public FolderTreeItem(FolderTreeItem source) {
+    	this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+        this.name = source.name;
+        this.path = source.path;
+        this.delim = source.delim;
+        this.selectable = source.selectable;
+        this.msgCount = source.msgCount;
+        this.unseenCount = source.unseenCount;
+    }
+    
+    /**
      * Creates an uninitialized folder tree item.
      * Only for use during deserialization.
      */

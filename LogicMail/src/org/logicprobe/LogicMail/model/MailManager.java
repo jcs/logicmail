@@ -107,8 +107,7 @@ public class MailManager {
 	public synchronized MailRootNode getMailRootNode() {
 		return mailRootNode;
 	}
-	
-	
+
 	/**
 	 * Called when the account configuration has changed,
 	 * to cause the mail model to update its account list.

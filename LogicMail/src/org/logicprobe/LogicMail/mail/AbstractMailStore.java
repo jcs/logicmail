@@ -111,15 +111,14 @@ public abstract class AbstractMailStore {
     public abstract void requestFolderTree();
     
     /**
-     * Requests the current message counts of a folder or
-     * group of folders.
+     * Requests the current message counts of a group of folders.
      * 
-     * <p>Successful completion is indicated by a call to
+     * <p>Successful completion is indicated by calls to
      * {@link FolderListener#folderStatusChanged(FolderEvent)}.
      * 
-     * @param root The root node of the folder tree to refresh.
+     * @param folders The folder tree items to refresh.
      */
-    public abstract void requestFolderStatus(FolderTreeItem root);
+    public abstract void requestFolderStatus(FolderTreeItem[] folders);
     
     /**
      * Requests the message listing from a particular folder.

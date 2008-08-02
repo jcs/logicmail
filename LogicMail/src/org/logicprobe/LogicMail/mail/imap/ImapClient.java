@@ -324,18 +324,13 @@ public class ImapClient implements IncomingMailClient {
             }
         }
 
-    public void refreshFolderStatus(FolderTreeItem root) throws IOException, MailException {
-        // Flatten the tree for easy batching of the status refresh
-        Vector folders = new Vector();
-        flattenFolderTree(folders, root);
-        
+    public void refreshFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
         // Construct an array of mailbox paths to match the folder vector
-        int size = folders.size();
         Vector mboxPaths = new Vector();
         Hashtable mboxMap = new Hashtable();
         int i;
-        for(i=0; i<size; i++) {
-            FolderTreeItem item = (FolderTreeItem)folders.elementAt(i);
+        for(i=0; i<folders.length; i++) {
+            FolderTreeItem item = folders[i];
             if(item.isSelectable()) {
                 mboxPaths.addElement(item.getPath());
                 mboxMap.put(item.getPath(), item);
@@ -354,28 +349,6 @@ public class ImapClient implements IncomingMailClient {
             item.setUnseenCount(response[i].unseen);
         }
     }
-    
-    /**
-     * Recursively walk the folder tree, populating a flat vector of
-     * FolderTreeItem objects.
-     *
-     * @param folders An initialized Vector to populate
-     * @param node The FolderTreeItem to start from
-     */
-    private void flattenFolderTree(Vector folders, FolderTreeItem node) {
-        // Avoid adding the invisible root node
-        if(node.getPath().length() > 0) {
-            folders.addElement(node);
-        }
-        
-        if(node.hasChildren()) {
-            FolderTreeItem[] children = node.children();
-            for(int i = 0; i < children.length; i++) {
-                flattenFolderTree(folders, children[i]);
-            }
-        }
-    }
-    
     
     public FolderTreeItem getActiveFolder() {
         return activeMailbox;

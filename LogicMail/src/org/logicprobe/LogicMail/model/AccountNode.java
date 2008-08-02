@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -50,6 +51,8 @@ import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.util.DataStore;
+import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -73,7 +76,8 @@ public class AccountNode implements Node {
 	private boolean shutdown = false;
 	private Vector outboundNewMessages = new Vector();
 	private Hashtable outboundMessageReplies = new Hashtable(); 
-	
+	private DataStore accountDataStore;
+
 	public final static int STATUS_LOCAL   = 0;
 	public final static int STATUS_OFFLINE = 1;
 	public final static int STATUS_ONLINE  = 2;
@@ -131,11 +135,15 @@ public class AccountNode implements Node {
 		if(!mailStore.hasFolders()) {
 			// Create the fake INBOX node for non-folder-capable mail stores
 			this.rootMailbox = new MailboxNode(new FolderTreeItem("", "", ""), -1);
+			this.rootMailbox.setParentAccount(this);
 			MailboxNode inboxNode = new MailboxNode(new FolderTreeItem("INBOX", "INBOX", ""), MailboxNode.TYPE_INBOX);
 			inboxNode.setParentAccount(this);
 			this.rootMailbox.addMailbox(inboxNode);
 			pathMailboxMap.put("INBOX", inboxNode);
 		}
+		
+		// Load any saved tree data
+		load();
 	}
 	
 	public void accept(NodeVisitor visitor) {
@@ -332,11 +340,13 @@ public class AccountNode implements Node {
 	 * updated mailboxes.
 	 */
 	public void refreshMailboxStatus() {
-		MailboxNode mailbox;
-		synchronized(rootMailboxLock) {
-			mailbox = this.rootMailbox;
+		int size = pathMailboxMap.size();
+		FolderTreeItem[] folders = new FolderTreeItem[size];
+		Enumeration e = pathMailboxMap.keys();
+		for(int i=0; i<size; i++) {
+			folders[i] = ((MailboxNode)pathMailboxMap.get(e.nextElement())).getFolderTreeItem();
 		}
-		mailStore.requestFolderStatus(mailbox.getFolderTreeItem());
+		mailStore.requestFolderStatus(folders);
 	}
 
 	/**
@@ -407,6 +417,7 @@ public class AccountNode implements Node {
 			populateMailboxNodes(rootFolder, rootMailbox, remainingMailboxMap);
 		}
 		
+		save();
 		fireAccountStatusChanged(AccountNodeEvent.TYPE_MAILBOX_TREE);
 	}
 	
@@ -430,7 +441,7 @@ public class AccountNode implements Node {
 			}
 		}
 	}
-	
+
 	private void populateMailboxNodes(FolderTreeItem folderTreeItem, MailboxNode currentMailbox, Hashtable remainingMailboxMap) {
 		pathMailboxMap.put(folderTreeItem.getPath(), currentMailbox);
 		if(folderTreeItem.hasChildren()) {
@@ -680,4 +691,65 @@ public class AccountNode implements Node {
             ((AccountNodeListener)listeners[i]).accountStatusChanged(e);
         }
     }
+    
+    /**
+     * Saves the mailbox tree to persistent storage.
+     */
+	private void save() {
+		if(accountConfig == null) {
+			return;
+		}
+		if(accountDataStore == null) {
+			long accountId = accountConfig.getUniqueId();
+			accountDataStore = DataStoreFactory.getConnectionCacheStore(accountId);
+			accountDataStore.load();
+		}
+		
+		accountDataStore.putNamedObject("ROOT_MAILBOX", rootMailbox);
+		accountDataStore.save();
+	}
+	
+	/**
+	 * Loads the mailbox tree from persistent storage.
+	 */
+	private void load() {
+		if(accountConfig == null) {
+			return;
+		}
+		if(accountDataStore == null) {
+			long accountId = accountConfig.getUniqueId();
+			accountDataStore = DataStoreFactory.getConnectionCacheStore(accountId);
+			accountDataStore.load();
+		}
+
+		Object loadedObject = accountDataStore.getNamedObject("ROOT_MAILBOX");
+		if(loadedObject instanceof MailboxNode) {
+			synchronized(rootMailboxLock) {
+				this.rootMailbox = (MailboxNode)loadedObject;
+				this.rootMailbox.setParentAccount(this);
+				prepareDeserializedMailboxNode(rootMailbox);
+			}
+		}
+	}
+	
+	//TODO: Handle deleted account nodes
+	
+	/**
+	 * Traverses the deserialized mailbox nodes, populates any necessary
+	 * data structures in the account node, and sets the mailbox parent
+	 * account references. 
+	 *
+	 * @param mailboxNode The mailbox node.
+	 */
+	private void prepareDeserializedMailboxNode(MailboxNode mailboxNode) {
+		mailboxNode.setParentAccount(this);
+		FolderTreeItem item = mailboxNode.getFolderTreeItem();
+		if(item != null && item.getPath().length() > 0) {
+			this.pathMailboxMap.put(item.getPath(), mailboxNode);
+		}
+		MailboxNode[] children = mailboxNode.getMailboxes();
+		for(int i=0; i<children.length; i++) {
+			prepareDeserializedMailboxNode(children[i]);
+		}
+	}
 }
