@@ -229,9 +229,9 @@ public class AccountNodeTest extends TestCase {
 			fireFolderTreeUpdated(rootFolder);
 		}
 		
-		public void requestFolderStatus(FolderTreeItem root) {
+		public void requestFolderStatus(FolderTreeItem[] folders) {
 			folderStatusRequested = true;
-			folderStatusRequestedItem = root;
+			folderStatusRequestedItem = folders[0];
 			fireFolderStatusChanged(statusUpdatedRootFolder);
 		}
 		

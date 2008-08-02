@@ -177,7 +177,7 @@ public class NetworkMailStoreTest extends TestCase {
     	fakeIncomingMailClient.refreshedMsgCount = 42;
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	folder.setMsgCount(0);
-    	instance.requestFolderStatus(folder);
+    	instance.requestFolderStatus(new FolderTreeItem[] { folder });
     	instance.shutdown(true);
     	
     	assertNotNull(eventFolderStatusChanged);
@@ -253,7 +253,7 @@ public class NetworkMailStoreTest extends TestCase {
     	// Do a whole batch of non-conflicting requests to make
     	// sure the queue is working correctly.
     	instance.requestFolderTree();
-    	instance.requestFolderStatus(folder);
+    	instance.requestFolderStatus(new FolderTreeItem[] { folder });
     	instance.requestFolderMessagesRange(folder, 42, 43);
     	instance.requestMessage(folder, fakeIncomingMailClient.folderMessages[0]);
     	instance.shutdown(true);
@@ -322,8 +322,8 @@ public class NetworkMailStoreTest extends TestCase {
 		public FolderTreeItem getFolderTree() throws IOException, MailException { return this.folderTree; }
 		public Message getMessage(FolderMessage folderMessage)
 				throws IOException, MailException { return this.message; }
-		public void refreshFolderStatus(FolderTreeItem root)
-				throws IOException, MailException { root.setMsgCount(refreshedMsgCount); }
+		public void refreshFolderStatus(FolderTreeItem[] folders)
+				throws IOException, MailException { folders[0].setMsgCount(refreshedMsgCount); }
 		public void setActiveFolder(FolderTreeItem folderItem)
 				throws IOException, MailException { this.activeFolder = folderItem; }
 		public void deleteMessage(FolderMessage folderMessage)
