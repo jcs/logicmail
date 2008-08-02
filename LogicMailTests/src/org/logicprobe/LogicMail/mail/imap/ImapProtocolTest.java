@@ -285,7 +285,7 @@ public class ImapProtocolTest extends TestCase {
 
             // Test escaped delimiter
             instance.addExecuteExpectation(
-                    "LIST", "\"INBOX\\\" \"%\"",
+                    "LIST", "\"INBOX\\\\\" \"%\"",
                     new String[] {
                         "* LIST (\\HasNoChildren) \"\\\\\" \"INBOX\\Saved\\Stuff\"",
                         "* LIST (\\HasNoChildren) \"\\\\\" \"INBOX\\Sent\"",
@@ -313,7 +313,7 @@ public class ImapProtocolTest extends TestCase {
             
             // Test specified-length encoding for path name
             instance.addExecuteExpectation(
-                    "LIST", "\"2007\\\" \"%\"",
+                    "LIST", "\"2007\\\\\" \"%\"",
                     new String[] {
                         "* LIST (\\HasNoChildren) \"\\\\\" {12}",
                         "2007\\Q3-2007",

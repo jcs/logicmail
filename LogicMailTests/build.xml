@@ -36,6 +36,9 @@
 				</fileset>
 				<fileset dir="${app.src.dir}">
 					<include name="**/*.java"/>
+                	<include name="**/*.rrc"/>
+                	<include name="**/*.rrh"/>
+					<exclude name="**/*BB40.java"/>
 					<exclude name="org/logicprobe/LogicMail/LogicMail.java"/>
 				</fileset>
 			</src>

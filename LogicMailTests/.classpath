@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/BlackBerry 4.1"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail"/>
+	<classpathentry kind="src" path="/LogicMail/.tmp"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
