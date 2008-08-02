@@ -256,8 +256,8 @@ class ImapParser {
         }
 
         // Sanity checking
-        if(parsedText.size() < 2 ||
-           !(parsedText.elementAt(1) instanceof Vector)) {
+        if(parsedText.size() < 4 ||
+           !(parsedText.elementAt(3) instanceof Vector)) {
            EventLogger.logEvent(
                AppInfo.GUID,
                "ImapParser.parseMessageStructure: Sanity check failed".getBytes(),
@@ -265,7 +265,7 @@ class ImapParser {
            return null;
         }
         
-        Vector parsedStruct = (Vector)parsedText.elementAt(1);
+        Vector parsedStruct = (Vector)parsedText.elementAt(3);
         MessageSection msgStructure = parseMessageStructureHelper(null, 1, parsedStruct);
         fixMessageStructure(msgStructure);
         return msgStructure;

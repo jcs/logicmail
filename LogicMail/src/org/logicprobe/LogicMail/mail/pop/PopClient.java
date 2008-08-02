@@ -234,11 +234,13 @@ public class PopClient implements IncomingMailClient {
         FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
         int index = 0;
         String[] headerText;
+        String uid;
         MessageEnvelope env;
         for(int i=firstIndex; i<=lastIndex; i++) {
             headerText = popProtocol.executeTop(i, 0);
+            uid = popProtocol.executeUidl(i);
             env = PopParser.parseMessageEnvelope(headerText);
-            folderMessages[index++] = new FolderMessage(env, i);
+            folderMessages[index++] = new FolderMessage(env, i, uid.hashCode());
         }
         return folderMessages;
     }

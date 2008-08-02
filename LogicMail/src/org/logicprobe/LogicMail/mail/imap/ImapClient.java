@@ -376,7 +376,7 @@ public class ImapClient implements IncomingMailClient {
         
         FolderMessage[] folderMessages = new FolderMessage[response.length];
         for(int i=0;i<response.length;i++) {
-            folderMessages[i] = new FolderMessage(response[i].envelope, response[i].index);
+            folderMessages[i] = new FolderMessage(response[i].envelope, response[i].index, response[i].uid);
             folderMessages[i].setSeen(response[i].flags.seen);
             folderMessages[i].setAnswered(response[i].flags.answered);
             folderMessages[i].setDeleted(response[i].flags.deleted);
@@ -390,15 +390,15 @@ public class ImapClient implements IncomingMailClient {
     }
 
     public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
-        ImapParser.MessageSection structure = getMessageStructure(folderMessage.getIndex());
+        ImapParser.MessageSection structure = getMessageStructure(folderMessage.getUid());
         MessagePart rootPart =
-            getMessagePart(folderMessage.getIndex(),
+            getMessagePart(folderMessage.getUid(),
                            structure, globalConfig.getImapMaxMsgSize());
         Message msg = new Message(folderMessage.getEnvelope(), rootPart);
         return msg;
     }
 
-    private MessagePart getMessagePart(int index,
+    private MessagePart getMessagePart(int uid,
                                        ImapParser.MessageSection structure,
                                        int maxSize)
         throws IOException, MailException
@@ -410,7 +410,7 @@ public class ImapClient implements IncomingMailClient {
                 data = null;
             else {
                 if(structure.size < maxSize) {
-                    data = getMessageBody(index, structure.address);
+                    data = getMessageBody(uid, structure.address);
                     maxSize -= structure.size;
                 }
                 else {
@@ -425,7 +425,7 @@ public class ImapClient implements IncomingMailClient {
 
         if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
             for(int i=0;i<structure.subsections.length;i++) {
-                MessagePart subPart = getMessagePart(index, structure.subsections[i], maxSize);
+                MessagePart subPart = getMessagePart(uid, structure.subsections[i], maxSize);
                 if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
                 }
@@ -438,12 +438,12 @@ public class ImapClient implements IncomingMailClient {
      * Returns the message structure tree independent of message content.
      * This tree is used to build the final message tree.
      */
-    private ImapParser.MessageSection getMessageStructure(int msgIndex) throws IOException, MailException {
+    private ImapParser.MessageSection getMessageStructure(int uid) throws IOException, MailException {
         if(activeMailbox.equals("")) {
             throw new MailException("Mailbox not selected");
         }
 
-        return imapProtocol.executeFetchBodystructure(msgIndex);
+        return imapProtocol.executeFetchBodystructure(uid);
     }
 
     /**
@@ -465,24 +465,24 @@ public class ImapClient implements IncomingMailClient {
         return item;
     }
 
-    private String getMessageBody(int index, String address) throws IOException, MailException {
+    private String getMessageBody(int uid, String address) throws IOException, MailException {
         if(activeMailbox.equals("")) {
             throw new MailException("Mailbox not selected");
         }
         
-        return imapProtocol.executeFetchBody(index, address);
+        return imapProtocol.executeFetchBody(uid, address);
     }
     
     public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(folderMessage.getIndex(), true, new String[] { "\\Deleted" });
+            imapProtocol.executeStore(folderMessage.getUid(), true, new String[] { "\\Deleted" });
         refreshMessageFlags(updatedFlags, folderMessage);
     }
 
 
     public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(folderMessage.getIndex(), false, new String[] { "\\Deleted" });
+            imapProtocol.executeStore(folderMessage.getUid(), false, new String[] { "\\Deleted" });
         refreshMessageFlags(updatedFlags, folderMessage);
     }
     
@@ -494,7 +494,7 @@ public class ImapClient implements IncomingMailClient {
      */
     public void messageAnswered(FolderMessage folderMessage) throws IOException, MailException {
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(folderMessage.getIndex(), true, new String[] { "\\Answered" });
+            imapProtocol.executeStore(folderMessage.getUid(), true, new String[] { "\\Answered" });
         refreshMessageFlags(updatedFlags, folderMessage);
     }
     

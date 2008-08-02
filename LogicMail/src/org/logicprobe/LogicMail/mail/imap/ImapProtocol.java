@@ -453,12 +453,13 @@ public class ImapProtocol {
      */
     public static class FetchEnvelopeResponse {
         public int index;
+        public int uid;
         public MessageFlags flags;
         public MessageEnvelope envelope;
     }
 
     /**
-     * Execute the "FETCH (ENVELOPE)" command
+     * Execute the "FETCH (FLAGS UID ENVELOPE)" command
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
      * @return Array of FetchEnvelopeResponse objects
@@ -474,7 +475,7 @@ public class ImapProtocol {
         String[] rawList = execute("FETCH",
                                    Integer.toString(firstIndex) + ":" +
                                    Integer.toString(lastIndex) +
-                                   " (FLAGS ENVELOPE)");
+                                   " (FLAGS UID ENVELOPE)");
         
         FetchEnvelopeResponse[] envResponses = new FetchEnvelopeResponse[(lastIndex - firstIndex)+1];
         
@@ -525,6 +526,15 @@ public class ImapProtocol {
                            parsedText.elementAt(j+1) instanceof Vector) {
                             envRespItem.flags = ImapParser.parseMessageFlags((Vector)parsedText.elementAt(j+1));
                         }
+                        else if(((String)parsedText.elementAt(j)).equals("UID") &&
+                        		parsedSize > j+1 &&
+                        		parsedText.elementAt(j+1) instanceof String) {
+                        	try {
+                        		envRespItem.uid = Integer.parseInt((String)parsedText.elementAt(j+1));
+                        	} catch (NumberFormatException e) {
+                        		envRespItem.uid = -1;
+                        	}
+                        }
                         else if(((String)parsedText.elementAt(j)).equals("ENVELOPE") &&
                                 parsedSize > j+1 &&
                                 parsedText.elementAt(j+1) instanceof Vector) {
@@ -558,18 +568,18 @@ public class ImapProtocol {
 
     /**
      * Execute the "FETCH (BODYSTRUCTURE)" command
-     * @param index Index of the message
+     * @param uid Unique ID of the message
      * @return Body structure tree
      */
-    public ImapParser.MessageSection executeFetchBodystructure(int index) throws IOException, MailException {
+    public ImapParser.MessageSection executeFetchBodystructure(int uid) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
-            ("ImapProtocol.executeFetchBodyStructure("+index+")").getBytes(),
+            ("ImapProtocol.executeFetchBodyStructure("+uid+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
         
-        String[] rawList = execute("FETCH", index + " (BODYSTRUCTURE)");
+        String[] rawList = execute("UID FETCH", uid + " (BODYSTRUCTURE)");
 
         // Pre-process the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
@@ -606,19 +616,19 @@ public class ImapProtocol {
 
     /**
      * Execute the "FETCH (BODY)" command
-     * @param index Index of the message
+     * @param uid Unique ID of the message
      * @param address Address of the body section (i.e. "1", "1.2")
      * @return Body text as a string
      */
-    public String executeFetchBody(int index, String address) throws IOException, MailException {
+    public String executeFetchBody(int uid, String address) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
-            ("ImapProtocol.executeFetchBody("+index+", \""+address+"\")").getBytes(),
+            ("ImapProtocol.executeFetchBody("+uid+", \""+address+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
 
-        String[] rawList = execute("FETCH", index + " (BODY["+ address +"])");
+        String[] rawList = execute("UID FETCH", uid + " (BODY["+ address +"])");
 
         if(rawList.length <= 1) {
             return "";
@@ -635,12 +645,12 @@ public class ImapProtocol {
 
     /**
      * Execute the "STORE" command to update message flags.
-     * @param index The message index to modify.
+     * @param uid The message unique ID to modify.
      * @param addOrRemove True to add flags, false to remove them.
      * @param flags Array of flags to change.  (i.e. "\Seen", "\Answered")
      * @return Updated standard message flags, or null if there was a parse error.
      */
-    public MessageFlags executeStore(int index, boolean addOrRemove, String[] flags) throws IOException, MailException {
+    public MessageFlags executeStore(int uid, boolean addOrRemove, String[] flags) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             StringBuffer buf = new StringBuffer();
             for(int i=0; i<flags.length; i++) {
@@ -653,12 +663,12 @@ public class ImapProtocol {
             }
             EventLogger.logEvent(
             AppInfo.GUID,
-            ("ImapProtocol.executeStore("+index+", "+(addOrRemove?"add":"remove")+", {"+buf.toString()+"})").getBytes(),
+            ("ImapProtocol.executeStore("+uid+", "+(addOrRemove?"add":"remove")+", {"+buf.toString()+"})").getBytes(),
             EventLogger.DEBUG_INFO);
         }
 
         StringBuffer buf = new StringBuffer();
-        buf.append(index);
+        buf.append(uid);
         buf.append(' ');
         buf.append(addOrRemove?'+':'-');
         buf.append("FLAGS (");
@@ -669,20 +679,22 @@ public class ImapProtocol {
             }
         }
         buf.append(')');
-        String[] rawList = execute("STORE", buf.toString());
+        String[] rawList = execute("UID STORE", buf.toString());
         if(rawList.length < 1) {
             throw new MailException("Unable to set message flags");
         }
         
         try {
-            int p = rawList[0].indexOf(' ');
-            int q = rawList[0].indexOf(' ', p+1);
-            int fetchIndex = Integer.parseInt(rawList[0].substring(p+1, q));
-            if(fetchIndex != index) {
-                return null;
+            int p = rawList[0].indexOf("UID");
+            int q = rawList[0].lastIndexOf(')');
+            if(p != -1 && q != -1 && p < q) {
+                int fetchIndex = Integer.parseInt(rawList[0].substring(p+4, q));
+                if(fetchIndex != uid) {
+                    return null;
+                }
             }
             p = rawList[0].indexOf("FLAGS (");
-            q = rawList[0].indexOf("))");
+            q = rawList[0].indexOf(") UID");
             if(p == -1 || q == -1) {
                 return null;
             }
@@ -701,7 +713,7 @@ public class ImapProtocol {
     /**
      * Execute the "APPEND" command to add a message to an existing mailbox.
      * @param mboxName Mailbox name.
-     * @param rawMessage The raw message text, in RFC2822-compliant format.
+     * @param rawMessage The raw message text, in RFC2822-complaint format.
      * @param flags Flags to store the message with.
      */
     public void executeAppend(String mboxName, String rawMessage, MessageFlags flags) throws IOException, MailException {

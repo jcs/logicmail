@@ -39,6 +39,7 @@ package org.logicprobe.LogicMail.message;
 public class FolderMessage {
     private MessageEnvelope envelope;
     private int index;
+    private int uid;
     private MessageFlags messageFlags;
     
     /**
@@ -46,9 +47,10 @@ public class FolderMessage {
      * @param envelope The message's envelope
      * @param index The index of the message within the folder
      */
-    public FolderMessage(MessageEnvelope envelope, int index) {
+    public FolderMessage(MessageEnvelope envelope, int index, int uid) {
         this.envelope = envelope;
         this.index = index;
+        this.uid = uid;
         this.messageFlags = new MessageFlags();
     }
 
@@ -68,6 +70,14 @@ public class FolderMessage {
         return index;
     }
 
+    /**
+     * Get the unique ID of this message
+     * @return unique ID
+     */
+    public int getUid() {
+    	return uid;
+    }
+    
     /**
      * Gets the flags associated with this message.
      * @return Message flags

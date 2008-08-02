@@ -129,7 +129,28 @@ public class PopProtocol {
         }
         return executeFollow("TOP " + index + " " + lines);
     }
-
+    
+    /**
+     * Execute the "UIDL" command
+     * @param index Message index
+     */
+    public String executeUidl(int index) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeUidl("+index+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        String result = execute("UIDL " + index);
+        int p = result.lastIndexOf(' ');
+        if(p < result.length() - 2) {
+        	return result.substring(p+1);
+        }
+        else {
+        	return null;
+        }
+    }
+    
     /**
      * Execute the "DELE" command.
      * This will mark the message at the specified index as deleted, but will
