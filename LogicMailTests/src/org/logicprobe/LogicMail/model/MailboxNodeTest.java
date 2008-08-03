@@ -28,10 +28,10 @@ public class MailboxNodeTest extends TestCase {
     }
     
     public void testAddMessage() {
-    	MessageNode message1 = new MessageNode(new FolderMessage(new MessageEnvelope(), 1));
-    	MessageNode message2 = new MessageNode(new FolderMessage(new MessageEnvelope(), 2));
-    	MessageNode message3 = new MessageNode(new FolderMessage(new MessageEnvelope(), 3));
-    	MessageNode message4 = new MessageNode(new FolderMessage(new MessageEnvelope(), 4));
+    	MessageNode message1 = new MessageNode(new FolderMessage(new MessageEnvelope(), 1, 11));
+    	MessageNode message2 = new MessageNode(new FolderMessage(new MessageEnvelope(), 2, 12));
+    	MessageNode message3 = new MessageNode(new FolderMessage(new MessageEnvelope(), 3, 13));
+    	MessageNode message4 = new MessageNode(new FolderMessage(new MessageEnvelope(), 4, 14));
     	
     	// Add messages in-order
     	instance.addMessage(message1);

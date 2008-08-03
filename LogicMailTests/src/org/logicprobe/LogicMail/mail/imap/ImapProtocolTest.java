@@ -350,9 +350,9 @@ public class ImapProtocolTest extends TestCase {
     public void testExecuteFetchEnvelope1() {
         try {
             instance.addExecuteExpectation(
-                "FETCH", "1:1 (FLAGS ENVELOPE)",
+                "FETCH", "1:1 (FLAGS UID ENVELOPE)",
                 new String[] {
-                    "* 1 FETCH (FLAGS (\\Answered \\Seen) " +
+                    "* 1 FETCH (FLAGS (\\Answered \\Seen) UID 10 " +
                     "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
                     "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
                     "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
@@ -368,6 +368,7 @@ public class ImapProtocolTest extends TestCase {
             assertNotNull(result[0]);
             
             assertEquals(1, result[0].index);
+            assertEquals(10, result[0].uid);
             assertNotNull(result[0].flags);
             assertTrue(result[0].flags.answered);
             assertTrue(result[0].flags.seen);
@@ -427,7 +428,7 @@ public class ImapProtocolTest extends TestCase {
     public void testExecuteFetchEnvelope2() {
         try {
             instance.addExecuteExpectation(
-                "FETCH", "1:1 (FLAGS ENVELOPE)",
+                "FETCH", "1:1 (FLAGS UID ENVELOPE)",
                 new String[] {
                     "* 1 FETCH (" +
                     "ENVELOPE (\"Sun, 08 Jul 2007 09:48:47 +0100\" \"A Test\" " +
@@ -438,7 +439,7 @@ public class ImapProtocolTest extends TestCase {
                     "NIL NIL " +
                     "NIL " +
                     "\"<4690A4EF.3070302@mail.scratch.test>\") " +
-                    "FLAGS (\\Seen))"
+                    "FLAGS (\\Seen) UID 10)"
                 });
             ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
             assertNotNull(result);
@@ -446,6 +447,7 @@ public class ImapProtocolTest extends TestCase {
             assertNotNull(result[0]);
             
             assertEquals(1, result[0].index);
+            assertEquals(10, result[0].uid);
             assertNotNull(result[0].flags);
             assertTrue(result[0].flags.seen);
             assertTrue(!result[0].flags.answered);
@@ -505,9 +507,9 @@ public class ImapProtocolTest extends TestCase {
     public void testExecuteStore1() {
         try {
             instance.addExecuteExpectation(
-                    "STORE", "5 +FLAGS (\\Answered)",
-                    new String[] { "* 5 FETCH (FLAGS (\\Seen \\Answered))" });
-            ImapProtocol.MessageFlags result = instance.executeStore(5, true, new String[] { "\\Answered" });
+                    "UID STORE", "15 +FLAGS (\\Answered)",
+                    new String[] { "* 5 FETCH (FLAGS (\\Seen \\Answered) UID 15)" });
+            ImapProtocol.MessageFlags result = instance.executeStore(15, true, new String[] { "\\Answered" });
             assertNotNull(result);
             
             assertTrue(result.seen);
@@ -525,9 +527,9 @@ public class ImapProtocolTest extends TestCase {
     public void testExecuteStore2() {
         try {
             instance.addExecuteExpectation(
-                    "STORE", "5 -FLAGS (\\Answered)",
-                    new String[] { "* 5 FETCH (FLAGS ())" });
-            ImapProtocol.MessageFlags result = instance.executeStore(5, false, new String[] { "\\Answered" });
+                    "UID STORE", "15 -FLAGS (\\Answered)",
+                    new String[] { "* 5 FETCH (FLAGS () UID 15)" });
+            ImapProtocol.MessageFlags result = instance.executeStore(15, false, new String[] { "\\Answered" });
             assertNotNull(result);
             
             assertTrue(!result.seen);

@@ -187,8 +187,8 @@ public class NetworkMailStoreTest extends TestCase {
     
     public void testRequestFolderMessages() {
     	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-    		new FolderMessage(new MessageEnvelope(), 42),
-    		new FolderMessage(new MessageEnvelope(), 43),
+    		new FolderMessage(new MessageEnvelope(), 42, 52),
+    		new FolderMessage(new MessageEnvelope(), 43, 53),
     	};
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	instance.requestFolderMessagesRange(folder, 42, 43);
@@ -198,14 +198,14 @@ public class NetworkMailStoreTest extends TestCase {
     	assertEquals("INBOX", eventFolderMessagesAvailable.getFolder().getName());
     	assertNotNull(eventFolderMessagesAvailable.getMessages());
     	assertEquals(2, eventFolderMessagesAvailable.getMessages().length);
-    	assertEquals(42, eventFolderMessagesAvailable.getMessages()[0].getIndex());
-    	assertEquals(43, eventFolderMessagesAvailable.getMessages()[1].getIndex());
+    	assertEquals(52, eventFolderMessagesAvailable.getMessages()[0].getUid());
+    	assertEquals(53, eventFolderMessagesAvailable.getMessages()[1].getUid());
     }
     
     public void testRequestMessage() {
     	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42);
+    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52);
     	instance.requestMessage(folder, folderMessage);
     	instance.shutdown(true);
     	
@@ -218,7 +218,7 @@ public class NetworkMailStoreTest extends TestCase {
     public void testRequestMessageDelete() {
     	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42);
+    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52);
     	instance.requestMessageDelete(folder, folderMessage);
     	instance.shutdown(true);
     	
@@ -231,7 +231,7 @@ public class NetworkMailStoreTest extends TestCase {
     public void testRequestMessageUndelete() {
     	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42);
+    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52);
     	instance.requestMessageUndelete(folder, folderMessage);
     	instance.shutdown(true);
     	
@@ -246,8 +246,8 @@ public class NetworkMailStoreTest extends TestCase {
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	fakeIncomingMailClient.folderTree = folder;
     	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-        		new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42),
-        		new FolderMessage(new MessageEnvelope(), 43),
+        		new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52),
+        		new FolderMessage(new MessageEnvelope(), 43, 53),
         };
 
     	// Do a whole batch of non-conflicting requests to make
