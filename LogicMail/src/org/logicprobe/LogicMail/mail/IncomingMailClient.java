@@ -128,6 +128,21 @@ public interface IncomingMailClient extends MailClient {
         throws IOException, MailException;
     
     /**
+     * Get a list of new messages in the selected folder.
+     * On the first invocation, it will return the most recent messages
+     * up to the limit configured in the global configuration.
+     * On subsequent invocations, if the underlying protocol supports it,
+     * this method should return all new messages that have entered the
+     * mailbox since.  Otherwise, it will behave the same as it
+     * did on the first invocation.
+     * 
+     * @return List of message envelopes
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract FolderMessage[] getNewFolderMessages() throws IOException, MailException;
+    
+    /**
      * Get a particular message from the selected folder.
      * The details of message retrieval should be constrained by
      * protocol-specific capabilities, application-wide data

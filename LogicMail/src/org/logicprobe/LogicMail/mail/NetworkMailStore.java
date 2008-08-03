@@ -122,10 +122,10 @@ public class NetworkMailStore extends AbstractMailStore {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 	
-	public void requestFolderMessagesRecent(FolderTreeItem folder, int count) {
+	public void requestFolderMessagesRecent(FolderTreeItem folder) {
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-				new Object[] { folder, new Integer(count) });
+				new Object[] { folder });
 	}
 	
 	public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) {

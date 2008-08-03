@@ -90,6 +90,20 @@ public class ImapClient implements IncomingMailClient {
      */
     private FolderTreeItem activeMailbox = null;
 
+    /**
+     * Seen mailboxes, used to track whether fetching new
+     * messages should be based on a limited range, or
+     * the UIDNEXT parameter.
+     */
+    private Hashtable seenMailboxes = new Hashtable();
+    
+    /**
+     * Known mailboxes, used to track protocol-specific
+     * information on mailboxes that is not exposed
+     * to other classes.
+     */
+    private Hashtable knownMailboxes = new Hashtable();
+    
     public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
         this.accountConfig = accountConfig;
         this.globalConfig = globalConfig;
@@ -360,6 +374,7 @@ public class ImapClient implements IncomingMailClient {
 
         this.activeMailbox = mailbox;
         activeMailbox.setMsgCount(response.exists);
+        knownMailboxes.put(activeMailbox, response);
         
         // ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
@@ -374,6 +389,38 @@ public class ImapClient implements IncomingMailClient {
         ImapProtocol.FetchEnvelopeResponse[] response =
                 imapProtocol.executeFetchEnvelope(firstIndex, lastIndex);
         
+        return prepareFolderMessages(response);
+    }
+
+    public FolderMessage[] getNewFolderMessages() throws IOException, MailException {
+    	// Sanity check
+    	if(activeMailbox == null) {
+    		throw new MailException("Mailbox not selected");
+    	}
+    	
+    	FolderMessage[] result;
+    	if(!seenMailboxes.containsKey(activeMailbox)) {
+	    	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
+			int msgCount = activeMailbox.getMsgCount();
+	        int firstIndex = Math.max(1, msgCount - count);
+	    	result = getFolderMessages(firstIndex, activeMailbox.getMsgCount());
+	    	seenMailboxes.put(activeMailbox, new Object());
+    	}
+    	else {
+    		int uidNext = ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext;
+    		ImapProtocol.FetchEnvelopeResponse[] response =
+    			imapProtocol.executeFetchEnvelopeUid(uidNext);
+    		result = prepareFolderMessages(response);
+    		
+    		if(result.length > 0) {
+    			uidNext = result[result.length-1].getUid() + 1;
+    			((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext = uidNext;
+    		}
+    	}
+    	return result;
+    }
+
+    private FolderMessage[] prepareFolderMessages(ImapProtocol.FetchEnvelopeResponse[] response) {
         FolderMessage[] folderMessages = new FolderMessage[response.length];
         for(int i=0;i<response.length;i++) {
             folderMessages[i] = new FolderMessage(response[i].envelope, response[i].index, response[i].uid);
@@ -385,10 +432,9 @@ public class ImapClient implements IncomingMailClient {
             folderMessages[i].setDraft(response[i].flags.draft);
             folderMessages[i].setJunk(response[i].flags.junk);
         }
-        
-        return folderMessages;
+    	return folderMessages;
     }
-
+    
     public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
         ImapParser.MessageSection structure = getMessageStructure(folderMessage.getUid());
         MessagePart rootPart =

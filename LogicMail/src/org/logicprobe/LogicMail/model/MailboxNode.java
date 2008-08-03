@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.Serializable;
@@ -433,9 +432,7 @@ public class MailboxNode implements Node, Serializable {
      * messages without replacing the existing ones. 
      */
     public void refreshMessages() {
-    	parentAccount.getMailStore().requestFolderMessagesRecent(
-    			this.folderTreeItem,
-    			MailSettings.getInstance().getGlobalConfig().getRetMsgCount());
+    	parentAccount.getMailStore().requestFolderMessagesRecent(this.folderTreeItem);
     }
     
 	/**

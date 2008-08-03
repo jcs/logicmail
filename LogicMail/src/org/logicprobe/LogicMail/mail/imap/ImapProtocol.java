@@ -476,10 +476,31 @@ public class ImapProtocol {
                                    Integer.toString(firstIndex) + ":" +
                                    Integer.toString(lastIndex) +
                                    " (FLAGS UID ENVELOPE)");
+        return prepareFetchEnvelopeResponse(rawList);
+    }
+
+    /**
+     * Execute the "UID FETCH (FLAGS UID ENVELOPE)" command
+     * @param uidNext Unique ID of the next message
+     * @return Array of FetchEnvelopeResponse objects
+     */
+    public FetchEnvelopeResponse[] executeFetchEnvelopeUid(int uidNext) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeFetchEnvelopeUid("+uidNext+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
         
-        FetchEnvelopeResponse[] envResponses = new FetchEnvelopeResponse[(lastIndex - firstIndex)+1];
+        String[] rawList = execute("UID FETCH",
+                Integer.toString(uidNext) + ":*" +
+                " (FLAGS UID ENVELOPE)");
         
-        // Pre-process the returned text to clean up mid-field line breaks
+        return prepareFetchEnvelopeResponse(rawList);
+    }
+    
+    private FetchEnvelopeResponse[] prepareFetchEnvelopeResponse(String[] rawList) throws IOException, MailException {
+        // Preprocess the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
         // becomes more intelligent in how it handles replies
         String line;
@@ -499,7 +520,7 @@ public class ImapProtocol {
             }
         }
         
-        int index = 0;
+        Vector envResponses = new Vector();
         int size = rawList2.size();
         for(int i=0;i<size;i++) {
             try {
@@ -557,15 +578,17 @@ public class ImapProtocol {
                 
                 envRespItem.index = midx;
                 envRespItem.envelope = env;
-                envResponses[index++] = envRespItem;
+                envResponses.addElement(envRespItem);
             } catch (Exception exp) {
                 System.err.println("Parse error: " + exp);
             }
         }
 
-        return envResponses;
+        FetchEnvelopeResponse[] result = new FetchEnvelopeResponse[envResponses.size()];
+        envResponses.copyInto(result);
+        return result;
     }
-
+    
     /**
      * Execute the "FETCH (BODYSTRUCTURE)" command
      * @param uid Unique ID of the message

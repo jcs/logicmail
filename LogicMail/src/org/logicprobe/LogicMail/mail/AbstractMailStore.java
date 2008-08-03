@@ -150,9 +150,8 @@ public abstract class AbstractMailStore {
      * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
      * 
      * @param folder The folder to request a message listing for.
-     * @param count The maximum number of messages to get headers for.
      */
-    public abstract void requestFolderMessagesRecent(FolderTreeItem folder, int count);
+    public abstract void requestFolderMessagesRecent(FolderTreeItem folder);
     
     /**
      * Requests a particular message to be loaded.

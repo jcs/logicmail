@@ -89,8 +89,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			break;
 		case REQUEST_FOLDER_MESSAGES_RECENT:
 			handleRequestFolderMessagesRecent(
-					(FolderTreeItem)params[0],
-					((Integer)params[1]).intValue());
+					(FolderTreeItem)params[0]);
 			break;
 		case REQUEST_MESSAGE:
 			handleRequestMessage((FolderTreeItem)params[0], (FolderMessage)params[1]);
@@ -157,12 +156,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 //		}
 	}
 	
-	private void handleRequestFolderMessagesRecent(FolderTreeItem folder, int count) throws IOException, MailException {
+	private void handleRequestFolderMessagesRecent(FolderTreeItem folder) throws IOException, MailException {
 		checkActiveFolder(folder);
-		int msgCount = incomingClient.getActiveFolder().getMsgCount();
-        int firstIndex = Math.max(1, msgCount - count);
         
-		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, msgCount);
+		FolderMessage[] messages = incomingClient.getNewFolderMessages();
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messages != null && messages.length > 0 && listener != null) {

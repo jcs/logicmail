@@ -245,6 +245,13 @@ public class PopClient implements IncomingMailClient {
         return folderMessages;
     }
 
+    public FolderMessage[] getNewFolderMessages() throws IOException, MailException {
+    	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
+		int msgCount = activeMailbox.getMsgCount();
+        int firstIndex = Math.max(1, msgCount - count);
+    	return getFolderMessages(firstIndex, activeMailbox.getMsgCount());
+    }
+
     public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
         // Figure out the max number of lines
         int maxLines = globalConfig.getPopMaxLines();
