@@ -240,7 +240,7 @@ public class AccountNodeTest extends TestCase {
 		public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) { }
 		public void shutdown(boolean wait) { }
 		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) { }
-		public void requestFolderMessagesRecent(FolderTreeItem folder, int count) { }
+		public void requestFolderMessagesRecent(FolderTreeItem folder) { }
 		public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) { }
 		public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) { }
 		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) { }

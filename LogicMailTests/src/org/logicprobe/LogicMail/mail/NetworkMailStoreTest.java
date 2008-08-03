@@ -319,6 +319,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
 		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
 				throws IOException, MailException { this.firstIndex = firstIndex; this.lastIndex = lastIndex; return this.folderMessages; }
+		public FolderMessage[] getNewFolderMessages() throws IOException, MailException { return null; }
 		public FolderTreeItem getFolderTree() throws IOException, MailException { return this.folderTree; }
 		public Message getMessage(FolderMessage folderMessage)
 				throws IOException, MailException { return this.message; }
