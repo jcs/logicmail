@@ -102,6 +102,7 @@ public class Connection {
     protected InputStream input;
     protected OutputStream output;
     private boolean useWiFi;
+    private int fakeAvailable = -1;
     
     /**
      * Byte array holding carriage return and line feed
@@ -113,11 +114,6 @@ public class Connection {
      */
     private byte[] buffer = new byte[128];
     
-    /**
-     * Holds the actual number of bytes in the buffer.
-     */
-    private int count;
-
     /**
      * Holds a list of open connections
      */
@@ -149,7 +145,7 @@ public class Connection {
         }
         
         String protocolStr = (useSSL ? "ssl" : "socket");
-        // This param, which allows bypassing the MDS proxy, should probably
+        // This parameter, which allows bypassing the MDS proxy, should probably
         // be a global user configurable option
         String paramStr = (deviceSide ? ";deviceside=true" : "");
 
@@ -286,9 +282,9 @@ public class Connection {
     /**
      * Sends a string to the server. This method is used internally for
      * all outgoing communication to the server. The main thing it does
-     * it terminate the line with a CR/LF. If there are occurences of CR or
+     * it terminate the line with a CR/LF. If there are occurrences of CR or
      * LF inside the string, the method ensures that proper CR/LF sequences
-     * are sent for them, since this is what most internet protocols expect.
+     * are sent for them, since this is what most Internet protocols expect.
      *
      * @see #receive
      */
@@ -315,7 +311,7 @@ public class Connection {
                 int j = i;
                 
                 /**
-                 * Find next occurence of a line separator or the end of the
+                 * Find next occurrence of a line separator or the end of the
                  * string.
                  */
                 while ((j < length) && (bytes[j] != 0x0A) && (bytes[j] != 0x0D)) {
@@ -384,6 +380,21 @@ public class Connection {
     }
 
     /**
+     * Returns the number of bytes available for reading.
+     * Used to poll the connection without blocking.
+     * 
+     * @see InputStream#available()
+     */
+    public int available() throws IOException {
+    	if(fakeAvailable == -1) {
+    		return input.available();
+    	}
+    	else {
+    		return fakeAvailable;
+    	}
+    }
+    
+    /**
      * Receives a string from the server. This method is used internally for
      * incoming communication from the server. The main thing it does is
      * ensuring that only complete lines are returned to the application, that is,
@@ -402,7 +413,7 @@ public class Connection {
          * with a large number of temporary strings that grew as more
          * characters belonging to a line were read. The result was
          * a high level of heap fragmentation, which made applications
-         * instable on MIDP devices (that don't provide compacting GC,
+         * unstable on MIDP devices (that don't provide compacting GC,
          * that is).
          *
          * This new implementation seems to work better: Is reads
@@ -422,6 +433,9 @@ public class Connection {
          */
         StringBuffer resultBuffer = new StringBuffer();
         boolean stop = false;
+        int actualAvailable = input.available();
+        int readBytes = 0;
+        int count;
         
         /**
          * The "stop" flag will be set as soon as we have received
@@ -469,9 +483,10 @@ public class Connection {
                  * buffer.
                  */
                 // Note: We really should look for CRLF, and not use this
-                // half-assed approach which screws up on mid-lime LFs. (DK)
+                // approach which screws up on mid-line LFs. (DK)
                 else {
                     byte b = buffer[count];
+                    readBytes++;
                     
                     /**
                      * Ignore all CRs.
@@ -502,6 +517,12 @@ public class Connection {
         
         if(globalConfig.getConnDebug()) {
             EventLogger.logEvent(AppInfo.GUID, ("[RECV] " + resultBuffer.toString()).getBytes(), EventLogger.DEBUG_INFO);
+        }
+        if(actualAvailable > readBytes) {
+        	fakeAvailable = actualAvailable - readBytes;
+        }
+        else {
+        	fakeAvailable = -1;
         }
         
         return resultBuffer.toString();

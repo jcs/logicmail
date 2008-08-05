@@ -314,8 +314,11 @@ public abstract class AbstractMailConnectionHandler {
 	 * After this method completes, the connection handler will sleep until
 	 * a new request arrives, or it is commanded to shutdown.
 	 * </p>
+     * 
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
 	 */
-	protected abstract void handleBeginIdle();
+	protected abstract void handleBeginIdle() throws IOException, MailException;
 	
     /**
      * Handles the CLOSING state to close an existing connection.
@@ -372,6 +375,26 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	protected Queue getRequestQueue() {
 		return this.requestQueue;
+	}
+	
+	/**
+	 * Gets whether a shutdown is currently in progress.
+	 * @return True if shutdown is in progress.
+	 */
+	protected boolean getShutdownInProgress() {
+		return this.shutdownInProgress;
+	}
+	
+	/**
+	 * Sleep the connection thread.
+	 * @param time Time to sleep, in milliseconds.
+	 */
+	protected void sleepConnectionThread(long time) {
+		if(!connectionThread.isShutdown()) {
+			try {
+				ConnectionThread.sleep(time);
+			} catch (InterruptedException e) { }
+		}
 	}
 	
 	/**

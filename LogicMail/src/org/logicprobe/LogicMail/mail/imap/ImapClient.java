@@ -268,6 +268,10 @@ public class ImapClient implements IncomingMailClient {
     public boolean hasUndelete() {
         return true;
     }
+
+    public boolean hasIdle() {
+		return true;
+	}
     
     public FolderTreeItem getFolderTree() throws IOException, MailException {
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
@@ -574,4 +578,16 @@ public class ImapClient implements IncomingMailClient {
 
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
     }
+
+	public void idleModeBegin() throws IOException, MailException {
+		imapProtocol.executeIdle();
+	}
+
+	public void idleModeEnd() throws IOException, MailException {
+		imapProtocol.executeIdleDone();
+	}
+
+	public boolean idleModePoll() throws IOException, MailException {
+		return imapProtocol.executeIdlePoll();
+	}
 }

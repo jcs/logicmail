@@ -47,6 +47,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class ImapProtocol {
     private Connection connection;
+    private String idleCommandTag;
 
     /**
      * Counts the commands executed so far in this session. Every command of an
@@ -888,6 +889,49 @@ public class ImapProtocol {
     }
 
     /**
+     * Execute the "IDLE" command.
+     */
+    public void executeIdle() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeIdle()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        idleCommandTag = executeNoReply("IDLE", null);
+    }
+    
+    /**
+     * Execute the "DONE" command.
+     */
+    public void executeIdleDone() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("ImapProtocol.executeIdleDone()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+    	executeUntagged("DONE", null, idleCommandTag);
+    	idleCommandTag = null;
+    }
+    
+    /**
+     * Polls the connection during the IDLE state.
+     * For now, this is a simple implementation.  It just checks for
+     * the presence of a "+ ?? recent" untagged response, and returns
+     * true if one is found.
+     */
+    public boolean executeIdlePoll() throws IOException, MailException {
+		String result = receive();
+		if(result != null && result.startsWith("*") && result.toLowerCase().endsWith("recent")) {
+			return true;
+		}
+		else {
+			return false;
+		}
+    }
+    
+    /**
      * Executes an IMAP command several times, with different arguments,
      * and return the replies as an array of strings.
      * @param command IMAP command
@@ -1000,6 +1044,71 @@ public class ImapProtocol {
         }
 
         temp = temp.substring(tag.length());
+        if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
+            throw new MailException(temp);
+        }
+        return result;
+    }
+    
+    /**
+     * Attempts to read a line of text from the server, without sending
+     * anything first.
+     * @return Returned string, or null if nothing is available
+     */
+    protected String receive()
+    	throws IOException, MailException
+	{
+    	String result;
+    	
+    	if(connection.available() > 0) {
+    		System.err.println("-->connection.available() == " + connection.available());
+	        result = connection.receive();
+	        System.err.println("-->Read in "+result.length());
+	        System.err.println("-->connection.available() == " + connection.available());
+    	}
+    	else {
+    		result = null;
+    	}
+    	return result;
+	}
+    
+    /**
+     * Executes an IMAP command directly and expects no reply.
+     * @param command IMAP command
+     * @param arguments Arguments for the command
+     * @return Tag used to send the command
+     */
+    protected String executeNoReply(String command, String arguments)
+    	throws IOException, MailException
+	{
+        String tag = "A" + commandCount++ + " ";
+        connection.sendCommand(tag + command + (arguments == null ? "" : " " + arguments));
+
+        return tag;
+    }
+    
+    /**
+     * Executes an IMAP command without a tag prefix,
+     * and returns the reply as an array of strings.
+     * @param command IMAP command
+     * @param arguments Arguments for the command
+     * @param Known tag that indicates the end of the result
+     * @return List of returned strings
+     */
+    protected String[] executeUntagged(String command, String arguments, String endTag)
+    	throws IOException, MailException
+    {
+    	String[] result = new String[0];
+    	
+        connection.sendCommand(command + (arguments == null ? "" : " " + arguments));
+        
+        String temp = connection.receive();
+        while (!temp.startsWith(endTag)) {
+            Arrays.add(result, temp);
+            temp = connection.receive();
+        }
+
+        temp = temp.substring(endTag.length());
         if (temp.startsWith("BAD ") || temp.startsWith("NO ")) {
             throw new MailException(temp);
         }

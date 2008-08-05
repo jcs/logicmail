@@ -68,6 +68,13 @@ public interface IncomingMailClient extends MailClient {
     public abstract boolean hasUndelete();
     
     /**
+     * Return whether the underlying protocol supports an idle connection mode.
+     * 
+     * @return True if an idle mode is supported, false otherwise
+     */
+    public abstract boolean hasIdle();
+    
+    /**
      * Get the mail folder tree.
      * This should return null if folders are not supported
      * by the underlying protocol.
@@ -172,4 +179,32 @@ public interface IncomingMailClient extends MailClient {
      * @throw MailException on protocol errors
      */
     public abstract void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException;
+
+    /**
+     * Begins the idle mode for the underlying protocol.
+     * This should do nothing if the underlying protocol does not support idling.
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    public abstract void idleModeBegin() throws IOException, MailException;
+    
+    /**
+     * Ends the idle mode for the underlying protocol.
+     * This should do nothing if the underlying protocol does not support idling.
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    public abstract void idleModeEnd() throws IOException, MailException;
+
+    /**
+     * Polls the connecting during the idle mode for the underlying protocol.
+     * This should do nothing if the underlying protocol does not support idling.
+     * 
+     * @return True if the mailbox has new data, false otherwise.
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    public abstract boolean idleModePoll() throws IOException, MailException;
 }

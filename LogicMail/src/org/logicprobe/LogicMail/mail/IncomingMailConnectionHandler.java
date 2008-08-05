@@ -38,6 +38,7 @@ import net.rim.device.api.system.UnsupportedOperationException;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.util.Queue;
 
 public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler {
 	private IncomingMailClient incomingClient;
@@ -112,7 +113,33 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	/**
 	 * Handles the start of the IDLE state.
 	 */
-	protected void handleBeginIdle() {
+	protected void handleBeginIdle() throws IOException, MailException {
+		if(incomingClient.hasIdle()) {
+			incomingClient.idleModeBegin();
+			boolean endIdle = false;
+			while(!endIdle) {
+				sleepConnectionThread(500);
+				if(incomingClient.idleModePoll()) {
+					addRequest(
+							IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
+							new Object[] { incomingClient.getActiveFolder() });
+					endIdle = true;
+				}
+				else if(getShutdownInProgress()) {
+					endIdle = true;
+				}
+				else
+				{
+					Queue requestQueue = getRequestQueue();
+					synchronized(requestQueue) {
+						if(requestQueue.element() != null) {
+							endIdle = true;
+						}
+					}
+				}
+			}
+			incomingClient.idleModeEnd();
+		}
 	}
 
 	private void handleRequestFolderTree() throws IOException, MailException {

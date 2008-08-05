@@ -209,6 +209,10 @@ public class PopClient implements IncomingMailClient {
         return false;
     }
 
+    public boolean hasIdle() {
+		return false;
+	}
+
     public FolderTreeItem getFolderTree() throws IOException, MailException {
         return null;
     }
@@ -335,4 +339,17 @@ public class PopClient implements IncomingMailClient {
     public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
         // Undelete is not supported, so we do nothing here.
     }
+
+	public void idleModeBegin() throws IOException, MailException {
+		// Idle mode is not supported, so we do nothing here.
+	}
+
+	public void idleModeEnd() throws IOException, MailException {
+		// Idle mode is not supported, so we do nothing here.
+	}
+
+	public boolean idleModePoll() throws IOException, MailException {
+		// Idle mode is not supported, so we do nothing here.
+		return false;
+	}
 }
