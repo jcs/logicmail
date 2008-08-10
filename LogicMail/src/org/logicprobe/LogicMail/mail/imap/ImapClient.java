@@ -324,7 +324,7 @@ public class ImapClient implements IncomingMailClient {
             ImapProtocol.ListResponse resp = (ImapProtocol.ListResponse)respList.elementAt(i);
             FolderTreeItem childItem = getFolderItem(baseFolder, resp.name, resp.canSelect);
                 baseFolder.addChild(childItem);
-                if(resp.hasChildren || !childrenExtension) {
+                if(resp.hasChildren || (!resp.noInferiors && !childrenExtension)) {
                     // The folder has children, so lets go and list them
                     if(depth+1 < globalConfig.getImapMaxFolderDepth()) {
                         getFolderTreeImpl(childItem, depth+1, childrenExtension);

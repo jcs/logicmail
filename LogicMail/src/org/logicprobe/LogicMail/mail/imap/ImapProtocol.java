@@ -658,11 +658,18 @@ public class ImapProtocol {
             return "";
         }
         
+        // Workaround for mail servers that sometimes append untagged
+        // replies to the end of this response
+        int lastLineIndex = rawList.length - 1;
+        while(lastLineIndex > 0 && rawList[lastLineIndex].startsWith("* ")) {
+            lastLineIndex--;
+        }
+        
         StringBuffer msgBuf = new StringBuffer();
-        for(int i=1;i<rawList.length-1;i++) {
+        for(int i=1;i<lastLineIndex;i++) {
             msgBuf.append(rawList[i] + "\n");
         }
-        String lastLine = rawList[rawList.length-1];
+        String lastLine = rawList[lastLineIndex];
         msgBuf.append(lastLine.substring(0, lastLine.lastIndexOf(')')));
         return msgBuf.toString();
     }
@@ -758,6 +765,7 @@ public class ImapProtocol {
      */
     public static class ListResponse {
         public boolean hasChildren;
+        public boolean noInferiors;
         public boolean canSelect;
         public boolean marked;
         public String delim;
@@ -828,6 +836,7 @@ public class ImapProtocol {
             // Look for flags
             response.canSelect = !(flagStr.indexOf("\\Noselect") != -1);
             response.hasChildren = (flagStr.indexOf("\\HasChildren") != -1);
+            response.noInferiors = (flagStr.indexOf("\\Noinferiors") != -1);
             response.marked = (flagStr.indexOf("\\Marked") != -1);
 
             try {
@@ -1061,10 +1070,7 @@ public class ImapProtocol {
     	String result;
     	
     	if(connection.available() > 0) {
-    		System.err.println("-->connection.available() == " + connection.available());
 	        result = connection.receive();
-	        System.err.println("-->Read in "+result.length());
-	        System.err.println("-->connection.available() == " + connection.available());
     	}
     	else {
     		result = null;
