@@ -732,7 +732,20 @@ public class AccountNode implements Node {
 		}
 	}
 	
-	//TODO: Handle deleted account nodes
+	/**
+	 * Clear any persistent data associated with this account node.
+	 * 
+	 * <p>When this account node removed from the model tree
+	 * because the underlying account has been deleted,
+	 * this method needs to be called to ensure that
+	 * persistent data does not linger on the device.
+	 */
+	public void removeSavedData() {
+		if(accountDataStore != null) {
+			accountDataStore.delete();
+			accountDataStore = null;
+		}
+	}
 	
 	/**
 	 * Traverses the deserialized mailbox nodes, populates any necessary

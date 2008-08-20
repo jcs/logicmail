@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Calendar;
 import java.util.Vector;
-import net.rim.device.api.i18n.SimpleDateFormat;
+import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
@@ -92,7 +92,7 @@ public class MailboxScreen extends BaseScreen {
     	
         // Determine field sizes
         maxWidth = Graphics.getScreenWidth();
-        dateWidth = Font.getDefault().getAdvance("00/0000");
+        dateWidth = Font.getDefault().getAdvance("00/00/0000");
         senderWidth = maxWidth - dateWidth - 20;
     }
 
@@ -123,7 +123,9 @@ public class MailboxScreen extends BaseScreen {
             MessageNode[] initialMessages = this.mailboxNode.getMessages();
             for(int i=0; i<initialMessages.length; i++) {
             	knownMessages.addElement(initialMessages[i]);
-            	insertDisplayableMessage(initialMessages[i]);
+            	if(isMessageDisplayable(initialMessages[i])) {
+            		insertDisplayableMessage(initialMessages[i]);
+            	}
             }
             
         	this.mailboxNode.refreshMessages();
@@ -393,19 +395,22 @@ public class MailboxScreen extends BaseScreen {
             Calendar dispCal = Calendar.getInstance();
             dispCal.setTime(env.date);
 
-            SimpleDateFormat dateFormat;
+            DateFormat dateFormat;
 
             // Determine the date format to display,
             // based on the distance from the current time
-            // TODO: Implement localization for dates and times
             if(nowCal.get(Calendar.YEAR) == dispCal.get(Calendar.YEAR))
                 if((nowCal.get(Calendar.MONTH) == dispCal.get(Calendar.MONTH)) &&
-                (nowCal.get(Calendar.DAY_OF_MONTH) == dispCal.get(Calendar.DAY_OF_MONTH)))
-                    dateFormat = new SimpleDateFormat("h:mma");
-                else
-                    dateFormat = new SimpleDateFormat("MM/dd");
-            else
-                dateFormat = new SimpleDateFormat("MM/yyyy");
+                (nowCal.get(Calendar.DAY_OF_MONTH) == dispCal.get(Calendar.DAY_OF_MONTH))) {
+                	// Show just the time
+                    dateFormat = DateFormat.getInstance(DateFormat.TIME_MEDIUM);
+                }
+                else {
+                    dateFormat = DateFormat.getInstance(DateFormat.DATE_SHORT);
+                }
+            else {
+                dateFormat = DateFormat.getInstance(DateFormat.DATE_SHORT);
+            }
         
             StringBuffer buffer = new StringBuffer();
             dateFormat.format(dispCal, buffer, null);

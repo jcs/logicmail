@@ -45,6 +45,7 @@ public class MessageNode implements Node {
 	private FolderMessage folderMessage;
 	private Message message;
 	private EventListenerList listenerList = new EventListenerList();
+	private boolean refreshInProgress;
 
 	MessageNode(FolderMessage folderMessage) {
 		this.folderMessage = folderMessage;
@@ -89,6 +90,7 @@ public class MessageNode implements Node {
 	void setMessage(Message message) {
 		this.message = message;
 		if(this.message != null) {
+			refreshInProgress = false;
 			folderMessage.setRecent(false);
 			fireMessageStatusChanged(MessageNodeEvent.TYPE_LOADED);
 		}
@@ -135,9 +137,12 @@ public class MessageNode implements Node {
      * the limits defined in the configuration options.
      */
 	public void refreshMessage() {
-		parent.getParentAccount().getMailStore().requestMessage(
-				parent.getFolderTreeItem(),
-				folderMessage);
+		if(!refreshInProgress) {
+			refreshInProgress = true;
+			parent.getParentAccount().getMailStore().requestMessage(
+					parent.getFolderTreeItem(),
+					folderMessage);
+		}
 	}
 	
 	/**

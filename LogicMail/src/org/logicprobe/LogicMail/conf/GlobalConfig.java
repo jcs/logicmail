@@ -148,11 +148,11 @@ public class GlobalConfig implements Serializable {
     }
    
     public boolean getHideDeletedMsg() {
-	return hideDeletedMsg;
+    	return hideDeletedMsg;
     }
 
     public void setHideDeletedMsg(boolean hideDeletedMsg) {
-	this.hideDeletedMsg = hideDeletedMsg;
+    	this.hideDeletedMsg = hideDeletedMsg;
     }
      
     public void serialize(DataOutputStream output) throws IOException {

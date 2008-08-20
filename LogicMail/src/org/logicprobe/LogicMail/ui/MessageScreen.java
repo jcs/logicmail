@@ -112,7 +112,6 @@ public class MessageScreen extends BaseScreen {
     	super.onDisplay();
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(messageNode.getMessage() == null) {
-    		// TODO: Don't refresh the message if another refresh is currently in progress
     		messageNode.refreshMessage();
     	}
     }

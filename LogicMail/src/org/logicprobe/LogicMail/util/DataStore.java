@@ -36,7 +36,7 @@ package org.logicprobe.LogicMail.util;
  * The interface provides the ability to store objects by name or unique id.
  * Since all serializable objects provide a unique id, everything should
  * actually be stored by unique id.  A mapping table should be internally
- * maintained to allow name looups.  Named storage allows retrieval of
+ * maintained to allow name lookups.  Named storage allows retrieval of
  * top-level objects for which the unique id is unknown.
  */
 public interface DataStore {

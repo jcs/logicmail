@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,162 +28,179 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.mail.imap;
 
-import java.io.UnsupportedEncodingException;
-import java.util.Calendar;
-import java.util.Vector;
 import net.rim.device.api.system.EventLogger;
+
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
+
+import java.io.UnsupportedEncodingException;
+
+import java.util.Calendar;
+import java.util.Vector;
+
 
 /**
  * This class contains all static parser functions
  * needed when using the IMAP protocol
  */
 class ImapParser {
-    /**
-     * Simple container for a parsed message structure tree
-     */
-    public static class MessageSection {
-        public String address;
-        public String type;
-        public String subtype;
-        public String encoding;
-        public String charset;
-        public int size;
-        public MessageSection[] subsections;
-    }
-    
-    private ImapParser() { }
-    
     private static String strNIL = "NIL";
-    
+    private static final String MODIFIED_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
+
+    private ImapParser() {
+    }
+
     static ImapProtocol.MessageFlags parseMessageFlags(Vector flagsVec) {
         ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
-        
+
         String text;
         int size = flagsVec.size();
-        for(int i = 0; i < size; i++) {
-            if(flagsVec.elementAt(i) instanceof String) {
-                text = (String)flagsVec.elementAt(i);
-                if(text.equalsIgnoreCase("\\Seen")) {
+
+        for (int i = 0; i < size; i++) {
+            if (flagsVec.elementAt(i) instanceof String) {
+                text = (String) flagsVec.elementAt(i);
+
+                if (text.equalsIgnoreCase("\\Seen")) {
                     flags.seen = true;
-                }
-                else if(text.equalsIgnoreCase("\\Answered")) {
+                } else if (text.equalsIgnoreCase("\\Answered")) {
                     flags.answered = true;
-                }
-                else if(text.equalsIgnoreCase("\\Flagged")) {
+                } else if (text.equalsIgnoreCase("\\Flagged")) {
                     flags.flagged = true;
-                }
-                else if(text.equalsIgnoreCase("\\Deleted")) {
+                } else if (text.equalsIgnoreCase("\\Deleted")) {
                     flags.deleted = true;
-                }
-                else if(text.equalsIgnoreCase("\\Draft")) {
+                } else if (text.equalsIgnoreCase("\\Draft")) {
                     flags.draft = true;
-                }
-                else if(text.equalsIgnoreCase("\\Recent")) {
+                } else if (text.equalsIgnoreCase("\\Recent")) {
                     flags.recent = true;
-                }
-                else if(text.equalsIgnoreCase("Junk") || text.equalsIgnoreCase("$Junk")) {
+                } else if (text.equalsIgnoreCase("Junk") ||
+                        text.equalsIgnoreCase("$Junk")) {
                     flags.junk = true;
                 }
             }
         }
+
         return flags;
     }
 
     static String createMessageFlagsString(ImapProtocol.MessageFlags flags) {
         StringBuffer buf = new StringBuffer();
-        if(flags.seen) {
+
+        if (flags.seen) {
             buf.append("\\Seen");
         }
-        if(flags.answered) {
-            if(buf.length() > 0) { buf.append(' '); }
+
+        if (flags.answered) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+
             buf.append("\\Answered");
         }
-        if(flags.flagged) {
-            if(buf.length() > 0) { buf.append(' '); }
+
+        if (flags.flagged) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+
             buf.append("\\Flagged");
         }
-        if(flags.deleted) {
-            if(buf.length() > 0) { buf.append(' '); }
+
+        if (flags.deleted) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+
             buf.append("\\Deleted");
         }
-        if(flags.draft) {
-            if(buf.length() > 0) { buf.append(' '); }
+
+        if (flags.draft) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+
             buf.append("\\Draft");
         }
-        if(flags.recent) {
-            if(buf.length() > 0) { buf.append(' '); }
+
+        if (flags.recent) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+
             buf.append("\\Recent");
         }
+
         return buf.toString();
     }
-    
+
     static MessageEnvelope parseMessageEnvelope(Vector parsedEnv) {
         // Sanity checking
-        if(parsedEnv.size() < 10) {
-           EventLogger.logEvent(
-               AppInfo.GUID,
-               "ImapParser.parseMessageEnvelope: Sanity check failed".getBytes(),
-               EventLogger.WARNING);
-           return generateDummyEnvelope();
+        if (parsedEnv.size() < 10) {
+            EventLogger.logEvent(AppInfo.GUID,
+                "ImapParser.parseMessageEnvelope: Sanity check failed".getBytes(),
+                EventLogger.WARNING);
+
+            return generateDummyEnvelope();
         }
-            
+
         MessageEnvelope env = new MessageEnvelope();
 
-        if(parsedEnv.elementAt(0) instanceof String) {
+        if (parsedEnv.elementAt(0) instanceof String) {
             try {
-                env.date = StringParser.parseDateString((String)parsedEnv.elementAt(0));
+                env.date = StringParser.parseDateString((String) parsedEnv.elementAt(
+                            0));
             } catch (Exception e) {
                 env.date = Calendar.getInstance().getTime();
             }
         }
-        
-        if(parsedEnv.elementAt(1) instanceof String) {
-            env.subject = StringParser.parseEncodedHeader((String)parsedEnv.elementAt(1));
+
+        if (parsedEnv.elementAt(1) instanceof String) {
+            env.subject = StringParser.parseEncodedHeader((String) parsedEnv.elementAt(
+                        1));
         }
 
-        if(parsedEnv.elementAt(2) instanceof Vector) {
-            env.from = parseAddressList((Vector)parsedEnv.elementAt(2));
-        }
-        
-        if(parsedEnv.elementAt(3) instanceof Vector) {
-            env.sender = parseAddressList((Vector)parsedEnv.elementAt(3));
+        if (parsedEnv.elementAt(2) instanceof Vector) {
+            env.from = parseAddressList((Vector) parsedEnv.elementAt(2));
         }
 
-        if(parsedEnv.elementAt(4) instanceof Vector) {
-            env.replyTo = parseAddressList((Vector)parsedEnv.elementAt(4));
+        if (parsedEnv.elementAt(3) instanceof Vector) {
+            env.sender = parseAddressList((Vector) parsedEnv.elementAt(3));
         }
 
-        if(parsedEnv.elementAt(5) instanceof Vector) {
-            env.to = parseAddressList((Vector)parsedEnv.elementAt(5));
+        if (parsedEnv.elementAt(4) instanceof Vector) {
+            env.replyTo = parseAddressList((Vector) parsedEnv.elementAt(4));
         }
 
-        if(parsedEnv.elementAt(6) instanceof Vector) {
-            env.cc = parseAddressList((Vector)parsedEnv.elementAt(6));
+        if (parsedEnv.elementAt(5) instanceof Vector) {
+            env.to = parseAddressList((Vector) parsedEnv.elementAt(5));
         }
 
-        if(parsedEnv.elementAt(7) instanceof Vector) {
-            env.bcc = parseAddressList((Vector)parsedEnv.elementAt(7));
+        if (parsedEnv.elementAt(6) instanceof Vector) {
+            env.cc = parseAddressList((Vector) parsedEnv.elementAt(6));
         }
 
-        if(parsedEnv.elementAt(8) instanceof String) {
-            env.inReplyTo = (String)parsedEnv.elementAt(8);
-            if(env.inReplyTo.equals(strNIL)) {
+        if (parsedEnv.elementAt(7) instanceof Vector) {
+            env.bcc = parseAddressList((Vector) parsedEnv.elementAt(7));
+        }
+
+        if (parsedEnv.elementAt(8) instanceof String) {
+            env.inReplyTo = (String) parsedEnv.elementAt(8);
+
+            if (env.inReplyTo.equals(strNIL)) {
                 env.inReplyTo = "";
             }
         }
 
-        if(parsedEnv.elementAt(9) instanceof String) {
-            env.messageId = (String)parsedEnv.elementAt(9);
-            if(env.messageId.equals(strNIL)) {
+        if (parsedEnv.elementAt(9) instanceof String) {
+            env.messageId = (String) parsedEnv.elementAt(9);
+
+            if (env.messageId.equals(strNIL)) {
                 env.messageId = "";
             }
         }
+
         return env;
     }
 
@@ -191,47 +208,56 @@ class ImapParser {
         // Find the number of addresses, and allocate the array
         String[] addrList = new String[addrVec.size()];
         int index = 0;
-        
-        for(int i=0;i<addrVec.size();i++) {
-            if((addrVec.elementAt(i) instanceof Vector) &&
-               ((Vector)addrVec.elementAt(i)).size() >= 4) {
-                
-                Vector entry = (Vector)addrVec.elementAt(i);
+
+        for (int i = 0; i < addrVec.size(); i++) {
+            if ((addrVec.elementAt(i) instanceof Vector) &&
+                    (((Vector) addrVec.elementAt(i)).size() >= 4)) {
+                Vector entry = (Vector) addrVec.elementAt(i);
 
                 String realName = strNIL;
-                if(entry.elementAt(0) instanceof String) {
-                    realName = StringParser.parseEncodedHeader((String)entry.elementAt(0));
+
+                if (entry.elementAt(0) instanceof String) {
+                    realName = StringParser.parseEncodedHeader((String) entry.elementAt(
+                                0));
                 }
 
                 String mbName = strNIL;
-                if(entry.elementAt(2) instanceof String) {
-                    mbName = (String)entry.elementAt(2);
+
+                if (entry.elementAt(2) instanceof String) {
+                    mbName = (String) entry.elementAt(2);
                 }
 
                 String hostName = strNIL;
-                if(entry.elementAt(3) instanceof String) {
-                    hostName = (String)entry.elementAt(3);
+
+                if (entry.elementAt(3) instanceof String) {
+                    hostName = (String) entry.elementAt(3);
                 }
+
+                String addrStr = (mbName.equals(strNIL) ? "" : mbName) +
+                    (hostName.equals(strNIL) ? "" : ('@' + hostName));
+
                 // Now assemble these into a single address entry
                 // (possibly eventually storing them separately)
-                if(realName.length() > 0 && !realName.equals(strNIL)) {
-                    addrList[index] = realName + " <" + mbName + "@" + hostName + ">";
+                if ((realName.length() > 0) && !realName.equals(strNIL)) {
+                    addrList[index] = realName + " <" + addrStr + ">";
+                } else {
+                    addrList[index] = addrStr;
                 }
-                else {
-                    addrList[index] = mbName + "@" + hostName;
-                }
+
                 index++;
             }
         }
+
         return addrList;
     }
-    
+
     static MessageEnvelope generateDummyEnvelope() {
         MessageEnvelope env = new MessageEnvelope();
         env.date = Calendar.getInstance().getTime();
         env.from = new String[1];
         env.from[0] = "<sender>";
         env.subject = "<subject>";
+
         return env;
     }
 
@@ -243,31 +269,34 @@ class ImapParser {
      */
     static MessageSection parseMessageStructure(String rawText) {
         Vector parsedText = null;
+
         try {
-            parsedText = StringParser.nestedParenStringLexer(rawText.substring(rawText.indexOf('(')));
+            parsedText = StringParser.nestedParenStringLexer(rawText.substring(
+                        rawText.indexOf('(')));
         } catch (Exception exp) {
-            EventLogger.logEvent(
-                AppInfo.GUID,
+            EventLogger.logEvent(AppInfo.GUID,
                 ("ImapParser.parseMessageStructure: " +
-                "Caught exception when parsing input:\r\n"+
-                exp.toString()).getBytes(),
+                "Caught exception when parsing input:\r\n" + exp.toString()).getBytes(),
                 EventLogger.WARNING);
+
             return null;
         }
 
         // Sanity checking
-        if(parsedText.size() < 4 ||
-           !(parsedText.elementAt(3) instanceof Vector)) {
-           EventLogger.logEvent(
-               AppInfo.GUID,
-               "ImapParser.parseMessageStructure: Sanity check failed".getBytes(),
-               EventLogger.WARNING);
-           return null;
+        if ((parsedText.size() < 2) ||
+                !(parsedText.elementAt(1) instanceof Vector)) {
+            EventLogger.logEvent(AppInfo.GUID,
+                "ImapParser.parseMessageStructure: Sanity check failed".getBytes(),
+                EventLogger.WARNING);
+
+            return null;
         }
-        
-        Vector parsedStruct = (Vector)parsedText.elementAt(3);
-        MessageSection msgStructure = parseMessageStructureHelper(null, 1, parsedStruct);
+
+        Vector parsedStruct = (Vector) parsedText.elementAt(1);
+        MessageSection msgStructure = parseMessageStructureHelper(null, 1,
+                parsedStruct);
         fixMessageStructure(msgStructure);
+
         return msgStructure;
     }
 
@@ -275,91 +304,102 @@ class ImapParser {
      * This method implements a kludge to fix body part addresses
      */
     private static void fixMessageStructure(MessageSection msgStructure) {
-        if(msgStructure == null) {
+        if (msgStructure == null) {
             return;
         }
+
         int p = msgStructure.address.indexOf('.');
-        if(p != -1 && p+1 < msgStructure.address.length()) {
-            msgStructure.address = msgStructure.address.substring(p+1);
+
+        if ((p != -1) && ((p + 1) < msgStructure.address.length())) {
+            msgStructure.address = msgStructure.address.substring(p + 1);
         }
-        
-        if(msgStructure.subsections != null && msgStructure.subsections.length > 0) {
-            for(int i=0;i<msgStructure.subsections.length;i++) {
+
+        if ((msgStructure.subsections != null) &&
+                (msgStructure.subsections.length > 0)) {
+            for (int i = 0; i < msgStructure.subsections.length; i++) {
                 fixMessageStructure(msgStructure.subsections[i]);
             }
         }
     }
-    
-    private static MessageSection parseMessageStructureHelper(String parentAddress,
-                                                              int index,
-                                                              Vector parsedStruct) {
+
+    private static MessageSection parseMessageStructureHelper(
+        String parentAddress, int index, Vector parsedStruct) {
         // Determine the address of this body part
         String address;
-        if(parentAddress == null) {
+
+        if (parentAddress == null) {
             address = Integer.toString(index);
-        }
-        else {
+        } else {
             address = parentAddress + "." + Integer.toString(index);
         }
+
         // Determine the number of body parts and parse
-        if(parsedStruct.elementAt(0) instanceof String) {
+        if (parsedStruct.elementAt(0) instanceof String) {
             // The first element is a string, so we hit a simple message part
             MessageSection section = parseMessageStructureSection(parsedStruct);
             section.address = address;
+
             return section;
-        }
-        else if(parsedStruct.elementAt(0) instanceof Vector) {
+        } else if (parsedStruct.elementAt(0) instanceof Vector) {
             // The first element is a vector, so we hit a multipart message part
             int size = parsedStruct.size();
-            MessageSection[] subSections = new MessageSection[size-4];
-            for(int i=0;i<size;++i) {
+            MessageSection[] subSections = new MessageSection[size - 4];
+
+            for (int i = 0; i < size; ++i) {
                 // Iterate through the message parts
-                if(parsedStruct.elementAt(i) instanceof Vector)
-                    subSections[i] = parseMessageStructureHelper(address, i+1, (Vector)parsedStruct.elementAt(i));
-                else if(parsedStruct.elementAt(i) instanceof String) {
+                if (parsedStruct.elementAt(i) instanceof Vector) {
+                    subSections[i] = parseMessageStructureHelper(address,
+                            i + 1, (Vector) parsedStruct.elementAt(i));
+                } else if (parsedStruct.elementAt(i) instanceof String) {
                     MessageSection section = new MessageSection();
                     section.type = "multipart";
-                    section.subtype = ((String)parsedStruct.elementAt(i)).toLowerCase();
+                    section.subtype = ((String) parsedStruct.elementAt(i)).toLowerCase();
                     section.subsections = subSections;
                     section.address = address;
+
                     return section;
                 }
             }
         }
+
         return null;
     }
-    
-    private static MessageSection parseMessageStructureSection(Vector sectionList) {
+
+    private static MessageSection parseMessageStructureSection(
+        Vector sectionList) {
         MessageSection sec = new MessageSection();
         Vector tmpVec;
-        
-        if(sectionList.elementAt(0) instanceof String) {
-            sec.type = ((String)sectionList.elementAt(0)).toLowerCase();
+
+        if (sectionList.elementAt(0) instanceof String) {
+            sec.type = ((String) sectionList.elementAt(0)).toLowerCase();
         }
 
-        if(sectionList.elementAt(1) instanceof String) {
-            sec.subtype = ((String)sectionList.elementAt(1)).toLowerCase();
+        if (sectionList.elementAt(1) instanceof String) {
+            sec.subtype = ((String) sectionList.elementAt(1)).toLowerCase();
         }
 
         sec.charset = null;
-        if(sectionList.elementAt(2) instanceof Vector) {
-            tmpVec = (Vector)sectionList.elementAt(2);
-            if(tmpVec.size() >= 2) {
-                if((tmpVec.elementAt(0) instanceof String) &&
-                   ((String)tmpVec.elementAt(0)).equalsIgnoreCase("charset") &&
-                   tmpVec.elementAt(1) instanceof String) {
-                    sec.charset = (String)tmpVec.elementAt(1);                    
+
+        if (sectionList.elementAt(2) instanceof Vector) {
+            tmpVec = (Vector) sectionList.elementAt(2);
+
+            if (tmpVec.size() >= 2) {
+                if ((tmpVec.elementAt(0) instanceof String) &&
+                        ((String) tmpVec.elementAt(0)).equalsIgnoreCase(
+                            "charset") &&
+                        tmpVec.elementAt(1) instanceof String) {
+                    sec.charset = (String) tmpVec.elementAt(1);
                 }
             }
         }
-        
-        if(sectionList.elementAt(5) instanceof String) {
-            sec.encoding = ((String)sectionList.elementAt(5)).toLowerCase();
+
+        if (sectionList.elementAt(5) instanceof String) {
+            sec.encoding = ((String) sectionList.elementAt(5)).toLowerCase();
         }
 
-        if(sectionList.elementAt(6) instanceof String) {
+        if (sectionList.elementAt(6) instanceof String) {
             try {
-                sec.size = Integer.parseInt((String)sectionList.elementAt(6));
+                sec.size = Integer.parseInt((String) sectionList.elementAt(6));
             } catch (Exception exp) {
                 sec.size = -1;
             }
@@ -367,7 +407,7 @@ class ImapParser {
 
         return sec;
     }
-    
+
     /**
      * Takes in the raw IMAP folder name, and outputs a string that
      * has been properly decoded according to section 5.1.3 of
@@ -382,55 +422,51 @@ class ImapParser {
         int index = 0;
         int len = rawText.length();
         boolean usMode = true;
-        while(index < len) {
+
+        while (index < len) {
             char ch = rawText.charAt(index);
-            if(usMode) {
-                if(ch != '&') {
+
+            if (usMode) {
+                if (ch != '&') {
                     buf.append(ch);
                     index++;
-                }
-                else if(ch == '&' && index < len - 1 && rawText.charAt(index+1) == '-') {
+                } else if ((ch == '&') && (index < (len - 1)) &&
+                        (rawText.charAt(index + 1) == '-')) {
                     buf.append(ch);
                     index += 2;
-                }
-                else {
+                } else {
                     usMode = false;
                     index++;
                 }
-            }
-            else {
-                if(intlBuf == null) {
+            } else {
+                if (intlBuf == null) {
                     intlBuf = new StringBuffer();
                 }
-                
-                if(ch == '-') {
+
+                if (ch == '-') {
                     buf.append(decodeModifiedBase64(intlBuf.toString()));
                     intlBuf = null;
                     usMode = true;
                     index++;
-                }
-                else {
+                } else {
                     intlBuf.append(ch);
                     index++;
                 }
             }
         }
-        
+
         return buf.toString();
     }
-    
-    private static final String MODIFIED_BASE64_ALPHABET =
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
-    
+
     /**
      * Decodes the IMAP modification of the UTF-7 modification of Base64.
-     * 
+     *
      * This is probably a very sloppy and inefficient implementation,
      * which is why it is only used for decoding folder names.  This operation
      * is extremely infrequent, and usually only happens on select characters.
      * While the code should be improved a bit, it is hopefully sufficient
      * for now.  Propper Base64 decoding will still be used everywhere else.
-     * 
+     *
      * @param input Encoded string
      * @return Decoded string
      */
@@ -438,6 +474,7 @@ class ImapParser {
         boolean[] bits = new boolean[input.length() * 6];
         int len = input.length();
         int bitsIndex = 0;
+
         for (int i = 0; i < len; i++) {
             byte val = (byte) MODIFIED_BASE64_ALPHABET.indexOf(input.charAt(i));
             bits[bitsIndex++] = (val & (byte) 0x20) != 0;
@@ -450,22 +487,39 @@ class ImapParser {
 
         byte[] decodeData = new byte[(bits.length - (bits.length % 16)) / 8];
         bitsIndex = 0;
+
         for (int i = 0; i < decodeData.length; i++) {
             decodeData[i] = 0;
+
             for (int j = 7; j >= 0; j--) {
                 decodeData[i] += (bits[bitsIndex] ? (1 << j) : 0);
                 bitsIndex++;
+
                 if (bitsIndex >= bits.length) {
                     break;
                 }
             }
         }
-        
+
         try {
             String result = new String(decodeData, "UTF-16BE");
+
             return result;
         } catch (UnsupportedEncodingException e) {
             return input;
         }
+    }
+
+    /**
+     * Simple container for a parsed message structure tree
+     */
+    public static class MessageSection {
+        public String address;
+        public String type;
+        public String subtype;
+        public String encoding;
+        public String charset;
+        public int size;
+        public MessageSection[] subsections;
     }
 }

@@ -148,7 +148,22 @@ public class MailManager {
 			mailRootNode.addAccount((AccountNode)newAccounts.elementAt(i));
 		}
 		
-		//TODO: Clear deleted accounts from the MailFactory
+		// Clear deleted accounts from the MailFactory and persistent storage
+		for(int i=0; i<existingAccounts.length; i++) {
+			boolean accountDeleted = true;
+			int size = newAccounts.size();
+			for(int j=0; j<size; j++) {
+				AccountNode newAccount = (AccountNode)newAccounts.elementAt(j);
+				if(newAccount == existingAccounts[i]) {
+					accountDeleted = false;
+					break;
+				}
+			}
+			if(accountDeleted) {
+				existingAccounts[i].removeSavedData();
+				MailFactory.clearMailStore(existingAccounts[i].getAccountConfig());
+			}
+		}
 		
 		// Get the newly updated account list, and determine whether
 		// we need to update any mail senders.
