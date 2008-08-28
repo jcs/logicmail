@@ -282,9 +282,24 @@ class ImapParser {
             return null;
         }
 
+        // Find the BODYSTRUCTURE portion of the reply
+        Vector parsedStruct = null;
+        int size = parsedText.size();
+
+        for (int i = 0; i < size; i++) {
+            if (parsedText.elementAt(i) instanceof String) {
+                String label = (String) parsedText.elementAt(i);
+
+                if (label.equalsIgnoreCase("BODYSTRUCTURE") &&
+                        (i < (size - 1)) &&
+                        parsedText.elementAt(i + 1) instanceof Vector) {
+                    parsedStruct = (Vector) parsedText.elementAt(i + 1);
+                }
+            }
+        }
+
         // Sanity checking
-        if ((parsedText.size() < 2) ||
-                !(parsedText.elementAt(1) instanceof Vector)) {
+        if (parsedStruct == null) {
             EventLogger.logEvent(AppInfo.GUID,
                 "ImapParser.parseMessageStructure: Sanity check failed".getBytes(),
                 EventLogger.WARNING);
@@ -292,7 +307,6 @@ class ImapParser {
             return null;
         }
 
-        Vector parsedStruct = (Vector) parsedText.elementAt(1);
         MessageSection msgStructure = parseMessageStructureHelper(null, 1,
                 parsedStruct);
         fixMessageStructure(msgStructure);

@@ -878,16 +878,25 @@ public class StringParser {
             if (text.charAt(index) == '=') {
                 if ((index + 2) >= length) {
                     break;
-                }
+                } else {
+                    char ch1 = text.charAt(index + 1);
+                    char ch2 = text.charAt(index + 2);
 
-                try {
-                    int charVal = Integer.parseInt(text.substring(index + 1,
-                                index + 3), 16);
-                    buffer.append((char) charVal);
-                } catch (NumberFormatException exp) {
-                }
+                    if ((ch1 == '\r') && (ch2 == '\n')) {
+                        index += 3;
+                    } else if (ch1 == '\n') {
+                        index += 2;
+                    } else {
+                        try {
+                            int charVal = Integer.parseInt(text.substring(index +
+                                        1, index + 3), 16);
+                            buffer.append((char) charVal);
+                        } catch (NumberFormatException exp) {
+                        }
 
-                index += 3;
+                        index += 3;
+                    }
+                }
             } else {
                 buffer.append(text.charAt(index));
                 index++;
@@ -904,14 +913,23 @@ public class StringParser {
         StringBuffer buffer = new StringBuffer();
         char ch;
         String charStr;
+        int length = text.length();
 
-        for (int i = 0; i < text.length(); i++) {
+        for (int i = 0; i < length; i++) {
             ch = text.charAt(i);
 
-            if (ch < 128) {
+            if ((ch != '\t') && (ch != ' ') && (ch < 128)) {
+                if ((buffer.length() == 75) && (i < (length - 1))) {
+                    buffer.append("=\r\n");
+                }
+
                 buffer.append(ch);
             } else {
-                charStr = Integer.toHexString((int) ch);
+                if ((buffer.length() == 73) && (i < (length - 3))) {
+                    buffer.append("=\r\n");
+                }
+
+                charStr = Integer.toHexString((int) ch).toUpperCase();
                 buffer.append('=');
 
                 if (charStr.length() == 1) {
