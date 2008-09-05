@@ -53,6 +53,10 @@ import java.util.Vector;
  * E-Mail protocol server responses.
  */
 public class StringParser {
+    private static final long ONE_SECOND = 1000;
+    private static final long ONE_MINUTE = ONE_SECOND * 60;
+    private static final long ONE_HOUR = ONE_MINUTE * 60;
+
     private StringParser() {
     }
 
@@ -431,7 +435,12 @@ public class StringParser {
 
         buf.append(' ');
 
-        int tzOffset = (cal.getTimeZone().getRawOffset()) / 36000;
+        int tzOffset = cal.getTimeZone().getOffset(1, cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
+                cal.get(Calendar.DAY_OF_WEEK),
+                (int) (((long) cal.get(Calendar.HOUR_OF_DAY) * ONE_HOUR) +
+                (cal.get(Calendar.MINUTE) * ONE_MINUTE) +
+                (cal.get(Calendar.SECOND) * ONE_SECOND))) / 36000;
 
         if (tzOffset < 0) {
             buf.append(NumberUtilities.toString(tzOffset, 10, 5));
