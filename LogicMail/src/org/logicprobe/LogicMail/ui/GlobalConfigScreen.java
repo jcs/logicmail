@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,7 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Field;
@@ -42,13 +41,15 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+
 
 /**
  * Configuration screen
  */
-public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeListener {
+public class GlobalConfigScreen extends BaseCfgScreen
+    implements FieldChangeListener {
     private MailSettings mailSettings;
     private BasicEditField fldRetMsgCount;
     private ObjectChoiceField fldDispOrder;
@@ -58,81 +59,133 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     private ObjectChoiceField fldWifiMode;
     private CheckboxField fldConnDebug;
     private CheckboxField fldHideDeletedMsg;
+    private CheckboxField fldOverrideHostname;
+    private BasicEditField fldLocalHostname;
     private ButtonField btSave;
+    private String localHostname;
 
     public GlobalConfigScreen() {
-        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_GLOBAL_TITLE));
+        super("LogicMail - " +
+            resources.getString(LogicMailResource.CONFIG_GLOBAL_TITLE));
 
         mailSettings = MailSettings.getInstance();
+
         GlobalConfig config = mailSettings.getGlobalConfig();
 
-        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS), Field.NON_FOCUSABLE));
-        
-        fldRetMsgCount = new BasicEditField("  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + " ",
-                                            Integer.toString(config.getRetMsgCount()));
+        add(new RichTextField(resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS),
+                Field.NON_FOCUSABLE));
+
+        fldRetMsgCount = new BasicEditField("  " +
+                resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + " ",
+                Integer.toString(config.getRetMsgCount()));
         fldRetMsgCount.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldRetMsgCount);
 
         String[] orderTypes = {
-        		resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
-        		resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING) };
-        if(!config.getDispOrder())
-            fldDispOrder = new ObjectChoiceField(
-            		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ", orderTypes, 0);
-        else
-            fldDispOrder = new ObjectChoiceField(
-            		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ", orderTypes, 1);
+                resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
+                resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
+            };
+
+        if (!config.getDispOrder()) {
+            fldDispOrder = new ObjectChoiceField("  " +
+                    resources.getString(
+                        LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ",
+                    orderTypes, 0);
+        } else {
+            fldDispOrder = new ObjectChoiceField("  " +
+                    resources.getString(
+                        LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ",
+                    orderTypes, 1);
+        }
+
         add(fldDispOrder);
 
-        fldHideDeletedMsg = new CheckboxField(
-        		resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
-        		config.getHideDeletedMsg());
+        fldHideDeletedMsg = new CheckboxField(resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
+                config.getHideDeletedMsg());
         add(fldHideDeletedMsg);
 
         String[] wifiModes = {
-        		resources.getString(LogicMailResource.MENUITEM_DISABLED),
-        		resources.getString(LogicMailResource.MENUITEM_PROMPT),
-        		resources.getString(LogicMailResource.MENUITEM_ALWAYS) };
-        fldWifiMode = new ObjectChoiceField(
-        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + " ",
-        		wifiModes, config.getWifiMode());
+                resources.getString(LogicMailResource.MENUITEM_DISABLED),
+                resources.getString(LogicMailResource.MENUITEM_PROMPT),
+                resources.getString(LogicMailResource.MENUITEM_ALWAYS)
+            };
+        fldWifiMode = new ObjectChoiceField("  " +
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) +
+                " ", wifiModes, config.getWifiMode());
         add(fldWifiMode);
-        
-        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_SETTINGS), Field.NON_FOCUSABLE));
-        fldImapMaxMsgSize = new BasicEditField(
-        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_DOWNLOAD_LIMIT) + " ",
-        		Integer.toString(config.getImapMaxMsgSize()/1024));
+
+        add(new RichTextField(resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_IMAP_SETTINGS),
+                Field.NON_FOCUSABLE));
+        fldImapMaxMsgSize = new BasicEditField("  " +
+                resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_IMAP_DOWNLOAD_LIMIT) + " ",
+                Integer.toString(config.getImapMaxMsgSize() / 1024));
         fldImapMaxMsgSize.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldImapMaxMsgSize);
-        
-        fldImapMaxFolderDepth = new BasicEditField(
-        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_FOLDER_LIMIT) + " ",
-        		Integer.toString(config.getImapMaxFolderDepth()));
+
+        fldImapMaxFolderDepth = new BasicEditField("  " +
+                resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_IMAP_FOLDER_LIMIT) + " ",
+                Integer.toString(config.getImapMaxFolderDepth()));
         fldImapMaxFolderDepth.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldImapMaxFolderDepth);
 
-        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_SETTINGS), Field.NON_FOCUSABLE));
-        fldPopMaxLines = new BasicEditField(
-        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_DOWNLOAD_LIMIT) + " ",
-        		Integer.toString(config.getPopMaxLines()));
+        add(new RichTextField(resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_POP_SETTINGS),
+                Field.NON_FOCUSABLE));
+        fldPopMaxLines = new BasicEditField("  " +
+                resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_POP_DOWNLOAD_LIMIT) + " ",
+                Integer.toString(config.getPopMaxLines()));
         fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
         add(fldPopMaxLines);
 
-        fldConnDebug = new CheckboxField(
-        		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
-        		config.getConnDebug());
+        boolean overrideHostname = localHostname.length() > 0;
+        fldOverrideHostname = new CheckboxField("Override hostname",
+                overrideHostname);
+        fldOverrideHostname.setChangeListener(this);
+        add(fldOverrideHostname);
+
+        if (overrideHostname) {
+            fldLocalHostname = new BasicEditField("  Hostname: ", localHostname);
+        } else {
+            String hostname = System.getProperty("microedition.hostname");
+            fldLocalHostname = new BasicEditField("  Hostname: ",
+                    ((hostname != null) ? hostname : "localhost"));
+            fldLocalHostname.setEditable(false);
+        }
+
+        add(fldLocalHostname);
+        fldConnDebug = new CheckboxField(resources.getString(
+                    LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
+                config.getConnDebug());
         add(fldConnDebug);
 
         add(new SeparatorField());
 
-        btSave = new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
+        btSave = new ButtonField(resources.getString(
+                    LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
         btSave.setChangeListener(this);
         add(btSave);
     }
 
     public void fieldChanged(Field field, int context) {
-        if(field == btSave) {
+        if (field == btSave) {
             onClose();
+        } else if (field == fldOverrideHostname) {
+            if (fldOverrideHostname.getChecked()) {
+                fldLocalHostname.setText(localHostname);
+                fldLocalHostname.setEditable(true);
+            } else {
+                String hostname = System.getProperty("microedition.hostname");
+                fldLocalHostname.setText((hostname != null) ? hostname
+                                                            : "localhost");
+                fldLocalHostname.setEditable(false);
+            }
         }
     }
 
@@ -141,26 +194,42 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 
         try {
             config.setRetMsgCount(Integer.parseInt(fldRetMsgCount.getText()));
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
 
-        if(fldDispOrder.getSelectedIndex() == 0)
+        if (fldDispOrder.getSelectedIndex() == 0) {
             config.setDispOrder(false);
-        else
+        } else {
             config.setDispOrder(true);
+        }
 
         config.setHideDeletedMsg(fldHideDeletedMsg.getChecked());
 
         config.setWifiMode(fldWifiMode.getSelectedIndex());
 
         try {
-            config.setImapMaxMsgSize(Integer.parseInt(fldImapMaxMsgSize.getText())*1024);
-        } catch (Exception e) { }
+            config.setImapMaxMsgSize(Integer.parseInt(
+                    fldImapMaxMsgSize.getText()) * 1024);
+        } catch (Exception e) {
+        }
+
         try {
-            config.setImapMaxFolderDepth(Integer.parseInt(fldImapMaxFolderDepth.getText()));
-        } catch (Exception e) { }
+            config.setImapMaxFolderDepth(Integer.parseInt(
+                    fldImapMaxFolderDepth.getText()));
+        } catch (Exception e) {
+        }
+
         try {
             config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
+
+        if (fldOverrideHostname.getChecked()) {
+            config.setLocalHostname(fldLocalHostname.getText().trim());
+        } else {
+            config.setLocalHostname("");
+        }
+
         config.setConnDebug(fldConnDebug.getChecked());
         mailSettings.saveSettings();
     }

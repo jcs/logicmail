@@ -55,6 +55,7 @@ import java.util.Calendar;
  */
 public class SmtpClient implements OutgoingMailClient {
     private static String strCRLF = "\r\n";
+    private GlobalConfig globalConfig;
     private OutgoingConfig outgoingConfig;
     private Connection connection;
     private SmtpProtocol smtpProtocol;
@@ -71,6 +72,7 @@ public class SmtpClient implements OutgoingMailClient {
 
     /** Creates a new instance of SmtpClient */
     public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
+    	this.globalConfig = globalConfig;
         this.outgoingConfig = outgoingConfig;
         connection = new Connection(outgoingConfig.getServerName(),
                 outgoingConfig.getServerPort(), outgoingConfig.getServerSSL(),
@@ -122,10 +124,14 @@ public class SmtpClient implements OutgoingMailClient {
             // Eat the initial server response
             connection.receive();
 
-            String hostname = System.getProperty("microedition.hostname");
+            String hostname = globalConfig.getLocalHostname();
 
-            if (hostname == null) {
-                hostname = connection.getLocalAddress();
+            if (hostname.length() == 0) {
+                hostname = System.getProperty("microedition.hostname");
+
+                if (hostname == null) {
+                    hostname = connection.getLocalAddress();
+                }
             }
 
             smtpProtocol.executeExtendedHello(hostname);

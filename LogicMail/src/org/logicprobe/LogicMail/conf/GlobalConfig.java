@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,50 +28,62 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.conf;
 
-import java.io.IOException;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 
 /**
  * Store the global configuration for LogicMail.
  */
 public class GlobalConfig implements Serializable {
+    /** WiFi support is disabled, best for non-WiFi devices */
+    final public static int WIFI_DISABLED = 0;
+
+    /** Prompt for WiFi use whenever establishing a connection */
+    final public static int WIFI_PROMPT = 1;
+
+    /** Always use WiFi */
+    final public static int WIFI_ALWAYS = 2;
     private long uniqueId;
+
     /** number of message headers to retrieve */
     private int retMsgCount;
+
     /** true for ascending, false for descending */
     private boolean dispOrder;
+
     /** IMAP: maximum message size */
     private int imapMaxMsgSize;
+
     /** IMAP: maximum folder depth */
     private int imapMaxFolderDepth;
+
     /** POP: maximum message lines */
     private int popMaxLines;
+
     /** Mode for WiFi support */
     private int wifiMode;
+
     /** Connection debugging */
     private boolean connDebug;
+
     /** Hide deleted messages */
     private boolean hideDeletedMsg;
 
-    /** WiFi support is disabled, best for non-WiFi devices */
-    final public static int WIFI_DISABLED = 0;
-    /** Prompt for WiFi use whenever establishing a connection */
-    final public static int WIFI_PROMPT = 1;
-    /** Always use WiFi */
-    final public static int WIFI_ALWAYS = 2;
-    
-    
+    /** Local host name override */
+    private String localHostname;
+
     public GlobalConfig() {
         setDefaults();
     }
-    
+
     public GlobalConfig(DataInputStream input) {
         try {
             deserialize(input);
@@ -89,8 +101,9 @@ public class GlobalConfig implements Serializable {
         this.popMaxLines = 400;
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
         this.hideDeletedMsg = true;
+        this.localHostname = "";
     }
-    
+
     public void setRetMsgCount(int retMsgCount) {
         this.retMsgCount = retMsgCount;
     }
@@ -98,11 +111,11 @@ public class GlobalConfig implements Serializable {
     public int getRetMsgCount() {
         return retMsgCount;
     }
-    
+
     public void setDispOrder(boolean dispOrder) {
         this.dispOrder = dispOrder;
     }
-    
+
     public boolean getDispOrder() {
         return dispOrder;
     }
@@ -114,7 +127,7 @@ public class GlobalConfig implements Serializable {
     public void setImapMaxMsgSize(int imapMaxMsgSize) {
         this.imapMaxMsgSize = imapMaxMsgSize;
     }
-    
+
     public int getImapMaxFolderDepth() {
         return imapMaxFolderDepth;
     }
@@ -130,7 +143,7 @@ public class GlobalConfig implements Serializable {
     public void setPopMaxLines(int popMaxLines) {
         this.popMaxLines = popMaxLines;
     }
-    
+
     public int getWifiMode() {
         return wifiMode;
     }
@@ -142,24 +155,32 @@ public class GlobalConfig implements Serializable {
     public boolean getConnDebug() {
         return connDebug;
     }
-    
+
     public void setConnDebug(boolean connDebug) {
         this.connDebug = connDebug;
     }
-   
+
     public boolean getHideDeletedMsg() {
-    	return hideDeletedMsg;
+        return hideDeletedMsg;
     }
 
     public void setHideDeletedMsg(boolean hideDeletedMsg) {
-    	this.hideDeletedMsg = hideDeletedMsg;
+        this.hideDeletedMsg = hideDeletedMsg;
     }
-     
+
+    public String getLocalHostname() {
+        return this.localHostname;
+    }
+
+    public void setLocalHostname(String localHostname) {
+        this.localHostname = localHostname;
+    }
+
     public void serialize(DataOutputStream output) throws IOException {
         output.writeLong(uniqueId);
-        
+
         SerializableHashtable table = new SerializableHashtable();
-        
+
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_imapMaxMsgSize", new Integer(imapMaxMsgSize));
@@ -168,6 +189,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_wifiMode", new Integer(wifiMode));
         table.put("global_connDebug", new Boolean(connDebug));
         table.put("global_hideDeletedMsg", new Boolean(hideDeletedMsg));
+        table.put("global_localHostname", localHostname);
 
         table.serialize(output);
     }
@@ -175,43 +197,68 @@ public class GlobalConfig implements Serializable {
     public void deserialize(DataInputStream input) throws IOException {
         setDefaults();
         uniqueId = input.readLong();
-        
+
         SerializableHashtable table = new SerializableHashtable();
         table.deserialize(input);
+
         Object value;
 
         value = table.get("global_retMsgCount");
-        if(value != null && value instanceof Integer) {
-            retMsgCount = ((Integer)value).intValue();
+
+        if ((value != null) && value instanceof Integer) {
+            retMsgCount = ((Integer) value).intValue();
         }
+
         value = table.get("global_dispOrder");
-        if(value != null && value instanceof Boolean) {
-            dispOrder = ((Boolean)value).booleanValue();
+
+        if ((value != null) && value instanceof Boolean) {
+            dispOrder = ((Boolean) value).booleanValue();
         }
+
         value = table.get("global_imapMaxMsgSize");
-        if(value != null && value instanceof Integer) {
-            imapMaxMsgSize = ((Integer)value).intValue();
+
+        if ((value != null) && value instanceof Integer) {
+            imapMaxMsgSize = ((Integer) value).intValue();
         }
+
         value = table.get("global_imapMaxFolderDepth");
-        if(value != null && value instanceof Integer) {
-            imapMaxFolderDepth = ((Integer)value).intValue();
+
+        if ((value != null) && value instanceof Integer) {
+            imapMaxFolderDepth = ((Integer) value).intValue();
         }
+
         value = table.get("global_popMaxLines");
-        if(value != null && value instanceof Integer) {
-            popMaxLines = ((Integer)value).intValue();
+
+        if ((value != null) && value instanceof Integer) {
+            popMaxLines = ((Integer) value).intValue();
         }
+
         value = table.get("global_wifiMode");
-        if(value != null && value instanceof Integer) {
-            wifiMode = ((Integer)value).intValue();
-            if(wifiMode < 0 || wifiMode > 2) { wifiMode = GlobalConfig.WIFI_DISABLED; }
+
+        if ((value != null) && value instanceof Integer) {
+            wifiMode = ((Integer) value).intValue();
+
+            if ((wifiMode < 0) || (wifiMode > 2)) {
+                wifiMode = GlobalConfig.WIFI_DISABLED;
+            }
         }
+
         value = table.get("global_connDebug");
-        if(value != null && value instanceof Boolean) {
-            connDebug = ((Boolean)value).booleanValue();
+
+        if ((value != null) && value instanceof Boolean) {
+            connDebug = ((Boolean) value).booleanValue();
         }
+
         value = table.get("global_hideDeletedMsg");
-        if(value != null && value instanceof Boolean) {
-            hideDeletedMsg = ((Boolean)value).booleanValue();
+
+        if ((value != null) && value instanceof Boolean) {
+            hideDeletedMsg = ((Boolean) value).booleanValue();
+        }
+
+        value = table.get("global_localHostname");
+
+        if ((value != null) && value instanceof String) {
+            localHostname = (String) value;
         }
     }
 
