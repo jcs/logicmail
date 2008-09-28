@@ -145,16 +145,16 @@ public class GlobalConfigScreen extends BaseCfgScreen
         add(fldPopMaxLines);
 
         boolean overrideHostname = localHostname.length() > 0;
-        fldOverrideHostname = new CheckboxField("Override hostname",
+        fldOverrideHostname = new CheckboxField(resources.getString(LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
                 overrideHostname);
         fldOverrideHostname.setChangeListener(this);
         add(fldOverrideHostname);
 
         if (overrideHostname) {
-            fldLocalHostname = new BasicEditField("  Hostname: ", localHostname);
+            fldLocalHostname = new BasicEditField("  "+resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME)+" ", localHostname);
         } else {
             String hostname = System.getProperty("microedition.hostname");
-            fldLocalHostname = new BasicEditField("  Hostname: ",
+            fldLocalHostname = new BasicEditField("  "+resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME)+" ",
                     ((hostname != null) ? hostname : "localhost"));
             fldLocalHostname.setEditable(false);
         }
