@@ -41,7 +41,6 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.util.EventObject;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
 import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
@@ -49,6 +48,7 @@ import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
  * This class is the base for all screens in LogicMail.
@@ -232,21 +232,6 @@ public abstract class BaseScreen extends MainScreen {
         return true;
     }
     
-	/**
-	 * Convenience class to make it easier for event handlers to pass
-	 * the EventObject onto an event handler method that runs on a
-	 * different thread.
-	 */
-	protected abstract class EventObjectRunnable implements Runnable {
-		private EventObject event;
-		public EventObjectRunnable(EventObject event) {
-			this.event = event;
-		}
-		public EventObject getEvent() { return this.event; }
-		
-		public abstract void run();
-	}
-	
 	/**
 	 * Invoked when there is a change in status from
 	 * the mail connection.

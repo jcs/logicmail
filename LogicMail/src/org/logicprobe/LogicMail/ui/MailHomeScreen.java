@@ -56,6 +56,7 @@ import org.logicprobe.LogicMail.model.Node;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailManagerListener;
+import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
  * Main screen for the application, providing a unified
