@@ -83,6 +83,15 @@ public class MailManager {
 			public void mailConnectionError(MailConnectionStatusEvent e) { }
 			public void mailConnectionLogin(MailConnectionLoginEvent e) { }
 		});
+		
+		// Refresh data from local account nodes
+		AccountNode[] accounts = mailRootNode.getAccounts();
+		for(int i=0; i<accounts.length; i++) {
+			if(accounts[i].getStatus() == AccountNode.STATUS_LOCAL) {
+				accounts[i].refreshMailboxes();
+				accounts[i].refreshMailboxStatus();
+			}
+		}
 	}
 	
 	/**
@@ -118,8 +127,16 @@ public class MailManager {
 		// if an account already exists, and only creating new nodes
 		// for new accounts.
 		AccountNode[] existingAccounts = mailRootNode.getAccounts();
-		int num = mailSettings.getNumAccounts();
 		Vector newAccounts = new Vector();
+		
+		// Prepopulate the new account list with the local accounts
+		for(int i=0; i < existingAccounts.length; i++) {
+			if(existingAccounts[i].getStatus() == AccountNode.STATUS_LOCAL) {
+				newAccounts.addElement(existingAccounts[i]);
+			}
+		}
+		
+		int num = mailSettings.getNumAccounts();
 		boolean accountExists;
 		for(int i=0; i<num; i++) {
 			AccountConfig accountConfig = mailSettings.getAccountConfig(i);
@@ -169,21 +186,23 @@ public class MailManager {
 		// we need to update any mail senders.
 		existingAccounts = mailRootNode.getAccounts();
 		for(int i=0; i<existingAccounts.length; i++) {
-			AbstractMailSender mailSender = existingAccounts[i].getMailSender();
-			OutgoingConfig outgoingConfig = existingAccounts[i].getAccountConfig().getOutgoingConfig();
-			if(outgoingConfig == null) {
-				if(mailSender != null) {
-					mailSender.shutdown(false);
+			if(existingAccounts[i].getStatus() != AccountNode.STATUS_LOCAL) {
+				AbstractMailSender mailSender = existingAccounts[i].getMailSender();
+				OutgoingConfig outgoingConfig = existingAccounts[i].getAccountConfig().getOutgoingConfig();
+				if(outgoingConfig == null) {
+					if(mailSender != null) {
+						mailSender.shutdown(false);
+					}
+					existingAccounts[i].setMailSender(null);
 				}
-				existingAccounts[i].setMailSender(null);
-			}
-			else if((mailSender instanceof NetworkMailSender
-			       &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
-				mailSender.shutdown(false);
-				existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
-			}
-			else if(mailSender == null) {
-				existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
+				else if((mailSender instanceof NetworkMailSender
+				       &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
+					mailSender.shutdown(false);
+					existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
+				}
+				else if(mailSender == null) {
+					existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
+				}
 			}
 		}
 		
@@ -204,7 +223,7 @@ public class MailManager {
 		AccountNode[] accounts = mailRootNode.getAccounts();
 		AccountNode matchingAccount = null;
 		for(int i=0; i<accounts.length; i++) {
-			if(accounts[i].getAccountConfig().equals(e.getConnectionConfig())) {
+			if(e.getConnectionConfig().equals(accounts[i].getAccountConfig())) {
 				matchingAccount = accounts[i];
 				break;
 			}

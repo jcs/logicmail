@@ -357,18 +357,20 @@ class ImapParser {
         } else if (parsedStruct.elementAt(0) instanceof Vector) {
             // The first element is a vector, so we hit a multipart message part
             int size = parsedStruct.size();
-            MessageSection[] subSections = new MessageSection[size - 4];
+            Vector subSectionsVector = new Vector();
 
             for (int i = 0; i < size; ++i) {
                 // Iterate through the message parts
                 if (parsedStruct.elementAt(i) instanceof Vector) {
-                    subSections[i] = parseMessageStructureHelper(address,
-                            i + 1, (Vector) parsedStruct.elementAt(i));
+                    subSectionsVector.addElement(
+                    		parseMessageStructureHelper(address,
+                            i + 1, (Vector) parsedStruct.elementAt(i)));
                 } else if (parsedStruct.elementAt(i) instanceof String) {
                     MessageSection section = new MessageSection();
                     section.type = "multipart";
                     section.subtype = ((String) parsedStruct.elementAt(i)).toLowerCase();
-                    section.subsections = subSections;
+                    section.subsections = new MessageSection[subSectionsVector.size()];
+                    subSectionsVector.copyInto(section.subsections);
                     section.address = address;
 
                     return section;

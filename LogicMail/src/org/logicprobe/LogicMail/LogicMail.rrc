@@ -2,6 +2,7 @@ ABOUT_TITLE#0x0="About";
 APPNAME#0x0="LogicMail";
 BASE_CLOSEANDEXIT#0x0="Close active connections and exit?";
 CONFIG_ACCOUNTS#0x0="Accounts";
+CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER#0x0="Draft message folder:";
 CONFIG_ACCOUNT_FOLDER_PREFIX#0x0="Folder prefix:";
 CONFIG_ACCOUNT_IDENTITY#0x0="Identity:";
 CONFIG_ACCOUNT_INCOMING_SERVER#0x0="Incoming server:";

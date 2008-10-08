@@ -32,13 +32,21 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.io.DataInputStream;
+
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.MailRootNode;
+import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
  * Store account configuration for IMAP
  */
 public class ImapConfig extends AccountConfig {
-    private String sentFolder;
+    private MailboxNode sentMailbox;
+    private long sentMailboxId;
+    private MailboxNode draftMailbox;
+    private long draftMailboxId;
     private String folderPrefix;
     
     public ImapConfig() {
@@ -52,7 +60,10 @@ public class ImapConfig extends AccountConfig {
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(143);
-        sentFolder = null;
+        sentMailbox = null;
+        sentMailboxId = -1L;
+        draftMailbox = null;
+        draftMailboxId = -1L;
         folderPrefix = null;
     }    
 
@@ -61,12 +72,74 @@ public class ImapConfig extends AccountConfig {
         return text;
     }
 
-    public String getSentFolder() {
-        return sentFolder;
+    public MailboxNode getSentMailbox() {
+        if(sentMailbox == null && sentMailboxId != -1L) {
+        	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+        	
+        	AccountNode[] accounts = rootNode.getAccounts();
+        	for(int i=0; i<accounts.length; i++) {
+        		sentMailbox = findMailboxNode(accounts[i].getRootMailbox(), sentMailboxId);
+        		if(sentMailbox != null) {
+        			break;
+        		}
+        	}
+        }
+        return sentMailbox;
     }
 
-    public void setSentFolder(String sentFolder) {
-        this.sentFolder = sentFolder;
+    
+    public void setSentMailbox(MailboxNode sentMailbox) {
+        if(sentMailbox == null) {
+            this.sentMailbox = null;
+            this.sentMailboxId = -1L;
+        }
+        else {
+            this.sentMailbox = sentMailbox;
+            this.sentMailboxId = sentMailbox.getUniqueId();
+        }
+    }
+    
+    public MailboxNode getDraftMailbox() {
+        if(draftMailbox == null && draftMailboxId != -1L) {
+        	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+        	
+        	AccountNode[] accounts = rootNode.getAccounts();
+        	for(int i=0; i<accounts.length; i++) {
+        		draftMailbox = findMailboxNode(accounts[i].getRootMailbox(), draftMailboxId);
+        		if(draftMailbox != null) {
+        			break;
+        		}
+        	}
+        }
+        return sentMailbox;
+    }
+
+    
+    public void setDraftMailbox(MailboxNode draftMailbox) {
+        if(draftMailbox == null) {
+            this.draftMailbox = null;
+            this.draftMailboxId = -1L;
+        }
+        else {
+            this.draftMailbox = draftMailbox;
+            this.draftMailboxId = draftMailbox.getUniqueId();
+        }
+    }
+    
+    private static MailboxNode findMailboxNode(MailboxNode currentNode, long id) {
+    	if(currentNode.getUniqueId() == id) {
+    		return currentNode;
+    	}
+    	else {
+    		MailboxNode[] nodes = currentNode.getMailboxes();
+    		for(int i=0; i<nodes.length; i++) {
+    			MailboxNode result = findMailboxNode(nodes[i], id);
+    			if(result != null) {
+    				return result;
+    			}
+    		}
+    	}
+    	return null;
     }
 
     public String getFolderPrefix() {
@@ -79,12 +152,8 @@ public class ImapConfig extends AccountConfig {
 
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
-        if(sentFolder != null) {
-            table.put("account_imap_sentFolder", sentFolder);
-        }
-        else {
-            table.put("account_imap_sentFolder", "");
-        }
+        table.put("account_imap_sentMailboxId", new Long(sentMailboxId));
+        table.put("account_imap_draftMailboxId", new Long(draftMailboxId));
         
         if(folderPrefix != null) {
             table.put("account_imap_folderPrefix", folderPrefix);
@@ -98,14 +167,22 @@ public class ImapConfig extends AccountConfig {
         super.readConfigItems(table);
         Object value;
 
-        value = table.get("account_imap_sentFolder");
-        if(value != null && value instanceof String) {
-            sentFolder = (String)value;
-            if(sentFolder.length() == 0) {
-                sentFolder = null;
-            }
+        value = table.get("account_imap_sentMailboxId");
+        if(value != null && value instanceof Long) {
+        	sentMailboxId = ((Long)value).longValue();
         }
-
+        else {
+        	sentMailboxId = -1L;
+        }
+        
+        value = table.get("account_imap_draftMailboxId");
+        if(value != null && value instanceof Long) {
+        	draftMailboxId = ((Long)value).longValue();
+        }
+        else {
+        	draftMailboxId = -1L;
+        }
+        
         value = table.get("account_imap_folderPrefix");
         if(value != null && value instanceof String) {
             folderPrefix = (String)value;

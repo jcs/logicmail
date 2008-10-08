@@ -23,6 +23,7 @@ public class NodeIcons {
 	private Bitmap folderNewIcon;
 	private Bitmap inboxFolderIcon;
 	private Bitmap inboxNewFolderIcon;
+	private Bitmap outboxFolderIcon;
 	private Bitmap draftsFolderIcon;
 	private Bitmap sentFolderIcon;
 	private Bitmap trashFolderIcon;
@@ -47,6 +48,7 @@ public class NodeIcons {
 		folderNewIcon       = Bitmap.getBitmapResource("folder_new.png");
 		inboxFolderIcon     = Bitmap.getBitmapResource("folder_inbox.png");
 		inboxNewFolderIcon  = Bitmap.getBitmapResource("folder_inbox_new.png");
+		outboxFolderIcon    = Bitmap.getBitmapResource("folder_outbox.png");
 		draftsFolderIcon    = Bitmap.getBitmapResource("folder_drafts.png");
 		sentFolderIcon      = Bitmap.getBitmapResource("folder_sent.png");
 		trashFolderIcon     = Bitmap.getBitmapResource("folder_trash.png");
@@ -115,6 +117,9 @@ public class NodeIcons {
 				else {
 					this.icon = trashFolderIcon;
 				}
+				break;
+			case MailboxNode.TYPE_OUTBOX:
+				this.icon = outboxFolderIcon;
 				break;
 			case MailboxNode.TYPE_NORMAL:
 			default:

@@ -380,7 +380,11 @@ public class MailHomeScreen extends BaseScreen {
 		Font origFont = graphics.getFont();
 		StringBuffer buf = new StringBuffer();
 		buf.append(treeNode.node.getName());
-		if(treeNode.node instanceof MailboxNode) {
+		
+		if(treeNode.node instanceof AccountNode) {
+			graphics.setFont(origFont.derive(Font.BOLD));
+		}
+		else if(treeNode.node instanceof MailboxNode) {
 			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
 			
 			if(!mailboxNode.isSelectable()) {

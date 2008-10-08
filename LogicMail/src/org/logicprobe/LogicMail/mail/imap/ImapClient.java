@@ -290,7 +290,7 @@ public class ImapClient implements IncomingMailClient {
             // safely ignore.  Otherwise, create a folder item and add it.
             try {
                 imapProtocol.executeStatus(new String[] { "INBOX" });
-                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, "INBOX", "INBOX", folderDelim, true);
+                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, "INBOX", "INBOX", folderDelim, true, true);
                 rootItem.addChild(inboxItem);
             } catch (MailException exp) { }
             
@@ -510,7 +510,7 @@ public class ImapClient implements IncomingMailClient {
             if(i != -1) { pos = i+1; i++; }
         }
         String decodedName = ImapParser.parseFolderName(folderPath.substring(pos));
-        FolderTreeItem item = new FolderTreeItem(parent, decodedName, folderPath, folderDelim, canSelect);
+        FolderTreeItem item = new FolderTreeItem(parent, decodedName, folderPath, folderDelim, canSelect, canSelect);
         item.setMsgCount(0);
         return item;
     }

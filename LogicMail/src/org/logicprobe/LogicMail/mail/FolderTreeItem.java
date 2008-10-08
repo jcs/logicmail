@@ -49,6 +49,7 @@ public class FolderTreeItem implements Serializable {
     private String path;
     private String delim;
     private boolean selectable;
+    private boolean appendable;
     private int msgCount;
     private int unseenCount;
 
@@ -65,6 +66,7 @@ public class FolderTreeItem implements Serializable {
         this.path = path;
         this.delim = delim;
         this.selectable = true;
+        this.appendable = false;
         this.msgCount = -1;
         this.unseenCount = -1;
         this.children = null;
@@ -77,13 +79,14 @@ public class FolderTreeItem implements Serializable {
      * @param path The full path to this folder
      * @param delim The path delimiter
      */
-    public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim, boolean selectable) {
+    public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim, boolean selectable, boolean appendable) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.parent = parent;
         this.name = name;
         this.path = path;
         this.delim = delim;
         this.selectable = selectable;
+        this.appendable = appendable;
         this.msgCount = -1;
         this.unseenCount = -1;
         this.children = null;
@@ -121,6 +124,7 @@ public class FolderTreeItem implements Serializable {
         output.writeUTF(path);
         output.writeUTF(delim);
         output.writeBoolean(selectable);
+        output.writeBoolean(appendable);
         output.writeInt(msgCount);
         if(children != null && children.length > 0) {
             output.writeInt(children.length);
@@ -137,6 +141,7 @@ public class FolderTreeItem implements Serializable {
         path = input.readUTF();
         delim = input.readUTF();
         selectable = input.readBoolean();
+        appendable = input.readBoolean();
         msgCount = input.readInt();
         int childCount = input.readInt();
         if(childCount > 0) {
@@ -189,6 +194,10 @@ public class FolderTreeItem implements Serializable {
 
     public boolean isSelectable() {
         return selectable;
+    }
+    
+    public boolean isAppendable() {
+    	return appendable;
     }
     
     public int getMsgCount() {

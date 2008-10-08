@@ -41,10 +41,23 @@ import org.logicprobe.LogicMail.conf.OutgoingConfig;
  * concrete mail store and sender instances
  */
 public class MailFactory {
+	private static LocalMailStore localMailStore;
     private static Hashtable mailStoreTable = new Hashtable();
     private static Hashtable mailSenderTable = new Hashtable();
     
 	private MailFactory() { }
+	
+	/**
+	 * Gets the local mail store instance.
+	 * 
+	 * @return Mail store instance
+	 */
+	public static AbstractMailStore createLocalMailStore() {
+		if(localMailStore == null) {
+			localMailStore = new LocalMailStore();
+		}
+		return localMailStore;
+	}
 	
 	/**
 	 * Get the mail store instance for the provided account.

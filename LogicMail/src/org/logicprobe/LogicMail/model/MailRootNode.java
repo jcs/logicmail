@@ -32,6 +32,8 @@ package org.logicprobe.LogicMail.model;
 
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.mail.MailFactory;
+
 /**
  * Root node for the mail data model, implemented as a singleton.
  * This node contains only <tt>AccountNode</tt> instances
@@ -42,6 +44,9 @@ public class MailRootNode implements Node {
 	
 	public MailRootNode() {
 		this.accounts = new Vector();
+
+		// Add the local mail store
+		accounts.addElement(new AccountNode(MailFactory.createLocalMailStore()));
 	}
 	
 	public void accept(NodeVisitor visitor) {

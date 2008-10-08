@@ -69,7 +69,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private CheckboxField useMdsField;
     private ObjectChoiceField identityField;
     private ObjectChoiceField outgoingServerField;
-    private ObjectChoiceField sentFolderChoiceField;
+    private LabelField sentFolderChoiceLabel;
+    private LabelField sentFolderChoiceButtonLabel;
+    private LabelField draftFolderChoiceLabel;
+    private LabelField draftFolderChoiceButtonLabel;
+    
     private BasicEditField folderPrefixField;
     private ButtonField saveButton;
     
@@ -78,6 +82,8 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private AccountConfig acctConfig;
     private IdentityConfig[] identityConfigs;
     private OutgoingConfig[] outgoingConfigs;
+    private MailboxNode selectedSentFolder;
+    private MailboxNode selectedDraftFolder;
     private FieldChangeListener fieldChangeListener;
     
     private class NullOutgoingConfig extends OutgoingConfig {
@@ -89,22 +95,6 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
     }
 
-    /**
-     * Simple container class to use for ObjectChoiceField items
-     * where the desired display text is different from the item
-     * object's toString result.
-     */
-    private class ObjectChoiceItem {
-        private String text;
-        private Object item;
-        public ObjectChoiceItem(String text, Object item) {
-            this.text = text;
-            this.item = item;
-        }
-        public Object getItem() { return item; }
-        public String toString() { return text; }
-    }
-    
     public AcctCfgScreen(AccountConfig acctConfig) {
         super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
         
@@ -197,73 +187,26 @@ public class AcctCfgScreen extends BaseCfgScreen {
 
         if(acctConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)acctConfig;
-            ObjectChoiceItem[] folderChoices = getFolderChoices();
-
-            // Select the default choice based on the currently configured folder
-            int defaultFolder = 0;
-            String sentFolder = imapConfig.getSentFolder();
-            if(sentFolder != null && folderChoices.length > 0) {
-                for(int i=1; i<folderChoices.length; i++) {
-                    if(sentFolder.equals(((MailboxNode)folderChoices[i].getItem()).getPath())) {
-                        defaultFolder = i;
-                        break;
-                    }
-                }
-            }
-            sentFolderChoiceField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + " ", folderChoices, defaultFolder, Field.FIELD_LEFT);
-            add(sentFolderChoiceField);
+            selectedSentFolder = imapConfig.getSentMailbox();
+            selectedDraftFolder = imapConfig.getDraftMailbox();
+            
+            sentFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + " ");
+            sentFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedSentFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
+            draftFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER) + " ");
+            draftFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedDraftFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
             
             folderPrefixField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_FOLDER_PREFIX) + " ", imapConfig.getFolderPrefix());
+
+            add(sentFolderChoiceLabel);
+            add(sentFolderChoiceButtonLabel);
+            add(draftFolderChoiceLabel);
+            add(draftFolderChoiceButtonLabel);
             add(folderPrefixField);
         }
         
         add(new SeparatorField());
         add(new LabelField(null, Field.NON_FOCUSABLE));
         add(saveButton);
-    }
-    
-    private ObjectChoiceItem[] getFolderChoices() {
-        Vector choices = new Vector();
-        choices.addElement(new ObjectChoiceItem("<" + resources.getString(LogicMailResource.CONFIG_ACCOUNT_NONE) + ">", null));
-        
-        // Find the account node matching this configuration, if it exists
-        AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-        AccountNode matchingAccount = null;
-        for(int i=0; i<accounts.length; i++) {
-        	if(accounts[i].getAccountConfig() == this.acctConfig) {
-        		matchingAccount = accounts[i];
-        		break;
-        	}
-        }
-        
-        // We found a matching account node, so build the choice list
-        if(matchingAccount != null) {
-        	MailboxNode rootMailbox = matchingAccount.getRootMailbox();
-        	if(rootMailbox != null) {
-        		MailboxNode[] children = rootMailbox.getMailboxes();
-        		for(int i=0; i<children.length; i++) {
-        			folderChoicesHelper(choices, 0, children[i]);
-        		}
-        	}
-        }
-        
-        int size = choices.size();
-        ObjectChoiceItem[] result = new ObjectChoiceItem[size];
-        choices.copyInto(result);
-        return result;
-    }
-    
-    private void folderChoicesHelper(Vector choices, int level, MailboxNode currentNode) {
-        StringBuffer buf = new StringBuffer();
-        for(int i=0; i<level; i++) {
-            buf.append("  ");
-        }
-        buf.append(currentNode.getName());
-        choices.addElement(new ObjectChoiceItem(buf.toString(), currentNode));
-        MailboxNode[] children = currentNode.getMailboxes();
-        for(int i=0; i<children.length; i++) {
-            folderChoicesHelper(choices, level+1, children[i]);
-        }
     }
     
     public void AcctCfgScreen_fieldChanged(Field field, int context) {
@@ -291,6 +234,87 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
     }
 
+    protected boolean onClick() {
+    	if(getFieldWithFocus() == sentFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+    		showFolderSelection(sentFolderChoiceButtonLabel);
+        	return true;
+        }
+        if(getFieldWithFocus() == draftFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+        	showFolderSelection(draftFolderChoiceButtonLabel);
+        	return true;
+        }
+        else {
+        	return super.onClick();
+        }
+    }
+    
+    private void showFolderSelection(LabelField choiceButtonLabel) {
+    	String titleText;
+    	if(choiceButtonLabel == sentFolderChoiceButtonLabel) {
+    		titleText = resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER); 
+    	}
+    	else if(choiceButtonLabel == draftFolderChoiceButtonLabel) {
+    		titleText = resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER);
+    	}
+    	else {
+    		return;
+    	}
+    	
+    	ImapConfig imapConfig = (ImapConfig)acctConfig;
+
+    	// Build an array containing the current account node, if it already exists,
+    	// and any local account nodes.
+    	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
+    	Vector accountNodeVector = new Vector();
+    	for(int i=0; i<accountNodes.length; i++) {
+    		if(accountNodes[i].getStatus() == AccountNode.STATUS_LOCAL ||
+  			   accountNodes[i].getAccountConfig() == imapConfig) {
+    			accountNodeVector.addElement(accountNodes[i]);
+    		}
+    	}
+    	accountNodes = new AccountNode[accountNodeVector.size()];
+    	accountNodeVector.copyInto(accountNodes);
+    	
+    	MailboxSelectionDialog dialog = new MailboxSelectionDialog(titleText, accountNodes);
+    	if(choiceButtonLabel == sentFolderChoiceButtonLabel) {
+    		dialog.setSelectedMailboxNode(selectedSentFolder);
+    	}
+    	else if(choiceButtonLabel == draftFolderChoiceButtonLabel) {
+    		dialog.setSelectedMailboxNode(selectedDraftFolder);
+    	}
+    	dialog.doModal();
+    	
+    	MailboxNode selectedNode = dialog.getSelectedMailboxNode();
+    	if(selectedNode != null) {
+    		choiceButtonLabel.setText(createSelectedMailboxString(selectedNode));
+        	if(choiceButtonLabel == sentFolderChoiceButtonLabel) {
+        		if(selectedSentFolder != selectedNode) {
+        			selectedSentFolder = selectedNode;
+        			this.setDirty(true);
+        		}
+        	}
+        	else if(choiceButtonLabel == draftFolderChoiceButtonLabel) {
+        		if(selectedDraftFolder != selectedNode) {
+        			selectedDraftFolder = selectedNode;
+        			this.setDirty(true);
+        		}
+        	}
+    	}
+    }
+    
+    private String createSelectedMailboxString(MailboxNode mailboxNode) {
+		StringBuffer buf = new StringBuffer();
+    	if(mailboxNode != null) {
+			buf.append(mailboxNode.getParentAccount().getName());
+			buf.append(": ");
+			buf.append(mailboxNode.getName());
+    	}
+    	else {
+    		buf.append("<NONE>");
+    	}
+		return buf.toString();
+    }
+    
     protected boolean onSavePrompt() {
         if(acctNameField.getText().length() > 0 &&
            serverNameField.getText().length() > 0 &&
@@ -343,14 +367,9 @@ public class AcctCfgScreen extends BaseCfgScreen {
 
         if(acctConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)acctConfig;
-            ObjectChoiceItem sentFolderChoice =
-                    (ObjectChoiceItem)sentFolderChoiceField.getChoice(sentFolderChoiceField.getSelectedIndex());
-            if(sentFolderChoice.getItem() == null) {
-                imapConfig.setSentFolder(null);
-            }
-            else {
-                imapConfig.setSentFolder(((MailboxNode)sentFolderChoice.getItem()).getPath());
-            }
+            
+            imapConfig.setSentMailbox(selectedSentFolder);
+            imapConfig.setDraftMailbox(selectedDraftFolder);
             
             String folderPrefix = folderPrefixField.getText().trim();
             if(folderPrefix.length() == 0) {

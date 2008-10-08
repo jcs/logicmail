@@ -56,20 +56,23 @@ public class MailboxNode implements Node, Serializable {
 	private EventListenerList listenerList = new EventListenerList();
 	private int type;
 	private FolderTreeItem folderTreeItem;
+	private boolean hasAppend;
 	
 	public final static int TYPE_NORMAL = 0;
 	public final static int TYPE_INBOX  = 1;
-	public final static int TYPE_DRAFTS = 2;
-	public final static int TYPE_SENT   = 3;
-	public final static int TYPE_TRASH  = 4;
+	public final static int TYPE_OUTBOX = 2;
+	public final static int TYPE_DRAFTS = 3;
+	public final static int TYPE_SENT   = 4;
+	public final static int TYPE_TRASH  = 5;
 
 	/**
 	 * Initializes a new instance of <tt>MailboxNode</tt>.
 	 * 
 	 * @param folderTreeItem The folder item this node wraps.
+	 * @param hasAppend True if messages can be appended to this mailbox.
 	 * @param type The type of mailbox this is representing.
 	 */
-	MailboxNode(FolderTreeItem folderTreeItem, int type) {
+	MailboxNode(FolderTreeItem folderTreeItem, boolean hasAppend, int type) {
 		this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
 		this.mailboxes = new Vector();
 		this.messages = new Vector();
@@ -78,6 +81,17 @@ public class MailboxNode implements Node, Serializable {
 			this.setFolderTreeItem(new FolderTreeItem(folderTreeItem));
 		}
 		this.type = type;
+		this.hasAppend = hasAppend;
+	}
+	
+	/**
+	 * Initializes a new instance of <tt>MailboxNode</tt>.
+	 * 
+	 * @param folderTreeItem The folder item this node wraps.
+	 * @param hasAppend True if messages can be appended to this mailbox.
+	 */
+	MailboxNode(FolderTreeItem folderTreeItem, boolean hasAppend) {
+		this(folderTreeItem, hasAppend, TYPE_NORMAL);
 	}
 	
 	/**
@@ -86,9 +100,9 @@ public class MailboxNode implements Node, Serializable {
 	 * @param folderTreeItem The folder item this node wraps.
 	 */
 	MailboxNode(FolderTreeItem folderTreeItem) {
-		this(folderTreeItem, TYPE_NORMAL);
+		this(folderTreeItem, false, TYPE_NORMAL);
 	}
-	
+
 	/**
 	 * Initializes a new instance of <tt>MailboxNode</tt>.
 	 * 
@@ -97,7 +111,7 @@ public class MailboxNode implements Node, Serializable {
 	 * outside this package for any other reason.
 	 */
 	public MailboxNode() {
-		this(null, TYPE_NORMAL);
+		this(null, false, TYPE_NORMAL);
 	}
 	
 	public void accept(NodeVisitor visitor) {
@@ -373,6 +387,15 @@ public class MailboxNode implements Node, Serializable {
 	}
 	
 	/**
+	 * Gets whether messages can be appended to this mailbox.
+	 * 
+	 * @return True if messages can be appended.
+	 */
+	public boolean hasAppend() {
+		return this.hasAppend;
+	}
+	
+	/**
 	 * Sets the type of this mailbox.
 	 * 
 	 * @param type The type.
@@ -488,6 +511,7 @@ public class MailboxNode implements Node, Serializable {
 	
 	public void serialize(DataOutputStream output) throws IOException {
 		output.writeLong(uniqueId);
+		output.writeBoolean(hasAppend);
 		output.writeInt(type);
 		folderTreeItem.serialize(output);
 		synchronized(mailboxes) {
@@ -501,6 +525,7 @@ public class MailboxNode implements Node, Serializable {
 	
 	public void deserialize(DataInputStream input) throws IOException {
 		uniqueId = input.readLong();
+		hasAppend = input.readBoolean();
 		type = input.readInt();
 		folderTreeItem = new FolderTreeItem();
 		folderTreeItem.deserialize(input);
