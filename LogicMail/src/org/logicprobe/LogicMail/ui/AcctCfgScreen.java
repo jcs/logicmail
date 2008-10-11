@@ -234,7 +234,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
     }
 
-    protected boolean onClick() {
+    protected boolean trackwheelUnclick(int status, int time) {
     	if(getFieldWithFocus() == sentFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
     		showFolderSelection(sentFolderChoiceButtonLabel);
         	return true;
@@ -244,7 +244,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
         	return true;
         }
         else {
-        	return super.onClick();
+        	return super.trackwheelUnclick(status, time);
         }
     }
     
