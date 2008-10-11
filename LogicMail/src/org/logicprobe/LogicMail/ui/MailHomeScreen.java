@@ -45,6 +45,7 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.Field;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.AccountNodeEvent;
 import org.logicprobe.LogicMail.model.AccountNodeListener;
@@ -68,6 +69,7 @@ public class MailHomeScreen extends BaseScreen {
 	private MailRootNode mailRootNode;
 	private Hashtable nodeIdMap;
 	private MailManagerListener mailManagerListener;
+	private boolean firstVisible = true;
 	
 	/** Tree node data class */
 	private static class TreeNode {
@@ -204,6 +206,36 @@ public class MailHomeScreen extends BaseScreen {
 	public boolean onClose() {
 		tryShutdownApplication();
 		return false;
+	}
+
+	protected void onVisibilityChange(boolean visible) {
+		super.onVisibilityChange(visible);
+		if(visible && firstVisible) {
+			firstVisible = false;
+			// Check to see if there are no configured accounts
+			if(mailRootNode.getAccounts().length <= 1) {
+				UiApplication.getUiApplication().invokeLater(new Runnable() {
+					public void run() {
+						// Start the new account configuration wizard
+						AccountConfigWizard wizard = new AccountConfigWizard();
+						if(wizard.start()) {
+							AccountConfig newAccountConfig = wizard.getAccountConfig();
+							
+							// Find the newly created account, and trigger a folder refresh (if applicable)
+							AccountNode[] accounts = mailRootNode.getAccounts();
+							for(int i=0; i<accounts.length; i++) {
+								if(accounts[i].getAccountConfig() == newAccountConfig) {
+									if(accounts[i].hasFolders()) {
+										accounts[i].refreshMailboxes();
+									}
+									break;
+								}
+							}
+						}
+					}
+				});
+			}
+		}
 	}
 	
     protected void makeMenu(Menu menu, int instance) {

@@ -321,6 +321,7 @@ public class ConfigScreen extends BaseCfgScreen {
             configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             identityIndexMap.remove(identityConfig);
+            buildAccountsList();
         }
     }
 
@@ -358,6 +359,7 @@ public class ConfigScreen extends BaseCfgScreen {
             configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             accountIndexMap.remove(acctConfig);
+            buildAccountsList();
         }
     }
 
@@ -385,6 +387,7 @@ public class ConfigScreen extends BaseCfgScreen {
             configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             outgoingIndexMap.remove(outgoingConfig);
+            buildAccountsList();
         }
     }
 }
