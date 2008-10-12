@@ -297,11 +297,6 @@ public abstract class AbstractMailConnectionHandler {
 			else if(connectionThread.isShutdown()) {
 				setConnectionState(STATE_CLOSING);
 			}
-			else {
-				try {
-					requestQueue.wait();
-				} catch (InterruptedException e) { }
-			}
 		}
 	}
     

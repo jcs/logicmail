@@ -579,6 +579,11 @@ public class ImapClient implements IncomingMailClient {
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
     }
 
+	public boolean noop() throws IOException, MailException {
+		boolean result = imapProtocol.executeNoop();
+		return result;
+	}
+	
 	public void idleModeBegin() throws IOException, MailException {
 		imapProtocol.executeIdle();
 	}

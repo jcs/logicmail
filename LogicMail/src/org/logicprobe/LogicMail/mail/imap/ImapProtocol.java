@@ -941,6 +941,35 @@ public class ImapProtocol {
     }
 
     /**
+     * Execute the "NOOP" command.
+     * The parsing of the result is currently very simple, and just looks
+     * for the presence of a "* ?? recent" untagged response.
+     */
+    public boolean executeNoop() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeNoop()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+        String[] replyText = execute("NOOP", null);
+
+        if ((replyText == null) || (replyText.length < 1)) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to read NOOP response").getBytes(),
+                    EventLogger.WARNING);
+            return false;
+        }
+        
+        for(int i=0; i<replyText.length; i++) {
+        	if(replyText[i].startsWith("*") && replyText[i].toLowerCase().endsWith("recent")) {
+        		return true;
+        	}
+        }
+        
+    	return false;
+    }
+    
+    /**
      * Execute the "IDLE" command.
      */
     public void executeIdle() throws IOException, MailException {
@@ -970,7 +999,7 @@ public class ImapProtocol {
     /**
      * Polls the connection during the IDLE state.
      * For now, this is a simple implementation.  It just checks for
-     * the presence of a "+ ?? recent" untagged response, and returns
+     * the presence of a "* ?? recent" untagged response, and returns
      * true if one is found.
      */
     public boolean executeIdlePoll() throws IOException, MailException {

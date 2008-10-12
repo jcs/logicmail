@@ -181,6 +181,20 @@ public interface IncomingMailClient extends MailClient {
     public abstract void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException;
 
     /**
+     * Sends the underlying protocol's no-operation command.
+     * On some protocols, this can be an explicit way of checking
+     * for the availability of new messages, so the return value
+     * is used to indicate the result of that check.
+     * If no such command is supported by the underlying protocol,
+     * then a false should be immediately returned.
+     * 
+     * @return True if the mailbox has new data, false otherwise.
+     * @throw IOException on I/O errors
+     * @throw MailException on protocol errors
+     */
+    public abstract boolean noop() throws IOException, MailException;
+    
+    /**
      * Begins the idle mode for the underlying protocol.
      * This should do nothing if the underlying protocol does not support idling.
      * 

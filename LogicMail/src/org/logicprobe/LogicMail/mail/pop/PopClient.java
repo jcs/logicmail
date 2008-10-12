@@ -340,6 +340,11 @@ public class PopClient implements IncomingMailClient {
         // Undelete is not supported, so we do nothing here.
     }
 
+    public boolean noop() throws IOException, MailException {
+    	popProtocol.executeNoop();
+		return false;
+	}
+
 	public void idleModeBegin() throws IOException, MailException {
 		// Idle mode is not supported, so we do nothing here.
 	}
@@ -352,4 +357,5 @@ public class PopClient implements IncomingMailClient {
 		// Idle mode is not supported, so we do nothing here.
 		return false;
 	}
+
 }

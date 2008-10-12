@@ -169,6 +169,19 @@ public class PopProtocol {
     }
 
     /**
+     * Executes the "NOOP" command.
+     */
+    public void executeNoop() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeNoop()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        execute("NOOP");
+    }
+    
+    /**
      * Execute a POP3 command that returns multiple lines.
      * This works by running the normal execute() and then
      * receiving every new line until a lone "." is encountered.

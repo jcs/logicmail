@@ -56,6 +56,18 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	public static final int REQUEST_MESSAGE_ANSWERED        = 23;
 	public static final int REQUEST_MESSAGE_APPEND          = 24;
 	
+	/**
+	 * Maximum amount of time to spend in the idle state.
+	 * Currently set to 5 minutes. (1000 ms/sec * 60 sec/min * 5 min)
+	 */
+	private static final int IDLE_TIMEOUT = 300000;
+	
+	/**
+	 * Interval to poll the connection in the idle state.
+	 * Currently set to 500ms.
+	 */
+	private static final int IDLE_POLL_INTERVAL = 500;
+	
 	public IncomingMailConnectionHandler(IncomingMailClient client) {
 		super(client);
 		this.incomingClient = client;
@@ -117,8 +129,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		if(incomingClient.hasIdle()) {
 			incomingClient.idleModeBegin();
 			boolean endIdle = false;
+			int idleTime = 0;
 			while(!endIdle) {
-				sleepConnectionThread(500);
+				sleepConnectionThread(IDLE_POLL_INTERVAL);
+				idleTime += IDLE_POLL_INTERVAL;
 				if(incomingClient.idleModePoll()) {
 					addRequest(
 							IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
@@ -126,6 +140,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 					endIdle = true;
 				}
 				else if(getShutdownInProgress()) {
+					endIdle = true;
+				}
+				else if(idleTime >= IDLE_TIMEOUT) {
 					endIdle = true;
 				}
 				else
@@ -139,6 +156,14 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 				}
 			}
 			incomingClient.idleModeEnd();
+			
+			// If the idle state was ended due to a timeout, perform a no-operation
+			// command on the mail server as a final explicit check for new messages.
+			if(idleTime >= IDLE_TIMEOUT && incomingClient.noop()) {
+				addRequest(
+						IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
+						new Object[] { incomingClient.getActiveFolder() });
+			}
 		}
 	}
 
