@@ -37,6 +37,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -224,6 +225,44 @@ public class MailboxNode implements Node, Serializable {
 		return result;
 	}
 	
+	/**
+	 * Appends a message to this mailbox from an external source.
+	 * This method will request that the underlying mail store
+	 * add the provided message to its contents for this mailbox.
+	 * 
+	 * The actual messages contained within this node will not be
+	 * updated until the mail store informs the object model of
+	 * the new message.
+	 * 
+	 * @param message Message to append
+	 */
+	public void appendMessage(MessageNode message) {
+		// Sanity check
+		if(!this.hasAppend) {
+			return;
+		}
+		//TODO: Implement append for message nodes that may not have raw source available
+	}
+	
+	/**
+	 * Appends a raw message to this mailbox from an external source.
+	 * This method will request that the underlying mail store
+	 * add the provided message to its contents for this mailbox.
+	 * 
+	 * The actual messages contained within this node will not be
+	 * updated until the mail store informs the object model of
+	 * the new message.
+	 * 
+	 * @param message Message to append
+	 */
+	public void appendRawMessage(String rawMessage, MessageFlags initialFlags) {
+		// Sanity check
+		if(!this.hasAppend) {
+			return;
+		}
+		parentAccount.getMailStore().requestMessageAppend(this.folderTreeItem, rawMessage, initialFlags);
+	}
+
 	/**
 	 * Adds a mailbox to this mailbox.
 	 * 

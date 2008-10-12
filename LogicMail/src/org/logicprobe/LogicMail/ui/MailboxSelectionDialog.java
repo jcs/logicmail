@@ -48,13 +48,23 @@ import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
+/**
+ * Provides a common dialog for selecting a mailbox
+ */
 public class MailboxSelectionDialog extends Dialog {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private AccountNode[] accounts;
 	private Hashtable nodeIdMap;
 	private MailboxNode selectedMailboxNode;
 	private TreeField treeField;
+	private Hashtable unselectableNodeSet;
 	
+	/**
+	 * Constructs a new MailboxSelectionDialog.
+	 * 
+	 * @param title Title of the dialog
+	 * @param accounts Accounts to display mailboxes from
+	 */
 	public MailboxSelectionDialog(String title, AccountNode[] accounts) {
 		super(
 			title,
@@ -67,6 +77,7 @@ public class MailboxSelectionDialog extends Dialog {
 		initFields();
 		
 		nodeIdMap = new Hashtable();
+		unselectableNodeSet = new Hashtable();
 		populateTreeField();
 	}
 
@@ -83,6 +94,11 @@ public class MailboxSelectionDialog extends Dialog {
 		add(treeField);
 	}
 
+	/**
+	 * Sets the selected mailbox node.
+	 * 
+	 * @param mailboxNode Selected node
+	 */
 	public void setSelectedMailboxNode(MailboxNode mailboxNode) {
 		if(mailboxNode != null && nodeIdMap.containsKey(mailboxNode)) {
 			int id = ((Integer)nodeIdMap.get(mailboxNode)).intValue();
@@ -91,10 +107,39 @@ public class MailboxSelectionDialog extends Dialog {
 		selectedMailboxNode = mailboxNode;
 	}
 	
+	/**
+	 * Gets the selected mailbox node.
+	 * 
+	 * @return Selected node
+	 */
 	public MailboxNode getSelectedMailboxNode() {
 		return selectedMailboxNode;
 	}
 
+	/**
+	 * Marks a mailbox node as unselectable.
+	 * Unselectable mailboxes can still be set as the initial selection,
+	 * but cannot be chosen by the user afterwards.
+	 * 
+	 * @param mailboxNode Unselectable node.
+	 */
+	public void addUnselectableNode(MailboxNode mailboxNode) {
+		if(!unselectableNodeSet.containsKey(mailboxNode)) {
+			unselectableNodeSet.put(mailboxNode, new Object());
+		}
+	}
+	
+	/**
+	 * Removes a mailbox node from the unselectable set.
+	 * 
+	 * @param mailboxNode Unselectable node.
+	 */
+	public void removeUnselectableNode(MailboxNode mailboxNode) {
+		if(unselectableNodeSet.containsKey(mailboxNode)) {
+			unselectableNodeSet.remove(mailboxNode);
+		}
+	}
+	
 	private void populateTreeField() {
 		int firstNode = -1;
 		for(int i=accounts.length - 1; i >= 0; --i) {
@@ -148,7 +193,7 @@ public class MailboxSelectionDialog extends Dialog {
 		int id = treeField.getCurrentNode();
 		if(id != -1 && treeField.getCookie(id) instanceof MailboxNode) {
 			result = (MailboxNode)treeField.getCookie(id);
-			if(!result.hasAppend()) {
+			if(!result.hasAppend() || unselectableNodeSet.containsKey(result)) {
 				return null;
 			}
 		}

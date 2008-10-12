@@ -661,14 +661,12 @@ public class AccountNode implements Node {
             if ((sentMailbox != null) && mailStore.hasAppend() && sentMailbox.hasAppend()) {
                 MessageFlags initialFlags = new MessageFlags();
                 initialFlags.setSeen(true);
-                mailStore.requestMessageAppend(sentMailbox.getFolderTreeItem(),
-                    e.getMessageSource(), initialFlags);
+                sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
             }
 
             // Update flags if necessary
             if ((repliedMessageNode != null) && mailStore.hasFlags()) {
-                mailStore.requestMessageAnswered(repliedMessageNode.getParent()
-                                                                   .getFolderTreeItem(),
+                mailStore.requestMessageAnswered(repliedMessageNode.getParent().getFolderTreeItem(),
                     repliedMessageNode.getFolderMessage());
             }
         }
