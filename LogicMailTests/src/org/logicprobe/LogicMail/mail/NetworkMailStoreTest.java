@@ -332,6 +332,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public void undeleteMessage(FolderMessage folderMessage)
 				throws IOException, MailException { folderMessage.setDeleted(false); this.undeletedMessage = folderMessage; }
 		public ConnectionConfig getConnectionConfig() { return null; }
+		public boolean noop() throws IOException, MailException { return false; }
 		public boolean hasIdle() { return false; }
 		public void idleModeBegin() throws IOException, MailException { }
 		public void idleModeEnd() throws IOException, MailException { }
