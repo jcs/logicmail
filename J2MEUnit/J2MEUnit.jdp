@@ -21,6 +21,12 @@ AutoRestart=0
 ]
 ExcludeFromBuildAll=0
 [Files
+src\.svn\all-wcprops
+src\.svn\entries
+src\j2meunit\.svn\entries
+src\j2meunit\framework\.svn\all-wcprops
+src\j2meunit\framework\.svn\entries
+src\j2meunit\framework\.svn\format
 src\j2meunit\framework\Assert.java
 src\j2meunit\framework\AssertionFailedError.java
 src\j2meunit\framework\Protectable.java
@@ -31,9 +37,12 @@ src\j2meunit\framework\TestListener.java
 src\j2meunit\framework\TestMethod.java
 src\j2meunit\framework\TestResult.java
 src\j2meunit\framework\TestSuite.java
+src\j2meunit\rimui\.svn\all-wcprops
+src\j2meunit\rimui\.svn\format
 src\j2meunit\rimui\TestConsoleScreen.java
 src\j2meunit\rimui\TestResultsScreen.java
 src\j2meunit\rimui\TestRunner.java
+src\j2meunit\util\.svn\format
 src\j2meunit\util\StringUtil.java
 src\j2meunit\util\Version.java
 ]

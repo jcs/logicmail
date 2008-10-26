@@ -22,7 +22,15 @@ LogicMail
 ]
 ExcludeFromBuildAll=0
 [Files
-..\LogicMail\src\icons\logicmail.png
+src\.svn\all-wcprops
+src\.svn\format
+src\org\.svn\all-wcprops
+src\org\.svn\entries
+src\org\logicprobe\.svn\entries
+src\org\logicprobe\.svn\format
+src\org\logicprobe\LogicMail\.svn\all-wcprops
+src\org\logicprobe\LogicMail\.svn\entries
+src\org\logicprobe\LogicMail\.svn\format
 src\org\logicprobe\LogicMail\LogicMailStartup.java
 ]
 HaveAlxImports=0
