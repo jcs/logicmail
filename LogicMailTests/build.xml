@@ -7,6 +7,7 @@
     <property name="src.dir" location="src"/>
 	<property name="dist.dir" location="dist"/>
 	<property name="app.src.dir" location="../LogicMail/src"/>
+	<property name="j2meunit.src.dir" location="../J2MEUnit/src"/>
 	<property file="../LogicMail/project.properties"/>
 
     <!-- Task definitions -->
@@ -31,6 +32,9 @@
                  type="cldc"
                  midletclass="org.logicprobe.LogicMail.LogicMailTests"/>
             <src>
+            	<fileset dir="${j2meunit.src.dir}">
+            		<include name="**/*.java"/>
+            	</fileset>
                 <fileset dir="${src.dir}">
 					<include name="**/*.java"/>
 				</fileset>

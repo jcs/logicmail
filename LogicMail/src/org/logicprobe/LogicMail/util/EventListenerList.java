@@ -61,13 +61,23 @@ public class EventListenerList {
         if(l == null || !t.isInstance(l)) {
             throw new IllegalArgumentException();
         }
+        int removeCount = 0;
         for(int i=0; i<listenerList.length; i+=2) {
             if(t == (Class)listenerList[i] &&
                l == (EventListener)listenerList[i+1]) {
-               Arrays.removeAt(listenerList, i);
-               Arrays.removeAt(listenerList, i);
+            	removeCount += 2;
             }
         }
+        Object[] newListenerList = new Object[listenerList.length - removeCount];
+        int index = 0;
+        for(int i=0; i<listenerList.length; i+=2) {
+            if(t != (Class)listenerList[i] &&
+               l != (EventListener)listenerList[i+1]) {
+            	newListenerList[index++] = listenerList[i];
+            	newListenerList[index++] = listenerList[i+1];
+            }
+        }
+        listenerList = newListenerList;
     }
     
     public int getListenerCount() {

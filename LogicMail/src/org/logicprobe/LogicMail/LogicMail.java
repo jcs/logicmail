@@ -51,15 +51,6 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application
  */
 public class LogicMail extends UiApplication {
-    public static void main(String argv[]) {
-        // Register with the event logger
-        EventLogger.register(AppInfo.GUID, "LogicMail", EventLogger.VIEWER_STRING);
-        
-        // Start the application
-        LogicMail app = new LogicMail();
-        app.enterEventDispatcher();
-    }
-
     public LogicMail() {
         // Load the configuration
         MailSettings.getInstance().loadSettings();
@@ -81,5 +72,9 @@ public class LogicMail extends UiApplication {
         }
         
         pushScreen(new MailHomeScreen());
+    }
+
+    public void run() {
+    	enterEventDispatcher();
     }
 } 
