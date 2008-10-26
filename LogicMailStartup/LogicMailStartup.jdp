@@ -1,0 +1,55 @@
+## RIM Java Development Environment
+# RIM Project file
+#
+# This file is generated and managed by BlackBerry developer tools.
+# It SHOULD NOT BE modified manually.
+#
+AddOn=0
+AlwaysBuild=0
+[AlxImports
+]
+AutoRestart=0
+[ClassProtection
+]
+[CustomBuildFiles
+]
+[CustomBuildRules
+]
+[DefFiles
+]
+[DependsOn
+LogicMail
+]
+ExcludeFromBuildAll=0
+[Files
+..\LogicMail\src\icons\logicmail.png
+src\org\logicprobe\LogicMail\LogicMailStartup.java
+]
+HaveAlxImports=0
+HaveDefs=0
+HaveImports=0
+[Icons
+..\LogicMail\src\icons\logicmail.png
+]
+[ImplicitRules
+]
+[Imports
+]
+Listing=0
+Options=-quiet
+OutputFileName=LogicMailStartup
+[PackageProtection
+]
+RibbonPosition=0
+[RolloverIcons
+]
+RunOnStartup=0
+StartupTier=7
+SystemModule=0
+Title=LogicMail
+TitleResourceBundle=org.logicprobe.LogicMail.LogicMail
+TitleResourceBundleKey=APPNAME
+TitleResourceBundleName=LogicMail
+TitleResourceBundlePath=..\LogicMail\src\org\logicprobe\LogicMail\LogicMail.rrh
+Type=0
+Version=1.9.0
