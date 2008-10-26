@@ -2,8 +2,8 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/NET_RIM_BLACKBERRY"/>
-	<classpathentry exported="true" kind="src" path="/J2MEUnit"/>
-	<classpathentry exported="true" kind="src" path="/LogicMail"/>
 	<classpathentry kind="src" path=".tmp"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/J2MEUnit"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
