@@ -170,6 +170,18 @@ public class HeaderField extends Field {
         }
         super.onUndisplay();
     }
+
+    /**
+     * Remove any global event listeners.  Intended to be called on shutdown,
+     * where the active screen may not get popped off the stack prior to
+     * System.exit() being called.
+     */
+    public void removeListeners() {
+        if(listenersActive) {
+            Application.getApplication().removeSystemListener(systemListener);
+            Application.getApplication().removeRadioListener(radioStatusListener);
+        }
+    }
     
     public void setTitle(String title) {
         this.title = title;

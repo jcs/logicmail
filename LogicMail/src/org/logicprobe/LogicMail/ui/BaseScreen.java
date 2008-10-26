@@ -57,6 +57,7 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  */
 public abstract class BaseScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+	private HeaderField headerField;
 	private LabelField statusLabel;
 	private boolean isExposed = false;
 	
@@ -72,7 +73,7 @@ public abstract class BaseScreen extends MainScreen {
     public BaseScreen(String title) {
         super();
         // Create screen elements
-        HeaderField headerField = new HeaderField("LogicMail - " + title);
+        headerField = new HeaderField("LogicMail - " + title);
         setTitle(headerField);
 		statusLabel = new LabelField();
 		setStatus(null);
@@ -196,11 +197,12 @@ public abstract class BaseScreen extends MainScreen {
             			accounts[i].requestDisconnect(true);
             		}
             	}
-                
+                headerField.removeListeners();
                 System.exit(0);
             }
         }
         else {
+            headerField.removeListeners();
             System.exit(0);
         }
     }
