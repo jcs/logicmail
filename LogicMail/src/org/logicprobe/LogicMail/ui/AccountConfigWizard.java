@@ -109,10 +109,10 @@ public class AccountConfigWizard extends WizardController {
 			if(identityNameEditField.getText().trim().length() > 0 &&
 			   nameEditField.getText().trim().length() > 0 &&
 			   emailAddressEditField.getText().trim().length() > 0) {
-				setDataValid(true);
+				setInputValid(true);
 			}
 			else {
-				setDataValid(false);
+				setInputValid(false);
 			}
 		}
 		
@@ -171,7 +171,7 @@ public class AccountConfigWizard extends WizardController {
 			accountTypeGroup = new RadioButtonGroup();
 			accountTypeGroup.setChangeListener(new FieldChangeListener() {
 				public void fieldChanged(Field field, int context) {
-					setDataValid(accountTypeGroup.getSelectedIndex() != -1);
+					setInputValid(accountTypeGroup.getSelectedIndex() != -1);
 				}
 			});
 			imapAccountType = new RadioButtonField("IMAP", accountTypeGroup, false);
@@ -180,7 +180,7 @@ public class AccountConfigWizard extends WizardController {
 			add(descriptionLabelField);
 			add(imapAccountType);
 			add(popAccountType);
-			setDataValid(false);
+			setInputValid(false);
 		}
 		
 		protected void onPageFlip() {
@@ -206,7 +206,7 @@ public class AccountConfigWizard extends WizardController {
 			nameEditField = new EditField("Account name: ", "");
 			nameEditField.setChangeListener(new FieldChangeListener() {
 				public void fieldChanged(Field field, int context) {
-					setDataValid(nameEditField.getText().trim().length() > 0);
+					setInputValid(nameEditField.getText().trim().length() > 0);
 				}
 			});
 			
@@ -273,10 +273,10 @@ public class AccountConfigWizard extends WizardController {
 	        }
 	        
 	        if(nameEditField.getText().trim().length() > 0 && portEditField.getText().trim().length() > 0) {
-	        	setDataValid(true);
+	        	setInputValid(true);
 	        }
 	        else {
-	        	setDataValid(false);
+	        	setInputValid(false);
 	        }
 		}
 		public void gatherResults() {
@@ -306,7 +306,7 @@ public class AccountConfigWizard extends WizardController {
 			add(passEditField);
 			add(new LabelField());
 			add(commentsField);
-        	setDataValid(true);
+        	setInputValid(true);
 		}
 		public void gatherResults() {
 			accountConfig.setServerUser(userEditField.getText());
@@ -380,10 +380,10 @@ public class AccountConfigWizard extends WizardController {
 
 		private void validateData() {
 	        if(nameEditField.getText().trim().length() > 0 && portEditField.getText().trim().length() > 0) {
-	        	setDataValid(true);
+	        	setInputValid(true);
 	        }
 	        else {
-	        	setDataValid(false);
+	        	setInputValid(false);
 	        }
 		}
 		private void populateOutgoingItems() {
@@ -475,7 +475,7 @@ public class AccountConfigWizard extends WizardController {
 			
 			add(descriptionLabelField);
 			add(authChoiceField);
-        	setDataValid(true);
+        	setInputValid(true);
 		}
 		
 		private void outgoingAuthenticationWizardScreen_fieldChanged(Field field, int context) {
@@ -517,7 +517,7 @@ public class AccountConfigWizard extends WizardController {
 
 			add(new LabelField());
 			add(testButton);
-			setDataValid(true);
+			setInputValid(true);
 		}
 		
 		public void onPageEnter() {

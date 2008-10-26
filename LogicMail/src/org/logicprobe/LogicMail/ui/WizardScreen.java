@@ -39,7 +39,7 @@ public abstract class WizardScreen extends MainScreen {
 	private String title;
 	private int pageType;
 	private int pageResult;
-	private boolean isDataValid;
+	private boolean isInputValid;
 	private boolean isEnabled = true;
 	
 	public WizardScreen(String title, int pageType) {
@@ -48,7 +48,7 @@ public abstract class WizardScreen extends MainScreen {
 		this.pageResult = RESULT_CANCEL;
 		initBaseFields();
 		initFields();
-		nextButton.setEditable(isDataValid);
+		nextButton.setEditable(isInputValid);
 	}
 	
 	private void initBaseFields() {
@@ -78,7 +78,7 @@ public abstract class WizardScreen extends MainScreen {
     	    protected void onFocus(int direction) {
     	    	if(direction == 1) {
     	    		// Force focus to the last button on field entry
-    	    		if(isDataValid) {
+    	    		if(isInputValid) {
     	    			getField(getFieldCount() - 1).setFocus();
     	    		}
     	    		else {
@@ -114,23 +114,23 @@ public abstract class WizardScreen extends MainScreen {
 	protected abstract void initFields();
 	
 	/**
-	 * Sets whether this screen contains valid data,
+	 * Sets whether this screen contains input valid data,
 	 * and should provide a next button.
 	 * 
-	 * @param isDataValid True if data is valid
+	 * @param isInputValid True if input data is valid
 	 */
-	protected void setDataValid(boolean isDataValid) {
-		this.isDataValid = isDataValid;
-		nextButton.setEditable(isDataValid);
+	protected void setInputValid(boolean isInputValid) {
+		this.isInputValid = isInputValid;
+		nextButton.setEditable(isInputValid);
 	}
 	
 	/**
-	 * Gets whether this screen contains valid data.
+	 * Gets whether this screen contains valid input data.
 	 * 
-	 * @return True if data is valid
+	 * @return True if input data is valid
 	 */
-	protected boolean isDataValid() {
-		return this.isDataValid;
+	protected boolean isInputValid() {
+		return this.isInputValid;
 	}
 	
 	/**
