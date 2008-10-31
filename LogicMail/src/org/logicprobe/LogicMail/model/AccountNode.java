@@ -756,12 +756,10 @@ public class AccountNode implements Node {
         }
 
         if (accountDataStore == null) {
-            long accountId = accountConfig.getUniqueId();
-            accountDataStore = DataStoreFactory.getConnectionCacheStore(accountId);
-            accountDataStore.load();
+            accountDataStore = DataStoreFactory.getConnectionCacheStore();
         }
 
-        accountDataStore.putNamedObject("ROOT_MAILBOX", rootMailbox);
+        accountDataStore.putNamedObject(Long.toString(accountConfig.getUniqueId()), rootMailbox);
         accountDataStore.save();
     }
 
@@ -774,12 +772,10 @@ public class AccountNode implements Node {
         }
 
         if (accountDataStore == null) {
-            long accountId = accountConfig.getUniqueId();
-            accountDataStore = DataStoreFactory.getConnectionCacheStore(accountId);
-            accountDataStore.load();
+            accountDataStore = DataStoreFactory.getConnectionCacheStore();
         }
 
-        Object loadedObject = accountDataStore.getNamedObject("ROOT_MAILBOX");
+        Object loadedObject = accountDataStore.getNamedObject(Long.toString(accountConfig.getUniqueId()));
 
         if (loadedObject instanceof MailboxNode) {
             synchronized (rootMailboxLock) {

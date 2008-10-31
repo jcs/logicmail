@@ -43,7 +43,6 @@ import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.cache.AccountCache;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
@@ -353,7 +352,6 @@ public class ConfigScreen extends BaseCfgScreen {
         int index = ((Integer)accountIndexMap.get(acctConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
-            (new AccountCache(acctConfig)).delete();
             mailSettings.removeAccountConfig(index);
             mailSettings.saveSettings();
             configurationChanged = true;

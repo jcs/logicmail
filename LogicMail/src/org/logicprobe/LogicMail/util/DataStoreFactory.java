@@ -31,8 +31,6 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.util.Hashtable;
-
 /**
  * Factory for creating DataStore instances.
  * The DataStore instances are intended to be used by classes that
@@ -42,7 +40,7 @@ import java.util.Hashtable;
 public final class DataStoreFactory {
     private static DataStore configurationStore;
     private static DataStore metadataStore;
-    private static Hashtable connectionCacheStoreTable;
+    private static DataStore connectionCacheStore;
     
     /** Creates a new instance of DataStoreFactory */
     private DataStoreFactory() {
@@ -55,7 +53,8 @@ public final class DataStoreFactory {
      */
     public static synchronized DataStore getConfigurationStore() {
         if(configurationStore == null) {
-            configurationStore = new RmsDataStore("configuration");
+        	// "org.logicprobe.LogicMail.store.configuration"
+        	configurationStore = new PersistentObjectDataStore(0xbb981925fd9130abL);
         }
         return configurationStore;
     }
@@ -68,32 +67,26 @@ public final class DataStoreFactory {
      */
     public static synchronized DataStore getMetadataStore() {
         if(metadataStore == null) {
-            metadataStore = new RmsDataStore("metadata");
+        	// "org.logicprobe.LogicMail.store.metadata"
+            metadataStore = new PersistentObjectDataStore(0xf630df16ea30eb49L);
         }
         return metadataStore;
     }
     
     /**
-     * Gets the cache store for a particular connection object.
-     * This provides separate cache stores for each configured
-     * connection that wants to make use of one.
+     * Gets the cache store for connections.  This is one global store
+     * shared by all connections, and used to maintain lightweight
+     * data like folder tree structures.  All users are expected to
+     * use unique names to store their data.
      *
-     * @param connectionId Unique id for the connection object
      * @return Cache store
      */
-    public static synchronized DataStore getConnectionCacheStore(long connectionId) {
-        if(connectionCacheStoreTable == null) {
-            connectionCacheStoreTable = new Hashtable();
+    public static synchronized DataStore getConnectionCacheStore() {
+        if(connectionCacheStore == null) {
+        	// "org.logicprobe.LogicMail.store.connection"
+            connectionCacheStore = new PersistentObjectDataStore(0xe53945d6e054c98cL);
+            connectionCacheStore.load();
         }
-        Long idObj = new Long(connectionId);
-        Object value = connectionCacheStoreTable.get(idObj);
-        if(value != null) {
-            return (DataStore)value;
-        }
-        else {
-            DataStore cacheStore = new RmsDataStore("cache_"+idObj.toString());
-            connectionCacheStoreTable.put(idObj, cacheStore);
-            return cacheStore;
-        }
+        return connectionCacheStore;
     }
 }
