@@ -21,7 +21,6 @@ AutoRestart=0
 ]
 ExcludeFromBuildAll=0
 [Files
-.tmp\org\logicprobe\LogicMail\LogicMailResource.java
 src\.svn\all-wcprops
 src\.svn\entries
 src\.svn\format
@@ -86,11 +85,6 @@ src\org\logicprobe\LogicMail\.svn\entries
 src\org\logicprobe\LogicMail\.svn\format
 src\org\logicprobe\LogicMail\.svn\prop-base\LogicMail.java.svn-base
 src\org\logicprobe\LogicMail\AppInfo.java
-src\org\logicprobe\LogicMail\cache\.svn\all-wcprops
-src\org\logicprobe\LogicMail\cache\.svn\entries
-src\org\logicprobe\LogicMail\cache\.svn\format
-src\org\logicprobe\LogicMail\cache\.svn\prop-base\AccountCache.java.svn-base
-src\org\logicprobe\LogicMail\cache\AccountCache.java
 src\org\logicprobe\LogicMail\conf\.svn\all-wcprops
 src\org\logicprobe\LogicMail\conf\.svn\entries
 src\org\logicprobe\LogicMail\conf\.svn\format
@@ -253,6 +247,7 @@ src\org\logicprobe\LogicMail\util\EventListenerList.java
 src\org\logicprobe\LogicMail\util\EventObject.java
 src\org\logicprobe\LogicMail\util\EventObjectRunnable.java
 src\org\logicprobe\LogicMail\util\MD5.java
+src\org\logicprobe\LogicMail\util\PersistentObjectDataStore.java
 src\org\logicprobe\LogicMail\util\Queue.java
 src\org\logicprobe\LogicMail\util\RmsDataStore.java
 src\org\logicprobe\LogicMail\util\Serializable.java
