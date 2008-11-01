@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Calendar;
 import java.util.Vector;
 import net.rim.device.api.i18n.DateFormat;
+import net.rim.device.api.system.Display;
 import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
@@ -92,7 +93,7 @@ public class MailboxScreen extends BaseScreen {
     	initFields();
     	
         // Determine field sizes
-        maxWidth = Graphics.getScreenWidth();
+        maxWidth = Display.getWidth();
         dateWidth = Font.getDefault().getAdvance("00/00/0000");
         senderWidth = maxWidth - dateWidth - 20;
     }
@@ -424,7 +425,7 @@ public class MailboxScreen extends BaseScreen {
     }
     
     public int messageListField_getPreferredWidth(ListField listField) {
-        return Graphics.getScreenWidth();
+    	return Display.getWidth();
     }
     
     public Object messageListField_get(ListField listField, int index) {

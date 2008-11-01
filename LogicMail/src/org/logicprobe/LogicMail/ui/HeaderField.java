@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.DeviceInfo;
+import net.rim.device.api.system.Display;
 import net.rim.device.api.system.RadioInfo;
 import net.rim.device.api.system.RadioStatusListener;
 import net.rim.device.api.system.SystemListener;
@@ -77,7 +78,7 @@ public class HeaderField extends Field {
         this.batteryBackground = 0x999999;
         this.signalBarColor = Color.BLUE;
         this.fieldHeight = headerFont.getHeight();
-        this.fieldWidth = Graphics.getScreenWidth();
+        this.fieldWidth = Display.getWidth();
         signalLevel = RadioInfo.getSignalLevel();
         batteryLevel = DeviceInfo.getBatteryLevel();
         
