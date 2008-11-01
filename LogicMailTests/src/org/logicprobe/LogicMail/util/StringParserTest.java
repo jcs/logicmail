@@ -650,36 +650,6 @@ public class StringParserTest extends TestCase {
     }
 
     /**
-     * Test of createInputStream method, of class org.logicprobe.LogicMail.util.StringParser.
-     */
-    public void testCreateInputStream() {
-        System.out.println("createInputStream");
-
-        //        java.lang.String[] rawLines = null;
-        //        org.logicprobe.LogicMail.util.StringParser instance = null;
-        //        java.io.InputStream expectedResult = null;
-        //        java.io.InputStream result = instance.createInputStream(rawLines);
-        //        assertEquals(expectedResult, result);
-        //TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
-
-    /**
-     * Test of readWholeStream method, of class org.logicprobe.LogicMail.util.StringParser.
-     */
-    public void testReadWholeStream() {
-        System.out.println("readWholeStream");
-
-        //        java.io.InputStream is = null;
-        //        org.logicprobe.LogicMail.util.StringParser instance = null;
-        //        byte[] expectedResult = null;
-        //        byte[] result = instance.readWholeStream(is);
-        //        assertEquals(expectedResult, result);
-        //TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
-    }
-
-    /**
      * Test of decodeQuotedPrintable method, of class org.logicprobe.LogicMail.util.StringParser.
      * Basic test.
      */
@@ -804,15 +774,6 @@ public class StringParserTest extends TestCase {
                     ((StringParserTest) tc).testParseValidCharsetString();
                 }
             }));
-
-        //        testSuite.addTest(new StringParserTest("createInputStream", new TestMethod() {
-        //            public void run(TestCase tc) {
-        //                ((StringParserTest)tc).testCreateInputStream();
-        //        }}));
-        //        testSuite.addTest(new StringParserTest("readWholeStream", new TestMethod() {
-        //            public void run(TestCase tc) {
-        //                ((StringParserTest)tc).testReadWholeStream();
-        //        }}));
         testSuite.addTest(new StringParserTest("decodeQuotedPrintable1",
                 new TestMethod() {
                 public void run(TestCase tc) {
