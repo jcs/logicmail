@@ -37,6 +37,7 @@ import java.util.Enumeration;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Menu;
@@ -271,6 +272,16 @@ public class MailHomeScreen extends BaseScreen {
     protected boolean onClick() {
     	return openSelectedItem();
     }
+    
+    public boolean keyChar(char key, int status, int time) {
+		boolean retval = false;
+		switch (key) {
+		case Keypad.KEY_ENTER:
+			retval = openSelectedItem();
+			break;
+		}
+		return retval;
+	}
     
 	/**
 	 * Handles the configuration change event from the mail manager.
