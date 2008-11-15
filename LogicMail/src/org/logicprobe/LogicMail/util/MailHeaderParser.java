@@ -29,21 +29,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail.pop;
+package org.logicprobe.LogicMail.util;
 
 import java.util.Calendar;
 import java.util.Hashtable;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * This class contains all static parser functions
  * needed when using the IMAP protocol
  */
-class PopParser {
-    private PopParser() { }
+public class MailHeaderParser {
+    private MailHeaderParser() { }
 
-    static MessageEnvelope parseMessageEnvelope(String[] rawHeaders) {
+    public static MessageEnvelope parseMessageEnvelope(String[] rawHeaders) {
         Hashtable headers = StringParser.parseMailHeaders(rawHeaders);
         MessageEnvelope env = new MessageEnvelope();
         
@@ -68,7 +67,7 @@ class PopParser {
         return env;
     }
     
-    static String[] parseAddressList(String text) {
+    public static String[] parseAddressList(String text) {
         String[] addresses = StringParser.parseCsvString(text);
         for(int i=0; i<addresses.length; i++) {
             addresses[i] = StringParser.parseEncodedHeader(addresses[i]);

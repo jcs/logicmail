@@ -52,6 +52,7 @@ import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.MailHeaderParser;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -243,7 +244,7 @@ public class PopClient implements IncomingMailClient {
         for(int i=firstIndex; i<=lastIndex; i++) {
             headerText = popProtocol.executeTop(i, 0);
             uid = popProtocol.executeUidl(i);
-            env = PopParser.parseMessageEnvelope(headerText);
+            env = MailHeaderParser.parseMessageEnvelope(headerText);
             folderMessages[index++] = new FolderMessage(env, i, uid.hashCode());
         }
         return folderMessages;

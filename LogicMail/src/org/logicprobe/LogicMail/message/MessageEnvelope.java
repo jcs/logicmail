@@ -31,14 +31,22 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.Calendar;
 import java.util.Date;
+
+import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
  * The "envelope" of a mail message.
  * Essentially, this is a usable parsed form
  * of some parts of the message headers
  */
-public class MessageEnvelope {
+public class MessageEnvelope implements Serializable {
+    private long uniqueId;
     public Date date;
     public String subject;
     public String[] from;
@@ -52,5 +60,57 @@ public class MessageEnvelope {
 
     /** Creates a new instance of MessageEnvelope */
     public MessageEnvelope() {
+        uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
+
+    public long getUniqueId() {
+        return uniqueId;
+	}
+
+	public void serialize(DataOutputStream output) throws IOException {
+		output.writeLong(uniqueId);
+        output.writeLong(date.getTime());
+        output.writeUTF((subject != null) ? subject : "");
+        serializeArray(output, from);
+        serializeArray(output, sender);
+        serializeArray(output, replyTo);
+        serializeArray(output, to);
+        serializeArray(output, cc);
+        serializeArray(output, bcc);
+        output.writeUTF((inReplyTo != null) ? inReplyTo : "");
+        output.writeUTF((messageId != null) ? messageId : "");
+	}
+
+	private static void serializeArray(DataOutputStream output, String[] array) throws IOException {
+		output.writeInt(array.length);
+		for(int i=0; i<array.length; i++) {
+			output.writeUTF(array[i]);
+		}
+	}
+	
+	public void deserialize(DataInputStream input) throws IOException {
+		uniqueId = input.readLong();
+        long dateValue = input.readLong();
+        date = Calendar.getInstance().getTime();
+        date.setTime(dateValue);
+        
+        subject = input.readUTF();
+        from = deserializeArray(input);
+        sender = deserializeArray(input);
+        replyTo = deserializeArray(input);
+        to = deserializeArray(input);
+        cc = deserializeArray(input);
+        bcc = deserializeArray(input);
+        inReplyTo = input.readUTF();
+        messageId = input.readUTF();
+	}
+
+	private static String[] deserializeArray(DataInputStream input) throws IOException {
+		int length = input.readInt();
+		String[] result = new String[length];
+		for(int i=0; i<length; i++) {
+			result[i] = input.readUTF();
+		}
+		return result;
+	}
 }
