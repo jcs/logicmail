@@ -11,7 +11,6 @@ import java.util.Vector;
 
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
-import javax.microedition.io.file.FileSystemRegistry;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -41,11 +40,6 @@ public class MaildirFolder {
 	 */
 	public MaildirFolder(String folderUrl) {
 		this.folderUrl = folderUrl;
-		Enumeration e = FileSystemRegistry.listRoots();
-		while(e.hasMoreElements()) {
-			String root = (String)e.nextElement();
-			System.err.println("root: " + root);
-		}
 		messageEnvelopeMap = new Hashtable();
 	}
 	
@@ -91,8 +85,6 @@ public class MaildirFolder {
 			}
 		}
 
-		fileConnection.close();
-
 		System.err.println("Opened with " + messageEnvelopeMap.size() + " messages in index file");	
 	}
 
@@ -102,6 +94,11 @@ public class MaildirFolder {
 	 * @throws IOException Thrown on I/O errors
 	 */
 	public void close() throws IOException {
+		if(fileConnection != null) {
+			fileConnection.close();
+			fileConnection = null;
+		}
+
 		// Write out the message envelope map
 		if(messageEnvelopeMapDirty) {
 			FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");

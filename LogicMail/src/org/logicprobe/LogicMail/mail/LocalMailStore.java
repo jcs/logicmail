@@ -30,8 +30,11 @@
  */
 package org.logicprobe.LogicMail.mail;
 
+import java.io.IOException;
+
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.util.ThreadQueue;
 
 
 /**
@@ -41,10 +44,17 @@ import org.logicprobe.LogicMail.message.MessageFlags;
  */
 public class LocalMailStore extends AbstractMailStore {
     private FolderTreeItem rootFolder;
+    private ThreadQueue threadQueue;
 
+    // Hard-coded local folder root.
+    // This should be coming from the global configuration.
+    private static String MAILDIR_ROOT = "file:///SDCard/LogicMail/";
+    
     public LocalMailStore() {
         super();
 
+        threadQueue = new ThreadQueue();
+        
         // Build the local folder tree, which matches a fixed layout for now.
         // Eventually it should be partially editable by the user.
         // This is also the only folder tree that should lack an INBOX.
@@ -59,8 +69,7 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void shutdown(boolean wait) {
-        // This method is blank because all message operations
-        // handle local data store management.
+    	threadQueue.shutdown(wait);
     }
 
     public boolean isLocal() {
@@ -109,8 +118,7 @@ public class LocalMailStore extends AbstractMailStore {
         }
     }
 
-    public void requestFolderMessagesRange(FolderTreeItem folder,
-        int firstIndex, int lastIndex) {
+    public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) {
         // TODO Auto-generated method stub
     }
 
@@ -119,31 +127,67 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void requestFolderMessagesRecent(FolderTreeItem folder) {
+        FolderTreeItem[] localFolders = rootFolder.children();
+        FolderTreeItem requestFolder = null;
+        for (int i = 0; i < localFolders.length; i++) {
+        	if(localFolders[i].getPath().equals(folder.getPath())) {
+        		requestFolder = localFolders[i];
+        		break;
+        	}
+        }
+        
+        if(requestFolder != null) {
+        	threadQueue.invokeLater(new RequestFolderMessagesRecentRunnable(requestFolder));
+        }
+    }
+
+    private class RequestFolderMessagesRecentRunnable implements Runnable {
+    	private FolderTreeItem requestFolder;
+    	
+    	public RequestFolderMessagesRecentRunnable(FolderTreeItem requestFolder) {
+    		this.requestFolder = requestFolder;
+    	}
+    	
+		public void run() {
+        	StringBuffer buf = new StringBuffer();
+        	buf.append(MAILDIR_ROOT);
+        	buf.append(requestFolder.getPath());
+
+        	// TODO: Optimize so the MaildirFolder is semi-persistent in memory
+        	MaildirFolder maildirFolder = new MaildirFolder(buf.toString());
+
+        	FolderMessage[] folderMessages = null;
+        	try {
+        		maildirFolder.open();
+        		folderMessages = maildirFolder.getFolderMessages();
+        		maildirFolder.close();
+        	} catch (IOException e) {
+        		System.err.println("Unable to read folder: " + e.toString());
+        	}
+        	
+        	if(folderMessages != null) {
+        		fireFolderMessagesAvailable(requestFolder, folderMessages);
+        	}
+		}
+    }
+    
+    public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) {
         // TODO Auto-generated method stub
     }
 
-    public void requestMessage(FolderTreeItem folder,
-        FolderMessage folderMessage) {
+    public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) {
         // TODO Auto-generated method stub
     }
 
-    public void requestMessageDelete(FolderTreeItem folder,
-        FolderMessage folderMessage) {
+    public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) {
         // TODO Auto-generated method stub
     }
 
-    public void requestMessageUndelete(FolderTreeItem folder,
-        FolderMessage folderMessage) {
+    public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) {
         // TODO Auto-generated method stub
     }
 
-    public void requestMessageAnswered(FolderTreeItem folder,
-        FolderMessage folderMessage) {
-        // TODO Auto-generated method stub
-    }
-
-    public void requestMessageAppend(FolderTreeItem folder, String rawMessage,
-        MessageFlags initialFlags) {
+    public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
         // TODO Auto-generated method stub
     }
 }
