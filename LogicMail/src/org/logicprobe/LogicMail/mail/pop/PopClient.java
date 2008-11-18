@@ -32,9 +32,6 @@
 package org.logicprobe.LogicMail.mail.pop;
 
 import java.io.IOException;
-import net.rim.device.api.io.SharedInputStream;
-import net.rim.device.api.mime.MIMEInputStream;
-import net.rim.device.api.mime.MIMEParsingException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -49,10 +46,8 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartFactory;
-import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.MailHeaderParser;
+import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -244,7 +239,7 @@ public class PopClient implements IncomingMailClient {
         for(int i=firstIndex; i<=lastIndex; i++) {
             headerText = popProtocol.executeTop(i, 0);
             uid = popProtocol.executeUidl(i);
-            env = MailHeaderParser.parseMessageEnvelope(headerText);
+            env = MailMessageParser.parseMessageEnvelope(headerText);
             folderMessages[index++] = new FolderMessage(env, i, uid.hashCode());
         }
         return folderMessages;
@@ -264,72 +259,9 @@ public class PopClient implements IncomingMailClient {
         // Download the message text
         String[] message = popProtocol.executeTop((folderMessage.getIndex()), maxLines);
         
-        MIMEInputStream mimeInputStream = null;
-        try {
-            mimeInputStream = new MIMEInputStream(StringParser.createInputStream(message));
-        } catch (MIMEParsingException e) {
-            return null;
-        }
-
-        MessagePart rootPart = getMessagePart(mimeInputStream);
+        MessagePart rootPart = MailMessageParser.parseRawMessage(StringParser.createInputStream(message));
         Message msg = new Message(folderMessage.getEnvelope(), rootPart);
         return msg;
-    }
-
-    /**
-     * Recursively walk the provided MIMEInputStream, building a message
-     * tree in the process.
-     *
-     * @param mimeInputStream MIMEInputStream of the downloaded message data
-     * @return Root MessagePart element for this portion of the message tree
-     */
-    private MessagePart getMessagePart(MIMEInputStream mimeInputStream) throws IOException {
-        // Parse out the MIME type and relevant header fields
-        String mimeType = mimeInputStream.getContentType();
-        String type = mimeType.substring(0, mimeType.indexOf('/'));
-        String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
-        String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
-        String charset = mimeInputStream.getContentTypeParameter("charset");
-        
-        // Default parameters used when headers are missing
-        if(encoding == null) {
-            encoding = "7bit";
-        }
-        
-        // Handle the multi-part case
-        if(mimeInputStream.isMultiPart() && type.equalsIgnoreCase("multipart")) {
-            MessagePart part = MessagePartFactory.createMessagePart(type, subtype, null, null, null);
-            MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
-            for(int i=0;i<mimeSubparts.length;i++) {
-                MessagePart subPart = getMessagePart(mimeSubparts[i]);
-                if(subPart != null) {
-                    ((MultiPart)part).addPart(subPart);
-                }
-            }
-            return part;
-        }
-        // Handle the single-part case
-        else {
-            byte[] buffer;
-            // Handle encoded binary data (should be more encoding-agnostic)
-            if(encoding.equalsIgnoreCase("base64") && mimeInputStream.isPartComplete()!=0) {
-                SharedInputStream sis = mimeInputStream.getRawMIMEInputStream();
-                buffer = StringParser.readWholeStream(sis);
-
-                int offset = 0;
-                while((offset+3 < buffer.length) &&
-                        !(buffer[offset]=='\r' && buffer[offset+1]=='\n' &&
-                        buffer[offset+2]=='\r' && buffer[offset+3]=='\n')) {
-                    offset++;
-                }
-                int size = buffer.length - offset;
-                return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer, offset, size));
-            }
-            else {
-                buffer = StringParser.readWholeStream(mimeInputStream);
-                return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer));
-            }
-        }
     }
 
     public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {

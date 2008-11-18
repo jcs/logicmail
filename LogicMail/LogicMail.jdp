@@ -397,7 +397,7 @@ src\org\logicprobe\LogicMail\util\EventListener.java
 src\org\logicprobe\LogicMail\util\EventListenerList.java
 src\org\logicprobe\LogicMail\util\EventObject.java
 src\org\logicprobe\LogicMail\util\EventObjectRunnable.java
-src\org\logicprobe\LogicMail\util\MailHeaderParser.java
+src\org\logicprobe\LogicMail\util\MailMessageParser.java
 src\org\logicprobe\LogicMail\util\MD5.java
 src\org\logicprobe\LogicMail\util\PersistentObjectDataStore.java
 src\org\logicprobe\LogicMail\util\Queue.java

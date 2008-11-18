@@ -31,8 +31,10 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.ThreadQueue;
 
@@ -45,7 +47,8 @@ import org.logicprobe.LogicMail.util.ThreadQueue;
 public class LocalMailStore extends AbstractMailStore {
     private FolderTreeItem rootFolder;
     private ThreadQueue threadQueue;
-
+    private Hashtable folderMaildirMap;
+    
     // Hard-coded local folder root.
     // This should be coming from the global configuration.
     private static String MAILDIR_ROOT = "file:///SDCard/LogicMail/";
@@ -54,6 +57,7 @@ public class LocalMailStore extends AbstractMailStore {
         super();
 
         threadQueue = new ThreadQueue();
+        folderMaildirMap = new Hashtable();
         
         // Build the local folder tree, which matches a fixed layout for now.
         // Eventually it should be partially editable by the user.
@@ -127,35 +131,19 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void requestFolderMessagesRecent(FolderTreeItem folder) {
-        FolderTreeItem[] localFolders = rootFolder.children();
-        FolderTreeItem requestFolder = null;
-        for (int i = 0; i < localFolders.length; i++) {
-        	if(localFolders[i].getPath().equals(folder.getPath())) {
-        		requestFolder = localFolders[i];
-        		break;
-        	}
-        }
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder);
         
         if(requestFolder != null) {
         	threadQueue.invokeLater(new RequestFolderMessagesRecentRunnable(requestFolder));
         }
     }
 
-    private class RequestFolderMessagesRecentRunnable implements Runnable {
-    	private FolderTreeItem requestFolder;
-    	
+    private class RequestFolderMessagesRecentRunnable extends MaildirRunnable {
     	public RequestFolderMessagesRecentRunnable(FolderTreeItem requestFolder) {
-    		this.requestFolder = requestFolder;
+    		super(requestFolder);
     	}
     	
 		public void run() {
-        	StringBuffer buf = new StringBuffer();
-        	buf.append(MAILDIR_ROOT);
-        	buf.append(requestFolder.getPath());
-
-        	// TODO: Optimize so the MaildirFolder is semi-persistent in memory
-        	MaildirFolder maildirFolder = new MaildirFolder(buf.toString());
-
         	FolderMessage[] folderMessages = null;
         	try {
         		maildirFolder.open();
@@ -172,7 +160,35 @@ public class LocalMailStore extends AbstractMailStore {
     }
     
     public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) {
-        // TODO Auto-generated method stub
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder);
+        
+        if(requestFolder != null && folderMessage != null) {
+        	threadQueue.invokeLater(new RequestMessageRunnable(requestFolder, folderMessage));
+        }
+    }
+
+    private class RequestMessageRunnable extends MaildirRunnable {
+    	private FolderMessage folderMessage;
+    	
+    	public RequestMessageRunnable(FolderTreeItem requestFolder, FolderMessage folderMessage) {
+    		super(requestFolder);
+    		this.folderMessage = folderMessage;
+    	}
+    	
+		public void run() {
+        	Message message = null;
+        	try {
+        		maildirFolder.open();
+        		message = maildirFolder.getMessage(folderMessage);
+        		maildirFolder.close();
+        	} catch (IOException e) {
+        		System.err.println("Unable to read folder: " + e.toString());
+        	}
+        	
+        	if(message != null) {
+        		fireMessageAvailable(requestFolder, folderMessage, message);
+        	}
+		}
     }
 
     public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) {
@@ -189,5 +205,47 @@ public class LocalMailStore extends AbstractMailStore {
 
     public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
         // TODO Auto-generated method stub
+    }
+
+    
+    /**
+     * Gets the matching folder tree item for the parameter.
+     * This method ensures that we are working with a FolderTreeItem object
+     * owned by this mail store, even if the provided parameter is a
+     * separately created object with similar properties.
+     * 
+     * @param folder The folder parameter.
+     * @return The matching folder tree item.
+     */
+    private FolderTreeItem getMatchingFolderTreeItem(FolderTreeItem folder) {
+        FolderTreeItem[] localFolders = rootFolder.children();
+        FolderTreeItem requestFolder = null;
+        for (int i = 0; i < localFolders.length; i++) {
+        	if(localFolders[i].getPath().equals(folder.getPath())) {
+        		requestFolder = localFolders[i];
+        		break;
+        	}
+        }
+    	return requestFolder;
+    }
+    
+    private abstract class MaildirRunnable implements Runnable {
+    	protected FolderTreeItem requestFolder;
+    	protected MaildirFolder maildirFolder;
+    	
+    	public MaildirRunnable(FolderTreeItem requestFolder) {
+    		this.requestFolder = requestFolder;
+
+    		if(folderMaildirMap.containsKey(requestFolder)) {
+        		maildirFolder = (MaildirFolder)folderMaildirMap.get(requestFolder);
+        	}
+        	else {
+            	StringBuffer buf = new StringBuffer();
+            	buf.append(MAILDIR_ROOT);
+            	buf.append(requestFolder.getPath());
+        		maildirFolder = new MaildirFolder(buf.toString());
+        		folderMaildirMap.put(requestFolder, maildirFolder);
+        	}
+    	}
     }
 }

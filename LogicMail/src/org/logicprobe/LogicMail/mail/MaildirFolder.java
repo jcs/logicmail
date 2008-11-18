@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.mail;
 
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -43,8 +44,10 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.util.MailHeaderParser;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.util.MailMessageParser;
 
 /**
  * Implements an interface to messages stored on device file storage
@@ -58,9 +61,11 @@ import org.logicprobe.LogicMail.util.MailHeaderParser;
  */
 public class MaildirFolder {
 	private String folderUrl;
+	private boolean initialized;
 	private FileConnection fileConnection;
 	private Hashtable messageEnvelopeMap;
 	private boolean messageEnvelopeMapDirty = true;
+	public Hashtable uidMessageMap;
 	private static String EOF_MARKER = "----";
 	
 	/**
@@ -71,6 +76,7 @@ public class MaildirFolder {
 	public MaildirFolder(String folderUrl) {
 		this.folderUrl = folderUrl;
 		messageEnvelopeMap = new Hashtable();
+		uidMessageMap = new Hashtable();
 	}
 	
 	/**
@@ -82,37 +88,42 @@ public class MaildirFolder {
 	 */
 	public void open() throws IOException {
 		System.err.println("Opening: " + folderUrl);
-		fileConnection = (FileConnection)Connector.open(folderUrl);
+		fileConnection = (FileConnection)Connector.open(folderUrl + '/');
 		if(!fileConnection.exists()) {
-			fileConnection.create();
+			fileConnection.mkdir();
+		}
+		fileConnection.close();
+		
+		fileConnection = (FileConnection)Connector.open(folderUrl + "/cur/");
+		if(!fileConnection.exists()) {
+			fileConnection.mkdir();
 		}
 
-		fileConnection.setFileConnection("cur");
-		if(!fileConnection.exists()) {
-			fileConnection.create();
-		}
-		
-		// Read in the message envelope map
-		FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
-		if(indexFileConnection.exists()) {
-			DataInputStream inputStream = indexFileConnection.openDataInputStream();
-			try {
-				while(true) {
-					String uniqueId = inputStream.readUTF();
-					if(uniqueId.equals(EOF_MARKER)) {
-						break;
+		if(!initialized) {
+			// Read in the message envelope map
+			FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
+			if(indexFileConnection.exists()) {
+				DataInputStream inputStream = indexFileConnection.openDataInputStream();
+				try {
+					while(true) {
+						String uniqueId = inputStream.readUTF();
+						if(uniqueId.equals(EOF_MARKER)) {
+							break;
+						}
+						MessageEnvelope envelope = new MessageEnvelope();
+						envelope.deserialize(inputStream);
+						messageEnvelopeMap.put(uniqueId, envelope);
+						uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 					}
-					MessageEnvelope envelope = new MessageEnvelope();
-					envelope.deserialize(inputStream);
-					messageEnvelopeMap.put(uniqueId, envelope);
+					messageEnvelopeMapDirty = false;
+				} catch (IOException exp) {
+					// Non-fatally force the map dirty on exceptions, since this can
+					// only happen if the index file is truncated, and may not mean
+					// that any other problems exist.
+					messageEnvelopeMapDirty = true;
 				}
-				messageEnvelopeMapDirty = false;
-			} catch (IOException exp) {
-				// Non-fatally force the map dirty on exceptions, since this can
-				// only happen if the index file is truncated, and may not mean
-				// that any other problems exist.
-				messageEnvelopeMapDirty = true;
 			}
+			initialized = true;
 		}
 
 		System.err.println("Opened with " + messageEnvelopeMap.size() + " messages in index file");	
@@ -204,9 +215,10 @@ public class MaildirFolder {
 							envelope = getMessageEnvelope(inputStream);
 							inputStream.close();
 							messageEnvelopeMap.put(uniqueId, envelope);
+							uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 							messageEnvelopeMapDirty = true;
 						}
-						FolderMessage folderMessage = new FolderMessage(envelope, index++, -1);
+						FolderMessage folderMessage = new FolderMessage(envelope, index++, uniqueId.hashCode());
 						
 						// Check for flags
 						p += 3;
@@ -261,8 +273,64 @@ public class MaildirFolder {
 
 		String[] headerLinesArray = new String[headerLines.size()];
 		headerLines.copyInto(headerLinesArray);
-		MessageEnvelope envelope = MailHeaderParser.parseMessageEnvelope(headerLinesArray);
+		MessageEnvelope envelope = MailMessageParser.parseMessageEnvelope(headerLinesArray);
 		return envelope;
 	}
-}
 
+	public Message getMessage(FolderMessage folderMessage) throws IOException {
+		System.err.println("Getting message " + folderMessage.getIndex());
+		if(fileConnection == null) {
+			throw new IOException("Maildir not open");
+		}
+		
+		// Get the filename unique id prefix, and shortcut out if not found
+		String uniqueId = (String)uidMessageMap.get(new Integer(folderMessage.getUid()));
+		if(uniqueId == null) {
+			return null;
+		}
+		
+		// Find the file matching the unique id, and shortcut out if not found
+		String matchingFile;
+		Enumeration e = fileConnection.list(uniqueId + '*', false);
+		if(e.hasMoreElements()) {
+			matchingFile = (String)e.nextElement();
+		}
+		else {
+			return null;
+		}
+
+		// Open the file, and read its contents
+		Message message = null;
+		try {
+			FileConnection mailFileConnection =
+				(FileConnection)Connector.open(fileConnection.getURL() + '/' + matchingFile);
+			if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+				InputStream inputStream = mailFileConnection.openInputStream();
+				message = getMessage(inputStream, folderMessage.getEnvelope());
+				inputStream.close();
+			}
+		} catch (Exception exp) {
+			// Prevent message-reading errors from being fatal
+			// TODO: Log a useful error message here
+		}
+		
+		return message;
+	}
+
+	private Message getMessage(InputStream inputStream, MessageEnvelope envelope) throws IOException {
+		// Completely read the stream
+		InputStreamReader reader = new InputStreamReader(inputStream);
+		StringBuffer buf = new StringBuffer();
+		char[] rawBuf = new char[1024];
+		int n;
+		while((n = reader.read(rawBuf, 0, 1024)) != -1) {
+			buf.append(rawBuf, 0, n);
+		}
+		rawBuf = null;
+		
+		// Parse the message source
+        MessagePart rootPart = MailMessageParser.parseRawMessage(new ByteArrayInputStream(buf.toString().getBytes()));
+        Message message = new Message(envelope, rootPart);
+		return message;
+	}
+}
