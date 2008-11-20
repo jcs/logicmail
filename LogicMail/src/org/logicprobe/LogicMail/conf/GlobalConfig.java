@@ -37,6 +37,9 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Enumeration;
+
+import javax.microedition.io.file.FileSystemRegistry;
 
 
 /**
@@ -53,12 +56,15 @@ public class GlobalConfig implements Serializable {
     final public static int WIFI_ALWAYS = 2;
     private long uniqueId;
 
-    /** number of message headers to retrieve */
+    /** Number of message headers to retrieve */
     private int retMsgCount;
 
-    /** true for ascending, false for descending */
+    /** True for ascending, false for descending */
     private boolean dispOrder;
 
+    /** Root URL for local file storage */
+    private String localDataLocation;
+    
     /** IMAP: maximum message size */
     private int imapMaxMsgSize;
 
@@ -80,10 +86,18 @@ public class GlobalConfig implements Serializable {
     /** Local host name override */
     private String localHostname;
 
+    /**
+     * Instantiates a new global configuration.
+     */
     public GlobalConfig() {
         setDefaults();
     }
 
+    /**
+     * Instantiates a new global configuration.
+     * 
+     * @param input The input data to deserialize the contents from
+     */
     public GlobalConfig(DataInputStream input) {
         try {
             deserialize(input);
@@ -92,6 +106,9 @@ public class GlobalConfig implements Serializable {
         }
     }
 
+    /**
+     * Sets the defaults.
+     */
     private void setDefaults() {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.retMsgCount = 30;
@@ -102,80 +119,199 @@ public class GlobalConfig implements Serializable {
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
         this.hideDeletedMsg = true;
         this.localHostname = "";
+        
+        Enumeration e = FileSystemRegistry.listRoots();
+        if(e.hasMoreElements()) {
+        	this.localDataLocation = (String)e.nextElement();
+        }
+        else {
+        	this.localDataLocation = "file:///LogicMail/";
+        }
     }
 
+    /**
+     * Set the number of message headers to retrieve.
+     * 
+     * @param retMsgCount The number of message headers to retrieve
+     */
     public void setRetMsgCount(int retMsgCount) {
         this.retMsgCount = retMsgCount;
     }
 
+    /**
+     * Get the number of message headers to retrieve.
+     * 
+     * @return The number of message headers to retrieve
+     */
     public int getRetMsgCount() {
         return retMsgCount;
     }
 
+    /**
+     * Set the message display order.
+     * 
+     * @param dispOrder True for ascending, false for descending
+     */
     public void setDispOrder(boolean dispOrder) {
         this.dispOrder = dispOrder;
     }
 
+    /**
+     * Get the message display order.
+     * 
+     * @return True for ascending, false for descending
+     */
     public boolean getDispOrder() {
         return dispOrder;
     }
 
+    /**
+     * Get the root URL for local file storage.
+     * 
+     * @param localDataLocation The local data URL
+     */
+    public void setLocalDataLocation(String localDataLocation) {
+    	this.localDataLocation = localDataLocation;
+    }
+    
+    /**
+     * Set the root URL for local file storage.
+     * 
+     * @return The local data URL
+     */
+    public String getLocalDataLocation() {
+    	return localDataLocation;
+    }
+    
+    /**
+     * Gets the IMAP maximum message size
+     * 
+     * @return The IMAP maximum message size
+     */
     public int getImapMaxMsgSize() {
         return imapMaxMsgSize;
     }
 
+    /**
+     * Sets the IMAP maximum message size
+     * 
+     * @param imapMaxMsgSize The IMAP maximum message size
+     */
     public void setImapMaxMsgSize(int imapMaxMsgSize) {
         this.imapMaxMsgSize = imapMaxMsgSize;
     }
 
+    /**
+     * Gets the IMAP maximum folder depth.
+     * 
+     * @return The IMAP maximum folder depth
+     */
     public int getImapMaxFolderDepth() {
         return imapMaxFolderDepth;
     }
 
+    /**
+     * Sets the IMAP maximum folder depth.
+     * 
+     * @param imapMaxFolderDepth The IMAP maximum folder depth
+     */
     public void setImapMaxFolderDepth(int imapMaxFolderDepth) {
         this.imapMaxFolderDepth = imapMaxFolderDepth;
     }
 
+    /**
+     * Gets the POP maximum message lines.
+     * 
+     * @return The POP maximum message lines
+     */
     public int getPopMaxLines() {
         return popMaxLines;
     }
 
+    /**
+     * Sets the POP maximum message lines.
+     * 
+     * @param popMaxLines The POP maximum message lines
+     */
     public void setPopMaxLines(int popMaxLines) {
         this.popMaxLines = popMaxLines;
     }
 
+    /**
+     * Gets the WiFi connection mode.
+     * 
+     * @return The WiFi connection mode
+     */
     public int getWifiMode() {
         return wifiMode;
     }
 
+    /**
+     * Sets the WiFi connection mode.
+     * 
+     * @param wifiMode The WiFi connection mode
+     */
     public void setWifiMode(int wifiMode) {
         this.wifiMode = wifiMode;
     }
 
+    /**
+     * Gets the connection debugging mode.
+     * 
+     * @return True to enable, false to disable
+     */
     public boolean getConnDebug() {
         return connDebug;
     }
 
+    /**
+     * Sets the connection debugging mode.
+     * 
+     * @param connDebug True if enabled, false if disabled
+     */
     public void setConnDebug(boolean connDebug) {
         this.connDebug = connDebug;
     }
 
+    /**
+     * Gets whether deleted messages should be hidden.
+     * 
+     * @return True if hidden, false if shown
+     */
     public boolean getHideDeletedMsg() {
         return hideDeletedMsg;
     }
 
+    /**
+     * Sets whether deleted messages should be hidden.
+     * 
+     * @param hideDeletedMsg True to hide, false to show
+     */
     public void setHideDeletedMsg(boolean hideDeletedMsg) {
         this.hideDeletedMsg = hideDeletedMsg;
     }
 
+    /**
+     * Gets the local hostname override.
+     * 
+     * @return The local hostname
+     */
     public String getLocalHostname() {
         return this.localHostname;
     }
 
+    /**
+     * Sets the local hostname override.
+     * 
+     * @param localHostname The local hostname
+     */
     public void setLocalHostname(String localHostname) {
         this.localHostname = localHostname;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+     */
     public void serialize(DataOutputStream output) throws IOException {
         output.writeLong(uniqueId);
 
@@ -183,6 +319,7 @@ public class GlobalConfig implements Serializable {
 
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
+        table.put("global_localDataLocation", localDataLocation);
         table.put("global_imapMaxMsgSize", new Integer(imapMaxMsgSize));
         table.put("global_imapMaxFolderDepth", new Integer(imapMaxFolderDepth));
         table.put("global_popMaxLines", new Integer(popMaxLines));
@@ -194,6 +331,9 @@ public class GlobalConfig implements Serializable {
         table.serialize(output);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+     */
     public void deserialize(DataInputStream input) throws IOException {
         setDefaults();
         uniqueId = input.readLong();
@@ -204,64 +344,62 @@ public class GlobalConfig implements Serializable {
         Object value;
 
         value = table.get("global_retMsgCount");
-
         if ((value != null) && value instanceof Integer) {
             retMsgCount = ((Integer) value).intValue();
         }
 
         value = table.get("global_dispOrder");
-
         if ((value != null) && value instanceof Boolean) {
             dispOrder = ((Boolean) value).booleanValue();
         }
 
+        value = table.get("global_localDataLocation");
+        if ((value != null) && value instanceof String) {
+        	localDataLocation = (String) value;
+        }
+        
         value = table.get("global_imapMaxMsgSize");
-
         if ((value != null) && value instanceof Integer) {
             imapMaxMsgSize = ((Integer) value).intValue();
         }
 
         value = table.get("global_imapMaxFolderDepth");
-
         if ((value != null) && value instanceof Integer) {
             imapMaxFolderDepth = ((Integer) value).intValue();
         }
 
         value = table.get("global_popMaxLines");
-
         if ((value != null) && value instanceof Integer) {
             popMaxLines = ((Integer) value).intValue();
         }
 
         value = table.get("global_wifiMode");
-
         if ((value != null) && value instanceof Integer) {
             wifiMode = ((Integer) value).intValue();
-
             if ((wifiMode < 0) || (wifiMode > 2)) {
                 wifiMode = GlobalConfig.WIFI_DISABLED;
             }
         }
 
         value = table.get("global_connDebug");
-
         if ((value != null) && value instanceof Boolean) {
             connDebug = ((Boolean) value).booleanValue();
         }
 
         value = table.get("global_hideDeletedMsg");
-
         if ((value != null) && value instanceof Boolean) {
             hideDeletedMsg = ((Boolean) value).booleanValue();
         }
 
         value = table.get("global_localHostname");
-
         if ((value != null) && value instanceof String) {
             localHostname = (String) value;
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
     public long getUniqueId() {
         return uniqueId;
     }

@@ -57,6 +57,7 @@ public class MailManager {
 	private EventListenerList listenerList = new EventListenerList();
 	private MailRootNode mailRootNode;
 	private MailSettings mailSettings;
+	private OutboxMailboxNode outboxMailboxNode;
 	
 	/**
 	 * Constructor.
@@ -92,6 +93,15 @@ public class MailManager {
 				accounts[i].refreshMailboxStatus();
 			}
 		}
+
+		// Find the outbox node, and save a reference to it for easy access
+		MailboxNode[] localMailboxes = mailRootNode.getLocalAccount().getRootMailbox().getMailboxes();
+		for(int i=0; i<localMailboxes.length; i++) {
+			if(localMailboxes[i] instanceof OutboxMailboxNode) {
+				outboxMailboxNode = (OutboxMailboxNode)localMailboxes[i];
+				break;
+			}
+		}
 	}
 	
 	/**
@@ -115,6 +125,15 @@ public class MailManager {
 	 */
 	public synchronized MailRootNode getMailRootNode() {
 		return mailRootNode;
+	}
+
+	/**
+	 * Gets the outbox node within the local account.
+	 * 
+	 * @return Outbox node.
+	 */
+	public OutboxMailboxNode getOutboxMailboxNode() {
+		return outboxMailboxNode;
 	}
 
 	/**

@@ -185,8 +185,7 @@ public class ConfigScreen extends BaseCfgScreen {
         super.makeMenu(menu, instance);
     }
     
-    public boolean keyChar(char key, int status, int time)
-    {
+    public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch(key) {
             case Keypad.KEY_SPACE:
@@ -199,6 +198,10 @@ public class ConfigScreen extends BaseCfgScreen {
                 break;
         }
         return retval;
+    }
+    
+    protected boolean onClick() {
+    	return openSelectedNode();
     }
     
     private void toggleSelectedNode() {
@@ -218,10 +221,12 @@ public class ConfigScreen extends BaseCfgScreen {
         configTreeField.setExpanded(curNode, !configTreeField.getExpanded(curNode));
     }
     
-    private void openSelectedNode() {
+    private boolean openSelectedNode() {
+    	boolean result = false;
         int curNode = configTreeField.getCurrentNode();
         if(curNode == globalId) {
             UiApplication.getUiApplication().pushScreen(new GlobalConfigScreen());
+            result = true;
         }
         else {
             int parentNode = configTreeField.getParent(curNode);
@@ -233,6 +238,7 @@ public class ConfigScreen extends BaseCfgScreen {
                     mailSettings.saveSettings();
                     configurationChanged = true;
                 }
+                result = true;
             }
             else if(parentNode == accountsId) {
                 AccountConfig acctConfig = (AccountConfig)configTreeField.getCookie(curNode);
@@ -242,6 +248,7 @@ public class ConfigScreen extends BaseCfgScreen {
                     mailSettings.saveSettings();
                     configurationChanged = true;
                 }
+                result = true;
             }
             else if(parentNode == outgoingId) {
                 OutgoingConfig outgoingConfig = (OutgoingConfig)configTreeField.getCookie(curNode);
@@ -251,9 +258,13 @@ public class ConfigScreen extends BaseCfgScreen {
                     mailSettings.saveSettings();
                     configurationChanged = true;
                 }
+                result = true;
             }
         }
-        buildAccountsList();
+        if(result) {
+        	buildAccountsList();
+        }
+        return result;
     }
 
     private void buildAccountsList() {

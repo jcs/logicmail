@@ -30,6 +30,11 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Enumeration;
+import java.util.Vector;
+
+import javax.microedition.io.file.FileSystemRegistry;
+
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
@@ -44,154 +49,188 @@ import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
-
 /**
  * Configuration screen
  */
-public class GlobalConfigScreen extends BaseCfgScreen
-    implements FieldChangeListener {
+public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeListener {
     private MailSettings mailSettings;
-    private BasicEditField fldRetMsgCount;
-    private ObjectChoiceField fldDispOrder;
-    private BasicEditField fldImapMaxMsgSize;
-    private BasicEditField fldImapMaxFolderDepth;
-    private BasicEditField fldPopMaxLines;
-    private ObjectChoiceField fldWifiMode;
-    private CheckboxField fldConnDebug;
-    private CheckboxField fldHideDeletedMsg;
-    private CheckboxField fldOverrideHostname;
-    private BasicEditField fldLocalHostname;
-    private ButtonField btSave;
+    private GlobalConfig existingConfig;
     private String localHostname;
+    private String[] fileSystemRoots;
+    private int selectedFileSystemRootIndex;
+
+    private static String LOCAL_FILE_BASE = "LogicMail/";
+    
+    private RichTextField globalSettingsLabel;
+    private BasicEditField messageCountEditField;
+    private ObjectChoiceField displayOrderChoiceField;
+    private CheckboxField hideDeletedMessagesCheckboxField;
+    private ObjectChoiceField wifiModeChoiceField;
+    private ObjectChoiceField localDataLocationChoiceLabel;
+    private RichTextField imapSettingsLabel;
+    private BasicEditField imapMaxMsgSizeEditField;
+    private BasicEditField imapMaxFolderDepthEditField;
+    private RichTextField popSettingsLabel;
+    private BasicEditField popMaxLinesEditField;
+    private CheckboxField connectionDebuggingCheckboxField;
+    private CheckboxField overrideHostnameCheckboxField;
+    private BasicEditField localHostnameEditField;
+    private ButtonField saveButton;
 
     public GlobalConfigScreen() {
         super("LogicMail - " +
             resources.getString(LogicMailResource.CONFIG_GLOBAL_TITLE));
 
         mailSettings = MailSettings.getInstance();
+        existingConfig = mailSettings.getGlobalConfig();
+        localHostname = existingConfig.getLocalHostname();
 
-        GlobalConfig config = mailSettings.getGlobalConfig();
-        localHostname = config.getLocalHostname();
-
-        add(new RichTextField(resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS),
-                Field.NON_FOCUSABLE));
-
-        fldRetMsgCount = new BasicEditField("  " +
-                resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + " ",
-                Integer.toString(config.getRetMsgCount()));
-        fldRetMsgCount.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldRetMsgCount);
-
-        String[] orderTypes = {
-                resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
-                resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
-            };
-
-        if (!config.getDispOrder()) {
-            fldDispOrder = new ObjectChoiceField("  " +
-                    resources.getString(
-                        LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ",
-                    orderTypes, 0);
-        } else {
-            fldDispOrder = new ObjectChoiceField("  " +
-                    resources.getString(
-                        LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + " ",
-                    orderTypes, 1);
+        // Populate fileSystemRoots with a list of all
+        // available storage devices
+        Vector resultsVector = new Vector();
+        String selectedFileSystemRoot = existingConfig.getLocalDataLocation();
+        int i = 0;
+        selectedFileSystemRootIndex = 0;
+        Enumeration e = FileSystemRegistry.listRoots();
+        while(e.hasMoreElements()) {
+        	String root = (String)e.nextElement();
+        	if(selectedFileSystemRoot.endsWith(root + LOCAL_FILE_BASE)) {
+        		selectedFileSystemRootIndex = i;
+        	}
+        	resultsVector.addElement(root);
+        	i++;
         }
-
-        add(fldDispOrder);
-
-        fldHideDeletedMsg = new CheckboxField(resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
-                config.getHideDeletedMsg());
-        add(fldHideDeletedMsg);
-
-        String[] wifiModes = {
-                resources.getString(LogicMailResource.MENUITEM_DISABLED),
-                resources.getString(LogicMailResource.MENUITEM_PROMPT),
-                resources.getString(LogicMailResource.MENUITEM_ALWAYS)
-            };
-        fldWifiMode = new ObjectChoiceField("  " +
-                resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) +
-                " ", wifiModes, config.getWifiMode());
-        add(fldWifiMode);
-
-        add(new RichTextField(resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_IMAP_SETTINGS),
-                Field.NON_FOCUSABLE));
-        fldImapMaxMsgSize = new BasicEditField("  " +
-                resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_IMAP_DOWNLOAD_LIMIT) + " ",
-                Integer.toString(config.getImapMaxMsgSize() / 1024));
-        fldImapMaxMsgSize.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldImapMaxMsgSize);
-
-        fldImapMaxFolderDepth = new BasicEditField("  " +
-                resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_IMAP_FOLDER_LIMIT) + " ",
-                Integer.toString(config.getImapMaxFolderDepth()));
-        fldImapMaxFolderDepth.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldImapMaxFolderDepth);
-
-        add(new RichTextField(resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_POP_SETTINGS),
-                Field.NON_FOCUSABLE));
-        fldPopMaxLines = new BasicEditField("  " +
-                resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_POP_DOWNLOAD_LIMIT) + " ",
-                Integer.toString(config.getPopMaxLines()));
-        fldPopMaxLines.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        add(fldPopMaxLines);
-
-        boolean overrideHostname = localHostname.length() > 0;
-        fldOverrideHostname = new CheckboxField(resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
-                overrideHostname);
-        fldOverrideHostname.setChangeListener(this);
-        add(fldOverrideHostname);
-
-        if (overrideHostname) {
-            fldLocalHostname = new BasicEditField("  " +
-                    resources.getString(
-                        LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + " ",
-                    localHostname);
-        } else {
-            String hostname = System.getProperty("microedition.hostname");
-            fldLocalHostname = new BasicEditField("  " +
-                    resources.getString(
-                        LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + " ",
-                    ((hostname != null) ? hostname : "localhost"));
-            fldLocalHostname.setEditable(false);
-        }
-
-        add(fldLocalHostname);
-        fldConnDebug = new CheckboxField(resources.getString(
-                    LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
-                config.getConnDebug());
-        add(fldConnDebug);
-
-        add(new SeparatorField());
-
-        btSave = new ButtonField(resources.getString(
-                    LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
-        btSave.setChangeListener(this);
-        add(btSave);
+        fileSystemRoots = new String[resultsVector.size()];
+        resultsVector.copyInto(fileSystemRoots);
+        
+        initFields();
     }
 
+    private void initFields() {
+        globalSettingsLabel = new RichTextField(
+        		resources.getString(LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS),
+        		Field.NON_FOCUSABLE);
+
+	    messageCountEditField = new BasicEditField(
+	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
+	            Integer.toString(existingConfig.getRetMsgCount()));
+	    messageCountEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+	
+	    String[] orderTypes = {
+	            resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
+	            resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
+	        };
+	
+	    if (!existingConfig.getDispOrder()) {
+	        displayOrderChoiceField = new ObjectChoiceField(
+	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+	                orderTypes, 0);
+	    } else {
+	        displayOrderChoiceField = new ObjectChoiceField(
+	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+	                orderTypes, 1);
+	    }
+	
+	    hideDeletedMessagesCheckboxField = new CheckboxField(
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
+                existingConfig.getHideDeletedMsg());
+	
+	    String[] wifiModes = {
+	            resources.getString(LogicMailResource.MENUITEM_DISABLED),
+	            resources.getString(LogicMailResource.MENUITEM_PROMPT),
+	            resources.getString(LogicMailResource.MENUITEM_ALWAYS)
+	        };
+	    wifiModeChoiceField = new ObjectChoiceField(
+	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + ' ',
+	    		wifiModes,
+	    		existingConfig.getWifiMode());
+
+	    localDataLocationChoiceLabel = new ObjectChoiceField(
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_LOCATION) + ' ',
+	    		fileSystemRoots,
+	    		selectedFileSystemRootIndex);
+	    
+	    imapSettingsLabel = new RichTextField(
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_SETTINGS),
+	            Field.NON_FOCUSABLE);
+	    imapMaxMsgSizeEditField = new BasicEditField(
+	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_DOWNLOAD_LIMIT) + ' ',
+	            Integer.toString(existingConfig.getImapMaxMsgSize() / 1024));
+	    imapMaxMsgSizeEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+	
+	    imapMaxFolderDepthEditField = new BasicEditField(
+	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_FOLDER_LIMIT) + ' ',
+	            Integer.toString(existingConfig.getImapMaxFolderDepth()));
+	    imapMaxFolderDepthEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+	    
+	    popSettingsLabel = new RichTextField(
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_SETTINGS),
+	            Field.NON_FOCUSABLE);
+	    popMaxLinesEditField = new BasicEditField(
+	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_DOWNLOAD_LIMIT) + ' ',
+	            Integer.toString(existingConfig.getPopMaxLines()));
+	    popMaxLinesEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+	
+	    boolean overrideHostname = localHostname.length() > 0;
+	    overrideHostnameCheckboxField = new CheckboxField(
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
+	            overrideHostname);
+	    overrideHostnameCheckboxField.setChangeListener(this);
+	
+	    if (overrideHostname) {
+	        localHostnameEditField = new BasicEditField(
+	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+	                localHostname);
+	    } else {
+	        String hostname = System.getProperty("microedition.hostname");
+	        localHostnameEditField = new BasicEditField(
+	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+	                ((hostname != null) ? hostname : "localhost"));
+	        localHostnameEditField.setEditable(false);
+	    }
+	
+	    connectionDebuggingCheckboxField = new CheckboxField(
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
+                existingConfig.getConnDebug());
+	
+	    saveButton = new ButtonField(
+	    		resources.getString(LogicMailResource.MENUITEM_SAVE),
+	    		Field.FIELD_HCENTER);
+	    saveButton.setChangeListener(this);
+	    
+	    add(globalSettingsLabel);
+	    add(messageCountEditField);
+	    add(displayOrderChoiceField);
+	    add(hideDeletedMessagesCheckboxField);
+	    add(wifiModeChoiceField);
+	    add(localDataLocationChoiceLabel);
+	    add(new SeparatorField());
+	    add(imapSettingsLabel);
+	    add(imapMaxMsgSizeEditField);
+	    add(imapMaxFolderDepthEditField);
+	    add(new SeparatorField());
+	    add(popSettingsLabel);
+	    add(popMaxLinesEditField);
+	    add(new SeparatorField());
+	    add(overrideHostnameCheckboxField);
+	    add(localHostnameEditField);
+	    add(connectionDebuggingCheckboxField);
+	    add(new SeparatorField());
+	    add(saveButton);
+    }
+    
     public void fieldChanged(Field field, int context) {
-        if (field == btSave) {
+        if (field == saveButton) {
             onClose();
-        } else if (field == fldOverrideHostname) {
-            if (fldOverrideHostname.getChecked()) {
-                fldLocalHostname.setText(localHostname);
-                fldLocalHostname.setEditable(true);
+        } else if (field == overrideHostnameCheckboxField) {
+            if (overrideHostnameCheckboxField.getChecked()) {
+                localHostnameEditField.setText(localHostname);
+                localHostnameEditField.setEditable(true);
             } else {
                 String hostname = System.getProperty("microedition.hostname");
-                fldLocalHostname.setText((hostname != null) ? hostname
+                localHostnameEditField.setText((hostname != null) ? hostname
                                                             : "localhost");
-                fldLocalHostname.setEditable(false);
+                localHostnameEditField.setEditable(false);
             }
         }
     }
@@ -200,44 +239,43 @@ public class GlobalConfigScreen extends BaseCfgScreen
         GlobalConfig config = mailSettings.getGlobalConfig();
 
         try {
-            config.setRetMsgCount(Integer.parseInt(fldRetMsgCount.getText()));
-        } catch (Exception e) {
-        }
+            config.setRetMsgCount(Integer.parseInt(messageCountEditField.getText()));
+        } catch (Exception e) { }
 
-        if (fldDispOrder.getSelectedIndex() == 0) {
+        if (displayOrderChoiceField.getSelectedIndex() == 0) {
             config.setDispOrder(false);
         } else {
             config.setDispOrder(true);
         }
 
-        config.setHideDeletedMsg(fldHideDeletedMsg.getChecked());
+        config.setHideDeletedMsg(hideDeletedMessagesCheckboxField.getChecked());
 
-        config.setWifiMode(fldWifiMode.getSelectedIndex());
+        config.setWifiMode(wifiModeChoiceField.getSelectedIndex());
 
+        String url = "file:///" + fileSystemRoots[localDataLocationChoiceLabel.getSelectedIndex()] + LOCAL_FILE_BASE;
+        config.setLocalDataLocation(url);
+        
         try {
             config.setImapMaxMsgSize(Integer.parseInt(
-                    fldImapMaxMsgSize.getText()) * 1024);
-        } catch (Exception e) {
-        }
+                    imapMaxMsgSizeEditField.getText()) * 1024);
+        } catch (Exception e) { }
 
         try {
             config.setImapMaxFolderDepth(Integer.parseInt(
-                    fldImapMaxFolderDepth.getText()));
-        } catch (Exception e) {
-        }
+                    imapMaxFolderDepthEditField.getText()));
+        } catch (Exception e) { }
 
         try {
-            config.setPopMaxLines(Integer.parseInt(fldPopMaxLines.getText()));
-        } catch (Exception e) {
-        }
+            config.setPopMaxLines(Integer.parseInt(popMaxLinesEditField.getText()));
+        } catch (Exception e) { }
 
-        if (fldOverrideHostname.getChecked()) {
-            config.setLocalHostname(fldLocalHostname.getText().trim());
+        if (overrideHostnameCheckboxField.getChecked()) {
+            config.setLocalHostname(localHostnameEditField.getText().trim());
         } else {
             config.setLocalHostname("");
         }
 
-        config.setConnDebug(fldConnDebug.getChecked());
+        config.setConnDebug(connectionDebuggingCheckboxField.getChecked());
         mailSettings.saveSettings();
     }
 }

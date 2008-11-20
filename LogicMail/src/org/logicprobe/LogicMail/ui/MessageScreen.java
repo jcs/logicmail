@@ -62,6 +62,7 @@ public class MessageScreen extends BaseScreen {
     private MessageNode messageNode;
     private MessageEnvelope envelope;
     private boolean isSentFolder;
+    private boolean messageRendered;
     
     public MessageScreen(MessageNode messageNode)
     {
@@ -71,7 +72,8 @@ public class MessageScreen extends BaseScreen {
         this.envelope = messageNode.getFolderMessage().getEnvelope();
         
         // Determine if this screen is viewing a sent message
-        this.isSentFolder = (messageNode.getParent().getType() == MailboxNode.TYPE_SENT);
+        int mailboxType = messageNode.getParent().getType();
+        this.isSentFolder = (mailboxType == MailboxNode.TYPE_SENT) || (mailboxType == MailboxNode.TYPE_OUTBOX);
         
         // Create screen elements
         if(isSentFolder) {
@@ -115,6 +117,9 @@ public class MessageScreen extends BaseScreen {
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(messageNode.getMessage() == null) {
     		messageNode.refreshMessage();
+    	}
+    	else if(!messageRendered) {
+    		renderMessage();
     	}
     }
 
@@ -253,24 +258,31 @@ public class MessageScreen extends BaseScreen {
     }
     
     private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
-    	Message message = messageNode.getMessage();
-    	if(e.getType() == MessageNodeEvent.TYPE_LOADED && message != null) {
-    		// Prepare the UI elements
-    		Vector messageFields;
-    		if(message.getBody() != null) {
-    			MessageRenderer messageRenderer = new MessageRenderer();
-    			message.getBody().accept(messageRenderer);
-    			messageFields = messageRenderer.getMessageFields();
-    		}
-    		else {
-    			messageFields = new Vector();
-    			messageFields.addElement(
-    					new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
-    		}
-    		drawMessageFields(messageFields);
+    	if(e.getType() == MessageNodeEvent.TYPE_LOADED) {
+    		renderMessage();
     	}
     }
 
+    private void renderMessage() {
+    	Message message = messageNode.getMessage();
+    	if(message != null) {
+			// Prepare the UI elements
+			Vector messageFields;
+			if(message.getBody() != null) {
+				MessageRenderer messageRenderer = new MessageRenderer();
+				message.getBody().accept(messageRenderer);
+				messageFields = messageRenderer.getMessageFields();
+			}
+			else {
+				messageFields = new Vector();
+				messageFields.addElement(
+						new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
+			}
+			drawMessageFields(messageFields);
+			messageRendered = true;
+    	}
+    }
+    
     private void drawMessageFields(Vector messageFields) {
         if(messageFields == null) {
             return;

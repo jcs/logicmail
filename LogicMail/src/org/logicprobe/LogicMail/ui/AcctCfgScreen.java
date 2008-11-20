@@ -239,7 +239,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
     		showFolderSelection(sentFolderChoiceButtonLabel);
         	return true;
         }
-        if(getFieldWithFocus() == draftFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+    	else if(getFieldWithFocus() == draftFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
         	showFolderSelection(draftFolderChoiceButtonLabel);
         	return true;
         }

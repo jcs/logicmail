@@ -15,7 +15,8 @@ import net.rim.device.api.system.Bitmap;
  */
 public class NodeIcons {
 	private static NodeIcons instance = new NodeIcons();
-
+	private NodeIconVisitor visitor = new NodeIconVisitor();
+	
 	private Bitmap localAccountIcon;
 	private Bitmap networkAccountIcon0;
 	private Bitmap networkAccountIcon1;
@@ -37,6 +38,8 @@ public class NodeIcons {
     private Bitmap unknownMessageIcon;
     private Bitmap junkMessageIcon;
 	
+    public final static int ICON_FOLDER = 0;
+    
 	private NodeIcons() {
 		// Load account icons
 		localAccountIcon    = Bitmap.getBitmapResource("account_local.png");
@@ -69,10 +72,26 @@ public class NodeIcons {
 		return instance.getIconImpl(node);
 	}
 	
+	public static Bitmap getIcon(int type) {
+		return instance.getIconImpl(type);
+	}
+	
 	private Bitmap getIconImpl(Node node) {
-		NodeIconVisitor visitor = new NodeIconVisitor();
+		visitor.clearIcon();
 		node.accept(visitor);
 		return visitor.getIcon();
+	}
+	
+	private Bitmap getIconImpl(int type) {
+		Bitmap icon;
+		switch(type) {
+		case ICON_FOLDER:
+			icon = folderIcon;
+			break;
+		default:
+			icon = null;
+		}
+		return icon;
 	}
 	
 	private class NodeIconVisitor implements NodeVisitor {
@@ -151,6 +170,10 @@ public class NodeIcons {
 	        	this.icon = openedMessageIcon;
 	        else
 	        	this.icon = unknownMessageIcon;
+		}
+		
+		public void clearIcon() {
+			this.icon = null;
 		}
 		
 		public Bitmap getIcon() {

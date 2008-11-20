@@ -364,10 +364,22 @@ public class AccountNode implements Node {
      * @param message Message to send.
      */
     public void sendMessage(Message message) {
-        // TODO: Spool sent messages through an outbox
         if (mailSender != null) {
-            outboundNewMessages.addElement(message);
-            mailSender.requestSendMessage(message);
+        	// Construct an outgoing message node
+        	FolderMessage outgoingFolderMessage = new FolderMessage(message.getEnvelope(), -1, -1);
+        	outgoingFolderMessage.setSeen(false);
+        	outgoingFolderMessage.setRecent(true);
+        	OutgoingMessageNode outgoingMessage =
+        		new OutgoingMessageNode(
+        				outgoingFolderMessage,
+        				this, mailSender);
+        	
+        	outgoingMessage.setMessage(message);
+        	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
+        	
+        	//TODO: Finish outbox spool and clean up old approach
+            //outboundNewMessages.addElement(message);
+            //mailSender.requestSendMessage(message);
         }
     }
 
@@ -379,10 +391,21 @@ public class AccountNode implements Node {
      */
     public void sendMessageReply(Message message,
         MessageNode originalMessageNode) {
-        // TODO: Spool sent messages through an outbox
         if (mailSender != null) {
-            outboundMessageReplies.put(message, originalMessageNode);
-            mailSender.requestSendMessage(message);
+        	// Construct an outgoing message node
+        	FolderMessage outgoingFolderMessage = new FolderMessage(message.getEnvelope(), -1, -1);
+        	outgoingFolderMessage.setSeen(false);
+        	outgoingFolderMessage.setRecent(true);
+        	OutgoingMessageNode outgoingMessage =
+        		new OutgoingMessageNode(
+        				outgoingFolderMessage,
+        				this, mailSender, originalMessageNode);
+        	outgoingMessage.setMessage(message);
+        	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
+        	
+        	//TODO: Finish outbox spool and clean up old approach
+            //outboundMessageReplies.put(message, originalMessageNode);
+            //mailSender.requestSendMessage(message);
         }
     }
 
@@ -475,9 +498,15 @@ public class AccountNode implements Node {
                             folderTreeItemChildren[i].getPath())) {
                     childMailbox = (MailboxNode) remainingMailboxMap.get(folderTreeItemChildren[i].getPath());
                 } else {
-                    childMailbox = new MailboxNode(folderTreeItemChildren[i],
-                    		folderTreeItemChildren[i].isAppendable(),
-                            getMailboxType(folderTreeItemChildren[i]));
+                	int mailboxType = getMailboxType(folderTreeItemChildren[i]);
+                	if(mailboxType == MailboxNode.TYPE_OUTBOX) {
+	                    childMailbox = new OutboxMailboxNode(folderTreeItemChildren[i]);
+                	}
+                	else {
+	                    childMailbox = new MailboxNode(folderTreeItemChildren[i],
+	                    		folderTreeItemChildren[i].isAppendable(),
+	                    		mailboxType);
+                	}
                     childMailbox.setParentAccount(this);
                 }
 

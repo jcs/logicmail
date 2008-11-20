@@ -40,13 +40,15 @@ import org.logicprobe.LogicMail.mail.MailFactory;
  * as its children.
  */
 public class MailRootNode implements Node {
-	Vector accounts;
+	private Vector accounts;
+	private AccountNode localAccountNode;
 	
 	public MailRootNode() {
 		this.accounts = new Vector();
 
 		// Add the local mail store
-		accounts.addElement(new AccountNode(MailFactory.createLocalMailStore()));
+		localAccountNode = new AccountNode(MailFactory.createLocalMailStore());
+		accounts.addElement(localAccountNode);
 	}
 	
 	public void accept(NodeVisitor visitor) {
@@ -71,6 +73,15 @@ public class MailRootNode implements Node {
 			}
 		}
 		return result;
+	}
+	
+	/**
+	 * Gets the account node representing the local mail folders.
+	 * 
+	 * @return Local account node.
+	 */
+	public AccountNode getLocalAccount() {
+		return localAccountNode;
 	}
 	
 	/**

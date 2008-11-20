@@ -472,7 +472,11 @@ public class MailboxNode implements Node, Serializable {
      * @return Message count.
      */
     public int getMessageCount() {
-        return this.folderTreeItem.getMsgCount();
+    	int result = 0;
+		synchronized(messages) {
+			result = messages.size();
+		}
+        return result;
     }
 
     /**

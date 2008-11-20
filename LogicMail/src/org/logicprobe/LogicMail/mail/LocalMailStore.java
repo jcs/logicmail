@@ -33,6 +33,10 @@ package org.logicprobe.LogicMail.mail;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
+
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -48,10 +52,6 @@ public class LocalMailStore extends AbstractMailStore {
     private FolderTreeItem rootFolder;
     private ThreadQueue threadQueue;
     private Hashtable folderMaildirMap;
-    
-    // Hard-coded local folder root.
-    // This should be coming from the global configuration.
-    private static String MAILDIR_ROOT = "file:///SDCard/LogicMail/";
     
     public LocalMailStore() {
         super();
@@ -240,8 +240,19 @@ public class LocalMailStore extends AbstractMailStore {
         		maildirFolder = (MaildirFolder)folderMaildirMap.get(requestFolder);
         	}
         	else {
+        		String folderUrl = MailSettings.getInstance().getGlobalConfig().getLocalDataLocation();
+        		try {
+        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl + '/');
+        		if(!fileConnection.exists()) {
+        			fileConnection.mkdir();
+        		}
+        		fileConnection.close();
+        		} catch (IOException e) {
+        			System.err.println("Error preparing root path: " + e.toString());
+        		}
+        		
             	StringBuffer buf = new StringBuffer();
-            	buf.append(MAILDIR_ROOT);
+            	buf.append(folderUrl);
             	buf.append(requestFolder.getPath());
         		maildirFolder = new MaildirFolder(buf.toString());
         		folderMaildirMap.put(requestFolder, maildirFolder);
