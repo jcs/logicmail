@@ -305,6 +305,8 @@ src\org\logicprobe\LogicMail\model\MessageNodeEvent.java
 src\org\logicprobe\LogicMail\model\MessageNodeListener.java
 src\org\logicprobe\LogicMail\model\Node.java
 src\org\logicprobe\LogicMail\model\NodeVisitor.java
+src\org\logicprobe\LogicMail\model\OutboxMailboxNode.java
+src\org\logicprobe\LogicMail\model\OutgoingMessageNode.java
 src\org\logicprobe\LogicMail\ui\.svn\all-wcprops
 src\org\logicprobe\LogicMail\ui\.svn\entries
 src\org\logicprobe\LogicMail\ui\.svn\format
