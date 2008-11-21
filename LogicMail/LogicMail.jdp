@@ -143,6 +143,7 @@ src\org\logicprobe\LogicMail\conf\PopConfig.java
 src\org\logicprobe\LogicMail\LogicMail.java
 src\org\logicprobe\LogicMail\LogicMail.rrc
 src\org\logicprobe\LogicMail\LogicMail.rrh
+src\org\logicprobe\LogicMail\LogicMail_nl.rrc
 src\org\logicprobe\LogicMail\mail\.svn\all-wcprops
 src\org\logicprobe\LogicMail\mail\.svn\entries
 src\org\logicprobe\LogicMail\mail\.svn\format
