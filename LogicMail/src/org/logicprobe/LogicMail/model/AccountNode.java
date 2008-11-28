@@ -593,6 +593,7 @@ public class AccountNode implements Node {
 
         if (messageNode != null) {
             messageNode.setMessage(e.getMessage());
+            messageNode.setMessageSource(e.getMessageSource());
         }
     }
 

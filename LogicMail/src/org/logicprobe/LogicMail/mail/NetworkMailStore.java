@@ -177,7 +177,7 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
 			results = (Object[])result;
-			fireMessageAvailable((FolderTreeItem)results[0], (FolderMessage)results[1], (Message)results[2]);
+			fireMessageAvailable((FolderTreeItem)results[0], (FolderMessage)results[1], (Message)results[2], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
 			results = (Object[])result;

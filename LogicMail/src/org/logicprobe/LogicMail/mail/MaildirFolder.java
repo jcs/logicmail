@@ -30,12 +30,12 @@
  */
 package org.logicprobe.LogicMail.mail;
 
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -43,12 +43,16 @@ import java.util.Vector;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
+import net.rim.device.api.system.ApplicationDescriptor;
+import net.rim.device.api.system.ApplicationManager;
+import net.rim.device.api.system.DeviceInfo;
+
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 
+// TODO: Auto-generated Javadoc
 /**
  * Implements an interface to messages stored on device file storage
  * in the Maildir (http://cr.yp.to/proto/maildir.html) format.
@@ -60,12 +64,29 @@ import org.logicprobe.LogicMail.util.MailMessageParser;
  * parsed just to generate a mailbox listing.
  */
 public class MaildirFolder {
+	
+	/** The folder url. */
 	private String folderUrl;
+	
+	/** The initialized. */
 	private boolean initialized;
+	
+	/** The file connection. */
 	private FileConnection fileConnection;
+	
+	/** The message envelope map. */
 	private Hashtable messageEnvelopeMap;
+	
+	/** The message envelope map dirty. */
 	private boolean messageEnvelopeMapDirty = true;
-	public Hashtable uidMessageMap;
+	
+	/** The uid message map. */
+	private Hashtable uidMessageMap;
+	
+	/** The next index. */
+	private int nextIndex = 0;
+	
+	/** The EO f_ marker. */
 	private static String EOF_MARKER = "----";
 	
 	/**
@@ -173,6 +194,7 @@ public class MaildirFolder {
 	 * Message flags are always parsed from the message filenames.
 	 * 
 	 * @return Array of <tt>FolderMessage</tt>s.
+	 * 
 	 * @throws IOException Thrown on I/O errors
 	 */
 	public FolderMessage[] getFolderMessages() throws IOException {
@@ -195,7 +217,7 @@ public class MaildirFolder {
 		}
 		Vector folderMessageList = new Vector();
 		int size = fileList.size();
-		int index = 0;
+		nextIndex = 0;
 		for(int i=0; i<size; i++) {
 			String fileName = (String)fileList.elementAt(i);
 			FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + fileName);
@@ -218,7 +240,7 @@ public class MaildirFolder {
 							uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 							messageEnvelopeMapDirty = true;
 						}
-						FolderMessage folderMessage = new FolderMessage(envelope, index++, uniqueId.hashCode());
+						FolderMessage folderMessage = new FolderMessage(envelope, nextIndex++, uniqueId.hashCode());
 						
 						// Check for flags
 						p += 3;
@@ -248,7 +270,9 @@ public class MaildirFolder {
 	 * out the message envelope.
 	 * 
 	 * @param inputStream The input stream to read from.
+	 * 
 	 * @return The message envelope.
+	 * 
 	 * @throws IOException Thrown on I/O errors.
 	 */
 	private MessageEnvelope getMessageEnvelope(InputStream inputStream) throws IOException {
@@ -277,7 +301,16 @@ public class MaildirFolder {
 		return envelope;
 	}
 
-	public Message getMessage(FolderMessage folderMessage) throws IOException {
+	/**
+	 * Gets the message source from the maildir.
+	 * 
+	 * @param folderMessage The folder message containing header information for the message to get.
+	 * 
+	 * @return The message source
+	 * 
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
+	public String getMessageSource(FolderMessage folderMessage) throws IOException {
 		System.err.println("Getting message " + folderMessage.getIndex());
 		if(fileConnection == null) {
 			throw new IOException("Maildir not open");
@@ -300,13 +333,13 @@ public class MaildirFolder {
 		}
 
 		// Open the file, and read its contents
-		Message message = null;
+		String messageSource = null;
 		try {
 			FileConnection mailFileConnection =
 				(FileConnection)Connector.open(fileConnection.getURL() + '/' + matchingFile);
 			if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
 				InputStream inputStream = mailFileConnection.openInputStream();
-				message = getMessage(inputStream, folderMessage.getEnvelope());
+				messageSource = getMessageSourceFromStream(inputStream);
 				inputStream.close();
 			}
 		} catch (Exception exp) {
@@ -314,10 +347,19 @@ public class MaildirFolder {
 			// TODO: Log a useful error message here
 		}
 		
-		return message;
+		return messageSource;
 	}
 
-	private Message getMessage(InputStream inputStream, MessageEnvelope envelope) throws IOException {
+	/**
+	 * Gets the message source from stream.
+	 * 
+	 * @param inputStream the input stream
+	 * 
+	 * @return the message source from stream
+	 * 
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
+	private String getMessageSourceFromStream(InputStream inputStream) throws IOException {
 		// Completely read the stream
 		InputStreamReader reader = new InputStreamReader(inputStream);
 		StringBuffer buf = new StringBuffer();
@@ -328,9 +370,76 @@ public class MaildirFolder {
 		}
 		rawBuf = null;
 		
-		// Parse the message source
-        MessagePart rootPart = MailMessageParser.parseRawMessage(new ByteArrayInputStream(buf.toString().getBytes()));
-        Message message = new Message(envelope, rootPart);
-		return message;
+		return buf.toString();
+	}
+
+	/**
+	 * Appends a message to the maildir.
+	 * 
+	 * @param rawMessage The raw message
+	 * @param initialFlags The initial flags
+	 * @return The folder message
+	 */
+	public FolderMessage appendMessage(String rawMessage, MessageFlags initialFlags) {
+		System.err.println("-->MaildirFolder.appendMessage()");
+		StringBuffer buf = new StringBuffer();
+
+		// Build the filename
+		buf.append(System.currentTimeMillis());
+		buf.append('.');
+		buf.append(ApplicationManager.getApplicationManager().getProcessId(ApplicationDescriptor.currentApplicationDescriptor()));
+		buf.append('.');
+		buf.append(DeviceInfo.getDeviceId());
+		String uniqueId = buf.toString();
+		
+		buf.append("_2,");
+		if(initialFlags.isAnswered()) { buf.append('R'); }
+		if(initialFlags.isDeleted()) { buf.append('T'); }
+		if(initialFlags.isDraft()) { buf.append('D'); }
+		if(initialFlags.isFlagged()) { buf.append('F'); }
+		if(initialFlags.isSeen()) { buf.append('S'); }
+
+		System.err.println("filename = \""+buf.toString()+"\"");
+
+		MessageEnvelope envelope = null;
+		try {
+			// Create a file connection for the new message
+			FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + buf.toString());
+			mailFileConnection.create();
+			
+			// Write out the message
+			DataOutputStream outputStream = mailFileConnection.openDataOutputStream();
+			OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+			writer.write(rawMessage);
+			outputStream.close();
+
+			// Make sure the message was written, by trying to read the headers back from it
+			InputStream inputStream = mailFileConnection.openInputStream();
+			envelope = getMessageEnvelope(inputStream);
+			inputStream.close();
+			mailFileConnection.close();
+			
+			messageEnvelopeMap.put(uniqueId, envelope);
+			uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
+			messageEnvelopeMapDirty = true;
+		} catch (IOException exp) {
+			// TODO: Log a useful error message here
+			System.err.println("Error writing message: " + exp.toString());
+		}
+		
+		FolderMessage result;
+		
+		if(envelope != null) {
+			result = new FolderMessage(envelope, nextIndex++, uniqueId.hashCode());
+			result.setAnswered(initialFlags.isAnswered());
+			result.setDeleted(initialFlags.isDeleted());
+			result.setDraft(initialFlags.isDraft());
+			result.setFlagged(initialFlags.isFlagged());
+			result.setSeen(initialFlags.isSeen());
+		}
+		else {
+			result = null;
+		}
+		return result;
 	}
 }

@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.mail;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Hashtable;
 
@@ -40,6 +41,8 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.ThreadQueue;
 
 
@@ -49,6 +52,7 @@ import org.logicprobe.LogicMail.util.ThreadQueue;
  * currently have any user configuration.
  */
 public class LocalMailStore extends AbstractMailStore {
+	private static String urlRoot = "file:///";
     private FolderTreeItem rootFolder;
     private ThreadQueue threadQueue;
     private Hashtable folderMaildirMap;
@@ -176,17 +180,22 @@ public class LocalMailStore extends AbstractMailStore {
     	}
     	
 		public void run() {
-        	Message message = null;
+			String messageSource = null;
+			Message message = null;
         	try {
         		maildirFolder.open();
-        		message = maildirFolder.getMessage(folderMessage);
+        		messageSource = maildirFolder.getMessageSource(folderMessage);
         		maildirFolder.close();
+        		
+        		// Parse the message source
+                MessagePart rootPart = MailMessageParser.parseRawMessage(new ByteArrayInputStream(messageSource.getBytes()));
+                message = new Message(folderMessage.getEnvelope(), rootPart);
         	} catch (IOException e) {
-        		System.err.println("Unable to read folder: " + e.toString());
+        		System.err.println("Unable to read message: " + e.toString());
         	}
         	
-        	if(message != null) {
-        		fireMessageAvailable(requestFolder, folderMessage, message);
+        	if(message != null && messageSource != null) {
+        		fireMessageAvailable(requestFolder, folderMessage, message, messageSource);
         	}
 		}
     }
@@ -204,9 +213,38 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
-        // TODO Auto-generated method stub
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder);
+        
+        if(requestFolder != null && rawMessage != null && rawMessage.length() > 0 && initialFlags != null) {
+        	threadQueue.invokeLater(new RequestMessageAppendRunnable(requestFolder, rawMessage, initialFlags));
+        }
     }
 
+    private class RequestMessageAppendRunnable extends MaildirRunnable {
+    	private String rawMessage;
+    	private MessageFlags initialFlags;
+    	
+    	public RequestMessageAppendRunnable(FolderTreeItem requestFolder, String rawMessage, MessageFlags initialFlags) {
+    		super(requestFolder);
+    		this.rawMessage = rawMessage;
+    		this.initialFlags = initialFlags;
+    	}
+    	
+		public void run() {
+        	FolderMessage folderMessage = null;
+        	try {
+        		maildirFolder.open();
+        		folderMessage = maildirFolder.appendMessage(rawMessage, initialFlags);
+        		maildirFolder.close();
+        	} catch (IOException e) {
+        		System.err.println("Unable to read folder: " + e.toString());
+        	}
+        	
+        	if(folderMessage != null) {
+        		fireFolderMessagesAvailable(requestFolder, new FolderMessage[] { folderMessage });
+        	}
+		}
+    }
     
     /**
      * Gets the matching folder tree item for the parameter.
@@ -240,19 +278,20 @@ public class LocalMailStore extends AbstractMailStore {
         		maildirFolder = (MaildirFolder)folderMaildirMap.get(requestFolder);
         	}
         	else {
-        		String folderUrl = MailSettings.getInstance().getGlobalConfig().getLocalDataLocation();
+        		String folderUrl = urlRoot + MailSettings.getInstance().getGlobalConfig().getLocalDataLocation() + "/LogicMail";
         		try {
-        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl + '/');
-        		if(!fileConnection.exists()) {
-        			fileConnection.mkdir();
-        		}
-        		fileConnection.close();
+	        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl + '/');
+	        		if(!fileConnection.exists()) {
+	        			fileConnection.mkdir();
+	        		}
+	        		fileConnection.close();
         		} catch (IOException e) {
         			System.err.println("Error preparing root path: " + e.toString());
         		}
         		
             	StringBuffer buf = new StringBuffer();
             	buf.append(folderUrl);
+            	buf.append('/');
             	buf.append(requestFolder.getPath());
         		maildirFolder = new MaildirFolder(buf.toString());
         		folderMaildirMap.put(requestFolder, maildirFolder);

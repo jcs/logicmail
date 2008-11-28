@@ -131,10 +131,10 @@ public class OutboxMailboxNode extends MailboxNode {
     private void mailSender_MessageSent(MessageSentEvent e) {
     	// Find out whether we know about this message
     	if(outboundMessageMap.get(e.getMessage()) instanceof OutgoingMessageNode) {
-    		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
+    		//OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
     		
     		// Store to the Sent folder
-    		AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
+    		//AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
     		
     		//get sent folder
     		//sendingAccountConfig.getOutgoingConfig()

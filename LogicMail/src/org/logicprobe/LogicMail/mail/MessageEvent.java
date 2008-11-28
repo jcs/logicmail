@@ -41,6 +41,7 @@ public class MessageEvent extends MailStoreEvent {
 	private FolderTreeItem folder;
 	private FolderMessage folderMessage;
 	private Message message;
+	private String messageSource;
 	
     /** Creates a new instance of MessageEvent */
 	public MessageEvent(Object source, FolderTreeItem folder, FolderMessage folderMessage, Message message) {
@@ -48,6 +49,12 @@ public class MessageEvent extends MailStoreEvent {
 		this.folder = folder;
 		this.folderMessage = folderMessage;
 		this.message = message;
+	}
+
+	/** Creates a new instance of MessageEvent */
+	public MessageEvent(Object source, FolderTreeItem folder, FolderMessage folderMessage, Message message, String messageSource) {
+		this(source, folder, folderMessage, message);
+		this.messageSource = messageSource;
 	}
 
 	public MessageEvent(Object source, FolderTreeItem folder, FolderMessage folderMessage) {
@@ -73,5 +80,12 @@ public class MessageEvent extends MailStoreEvent {
 	 */
 	public Message getMessage() {
 		return message;
+	}
+
+	/**
+	 * Gets the message source, if it is available for this particular event.
+	 */
+	public String getMessageSource() {
+		return messageSource;
 	}
 }

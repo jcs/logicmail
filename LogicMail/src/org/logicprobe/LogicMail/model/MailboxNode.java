@@ -241,6 +241,10 @@ public class MailboxNode implements Node, Serializable {
 		if(!this.hasAppend) {
 			return;
 		}
+		String rawMessage = message.getMessageSource();
+		if(rawMessage != null) {
+			parentAccount.getMailStore().requestMessageAppend(this.folderTreeItem, rawMessage, message.getFolderMessage().getFlags());
+		}
 		//TODO: Implement append for message nodes that may not have raw source available
 	}
 	

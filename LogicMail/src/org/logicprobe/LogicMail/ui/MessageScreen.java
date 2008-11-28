@@ -222,17 +222,17 @@ public class MessageScreen extends BaseScreen {
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
         menu.addSeparator();
-        if(accountConfig.getOutgoingConfig() != null) {
+        if(accountConfig != null && accountConfig.getOutgoingConfig() != null) {
             menu.add(replyItem);
             if(accountConfig.getIdentityConfig() != null) {
                 menu.add(replyAllItem);
             }
             menu.add(forwardItem);
-            menu.add(copyToItem);
-            menu.add(moveToItem);
             menu.add(compositionItem);
-            menu.addSeparator();
         }
+        menu.add(copyToItem);
+        menu.add(moveToItem);
+        menu.addSeparator();
         menu.add(closeItem);
     }
 

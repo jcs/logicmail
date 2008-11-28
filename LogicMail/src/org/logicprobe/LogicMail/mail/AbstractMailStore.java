@@ -369,13 +369,14 @@ public abstract class AbstractMailStore {
      * @param folder The folder in which a message has become available
      * @param folderMessage The folder data for the message
      * @param message The message itself
+     * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(FolderTreeItem folder, FolderMessage folderMessage, Message message) {
+    protected void fireMessageAvailable(FolderTreeItem folder, FolderMessage folderMessage, Message message, String messageSource) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, folder, folderMessage, message);
+                e = new MessageEvent(this, folder, folderMessage, message, messageSource);
             }
             ((MessageListener)listeners[i]).messageAvailable(e);
         }

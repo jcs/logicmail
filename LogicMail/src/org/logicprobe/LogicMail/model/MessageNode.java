@@ -44,6 +44,7 @@ public class MessageNode implements Node {
 	private MailboxNode parent;
 	private FolderMessage folderMessage;
 	private Message message;
+	private String messageSource;
 	private EventListenerList listenerList = new EventListenerList();
 	private boolean refreshInProgress;
 
@@ -107,6 +108,24 @@ public class MessageNode implements Node {
 			folderMessage.setSeen(true);
 		}
 		return this.message;
+	}
+
+	/**
+	 * Sets the raw message source.
+	 * 
+	 * @param messageSource The raw message source
+	 */
+	void setMessageSource(String messageSource) {
+		this.messageSource = messageSource;
+	}
+	
+	/**
+	 * Gets the raw message source.
+	 * 
+	 * @return The raw message source
+	 */
+	public String getMessageSource() {
+		return this.messageSource;
 	}
 	
 	/**
