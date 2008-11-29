@@ -40,6 +40,7 @@ import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
@@ -50,6 +51,8 @@ import org.logicprobe.LogicMail.message.MultiPart;
  * parsing raw message source text.
  */
 public class MailMessageParser {
+    private static String strCRLF = "\r\n";
+
     private MailMessageParser() { }
 
     /**
@@ -81,6 +84,61 @@ public class MailMessageParser {
         env.messageId = (String)headers.get("message-id");
         env.inReplyTo = (String)headers.get("in-reply-to");
         return env;
+    }
+
+    /**
+     * Generates the message headers corresponding to the provided envelope.
+     * 
+     * @param envelope The message envelope.
+     * @param includeUserAgent True to include the User-Agent line.
+     * @return The headers, one per line, with CRLF line separators.
+     */
+    public static String generateMessageHeaders(MessageEnvelope envelope, boolean includeUserAgent) {
+        StringBuffer buffer = new StringBuffer();
+
+        // Create the message headers
+        buffer.append("From: ");
+        buffer.append(StringParser.makeCsvString(envelope.from));
+        buffer.append(strCRLF);
+        
+        buffer.append("To: ");
+        buffer.append(StringParser.makeCsvString(envelope.to));
+        buffer.append(strCRLF);
+
+        if ((envelope.cc != null) && (envelope.cc.length > 0)) {
+            buffer.append("Cc: ");
+            buffer.append(StringParser.makeCsvString(envelope.cc));
+            buffer.append(strCRLF);
+        }
+
+        if ((envelope.replyTo != null) && (envelope.replyTo.length > 0)) {
+            buffer.append("Reply-To: ");
+            buffer.append(StringParser.makeCsvString(envelope.replyTo));
+            buffer.append(strCRLF);
+        }
+
+        buffer.append("Date: ");
+        buffer.append(StringParser.createDateString(envelope.date));
+        buffer.append(strCRLF);
+
+        if(includeUserAgent) {
+	        buffer.append("User-Agent: ");
+	        buffer.append(AppInfo.getName());
+	        buffer.append('/');
+	        buffer.append(AppInfo.getVersion());
+	        buffer.append(strCRLF);
+        }
+        
+        buffer.append("Subject: ");
+        buffer.append(envelope.subject);
+        buffer.append(strCRLF);
+
+        if (envelope.inReplyTo != null) {
+            buffer.append("In-Reply-To: ");
+            buffer.append(envelope.inReplyTo);
+            buffer.append(strCRLF);
+        }
+    	return buffer.toString();
     }
     
     /**
@@ -132,8 +190,6 @@ public class MailMessageParser {
      * @return Root MessagePart element for this portion of the message tree
      */
     private static MessagePart getMessagePart(MIMEInputStream mimeInputStream) throws IOException {
-    	//TODO: Refactor so MaildirFolder and PopClient use a common implementation
-    	
         // Parse out the MIME type and relevant header fields
         String mimeType = mimeInputStream.getContentType();
         String type = mimeType.substring(0, mimeType.indexOf('/'));

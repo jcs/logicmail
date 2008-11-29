@@ -786,7 +786,7 @@ public class StringParser {
 
     /**
      * Parse a CSV string, where commas inside quotes or
-     * excaped with a backslash aren't considered separators,
+     * escaped with a backslash aren't considered separators,
      * and whitespace is trimmed.
      */
     public static String[] parseCsvString(String text) {
@@ -820,6 +820,31 @@ public class StringParser {
         }
 
         return tok;
+    }
+
+    /**
+     * Create a simple CSV string from the provided input strings.
+     * 
+     * @param input Array of strings.
+     * @return Comma-separated value string.
+     */
+    public static String makeCsvString(String[] input) {
+        if ((input == null) || (input.length == 0)) {
+            return "";
+        } else if (input.length == 1) {
+            return input[0];
+        } else {
+            StringBuffer buffer = new StringBuffer();
+
+            for (int i = 0; i < (input.length - 1); i++) {
+                buffer.append(input[i]);
+                buffer.append(", ");
+            }
+
+            buffer.append(input[input.length - 1]);
+
+            return buffer.toString();
+        }
     }
 
     /**

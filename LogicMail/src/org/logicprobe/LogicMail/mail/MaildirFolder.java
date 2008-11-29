@@ -64,29 +64,13 @@ import org.logicprobe.LogicMail.util.MailMessageParser;
  * parsed just to generate a mailbox listing.
  */
 public class MaildirFolder {
-	
-	/** The folder url. */
 	private String folderUrl;
-	
-	/** The initialized. */
 	private boolean initialized;
-	
-	/** The file connection. */
 	private FileConnection fileConnection;
-	
-	/** The message envelope map. */
 	private Hashtable messageEnvelopeMap;
-	
-	/** The message envelope map dirty. */
 	private boolean messageEnvelopeMapDirty = true;
-	
-	/** The uid message map. */
 	private Hashtable uidMessageMap;
-	
-	/** The next index. */
 	private int nextIndex = 0;
-	
-	/** The EO f_ marker. */
 	private static String EOF_MARKER = "----";
 	
 	/**
@@ -270,9 +254,7 @@ public class MaildirFolder {
 	 * out the message envelope.
 	 * 
 	 * @param inputStream The input stream to read from.
-	 * 
 	 * @return The message envelope.
-	 * 
 	 * @throws IOException Thrown on I/O errors.
 	 */
 	private MessageEnvelope getMessageEnvelope(InputStream inputStream) throws IOException {
@@ -305,9 +287,7 @@ public class MaildirFolder {
 	 * Gets the message source from the maildir.
 	 * 
 	 * @param folderMessage The folder message containing header information for the message to get.
-	 * 
 	 * @return The message source
-	 * 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public String getMessageSource(FolderMessage folderMessage) throws IOException {
@@ -351,12 +331,10 @@ public class MaildirFolder {
 	}
 
 	/**
-	 * Gets the message source from stream.
+	 * Gets the message source from an input stream.
 	 * 
 	 * @param inputStream the input stream
-	 * 
 	 * @return the message source from stream
-	 * 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private String getMessageSourceFromStream(InputStream inputStream) throws IOException {

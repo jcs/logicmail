@@ -30,7 +30,6 @@
  */
 package org.logicprobe.LogicMail.mail.smtp;
 
-import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -43,7 +42,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.MailMessageParser;
 
 import java.io.IOException;
 
@@ -54,7 +53,6 @@ import java.util.Calendar;
  * Implements an SMTP client
  */
 public class SmtpClient implements OutgoingMailClient {
-    private static String strCRLF = "\r\n";
     private GlobalConfig globalConfig;
     private OutgoingConfig outgoingConfig;
     private Connection connection;
@@ -213,29 +211,10 @@ public class SmtpClient implements OutgoingMailClient {
         MessageEnvelope env = message.getEnvelope();
         StringBuffer buffer = new StringBuffer();
 
-        // Create the message headers
-        buffer.append("From: " + makeCsvString(env.from) + strCRLF);
-        buffer.append("To: " + makeCsvString(env.to) + strCRLF);
-
-        if ((env.cc != null) && (env.cc.length > 0)) {
-            buffer.append("Cc: " + makeCsvString(env.cc) + strCRLF);
-        }
-
-        if ((env.replyTo != null) && (env.replyTo.length > 0)) {
-            buffer.append("Reply-To: " + makeCsvString(env.replyTo) + strCRLF);
-        }
-
-        buffer.append("Date: " +
-            StringParser.createDateString(Calendar.getInstance().getTime()) +
-            strCRLF);
-        buffer.append("User-Agent: " + AppInfo.getName() + "/" +
-            AppInfo.getVersion() + strCRLF);
-        buffer.append("Subject: " + env.subject + strCRLF);
-
-        if (env.inReplyTo != null) {
-            buffer.append("In-Reply-To: " + env.inReplyTo + strCRLF);
-        }
-
+        // Generate the headers
+        env.date = Calendar.getInstance().getTime();
+        buffer.append(MailMessageParser.generateMessageHeaders(env, true));
+        
         // Add the body
         buffer.append(mimeStr);
 
@@ -273,25 +252,6 @@ public class SmtpClient implements OutgoingMailClient {
         }
 
         return rawMessage;
-    }
-
-    private static String makeCsvString(String[] input) {
-        if ((input == null) || (input.length == 0)) {
-            return "";
-        } else if (input.length == 1) {
-            return input[0];
-        } else {
-            StringBuffer buffer = new StringBuffer();
-
-            for (int i = 0; i < (input.length - 1); i++) {
-                buffer.append(input[i]);
-                buffer.append(", ");
-            }
-
-            buffer.append(input[input.length - 1]);
-
-            return buffer.toString();
-        }
     }
 
     private static String stripEmail(String input) {

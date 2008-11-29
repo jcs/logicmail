@@ -38,7 +38,9 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.EventListenerList;
+import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
@@ -242,10 +244,24 @@ public class MailboxNode implements Node, Serializable {
 			return;
 		}
 		String rawMessage = message.getMessageSource();
-		if(rawMessage != null) {
-			parentAccount.getMailStore().requestMessageAppend(this.folderTreeItem, rawMessage, message.getFolderMessage().getFlags());
+		if(rawMessage == null) {
+			// Generate the message source
+			StringBuffer buf = new StringBuffer();
+			buf.append(MailMessageParser.generateMessageHeaders(message.getMessage().getEnvelope(), false));
+			
+	        MessageMimeConverter messageMime = new MessageMimeConverter();
+	        message.getMessage().getBody().accept(messageMime);
+			
+	        buf.append(messageMime.toMimeString());
+
+	        rawMessage = buf.toString();
 		}
-		//TODO: Implement append for message nodes that may not have raw source available
+
+		// Append the message to the folder
+		parentAccount.getMailStore().requestMessageAppend(
+				this.folderTreeItem,
+				rawMessage,
+				message.getFolderMessage().getFlags());
 	}
 	
 	/**
