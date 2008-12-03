@@ -34,8 +34,8 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Vector;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
@@ -43,6 +43,7 @@ import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
+import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -57,10 +58,16 @@ import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
 
 /**
- * Configuration screen
+ * Account configuration screen
  */
 public class AcctCfgScreen extends BaseCfgScreen {
+	// Top-level fields
     private BasicEditField acctNameField;
+    private LabelField accountTypeLabel;
+	private ObjectChoiceField pageField;
+	private VerticalFieldManager contentFieldManager;
+	
+	// Basic settings fields
     private BasicEditField serverNameField;
     private CheckboxField serverSslField;
     private BasicEditField serverPortField;
@@ -69,14 +76,17 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private CheckboxField useMdsField;
     private ObjectChoiceField identityField;
     private ObjectChoiceField outgoingServerField;
+    
+    // Folder settings fields
     private LabelField sentFolderChoiceLabel;
     private LabelField sentFolderChoiceButtonLabel;
     private LabelField draftFolderChoiceLabel;
     private LabelField draftFolderChoiceButtonLabel;
     
+    // Advanced settings fields
     private BasicEditField folderPrefixField;
-    private ButtonField saveButton;
     
+	private Manager[] pageFieldManagers;
     private boolean acctSaved;
     private boolean createDefaultIdentity;
     private AccountConfig acctConfig;
@@ -95,6 +105,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
     }
 
+    /**
+     * Instantiates a new account configuration screen.
+     * 
+     * @param acctConfig The account configuration instance.
+     */
     public AcctCfgScreen(AccountConfig acctConfig) {
         super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
         
@@ -144,77 +159,110 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
     }
 
+    /**
+     * Initializes the UI fields.
+     */
     private void initFields() {
-        acctNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + " ", acctConfig.getAcctName());
-        serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + " ", acctConfig.getServerName());
-        
-        serverSslField = new CheckboxField("SSL", acctConfig.getServerSSL());
-        serverSslField.setChangeListener(fieldChangeListener);
-        serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + " ", Integer.toString(acctConfig.getServerPort()));
-        serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + " ", acctConfig.getServerUser());
-        serverPassField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + " ", acctConfig.getServerPass());
-        
-        useMdsField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !acctConfig.getDeviceSide());
-        identityField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + " ", identityConfigs, 0);
-        outgoingServerField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + " ", outgoingConfigs, 0);
-        
-        saveButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
-        saveButton.setChangeListener(fieldChangeListener);
-        
-        add(acctNameField);
-        add(new SeparatorField());
+        acctNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + ' ', acctConfig.getAcctName());
 
+        String accountType = resources.getString(LogicMailResource.CONFIG_ACCOUNT_PROTOCOL);
         if(acctConfig instanceof ImapConfig) {
-            add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PROTOCOL) + " IMAP", Field.NON_FOCUSABLE));
+        	accountType += " IMAP";
         }
         else if(acctConfig instanceof PopConfig) {
-            add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PROTOCOL) + " POP", Field.NON_FOCUSABLE));
+        	accountType += " POP";
         }
-
-        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER), Field.NON_FOCUSABLE));
-        add(serverNameField);
+        accountTypeLabel = new LabelField(accountType, Field.NON_FOCUSABLE);
         
-        add(serverSslField);
-        add(serverPortField);
-        add(serverUserField);
-        add(serverPassField);
-        add(useMdsField);
-        add(new LabelField());
-        add(identityField);
-        add(outgoingServerField);
-        add(new LabelField());
+        pageField = new ObjectChoiceField("Configuration: ",
+        		new String[] { "Basic settings", "Folder settings", "Advanced settings" });
+    	pageField.setChangeListener(fieldChangeListener);
 
+    	pageFieldManagers = new Manager[3];
+    	pageFieldManagers[0] = initFieldsBasic();
+    	pageFieldManagers[1] = initFieldsFolder();
+    	pageFieldManagers[2] = initFieldsAdvanced();
+        
+    	// Container for the active settings page
+    	contentFieldManager = new VerticalFieldManager();
+    	contentFieldManager.add(pageFieldManagers[0]);
+    	
+        add(acctNameField);
+        add(accountTypeLabel);
+        add(pageField);
+        add(new SeparatorField());
+        add(contentFieldManager);
+        add(new LabelField());
+    }
+    
+    /**
+     * Initializes the UI fields for the basic settings page.
+     */
+    private Manager initFieldsBasic() {
+    	Manager manager = new VerticalFieldManager();
+        serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName());
+        serverSslField = new CheckboxField("SSL", acctConfig.getServerSSL());
+        serverSslField.setChangeListener(fieldChangeListener);
+        serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(acctConfig.getServerPort()));
+        serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+        serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', acctConfig.getServerUser());
+        serverPassField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', acctConfig.getServerPass());
+        useMdsField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !acctConfig.getDeviceSide());
+        identityField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + ' ', identityConfigs, 0);
+        outgoingServerField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + ' ', outgoingConfigs, 0);
+
+        manager.add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER), Field.NON_FOCUSABLE));
+        manager.add(serverNameField);
+        manager.add(serverSslField);
+        manager.add(serverPortField);
+        manager.add(serverUserField);
+        manager.add(serverPassField);
+        manager.add(useMdsField);
+        manager.add(new LabelField());
+        manager.add(identityField);
+        manager.add(outgoingServerField);
+        
+        return manager;
+    }
+    
+    /**
+     * Initializes the UI fields for the folder settings page.
+     */
+    private Manager initFieldsFolder() {
+    	Manager manager = new VerticalFieldManager();
         if(acctConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)acctConfig;
             selectedSentFolder = imapConfig.getSentMailbox();
             selectedDraftFolder = imapConfig.getDraftMailbox();
             
-            sentFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + " ");
+            sentFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + ' ');
             sentFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedSentFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
-            draftFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER) + " ");
+            draftFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER) + ' ');
             draftFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedDraftFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
-            
-            folderPrefixField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_FOLDER_PREFIX) + " ", imapConfig.getFolderPrefix());
 
-            add(sentFolderChoiceLabel);
-            add(sentFolderChoiceButtonLabel);
-            add(draftFolderChoiceLabel);
-            add(draftFolderChoiceButtonLabel);
-            add(folderPrefixField);
+            manager.add(sentFolderChoiceLabel);
+            manager.add(sentFolderChoiceButtonLabel);
+            manager.add(draftFolderChoiceLabel);
+            manager.add(draftFolderChoiceButtonLabel);
         }
-        
-        add(new SeparatorField());
-        add(new LabelField(null, Field.NON_FOCUSABLE));
-        add(saveButton);
+        return manager;
+    }
+    
+    /**
+     * Initializes the UI fields for the advanced settings page.
+     */
+    private Manager initFieldsAdvanced() {
+    	Manager manager = new VerticalFieldManager();
+        if(acctConfig instanceof ImapConfig) {
+            ImapConfig imapConfig = (ImapConfig)acctConfig;
+            folderPrefixField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_FOLDER_PREFIX) + ' ', imapConfig.getFolderPrefix());
+            manager.add(folderPrefixField);
+        }
+    	return manager;
     }
     
     public void AcctCfgScreen_fieldChanged(Field field, int context) {
-        if(field == saveButton) {
-            field.setDirty(false);
-            onClose();
-        }
-        else if(field == serverSslField) {
+        if(field == serverSslField) {
             if(acctConfig instanceof PopConfig) {
                 if(serverSslField.getChecked()) {
                     serverPortField.setText("995");
@@ -232,20 +280,35 @@ public class AcctCfgScreen extends BaseCfgScreen {
                 }
             }
         }
+        else if(field == pageField) {
+        	int index = pageField.getSelectedIndex();
+        	if(contentFieldManager.getField(0) != pageFieldManagers[index]) {
+        		contentFieldManager.deleteAll();
+        		contentFieldManager.add(pageFieldManagers[index]);
+        	}
+        }
     }
 
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#trackwheelUnclick(int, int)
+     */
     protected boolean trackwheelUnclick(int status, int time) {
-    	if(getFieldWithFocus() == sentFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
-    		showFolderSelection(sentFolderChoiceButtonLabel);
-        	return true;
-        }
-    	else if(getFieldWithFocus() == draftFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
-        	showFolderSelection(draftFolderChoiceButtonLabel);
-        	return true;
-        }
-        else {
-        	return super.trackwheelUnclick(status, time);
-        }
+    	if(getFieldWithFocus() == contentFieldManager && contentFieldManager.getField(0) == pageFieldManagers[1]) {
+	    	if(pageFieldManagers[1].getFieldWithFocus() == sentFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+	    		showFolderSelection(sentFolderChoiceButtonLabel);
+	        	return true;
+	        }
+	    	else if(pageFieldManagers[1].getFieldWithFocus() == draftFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+	        	showFolderSelection(draftFolderChoiceButtonLabel);
+	        	return true;
+	        }
+	        else {
+	        	return super.trackwheelUnclick(status, time);
+	        }
+    	}
+    	else {
+    		return super.trackwheelUnclick(status, time);
+    	}
     }
     
     private void showFolderSelection(LabelField choiceButtonLabel) {
@@ -315,6 +378,9 @@ public class AcctCfgScreen extends BaseCfgScreen {
 		return buf.toString();
     }
     
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.container.MainScreen#onSavePrompt()
+     */
     protected boolean onSavePrompt() {
         if(acctNameField.getText().length() > 0 &&
            serverNameField.getText().length() > 0 &&
@@ -336,6 +402,9 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
     }
 
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#save()
+     */
     public void save() {
         this.acctConfig.setAcctName(acctNameField.getText());
         this.acctConfig.setServerName(serverNameField.getText());

@@ -111,7 +111,7 @@ public class ImapConfig extends AccountConfig {
         		}
         	}
         }
-        return sentMailbox;
+        return draftMailbox;
     }
 
     
