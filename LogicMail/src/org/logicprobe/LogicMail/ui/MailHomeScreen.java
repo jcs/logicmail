@@ -418,7 +418,7 @@ public class MailHomeScreen extends BaseScreen {
 		
 		Bitmap icon = NodeIcons.getIcon(treeNode.node);
 		
-		graphics.drawBitmap(indent, y+1, height-2, height-2, icon, 0, 0);
+		graphics.drawBitmap(indent, y+((height-icon.getHeight())/2), height-2, height-2, icon, 0, 0);
 		
 		Font origFont = graphics.getFont();
 		StringBuffer buf = new StringBuffer();
