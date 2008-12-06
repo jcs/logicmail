@@ -572,6 +572,10 @@ public class MailboxNode implements Node, Serializable {
 		return uniqueId;
 	}
 	
+	protected void setUniqueId(long uniqueId) {
+		this.uniqueId = uniqueId;
+	}
+	
 	public void serialize(DataOutputStream output) throws IOException {
 		output.writeLong(uniqueId);
 		output.writeBoolean(hasAppend);

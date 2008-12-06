@@ -32,6 +32,11 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.io.DataInputStream;
+
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.MailRootNode;
+import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
@@ -48,6 +53,11 @@ public abstract class AccountConfig extends ConnectionConfig {
     private long identityConfigId;
     private OutgoingConfig outgoingConfig;
     private long outgoingConfigId;
+
+    private MailboxNode sentMailbox;
+    private long sentMailboxId;
+    private MailboxNode draftMailbox;
+    private long draftMailboxId;
 
     public AccountConfig() {
         super();
@@ -67,6 +77,10 @@ public abstract class AccountConfig extends ConnectionConfig {
         identityConfigId = -1L;
         outgoingConfig = null;
         outgoingConfigId = -1L;
+        sentMailbox = null;
+        sentMailboxId = -1L;
+        draftMailbox = null;
+        draftMailboxId = -1L;
     }
 
     public String toString() {
@@ -142,6 +156,76 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
     }
 
+    public MailboxNode getSentMailbox() {
+        if(sentMailbox == null && sentMailboxId != -1L) {
+        	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+        	
+        	AccountNode[] accounts = rootNode.getAccounts();
+        	for(int i=0; i<accounts.length; i++) {
+        		sentMailbox = findMailboxNode(accounts[i].getRootMailbox(), sentMailboxId);
+        		if(sentMailbox != null) {
+        			break;
+        		}
+        	}
+        }
+        return sentMailbox;
+    }
+
+    
+    public void setSentMailbox(MailboxNode sentMailbox) {
+        if(sentMailbox == null) {
+            this.sentMailbox = null;
+            this.sentMailboxId = -1L;
+        }
+        else {
+            this.sentMailbox = sentMailbox;
+            this.sentMailboxId = sentMailbox.getUniqueId();
+        }
+    }
+    
+    public MailboxNode getDraftMailbox() {
+        if(draftMailbox == null && draftMailboxId != -1L) {
+        	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+        	
+        	AccountNode[] accounts = rootNode.getAccounts();
+        	for(int i=0; i<accounts.length; i++) {
+        		draftMailbox = findMailboxNode(accounts[i].getRootMailbox(), draftMailboxId);
+        		if(draftMailbox != null) {
+        			break;
+        		}
+        	}
+        }
+        return draftMailbox;
+    }
+
+    
+    public void setDraftMailbox(MailboxNode draftMailbox) {
+        if(draftMailbox == null) {
+            this.draftMailbox = null;
+            this.draftMailboxId = -1L;
+        }
+        else {
+            this.draftMailbox = draftMailbox;
+            this.draftMailboxId = draftMailbox.getUniqueId();
+        }
+    }
+    
+    private static MailboxNode findMailboxNode(MailboxNode currentNode, long id) {
+    	if(currentNode.getUniqueId() == id) {
+    		return currentNode;
+    	}
+    	else {
+    		MailboxNode[] nodes = currentNode.getMailboxes();
+    		for(int i=0; i<nodes.length; i++) {
+    			MailboxNode result = findMailboxNode(nodes[i], id);
+    			if(result != null) {
+    				return result;
+    			}
+    		}
+    	}
+    	return null;
+    }
+
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
         table.put("account_serverType", new Integer(serverType));
@@ -149,6 +233,8 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_serverPass", serverPass);
         table.put("account_identityConfigId", new Long(identityConfigId));
         table.put("account_outgoingConfigId", new Long(outgoingConfigId));
+        table.put("account_sentMailboxId", new Long(sentMailboxId));
+        table.put("account_draftMailboxId", new Long(draftMailboxId));
     }
 
     public void readConfigItems(SerializableHashtable table) {
@@ -183,5 +269,21 @@ public abstract class AccountConfig extends ConnectionConfig {
             outgoingConfigId = -1;
         }
         outgoingConfig = null;
+
+        value = table.get("account_sentMailboxId");
+        if(value != null && value instanceof Long) {
+        	sentMailboxId = ((Long)value).longValue();
+        }
+        else {
+        	sentMailboxId = -1L;
+        }
+        
+        value = table.get("account_draftMailboxId");
+        if(value != null && value instanceof Long) {
+        	draftMailboxId = ((Long)value).longValue();
+        }
+        else {
+        	draftMailboxId = -1L;
+        }
     }
 }

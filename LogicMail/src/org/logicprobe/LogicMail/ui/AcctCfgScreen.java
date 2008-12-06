@@ -230,21 +230,18 @@ public class AcctCfgScreen extends BaseCfgScreen {
      */
     private Manager initFieldsFolder() {
     	Manager manager = new VerticalFieldManager();
-        if(acctConfig instanceof ImapConfig) {
-            ImapConfig imapConfig = (ImapConfig)acctConfig;
-            selectedSentFolder = imapConfig.getSentMailbox();
-            selectedDraftFolder = imapConfig.getDraftMailbox();
-            
-            sentFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + ' ');
-            sentFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedSentFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
-            draftFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER) + ' ');
-            draftFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedDraftFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
+        selectedSentFolder = acctConfig.getSentMailbox();
+        selectedDraftFolder = acctConfig.getDraftMailbox();
+        
+        sentFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + ' ');
+        sentFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedSentFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
+        draftFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER) + ' ');
+        draftFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedDraftFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
 
-            manager.add(sentFolderChoiceLabel);
-            manager.add(sentFolderChoiceButtonLabel);
-            manager.add(draftFolderChoiceLabel);
-            manager.add(draftFolderChoiceButtonLabel);
-        }
+        manager.add(sentFolderChoiceLabel);
+        manager.add(sentFolderChoiceButtonLabel);
+        manager.add(draftFolderChoiceLabel);
+        manager.add(draftFolderChoiceButtonLabel);
         return manager;
     }
     
@@ -294,11 +291,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
      */
     protected boolean trackwheelUnclick(int status, int time) {
     	if(getFieldWithFocus() == contentFieldManager && contentFieldManager.getField(0) == pageFieldManagers[1]) {
-	    	if(pageFieldManagers[1].getFieldWithFocus() == sentFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+	    	if(pageFieldManagers[1].getFieldWithFocus() == sentFolderChoiceButtonLabel) {
 	    		showFolderSelection(sentFolderChoiceButtonLabel);
 	        	return true;
 	        }
-	    	else if(pageFieldManagers[1].getFieldWithFocus() == draftFolderChoiceButtonLabel && acctConfig instanceof ImapConfig) {
+	    	else if(pageFieldManagers[1].getFieldWithFocus() == draftFolderChoiceButtonLabel) {
 	        	showFolderSelection(draftFolderChoiceButtonLabel);
 	        	return true;
 	        }
@@ -323,15 +320,13 @@ public class AcctCfgScreen extends BaseCfgScreen {
     		return;
     	}
     	
-    	ImapConfig imapConfig = (ImapConfig)acctConfig;
-
     	// Build an array containing the current account node, if it already exists,
     	// and any local account nodes.
     	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
     	Vector accountNodeVector = new Vector();
     	for(int i=0; i<accountNodes.length; i++) {
     		if(accountNodes[i].getStatus() == AccountNode.STATUS_LOCAL ||
-  			   accountNodes[i].getAccountConfig() == imapConfig) {
+  			   accountNodes[i].getAccountConfig() == acctConfig) {
     			accountNodeVector.addElement(accountNodes[i]);
     		}
     	}
@@ -434,11 +429,11 @@ public class AcctCfgScreen extends BaseCfgScreen {
             this.acctConfig.setOutgoingConfig(selectedOutgoingConfig);
         }
 
+        this.acctConfig.setSentMailbox(selectedSentFolder);
+        this.acctConfig.setDraftMailbox(selectedDraftFolder);
+
         if(acctConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)acctConfig;
-            
-            imapConfig.setSentMailbox(selectedSentFolder);
-            imapConfig.setDraftMailbox(selectedDraftFolder);
             
             String folderPrefix = folderPrefixField.getText().trim();
             if(folderPrefix.length() == 0) {

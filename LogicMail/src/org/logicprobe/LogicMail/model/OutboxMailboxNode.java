@@ -38,6 +38,7 @@ import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 public class OutboxMailboxNode extends MailboxNode {
 	private int lastMessageId = 0;
@@ -49,7 +50,8 @@ public class OutboxMailboxNode extends MailboxNode {
             mailSender_MessageSent(e);
         }
     };
-	public OutboxMailboxNode(FolderTreeItem folderTreeItem) {
+    
+	OutboxMailboxNode(FolderTreeItem folderTreeItem) {
 		super(folderTreeItem, false, MailboxNode.TYPE_OUTBOX);
 	}
 
@@ -131,58 +133,21 @@ public class OutboxMailboxNode extends MailboxNode {
     private void mailSender_MessageSent(MessageSentEvent e) {
     	// Find out whether we know about this message
     	if(outboundMessageMap.get(e.getMessage()) instanceof OutgoingMessageNode) {
-    		//OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
+    		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
     		
     		// Store to the Sent folder
-    		//AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
+    		AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
     		
-    		//get sent folder
-    		//sendingAccountConfig.getOutgoingConfig()
-    		//append to sent folder
-    		//update replied-to message flags
-    	}
-    	
-    	
-//        boolean messageSent;
-//        MessageNode repliedMessageNode = null;
+    		// Append to the Sent message folder, if available
+    		MailboxNode sentMailbox = sendingAccountConfig.getSentMailbox();
+    		if(sentMailbox != null && sentMailbox.hasAppend()) {
+    			MessageFlags initialFlags = new MessageFlags();
+    			initialFlags.setSeen(true);
+    			sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
+    		}
 
-    
-//    // Find whether we have to deal with this event
-//    if (outboundNewMessages.contains(e.getMessage())) {
-//        messageSent = true;
-//        outboundNewMessages.removeElement(e.getMessage());
-//    } else if (outboundMessageReplies.containsKey(e.getMessage())) {
-//        messageSent = true;
-//        repliedMessageNode = (MessageNode) outboundMessageReplies.get(e.getMessage());
-//        outboundMessageReplies.remove(e.getMessage());
-//    } else {
-//        messageSent = false;
-//    }
-//
-//    if (messageSent) {
-//        // Store to the Sent folder
-//        MailboxNode sentMailbox = null;
-//
-//        if (accountConfig instanceof ImapConfig) {
-//        	sentMailbox = ((ImapConfig) accountConfig).getSentMailbox();
-//        	
-//        	//TODO: Implement cross-account append capability
-//        	if(sentMailbox.getParentAccount() != this) {
-//        		sentMailbox = null;
-//        	}
-//        }
-//
-//        if ((sentMailbox != null) && mailStore.hasAppend() && sentMailbox.hasAppend()) {
-//            MessageFlags initialFlags = new MessageFlags();
-//            initialFlags.setSeen(true);
-//            sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
-//        }
-//
-//        // Update flags if necessary
-//        if ((repliedMessageNode != null) && mailStore.hasFlags()) {
-//            mailStore.requestMessageAnswered(repliedMessageNode.getParent().getFolderTreeItem(),
-//                repliedMessageNode.getFolderMessage());
-//        }
-//    }
+    		// Update replied-to message flags
+    		// TODO: Update replied-to message
+    	}
     }
 }

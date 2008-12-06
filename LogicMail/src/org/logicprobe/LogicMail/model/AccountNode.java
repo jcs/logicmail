@@ -31,7 +31,6 @@
 package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
@@ -46,7 +45,6 @@ import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -78,8 +76,8 @@ public class AccountNode implements Node {
     private AccountConfig accountConfig;
     private int status;
     private boolean shutdown = false;
-    private Vector outboundNewMessages = new Vector();
-    private Hashtable outboundMessageReplies = new Hashtable();
+    //private Vector outboundNewMessages = new Vector();
+    //private Hashtable outboundMessageReplies = new Hashtable();
     private DataStore accountDataStore;
     private MailSenderListener mailSenderListener = new MailSenderListener() {
             public void messageSent(MessageSentEvent e) {
@@ -660,46 +658,46 @@ public class AccountNode implements Node {
      * @param e Event data.
      */
     private void mailSender_MessageSent(MessageSentEvent e) {
-        boolean messageSent;
-        MessageNode repliedMessageNode = null;
-
-        // Find whether we have to deal with this event
-        if (outboundNewMessages.contains(e.getMessage())) {
-            messageSent = true;
-            outboundNewMessages.removeElement(e.getMessage());
-        } else if (outboundMessageReplies.containsKey(e.getMessage())) {
-            messageSent = true;
-            repliedMessageNode = (MessageNode) outboundMessageReplies.get(e.getMessage());
-            outboundMessageReplies.remove(e.getMessage());
-        } else {
-            messageSent = false;
-        }
-
-        if (messageSent) {
-            // Store to the Sent folder
-            MailboxNode sentMailbox = null;
-
-            if (accountConfig instanceof ImapConfig) {
-            	sentMailbox = ((ImapConfig) accountConfig).getSentMailbox();
-            	
-            	//TODO: Implement cross-account append capability
-            	if(sentMailbox.getParentAccount() != this) {
-            		sentMailbox = null;
-            	}
-            }
-
-            if ((sentMailbox != null) && mailStore.hasAppend() && sentMailbox.hasAppend()) {
-                MessageFlags initialFlags = new MessageFlags();
-                initialFlags.setSeen(true);
-                sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
-            }
-
-            // Update flags if necessary
-            if ((repliedMessageNode != null) && mailStore.hasFlags()) {
-                mailStore.requestMessageAnswered(repliedMessageNode.getParent().getFolderTreeItem(),
-                    repliedMessageNode.getFolderMessage());
-            }
-        }
+//        boolean messageSent;
+//        MessageNode repliedMessageNode = null;
+//
+//        // Find whether we have to deal with this event
+//        if (outboundNewMessages.contains(e.getMessage())) {
+//            messageSent = true;
+//            outboundNewMessages.removeElement(e.getMessage());
+//        } else if (outboundMessageReplies.containsKey(e.getMessage())) {
+//            messageSent = true;
+//            repliedMessageNode = (MessageNode) outboundMessageReplies.get(e.getMessage());
+//            outboundMessageReplies.remove(e.getMessage());
+//        } else {
+//            messageSent = false;
+//        }
+//
+//        if (messageSent) {
+//            // Store to the Sent folder
+//            MailboxNode sentMailbox = null;
+//
+//            if (accountConfig instanceof ImapConfig) {
+//            	sentMailbox = ((ImapConfig) accountConfig).getSentMailbox();
+//            	
+//            	//TODO: Implement cross-account append capability
+//            	if(sentMailbox.getParentAccount() != this) {
+//            		sentMailbox = null;
+//            	}
+//            }
+//
+//            if ((sentMailbox != null) && mailStore.hasAppend() && sentMailbox.hasAppend()) {
+//                MessageFlags initialFlags = new MessageFlags();
+//                initialFlags.setSeen(true);
+//                sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
+//            }
+//
+//            // Update flags if necessary
+//            if ((repliedMessageNode != null) && mailStore.hasFlags()) {
+//                mailStore.requestMessageAnswered(repliedMessageNode.getParent().getFolderTreeItem(),
+//                    repliedMessageNode.getFolderMessage());
+//            }
+//        }
     }
 
     /**
@@ -781,15 +779,16 @@ public class AccountNode implements Node {
      * Saves the mailbox tree to persistent storage.
      */
     private void save() {
-        if (accountConfig == null) {
-            return;
-        }
-
         if (accountDataStore == null) {
             accountDataStore = DataStoreFactory.getConnectionCacheStore();
         }
 
-        accountDataStore.putNamedObject(Long.toString(accountConfig.getUniqueId()), rootMailbox);
+        if(mailStore.isLocal()) {
+        	accountDataStore.putNamedObject("LocalMailStore", rootMailbox);
+        }
+        else {
+        	accountDataStore.putNamedObject(Long.toString(accountConfig.getUniqueId()), rootMailbox);
+        }
         accountDataStore.save();
     }
 
@@ -797,16 +796,19 @@ public class AccountNode implements Node {
      * Loads the mailbox tree from persistent storage.
      */
     private void load() {
-        if (accountConfig == null) {
-            return;
-        }
-
         if (accountDataStore == null) {
             accountDataStore = DataStoreFactory.getConnectionCacheStore();
         }
-
-        Object loadedObject = accountDataStore.getNamedObject(Long.toString(accountConfig.getUniqueId()));
-
+        
+        Object loadedObject;
+        if(mailStore.isLocal()) {
+	        loadedObject = accountDataStore.getNamedObject("LocalMailStore");
+        	
+        }
+        else {
+	        loadedObject = accountDataStore.getNamedObject(Long.toString(accountConfig.getUniqueId()));
+        }
+        
         if (loadedObject instanceof MailboxNode) {
             synchronized (rootMailboxLock) {
                 this.rootMailbox = (MailboxNode) loadedObject;
