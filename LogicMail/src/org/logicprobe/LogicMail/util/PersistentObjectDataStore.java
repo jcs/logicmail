@@ -31,11 +31,6 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -115,7 +110,7 @@ public class PersistentObjectDataStore implements DataStore {
 		byte[] byteArray;
 		Enumeration e = objectMap.elements();
         while (e.hasMoreElements()) {
-            byteArray = serializeClass((Serializable)e.nextElement());
+            byteArray = SerializationUtils.serializeClass((Serializable)e.nextElement());
             objectData.addElement(byteArray);
         }
 
@@ -142,7 +137,7 @@ public class PersistentObjectDataStore implements DataStore {
 			Object deserializedObject;
 			int size = newObjectMap.size();
 			for(int i=0; i<size; i++) {
-				deserializedObject = deserializeClass((byte[])newObjectMap.elementAt(i));
+				deserializedObject = SerializationUtils.deserializeClass((byte[])newObjectMap.elementAt(i));
                 if(deserializedObject instanceof Serializable) {
                     objectMap.put(new Long(((Serializable)deserializedObject).getUniqueId()), deserializedObject);
                 }
@@ -153,52 +148,4 @@ public class PersistentObjectDataStore implements DataStore {
 	public void delete() {
 		PersistentStore.destroyPersistentObject(storeUid);
 	}
-	
-    /**
-     * Utility method to serialize any serializable class.
-     * The returned buffer consists of the fully qualified class name,
-     * followed by the serialized contents of the class.
-     */
-    private byte[] serializeClass(Serializable input) {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        DataOutputStream output = new DataOutputStream(buffer);
-        try {
-            output.writeUTF(input.getClass().getName());
-            input.serialize(output);
-        } catch (IOException ex) {
-            // do nothing
-        }
-        return buffer.toByteArray();
-    }
-    
-    /**
-     * Utility method to deserialize any class.
-     * First, the fully qualified class name is read from the
-     * input stream.  Then, if a class matching that name exists,
-     * it is instantiated.  Finally, if that class implements the
-     * Serializable interface, the input stream is passed on
-     * to its deserialize method.
-     */
-    private Serializable deserializeClass(byte[] data) {
-        DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
-        Object deserializedObject;
-        Serializable result = null;
-        try {
-            String classType = input.readUTF();
-            deserializedObject = Class.forName(classType).newInstance();
-            if(deserializedObject instanceof Serializable) {
-                result = (Serializable)deserializedObject;
-                result.deserialize(input);
-            }
-        } catch (IOException ex) {
-            result = null;
-        } catch (ClassNotFoundException ex) {
-            result = null;
-        } catch (InstantiationException ex) {
-            result = null;
-        } catch (IllegalAccessException ex) {
-            result = null;
-        }
-        return result;
-    }
 }

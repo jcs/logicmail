@@ -57,6 +57,7 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 			connectionTimer.cancel();
 		}
 		connectionTimer = new Timer();
+		//TODO: Figure out why this causes an IllegalStateException
 		connectionTimer.schedule(connectionTimerTask, CONNECTION_TIMEOUT);
 	}
 	

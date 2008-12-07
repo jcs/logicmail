@@ -52,7 +52,6 @@ import org.logicprobe.LogicMail.util.ThreadQueue;
  * currently have any user configuration.
  */
 public class LocalMailStore extends AbstractMailStore {
-	private static String urlRoot = "file:///";
     private FolderTreeItem rootFolder;
     private ThreadQueue threadQueue;
     private Hashtable folderMaildirMap;
@@ -278,7 +277,7 @@ public class LocalMailStore extends AbstractMailStore {
         		maildirFolder = (MaildirFolder)folderMaildirMap.get(requestFolder);
         	}
         	else {
-        		String folderUrl = urlRoot + MailSettings.getInstance().getGlobalConfig().getLocalDataLocation() + "/LogicMail";
+        		String folderUrl = MailSettings.getInstance().getGlobalConfig().getLocalDataLocation();
         		try {
 	        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl + '/');
 	        		if(!fileConnection.exists()) {

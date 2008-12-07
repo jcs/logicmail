@@ -31,11 +31,6 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import javax.microedition.rms.RecordStore;
@@ -127,13 +122,13 @@ public class RmsDataStore implements DataStore {
             
             // Serialize the name map, and store
             // it at the first index.
-            byteArray = serializeClass(nameMap);
+            byteArray = SerializationUtils.serializeClass(nameMap);
             store.addRecord(byteArray, 0, byteArray.length);
             
             // Store all the objects in the object map
             Enumeration e = objectMap.elements();
             while (e.hasMoreElements()) {
-                byteArray = serializeClass((Serializable)e.nextElement());
+                byteArray = SerializationUtils.serializeClass((Serializable)e.nextElement());
                 store.addRecord(byteArray, 0, byteArray.length);
             }
             store.closeRecordStore();
@@ -151,7 +146,7 @@ public class RmsDataStore implements DataStore {
             
             if(records >= 1) {
                 // Deserialize the name map
-                deserializedObject = deserializeClass(store.getRecord(1));
+                deserializedObject = SerializationUtils.deserializeClass(store.getRecord(1));
                 if(deserializedObject instanceof SerializableHashtable) {
                     nameMap = (SerializableHashtable)deserializedObject;
                 }
@@ -163,7 +158,7 @@ public class RmsDataStore implements DataStore {
                 objectMap.clear();
                 if(records > 1) {
                     for(int i=2;i<=records;i++) {
-                        deserializedObject = deserializeClass(store.getRecord(i));
+                        deserializedObject = SerializationUtils.deserializeClass(store.getRecord(i));
                         if(deserializedObject instanceof Serializable) {
                             objectMap.put(new Long(((Serializable)deserializedObject).getUniqueId()), deserializedObject);
                         }
@@ -183,53 +178,5 @@ public class RmsDataStore implements DataStore {
         } catch (RecordStoreException exp) {
             // do nothing
         }
-    }
-    
-    /**
-     * Utility method to serialize any serializable class.
-     * The returned buffer consists of the fully qualified class name,
-     * followed by the serialized contents of the class.
-     */
-    private byte[] serializeClass(Serializable input) {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        DataOutputStream output = new DataOutputStream(buffer);
-        try {
-            output.writeUTF(input.getClass().getName());
-            input.serialize(output);
-        } catch (IOException ex) {
-            // do nothing
-        }
-        return buffer.toByteArray();
-    }
-    
-    /**
-     * Utility method to deserialize any class.
-     * First, the fully qualified class name is read from the
-     * input stream.  Then, if a class matching that name exists,
-     * it is instantiated.  Finally, if that class implements the
-     * Serializable interface, the input stream is passed on
-     * to its deserialize method.
-     */
-    private Serializable deserializeClass(byte[] data) {
-        DataInputStream input = new DataInputStream(new ByteArrayInputStream(data));
-        Object deserializedObject;
-        Serializable result = null;
-        try {
-            String classType = input.readUTF();
-            deserializedObject = Class.forName(classType).newInstance();
-            if(deserializedObject instanceof Serializable) {
-                result = (Serializable)deserializedObject;
-                result.deserialize(input);
-            }
-        } catch (IOException ex) {
-            result = null;
-        } catch (ClassNotFoundException ex) {
-            result = null;
-        } catch (InstantiationException ex) {
-            result = null;
-        } catch (IllegalAccessException ex) {
-            result = null;
-        }
-        return result;
     }
 }

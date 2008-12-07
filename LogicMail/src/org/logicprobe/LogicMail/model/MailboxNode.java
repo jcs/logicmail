@@ -42,6 +42,7 @@ import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.SerializationUtils;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
@@ -568,16 +569,16 @@ public class MailboxNode implements Node, Serializable {
         }
     }
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+	 */
 	public long getUniqueId() {
 		return uniqueId;
 	}
 	
-	protected void setUniqueId(long uniqueId) {
-		this.uniqueId = uniqueId;
-	}
-	
-	// TODO: Figure out how to handle OutboxMailboxNode for serialization/deserialization
-	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
 	public void serialize(DataOutputStream output) throws IOException {
 		output.writeLong(uniqueId);
 		output.writeBoolean(hasAppend);
@@ -587,11 +588,17 @@ public class MailboxNode implements Node, Serializable {
 			int size = mailboxes.size();
 			output.writeInt(size);
 			for(int i=0; i<size; i++) {
-				((MailboxNode)mailboxes.elementAt(i)).serialize(output);
+				byte[] serializedBytes =
+					SerializationUtils.serializeClass((MailboxNode)mailboxes.elementAt(i));
+				output.writeInt(serializedBytes.length);
+				output.write(serializedBytes);
 			}
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
 	public void deserialize(DataInputStream input) throws IOException {
 		uniqueId = input.readLong();
 		hasAppend = input.readBoolean();
@@ -601,10 +608,19 @@ public class MailboxNode implements Node, Serializable {
 		synchronized(mailboxes) {
 			int size = input.readInt();
 			for(int i=0; i<size; i++) {
-				MailboxNode child = new MailboxNode();
-				child.deserialize(input);
-				child.parentMailbox = this;
-				mailboxes.addElement(child);
+				int length = input.readInt();
+				if(length < 0 || length > 1000000) {
+					// Quick check to deal with data incompatibility
+					throw new IOException();
+				}
+				byte[] serializedBytes = new byte[length];
+				input.read(serializedBytes);
+				Object deserializedObject = SerializationUtils.deserializeClass(serializedBytes);
+				if(deserializedObject instanceof MailboxNode) {
+					MailboxNode child = (MailboxNode)deserializedObject;
+					child.parentMailbox = this;
+					mailboxes.addElement(child);
+				}
 			}
 		}
 	}
