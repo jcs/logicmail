@@ -76,8 +76,6 @@ public class AccountNode implements Node {
     private AccountConfig accountConfig;
     private int status;
     private boolean shutdown = false;
-    //private Vector outboundNewMessages = new Vector();
-    //private Hashtable outboundMessageReplies = new Hashtable();
     private DataStore accountDataStore;
     private MailSenderListener mailSenderListener = new MailSenderListener() {
             public void messageSent(MessageSentEvent e) {
@@ -374,10 +372,6 @@ public class AccountNode implements Node {
         	
         	outgoingMessage.setMessage(message);
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
-        	
-        	//TODO: Finish outbox spool and clean up old approach
-            //outboundNewMessages.addElement(message);
-            //mailSender.requestSendMessage(message);
         }
     }
 
@@ -400,10 +394,6 @@ public class AccountNode implements Node {
         				this, mailSender, originalMessageNode);
         	outgoingMessage.setMessage(message);
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
-        	
-        	//TODO: Finish outbox spool and clean up old approach
-            //outboundMessageReplies.put(message, originalMessageNode);
-            //mailSender.requestSendMessage(message);
         }
     }
 
@@ -658,34 +648,6 @@ public class AccountNode implements Node {
      * @param e Event data.
      */
     private void mailSender_MessageSent(MessageSentEvent e) {
-//        boolean messageSent;
-//        MessageNode repliedMessageNode = null;
-//
-//        // Find whether we have to deal with this event
-//        if (outboundNewMessages.contains(e.getMessage())) {
-//            messageSent = true;
-//            outboundNewMessages.removeElement(e.getMessage());
-//        } else if (outboundMessageReplies.containsKey(e.getMessage())) {
-//            messageSent = true;
-//            repliedMessageNode = (MessageNode) outboundMessageReplies.get(e.getMessage());
-//            outboundMessageReplies.remove(e.getMessage());
-//        } else {
-//            messageSent = false;
-//        }
-//
-//        if (messageSent) {
-//            // Store to the Sent folder
-//            MailboxNode sentMailbox = null;
-//
-//            if (accountConfig instanceof ImapConfig) {
-//            	sentMailbox = ((ImapConfig) accountConfig).getSentMailbox();
-//            	
-//            	//TODO: Implement cross-account append capability
-//            	if(sentMailbox.getParentAccount() != this) {
-//            		sentMailbox = null;
-//            	}
-//            }
-//
 //            if ((sentMailbox != null) && mailStore.hasAppend() && sentMailbox.hasAppend()) {
 //                MessageFlags initialFlags = new MessageFlags();
 //                initialFlags.setSeen(true);

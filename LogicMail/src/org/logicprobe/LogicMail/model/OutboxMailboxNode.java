@@ -34,6 +34,7 @@ import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
+import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
@@ -147,7 +148,15 @@ public class OutboxMailboxNode extends MailboxNode {
     		}
 
     		// Update replied-to message flags
-    		// TODO: Update replied-to message
+    		MessageNode replyToMessageNode = outgoingMessageNode.getReplyToMessageNode();
+    		if(replyToMessageNode != null) {
+    			AbstractMailStore sendingMailStore = outgoingMessageNode.getSendingAccount().getMailStore();
+    			if(sendingMailStore.hasFlags()) {
+    				sendingMailStore.requestMessageAnswered(
+    						replyToMessageNode.getParent().getFolderTreeItem(),
+    						replyToMessageNode.getFolderMessage());
+    			}
+    		}
     	}
     }
 }
