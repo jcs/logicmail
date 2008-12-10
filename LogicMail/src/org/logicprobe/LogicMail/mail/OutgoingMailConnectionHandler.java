@@ -5,6 +5,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.util.Queue;
 
 public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler {
 	private OutgoingMailClient outgoingClient;
@@ -20,13 +21,20 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	public OutgoingMailConnectionHandler(OutgoingMailClient client) {
 		super(client);
 		this.outgoingClient = client;
+		this.connectionTimer = new Timer();
 	}
 
-	private TimerTask connectionTimerTask = new TimerTask() {
+	private TimerTask connectionTimerTask;
+	
+	private class ConnectionTimerTask extends TimerTask {
 		public void run() {
-			setConnectionState(STATE_CLOSING);
+			Queue requestQueue = getRequestQueue();
+			synchronized(requestQueue) {
+				setConnectionState(STATE_CLOSING);
+				requestQueue.notifyAll();
+			}
 		}
-	};
+	}
 	
 	/**
 	 * Handles a specific request during the REQUESTS state.
@@ -37,9 +45,9 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
      * @throw MailException on protocol errors
 	 */
 	protected void handleRequest(int type, Object[] params) throws IOException, MailException {
-		if(connectionTimer != null) {
-			connectionTimer.cancel();
-			connectionTimer = null;
+		if(connectionTimerTask != null) {
+			connectionTimerTask.cancel();
+			connectionTimerTask = null;
 		}
 		switch(type) {
 		case REQUEST_SEND_MESSAGE:
@@ -53,21 +61,33 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	 * Handles the start of the IDLE state.
 	 */
 	protected void handleBeginIdle() {
-		if(connectionTimer != null) {
-			connectionTimer.cancel();
+		if(connectionTimerTask != null) {
+			connectionTimerTask.cancel();
+			connectionTimerTask = null;
 		}
-		connectionTimer = new Timer();
-		//TODO: Figure out why this causes an IllegalStateException
+		connectionTimerTask = new ConnectionTimerTask();
 		connectionTimer.schedule(connectionTimerTask, CONNECTION_TIMEOUT);
+		
+		Queue requestQueue = getRequestQueue();
+		synchronized(requestQueue) {
+			if(requestQueue.element() != null) {
+				return;
+			}
+			else {
+				try {
+					requestQueue.wait();
+				} catch (InterruptedException e) { }
+			}
+		}
 	}
 	
 	/**
 	 * Called at the start of the CLOSING state.
 	 */
 	protected void handleBeforeClosing() {
-		if(connectionTimer != null) {
-			connectionTimer.cancel();
-			connectionTimer = null;
+		if(connectionTimerTask != null) {
+			connectionTimerTask.cancel();
+			connectionTimerTask = null;
 		}
 	}
 	

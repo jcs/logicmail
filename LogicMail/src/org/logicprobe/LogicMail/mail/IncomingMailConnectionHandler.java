@@ -165,6 +165,19 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 						new Object[] { incomingClient.getActiveFolder() });
 			}
 		}
+		else {
+			Queue requestQueue = getRequestQueue();
+			synchronized(requestQueue) {
+				if(requestQueue.element() != null) {
+					return;
+				}
+				else {
+					try {
+						requestQueue.wait();
+					} catch (InterruptedException e) { }
+				}
+			}
+		}
 	}
 
 	private void handleRequestFolderTree() throws IOException, MailException {
