@@ -175,15 +175,20 @@ public class AccountNodeTest extends TestCase {
     	// Check for the necessary events and changes
     	assertTrue(mailboxStatusChangedEvents.containsKey(inboxNode));
     	assertEquals(5, inboxNode.getUnseenMessageCount());
-    	assertEquals(10, inboxNode.getMessageCount());
+    	//assertEquals(10, inboxNode.getMessageCount());
 
     	assertTrue(mailboxStatusChangedEvents.containsKey(oneNode));
     	assertEquals(6, oneNode.getUnseenMessageCount());
-    	assertEquals(11, oneNode.getMessageCount());
+    	//assertEquals(11, oneNode.getMessageCount());
     	
     	assertTrue(mailboxStatusChangedEvents.containsKey(twoNode));
     	assertEquals(7, twoNode.getUnseenMessageCount());
-    	assertEquals(12, twoNode.getMessageCount());
+    	//assertEquals(12, twoNode.getMessageCount());
+    	
+    	// Note: getMessageCount() assertions are commented out because
+    	// they are now based on the actual MailboxNode contents.  When
+    	// this test was written, they were based on the IMAP folder
+    	// status results.
     }
     
     public Test suite() {
