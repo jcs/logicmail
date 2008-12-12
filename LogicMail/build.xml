@@ -8,6 +8,7 @@
     <property name="dist.dir" location="dist"/>
 	<property name="dist.ota.dir" location="distota"/>
 	<property name="dist.alx.dir" location="distalx"/>
+	<property name="docs.dir" location="docs"/>
 	<property name="startup.src.dir" location="../LogicMailStartup/src"/>
 	<property file="project.properties"/>
 
@@ -69,6 +70,23 @@
     	<if><isset property="jde450.home"/><then>
     		<build-platform jdehome="${jde450.home}" platform="BB450" defines="BLACKBERRY_4_5_0" />
 		</then></if>
+	</target>
+
+	<!-- Build the code documentation -->
+	<target name="docs">
+		<javadoc destdir="${docs.dir}"
+			     author="true"
+				 version="true"
+				 use="true"
+				 windowtitle="${module.description}">
+			<fileset dir="${src.dir}">
+				<include name="**/*.java"/>
+				<exclude name="**/*BB40.java"/>
+			</fileset>
+			<fileset dir="${startup.src.dir}">
+				<include name="**/*.java"/>
+			</fileset>
+		</javadoc>
 	</target>
 
 	<!-- Build the desktop loader distribution -->
@@ -161,5 +179,6 @@
 		<delete dir="${dist.dir}"/>
 		<delete dir="${dist.alx.dir}"/>
 		<delete dir="${dist.ota.dir}"/>
+		<delete dir="${docs.dir}"/>
 	</target>
 </project>
