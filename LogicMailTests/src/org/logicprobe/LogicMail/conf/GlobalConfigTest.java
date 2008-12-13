@@ -92,9 +92,6 @@ public class GlobalConfigTest extends TestCase {
 
         assertEquals(30, instance.getRetMsgCount());
         assertTrue(!instance.getDispOrder());
-        assertEquals(32768, instance.getImapMaxMsgSize());
-        assertEquals(4, instance.getImapMaxFolderDepth());
-        assertEquals(400, instance.getPopMaxLines());
         assertEquals(0, instance.getWifiMode());
         assertTrue(instance.getHideDeletedMsg());
     }
@@ -105,9 +102,6 @@ public class GlobalConfigTest extends TestCase {
             GlobalConfig instance = new GlobalConfig();
             instance.setRetMsgCount(20);
             instance.setDispOrder(true);
-            instance.setImapMaxMsgSize(16384);
-            instance.setImapMaxFolderDepth(8);
-            instance.setPopMaxLines(200);
             instance.setWifiMode(1);
             instance.setHideDeletedMsg(false);
             
@@ -123,9 +117,6 @@ public class GlobalConfigTest extends TestCase {
             // Verify results
             assertEquals(20, instance.getRetMsgCount());
             assertTrue(instance.getDispOrder());
-            assertEquals(16384, instance.getImapMaxMsgSize());
-            assertEquals(8, instance.getImapMaxFolderDepth());
-            assertEquals(200, instance.getPopMaxLines());
             assertEquals(1, instance.getWifiMode());
             assertTrue(!instance.getHideDeletedMsg());
         } catch (Throwable t) {
