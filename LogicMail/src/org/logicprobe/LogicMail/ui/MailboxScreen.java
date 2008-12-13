@@ -139,6 +139,7 @@ public class MailboxScreen extends BaseScreen {
         }
         
         // TODO: Support message list changes between display pushing
+        // TODO: Support updating when messages are deleted
     }
     
 	protected void onUndisplay() {

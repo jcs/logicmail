@@ -37,6 +37,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -229,7 +230,7 @@ public class MailboxNode implements Node, Serializable {
 	}
 	
 	/**
-	 * Appends a message to this mailbox from an external source.
+	 * Appends a message node to this mailbox from an external source.
 	 * This method will request that the underlying mail store
 	 * add the provided message to its contents for this mailbox.
 	 * 
@@ -247,15 +248,7 @@ public class MailboxNode implements Node, Serializable {
 		String rawMessage = message.getMessageSource();
 		if(rawMessage == null) {
 			// Generate the message source
-			StringBuffer buf = new StringBuffer();
-			buf.append(MailMessageParser.generateMessageHeaders(message.getMessage().getEnvelope(), false));
-			
-	        MessageMimeConverter messageMime = new MessageMimeConverter();
-	        message.getMessage().getBody().accept(messageMime);
-			
-	        buf.append(messageMime.toMimeString());
-
-	        rawMessage = buf.toString();
+	        rawMessage = generateRawMessage(message.getMessage());
 		}
 
 		// Append the message to the folder
@@ -263,6 +256,52 @@ public class MailboxNode implements Node, Serializable {
 				this.folderTreeItem,
 				rawMessage,
 				message.getFolderMessage().getFlags());
+	}
+
+	/**
+	 * Appends a message to this mailbox from an external source.
+	 * This method will request that the underlying mail store
+	 * add the provided message to its contents for this mailbox.
+	 * 
+	 * The actual messages contained within this node will not be
+	 * updated until the mail store informs the object model of
+	 * the new message.
+	 * 
+	 * @param message Message to append
+	 * @param messageFlags Flags for the message
+	 */
+	public void appendMessage(Message message, MessageFlags messageFlags) {
+		// Sanity check
+		if(!this.hasAppend) {
+			return;
+		}
+		// Generate the message source
+        String rawMessage = generateRawMessage(message);
+
+		// Append the message to the folder
+		parentAccount.getMailStore().requestMessageAppend(
+				this.folderTreeItem,
+				rawMessage,
+				messageFlags);
+	}
+
+	/**
+	 * Generate raw message source for an object-structured message.
+	 * 
+	 * @param message The message to transform
+	 * @return The raw source
+	 */
+	private String generateRawMessage(Message message) {
+		StringBuffer buf = new StringBuffer();
+		buf.append(MailMessageParser.generateMessageHeaders(message.getEnvelope(), false));
+		
+        MessageMimeConverter messageMime = new MessageMimeConverter();
+        message.getBody().accept(messageMime);
+		
+        buf.append(messageMime.toMimeString());
+
+        String rawMessage = buf.toString();
+        return rawMessage;
 	}
 	
 	/**
@@ -389,6 +428,7 @@ public class MailboxNode implements Node, Serializable {
 				messageMap.remove(new Integer(message.getId()));
 			}
 		}
+		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 	}
 
 	/**
@@ -399,6 +439,7 @@ public class MailboxNode implements Node, Serializable {
 			messages.removeAllElements();
 			messageMap.clear();
 		}
+		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 	}
 	
 	/**

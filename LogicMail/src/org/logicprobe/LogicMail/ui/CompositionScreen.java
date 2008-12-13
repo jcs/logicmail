@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Calendar;
+
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.AutoTextEditField;
@@ -39,14 +41,17 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.Arrays;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 
 
@@ -67,25 +72,26 @@ public class CompositionScreen extends BaseScreen {
     private boolean messageSent;
     private IdentityConfig identityConfig;
     private MessageNode replyToMessageNode;
-    private MenuItem sendMenuItem = new MenuItem("Send", 200000, 10) {
+    
+    private MenuItem sendMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SEND), 200000, 10) {
             public void run() {
                 sendMessage();
             }
         };
 
-    private MenuItem addToMenuItem = new MenuItem("Add To:", 200110, 10) {
+    private MenuItem addToMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_TO), 200110, 10) {
             public void run() {
                 insertRecipientField(EmailAddressBookEditField.ADDRESS_TO);
             }
         };
 
-    private MenuItem addCcMenuItem = new MenuItem("Add Cc:", 200120, 10) {
+    private MenuItem addCcMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_CC), 200120, 10) {
             public void run() {
                 insertRecipientField(EmailAddressBookEditField.ADDRESS_CC);
             }
         };
 
-    private MenuItem addBccMenuItem = new MenuItem("Add Bcc:", 200130, 10) {
+    private MenuItem addBccMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_BCC), 200130, 10) {
             public void run() {
                 insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC);
             }
@@ -135,17 +141,14 @@ public class CompositionScreen extends BaseScreen {
         switch (composeType) {
         case COMPOSE_REPLY:
             message = message.toReplyMessage();
-
             break;
 
         case COMPOSE_REPLY_ALL:
             message = message.toReplyAllMessage(identityConfig.getEmailAddress());
-
             break;
 
         case COMPOSE_FORWARD:
             message = message.toForwardMessage();
-
             break;
         }
 
@@ -211,26 +214,55 @@ public class CompositionScreen extends BaseScreen {
         if (!messageSent &&
                 ((subjectEditField.getText().length() > 0) ||
                 (messageEditField.getText().length() > 0))) {
-            if (Dialog.ask(Dialog.D_YES_NO, "Discard unsent message?") == Dialog.YES) {
-                close();
 
+        	boolean shouldClose = false;
+        	MailboxNode draftMailbox = accountConfig.getDraftMailbox();
+        	if(draftMailbox != null) {
+        		int choice = Dialog.ask(
+        				resources.getString(LogicMailResource.COMPOSITION_PROMPT_SAVE_OR_DISCARD),
+        				new Object[] {
+        						resources.getString(LogicMailResource.MENUITEM_SAVE_AS_DRAFT),
+        						resources.getString(LogicMailResource.MENUITEM_DISCARD),
+        						resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
+        		if(choice == 0) {
+        			// Save as draft, then close
+        			Message message = generateMessage();
+        			message.getEnvelope().date = Calendar.getInstance().getTime();
+        			MessageFlags messageFlags = new MessageFlags(
+        					false,
+        					false,
+        					false,
+        					false,
+        					true,
+        					true,
+        					false);
+        			draftMailbox.appendMessage(message, messageFlags);
+        			shouldClose = true;
+        		}
+        		else if(choice == 1) {
+        			shouldClose = true;
+        		}
+        	}
+        	else {
+        		int choice =
+        			Dialog.ask(
+        					resources.getString(LogicMailResource.COMPOSITION_PROMPT_DISCARD_UNSENT),
+        					new Object[] {
+        							resources.getString(LogicMailResource.MENUITEM_DISCARD),
+        							resources.getString(LogicMailResource.MENUITEM_CANCEL)}, 0);
+        		if(choice == 0) { shouldClose = true; }
+        	}
+        	
+            if (shouldClose) {
+                close();
                 return true;
             } else {
                 return false;
             }
         } else {
             close();
-
             return true;
         }
-    }
-
-    /**
-     * Get whether the composed message was sent.
-     * @return True if sent, false otherwise.
-     */
-    public boolean getMessageSent() {
-        return messageSent;
     }
 
     protected void makeMenu(Menu menu, int instance) {
@@ -246,7 +278,7 @@ public class CompositionScreen extends BaseScreen {
         menu.addSeparator();
     }
 
-    private void sendMessage() {
+    private Message generateMessage() {
         // Simplest possible implementation for now,
         // which turns the content of the screen into
         // a message containing a single text/plain section
@@ -326,7 +358,12 @@ public class CompositionScreen extends BaseScreen {
                 "plain", "7bit", "us-ascii", messageEditField.getText());
 
         Message message = new Message(env, bodyPart);
-
+    	return message;
+    }
+    
+    private void sendMessage() {
+    	Message message = generateMessage();
+    	
         if (replyToMessageNode != null) {
             accountNode.sendMessageReply(message, replyToMessageNode);
         } else {
@@ -334,6 +371,8 @@ public class CompositionScreen extends BaseScreen {
         }
 
         messageSent = true;
+        setDirty(false);
+        close();
     }
 
     /**

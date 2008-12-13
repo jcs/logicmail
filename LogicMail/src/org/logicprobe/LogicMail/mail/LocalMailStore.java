@@ -279,7 +279,7 @@ public class LocalMailStore extends AbstractMailStore {
         	else {
         		String folderUrl = MailSettings.getInstance().getGlobalConfig().getLocalDataLocation();
         		try {
-	        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl + '/');
+	        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl);
 	        		if(!fileConnection.exists()) {
 	        			fileConnection.mkdir();
 	        		}
@@ -290,7 +290,6 @@ public class LocalMailStore extends AbstractMailStore {
         		
             	StringBuffer buf = new StringBuffer();
             	buf.append(folderUrl);
-            	buf.append('/');
             	buf.append(requestFolder.getPath());
         		maildirFolder = new MaildirFolder(buf.toString());
         		folderMaildirMap.put(requestFolder, maildirFolder);

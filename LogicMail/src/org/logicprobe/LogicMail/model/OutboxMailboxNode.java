@@ -135,6 +135,7 @@ public class OutboxMailboxNode extends MailboxNode {
     	// Find out whether we know about this message
     	if(outboundMessageMap.get(e.getMessage()) instanceof OutgoingMessageNode) {
     		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
+    		outboundMessageMap.remove(e.getMessage());
     		
     		// Store to the Sent folder
     		AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
@@ -157,6 +158,9 @@ public class OutboxMailboxNode extends MailboxNode {
     						replyToMessageNode.getFolderMessage());
     			}
     		}
+    		
+    		// Remove from this folder
+    		removeMessage(outgoingMessageNode);
     	}
     }
 }
