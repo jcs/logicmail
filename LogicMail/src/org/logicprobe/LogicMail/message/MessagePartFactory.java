@@ -43,7 +43,7 @@ public class MessagePartFactory {
     /**
      * Create a new message part
      * @param mimeType MIME type
-     * @param mimeSubType MIME subtype
+     * @param mimeSubtype MIME subtype
      * @param encoding Encoding type (i.e. 7bit, base64)
      * @param param Type-specific parameter (i.e. charset, filename)
      * @param data Actual text data for the section

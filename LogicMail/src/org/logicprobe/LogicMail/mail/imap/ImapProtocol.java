@@ -1179,11 +1179,11 @@ public class ImapProtocol {
      * and returns the reply as an array of strings.
      * @param command IMAP command
      * @param arguments Arguments for the command
-     * @param Known tag that indicates the end of the result
+     * @param endTag Known tag that indicates the end of the result
      * @return List of returned strings
      */
-    protected String[] executeUntagged(String command, String arguments,
-        String endTag) throws IOException, MailException {
+    protected String[] executeUntagged(String command, String arguments, String endTag)
+    	throws IOException, MailException {
         String[] result = new String[0];
 
         connection.sendCommand(command +

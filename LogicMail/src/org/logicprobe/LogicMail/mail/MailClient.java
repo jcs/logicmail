@@ -50,8 +50,8 @@ public interface MailClient {
      * the underlying connection.
      *
      * @return True if successful, false on authentication failure
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract boolean open() throws IOException, MailException;
     
@@ -60,8 +60,8 @@ public interface MailClient {
      * This method should sent protocol-specific logout commands and
      * then terminate the connection.
      *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract void close() throws IOException, MailException;
 

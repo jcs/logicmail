@@ -53,7 +53,8 @@ public class RmsDataStore implements DataStore {
     
     /**
      * Creates a new instance of RmsDataStore.
-     * @param name Name of the RMS store to use.
+     * 
+     * @param storeName Name of the RMS store to use.
      */
     public RmsDataStore(String storeName) {
         this.storeName = storeName;

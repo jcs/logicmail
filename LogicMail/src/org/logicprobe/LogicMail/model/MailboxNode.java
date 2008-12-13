@@ -274,7 +274,8 @@ public class MailboxNode implements Node, Serializable {
 	 * updated until the mail store informs the object model of
 	 * the new message.
 	 * 
-	 * @param message Message to append
+	 * @param rawMessage Message to append
+	 * @param initialFlags Initial flags for the message
 	 */
 	public void appendRawMessage(String rawMessage, MessageFlags initialFlags) {
 		// Sanity check

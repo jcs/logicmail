@@ -537,8 +537,8 @@ public class ImapClient implements IncomingMailClient {
     /**
      * Sets the flags on a message so the server knows it was answered.
      *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public void messageAnswered(FolderMessage folderMessage) throws IOException, MailException {
         ImapProtocol.MessageFlags updatedFlags =
@@ -561,8 +561,8 @@ public class ImapClient implements IncomingMailClient {
      * Appends a message to the specified folder, and flags it as seen.
      * This is intended for use when saving sent or draft messages.
      *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
         ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();

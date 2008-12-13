@@ -125,7 +125,8 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
     /**
      * Set the address contained within the field.
      * Supports handling the "John Doe <jdoe@generic.org>" format.
-     * @param address Address to set the field to
+     * 
+     * @param sourceAddress Address to set the field to
      */
     public void setAddress(String sourceAddress) {
         sourceAddress = sourceAddress.trim();

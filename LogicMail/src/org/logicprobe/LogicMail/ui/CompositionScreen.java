@@ -94,7 +94,7 @@ public class CompositionScreen extends BaseScreen {
     /**
      * Creates a new instance of CompositionScreen.
      *
-     * @param accountConfig Account configuration
+     * @param accountNode Account node
      */
     public CompositionScreen(AccountNode accountNode) {
         this.accountNode = accountNode;
@@ -119,7 +119,7 @@ public class CompositionScreen extends BaseScreen {
      * Used for working with an already created message,
      * such as a draft, reply, or forward.
      *
-     * @param accountConfig Account configuration
+     * @param accountNode Account node
      * @param messageNode Message we are composing
      * @param composeType Type of message we are creating
      */

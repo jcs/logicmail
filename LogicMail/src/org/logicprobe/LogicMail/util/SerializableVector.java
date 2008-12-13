@@ -64,8 +64,6 @@ public class SerializableVector extends Vector implements Serializable {
      * This class only supports vectors containing objects which
      * wrap the various primitive types supported by DataOutputStream
      * and DataInputStream.
-     *
-     * @param table The instance of Hashtable to wrap
      */
     public SerializableVector() {
         super();

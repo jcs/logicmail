@@ -36,26 +36,29 @@ import java.io.IOException;
 
 /**
  * Interface for configuration classes that can be serialized
- * for storage in the J2ME RMS
+ * for storage in the J2ME RMS or the RIM Persistent Object store.
  */
 public interface Serializable {
     /**
      * Serialize.
-     * @return Byte array containing the data represented by this class
+     * 
+     * @param output Stream to contain the data represented by this class
      */
     public void serialize(DataOutputStream output) throws IOException;
     
     /**
      * Deserialize.
-     * @param byteArray Byte array containing the data for this class to represent
+     * 
+     * @param input Stream containing the data for this class to represent
      */
     public void deserialize(DataInputStream input) throws IOException;
     
     /**
      * Gets the unique ID for this class.
      * This ID should be generated the first time a new class is created,
-     * and should be persisted during serialization.  This enableds references
+     * and should be persisted during serialization.  This enables references
      * between serialized objects to be recreated.
+     * 
      * @return Unique ID
      */
     public long getUniqueId();

@@ -83,8 +83,8 @@ public interface IncomingMailClient extends MailClient {
      * reference the visible root folder.
      *
      * @return Root folder of the tree, and all children below it
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract FolderTreeItem getFolderTree()
         throws IOException, MailException;
@@ -93,8 +93,8 @@ public interface IncomingMailClient extends MailClient {
      * Refresh the folder status.
      *
      * @param folders The folders to refresh
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract void refreshFolderStatus(FolderTreeItem[] folders)
         throws IOException, MailException;
@@ -116,8 +116,8 @@ public interface IncomingMailClient extends MailClient {
      * to a single inbox folder
      * 
      * @param folderItem The FolderItem object describing the new active folderItem
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract void setActiveFolder(FolderTreeItem folderItem)
         throws IOException, MailException;
@@ -128,8 +128,8 @@ public interface IncomingMailClient extends MailClient {
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
      * @return List of message envelopes
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
         throws IOException, MailException;
@@ -144,8 +144,8 @@ public interface IncomingMailClient extends MailClient {
      * did on the first invocation.
      * 
      * @return List of message envelopes
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract FolderMessage[] getNewFolderMessages() throws IOException, MailException;
     
@@ -155,8 +155,8 @@ public interface IncomingMailClient extends MailClient {
      * protocol-specific capabilities, application-wide data
      * format capabilities, and user configuration options.
      *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract Message getMessage(FolderMessage folderMessage) throws IOException, MailException;
     
@@ -166,8 +166,8 @@ public interface IncomingMailClient extends MailClient {
      * deletion process, then this command should only mark the
      * message as deleted.
      *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract void deleteMessage(FolderMessage folderMessage) throws IOException, MailException;
     
@@ -175,8 +175,8 @@ public interface IncomingMailClient extends MailClient {
      * Undeletes a particular message from the selected folder.
      * This should do nothing if the underlying protocol does not support undeletion.
      *
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException;
 
@@ -189,8 +189,8 @@ public interface IncomingMailClient extends MailClient {
      * then a false should be immediately returned.
      * 
      * @return True if the mailbox has new data, false otherwise.
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
     public abstract boolean noop() throws IOException, MailException;
     

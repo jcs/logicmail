@@ -190,8 +190,8 @@ public abstract class AbstractMailConnectionHandler {
      * This method should typically establish a socket connection and
      * then send the protocol-specific login commands.
      * 
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
 	private void handleOpeningConnection() throws IOException, MailException {
 		showStatus("Opening connection...");
@@ -219,8 +219,8 @@ public abstract class AbstractMailConnectionHandler {
 	/**
 	 * Handles the OPENED state.
 	 * 
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
 	 */
 	private void handleOpenedConnection() throws IOException, MailException {
 		showStatus(null);
@@ -238,8 +238,8 @@ public abstract class AbstractMailConnectionHandler {
 	/**
      * Handles the REQUESTS state to process any pending server requests.
      * 
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
 	private void handlePendingRequests() throws IOException, MailException {
 		Queue requestQueue = getRequestQueue();
@@ -273,8 +273,8 @@ public abstract class AbstractMailConnectionHandler {
 	 * 
 	 * @param type Type identifier for the request.
 	 * @param params Parameters for the request.
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
 	 */
 	protected abstract void handleRequest(int type, Object[] params) throws IOException, MailException;
 	
@@ -283,8 +283,8 @@ public abstract class AbstractMailConnectionHandler {
      * pending requests have been handled.  This method is called
      * at a periodic interval when no requests are pending.
      * 
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
 	private void handleIdleConnection() throws IOException, MailException {
 		showStatus(null);
@@ -310,8 +310,8 @@ public abstract class AbstractMailConnectionHandler {
 	 * a new request arrives, or it is commanded to shutdown.
 	 * </p>
      * 
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
 	 */
 	protected abstract void handleBeginIdle() throws IOException, MailException;
 	
@@ -320,8 +320,8 @@ public abstract class AbstractMailConnectionHandler {
      * This method should send protocol-specific logout commands and
      * then terminate the connection.
      * 
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
      */
 	private void handleClosingConnection() throws IOException, MailException {
 		showStatus("Closing connection...");

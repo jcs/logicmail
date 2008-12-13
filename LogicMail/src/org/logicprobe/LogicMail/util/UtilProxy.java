@@ -96,7 +96,7 @@ public abstract class UtilProxy {
      *
      * @param input The Base64 encoded input
      * @return A byte array containing the decoded input.
-     * @throw IOException Thrown if a decoding error occurred.
+     * @throws IOException Thrown if a decoding error occurred.
      */
     public abstract byte[] Base64Decode(String input) throws IOException;
     
@@ -108,7 +108,7 @@ public abstract class UtilProxy {
      * @param inputLength The length of the array
      * @param insertCR    Set to true if you want to insert a CR after every 76th encoded character
      * @param insertLF    Set to true if you want to insert a LF after every 76th encoded character
-     * @throw IOException Thrown if an encoding error occurred
+     * @throws IOException Thrown if an encoding error occurred
      * @return The encoded input as a byte array
      */
     public abstract byte[] Base64Encode(byte[] input, int inputOffset, int inputLength, boolean insertCR, boolean insertLF) throws IOException;
@@ -121,7 +121,7 @@ public abstract class UtilProxy {
      * @param inputLength The length of the array
      * @param insertCR    Set to true if you want to insert a CR after every 76th encoded character
      * @param insertLF    Set to true if you want to insert a LF after every 76th encoded character
-     * @throw IOException Thrown if an encoding error occurred
+     * @throws IOException Thrown if an encoding error occurred
      * @return The encoded input as a string
      */
     public abstract String Base64EncodeAsString(byte[] input, int inputOffset, int inputLength, boolean insertCR, boolean insertLF) throws IOException;

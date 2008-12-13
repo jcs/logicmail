@@ -13,6 +13,7 @@
 	<property file="project.properties"/>
 
     <!-- Task definitions -->
+	<typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
 		<classpath>
 			<pathelement location="../lib/ant-contrib-1.0b3.jar"/>
@@ -23,8 +24,6 @@
             <pathelement location="../lib/xmltask.jar"/>
         </classpath>
 	</taskdef>
-	<typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
-
 
 	<macrodef name="build-platform">
 		<attribute name="jdehome"/>
@@ -73,7 +72,7 @@
 	</target>
 
 	<!-- Build the code documentation -->
-	<target name="docs">
+	<target name="javadoc" depends="build">
 		<javadoc destdir="${docs.dir}"
 			     author="true"
 				 version="true"
@@ -81,11 +80,16 @@
 				 windowtitle="${module.description}">
 			<fileset dir="${src.dir}">
 				<include name="**/*.java"/>
+				<exclude name="**/bb40"/>
 				<exclude name="**/*BB40.java"/>
 			</fileset>
 			<fileset dir="${startup.src.dir}">
 				<include name="**/*.java"/>
 			</fileset>
+			<classpath>
+				<pathelement path="${jde421.home}/lib/net_rim_api.jar"/>
+				<pathelement path="${dist.dir}/BB421/${module.name}.jar"/>
+			</classpath>
 		</javadoc>
 	</target>
 

@@ -78,8 +78,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	 * 
 	 * @param type Type identifier for the request.
 	 * @param params Parameters for the request.
-     * @throw IOException on I/O errors
-     * @throw MailException on protocol errors
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
 	 */
 	protected void handleRequest(int type, Object[] params) throws IOException, MailException {
 		switch(type) {

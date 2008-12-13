@@ -103,7 +103,7 @@ public abstract class AbstractMailStore {
      * Requests the regeneration of the mail folder tree.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link MailStoreListener#folderTreeUpdated(MailStoreEvent)}.
+     * {@link MailStoreListener#folderTreeUpdated(FolderEvent)}.
      * 
      * <p>This can be an expensive operation, so it should
      * be called sparingly on non-local mail stores.
@@ -124,7 +124,7 @@ public abstract class AbstractMailStore {
      * Requests the message listing from a particular folder.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
      * @param firstIndex The index of the first message to get headers for.
@@ -136,7 +136,7 @@ public abstract class AbstractMailStore {
      * Requests the message listing from a particular folder.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
      * @param indices The set of indices for the messages to get headers for.
@@ -147,7 +147,7 @@ public abstract class AbstractMailStore {
      * Requests the recent message listing from a particular folder.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
      */
@@ -160,7 +160,7 @@ public abstract class AbstractMailStore {
      * {@link MessageListener#messageAvailable(MessageEvent)}.
      * 
      * @param folder The folder that the message is located in
-     * @param message The envelope information for the message to request
+     * @param folderMessage The envelope information for the message to request
      */
     public abstract void requestMessage(FolderTreeItem folder, FolderMessage folderMessage);
     
@@ -171,7 +171,7 @@ public abstract class AbstractMailStore {
      * {@link MessageListener#messageDeleted(MessageEvent)}.
      * 
      * @param folder The folder that the message is located in
-     * @param message The envelope information for the message to delete
+     * @param folderMessage The envelope information for the message to delete
      */
     public abstract void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage);
     
@@ -186,7 +186,7 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param folder The folder that the message is located in
-     * @param message The envelope information for the message to undelete
+     * @param folderMessage The envelope information for the message to undelete
      */
     public abstract void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage);
     
@@ -201,7 +201,7 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param folder The folder that the message is located in
-     * @param message The envelope information for the message to change
+     * @param folderMessage The envelope information for the message to change
      */
     public abstract void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage);
     
@@ -213,7 +213,7 @@ public abstract class AbstractMailStore {
      * exact message that was returned by an operation such as sending mail.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderEvent)}.
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * <p>If <tt>hasAppend()</tt> returns <tt>False</tt>,
      * then this method should throw an

@@ -418,7 +418,7 @@ public class SmtpProtocol {
      * This converts to a string where the letters in the
      * hex string are in lower-case.
      *
-     * @param in Input byte array
+     * @param hash Input byte array
      * @return Hex string
      */
     public static final String byteArrayToHexString( final byte[] hash ) {
