@@ -32,59 +32,110 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.io.DataInputStream;
+
+import org.logicprobe.LogicMail.mail.smtp.SmtpProtocol;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
- * Store account configuration for outgoing (SMTP) connections.
+ * Configuration object to store settings for
+ * outgoing (SMTP) connections.
  */
 public class OutgoingConfig extends ConnectionConfig {
     private int useAuth;
     private String serverUser;
     private String serverPass;
     
-    /** Creates a new instance of OutgoingConfig */
+    /**
+     * Instantiates a new connection configuration with defaults.
+     */
     public OutgoingConfig() {
         super();
     }
     
+    /**
+     * Instantiates a new connection configuration from serialized data.
+     * 
+     * @param input The input stream to deserialize from
+     */
     public OutgoingConfig(DataInputStream input) {
         super(input);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.ConnectionConfig#setDefaults()
+     */
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(25);
     }
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         String text = getAcctName().concat(" (SMTP)");
         return text;
     }
 
+    /**
+     * Gets which authentication method to use.
+     * Valid values are constants defined in {@link SmtpProtocol}.
+     * 
+     * @return The authentication method to use, or 0 for none.
+     */
     public int getUseAuth() {
         return useAuth;
     }
 
+    /**
+     * Sets which authentication method to use.
+     * Valid values are constants defined in {@link SmtpProtocol}.
+     * 
+     * @param useAuth The new authentication method to use, or 0 for none.
+     */
     public void setUseAuth(int useAuth) {
         this.useAuth = useAuth;
     }
 
+    /**
+     * Gets the username to authenticate with.
+     * 
+     * @return The username
+     */
     public String getServerUser() {
         return serverUser;
     }
 
+    /**
+     * Sets the username to authenticate with.
+     * 
+     * @param serverUser The new username
+     */
     public void setServerUser(String serverUser) {
         this.serverUser = serverUser;
     }
 
+    /**
+     * Gets the password to authenticate with.
+     * 
+     * @return The password
+     */
     public String getServerPass() {
         return serverPass;
     }
 
+    /**
+     * Sets the password to authenticate with.
+     * 
+     * @param serverPass The new password
+     */
     public void setServerPass(String serverPass) {
         this.serverPass = serverPass;
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.ConnectionConfig#writeConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
         table.put("account_smtpUseAuth", new Integer(useAuth));
@@ -92,6 +143,9 @@ public class OutgoingConfig extends ConnectionConfig {
         table.put("account_smtpPass", serverPass);
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.ConnectionConfig#readConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void readConfigItems(SerializableHashtable table) {
         super.readConfigItems(table);
         Object value;

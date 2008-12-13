@@ -40,36 +40,42 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
- * Store account configuration for LogicMail
+ * Configuration object to store settings for
+ * incoming mail accounts.
  */
 public abstract class AccountConfig extends ConnectionConfig {
-    final public static int TYPE_POP = 0;
-    final public static int TYPE_IMAP = 1;
-    
-    private int serverType;
     private String serverUser;
     private String serverPass;
     private IdentityConfig identityConfig;
     private long identityConfigId;
     private OutgoingConfig outgoingConfig;
     private long outgoingConfigId;
-
     private MailboxNode sentMailbox;
     private long sentMailboxId;
     private MailboxNode draftMailbox;
     private long draftMailboxId;
 
+    /**
+     * Instantiates a new connection configuration with defaults.
+     */
     public AccountConfig() {
         super();
     }
     
+    /**
+     * Instantiates a new connection configuration from serialized data.
+     * 
+     * @param input The input stream to deserialize from
+     */
     public AccountConfig(DataInputStream input) {
         super(input);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.ConnectionConfig#setDefaults()
+     */
     protected void setDefaults() {
         super.setDefaults();
-        serverType = TYPE_POP;
         serverUser = "";
         serverPass = "";
         setServerPort(110);
@@ -83,43 +89,54 @@ public abstract class AccountConfig extends ConnectionConfig {
         draftMailboxId = -1L;
     }
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
-        String text = getAcctName();
-        if(serverType == TYPE_POP) {
-            text = text.concat(" (POP)");
-        }
-        else if(serverType == TYPE_IMAP) {
-            text = text.concat(" (IMAP)");
-        }
-        
-        return text;
+        return getAcctName();
     }
 
-    public int getServerType() {
-        return serverType;
-    }
-    
-    public void setServerType(int serverType) {
-        this.serverType = serverType;
-    }
-    
-   
+    /**
+     * Gets the username to authenticate with.
+     * 
+     * @return The username
+     */
     public String getServerUser() {
         return serverUser;
     }
     
+    /**
+     * Sets the username to authenticate with.
+     * 
+     * @param serverUser The new username
+     */
     public void setServerUser(String serverUser) {
         this.serverUser = serverUser;
     }
     
+    /**
+     * Gets the password to authenticate with.
+     * 
+     * @return The password
+     */
     public String getServerPass() {
         return serverPass;
     }
     
+    /**
+     * Sets the password to authenticate with.
+     * 
+     * @param serverPass The new password
+     */
     public void setServerPass(String serverPass) {
         this.serverPass = serverPass;
     }
 
+    /**
+     * Gets the identity configuration.
+     * 
+     * @return The identity configuration
+     */
     public IdentityConfig getIdentityConfig() {
         if(identityConfig == null && identityConfigId != -1L) {
             identityConfig = MailSettings.getInstance().getIdentityConfigByUniqueId(identityConfigId);
@@ -127,6 +144,11 @@ public abstract class AccountConfig extends ConnectionConfig {
         return identityConfig;
     }
     
+    /**
+     * Sets the identity configuration.
+     * 
+     * @param identityConfig The new identity configuration
+     */
     public void setIdentityConfig(IdentityConfig identityConfig) {
         if(identityConfig == null) {
             this.identityConfig = null;
@@ -138,6 +160,11 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
     }
 
+    /**
+     * Gets the outgoing connection configuration.
+     * 
+     * @return The outgoing connection configuration
+     */
     public OutgoingConfig getOutgoingConfig() {
         if(outgoingConfig == null && outgoingConfigId != -1L) {
             outgoingConfig = MailSettings.getInstance().getOutgoingConfigByUniqueId(outgoingConfigId);
@@ -145,6 +172,11 @@ public abstract class AccountConfig extends ConnectionConfig {
         return outgoingConfig;
     }
     
+    /**
+     * Sets the outgoing connection configuration.
+     * 
+     * @param outgoingConfig The new outgoing connection configuration
+     */
     public void setOutgoingConfig(OutgoingConfig outgoingConfig) {
         if(outgoingConfig == null) {
             this.outgoingConfig = null;
@@ -156,6 +188,11 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
     }
 
+    /**
+     * Gets the sent message mailbox.
+     * 
+     * @return The sent message mailbox
+     */
     public MailboxNode getSentMailbox() {
         if(sentMailbox == null && sentMailboxId != -1L) {
         	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
@@ -172,6 +209,11 @@ public abstract class AccountConfig extends ConnectionConfig {
     }
 
     
+    /**
+     * Sets the sent message mailbox.
+     * 
+     * @param sentMailbox The new sent message mailbox
+     */
     public void setSentMailbox(MailboxNode sentMailbox) {
         if(sentMailbox == null) {
             this.sentMailbox = null;
@@ -183,6 +225,11 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
     }
     
+    /**
+     * Gets the draft message mailbox.
+     * 
+     * @return The draft message mailbox
+     */
     public MailboxNode getDraftMailbox() {
         if(draftMailbox == null && draftMailboxId != -1L) {
         	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
@@ -199,6 +246,11 @@ public abstract class AccountConfig extends ConnectionConfig {
     }
 
     
+    /**
+     * Sets the draft message mailbox.
+     * 
+     * @param draftMailbox The new draft message mailbox
+     */
     public void setDraftMailbox(MailboxNode draftMailbox) {
         if(draftMailbox == null) {
             this.draftMailbox = null;
@@ -210,6 +262,14 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
     }
     
+    /**
+     * Finds a mailbox node recursively in the mail model tree.
+     * 
+     * @param currentNode The current node
+     * @param id The id to look for
+     * 
+     * @return The mailbox node
+     */
     private static MailboxNode findMailboxNode(MailboxNode currentNode, long id) {
     	if(currentNode.getUniqueId() == id) {
     		return currentNode;
@@ -226,9 +286,11 @@ public abstract class AccountConfig extends ConnectionConfig {
     	return null;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.ConnectionConfig#writeConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
-        table.put("account_serverType", new Integer(serverType));
         table.put("account_serverUser", serverUser);
         table.put("account_serverPass", serverPass);
         table.put("account_identityConfigId", new Long(identityConfigId));
@@ -237,14 +299,13 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_draftMailboxId", new Long(draftMailboxId));
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.ConnectionConfig#readConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void readConfigItems(SerializableHashtable table) {
         super.readConfigItems(table);
         Object value;
 
-        value = table.get("account_serverType");
-        if(value != null && value instanceof Integer) {
-            serverType = ((Integer)value).intValue();
-        }
         value = table.get("account_serverUser");
         if(value != null && value instanceof String) {
             serverUser = (String)value;

@@ -39,25 +39,28 @@ import org.logicprobe.LogicMail.util.SerializableHashtable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
- * Store identity configuration
+ * Configuration object to store identity settings.
  */
 public class IdentityConfig implements Serializable {
     private long uniqueId;
-    /** Name of the identity */
     private String identityName;
-    /** Full name of the user */
     private String fullName;
-    /** E-Mail address for the From header */
     private String emailAddress;
-    /** E-Mail address for the Reply-To header */
     private String replyToAddress;
-    /** Message signature */
     private String msgSignature;
     
+    /**
+     * Instantiates a new identity with defaults.
+     */
     public IdentityConfig() {
         setDefaults();
     }
 
+    /**
+     * Instantiates a new identity from serialized data.
+     * 
+     * @param input The input stream to deserialize from
+     */
     public IdentityConfig(DataInputStream input) {
         try {
             deserialize(input);
@@ -66,6 +69,9 @@ public class IdentityConfig implements Serializable {
         }
     }
     
+    /**
+     * Sets the default values for all fields.
+     */
     private void setDefaults() {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         identityName = "";
@@ -75,50 +81,106 @@ public class IdentityConfig implements Serializable {
         msgSignature = "";
     }
 
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
     public String toString() {
         return identityName;
     }
     
+    /**
+     * Gets the identity name.
+     * 
+     * @return The identity name
+     */
     public String getIdentityName() {
         return identityName;
     }
 
+    /**
+     * Sets the identity name.
+     * 
+     * @param identityName The new identity name
+     */
     public void setIdentityName(String identityName) {
         this.identityName = identityName;
     }
 
+    /**
+     * Gets the full name of the user.
+     * 
+     * @return The full name
+     */
     public String getFullName() {
         return fullName;
     }
 
+    /**
+     * Sets the full name of the user.
+     * 
+     * @param fullName The new full name
+     */
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
 
+    /**
+     * Gets the E-Mail address for the From header.
+     * 
+     * @return The email address
+     */
     public String getEmailAddress() {
         return emailAddress;
     }
 
+    /**
+     * Sets the E-Mail address for the From header.
+     * 
+     * @param emailAddress The new email address
+     */
     public void setEmailAddress(String emailAddress) {
         this.emailAddress = emailAddress;
     }
 
+    /**
+     * Gets the E-Mail address for the Reply-To header.
+     * 
+     * @return The Reply-To address
+     */
     public String getReplyToAddress() {
         return replyToAddress;
     }
 
+    /**
+     * Sets the E-Mail address for the Reply-To header.
+     * 
+     * @param replyToAddress The new Reply-To address
+     */
     public void setReplyToAddress(String replyToAddress) {
         this.replyToAddress = replyToAddress;
     }
 
+    /**
+     * Gets the message signature.
+     * 
+     * @return The message signature
+     */
     public String getMsgSignature() {
         return msgSignature;
     }
 
+    /**
+     * Sets the message signature.
+     * 
+     * @param msgSignature The new message signature
+     */
     public void setMsgSignature(String msgSignature) {
         this.msgSignature = msgSignature;
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+     */
     public void serialize(DataOutputStream output) throws IOException {
         output.writeLong(uniqueId);
         
@@ -133,6 +195,9 @@ public class IdentityConfig implements Serializable {
         table.serialize(output);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+     */
     public void deserialize(DataInputStream input) throws IOException {
         setDefaults();
         uniqueId = input.readLong();
@@ -163,6 +228,9 @@ public class IdentityConfig implements Serializable {
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
     public long getUniqueId() {
         return uniqueId;
     }

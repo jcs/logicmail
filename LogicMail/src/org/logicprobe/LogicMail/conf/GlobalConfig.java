@@ -65,15 +65,6 @@ public class GlobalConfig implements Serializable {
     /** Root URL for local file storage */
     private String localDataLocation;
     
-    /** IMAP: maximum message size */
-    private int imapMaxMsgSize;
-
-    /** IMAP: maximum folder depth */
-    private int imapMaxFolderDepth;
-
-    /** POP: maximum message lines */
-    private int popMaxLines;
-
     /** Mode for WiFi support */
     private int wifiMode;
 
@@ -113,9 +104,6 @@ public class GlobalConfig implements Serializable {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.retMsgCount = 30;
         this.dispOrder = false;
-        this.imapMaxMsgSize = 32768;
-        this.imapMaxFolderDepth = 4;
-        this.popMaxLines = 400;
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
         this.hideDeletedMsg = true;
         this.localHostname = "";
@@ -181,60 +169,6 @@ public class GlobalConfig implements Serializable {
      */
     public String getLocalDataLocation() {
     	return localDataLocation;
-    }
-    
-    /**
-     * Gets the IMAP maximum message size
-     * 
-     * @return The IMAP maximum message size
-     */
-    public int getImapMaxMsgSize() {
-        return imapMaxMsgSize;
-    }
-
-    /**
-     * Sets the IMAP maximum message size
-     * 
-     * @param imapMaxMsgSize The IMAP maximum message size
-     */
-    public void setImapMaxMsgSize(int imapMaxMsgSize) {
-        this.imapMaxMsgSize = imapMaxMsgSize;
-    }
-
-    /**
-     * Gets the IMAP maximum folder depth.
-     * 
-     * @return The IMAP maximum folder depth
-     */
-    public int getImapMaxFolderDepth() {
-        return imapMaxFolderDepth;
-    }
-
-    /**
-     * Sets the IMAP maximum folder depth.
-     * 
-     * @param imapMaxFolderDepth The IMAP maximum folder depth
-     */
-    public void setImapMaxFolderDepth(int imapMaxFolderDepth) {
-        this.imapMaxFolderDepth = imapMaxFolderDepth;
-    }
-
-    /**
-     * Gets the POP maximum message lines.
-     * 
-     * @return The POP maximum message lines
-     */
-    public int getPopMaxLines() {
-        return popMaxLines;
-    }
-
-    /**
-     * Sets the POP maximum message lines.
-     * 
-     * @param popMaxLines The POP maximum message lines
-     */
-    public void setPopMaxLines(int popMaxLines) {
-        this.popMaxLines = popMaxLines;
     }
 
     /**
@@ -320,9 +254,6 @@ public class GlobalConfig implements Serializable {
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_localDataLocation", localDataLocation);
-        table.put("global_imapMaxMsgSize", new Integer(imapMaxMsgSize));
-        table.put("global_imapMaxFolderDepth", new Integer(imapMaxFolderDepth));
-        table.put("global_popMaxLines", new Integer(popMaxLines));
         table.put("global_wifiMode", new Integer(wifiMode));
         table.put("global_connDebug", new Boolean(connDebug));
         table.put("global_hideDeletedMsg", new Boolean(hideDeletedMsg));
@@ -358,21 +289,6 @@ public class GlobalConfig implements Serializable {
         	localDataLocation = (String) value;
         }
         
-        value = table.get("global_imapMaxMsgSize");
-        if ((value != null) && value instanceof Integer) {
-            imapMaxMsgSize = ((Integer) value).intValue();
-        }
-
-        value = table.get("global_imapMaxFolderDepth");
-        if ((value != null) && value instanceof Integer) {
-            imapMaxFolderDepth = ((Integer) value).intValue();
-        }
-
-        value = table.get("global_popMaxLines");
-        if ((value != null) && value instanceof Integer) {
-            popMaxLines = ((Integer) value).intValue();
-        }
-
         value = table.get("global_wifiMode");
         if ((value != null) && value instanceof Integer) {
             wifiMode = ((Integer) value).intValue();

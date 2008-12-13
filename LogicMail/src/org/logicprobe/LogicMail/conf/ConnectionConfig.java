@@ -40,7 +40,8 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 
 /**
- * Store connection configuration for LogicMail
+ * Abstract parent class for all configuration objects that represent
+ * network connections.
  */
 public abstract class ConnectionConfig implements Serializable {
     private long uniqueId;
@@ -50,10 +51,18 @@ public abstract class ConnectionConfig implements Serializable {
     private int serverPort;
     private boolean deviceSide;
     
+    /**
+     * Instantiates a new connection configuration with defaults.
+     */
     public ConnectionConfig() {
         setDefaults();
     }
     
+    /**
+     * Instantiates a new connection configuration from serialized data.
+     * 
+     * @param input The input stream to deserialize from
+     */
     public ConnectionConfig(DataInputStream input) {
         try {
             deserialize(input);
@@ -62,6 +71,11 @@ public abstract class ConnectionConfig implements Serializable {
         }
     }
 
+    /**
+     * Sets the default values for all fields.
+     * Subclasses should override this method to add default
+     * values for all of their fields.
+     */
     protected void setDefaults() {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         acctName = "";
@@ -71,46 +85,99 @@ public abstract class ConnectionConfig implements Serializable {
         deviceSide = false;
     }
 
+    /**
+     * Gets the account name.
+     * 
+     * @return The account name
+     */
     public String getAcctName() {
         return acctName;
     }
     
+    /**
+     * Sets the account name.
+     * 
+     * @param acctName The new account name
+     */
     public void setAcctName(String acctName) {
         this.acctName = acctName;
     }
     
+    /**
+     * Gets the server name.
+     * 
+     * @return The server name
+     */
     public String getServerName() {
         return serverName;
     }
     
+    /**
+     * Sets the server name.
+     * 
+     * @param serverName The new server name
+     */
     public void setServerName(String serverName) {
         this.serverName = serverName;
     }
 
+    /**
+     * Gets whether the server connection should use SSL.
+     * 
+     * @return The SSL mode
+     */
     public boolean getServerSSL() {
         return serverSSL;
     }
     
+    /**
+     * Sets whether the server connection should use SSL.
+     * 
+     * @param serverSSL The new SSL mode
+     */
     public void setServerSSL(boolean serverSSL) {
         this.serverSSL = serverSSL;
     }
 
+    /**
+     * Gets the server connection port.
+     * 
+     * @return The server port
+     */
     public int getServerPort() {
         return serverPort;
     }
 
+    /**
+     * Sets the server connection port.
+     * 
+     * @param serverPort The new server port
+     */
     public void setServerPort(int serverPort) {
         this.serverPort = serverPort;
     }
 
+    /**
+     * Gets whether the connection is device side.
+     * 
+     * @return The device side mode
+     */
     public boolean getDeviceSide() {
         return deviceSide;
     }
     
+    /**
+     * Sets whether the connection is device side.
+     * 
+     * @param deviceSide The new device side mode
+     */
     public void setDeviceSide(boolean deviceSide) {
         this.deviceSide = deviceSide;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+     */
     final public void serialize(DataOutputStream output) throws IOException {
         output.writeLong(uniqueId);
         SerializableHashtable table = new SerializableHashtable();
@@ -118,6 +185,9 @@ public abstract class ConnectionConfig implements Serializable {
         table.serialize(output);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+     */
     final public void deserialize(DataInputStream input) throws IOException {
         setDefaults();
         uniqueId = input.readLong();
@@ -128,8 +198,10 @@ public abstract class ConnectionConfig implements Serializable {
     
     /**
      * Write configuration items to the hash table that
-     * will be serialized.  This method should be overriden
-     * by subclasses to support additional configuration items.
+     * will be serialized.  Subclasses should override this method
+     * to support additional configuration items.
+     * 
+     * @param table The configuration item hash table
      */
     protected void writeConfigItems(SerializableHashtable table) {
         table.put("account_acctName", acctName);
@@ -141,8 +213,10 @@ public abstract class ConnectionConfig implements Serializable {
     
     /**
      * Read configuration items from the hash table that
-     * has been deserialized.  This method should be overriden
-     * by subclasses to support additional configuration items.
+     * has been deserialized.  Subclasses should override this method
+     * to support additional configuration items.
+     * 
+     * @param table The configuration item hash table
      */
     protected void readConfigItems(SerializableHashtable table) {
         Object value;
@@ -169,6 +243,9 @@ public abstract class ConnectionConfig implements Serializable {
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
     public long getUniqueId() {
         return uniqueId;
     }

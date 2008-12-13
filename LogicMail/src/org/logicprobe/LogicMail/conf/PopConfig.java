@@ -35,32 +35,80 @@ import java.io.DataInputStream;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
- * Store account configuration for POP
+ * Configuration object to store settings for
+ * POP mail accounts.
  */
 public class PopConfig extends AccountConfig {
+    private int maxMessageLines;
+
+    /**
+     * Instantiates a new connection configuration with defaults.
+     */
     public PopConfig() {
         super();
     }
     
+    /**
+     * Instantiates a new connection configuration from serialized data.
+     * 
+     * @param input The input stream to deserialize from
+     */
     public PopConfig(DataInputStream input) {
         super(input);
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#setDefaults()
+     */
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(110);
+        this.maxMessageLines = 400;
     }    
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#toString()
+     */
     public String toString() {
         String text = getAcctName().concat(" (POP)");
         return text;
     }
 
+    /**
+     * Gets the maximum message lines.
+     * 
+     * @return The maximum message lines
+     */
+    public int getMaxMessageLines() {
+        return maxMessageLines;
+    }
+
+    /**
+     * Sets the maximum message lines.
+     * 
+     * @param maxMessageLines The new maximum message lines
+     */
+    public void setMaxMessageLines(int maxMessageLines) {
+        this.maxMessageLines = maxMessageLines;
+    }
+
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#writeConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
+        table.put("account_pop_maxMessageLines", new Integer(maxMessageLines));
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#readConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void readConfigItems(SerializableHashtable table) {
         super.readConfigItems(table);
+        Object value;
+        value = table.get("account_pop_maxMessageLines");
+        if ((value != null) && value instanceof Integer) {
+        	maxMessageLines = ((Integer) value).intValue();
+        }
     }    
 }

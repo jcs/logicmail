@@ -58,7 +58,6 @@ import org.logicprobe.LogicMail.util.Connection;
  * 
  */
 public class ImapClient implements IncomingMailClient {
-    private GlobalConfig globalConfig;
     private ImapConfig accountConfig;
     private Connection connection;
     private ImapProtocol imapProtocol;
@@ -106,7 +105,6 @@ public class ImapClient implements IncomingMailClient {
     
     public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
         this.accountConfig = accountConfig;
-        this.globalConfig = globalConfig;
         connection = new Connection(
                 accountConfig.getServerName(),
                 accountConfig.getServerPort(),
@@ -326,14 +324,14 @@ public class ImapClient implements IncomingMailClient {
                 baseFolder.addChild(childItem);
                 if(resp.hasChildren || (!resp.noInferiors && !childrenExtension)) {
                     // The folder has children, so lets go and list them
-                    if(depth+1 < globalConfig.getImapMaxFolderDepth()) {
+                    if(depth+1 < accountConfig.getMaxFolderDepth()) {
                         getFolderTreeImpl(childItem, depth+1, childrenExtension);
                     }
                 }
                 else if(depth == 0 &&
                         nsPersonal != null &&
                         (resp.name + nsPersonal.delimiter).equals(nsPersonal.prefix) &&
-                        globalConfig.getImapMaxFolderDepth() > 1) {
+                        accountConfig.getMaxFolderDepth() > 1) {
                     // The folder claims to have no children, but it is a root
                     // folder that matches the personal namespace prefix, so
                     // look for children anyways.
@@ -443,7 +441,7 @@ public class ImapClient implements IncomingMailClient {
         ImapParser.MessageSection structure = getMessageStructure(folderMessage.getUid());
         MessagePart rootPart =
             getMessagePart(folderMessage.getUid(),
-                           structure, globalConfig.getImapMaxMsgSize());
+                           structure, accountConfig.getMaxMessageSize());
         Message msg = new Message(folderMessage.getEnvelope(), rootPart);
         return msg;
     }

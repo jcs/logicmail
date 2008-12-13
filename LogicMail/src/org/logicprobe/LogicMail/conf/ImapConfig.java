@@ -36,38 +36,106 @@ import java.io.DataInputStream;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
- * Store account configuration for IMAP
+ * Configuration object to store settings for
+ * IMAP mail accounts.
  */
 public class ImapConfig extends AccountConfig {
     private String folderPrefix;
+    private int maxMessageSize;
+    private int maxFolderDepth;
     
+    /**
+     * Instantiates a new connection configuration with defaults.
+     */
     public ImapConfig() {
         super();
     }
     
+    /**
+     * Instantiates a new connection configuration from serialized data.
+     * 
+     * @param input The input stream to deserialize from
+     */
     public ImapConfig(DataInputStream input) {
         super(input);
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#setDefaults()
+     */
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(143);
+        this.maxMessageSize = 32768;
+        this.maxFolderDepth = 4;
         folderPrefix = null;
     }    
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#toString()
+     */
     public String toString() {
         String text = getAcctName().concat(" (IMAP)");
         return text;
     }
 
+    /**
+     * Gets the folder prefix.
+     * 
+     * @return The folder prefix
+     */
     public String getFolderPrefix() {
         return folderPrefix;
     }
 
+    /**
+     * Sets the folder prefix.
+     * 
+     * @param folderPrefix The new folder prefix
+     */
     public void setFolderPrefix(String folderPrefix) {
         this.folderPrefix = folderPrefix;
     }
 
+    /**
+     * Gets the maximum message size.
+     * 
+     * @return The maximum message size
+     */
+    public int getMaxMessageSize() {
+    	return this.maxMessageSize;
+    }
+    
+    /**
+     * Sets the maximum message size.
+     * 
+     * @param maxMessageSize The new maximum message size
+     */
+    public void setMaxMessageSize(int maxMessageSize) {
+    	this.maxMessageSize = maxMessageSize;
+    }
+    
+    /**
+     * Gets the maximum folder depth.
+     * 
+     * @return The maximum folder depth
+     */
+    public int getMaxFolderDepth() {
+    	return maxFolderDepth;
+    }
+    
+    /**
+     * Sets the maximum folder depth.
+     * 
+     * @param maxFolderDepth The new maximum folder depth
+     */
+    public void setMaxFolderDepth(int maxFolderDepth) {
+    	this.maxFolderDepth = maxFolderDepth;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#writeConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
         if(folderPrefix != null) {
@@ -76,8 +144,13 @@ public class ImapConfig extends AccountConfig {
         else {
             table.put("account_imap_folderPrefix", "");
         }
+        table.put("account_imap_maxMessageSize", new Integer(maxMessageSize));
+        table.put("account_imap_maxFolderDepth", new Integer(maxFolderDepth));
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.conf.AccountConfig#readConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
+     */
     public void readConfigItems(SerializableHashtable table) {
         super.readConfigItems(table);
         Object value;
@@ -88,6 +161,15 @@ public class ImapConfig extends AccountConfig {
             if(folderPrefix.length() == 0) {
                 folderPrefix = null;
             }
+        }
+        value = table.get("account_imap_maxMessageSize");
+        if ((value != null) && value instanceof Integer) {
+        	maxMessageSize = ((Integer) value).intValue();
+        }
+
+        value = table.get("account_imap_maxFolderDepth");
+        if ((value != null) && value instanceof Integer) {
+        	maxFolderDepth = ((Integer) value).intValue();
         }
     }
 }

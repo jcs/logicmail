@@ -83,8 +83,12 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private LabelField draftFolderChoiceLabel;
     private LabelField draftFolderChoiceButtonLabel;
     
-    // Advanced settings fields
-    private BasicEditField folderPrefixField;
+    // Advanced settings fields (IMAP)
+    private BasicEditField imapFolderPrefixField;
+    private BasicEditField imapMaxMessageSizeEditField;
+    private BasicEditField imapMaxFolderDepthEditField;
+    // Advanced settings fields (POP)
+    private BasicEditField popMaxLinesEditField;
     
 	private Manager[] pageFieldManagers;
     private boolean acctSaved;
@@ -174,9 +178,16 @@ public class AcctCfgScreen extends BaseCfgScreen {
         }
         accountTypeLabel = new LabelField(accountType, Field.NON_FOCUSABLE);
         
-        pageField = new ObjectChoiceField("Configuration: ",
-        		new String[] { "Basic settings", "Folder settings", "Advanced settings" });
-    	pageField.setChangeListener(fieldChangeListener);
+        pageField = new ObjectChoiceField(
+        		resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE),
+        		new String[] {
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_BASIC),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_FOLDER),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_ADVANCED)
+        		});
+
+        
+        pageField.setChangeListener(fieldChangeListener);
 
     	pageFieldManagers = new Manager[3];
     	pageFieldManagers[0] = initFieldsBasic();
@@ -252,8 +263,34 @@ public class AcctCfgScreen extends BaseCfgScreen {
     	Manager manager = new VerticalFieldManager();
         if(acctConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)acctConfig;
-            folderPrefixField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_FOLDER_PREFIX) + ' ', imapConfig.getFolderPrefix());
-            manager.add(folderPrefixField);
+            
+            imapFolderPrefixField = new BasicEditField(
+            		resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_FOLDER_PREFIX) + ' ',
+            		imapConfig.getFolderPrefix());
+
+    	    imapMaxMessageSizeEditField = new BasicEditField(
+    	    		resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_DOWNLOAD_LIMIT) + ' ',
+    	            Integer.toString(imapConfig.getMaxMessageSize() / 1024));
+    	    imapMaxMessageSizeEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+    	
+    	    imapMaxFolderDepthEditField = new BasicEditField(
+    	    		resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_FOLDER_LIMIT) + ' ',
+    	            Integer.toString(imapConfig.getMaxFolderDepth()));
+    	    imapMaxFolderDepthEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+            
+            manager.add(imapFolderPrefixField);
+            manager.add(imapMaxMessageSizeEditField);
+            manager.add(imapMaxFolderDepthEditField);
+        }
+        else if(acctConfig instanceof PopConfig) {
+        	PopConfig popConfig = (PopConfig)acctConfig;
+        	
+    	    popMaxLinesEditField = new BasicEditField(
+    	    		resources.getString(LogicMailResource.CONFIG_ACCOUNT_POP_DOWNLOAD_LIMIT) + ' ',
+    	            Integer.toString(popConfig.getMaxMessageLines()));
+    	    popMaxLinesEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+    	    
+    	    manager.add(popMaxLinesEditField);
         }
     	return manager;
     }
@@ -435,13 +472,30 @@ public class AcctCfgScreen extends BaseCfgScreen {
         if(acctConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)acctConfig;
             
-            String folderPrefix = folderPrefixField.getText().trim();
+            String folderPrefix = imapFolderPrefixField.getText().trim();
             if(folderPrefix.length() == 0) {
                 imapConfig.setFolderPrefix(null);
             }
             else {
                 imapConfig.setFolderPrefix(folderPrefix);
             }
+
+            try {
+            	imapConfig.setMaxMessageSize(Integer.parseInt(
+                        imapMaxMessageSizeEditField.getText()) * 1024);
+            } catch (Exception e) { }
+
+            try {
+            	imapConfig.setMaxFolderDepth(Integer.parseInt(
+                        imapMaxFolderDepthEditField.getText()));
+            } catch (Exception e) { }
+        }
+        else if(acctConfig instanceof PopConfig) {
+        	PopConfig popConfig = (PopConfig)acctConfig;
+        	
+            try {
+            	popConfig.setMaxMessageLines(Integer.parseInt(popMaxLinesEditField.getText()));
+            } catch (Exception e) { }
         }
         
         acctSaved = true;

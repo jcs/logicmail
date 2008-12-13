@@ -38,11 +38,9 @@ import javax.microedition.io.file.FileSystemRegistry;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -67,15 +65,9 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     private CheckboxField hideDeletedMessagesCheckboxField;
     private ObjectChoiceField wifiModeChoiceField;
     private ObjectChoiceField localDataLocationChoiceLabel;
-    private RichTextField imapSettingsLabel;
-    private BasicEditField imapMaxMsgSizeEditField;
-    private BasicEditField imapMaxFolderDepthEditField;
-    private RichTextField popSettingsLabel;
-    private BasicEditField popMaxLinesEditField;
     private CheckboxField connectionDebuggingCheckboxField;
     private CheckboxField overrideHostnameCheckboxField;
     private BasicEditField localHostnameEditField;
-    private ButtonField saveButton;
 
     public GlobalConfigScreen() {
         super("LogicMail - " +
@@ -149,27 +141,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_LOCATION) + ' ',
 	    		fileSystemRoots,
 	    		selectedFileSystemRootIndex);
-	    
-	    imapSettingsLabel = new RichTextField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_SETTINGS),
-	            Field.NON_FOCUSABLE);
-	    imapMaxMsgSizeEditField = new BasicEditField(
-	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_DOWNLOAD_LIMIT) + ' ',
-	            Integer.toString(existingConfig.getImapMaxMsgSize() / 1024));
-	    imapMaxMsgSizeEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-	
-	    imapMaxFolderDepthEditField = new BasicEditField(
-	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_IMAP_FOLDER_LIMIT) + ' ',
-	            Integer.toString(existingConfig.getImapMaxFolderDepth()));
-	    imapMaxFolderDepthEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-	    
-	    popSettingsLabel = new RichTextField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_SETTINGS),
-	            Field.NON_FOCUSABLE);
-	    popMaxLinesEditField = new BasicEditField(
-	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_POP_DOWNLOAD_LIMIT) + ' ',
-	            Integer.toString(existingConfig.getPopMaxLines()));
-	    popMaxLinesEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
 	
 	    boolean overrideHostname = localHostname.length() > 0;
 	    overrideHostnameCheckboxField = new CheckboxField(
@@ -193,36 +164,19 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
                 existingConfig.getConnDebug());
 	
-	    saveButton = new ButtonField(
-	    		resources.getString(LogicMailResource.MENUITEM_SAVE),
-	    		Field.FIELD_HCENTER);
-	    saveButton.setChangeListener(this);
-	    
 	    add(globalSettingsLabel);
 	    add(messageCountEditField);
 	    add(displayOrderChoiceField);
 	    add(hideDeletedMessagesCheckboxField);
 	    add(wifiModeChoiceField);
 	    add(localDataLocationChoiceLabel);
-	    add(new SeparatorField());
-	    add(imapSettingsLabel);
-	    add(imapMaxMsgSizeEditField);
-	    add(imapMaxFolderDepthEditField);
-	    add(new SeparatorField());
-	    add(popSettingsLabel);
-	    add(popMaxLinesEditField);
-	    add(new SeparatorField());
 	    add(overrideHostnameCheckboxField);
 	    add(localHostnameEditField);
 	    add(connectionDebuggingCheckboxField);
-	    add(new SeparatorField());
-	    add(saveButton);
     }
     
     public void fieldChanged(Field field, int context) {
-        if (field == saveButton) {
-            onClose();
-        } else if (field == overrideHostnameCheckboxField) {
+        if (field == overrideHostnameCheckboxField) {
             if (overrideHostnameCheckboxField.getChecked()) {
                 localHostnameEditField.setText(localHostname);
                 localHostnameEditField.setEditable(true);
@@ -254,20 +208,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 
         String url = "file:///" + fileSystemRoots[localDataLocationChoiceLabel.getSelectedIndex()] + LOCAL_FILE_BASE;
         config.setLocalDataLocation(url);
-        
-        try {
-            config.setImapMaxMsgSize(Integer.parseInt(
-                    imapMaxMsgSizeEditField.getText()) * 1024);
-        } catch (Exception e) { }
-
-        try {
-            config.setImapMaxFolderDepth(Integer.parseInt(
-                    imapMaxFolderDepthEditField.getText()));
-        } catch (Exception e) { }
-
-        try {
-            config.setPopMaxLines(Integer.parseInt(popMaxLinesEditField.getText()));
-        } catch (Exception e) { }
 
         if (overrideHostnameCheckboxField.getChecked()) {
             config.setLocalHostname(localHostnameEditField.getText().trim());

@@ -56,7 +56,6 @@ import org.logicprobe.LogicMail.util.StringParser;
  * 
  */
 public class PopClient implements IncomingMailClient {
-    private GlobalConfig globalConfig;
     private PopConfig accountConfig;
     private Connection connection;
     private PopProtocol popProtocol;
@@ -75,7 +74,6 @@ public class PopClient implements IncomingMailClient {
     /** Creates a new instance of PopClient */
     public PopClient(GlobalConfig globalConfig, PopConfig accountConfig) {
         this.accountConfig = accountConfig;
-        this.globalConfig = globalConfig;
         connection = new Connection(
                 accountConfig.getServerName(),
                 accountConfig.getServerPort(),
@@ -254,7 +252,7 @@ public class PopClient implements IncomingMailClient {
 
     public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
         // Figure out the max number of lines
-        int maxLines = globalConfig.getPopMaxLines();
+        int maxLines = accountConfig.getMaxMessageLines();
 
         // Download the message text
         String[] message = popProtocol.executeTop((folderMessage.getIndex()), maxLines);
