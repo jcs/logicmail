@@ -32,15 +32,21 @@
 package org.logicprobe.LogicMail;
 
 import net.rim.device.api.system.ApplicationDescriptor;
+import net.rim.device.api.system.Bitmap;
 
 /**
  * Class to provide information about the application
  * and its environment.  Typically this information
  * should come from the deployment descriptor.
  */
-public class AppInfo {
+public final class AppInfo {
     /** System event log GUID */
-    public static long GUID = 0x6bc611e33074e780L;
+    public final static long GUID = 0x6bc611e33074e780L;
+    
+    private static Bitmap icon = Bitmap.getBitmapResource("logicmail.png");
+    private static Bitmap rolloverIcon = Bitmap.getBitmapResource("logicmail-rollover.png");
+    private static Bitmap newMessagesIcon = Bitmap.getBitmapResource("logicmail-new.png");
+    private static Bitmap newMessagesRolloverIcon = Bitmap.getBitmapResource("logicmail-new-rollover.png");
     
     public static String getName() {
         ApplicationDescriptor appDesc =
@@ -52,5 +58,21 @@ public class AppInfo {
         ApplicationDescriptor appDesc =
                 ApplicationDescriptor.currentApplicationDescriptor();
         return appDesc.getVersion();
+    }
+    
+    public static Bitmap getIcon() {
+    	return icon;
+    }
+    
+    public static Bitmap getRolloverIcon() {
+    	return rolloverIcon;
+    }
+    
+    public static Bitmap getNewMessagesIcon() {
+    	return newMessagesIcon;
+    }
+    
+    public static Bitmap getNewMessagesRolloverIcon() {
+    	return newMessagesRolloverIcon;
     }
 }

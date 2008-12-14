@@ -32,9 +32,15 @@
 package org.logicprobe.LogicMail;
 
 import java.util.Calendar;
+
+import net.rim.blackberry.api.homescreen.HomeScreen;
+import net.rim.device.api.notification.NotificationsConstants;
+import net.rim.device.api.notification.NotificationsManager;
+import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.UiApplication;
 import org.logicprobe.LogicMail.ui.MailHomeScreen;
+import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
 /*
@@ -48,33 +54,94 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  */
 
 /**
- * Main class for the application
+ * Main class for the application.
  */
 public class LogicMail extends UiApplication {
-    public LogicMail() {
-        // Load the configuration
-        MailSettings.getInstance().loadSettings();
+    /**
+     * Instantiates a new instance of the application.
+     * 
+     * @param autoStart True if this is the autostart instance, false for normal startup
+     */
+    public LogicMail(boolean autoStart) {
+    	if(autoStart) {
+    		doAutoStart();
+    	}
+    	else {
+	        // Load the configuration
+	        MailSettings.getInstance().loadSettings();
+	
+	        // Log application startup information
+	        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
+	            StringBuffer buf = new StringBuffer();
+	            buf.append("Application startup\r\n");
+	            buf.append("Date: ");
+	            buf.append(Calendar.getInstance().getTime().toString());
+	            buf.append("\r\n");
+	            buf.append("Name: ");
+	            buf.append(AppInfo.getName());
+	            buf.append("\r\n");
+	            buf.append("Version: ");
+	            buf.append(AppInfo.getVersion());
+	            buf.append("\r\n");
+	            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
+	        }
 
-        // Log application startup information
-        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-            StringBuffer buf = new StringBuffer();
-            buf.append("Application startup\r\n");
-            buf.append("Date: ");
-            buf.append(Calendar.getInstance().getTime().toString());
-            buf.append("\r\n");
-            buf.append("Name: ");
-            buf.append(AppInfo.getName());
-            buf.append("\r\n");
-            buf.append("Version: ");
-            buf.append(AppInfo.getVersion());
-            buf.append("\r\n");
-            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
-        }
-        
-        pushScreen(new MailHomeScreen());
+	        // Initialize the notification handler
+	        NotificationHandler.getInstance().setEnabled(true);
+	        
+	        // Push the mail home screen
+	        pushScreen(new MailHomeScreen());
+    	}
     }
 
+    /**
+     * Run the application.
+     */
     public void run() {
     	enterEventDispatcher();
+    }
+    
+    /** The constant event source object. */
+    private static final Object eventSource = new Object() {
+		public String toString() {
+	    	return "LogicMail New Message";
+		}
+	};
+	
+    /**
+     * Method to execute in autostart mode.
+     */
+    private void doAutoStart() {
+        invokeLater(new Runnable()
+        {
+            public void run()
+            {
+                ApplicationManager myApp = ApplicationManager.getApplicationManager();
+                boolean keepGoing = true;
+
+                while (keepGoing)
+                {
+                    if (myApp.inStartup())
+                    {
+                        try { Thread.sleep(1000); }
+                        catch (Exception ex) { }
+                    }
+                    else
+                    {
+                        // The BlackBerry has finished its startup process
+                        // Configure the rollover icons
+                        HomeScreen.updateIcon(AppInfo.getIcon(), 0);
+                        HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
+                        
+                        // Configure the notification source
+                        NotificationsManager.registerSource(AppInfo.GUID, eventSource, NotificationsConstants.CASUAL);
+                        
+                        keepGoing = false;
+                    }
+                 }
+                 //Exit the application.
+                 System.exit(0);
+            }
+        });    	
     }
 } 

@@ -40,6 +40,7 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
+
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
@@ -102,11 +103,13 @@ public abstract class BaseScreen extends MainScreen {
     	super.onDisplay();
     	isExposed = true;
     	MailConnectionManager.getInstance().addMailConnectionListener(mailConnectionListener);
+    	NotificationHandler.getInstance().cancelNotification();
     }
     
     protected void onUndisplay() {
     	isExposed = false;
     	MailConnectionManager.getInstance().removeMailConnectionListener(mailConnectionListener);
+    	NotificationHandler.getInstance().cancelNotification();
     	super.onUndisplay();
     }
     
@@ -198,11 +201,13 @@ public abstract class BaseScreen extends MainScreen {
             		}
             	}
                 headerField.removeListeners();
+                NotificationHandler.getInstance().shutdown();
                 System.exit(0);
             }
         }
         else {
             headerField.removeListeners();
+            NotificationHandler.getInstance().shutdown();
             System.exit(0);
         }
     }

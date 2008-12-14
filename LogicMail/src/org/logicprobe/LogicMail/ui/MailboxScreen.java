@@ -98,6 +98,15 @@ public class MailboxScreen extends BaseScreen {
         senderWidth = maxWidth - dateWidth - 20;
     }
 
+    /**
+     * Gets the mailbox node being displayed by this screen.
+     * 
+     * @return The mailbox node
+     */
+    public MailboxNode getMailboxNode() {
+    	return mailboxNode;
+    }
+    
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
 		public void mailboxStatusChanged(MailboxNodeEvent e) {
 			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
