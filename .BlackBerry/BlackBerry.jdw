@@ -17,6 +17,7 @@ DependenciesInWorkspace=0
 [Projects
 ..\J2MEUnit\J2MEUnit.jdp
 ..\LogicMail\LogicMail.jdp
+..\LogicMailInit\LogicMailInit.jdp
 ..\LogicMailStartup\LogicMailStartup.jdp
 ..\LogicMailTests\LogicMailTests.jdp
 ]
