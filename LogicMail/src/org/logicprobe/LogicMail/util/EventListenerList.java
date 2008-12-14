@@ -71,8 +71,8 @@ public class EventListenerList {
         Object[] newListenerList = new Object[listenerList.length - removeCount];
         int index = 0;
         for(int i=0; i<listenerList.length; i+=2) {
-            if(t != (Class)listenerList[i] &&
-               l != (EventListener)listenerList[i+1]) {
+            if(!(t == (Class)listenerList[i] &&
+                 l == (EventListener)listenerList[i+1])) {
             	newListenerList[index++] = listenerList[i];
             	newListenerList[index++] = listenerList[i+1];
             }

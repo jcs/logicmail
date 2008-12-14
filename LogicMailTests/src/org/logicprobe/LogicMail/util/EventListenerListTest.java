@@ -62,23 +62,37 @@ public class EventListenerListTest extends TestCase {
     }
     
     public void testAdd() {
-        TestListener testListener = new TestListener();
+        TestListener testListener1 = new TestListener();
+        TestListener testListener2 = new TestListener();
         assertNotNull(instance.getListenerList());
         assertEquals(0, instance.getListenerCount(TestListener.class));
-        instance.add(TestListener.class, testListener);
+        
+        instance.add(TestListener.class, testListener1);
         
         assertEquals(1, instance.getListenerCount(TestListener.class));
         EventListener[] addedListeners = instance.getListeners(TestListener.class);
         assertEquals(1, addedListeners.length);
-        assertTrue(addedListeners[0] == testListener);
+        assertTrue(addedListeners[0] == testListener1);
+        
+        instance.add(TestListener.class, testListener2);
+
+        assertEquals(2, instance.getListenerCount(TestListener.class));
+        addedListeners = instance.getListeners(TestListener.class);
+        assertEquals(2, addedListeners.length);
+        assertTrue(addedListeners[0] == testListener1);
+        assertTrue(addedListeners[1] == testListener2);
     }
     
     public void testRemove() {
-        TestListener testListener = new TestListener();
-        instance.add(TestListener.class, testListener);
-        instance.remove(TestListener.class, testListener);
+        TestListener testListener1 = new TestListener();
+        TestListener testListener2 = new TestListener();
+        instance.add(TestListener.class, testListener1);
+        instance.add(TestListener.class, testListener2);
+        instance.remove(TestListener.class, testListener2);
         assertNotNull(instance.getListenerList());
-        assertEquals(0, instance.getListenerCount(TestListener.class));        
+        EventListener[] listeners = instance.getListeners(TestListener.class);
+        assertEquals(1, listeners.length);
+        assertTrue(listeners[0] == testListener1);
     }
     
     public Test suite() {
