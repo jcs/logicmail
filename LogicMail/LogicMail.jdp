@@ -89,6 +89,9 @@ src\icons\folder_outbox.png
 src\icons\folder_sent.png
 src\icons\folder_trash.png
 src\icons\folder_trash_full.png
+src\icons\logicmail-new-rollover.png
+src\icons\logicmail-new.png
+src\icons\logicmail-rollover.png
 src\icons\logicmail.png
 src\icons\mail_deleted.png
 src\icons\mail_draft.png
@@ -359,6 +362,7 @@ src\org\logicprobe\LogicMail\ui\MessagePropertiesDialog.java
 src\org\logicprobe\LogicMail\ui\MessageRenderer.java
 src\org\logicprobe\LogicMail\ui\MessageScreen.java
 src\org\logicprobe\LogicMail\ui\NodeIcons.java
+src\org\logicprobe\LogicMail\ui\NotificationHandler.java
 src\org\logicprobe\LogicMail\ui\OutgoingConfigScreen.java
 src\org\logicprobe\LogicMail\ui\WizardController.java
 src\org\logicprobe\LogicMail\ui\WizardScreen.java
