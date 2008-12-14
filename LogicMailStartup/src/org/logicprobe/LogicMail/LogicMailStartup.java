@@ -44,15 +44,25 @@ import net.rim.device.api.system.EventLogger;
  */
 
 /**
- * Main class for the application
+ * Main class for the application.
  */
 public class LogicMailStartup {
-    public static void main(String argv[]) {
+    /**
+     * The main method.
+     * 
+     * @param args The arguments
+     */
+    public static void main(String[] args) {
         // Register with the event logger
         EventLogger.register(AppInfo.GUID, "LogicMail", EventLogger.VIEWER_STRING);
         
-        // Start the application
-        LogicMail app = new LogicMail();
+        LogicMail app;
+        if (args.length > 0 && args[0].equals("autostartup")) {
+	        app = new LogicMail(true);
+    	}
+        else {
+	        app = new LogicMail(false);
+    	}
         app.run();
     }
 }
