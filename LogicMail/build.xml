@@ -37,12 +37,17 @@
 	              destdir="${dist.dir}/@{platform}"
 	              jdehome="@{jdehome}"
 	        	  defines="@{preprocessor}">
-	              <jdp title="${module.title}"
-	                 vendor="${module.vendor}"
-	                 version="${module.version}"
-	                 type="cldc"
-	                 midletclass="org.logicprobe.LogicMail.LogicMail"
-	                 icon="logicmail.png"/>
+				<jdp title="${module.title}"
+					 vendor="${module.vendor}"
+					 version="${module.version}"
+					 type="cldc"
+					 midletclass="org.logicprobe.LogicMail.LogicMail"
+					 icon="logicmail.png">
+		        	<entry arguments="autostart"
+			        	   systemmodule="true"
+				           runonstartup="true"
+				           startuptier="7"/>
+				</jdp>
 	            <src>
 	                <fileset dir="${src.dir}">
 	                    <include name="**/*.java"/>
