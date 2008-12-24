@@ -63,6 +63,7 @@ public class MessageScreen extends BaseScreen {
     private MessageEnvelope envelope;
     private boolean isSentFolder;
     private boolean messageRendered;
+    private ThrobberField throbberField;
     
     public MessageScreen(MessageNode messageNode)
     {
@@ -116,6 +117,8 @@ public class MessageScreen extends BaseScreen {
     	super.onDisplay();
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(messageNode.getMessage() == null) {
+    		throbberField = new ThrobberField(this.getWidth() / 4, Field.FIELD_HCENTER);
+    		add(throbberField);
     		messageNode.refreshMessage();
     	}
     	else if(!messageRendered) {
@@ -125,6 +128,12 @@ public class MessageScreen extends BaseScreen {
 
     protected void onUndisplay() {
     	messageNode.removeMessageNodeListener(messageNodeListener);
+        synchronized(Application.getEventLock()) {
+    		if(throbberField != null) {
+    			this.delete(throbberField);
+    			throbberField = null;
+    		}
+        }
     	super.onUndisplay();
     }
     
@@ -259,6 +268,12 @@ public class MessageScreen extends BaseScreen {
     
     private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
     	if(e.getType() == MessageNodeEvent.TYPE_LOADED) {
+            synchronized(Application.getEventLock()) {
+	    		if(throbberField != null) {
+	    			this.delete(throbberField);
+	    			throbberField = null;
+	    		}
+            }
     		renderMessage();
     	}
     }
@@ -300,39 +315,4 @@ public class MessageScreen extends BaseScreen {
             add(new NullField(Field.FOCUSABLE));
         }
     }
-
-//    /**
-//     * Flags the currently viewed message as answered.
-//     */
-//    private void updateMessageAnswered() {
-//        if(client instanceof ImapClient) {
-//            MailClientHandler flagMessageHandler = new MailClientHandler(client, "Updating message status") {
-//                public void runSession(boolean retry) throws IOException, MailException {
-//                    ((ImapClient)client).messageAnswered(folderMessage);
-//                }
-//            };
-//            // Start the background process
-//            flagMessageHandler.start();
-//        }
-//    }
-    
-//    private void updateMessage() {
-//        UpdateMessageHandler updateMessageHandler = new UpdateMessageHandler();
-//        updateMessageHandler.setListener(new MailClientHandlerListener() {
-//            public void mailActionComplete(MailClientHandler source, boolean result) {
-//                source.setListener(null);
-//                UpdateMessageHandler updateMessageHandler = (UpdateMessageHandler)source;
-//                if(updateMessageHandler.getMessageFields() != null) {
-//                    msgFields = updateMessageHandler.getMessageFields();
-//                    msg = updateMessageHandler.getMessage();
-//                    drawMessageFields();
-//                    folderMessage.setSeen(true);
-//                    folderMessage.setRecent(false);
-//                }
-//            }
-//        });
-//
-//        // Start the background process
-//        updateMessageHandler.start();
-//    }
 }
