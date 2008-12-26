@@ -147,6 +147,7 @@ src\org\logicprobe\LogicMail\LogicMail.java
 src\org\logicprobe\LogicMail\LogicMail.rrc
 src\org\logicprobe\LogicMail\LogicMail.rrh
 src\org\logicprobe\LogicMail\LogicMail_de.rrc
+src\org\logicprobe\LogicMail\LogicMail_es.rrc
 src\org\logicprobe\LogicMail\LogicMail_fr.rrc
 src\org\logicprobe\LogicMail\LogicMail_nl.rrc
 src\org\logicprobe\LogicMail\mail\.svn\all-wcprops
