@@ -150,22 +150,25 @@ public class NotificationHandler {
 		AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
 		for(int i=0; i<accountNodes.length; i++) {
 			if(accountNodes[i].getStatus() != AccountNode.STATUS_LOCAL) {
-				MailboxNode[] mailboxNodes = accountNodes[i].getRootMailbox().getMailboxes();
-				MailboxNode inboxNode = null;
-				for(int j=0; j<mailboxNodes.length; j++) {
-					if(mailboxNodes[j].getName().equalsIgnoreCase("INBOX")) {
-						inboxNode = mailboxNodes[j];
-						break;
+				MailboxNode rootMailbox = accountNodes[i].getRootMailbox();
+				if(rootMailbox != null) {
+					MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
+					MailboxNode inboxNode = null;
+					for(int j=0; j<mailboxNodes.length; j++) {
+						if(mailboxNodes[j].getName().equalsIgnoreCase("INBOX")) {
+							inboxNode = mailboxNodes[j];
+							break;
+						}
 					}
-				}
-				
-				if(inboxNode != null) {
-					if(accountMap.containsKey(accountNodes[i]) && accountMap.get(accountNodes[i]) != inboxNode) {
-						((MailboxNode)accountMap.get(accountNodes[i])).removeMailboxNodeListener(mailboxNodeListener);
-					}
-					else if(!accountMap.containsKey(accountNodes[i])) {
-						inboxNode.addMailboxNodeListener(mailboxNodeListener);
-						accountMap.put(accountNodes[i], inboxNode);
+					
+					if(inboxNode != null) {
+						if(accountMap.containsKey(accountNodes[i]) && accountMap.get(accountNodes[i]) != inboxNode) {
+							((MailboxNode)accountMap.get(accountNodes[i])).removeMailboxNodeListener(mailboxNodeListener);
+						}
+						else if(!accountMap.containsKey(accountNodes[i])) {
+							inboxNode.addMailboxNodeListener(mailboxNodeListener);
+							accountMap.put(accountNodes[i], inboxNode);
+						}
 					}
 				}
 			}
