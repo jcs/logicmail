@@ -42,6 +42,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.NullField;
+import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -58,6 +59,10 @@ import org.logicprobe.LogicMail.model.MessageNodeListener;
  * Display an E-Mail message
  */
 public class MessageScreen extends BaseScreen {
+	private BorderedFieldManager addressFieldManager;
+	private BorderedFieldManager subjectFieldManager;
+	private VerticalFieldManager messageFieldManager;
+	
 	private AccountConfig accountConfig;
     private MessageNode messageNode;
     private MessageEnvelope envelope;
@@ -67,7 +72,7 @@ public class MessageScreen extends BaseScreen {
     
     public MessageScreen(MessageNode messageNode)
     {
-        super();
+        super(Manager.VERTICAL_SCROLLBAR);
         this.messageNode = messageNode;
         this.accountConfig = messageNode.getParent().getParentAccount().getAccountConfig();
         this.envelope = messageNode.getFolderMessage().getEnvelope();
@@ -77,13 +82,23 @@ public class MessageScreen extends BaseScreen {
         this.isSentFolder = (mailboxType == MailboxNode.TYPE_SENT) || (mailboxType == MailboxNode.TYPE_OUTBOX);
         
         // Create screen elements
+        addressFieldManager = new BorderedFieldManager(
+        		Manager.NO_HORIZONTAL_SCROLL
+        		| Manager.NO_VERTICAL_SCROLL
+        		| BorderedFieldManager.BOTTOM_BORDER_NONE);
+        subjectFieldManager = new BorderedFieldManager(
+        		Manager.NO_HORIZONTAL_SCROLL
+        		| Manager.NO_VERTICAL_SCROLL
+        		| BorderedFieldManager.BOTTOM_BORDER_LINE);
+        messageFieldManager = new VerticalFieldManager();
+        
         if(isSentFolder) {
             if(envelope.to != null && envelope.to.length > 0) {
-                add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + " " + envelope.to[0]));
+            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + " " + envelope.to[0]));
                 if(envelope.to.length > 1) {
                     for(int i=1;i<envelope.to.length;i++) {
                         if(envelope.to[i] != null) {
-                            add(new RichTextField("    " + envelope.to[i]));
+                        	addressFieldManager.add(new RichTextField("    " + envelope.to[i]));
                         }
                     }
                 }
@@ -91,20 +106,23 @@ public class MessageScreen extends BaseScreen {
         }
         else {
             if(envelope.from != null && envelope.from.length > 0) {
-                add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + " " + envelope.from[0]));
+            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + " " + envelope.from[0]));
                 if(envelope.from.length > 1) {
                     for(int i=1;i<envelope.from.length;i++) {
                         if(envelope.from[i] != null) {
-                            add(new RichTextField("      " + envelope.from[i]));
+                        	addressFieldManager.add(new RichTextField("      " + envelope.from[i]));
                         }
                     }
                 }
             }
         }
         if(envelope.subject != null) {
-            add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + envelope.subject));
+            subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + envelope.subject));
         }
-        add(new SeparatorField());
+
+        add(addressFieldManager);
+        add(subjectFieldManager);
+        add(messageFieldManager);
     }
     
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
@@ -306,13 +324,13 @@ public class MessageScreen extends BaseScreen {
             int size = messageFields.size();
             for(int i=0;i<size;++i) {
                 if(messageFields.elementAt(i) != null) {
-                    add((Field)messageFields.elementAt(i));
+                    messageFieldManager.add((Field)messageFields.elementAt(i));
                 }
                 if(i != size-1) {
-                    add(new SeparatorField(Field.FOCUSABLE));
+                	messageFieldManager.add(new SeparatorField(Field.FOCUSABLE));
                 }
             }
-            add(new NullField(Field.FOCUSABLE));
+            messageFieldManager.add(new NullField(Field.FOCUSABLE));
         }
     }
 }

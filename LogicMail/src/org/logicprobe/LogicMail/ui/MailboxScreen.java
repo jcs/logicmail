@@ -35,6 +35,7 @@ import java.util.Calendar;
 import java.util.Vector;
 import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Display;
+import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
@@ -370,6 +371,12 @@ public class MailboxScreen extends BaseScreen {
         }
         
         FolderMessage entry = (FolderMessage)messageNode.getFolderMessage();
+
+        int oldColor = graphics.getColor();
+        graphics.setColor(Color.DARKGRAY);
+        graphics.drawLine(0, y + lineHeight * 2 - 1, width, y + lineHeight * 2 - 1);
+        graphics.setColor(oldColor);
+        
         MessageEnvelope env = entry.getEnvelope();
         graphics.drawBitmap(1, y, 20, lineHeight*2, NodeIcons.getIcon(messageNode), 0, 0);
             

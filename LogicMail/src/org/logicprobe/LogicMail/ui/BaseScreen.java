@@ -71,8 +71,21 @@ public abstract class BaseScreen extends MainScreen {
 		setStatus(null);
     }
 
+    public BaseScreen(long style) {
+    	super(style);
+    }
+    
     public BaseScreen(String title) {
         super();
+        // Create screen elements
+        headerField = new HeaderField("LogicMail - " + title);
+        setTitle(headerField);
+		statusLabel = new LabelField();
+		setStatus(null);
+    }
+    
+    public BaseScreen(String title, long style) {
+    	super(style);
         // Create screen elements
         headerField = new HeaderField("LogicMail - " + title);
         setTitle(headerField);

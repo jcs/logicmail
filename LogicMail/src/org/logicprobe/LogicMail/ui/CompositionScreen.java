@@ -33,11 +33,11 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Calendar;
 
 import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
-import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.Arrays;
 
@@ -63,11 +63,16 @@ public class CompositionScreen extends BaseScreen {
     public final static int COMPOSE_REPLY = 1;
     public final static int COMPOSE_REPLY_ALL = 2;
     public final static int COMPOSE_FORWARD = 3;
+    
     private AccountNode accountNode;
     private AccountConfig accountConfig;
-    private VerticalFieldManager recipientsFieldManager;
+    
+    private BorderedFieldManager recipientsFieldManager;
+	private BorderedFieldManager subjectFieldManager;
+	private VerticalFieldManager messageFieldManager;
     private AutoTextEditField subjectEditField;
     private AutoTextEditField messageEditField;
+
     private String inReplyTo;
     private boolean messageSent;
     private IdentityConfig identityConfig;
@@ -196,18 +201,30 @@ public class CompositionScreen extends BaseScreen {
     }
 
     private void initFields() {
-        recipientsFieldManager = new VerticalFieldManager();
+
+    	recipientsFieldManager = new BorderedFieldManager(
+        		Manager.NO_HORIZONTAL_SCROLL
+        		| Manager.NO_VERTICAL_SCROLL
+        		| BorderedFieldManager.BOTTOM_BORDER_NONE);
         recipientsFieldManager.add(new EmailAddressBookEditField(
                 EmailAddressBookEditField.ADDRESS_TO, ""));
         recipientsFieldManager.add(new EmailAddressBookEditField(
                 EmailAddressBookEditField.ADDRESS_CC, ""));
-        subjectEditField = new AutoTextEditField("Subject: ", "");
-        messageEditField = new AutoTextEditField();
 
+        subjectFieldManager = new BorderedFieldManager(
+        		Manager.NO_HORIZONTAL_SCROLL
+        		| Manager.NO_VERTICAL_SCROLL
+        		| BorderedFieldManager.BOTTOM_BORDER_LINE);
+        subjectEditField = new AutoTextEditField("Subject: ", "");
+        subjectFieldManager.add(subjectEditField);
+        
+        messageFieldManager = new VerticalFieldManager();
+        messageEditField = new AutoTextEditField();
+        messageFieldManager.add(messageEditField);
+        
         add(recipientsFieldManager);
-        add(subjectEditField);
-        add(new SeparatorField());
-        add(messageEditField);
+        add(subjectFieldManager);
+        add(messageFieldManager);
     }
 
     public boolean onClose() {
