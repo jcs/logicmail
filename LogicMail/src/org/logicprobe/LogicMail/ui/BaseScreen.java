@@ -73,6 +73,8 @@ public abstract class BaseScreen extends MainScreen {
 
     public BaseScreen(long style) {
     	super(style);
+		statusLabel = new LabelField();
+		setStatus(null);
     }
     
     public BaseScreen(String title) {
