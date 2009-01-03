@@ -65,7 +65,7 @@ public class FolderTreeItem implements Serializable {
         this.name = name;
         this.path = path;
         this.delim = delim;
-        this.selectable = true;
+        this.selectable = false;
         this.appendable = false;
         this.msgCount = -1;
         this.unseenCount = -1;
