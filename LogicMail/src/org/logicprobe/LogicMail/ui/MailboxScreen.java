@@ -31,26 +31,19 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import java.util.Calendar;
+import java.util.Hashtable;
 import java.util.Vector;
-import net.rim.device.api.i18n.DateFormat;
-import net.rim.device.api.system.Display;
-import net.rim.device.api.ui.Color;
-import net.rim.device.api.ui.DrawStyle;
-import net.rim.device.api.ui.Font;
-import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.component.ListField;
-import net.rim.device.api.ui.component.ListFieldCallback;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
@@ -67,17 +60,11 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  */
 public class MailboxScreen extends BaseScreen {
 	private MailboxNode mailboxNode;
-    private ListField messageListField;
     private Vector knownMessages;
-    private Vector displayedMessages;
+    private Hashtable messageFieldMap;
     private boolean firstDisplay = true;
     private MailSettings mailSettings;
-	
-    // Things to calculate in advance
-    private int lineHeight;
-    private int dateWidth;
-    private int senderWidth;
-    private int maxWidth;
+    private VerticalFieldManager messageFieldManager;
     
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
@@ -88,15 +75,10 @@ public class MailboxScreen extends BaseScreen {
     	super(mailboxNode.getName());
     	this.mailboxNode = mailboxNode;
     	this.knownMessages = new Vector();
-    	this.displayedMessages = new Vector();
+    	this.messageFieldMap = new Hashtable();
     	mailSettings = MailSettings.getInstance();
     	
     	initFields();
-    	
-        // Determine field sizes
-        maxWidth = Display.getWidth();
-        dateWidth = Font.getDefault().getAdvance("00/00/0000");
-        senderWidth = maxWidth - dateWidth - 20;
     }
 
     /**
@@ -108,6 +90,7 @@ public class MailboxScreen extends BaseScreen {
     	return mailboxNode;
     }
     
+    /** The mailbox node listener. */
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
 		public void mailboxStatusChanged(MailboxNodeEvent e) {
 			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
@@ -118,6 +101,7 @@ public class MailboxScreen extends BaseScreen {
 		}
     };
     
+    /** The message node listener. */
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
 		public void messageStatusChanged(MessageNodeEvent e) {
 			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
@@ -128,6 +112,9 @@ public class MailboxScreen extends BaseScreen {
 		}
     };
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
+     */
     protected void onDisplay() {
     	super.onDisplay();
         this.mailboxNode.addMailboxNodeListener(mailboxNodeListener);
@@ -152,6 +139,9 @@ public class MailboxScreen extends BaseScreen {
         // TODO: Support updating when messages are deleted
     }
     
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.BaseScreen#onUndisplay()
+	 */
 	protected void onUndisplay() {
         this.mailboxNode.removeMailboxNodeListener(mailboxNodeListener);
         int size = knownMessages.size();
@@ -162,30 +152,17 @@ public class MailboxScreen extends BaseScreen {
     	super.onUndisplay();
     }
     
-    
+	/**
+	 * Initializes the fields.
+	 */
 	private void initFields() {
-        messageListField = new ListField();
-        lineHeight = messageListField.getRowHeight();
-        messageListField.setRowHeight(lineHeight * 2);
-        
-        messageListField.setCallback(new ListFieldCallback() {
-            public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
-            	messageListField_drawListRow(listField, graphics, index, y, width);
-            }
-            public int getPreferredWidth(ListField listField) {
-                return messageListField_getPreferredWidth(listField);
-            }
-            public Object get(ListField listField, int index) {
-                return messageListField_get(listField, index);
-            }
-            public int indexOfList(ListField listField, String prefix, int start) {
-                return messageListField_indexOfList(listField, prefix, start);
-            }
-        });
-        
-        add(messageListField);
+		messageFieldManager = new VerticalFieldManager(Manager.USE_ALL_WIDTH | Manager.USE_ALL_HEIGHT);
+        add(messageFieldManager);
 	}    
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#onSavePrompt()
+     */
     protected boolean onSavePrompt() {
         return true;
     }
@@ -216,17 +193,20 @@ public class MailboxScreen extends BaseScreen {
         }
     };
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
+     */
     protected void makeMenu(Menu menu, int instance) {
-    	if(messageListField.getSelectedIndex() != -1) {
+    	Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
+    	if(fieldWithFocus instanceof MailboxMessageField) {
     		menu.add(selectItem);
     		menu.add(propertiesItem);
     	}
         if(mailboxNode.getParentAccount().hasMailSender()) {
             menu.add(compositionItem);
         }
-        int index = messageListField.getSelectedIndex();
-        if(index >= 0 && index < messageListField.getSize() && !displayedMessages.isEmpty()) {
-        	MessageNode messageNode = (MessageNode)displayedMessages.elementAt(index);
+        if(fieldWithFocus instanceof MailboxMessageField) {
+        	MessageNode messageNode = ((MailboxMessageField)fieldWithFocus).getMessageNode();
             if(messageNode.getFolderMessage().isDeleted()) {
                 if(mailboxNode.getParentAccount().hasUndelete()) {
                     menu.add(undeleteItem);
@@ -267,6 +247,7 @@ public class MailboxScreen extends BaseScreen {
      * per the configuration.
      * 
      * @param messageNode Message to check.
+     * 
      * @return True if it should be displayed, false otherwise.
      */
     private boolean isMessageDisplayable(MessageNode messageNode) {
@@ -286,39 +267,62 @@ public class MailboxScreen extends BaseScreen {
      * @param messageNode Message to insert.
      */
     private void insertDisplayableMessage(MessageNode messageNode) {
-    	int selectedIndex = messageListField.getSelectedIndex();
+    	int selectedIndex = messageFieldManager.getFieldWithFocusIndex();
     	
-		if(displayedMessages.size() > 0) {
+		if(messageFieldManager.getFieldCount() > 0) {
 			int msgId = messageNode.getId();
-			int index = displayedMessages.size();
+			int index = messageFieldManager.getFieldCount();
 			
 			if(mailSettings.getGlobalConfig().getDispOrder()) {
 				// Ascending order
-				MessageNode lastMessage = (MessageNode)displayedMessages.lastElement();
-				while(index > 0 && lastMessage.getId() > msgId) {
+				MessageNode lastMessage = getLastDisplayedMessage(index - 1);
+				while(lastMessage != null && index > 0 && lastMessage.getId() > msgId) {
 					index--;
-					if(index > 0) { lastMessage = (MessageNode)displayedMessages.elementAt(index - 1); }
+					if(index > 0) { lastMessage = getLastDisplayedMessage(index - 1); }
 				}
 			}
 			else {
 				// Descending order
-				MessageNode lastMessage = (MessageNode)displayedMessages.lastElement();
-				while(index > 0 && lastMessage.getId() < msgId) {
+				MessageNode lastMessage = getLastDisplayedMessage(index - 1);
+				while(lastMessage != null && index > 0 && lastMessage.getId() < msgId) {
 					index--;
-					if(index > 0) { lastMessage = (MessageNode)displayedMessages.elementAt(index - 1); }
+					if(index > 0) { lastMessage = getLastDisplayedMessage(index - 1); }
 				}
 			}
-			displayedMessages.insertElementAt(messageNode, index);
-			messageListField.insert(index);
-			if(selectedIndex != -1) { messageListField.setSelectedIndex(selectedIndex); }
-			messageListField.invalidate(index);
+			MailboxMessageField mailboxMessageField =
+				new MailboxMessageField(mailboxNode, messageNode, Field.USE_ALL_WIDTH | Field.FOCUSABLE);
+			messageFieldMap.put(messageNode, mailboxMessageField);
+			messageFieldManager.insert(
+					mailboxMessageField,
+					index);
+			if(selectedIndex != -1) { messageFieldManager.getField(selectedIndex).setFocus(); }
 		}
 		else {
-			displayedMessages.addElement(messageNode);
-			messageListField.insert(0);
-			if(selectedIndex != -1) { messageListField.setSelectedIndex(selectedIndex); }
-			messageListField.invalidate(0);
+			MailboxMessageField mailboxMessageField =
+				new MailboxMessageField(mailboxNode, messageNode, Field.USE_ALL_WIDTH | Field.FOCUSABLE);
+			messageFieldMap.put(messageNode, mailboxMessageField);
+			messageFieldManager.insert(
+					mailboxMessageField,
+					0);
+			if(selectedIndex != -1) { messageFieldManager.getField(selectedIndex).setFocus(); }
 		}
+    }
+
+    /**
+     * Gets the last displayed message.
+     * 
+     * @param index the index
+     * 
+     * @return the last displayed message
+     */
+    private MessageNode getLastDisplayedMessage(int index) {
+    	while(index >= 0) {
+    		if(messageFieldManager.getField(index) instanceof MailboxMessageField) {
+    			return ((MailboxMessageField)messageFieldManager.getField(index)).getMessageNode();
+    		}
+    		index--;
+    	}
+    	return null;
     }
     
     /**
@@ -329,14 +333,14 @@ public class MailboxScreen extends BaseScreen {
 	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
 		if(e.getType() == MessageNodeEvent.TYPE_FLAGS) {
 			MessageNode messageNode = (MessageNode)e.getSource();
-			boolean currentlyDisplayed = displayedMessages.contains(messageNode);
+			boolean currentlyDisplayed = messageFieldMap.containsKey(messageNode);
 			boolean displayable = isMessageDisplayable(messageNode);
 			
 			if(currentlyDisplayed && !displayable) {
 				// Remove from display
-				int index = displayedMessages.indexOf(messageNode);
-				displayedMessages.removeElementAt(index);
-				messageListField.delete(index);
+				MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.get(messageNode);
+				messageFieldManager.delete(mailboxMessageField);
+				messageFieldMap.remove(messageNode);
 			}
 			else if(!currentlyDisplayed && displayable) {
 				// Add to display
@@ -344,129 +348,32 @@ public class MailboxScreen extends BaseScreen {
 			}
 			else if(currentlyDisplayed) {
 				// Just a visual flag update, so find and invalidate the item
-				int index = displayedMessages.indexOf(messageNode);
-				messageListField.invalidate(index);
+				MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.get(messageNode);
+				mailboxMessageField.invalidate();
 			}
 		}
 	}
 
     /**
-     * Draw a row of the message list.
-     * Currently using a double row so that more meaningful
-     * information can be displayed for each message entry.
-     * Actual rendering is crude at the moment, and needs to
-     * be reworked to use relative positioning for everything.
+     * Gets the selected message.
+     * 
+     * @return the selected message
      */
-    private void messageListField_drawListRow(
-    		ListField listField,
-            Graphics graphics,
-            int index,
-            int y,
-            int width)
-    {
-    	MessageNode messageNode = (MessageNode)displayedMessages.elementAt(index);
-        // sanity check
-        if(messageNode == null) {
-            return;
-        }
-        
-        FolderMessage entry = (FolderMessage)messageNode.getFolderMessage();
-
-        int oldColor = graphics.getColor();
-        graphics.setColor(Color.DARKGRAY);
-        graphics.drawLine(0, y + lineHeight * 2 - 1, width, y + lineHeight * 2 - 1);
-        graphics.setColor(oldColor);
-        
-        MessageEnvelope env = entry.getEnvelope();
-        graphics.drawBitmap(1, y, 20, lineHeight*2, NodeIcons.getIcon(messageNode), 0, 0);
-            
-        Font origFont = graphics.getFont();
-        graphics.setFont(origFont.derive(Font.BOLD));
-
-        if(mailboxNode.getType() == MailboxNode.TYPE_SENT) {
-            if(env.to != null && env.to.length > 0) {
-                graphics.drawText((String)env.to[0], 20, y,
-                                  (int)(getStyle() | DrawStyle.ELLIPSIS),
-                                   senderWidth);
-            }
-        }
-        else {
-            if(env.from != null && env.from.length > 0) {
-                graphics.drawText((String)env.from[0], 20, y,
-                                  (int)(getStyle() | DrawStyle.ELLIPSIS),
-                                   senderWidth);
-            }
-        }
-        graphics.setFont(origFont.derive(Font.PLAIN));
-        if(env.subject != null) {
-            graphics.drawText((String)env.subject, 20, y+lineHeight,
-                              (int)(getStyle() | DrawStyle.ELLIPSIS),
-                               maxWidth-20);
-        }
-        graphics.setFont(origFont);
-        
-        // Current time
-        // Perhaps this should only be set on initialization
-        // of this screen, and/or new message downloads
-        if(env.date != null) {
-            Calendar nowCal = Calendar.getInstance();
-    
-            Calendar dispCal = Calendar.getInstance();
-            dispCal.setTime(env.date);
-
-            DateFormat dateFormat;
-
-            // Determine the date format to display,
-            // based on the distance from the current time
-            if(nowCal.get(Calendar.YEAR) == dispCal.get(Calendar.YEAR))
-                if((nowCal.get(Calendar.MONTH) == dispCal.get(Calendar.MONTH)) &&
-                (nowCal.get(Calendar.DAY_OF_MONTH) == dispCal.get(Calendar.DAY_OF_MONTH))) {
-                	// Show just the time
-                    dateFormat = DateFormat.getInstance(DateFormat.TIME_MEDIUM);
-                }
-                else {
-                    dateFormat = DateFormat.getInstance(DateFormat.DATE_SHORT);
-                }
-            else {
-                dateFormat = DateFormat.getInstance(DateFormat.DATE_SHORT);
-            }
-        
-            StringBuffer buffer = new StringBuffer();
-            dateFormat.format(dispCal, buffer, null);
-            graphics.setFont(origFont.derive(Font.BOLD));
-            graphics.drawText(buffer.toString(), senderWidth+20, y,
-                              (int)(getStyle() | DrawStyle.ELLIPSIS),
-                              dateWidth);
-            graphics.setFont(origFont);
-        }
-    }
-    
-    public int messageListField_getPreferredWidth(ListField listField) {
-    	return Display.getWidth();
-    }
-    
-    public Object messageListField_get(ListField listField, int index) {
-        return this.displayedMessages.elementAt(index);
-    }
-    
-    public int messageListField_indexOfList(
-    		ListField listField,
-            String prefix,
-            int start)
-    {
-        return -1;
-    }
-
     private MessageNode getSelectedMessage() {
-        int index = messageListField.getSelectedIndex();
-        if(index < 0 || index > displayedMessages.size()) {
-            return null;
-        }
-        else {
-        	return (MessageNode)displayedMessages.elementAt(index);
-        }
+    	Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
+    	if(fieldWithFocus instanceof MailboxMessageField) {
+    		return ((MailboxMessageField)fieldWithFocus).getMessageNode();
+    	}
+    	else {
+    		return null;
+    	}
     }
     
+    /**
+     * Opens the selected message.
+     * 
+     * @return True, if successful
+     */
     private boolean openSelectedMessage()
     {
     	MessageNode messageNode = getSelectedMessage();
@@ -479,6 +386,9 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
 
+    /**
+     * Open selected message properties.
+     */
     private void openSelectedMessageProperties()
     {
     	MessageNode messageNode = getSelectedMessage();
@@ -489,6 +399,11 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
 
+    /**
+     * Delete selected message.
+     * 
+     * @return True, if successful
+     */
     private boolean deleteSelectedMessage() {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
@@ -502,6 +417,9 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
     
+    /**
+     * Undelete selected message.
+     */
     private void undeleteSelectedMessage() {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
@@ -509,14 +427,17 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#onClick()
+     */
     protected boolean onClick() {
     	return openSelectedMessage();
     }
     
-    public boolean keyChar(char key,
-                           int status,
-                           int time)
-    {
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
+     */
+    public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch(key) {
             case Keypad.KEY_ENTER:
