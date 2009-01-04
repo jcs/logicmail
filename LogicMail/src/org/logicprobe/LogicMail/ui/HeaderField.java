@@ -144,6 +144,7 @@ public class HeaderField extends Field {
         if(!listenersActive) {
             Application.getApplication().addSystemListener(systemListener);
             Application.getApplication().addRadioListener(radioStatusListener);
+            listenersActive = true;
         }
         super.onExposed();
     }
@@ -152,6 +153,7 @@ public class HeaderField extends Field {
         if(!listenersActive) {
             Application.getApplication().addSystemListener(systemListener);
             Application.getApplication().addRadioListener(radioStatusListener);
+            listenersActive = true;
         }
         super.onExposed();
     }
@@ -160,6 +162,7 @@ public class HeaderField extends Field {
         if(listenersActive) {
             Application.getApplication().removeSystemListener(systemListener);
             Application.getApplication().removeRadioListener(radioStatusListener);
+            listenersActive = false;
         }
         super.onObscured();
     }
@@ -168,6 +171,7 @@ public class HeaderField extends Field {
         if(listenersActive) {
             Application.getApplication().removeSystemListener(systemListener);
             Application.getApplication().removeRadioListener(radioStatusListener);
+            listenersActive = false;
         }
         super.onUndisplay();
     }
@@ -181,6 +185,7 @@ public class HeaderField extends Field {
         if(listenersActive) {
             Application.getApplication().removeSystemListener(systemListener);
             Application.getApplication().removeRadioListener(radioStatusListener);
+            listenersActive = false;
         }
     }
     
@@ -248,70 +253,93 @@ public class HeaderField extends Field {
         }
         
         if(showSignal) {
-            graphicsDiff = graphicsDiff + 30;
-            graphics.setColor(0x999999);
-            graphics.fillRect(preferredWidth - 28, midPoint + 2, 6, 4);
-            graphics.fillRect(preferredWidth - 23, midPoint, 6, 6);
-            graphics.fillRect(preferredWidth - 18, midPoint - 2, 6, 8);
-            graphics.fillRect(preferredWidth - 13, midPoint - 4, 6, 10);
-            graphics.fillRect(preferredWidth - 8, midPoint - 6, 6, 12);
-
-            graphics.setColor(signalBarColor);
-            if(signalLevel >= -120) {
-                //1 band
-                graphics.fillRect(preferredWidth - 27, midPoint + 3, 4, 2);
-            }
-            if(signalLevel >= -101) {
-                //2 bands
-                graphics.fillRect(preferredWidth - 22, midPoint + 1, 4, 4);
-            }
-            if(signalLevel >= -92) {
-                //3 bands
-                graphics.fillRect(preferredWidth - 17, midPoint - 1, 4, 6);
-            }
-            if(signalLevel >= -86) {
-                //4 bands
-                graphics.fillRect(preferredWidth - 12, midPoint - 3, 4, 8);
-            }
-            if(signalLevel >= -77) {
-                //5 bands
-                graphics.fillRect(preferredWidth - 7, midPoint - 5, 4, 10);
-            }
+        	graphics.pushRegion(preferredWidth - 37, midPoint - 7, 35, 14, 0, 0);
+        	drawSignalIndicator(graphics);
+        	graphics.popContext();
+        	
+            graphicsDiff += 37;
         }
         
         if(showBattery) {
-            graphics.setColor(batteryBackground);
-            graphics.fillRect(preferredWidth - 23 - graphicsDiff, midPoint - 4, 20, 8);
-            graphics.fillRect(preferredWidth - 3 - graphicsDiff, midPoint - 2, 1, 4);
-            if(batteryLevel > 75) {
-                graphics.setColor(0x28f300);
-            }
-            else if(batteryLevel > 50) {
-                graphics.setColor(0x91dc00);
-            }
-            else if(batteryLevel > 25) {
-                graphics.setColor(0xefec00);
-            }
-            else {
-                graphics.setColor(0xff2200);
-            }
-            double powerLong = ((18.00/100) * batteryLevel);
-            int power = (int)powerLong;
-            graphics.fillRect(preferredWidth - 22 - graphicsDiff, midPoint - 3, power, 6);
-            graphicsDiff = graphicsDiff + 24;
+        	graphics.pushRegion(preferredWidth - 48 - graphicsDiff, midPoint - 7, 44, 14, 0, 0);
+        	drawBatteryIndicator(graphics);
+        	graphics.popContext();
+        	
+        	graphicsDiff += 48;
         }
         
         graphics.setColor(fontColor);
         
         if(showTitle) {
-            int limit = 2;
-            if(showSignal) {
-                limit += 28;
-            }
-            if(showBattery) {
-                limit += 25;
-            }
-            graphics.drawText(title, 1, 0, DrawStyle.ELLIPSIS, preferredWidth - limit);
+            graphics.drawText(title, 1, 0, DrawStyle.ELLIPSIS, preferredWidth - graphicsDiff);
         }
+    }
+    
+    private void drawSignalIndicator(Graphics graphics) {
+    	graphics.setColor(Color.DARKGRAY);
+        graphics.fillRect(7, 12, 4, 2);
+        graphics.fillRect(13, 9, 4, 5);
+        graphics.fillRect(19, 6, 4, 8);
+        graphics.fillRect(25, 3, 4, 11);
+        graphics.fillRect(31, 0, 4, 14);
+    	
+    	graphics.setColor(signalBarColor);
+    	graphics.drawLine(0, 0, 8, 0);
+    	graphics.drawLine(0, 0, 4, 4);
+    	graphics.drawLine(8, 0, 4, 4);
+    	graphics.drawLine(4, 4, 4, 13);
+    	
+        if(signalLevel >= -120) {
+            //1 band
+            graphics.fillRect(7, 12, 4, 2);
+        }
+        if(signalLevel >= -101) {
+            //2 bands
+            graphics.fillRect(13, 9, 4, 5);
+        }
+        if(signalLevel >= -92) {
+            //3 bands
+            graphics.fillRect(19, 6, 4, 8);
+        }
+        if(signalLevel >= -86) {
+            //4 bands
+            graphics.fillRect(25, 3, 4, 11);
+        }
+        if(signalLevel >= -77) {
+            //5 bands
+            graphics.fillRect(31, 0, 4, 14);
+        }
+    }
+
+    private void drawBatteryIndicator(Graphics graphics) {
+    	int backgroundColor = graphics.getBackgroundColor();
+    	
+    	graphics.setColor(batteryBackground);
+    	graphics.drawRect(1, 0, 40, 14);
+    	graphics.drawRect(2, 1, 38, 12);
+    	graphics.drawLine(0, 2, 0, 12);
+    	graphics.fillRect(41, 3, 3, 8);
+
+    	graphics.setColor(backgroundColor);
+    	graphics.fillRect(3, 2, 36, 10);
+    	
+		// Pick the battery color
+    	if(batteryLevel > 75) { graphics.setColor(0x28f300); }
+		else if(batteryLevel > 50) { graphics.setColor(0x91dc00); }
+		else if(batteryLevel > 25) { graphics.setColor(0xefec00); }
+		else { graphics.setColor(0xff2200); }
+		
+    	// Paint the battery level indicator
+    	graphics.fillRect(4, 3, 6, 8);
+    	graphics.fillRect(11, 3, 6, 8);
+    	graphics.fillRect(18, 3, 6, 8);
+    	graphics.fillRect(25, 3, 6, 8);
+    	graphics.fillRect(32, 3, 6, 8);
+    	
+    	graphics.setColor(backgroundColor);
+        int power = (int)((34.00/100) * batteryLevel);
+        power = Math.max(power, 0);
+        power = Math.min(power, 34);
+        graphics.fillRect(38 - (34 - power), 3, 34 - power, 8);
     }
 }
