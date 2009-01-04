@@ -54,6 +54,7 @@ CONFIG_WHAT_ACCOUNT_TYPE#0="What type of account?";
 ERROR_UNKNOWN#0="Unknown error";
 LOGIN_TITLE#0="Authentication";
 MAILBOX_DELETE_PROMPT#0="Are you sure you want to delete this message?";
+MAILBOX_DRAFT_MULTIPLE_ACCOUNTS#0="Which account would you like this message to be sent from?";
 MAILHOME_NOACCOUNTS#0="No accounts";
 MAILHOME_TITLE#0="Home";
 MENUITEM_ABOUT#0="About";

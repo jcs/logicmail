@@ -134,7 +134,7 @@ public class MessageNode implements Node {
 	 * 
 	 * @return The name.
 	 */
-	public String getName() {
+	public String toString() {
 		return this.folderMessage.getEnvelope().subject;
 	}
 

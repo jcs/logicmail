@@ -400,9 +400,9 @@ public class AcctCfgScreen extends BaseCfgScreen {
     private String createSelectedMailboxString(MailboxNode mailboxNode) {
 		StringBuffer buf = new StringBuffer();
     	if(mailboxNode != null) {
-			buf.append(mailboxNode.getParentAccount().getName());
+			buf.append(mailboxNode.getParentAccount().toString());
 			buf.append(": ");
-			buf.append(mailboxNode.getName());
+			buf.append(mailboxNode.toString());
     	}
     	else {
     		buf.append("<NONE>");

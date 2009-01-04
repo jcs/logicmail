@@ -472,7 +472,7 @@ public class MailboxNode implements Node, Serializable {
 	 * 
 	 * @return The name.
 	 */
-	public String getName() {
+	public String toString() {
 		return this.folderTreeItem.getName();
 	}
 

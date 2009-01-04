@@ -235,7 +235,7 @@ public class AccountNode implements Node {
      *
      * @return The name.
      */
-    public String getName() {
+    public String toString() {
         if (accountConfig != null) {
             return this.accountConfig.toString();
         } else {

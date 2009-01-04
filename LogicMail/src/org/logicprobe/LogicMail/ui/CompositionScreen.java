@@ -35,6 +35,7 @@ import java.util.Calendar;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
@@ -53,6 +54,9 @@ import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.MessageNodeEvent;
+import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 
 /**
@@ -102,6 +106,12 @@ public class CompositionScreen extends BaseScreen {
             }
         };
 
+    private MessageNodeListener messageNodeListener = new MessageNodeListener() {
+		public void messageStatusChanged(MessageNodeEvent e) {
+			messageNodeListener_MessageStatusChanged(e);
+		}
+    };
+
     /**
      * Creates a new instance of CompositionScreen.
      *
@@ -114,15 +124,8 @@ public class CompositionScreen extends BaseScreen {
 
         initFields();
 
-        // Add the signature if available
-        if (identityConfig != null) {
-            String sig = identityConfig.getMsgSignature();
-
-            if ((sig != null) && (sig.length() > 0)) {
-                messageEditField.insert("\r\n--\r\n" + sig);
-                messageEditField.setCursorPosition(0);
-            }
-        }
+        appendSignature();
+		messageEditField.setEditable(true);
     }
 
     /**
@@ -134,29 +137,66 @@ public class CompositionScreen extends BaseScreen {
      * @param messageNode Message we are composing
      * @param composeType Type of message we are creating
      */
-    public CompositionScreen(AccountNode accountNode, MessageNode messageNode,
-        int composeType) {
-        this(accountNode);
+    public CompositionScreen(
+    		AccountNode accountNode,
+    		MessageNode messageNode,
+    		int composeType) {
+        this.accountNode = accountNode;
+        this.accountConfig = accountNode.getAccountConfig();
+        this.identityConfig = accountConfig.getIdentityConfig();
 
-        int i;
-        this.replyToMessageNode = messageNode;
+        initFields();
 
-        Message message = replyToMessageNode.getMessage();
-
-        switch (composeType) {
-        case COMPOSE_REPLY:
-            message = message.toReplyMessage();
-            break;
-
-        case COMPOSE_REPLY_ALL:
-            message = message.toReplyAllMessage(identityConfig.getEmailAddress());
-            break;
-
-        case COMPOSE_FORWARD:
-            message = message.toForwardMessage();
-            break;
+        if(composeType == COMPOSE_NORMAL) {
+        	if(messageNode.getMessage() != null) {
+        		populateFromMessage(messageNode.getMessage());
+        		messageEditField.setEditable(true);
+        	}
+        	else {
+        		messageNode.addMessageNodeListener(messageNodeListener);
+        		messageNode.refreshMessage();
+        	}
         }
+        else
+        {
+	        this.replyToMessageNode = messageNode;
+	
+	        Message message = replyToMessageNode.getMessage();
+	
+	        switch (composeType) {
+	        case COMPOSE_REPLY:
+	            message = message.toReplyMessage();
+	            break;
+	
+	        case COMPOSE_REPLY_ALL:
+	            message = message.toReplyAllMessage(identityConfig.getEmailAddress());
+	            break;
+	
+	        case COMPOSE_FORWARD:
+	            message = message.toForwardMessage();
+	            break;
+	        }
+	        populateFromMessage(message);
+	        appendSignature();
+    		messageEditField.setEditable(true);
+        }
+    }
 
+    private void messageNodeListener_MessageStatusChanged(MessageNodeEvent e) {
+    	if(e.getType() == MessageNodeEvent.TYPE_LOADED) {
+    		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+				public void run() {
+			    	MessageNode messageNode = (MessageNode)getEvent().getSource();
+		    		messageNode.removeMessageNodeListener(messageNodeListener);
+		    		populateFromMessage(messageNode.getMessage());
+		    		messageEditField.setEditable(true);
+				}
+    		});
+    	}
+    }
+
+    private void populateFromMessage(Message message) {
+        int i;
         MessagePart body = message.getBody();
         MessageEnvelope env = message.getEnvelope();
 
@@ -199,7 +239,19 @@ public class CompositionScreen extends BaseScreen {
         }
         inReplyTo = env.inReplyTo;
     }
+    
+    private void appendSignature() {
+        // Add the signature if available
+        if (identityConfig != null) {
+            String sig = identityConfig.getMsgSignature();
 
+            if ((sig != null) && (sig.length() > 0)) {
+                messageEditField.insert("\r\n--\r\n" + sig);
+                messageEditField.setCursorPosition(0);
+            }
+        }
+    }
+    
     private void initFields() {
 
     	recipientsFieldManager = new BorderedFieldManager(
@@ -220,6 +272,7 @@ public class CompositionScreen extends BaseScreen {
         
         messageFieldManager = new VerticalFieldManager();
         messageEditField = new AutoTextEditField();
+		messageEditField.setEditable(false);
         messageFieldManager.add(messageEditField);
         
         add(recipientsFieldManager);
@@ -254,6 +307,7 @@ public class CompositionScreen extends BaseScreen {
         					true,
         					false);
         			draftMailbox.appendMessage(message, messageFlags);
+        	    	// TODO: Save reply-to information with the draft message
         			shouldClose = true;
         		}
         		else if(choice == 1) {

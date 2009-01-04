@@ -185,7 +185,7 @@ public class MailboxSelectionDialog extends Dialog {
 		else {
 			graphics.setFont(font.derive(Font.PLAIN));
 		}
-		graphics.drawText(treeNode.getName(), indent, y, Graphics.ELLIPSIS, width);
+		graphics.drawText(treeNode.toString(), indent, y, Graphics.ELLIPSIS, width);
 	}
 
 	private MailboxNode getCurrentMailboxNode() {

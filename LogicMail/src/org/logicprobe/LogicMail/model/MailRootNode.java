@@ -41,6 +41,7 @@ import org.logicprobe.LogicMail.mail.MailFactory;
  */
 public class MailRootNode implements Node {
 	private Vector accounts;
+	private AccountNode[] accountsArray;
 	private AccountNode localAccountNode;
 	
 	public MailRootNode() {
@@ -58,21 +59,26 @@ public class MailRootNode implements Node {
 	/**
 	 * Get the accounts contained within the mail data model.
 	 * This method returns an array that is a shallow copy of the
-	 * live accounts list.  It is primarily intended for use
-	 * during initialization.
+	 * live accounts list.  Since multiple calls to this method
+	 * may return the same instance of that array, it should
+	 * not be modified by callers.
 	 *  
 	 * @return Account nodes.
 	 */
 	public AccountNode[] getAccounts() {
-		AccountNode[] result;
+		// Since this method is used quite frequently, a reference to the
+		// temporary snapshot array is kept.  It is only recreated if the
+		// accounts vector is modified.
 		synchronized(accounts) {
-			int size = accounts.size();
-			result = new AccountNode[size];
-			for(int i=0; i<size; i++) {
-				result[i] = (AccountNode)accounts.elementAt(i);
+			if(accountsArray == null) {
+				int size = accounts.size();
+				accountsArray = new AccountNode[size];
+				for(int i=0; i<size; i++) {
+					accountsArray[i] = (AccountNode)accounts.elementAt(i);
+				}
 			}
 		}
-		return result;
+		return accountsArray;
 	}
 	
 	/**
@@ -95,6 +101,7 @@ public class MailRootNode implements Node {
 		synchronized(accounts) {
 			if(!accounts.contains(account)) {
 				accounts.addElement(account);
+				accountsArray = null;
 			}
 		}
 	}
@@ -108,19 +115,8 @@ public class MailRootNode implements Node {
 		synchronized(accounts) {
 			if(accounts.contains(account)) {
 				accounts.removeElement(account);
+				accountsArray = null;
 			}
 		}
-	}
-	
-	/**
-	 * Gets the name of the root node.
-	 * Since the root node is a special case and is
-	 * not intended to ever be displayed by a user
-	 * interface, this method returns null.
-	 * 
-	 * @return Null
-	 */
-	public String getName() {
-		return null;
 	}
 }

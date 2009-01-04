@@ -422,7 +422,7 @@ public class MailHomeScreen extends BaseScreen {
 		
 		Font origFont = graphics.getFont();
 		StringBuffer buf = new StringBuffer();
-		buf.append(treeNode.node.getName());
+		buf.append(treeNode.node.toString());
 		
 		if(treeNode.node instanceof AccountNode) {
 			graphics.setFont(origFont.derive(Font.BOLD));

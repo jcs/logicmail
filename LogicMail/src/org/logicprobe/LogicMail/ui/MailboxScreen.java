@@ -43,7 +43,10 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
@@ -72,7 +75,7 @@ public class MailboxScreen extends BaseScreen {
      * @param mailboxNode Mailbox node to view.
      */
     public MailboxScreen(MailboxNode mailboxNode) {
-    	super(mailboxNode.getName());
+    	super(mailboxNode.toString());
     	this.mailboxNode = mailboxNode;
     	this.knownMessages = new Vector();
     	this.messageFieldMap = new Hashtable();
@@ -378,7 +381,12 @@ public class MailboxScreen extends BaseScreen {
     {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
-    		UiApplication.getUiApplication().pushScreen(new MessageScreen(messageNode));
+    		if(mailboxNode.getType() == MailboxNode.TYPE_DRAFTS) {
+    			openDraftMessage(messageNode);
+    		}
+    		else {
+    			UiApplication.getUiApplication().pushScreen(new MessageScreen(messageNode));
+    		}
     		return true;
     	}
     	else {
@@ -386,6 +394,49 @@ public class MailboxScreen extends BaseScreen {
     	}
     }
 
+    private boolean openDraftMessage(MessageNode messageNode) {
+    	// Build a list of all the accounts that have this mailbox
+    	// configured as their drafts folder.
+    	Vector matchingAccounts = new Vector();
+    	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+    	
+    	for(int i=0; i<accounts.length; i++) {
+    		AccountConfig accountConfig = accounts[i].getAccountConfig();
+    		if(accountConfig != null) {
+    			if(accountConfig.getDraftMailbox() == mailboxNode) {
+    				matchingAccounts.addElement(accounts[i]);
+    			}
+    		}
+    	}
+
+    	// Select the account node that matches this mailbox, prompting the
+    	// user if necessary.
+    	AccountNode account;
+    	int size = matchingAccounts.size();
+    	if(size > 1) {
+    		AccountNode[] choices = new AccountNode[size];
+    		matchingAccounts.copyInto(choices);
+        	int result = Dialog.ask(
+    			resources.getString(LogicMailResource.MAILBOX_DRAFT_MULTIPLE_ACCOUNTS),
+    			choices, 0);
+        	if(result != -1) {
+        		account = choices[result];
+        	}
+        	else {
+        		return false;
+        	}
+    	}
+    	else {
+    		account = (AccountNode)matchingAccounts.elementAt(0);
+    	}
+
+    	// Show the message composition screen
+    	UiApplication.getUiApplication().pushScreen(
+			new CompositionScreen(account, messageNode, CompositionScreen.COMPOSE_NORMAL));
+
+		return true;
+    }
+    
     /**
      * Open selected message properties.
      */

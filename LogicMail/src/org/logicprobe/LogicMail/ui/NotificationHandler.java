@@ -155,7 +155,7 @@ public class NotificationHandler {
 					MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
 					MailboxNode inboxNode = null;
 					for(int j=0; j<mailboxNodes.length; j++) {
-						if(mailboxNodes[j].getName().equalsIgnoreCase("INBOX")) {
+						if(mailboxNodes[j].toString().equalsIgnoreCase("INBOX")) {
 							inboxNode = mailboxNodes[j];
 							break;
 						}
