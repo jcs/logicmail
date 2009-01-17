@@ -95,17 +95,17 @@ public class AccountNodeTest extends TestCase {
     	assertNotNull("childMailboxes", childMailboxes);
     	assertEquals(1, childMailboxes.length);
     	assertNotNull("childMailboxes[0]", childMailboxes[0]);
-    	assertEquals("INBOX", childMailboxes[0].getName());
+    	assertEquals("INBOX", childMailboxes[0].toString());
     	MailboxNode inboxNode = childMailboxes[0];
     	
     	childMailboxes = childMailboxes[0].getMailboxes();
     	assertNotNull("childMailboxes2", childMailboxes);
     	assertEquals(2, childMailboxes.length);
     	assertNotNull("childMailboxes2[0]", childMailboxes[0]);
-    	assertEquals("One", childMailboxes[0].getName());
+    	assertEquals("One", childMailboxes[0].toString());
     	MailboxNode oneNode = childMailboxes[0];
     	assertNotNull("childMailboxes2[1]", childMailboxes[1]);
-    	assertEquals("Two", childMailboxes[1].getName());
+    	assertEquals("Two", childMailboxes[1].toString());
     	MailboxNode twoNode = childMailboxes[1];
     	
     	// Add another child node
@@ -134,7 +134,7 @@ public class AccountNodeTest extends TestCase {
     	assertNotNull("childMailboxes2[1]", childMailboxes[1]);
     	assertEquals(twoNode, childMailboxes[1]);
     	assertNotNull("childMailboxes2[2]", childMailboxes[2]);
-    	assertEquals("Three", childMailboxes[2].getName());
+    	assertEquals("Three", childMailboxes[2].toString());
     }
     
     public void testRefreshMailboxStatus() {
