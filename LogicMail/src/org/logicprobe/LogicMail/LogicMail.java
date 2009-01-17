@@ -62,7 +62,15 @@ public class LogicMail extends UiApplication {
      * 
      * @param autoStart True if this is the autostart instance, false for normal startup
      */
-    public LogicMail(boolean autoStart) {
+    public LogicMail(String[] args) {
+    	boolean autoStart = false;
+    	for(int i=0; i<args.length; i++) {
+    		if(args[i].indexOf("autostartup") != -1) {
+    			autoStart = true;    			
+    		}
+    	}
+    	AppInfo.initialize(args);
+    	
     	if(autoStart) {
     		doAutoStart();
     	}
@@ -132,7 +140,6 @@ public class LogicMail extends UiApplication {
                         // Configure the rollover icons
                         HomeScreen.updateIcon(AppInfo.getIcon(), 0);
                         HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
-                        
                         // Configure the notification source
                         NotificationsManager.registerSource(AppInfo.GUID, eventSource, NotificationsConstants.CASUAL);
                         

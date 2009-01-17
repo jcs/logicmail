@@ -42,8 +42,9 @@
 					 version="${module.version}"
 					 type="cldc"
 					 midletclass="org.logicprobe.LogicMail.LogicMail"
-					 icon="logicmail.png">
-		        	<entry arguments="autostart"
+					 icon="logicmail.png"
+					 arguments="-build:${module.build}">
+		        	<entry arguments="-build:${module.build} autostartup"
 			        	   systemmodule="true"
 				           runonstartup="true"
 				           startuptier="7"/>

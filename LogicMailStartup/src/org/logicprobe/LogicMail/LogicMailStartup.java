@@ -56,13 +56,7 @@ public class LogicMailStartup {
         // Register with the event logger
         EventLogger.register(AppInfo.GUID, "LogicMail", EventLogger.VIEWER_STRING);
         
-        LogicMail app;
-        if (args.length > 0 && args[0].equals("autostartup")) {
-	        app = new LogicMail(true);
-    	}
-        else {
-	        app = new LogicMail(false);
-    	}
+        LogicMail app = new LogicMail(args);
         app.run();
     }
 }
