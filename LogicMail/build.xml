@@ -3,192 +3,208 @@
  Ant build file for the LogicMail application
 -->
 <project name="LogicMail" default="build" basedir=".">
-    <!-- Properties -->
-    <property name="src.dir" location="src"/>
-    <property name="dist.dir" location="dist"/>
-	<property name="dist.ota.dir" location="distota"/>
-	<property name="dist.alx.dir" location="distalx"/>
-	<property name="docs.dir" location="docs"/>
-	<property name="startup.src.dir" location="../LogicMailStartup/src"/>
-	<property file="project.properties"/>
+  <!-- Properties -->
+  <property name="src.dir" location="src"/>
+  <property name="dist.dir" location="dist"/>
+  <property name="dist.ota.dir" location="distota"/>
+  <property name="dist.alx.dir" location="distalx"/>
+  <property name="docs.dir" location="docs"/>
+  <property name="startup.src.dir" location="../LogicMailStartup/src"/>
+  <property file="project.properties"/>
+  
+  <!-- Task definitions -->
+  <typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+    <classpath>
+      <pathelement location="../lib/ant-contrib-1.0b3.jar"/>
+    </classpath>
+  </taskdef>
+  <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask">
+    <classpath>
+      <pathelement location="../lib/xmltask.jar"/>
+    </classpath>
+  </taskdef>
+  
+  <macrodef name="build-platform">
+    <attribute name="jdehome"/>
+    <attribute name="platform"/>
+    <attribute name="defines"/>
+    <sequential>
+      <mkdir dir="${dist.dir}/@{platform}"/>
+      <copy file="${src.dir}/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
+      <rapc output="${module.name}"
+	    srcdir="${src.dir}"
+	    destdir="${dist.dir}/@{platform}"
+	    jdehome="@{jdehome}"
+	    defines="@{preprocessor}">
+	<jdp title="${module.title}"
+	     vendor="${module.vendor}"
+	     version="${module.version}"
+	     type="cldc"
+	     midletclass="org.logicprobe.LogicMail.LogicMail"
+	     icon="logicmail.png"
+	     arguments="-build:${module.build}">
+	  <entry arguments="-build:${module.build} autostartup"
+		 systemmodule="true"
+		 runonstartup="true"
+		 startuptier="7"/>
+	</jdp>
+	<src>
+	  <fileset dir="${src.dir}">
+	    <include name="**/*.java"/>
+	    <include name="**/*.rrc"/>
+	    <include name="**/*.rrh"/>
+	    <exclude name="**/bb40"/>
+	    <exclude name="**/*BB40.java"/>
+	    <include name="**/*.png"/>
+	  </fileset>
+	  <fileset dir="${startup.src.dir}">
+	    <include name="**/*.java"/>
+	  </fileset>
+	</src>
+      </rapc>
+      <delete file="${dist.dir}/@{platform}/logicmail.png"/>
+    </sequential>
+  </macrodef>
+  
+  <!-- Build the application -->
+  <target name="build">
+    <if><isset property="jde421.home"/><then>
+	<build-platform jdehome="${jde421.home}" platform="BB421" defines="BLACKBERRY_4_2_1" />
+    </then></if>
+    <if><isset property="jde450.home"/><then>
+    	<build-platform jdehome="${jde450.home}" platform="BB450" defines="BLACKBERRY_4_5_0" />
+    </then></if>
+  </target>
 
-    <!-- Task definitions -->
-	<typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
-	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
-		<classpath>
-			<pathelement location="../lib/ant-contrib-1.0b3.jar"/>
-		</classpath>
-	</taskdef>
-    <taskdef name="xmltask" classname="com.oopsconsultancy.xmltask.ant.XmlTask">
-        <classpath>
-            <pathelement location="../lib/xmltask.jar"/>
-        </classpath>
-	</taskdef>
-
-	<macrodef name="build-platform">
-		<attribute name="jdehome"/>
-		<attribute name="platform"/>
-		<attribute name="defines"/>
-		<sequential>
-	        <mkdir dir="${dist.dir}/@{platform}"/>
-	        <copy file="${src.dir}/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
-	        <rapc output="${module.name}"
-	              srcdir="${src.dir}"
-	              destdir="${dist.dir}/@{platform}"
-	              jdehome="@{jdehome}"
-	        	  defines="@{preprocessor}">
-				<jdp title="${module.title}"
-					 vendor="${module.vendor}"
-					 version="${module.version}"
-					 type="cldc"
-					 midletclass="org.logicprobe.LogicMail.LogicMail"
-					 icon="logicmail.png"
-					 arguments="-build:${module.build}">
-		        	<entry arguments="-build:${module.build} autostartup"
-			        	   systemmodule="true"
-				           runonstartup="true"
-				           startuptier="7"/>
-				</jdp>
-	            <src>
-	                <fileset dir="${src.dir}">
-	                    <include name="**/*.java"/>
-	                	<include name="**/*.rrc"/>
-	                	<include name="**/*.rrh"/>
-						<exclude name="**/bb40"/>
-						<exclude name="**/*BB40.java"/>
-	                    <include name="**/*.png"/>
-	                </fileset>
-	            	<fileset dir="${startup.src.dir}">
-	            		<include name="**/*.java"/>
-	        		</fileset>
-	            </src>
-	        </rapc>
-	        <delete file="${dist.dir}/@{platform}/logicmail.png"/>
-		</sequential>
-	</macrodef>
-	
-	<!-- Build the application -->
-    <target name="build">
-    	<if><isset property="jde421.home"/><then>
-	    	<build-platform jdehome="${jde421.home}" platform="BB421" defines="BLACKBERRY_4_2_1" />
-		</then></if>
-    	<if><isset property="jde450.home"/><then>
-    		<build-platform jdehome="${jde450.home}" platform="BB450" defines="BLACKBERRY_4_5_0" />
-		</then></if>
-	</target>
-
-	<!-- Build the code documentation -->
-	<target name="javadoc" depends="build">
-		<javadoc destdir="${docs.dir}"
-			     author="true"
-				 version="true"
-				 use="true"
-				 windowtitle="${module.description}">
-			<fileset dir="${src.dir}">
-				<include name="**/*.java"/>
-				<exclude name="**/bb40"/>
-				<exclude name="**/*BB40.java"/>
-			</fileset>
-			<fileset dir="${startup.src.dir}">
-				<include name="**/*.java"/>
-			</fileset>
-			<classpath>
-				<pathelement path="${jde421.home}/lib/net_rim_api.jar"/>
-				<pathelement path="${dist.dir}/BB421/${module.name}.jar"/>
-			</classpath>
-		</javadoc>
-	</target>
-
-	<!-- Build the desktop loader distribution -->
-	<target name="dist-alx" depends="build">
-		<mkdir dir="${dist.alx.dir}" />
-
-		<!-- Copy the files -->
-		<if><isset property="jde421.home"/><then>
-			<mkdir dir="${dist.alx.dir}/BB421" />
-			<copy todir="${dist.alx.dir}/BB421">
-				<fileset dir="${dist.dir}/BB421" includes="*.jar *.jad *.cod"/>
-			</copy>
-		</then></if>
-		<if><isset property="jde450.home"/><then>
-			<mkdir dir="${dist.alx.dir}/BB450" />
-			<copy todir="${dist.alx.dir}/BB450">
-				<fileset dir="${dist.dir}/BB450" includes="*.jar *.jad *.cod"/>
-			</copy>
-		</then></if>
-		<copy todir="${dist.alx.dir}">
-			<fileset dir=".." includes="README.txt, LICENSE.txt, ChangeLog.txt"/>
-		</copy>
-
-		<!-- Modify and copy the ALX file -->
-		<!-- TODO: Add version conditionals -->
-        <xmltask
-            source="LogicMail.alx"
-            dest="${dist.alx.dir}/${module.name}.alx">
-			<replace path="loader/application/version/text()" withText="${module.version}"/>
-			<replace path="loader/application/fileset/files/text()" withText="${module.name}.cod"/>
-		</xmltask>
-	</target>
-
-	<macrodef name="copy-ota-files">
-		<attribute name="src"/>
-		<attribute name="dest"/>
-		<sequential>
-			<mkdir dir="@{dest}"/>
-			<delete failonerror="false"><fileset dir="@{dest}" includes="*.*"/></delete>
-			<copy todir="@{dest}">
-				<fileset dir="@{src}" includes="*.jar, *.jad"/>
-			</copy>
-	        <unzip src="@{src}/${module.name}.cod" dest="@{dest}"/>
-		</sequential>
-	</macrodef>
-
-	<target name="dist-ota" depends="build">
-		<mkdir dir="${dist.ota.dir}/${module.version}"/>
-		<xmltask dest="${dist.ota.dir}/download-entry.xml" outputter="simple:4">
-			<insert path="/">
-				<![CDATA[
-					<downloads>
-						<entry>
-						</entry>
-					</downloads>
-				]]> 
-			</insert>
-			<attr path="/downloads/entry" attr="name" value="${module.title} ${module.version}"/>
-			<insert if="jde421.home" path="/downloads/entry">
-				<![CDATA[
-					<file name="${module.version}/BB421/${module.name}.jad" target="4.2.1"/>
-				]]>
-			</insert>
-			<insert if="jde450.home" path="/downloads/entry">
-				<![CDATA[
-					<file name="${module.version}/BB450/${module.name}.jad" target="4.5.0"/>
-				]]>
-			</insert>
-		</xmltask>
-    	<if><isset property="jde421.home"/><then>
-			<copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
-		</then></if>
-    	<if><isset property="jde450.home"/><then>
-			<copy-ota-files src="${dist.dir}/BB450" dest="${dist.ota.dir}/${module.version}/BB450"/>
-		</then></if>
-	</target>
-
-	<!-- Prepare the distribution -->
-	<target name="dist" depends="dist-alx,dist-ota">
-		<zip destfile="../LogicMail-${module.version}.zip">
-            <fileset dir="${dist.alx.dir}" />
-        </zip>
-		<zip destfile="../LogicMail-ota-${module.version}.zip">
-			<fileset dir="${dist.ota.dir}" />
-		</zip>
-	</target>
-
-	<!-- Clean up -->
-	<target name="clean">
-		<delete dir="${dist.dir}"/>
-		<delete dir="${dist.alx.dir}"/>
-		<delete dir="${dist.ota.dir}"/>
-		<delete dir="${docs.dir}"/>
-	</target>
+  <!-- Sign the application -->
+  <target name="sign" depends="build" if="sigtool.password">
+    <if><isset property="jde421.home"/><then>
+        <sigtool jdehome="${jde421.home}"
+                 password="${sigtool.password}"
+                 forceclose="true"
+                 codfile="${dist.dir}/BB421/${module.name}.cod"/>
+    </then></if>
+    <if><isset property="jde450.home"/><then>
+        <sigtool jdehome="${jde450.home}"
+                 password="${sigtool.password}"
+                 forceclose="true"
+                 codfile="${dist.dir}/BB450/${module.name}.cod"/>
+    </then></if>
+  </target>
+  
+  <!-- Build the code documentation -->
+  <target name="javadoc" depends="build">
+    <javadoc destdir="${docs.dir}"
+	     author="true"
+	     version="true"
+	     use="true"
+	     windowtitle="${module.description}">
+      <fileset dir="${src.dir}">
+	<include name="**/*.java"/>
+	<exclude name="**/bb40"/>
+	<exclude name="**/*BB40.java"/>
+      </fileset>
+      <fileset dir="${startup.src.dir}">
+	<include name="**/*.java"/>
+      </fileset>
+      <classpath>
+	<pathelement path="${jde421.home}/lib/net_rim_api.jar"/>
+	<pathelement path="${dist.dir}/BB421/${module.name}.jar"/>
+      </classpath>
+    </javadoc>
+  </target>
+  
+  <!-- Build the desktop loader distribution -->
+  <target name="dist-alx" depends="build">
+    <mkdir dir="${dist.alx.dir}" />
+    
+    <!-- Copy the files -->
+    <if><isset property="jde421.home"/><then>
+	<mkdir dir="${dist.alx.dir}/BB421" />
+	<copy todir="${dist.alx.dir}/BB421">
+	  <fileset dir="${dist.dir}/BB421" includes="*.jar *.jad *.cod"/>
+	</copy>
+    </then></if>
+    <if><isset property="jde450.home"/><then>
+	<mkdir dir="${dist.alx.dir}/BB450" />
+	<copy todir="${dist.alx.dir}/BB450">
+	  <fileset dir="${dist.dir}/BB450" includes="*.jar *.jad *.cod"/>
+	</copy>
+    </then></if>
+    <copy todir="${dist.alx.dir}">
+      <fileset dir=".." includes="README.txt, LICENSE.txt, ChangeLog.txt"/>
+    </copy>
+    
+    <!-- Modify and copy the ALX file -->
+    <!-- TODO: Add version conditionals -->
+    <xmltask
+       source="LogicMail.alx"
+       dest="${dist.alx.dir}/${module.name}.alx">
+      <replace path="loader/application/version/text()" withText="${module.version}"/>
+      <replace path="loader/application/fileset/files/text()" withText="${module.name}.cod"/>
+    </xmltask>
+  </target>
+  
+  <macrodef name="copy-ota-files">
+    <attribute name="src"/>
+    <attribute name="dest"/>
+    <sequential>
+      <mkdir dir="@{dest}"/>
+      <delete failonerror="false"><fileset dir="@{dest}" includes="*.*"/></delete>
+      <copy todir="@{dest}">
+	<fileset dir="@{src}" includes="*.jar, *.jad"/>
+      </copy>
+      <unzip src="@{src}/${module.name}.cod" dest="@{dest}"/>
+    </sequential>
+  </macrodef>
+  
+  <target name="dist-ota" depends="build">
+    <mkdir dir="${dist.ota.dir}/${module.version}"/>
+    <xmltask dest="${dist.ota.dir}/download-entry.xml" outputter="simple:4">
+      <insert path="/">
+        <![CDATA[
+          <downloads>
+            <entry>
+            </entry>
+          </downloads>
+        ]]> 
+       </insert>
+       <attr path="/downloads/entry" attr="name" value="${module.title} ${module.version}"/>
+       <insert if="jde421.home" path="/downloads/entry">
+   	<![CDATA[
+          <file name="${module.version}/BB421/${module.name}.jad" target="4.2.1"/>
+        ]]>
+      </insert>
+      <insert if="jde450.home" path="/downloads/entry">
+        <![CDATA[
+          <file name="${module.version}/BB450/${module.name}.jad" target="4.5.0"/>
+        ]]>
+      </insert>
+    </xmltask>
+    <if><isset property="jde421.home"/><then>
+	<copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
+    </then></if>
+    <if><isset property="jde450.home"/><then>
+	<copy-ota-files src="${dist.dir}/BB450" dest="${dist.ota.dir}/${module.version}/BB450"/>
+    </then></if>
+  </target>
+  
+  <!-- Prepare the distribution -->
+  <target name="dist" depends="dist-alx,dist-ota">
+    <zip destfile="../LogicMail-${module.version}.zip">
+      <fileset dir="${dist.alx.dir}" />
+    </zip>
+    <zip destfile="../LogicMail-ota-${module.version}.zip">
+      <fileset dir="${dist.ota.dir}" />
+    </zip>
+  </target>
+  
+  <!-- Clean up -->
+  <target name="clean">
+    <delete dir="${dist.dir}"/>
+    <delete dir="${dist.alx.dir}"/>
+    <delete dir="${dist.ota.dir}"/>
+    <delete dir="${docs.dir}"/>
+  </target>
 </project>
