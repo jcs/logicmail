@@ -151,6 +151,8 @@ src\org\logicprobe\LogicMail\LogicMail_de.rrc
 src\org\logicprobe\LogicMail\LogicMail_es.rrc
 src\org\logicprobe\LogicMail\LogicMail_fr.rrc
 src\org\logicprobe\LogicMail\LogicMail_nl.rrc
+src\org\logicprobe\LogicMail\LogicMail_zh.rrc
+src\org\logicprobe\LogicMail\LogicMail_zh_CN.rrc
 src\org\logicprobe\LogicMail\mail\.svn\all-wcprops
 src\org\logicprobe\LogicMail\mail\.svn\entries
 src\org\logicprobe\LogicMail\mail\.svn\format
