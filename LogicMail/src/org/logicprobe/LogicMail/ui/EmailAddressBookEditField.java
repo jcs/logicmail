@@ -33,15 +33,14 @@ package org.logicprobe.LogicMail.ui;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.ui.ContextMenu;
-import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
-import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.EditField;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.util.Arrays;
@@ -59,16 +58,22 @@ import javax.microedition.pim.PIMException;
  * Implements a field for entering e-mail addresses, supporting the
  * ability to input addresses from the address book.
  */
-public class EmailAddressBookEditField extends EmailAddressEditField {
-    public static int ADDRESS_TO = 1;
-    public static int ADDRESS_CC = 2;
-    public static int ADDRESS_BCC = 3;
+public class EmailAddressBookEditField extends EditField {
+    public final static int ADDRESS_TO = 1;
+    public final static int ADDRESS_CC = 2;
+    public final static int ADDRESS_BCC = 3;
+    
+    private final static int MODE_ADDRESS = 1;
+    private final static int MODE_NAME = 2;
+    
+    private final static char[] invalidChars = { '<', '>', '\"', '{', '}', '|', '\\', '^', '[', ']', '`' };
+    
     private String name;
     private String address;
-    private Bitmap bmapContactItem;
-    private Bitmap bmapContactNonItem;
+    private int addressMode;
     private int addressType;
     private boolean inAddressBook;
+
     private MenuItem addressPropertiesMenuItem = new MenuItem("Properties",
             200000, 10) {
             public void run() {
@@ -89,171 +94,216 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
      * @param initialValue The initial value of the field
      */
     public EmailAddressBookEditField(int addressType, String initialValue) {
-        super("", initialValue);
+        super("", "");
 
-        if (addressType == ADDRESS_TO) {
-            this.setLabel("To: ");
-        } else if (addressType == ADDRESS_CC) {
-            this.setLabel("Cc: ");
-        } else if (addressType == ADDRESS_BCC) {
-            this.setLabel("Bcc: ");
-        } else {
-            this.setLabel("To: ");
-            addressType = ADDRESS_TO;
+        setAddressType(addressType);
+        setText(initialValue);
+    }
+
+    /**
+     * Sets the address type.
+     * Will default to ADDRESS_TO if an invalid type is passed.
+     * 
+     * @param addressType The type of address (ADDRESS_TO, ADDRESS_CC, or ADDRESS_BCC)
+     */
+    public void setAddressType(int addressType) {
+        switch(addressType) {
+        case ADDRESS_TO:
+        	this.setLabel("To: ");
+        	break;
+        case ADDRESS_CC:
+        	this.setLabel("Cc: ");
+        	break;
+        case ADDRESS_BCC:
+        	this.setLabel("Bcc: ");
+        	break;
+    	default:
+    		this.setLabel("To: ");
+    		addressType = ADDRESS_TO;
         }
 
         this.addressType = addressType;
-
-        name = null;
-        address = "";
-        bmapContactItem = Bitmap.getBitmapResource("contact_item.png");
-        bmapContactNonItem = Bitmap.getBitmapResource("contact_nonitem.png");
     }
 
+    /**
+     * Gets the address type.
+     * 
+     * @return the address type
+     */
+    public int getAddressType() {
+    	return this.addressType;
+    }
+    
+    /**
+     * Sets the address mode.
+     * Also makes any other field state changes
+     * that go along with the new mode.
+     * 
+     * @param addressMode the new address mode
+     */
+    private void setAddressMode(int addressMode) {
+    	this.addressMode = addressMode;
+    	switch(addressMode) {
+    	case MODE_ADDRESS:
+        	super.setText(this.address);
+        	super.setEditable(true);
+        	break;
+    	case MODE_NAME:
+            super.setText(this.name);
+            super.setEditable(false);
+            break;
+    	}
+    	this.invalidate();
+    }
+    
+    /**
+     * Set the address contained within the field.
+     * 
+     * @return Address in the standard format
+     * 
+     * @see net.rim.device.api.ui.component.BasicEditField#getText()
+     */
     public String getText() {
-        if (name != null) {
-            if (name.length() == 0) {
-                return address;
-            } else {
-                return "\"" + name + "\" <" + address + ">";
-            }
+    	String result;
+    	if (name != null && name.length() > 0) {
+    		StringBuffer buf = new StringBuffer();
+    		buf.append('\"');
+    		buf.append(name);
+    		buf.append("\" <");
+    		buf.append(address);
+    		buf.append('>');
+    		result = buf.toString();
         } else {
-            return super.getText();
+        	result = address;
         }
+    	return result;
     }
 
     /**
      * Set the address contained within the field.
      * Supports handling the "John Doe <jdoe@generic.org>" format.
      * 
-     * @param sourceAddress Address to set the field to
+     * @param text Address to set the field to
      */
-    public void setAddress(String sourceAddress) {
-        sourceAddress = sourceAddress.trim();
+    public void setText(String text) {
+        text = text.trim();
 
-        int p = sourceAddress.indexOf('<');
-        int q = sourceAddress.indexOf('>');
+        int p = text.indexOf('<');
+        int q = text.indexOf('>');
 
+        // Attempt to set the address from the parameter
         if ((p == -1) && (q == -1)) {
-            this.address = sourceAddress;
-        } else if ((p != -1) && (q != -1) && (p < q) &&
-                (sourceAddress.length() > 2)) {
-            this.address = sourceAddress.substring(p + 1, q);
-        } else if ((p != -1) && (q == -1) && (sourceAddress.length() > 1)) {
-            this.address = sourceAddress.substring(p + 1);
-        } else {
+            this.address = text;
+        }
+        else if ((p != -1) && (q != -1) && (p < q) && (text.length() > 2)) {
+            this.address = text.substring(p + 1, q);
+        }
+        else if ((p != -1) && (q == -1) && (text.length() > 1)) {
+            this.address = text.substring(p + 1);
+        }
+        else {
             this.address = "";
         }
-
-        if (this.address.equals("")) {
+        
+        // Sanity check for empty addresses
+        if (this.address.length() == 0) {
+        	setAddressMode(MODE_ADDRESS);
             return;
         }
 
+        // Attempt to set the full name from the parameter
         if ((p != -1) && (p > 0)) {
-            this.name = sourceAddress.substring(0, p).trim();
+            this.name = text.substring(0, p).trim();
         } else {
             this.name = null;
         }
 
+        // Determine whether we are in MODE_ADDRESS or MODE_NAME
+        // and configure the field accordingly
         if (this.name != null) {
-            try {
-                this.setText(this.name);
-                this.setEditable(false);
-            } catch (IllegalArgumentException e) {
-                this.name = null;
-                this.setText(this.address);
-                this.setEditable(true);
-            }
-        } else {
-            this.setText(this.address);
-            this.setEditable(true);
+            setAddressMode(MODE_NAME);
+        }
+        else {
+        	setAddressMode(MODE_ADDRESS);
         }
 
+        // TODO: Add a quick address-book cross-check if possible
         inAddressBook = false;
     }
 
-    public int getAddressType() {
-        return addressType;
-    }
-
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.component.BasicEditField#makeContextMenu(net.rim.device.api.ui.ContextMenu)
+     */
     protected void makeContextMenu(ContextMenu contextMenu) {
-        if ((this.name != null) || (super.getText().length() > 0)) {
+    	if (addressMode == MODE_NAME) {
             contextMenu.addItem(addressPropertiesMenuItem);
         }
 
         contextMenu.addItem(addressBookMenuItem);
     }
 
-    protected void paint(Graphics graphics) {
-        if (name != null) {
-            int width = this.getExtent().width;
-            int height = this.getExtent().height;
-            int x = this.getExtent().x;
-            int y = this.getExtent().y;
-            int labelWidth = graphics.drawText(this.getLabel(), x, y,
-                    (int) this.getStyle(), width);
-            int nameWidth = graphics.drawText(name, x + labelWidth, y,
-                    (int) (this.getStyle() | DrawStyle.ELLIPSIS),
-                    width - labelWidth - bmapContactItem.getWidth() - 5);
-
-            if (inAddressBook) {
-                graphics.drawBitmap(x + labelWidth + nameWidth + 5, y, width,
-                    height, bmapContactItem, 0, 0);
-            } else {
-                graphics.drawBitmap(x + labelWidth + nameWidth + 5, y, width,
-                    height, bmapContactNonItem, 0, 0);
-            }
-        } else {
-            super.paint(graphics);
-        }
-    }
-
-    /**
-     * Handle key events
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.component.BasicEditField#keyChar(char, int, int)
      */
     protected boolean keyChar(char key, int status, int time) {
-        switch (key) {
-        case Keypad.KEY_BACKSPACE:
-        case Keypad.KEY_DELETE:
+    	boolean result = false;
 
-            if (name != null) {
+    	if(addressMode == MODE_NAME && status == 0) {
+	    	switch(key) {
+	        case Keypad.KEY_BACKSPACE:
+	        case Keypad.KEY_DELETE:
+	        	// Empty the field and sets us
+	        	// back into address mode.
                 name = null;
                 address = "";
-                setText(address);
-                setEditable(true);
+                setAddressMode(MODE_ADDRESS);
                 setFocus();
-
-                return true;
-            }
-
-            break;
-        }
-
-        return super.keyChar(key, status, time);
+                result = true;
+	            break;
+	        }
+    	}
+    	else {
+    		switch(key) {
+    		case Keypad.KEY_SPACE:
+    			if(address.indexOf('@') == -1) {
+    				result = super.keyChar('@', status, time);
+    			}
+    			else {
+    				result = super.keyChar('.', status, time);
+    			}
+    			break;
+			default:
+				// Ignore any invalid characters
+				for(int i=0; i<invalidChars.length; i++) {
+    				if(key == invalidChars[i]) { result = true; break; }
+    			}
+    		}
+    	}
+    	if(!result) {
+    		result = super.keyChar(key, status, time);
+    	}
+        return result;
     }
-
+    
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.component.TextField#fieldChangeNotify(int)
+     */
+    protected void fieldChangeNotify(int context) {
+    	if(addressMode == MODE_ADDRESS) {
+    		this.address = super.getText();
+    	}
+    	super.fieldChangeNotify(context);
+    }
+    
     /**
      * Handle the address properties dialog
      */
     private void addressProperties() {
-        String localName;
-        String localAddress;
+        String localName = this.name;
+        String localAddress = this.address;
 
-        if (this.name != null) {
-            localName = this.name;
-
-            if (this.address != null) {
-                localAddress = this.address;
-            } else {
-                localAddress = "";
-            }
-        } else {
-            localName = "";
-            localAddress = super.getText();
-        }
-
-        AddressPropertiesDialog dialog = new AddressPropertiesDialog(localName,
-                localAddress);
+        AddressPropertiesDialog dialog =
+        	new AddressPropertiesDialog(localName, localAddress);
 
         if (dialog.doModal() == Dialog.OK) {
             if (!localName.equals(dialog.getName()) ||
@@ -270,17 +320,9 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
                 this.address = localAddress;
 
                 if (this.name != null) {
-                    try {
-                        this.setText(this.name);
-                        this.setEditable(false);
-                    } catch (IllegalArgumentException e) {
-                        this.name = null;
-                        this.setText(this.address);
-                        this.setEditable(true);
-                    }
+                	setAddressMode(MODE_NAME);
                 } else {
-                    this.setText(this.address);
-                    this.setEditable(true);
+                	setAddressMode(MODE_ADDRESS);
                 }
 
                 this.inAddressBook = false;
@@ -311,7 +353,7 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
         String[] email = contactItem.email;
 
         if (email == null) {
-            this.setText("");
+        	setAddressMode(MODE_ADDRESS);
             inAddressBook = false;
         } else if (email.length > 1) {
             Dialog addrDlg = new Dialog("Which address?", email, null, 0,
@@ -320,30 +362,14 @@ public class EmailAddressBookEditField extends EmailAddressEditField {
             address = email[choice];
             name = contactItem.name;
 
-            try {
-                this.setText(name);
-                this.setEditable(false);
-                inAddressBook = true;
-            } catch (IllegalArgumentException e) {
-                name = null;
-                this.setText(address);
-                this.setEditable(true);
-                inAddressBook = false;
-            }
+            setAddressMode(MODE_NAME);
+            inAddressBook = true;
         } else {
             address = email[0];
             name = contactItem.name;
 
-            try {
-                this.setText(name);
-                this.setEditable(false);
-                inAddressBook = true;
-            } catch (IllegalArgumentException e) {
-                name = null;
-                this.setText(address);
-                this.setEditable(true);
-                inAddressBook = false;
-            }
+            setAddressMode(MODE_NAME);
+            inAddressBook = true;
         }
     }
 

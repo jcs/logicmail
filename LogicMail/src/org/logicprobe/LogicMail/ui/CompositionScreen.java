@@ -215,7 +215,7 @@ public class CompositionScreen extends BaseScreen {
             for (i = 0; i < env.to.length; i++) {
                 if (env.to[i].indexOf('@') != -1) {
                     insertRecipientField(EmailAddressBookEditField.ADDRESS_TO)
-                        .setAddress(env.to[i]);
+                        .setText(env.to[i]);
                 }
             }
         }
@@ -224,7 +224,7 @@ public class CompositionScreen extends BaseScreen {
             for (i = 0; i < env.cc.length; i++) {
                 if (env.cc[i].indexOf('@') != -1) {
                     insertRecipientField(EmailAddressBookEditField.ADDRESS_CC)
-                        .setAddress(env.cc[i]);
+                        .setText(env.cc[i]);
                 }
             }
         }
@@ -233,7 +233,7 @@ public class CompositionScreen extends BaseScreen {
             for (i = 0; i < env.bcc.length; i++) {
                 if (env.bcc[i].indexOf('@') != -1) {
                     insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC)
-                        .setAddress(env.bcc[i]);
+                        .setText(env.bcc[i]);
                 }
             }
         }
