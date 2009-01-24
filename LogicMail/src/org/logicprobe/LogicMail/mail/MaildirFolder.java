@@ -46,13 +46,14 @@ import javax.microedition.io.file.FileConnection;
 import net.rim.device.api.system.ApplicationDescriptor;
 import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.DeviceInfo;
+import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 
-// TODO: Auto-generated Javadoc
 /**
  * Implements an interface to messages stored on device file storage
  * in the Maildir (http://cr.yp.to/proto/maildir.html) format.
@@ -92,7 +93,11 @@ public class MaildirFolder {
 	 * @throws IOException Thrown on I/O errors
 	 */
 	public void open() throws IOException {
-		System.err.println("Opening: " + folderUrl);
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.open()\r\nOpening: " + folderUrl).getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
 		fileConnection = (FileConnection)Connector.open(folderUrl + '/');
 		if(!fileConnection.exists()) {
 			fileConnection.mkdir();
@@ -131,7 +136,11 @@ public class MaildirFolder {
 			initialized = true;
 		}
 
-		System.err.println("Opened with " + messageEnvelopeMap.size() + " messages in index file");	
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.open()\r\nOpened with " + messageEnvelopeMap.size() + " messages in index file").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
 	}
 
 	/**
@@ -140,6 +149,12 @@ public class MaildirFolder {
 	 * @throws IOException Thrown on I/O errors
 	 */
 	public void close() throws IOException {
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.close()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+		
 		if(fileConnection != null) {
 			fileConnection.close();
 			fileConnection = null;
@@ -182,7 +197,12 @@ public class MaildirFolder {
 	 * @throws IOException Thrown on I/O errors
 	 */
 	public FolderMessage[] getFolderMessages() throws IOException {
-		System.err.println("Getting folder messages");
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.getFolderMessages()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
 		if(fileConnection == null) {
 			throw new IOException("Maildir not open");
 		}
@@ -291,7 +311,11 @@ public class MaildirFolder {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public String getMessageSource(FolderMessage folderMessage) throws IOException {
-		System.err.println("Getting message " + folderMessage.getIndex());
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.getMessageSource(): " + folderMessage.getIndex()).getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
 		if(fileConnection == null) {
 			throw new IOException("Maildir not open");
 		}
@@ -323,8 +347,11 @@ public class MaildirFolder {
 				inputStream.close();
 			}
 		} catch (Exception exp) {
-			// Prevent message-reading errors from being fatal
-			// TODO: Log a useful error message here
+			if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+				EventLogger.logEvent(AppInfo.GUID,
+	                ("Error getting message source: " + exp.toString()).getBytes(),
+	                EventLogger.DEBUG_INFO);
+	        }
 		}
 		
 		return messageSource;
@@ -359,7 +386,12 @@ public class MaildirFolder {
 	 * @return The folder message
 	 */
 	public FolderMessage appendMessage(String rawMessage, MessageFlags initialFlags) {
-		System.err.println("-->MaildirFolder.appendMessage()");
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.appendMessage()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
 		StringBuffer buf = new StringBuffer();
 
 		// Build the filename
@@ -377,7 +409,11 @@ public class MaildirFolder {
 		if(initialFlags.isFlagged()) { buf.append('F'); }
 		if(initialFlags.isSeen()) { buf.append('S'); }
 
-		System.err.println("filename = \""+buf.toString()+"\"");
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MaildirFolder.appendMessage()\r\nfilename: "+buf.toString()).getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
 
 		MessageEnvelope envelope = null;
 		try {
@@ -401,8 +437,11 @@ public class MaildirFolder {
 			uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 			messageEnvelopeMapDirty = true;
 		} catch (IOException exp) {
-			// TODO: Log a useful error message here
-			System.err.println("Error writing message: " + exp.toString());
+			if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+				EventLogger.logEvent(AppInfo.GUID,
+	                ("Error writing message: " + exp.toString()).getBytes(),
+	                EventLogger.DEBUG_INFO);
+	        }
 		}
 		
 		FolderMessage result;
