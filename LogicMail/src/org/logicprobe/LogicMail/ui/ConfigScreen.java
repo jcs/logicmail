@@ -49,6 +49,8 @@ import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
 
 /**
  * This screen is the main entry point to all the
@@ -66,6 +68,9 @@ public class ConfigScreen extends BaseCfgScreen {
     private Hashtable outgoingIndexMap;
     private boolean configurationChanged;
     
+    /**
+     * Instantiates a new configuration screen.
+     */
     public ConfigScreen() {
         super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_TITLE));
         mailSettings = MailSettings.getInstance();
@@ -78,6 +83,9 @@ public class ConfigScreen extends BaseCfgScreen {
         buildAccountsList();
     }
     
+    /**
+     * Initializes the fields.
+     */
     private void initFields() {
         configTreeField = new TreeField(
             new TreeFieldCallback() {
@@ -97,11 +105,17 @@ public class ConfigScreen extends BaseCfgScreen {
         add(configTreeField);
     }
 
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#onDisplay()
+     */
     protected void onDisplay() {
 		configurationChanged = false;
     	super.onDisplay();
 	}
 	
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.Screen#onUndisplay()
+	 */
 	protected void onUndisplay() {
 		if(configurationChanged) {
 			configurationChanged = false;
@@ -109,6 +123,16 @@ public class ConfigScreen extends BaseCfgScreen {
 		super.onUndisplay();
 	}
     
+    /**
+     * Draws tree items in the TreeField
+     * 
+     * @param treeField the tree field
+     * @param graphics the graphics
+     * @param node the node
+     * @param y the y
+     * @param width the width
+     * @param indent the indent
+     */
     public void configTreeFieldDrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
         Object cookie = treeField.getCookie(node);
         graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
@@ -120,25 +144,31 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     };
 
-    private MenuItem addIdentItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_IDENTITY), 120, 10) {
+    private MenuItem newAccountWizardItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD), 110, 10) {
+        public void run() {
+        	newAccountWizard();
+        }
+    };
+    
+    private MenuItem addIdentityItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_IDENTITY), 120, 10) {
         public void run() {
             addIdentity();
         }
     };
 
-    private MenuItem deleteIdentItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_IDENTITY), 130, 10) {
+    private MenuItem deleteIdentityItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_IDENTITY), 130, 10) {
         public void run() {
             deleteSelectedIdentity();
         }
     };
 
-    private MenuItem addAcctItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_ACCOUNT), 120, 10) {
+    private MenuItem addAccountItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_ACCOUNT), 120, 10) {
         public void run() {
             addAccount();
         }
     };
 
-    private MenuItem deleteAcctItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_ACCOUNT), 130, 10) {
+    private MenuItem deleteAccountItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_ACCOUNT), 130, 10) {
         public void run() {
             deleteSelectedAccount();
         }
@@ -156,24 +186,29 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     };
 
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.container.MainScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
+     */
     protected void makeMenu(Menu menu, int instance) {
         int id = configTreeField.getCurrentNode();
         if(id != identitiesId && id != accountsId && id != outgoingId) {
             menu.add(selectItem);
         }
         if(id == identitiesId) {
-            menu.add(addIdentItem);
+            menu.add(addIdentityItem);
         }
         else if(configTreeField.getCookie(id) instanceof IdentityConfig) {
-            menu.add(addIdentItem);
-            menu.add(deleteIdentItem);
+            menu.add(addIdentityItem);
+            menu.add(deleteIdentityItem);
         }
         else if(id == accountsId) {
-            menu.add(addAcctItem);
+        	menu.add(newAccountWizardItem);
+            menu.add(addAccountItem);
         }
         else if(configTreeField.getCookie(id) instanceof AccountConfig) {
-            menu.add(addAcctItem);
-            menu.add(deleteAcctItem);
+        	menu.add(newAccountWizardItem);
+            menu.add(addAccountItem);
+            menu.add(deleteAccountItem);
         }
         else if(id == outgoingId) {
             menu.add(addOutgoingItem);
@@ -185,6 +220,9 @@ public class ConfigScreen extends BaseCfgScreen {
         super.makeMenu(menu, instance);
     }
     
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
+     */
     public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch(key) {
@@ -200,10 +238,16 @@ public class ConfigScreen extends BaseCfgScreen {
         return retval;
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseCfgScreen#onClick()
+     */
     protected boolean onClick() {
     	return openSelectedNode();
     }
     
+    /**
+     * Toggle selected node's expansion state
+     */
     private void toggleSelectedNode() {
         int curNode = configTreeField.getCurrentNode();
         
@@ -221,6 +265,11 @@ public class ConfigScreen extends BaseCfgScreen {
         configTreeField.setExpanded(curNode, !configTreeField.getExpanded(curNode));
     }
     
+    /**
+     * Open selected node.
+     * 
+     * @return true, if successful
+     */
     private boolean openSelectedNode() {
     	boolean result = false;
         int curNode = configTreeField.getCurrentNode();
@@ -267,6 +316,9 @@ public class ConfigScreen extends BaseCfgScreen {
         return result;
     }
 
+    /**
+     * Builds the accounts list.
+     */
     private void buildAccountsList() {
         int numIdentities = mailSettings.getNumIdentities();
         identityIndexMap.clear();
@@ -307,6 +359,30 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     }
     
+    /**
+     * Starts the new account wizard.
+     */
+    private void newAccountWizard() {
+		AccountConfigWizard wizard = new AccountConfigWizard();
+		if(wizard.start()) {
+			AccountConfig newAccountConfig = wizard.getAccountConfig();
+			
+			// Find the newly created account, and trigger a folder refresh (if applicable)
+			AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+			for(int i=0; i<accounts.length; i++) {
+				if(accounts[i].getAccountConfig() == newAccountConfig) {
+					if(accounts[i].hasFolders()) {
+						accounts[i].refreshMailboxes();
+					}
+					break;
+				}
+			}
+		}
+    }
+    
+    /**
+     * Adds a new identity.
+     */
     private void addIdentity() {
         IdentityConfig identityConfig = new IdentityConfig();
         IdentityConfigScreen identityConfigScreen = new IdentityConfigScreen(identityConfig);
@@ -319,6 +395,9 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     }
     
+    /**
+     * Delete the currently selected identity.
+     */
     private void deleteSelectedIdentity() {
         IdentityConfig identityConfig =
             (IdentityConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
@@ -335,6 +414,9 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     }
 
+    /**
+     * Adds a new account.
+     */
     private void addAccount() {
         int response = Dialog.ask(resources.getString(LogicMailResource.CONFIG_WHAT_ACCOUNT_TYPE), new String[] { "IMAP", "POP" }, 0);
         if(response != Dialog.CANCEL) {
@@ -356,6 +438,9 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     }
 
+    /**
+     * Delete the currently selected account.
+     */
     private void deleteSelectedAccount() {
         AccountConfig acctConfig =
             (AccountConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
@@ -372,6 +457,9 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     }
 
+    /**
+     * Adds a new outgoing server.
+     */
     private void addOutgoingServer() {
         OutgoingConfig outgoingConfig = new OutgoingConfig();
         OutgoingConfigScreen outgoingConfigScreen = new OutgoingConfigScreen(outgoingConfig);
@@ -384,6 +472,9 @@ public class ConfigScreen extends BaseCfgScreen {
         }
     }
     
+    /**
+     * Delete the currently selected outgoing server.
+     */
     private void deleteSelectedOutgoingServer() {
         OutgoingConfig outgoingConfig =
             (OutgoingConfig)configTreeField.getCookie(configTreeField.getCurrentNode());

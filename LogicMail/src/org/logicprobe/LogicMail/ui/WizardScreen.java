@@ -55,19 +55,19 @@ public abstract class WizardScreen extends MainScreen {
         titleLabel = new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleLabel);
 		
-        cancelButton = new ButtonField("Cancel");
+        cancelButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_CANCEL));
         cancelButton.setChangeListener(new FieldChangeListener() {
 			public void fieldChanged(Field field, int context) {
 				cancelButton_fieldChanged(field, context);
 			}
         });
-        prevButton = new ButtonField("< Prev");
+        prevButton = new ButtonField("< " + resources.getString(LogicMailResource.WIZARD_PREV));
         prevButton.setChangeListener(new FieldChangeListener() {
 			public void fieldChanged(Field field, int context) {
 				prevButton_fieldChanged(field, context);
 			}
         });
-        nextButton = new ButtonField("Next >");
+        nextButton = new ButtonField(resources.getString(LogicMailResource.WIZARD_NEXT) + " >");
         nextButton.setChangeListener(new FieldChangeListener() {
 			public void fieldChanged(Field field, int context) {
 				nextButton_fieldChanged(field, context);
@@ -101,7 +101,7 @@ public abstract class WizardScreen extends MainScreen {
         }
         else if(pageType == PAGE_LAST) {
         	statusFieldManager.add(prevButton);
-        	nextButton.setLabel("Finish");
+        	nextButton.setLabel(resources.getString(LogicMailResource.WIZARD_FINISH));
         	statusFieldManager.add(nextButton);
         }
         
@@ -220,7 +220,7 @@ public abstract class WizardScreen extends MainScreen {
 	public boolean onClose() {
 		if(pageResult == RESULT_CANCEL) {
             int result =
-            	Dialog.ask(Dialog.D_YES_NO, "Are you sure you want to cancel?");
+            	Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.WIZARD_CONFIRM_CANCEL));
             if(result == Dialog.YES) {
             	close();
                 return true;
