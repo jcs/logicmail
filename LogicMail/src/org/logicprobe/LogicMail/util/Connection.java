@@ -162,7 +162,7 @@ public class Connection {
         }
         
         if(useWiFi) {
-            paramStr = paramStr + ";ConnectionUID=S TCP-WiFi;ConnectionSetup=delayed;retrynocontext=true";
+            paramStr = paramStr + ";interface=wifi";
         }
         
         String connectStr = protocolStr + "://" + serverName + ":" + serverPort + paramStr;
