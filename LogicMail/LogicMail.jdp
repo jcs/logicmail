@@ -358,6 +358,7 @@ src\org\logicprobe\LogicMail\ui\BorderedFieldManager.java
 src\org\logicprobe\LogicMail\ui\CompositionScreen.java
 src\org\logicprobe\LogicMail\ui\ConfigScreen.java
 src\org\logicprobe\LogicMail\ui\EmailAddressBookEditField.java
+src\org\logicprobe\LogicMail\ui\EmailAddressPropertiesDialog.java
 src\org\logicprobe\LogicMail\ui\GlobalConfigScreen.java
 src\org\logicprobe\LogicMail\ui\HeaderField.java
 src\org\logicprobe\LogicMail\ui\IdentityConfigScreen.java

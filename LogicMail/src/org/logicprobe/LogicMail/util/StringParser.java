@@ -1035,4 +1035,87 @@ public class StringParser {
 
         return buf.toString();
     }
+    
+    /**
+     * Parses a standard-format E-Mail message recipient into the
+     * full name and address portions.  Input is expected to be
+     * in the following format:
+     * "John Doe <jdoe@generic.org>"
+     * 
+     * @param recipient Message recipient string
+     * @return String array with two elements, the first being the
+     * full name, and the second being the address.  If no full name
+     * is present, then that entry will be null.  If no address is
+     * present, then that entry will be an empty string.
+     */
+    public static String[] parseRecipient(String recipient) {
+    	String[] result = new String[2];
+    	
+    	String text = recipient.trim();
+
+        int p = text.indexOf('<');
+        int q = text.indexOf('>');
+
+        // Attempt to set the address from the parameter
+        if ((p == -1) && (q == -1)) {
+            result[1] = text;
+        }
+        else if ((p != -1) && (q != -1) && (p < q) && (text.length() > 2)) {
+        	result[1] = text.substring(p + 1, q);
+        }
+        else if ((p != -1) && (q == -1) && (text.length() > 1)) {
+        	result[1] = text.substring(p + 1);
+        }
+        else {
+        	result[1] = "";
+        }
+    	
+        // Sanity check for empty addresses
+        if (result[1].length() == 0) {
+            return result;
+        }
+
+        // Attempt to set the full name from the parameter
+        if ((p != -1) && (p > 0)) {
+            result[0] = text.substring(0, p).trim();
+            
+            // Check for quotes, and trim if necessary
+            int length = result[0].length();
+            if(length >= 2 && result[0].charAt(0) == '\"' && result[0].charAt(length - 1) == '\"') {
+            	result[0] = result[0].substring(1, length - 1);
+            }
+        } else {
+        	result[0] = null;
+        }
+        
+    	return result;
+    }
+    
+    /**
+     * Merges a name and address into a standard-format E-Mail message
+     * recipient.  The output is in the following format:
+     * "John Doe" <jdoe@generic.org>
+     * 
+     * @param name Full name
+     * @param address E-Mail address
+     * @return Full recipient formatted string
+     */
+    public static String mergeRecipient(String name, String address) {
+    	String result;
+    	if (address == null || address.length() == 0) {
+    		result = "";
+    	}
+    	else if (name != null && name.length() > 0) {
+    		StringBuffer buf = new StringBuffer();
+    		buf.append('\"');
+    		buf.append(name);
+    		buf.append("\" <");
+    		buf.append(address);
+    		buf.append('>');
+    		result = buf.toString();
+        } else {
+        	result = address;
+        }
+    	return result;
+    }
 }

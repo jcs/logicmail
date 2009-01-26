@@ -23,7 +23,7 @@
 	</buildSpec>
 	<natures>
 		<nature>net.rim.eide.rimnature</nature>
-		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>net.rim.eide.PreprocessingNature</nature>
+		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
 </projectDescription>

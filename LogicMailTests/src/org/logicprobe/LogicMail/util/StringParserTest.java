@@ -702,6 +702,57 @@ public class StringParserTest extends TestCase {
         assertEquals(expectedResult, result);
     }
 
+    public void testParseRecipient() {
+    	System.out.println("parseRecipient");
+    	
+    	String text = "John Doe <doej@generic.org>";
+    	String[] expected = new String[] { "John Doe", "doej@generic.org" };
+    	String[] actual = StringParser.parseRecipient(text);
+    	assertEquals("Unquoted normal case", expected, actual);
+
+    	text = "\"John Doe\" <doej@generic.org>";
+    	actual = StringParser.parseRecipient(text);
+    	assertEquals("Quoted normal case", expected, actual);
+    	
+    	text = "doej@generic.org";
+    	expected = new String[] { null, "doej@generic.org" };
+    	actual = StringParser.parseRecipient(text);
+    	assertEquals("Address-only normal case", expected, actual);
+    	
+    	text = "";
+    	expected = new String[] { null, "" };
+    	actual = StringParser.parseRecipient(text);
+    	assertEquals("Empty normal case", expected, actual);
+    }
+    
+    public void testMergeRecipient() {
+    	System.out.println("mergeRecipient");
+
+    	String expected = "\"John Doe\" <doej@generic.org>";
+    	String actual = StringParser.mergeRecipient("John Doe", "doej@generic.org");
+    	assertEquals("Name and address", expected, actual);
+    	
+    	expected = "doej@generic.org";
+    	actual = StringParser.mergeRecipient(null, "doej@generic.org");
+    	assertEquals("Address only 1", expected, actual);
+
+    	expected = "doej@generic.org";
+    	actual = StringParser.mergeRecipient("", "doej@generic.org");
+    	assertEquals("Address only 2", expected, actual);
+
+    	expected = "";
+    	actual = StringParser.mergeRecipient("John Doe", null);
+    	assertEquals("Name only 1", expected, actual);
+    
+    	expected = "";
+    	actual = StringParser.mergeRecipient("John Doe", "");
+    	assertEquals("Name only 2", expected, actual);
+
+    	expected = "";
+    	actual = StringParser.mergeRecipient("", "");
+    	assertEquals("Empty", expected, actual);
+    }
+    
     public Test suite() {
         TestSuite testSuite = new TestSuite("StringParser");
         testSuite.addTest(new StringParserTest("parseDateString",
@@ -796,6 +847,18 @@ public class StringParserTest extends TestCase {
                 new TestMethod() {
                 public void run(TestCase tc) {
                     ((StringParserTest) tc).testEncodeQuotedPrintable2();
+                }
+            }));
+        testSuite.addTest(new StringParserTest("parseRecipient",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((StringParserTest) tc).testParseRecipient();
+                }
+            }));
+        testSuite.addTest(new StringParserTest("mergeRecipient",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((StringParserTest) tc).testMergeRecipient();
                 }
             }));
 

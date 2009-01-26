@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,28 +30,25 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.blackberry.api.pdap.BlackBerryContactGroup;
+import net.rim.blackberry.api.pdap.BlackBerryContactList;
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
-import net.rim.device.api.system.ControlledAccessException;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.ContextMenu;
-import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EditField;
-import net.rim.device.api.ui.component.EmailAddressEditField;
-import net.rim.device.api.ui.component.LabelField;
-import net.rim.device.api.util.Arrays;
-
-import java.util.Enumeration;
-import java.util.Vector;
 
 import javax.microedition.pim.Contact;
-import javax.microedition.pim.ContactList;
 import javax.microedition.pim.PIM;
 import javax.microedition.pim.PIMException;
+import javax.microedition.pim.PIMItem;
+
+import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.util.StringParser;
 
 
 /**
@@ -59,7 +56,9 @@ import javax.microedition.pim.PIMException;
  * ability to input addresses from the address book.
  */
 public class EmailAddressBookEditField extends EditField {
-    public final static int ADDRESS_TO = 1;
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+
+	public final static int ADDRESS_TO = 1;
     public final static int ADDRESS_CC = 2;
     public final static int ADDRESS_BCC = 3;
     
@@ -72,17 +71,16 @@ public class EmailAddressBookEditField extends EditField {
     private String address;
     private int addressMode;
     private int addressType;
-    private boolean inAddressBook;
 
-    private MenuItem addressPropertiesMenuItem = new MenuItem("Properties",
+    private MenuItem addressPropertiesMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_PROPERTIES),
             200000, 10) {
             public void run() {
                 addressProperties();
             }
         };
 
-    private MenuItem addressBookMenuItem = new MenuItem("Address book", 200010,
-            10) {
+    private MenuItem addressBookMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SELECT_ADDRESS),
+    		200010, 10) {
             public void run() {
                 addressBookChooser();
             }
@@ -164,19 +162,7 @@ public class EmailAddressBookEditField extends EditField {
      * @see net.rim.device.api.ui.component.BasicEditField#getText()
      */
     public String getText() {
-    	String result;
-    	if (name != null && name.length() > 0) {
-    		StringBuffer buf = new StringBuffer();
-    		buf.append('\"');
-    		buf.append(name);
-    		buf.append("\" <");
-    		buf.append(address);
-    		buf.append('>');
-    		result = buf.toString();
-        } else {
-        	result = address;
-        }
-    	return result;
+    	return StringParser.mergeRecipient(name, address);
     }
 
     /**
@@ -186,36 +172,15 @@ public class EmailAddressBookEditField extends EditField {
      * @param text Address to set the field to
      */
     public void setText(String text) {
-        text = text.trim();
-
-        int p = text.indexOf('<');
-        int q = text.indexOf('>');
-
-        // Attempt to set the address from the parameter
-        if ((p == -1) && (q == -1)) {
-            this.address = text;
-        }
-        else if ((p != -1) && (q != -1) && (p < q) && (text.length() > 2)) {
-            this.address = text.substring(p + 1, q);
-        }
-        else if ((p != -1) && (q == -1) && (text.length() > 1)) {
-            this.address = text.substring(p + 1);
-        }
-        else {
-            this.address = "";
-        }
-        
+    	
+    	String[] recipient = StringParser.parseRecipient(text);
+    	this.name = recipient[0];
+    	this.address = recipient[1];
+    	
         // Sanity check for empty addresses
         if (this.address.length() == 0) {
         	setAddressMode(MODE_ADDRESS);
             return;
-        }
-
-        // Attempt to set the full name from the parameter
-        if ((p != -1) && (p > 0)) {
-            this.name = text.substring(0, p).trim();
-        } else {
-            this.name = null;
         }
 
         // Determine whether we are in MODE_ADDRESS or MODE_NAME
@@ -226,9 +191,6 @@ public class EmailAddressBookEditField extends EditField {
         else {
         	setAddressMode(MODE_ADDRESS);
         }
-
-        // TODO: Add a quick address-book cross-check if possible
-        inAddressBook = false;
     }
 
     /* (non-Javadoc)
@@ -302,8 +264,8 @@ public class EmailAddressBookEditField extends EditField {
         String localName = this.name;
         String localAddress = this.address;
 
-        AddressPropertiesDialog dialog =
-        	new AddressPropertiesDialog(localName, localAddress);
+        EmailAddressPropertiesDialog dialog =
+        	new EmailAddressPropertiesDialog(localName, localAddress);
 
         if (dialog.doModal() == Dialog.OK) {
             if (!localName.equals(dialog.getName()) ||
@@ -324,8 +286,6 @@ public class EmailAddressBookEditField extends EditField {
                 } else {
                 	setAddressMode(MODE_ADDRESS);
                 }
-
-                this.inAddressBook = false;
             }
         }
     }
@@ -334,145 +294,69 @@ public class EmailAddressBookEditField extends EditField {
      * Handle choosing an address from the address book
      */
     private void addressBookChooser() {
-        Vector contacts = getAddressList();
-        String[] names = new String[contacts.size()];
+    	Contact contact = null;
+		try {
+			BlackBerryContactList list = (BlackBerryContactList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
+	    	PIMItem item = list.choose();
+	    	if (item instanceof Contact) {
+		    	contact = (Contact)item;
+	    	}
+	    	else if (item instanceof BlackBerryContactGroup) {
+	    		BlackBerryContactGroup contactGroup = (BlackBerryContactGroup)item;
+	    		addContactGroup(contactGroup);
+	    	}
+		} catch (PIMException e) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
+                EventLogger.ERROR);
+			return;
+		}
+    	
+		if(contact != null) {
+			String contactName;
+			String[] contactEmail;
 
-        for (int i = 0; i < names.length; i++)
-            names[i] = ((ContactItem) contacts.elementAt(i)).name;
+            String[] values = contact.getStringArray(Contact.NAME, 0);
+            contactName = values[1] + ' ' + values[0];
 
-        Dialog abDlg = new Dialog("Address book", names, null, 0, null,
-                Dialog.LIST);
-        int choice;
-        choice = abDlg.doModal();
-
-        if ((choice < 0) || (choice > contacts.size())) {
-            return;
-        }
-
-        ContactItem contactItem = ((ContactItem) contacts.elementAt(choice));
-        String[] email = contactItem.email;
-
-        if (email == null) {
-        	setAddressMode(MODE_ADDRESS);
-            inAddressBook = false;
-        } else if (email.length > 1) {
-            Dialog addrDlg = new Dialog("Which address?", email, null, 0,
-                    Bitmap.getPredefinedBitmap(Bitmap.QUESTION));
-            choice = addrDlg.doModal();
-            address = email[choice];
-            name = contactItem.name;
-
-            setAddressMode(MODE_NAME);
-            inAddressBook = true;
-        } else {
-            address = email[0];
-            name = contactItem.name;
-
-            setAddressMode(MODE_NAME);
-            inAddressBook = true;
-        }
+            int count = contact.countValues(Contact.EMAIL);
+            contactEmail = new String[count];
+            for (int i = 0; i < count; i++) {
+            	contactEmail[i] = contact.getString(Contact.EMAIL, i);
+            }
+            
+            if(count > 1) {
+              Dialog addressDialog = new Dialog(
+            		  resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_WHICH_ADDRESS),
+            		  contactEmail, null, 0,
+            		  Bitmap.getPredefinedBitmap(Bitmap.QUESTION));
+              int choice = addressDialog.doModal();
+              if(choice != -1) {
+	              address = contactEmail[choice];
+	              name = contactName;
+	              setAddressMode(MODE_NAME);
+              }
+            }
+            else if(count == 1) {
+				address = contactEmail[0];
+				name = contactName;
+				setAddressMode(MODE_NAME);
+            }
+            else {
+            	Dialog.alert(resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_ALERT_NO_ADDRESS));
+            }
+		}
     }
 
     /**
-     * Search the address book and return a list of entries
-     * with E-Mail addresses.
-     *
-     * @return Vector of ContactItems
+     * Adds a selected contact group.
+     * 
+     * @param contactGroup the contact group
      */
-    private Vector getAddressList() {
-        // Note: This implementation is sub-optimal, but works for now.
-        Vector addressList = new Vector();
-
-        try {
-            PIM pim = PIM.getInstance();
-            ContactList contactList = (ContactList) pim.openPIMList(PIM.CONTACT_LIST,
-                    PIM.READ_ONLY);
-            Enumeration enumList = contactList.items();
-
-            while (enumList.hasMoreElements()) {
-                ContactItem contactItem = new ContactItem();
-                Contact c = (Contact) enumList.nextElement();
-                int[] fieldIds = c.getFields();
-
-                for (int i = 0; i < fieldIds.length; i++) {
-                    if (fieldIds[i] == Contact.NAME) {
-                        String[] values = c.getStringArray(Contact.NAME, 0);
-                        contactItem.name = values[1] + " " + values[0];
-                    }
-
-                    if (fieldIds[i] == Contact.EMAIL) {
-                        for (int j = 0; j < c.countValues(Contact.EMAIL);
-                                j++) {
-                            if (contactItem.email == null) {
-                                contactItem.email = new String[1];
-                                contactItem.email[0] = c.getString(Contact.EMAIL,
-                                        j);
-                            } else {
-                                Arrays.add(contactItem.email,
-                                    c.getString(Contact.EMAIL, j));
-                            }
-                        }
-                    }
-                }
-
-                if ((contactItem.name != null) && (contactItem.email != null)) {
-                    addressList.addElement(contactItem);
-                }
-            }
-        } catch (ControlledAccessException e) {
-            // should do something
-        } catch (PIMException e) {
-            // should do something
-        }
-
-        return addressList;
-    }
-
-    /**
-     * Dialog to allow viewing and editing of address properties
-     */
-    private static class AddressPropertiesDialog extends Dialog {
-        private BasicEditField fldName;
-        private EmailAddressEditField fldAddress;
-
-        public AddressPropertiesDialog(String name, String address) {
-            super("Address Properties", null, null, 0,
-                Bitmap.getPredefinedBitmap(Bitmap.QUESTION),
-                Field.FOCUSABLE | Field.FIELD_HCENTER);
-            fldName = new BasicEditField("Name: ", name);
-
-            try {
-                fldAddress = new EmailAddressEditField("Address: ", address);
-            } catch (Exception e) {
-                fldAddress = new EmailAddressEditField("Address: ", "");
-            }
-
-            this.add(fldName);
-            this.add(fldAddress);
-            this.add(new LabelField("", Field.NON_FOCUSABLE));
-
-            ButtonField btnOk = new ButtonField("OK",
-                    Field.FOCUSABLE | Field.FIELD_HCENTER);
-            btnOk.setChangeListener(new FieldChangeListener() {
-                    public void fieldChanged(Field field, int context) {
-                        AddressPropertiesDialog.this.select(Dialog.OK);
-                        AddressPropertiesDialog.this.close();
-                    }
-                });
-            this.add(btnOk);
-        }
-
-        public String getName() {
-            return fldName.getText();
-        }
-
-        public String getAddress() {
-            return fldAddress.getText();
-        }
-    }
-
-    private static class ContactItem {
-        String name;
-        String[] email;
+    private void addContactGroup(BlackBerryContactGroup contactGroup) {
+    	// Implementing this either requires having the composition
+    	// screen add multiple recipient lines, or actually supporting
+    	// contact groups directly in this field
+    	Dialog.alert(resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_ALERT_GROUPS_UNSUPPORTED));
     }
 }
