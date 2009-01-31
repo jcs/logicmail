@@ -157,8 +157,13 @@ class ImapParser {
         }
 
         if (parsedEnv.elementAt(1) instanceof String) {
-            env.subject = StringParser.parseEncodedHeader((String) parsedEnv.elementAt(
-                        1));
+            String subject = (String) parsedEnv.elementAt(1);
+
+            if (subject.equals(strNIL)) {
+                env.subject = "";
+            } else {
+                env.subject = StringParser.parseEncodedHeader(subject);
+            }
         }
 
         if (parsedEnv.elementAt(2) instanceof Vector) {
@@ -362,9 +367,8 @@ class ImapParser {
             for (int i = 0; i < size; ++i) {
                 // Iterate through the message parts
                 if (parsedStruct.elementAt(i) instanceof Vector) {
-                    subSectionsVector.addElement(
-                    		parseMessageStructureHelper(address,
-                            i + 1, (Vector) parsedStruct.elementAt(i)));
+                    subSectionsVector.addElement(parseMessageStructureHelper(
+                            address, i + 1, (Vector) parsedStruct.elementAt(i)));
                 } else if (parsedStruct.elementAt(i) instanceof String) {
                     MessageSection section = new MessageSection();
                     section.type = "multipart";

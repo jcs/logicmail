@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,13 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.util;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Calendar;
-import java.util.Hashtable;
 
 import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
@@ -46,6 +40,13 @@ import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
 
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.util.Calendar;
+import java.util.Hashtable;
+
+
 /**
  * This class contains static parser functions used for
  * parsing raw message source text.
@@ -53,54 +54,62 @@ import org.logicprobe.LogicMail.message.MultiPart;
 public class MailMessageParser {
     private static String strCRLF = "\r\n";
 
-    private MailMessageParser() { }
+    private MailMessageParser() {
+    }
 
     /**
      * Parses the message envelope from the message headers.
-     * 
+     *
      * @param rawHeaders The raw header text, separated into lines.
      * @return The message envelope.
      */
     public static MessageEnvelope parseMessageEnvelope(String[] rawHeaders) {
         Hashtable headers = StringParser.parseMailHeaders(rawHeaders);
         MessageEnvelope env = new MessageEnvelope();
-        
+
         // Populate the common header field bits of the envelope
-        env.subject = StringParser.parseEncodedHeader((String)headers.get("subject"));
-        if(env.subject == null) {
-            env.subject = "<subject>";
+        env.subject = StringParser.parseEncodedHeader((String) headers.get(
+                    "subject"));
+
+        if (env.subject == null) {
+            env.subject = "";
         }
-        env.from = parseAddressList((String)headers.get("from"));
-        env.sender = parseAddressList((String)headers.get("sender"));
-        env.to = parseAddressList((String)headers.get("to"));
-        env.cc = parseAddressList((String)headers.get("cc"));
-        env.bcc = parseAddressList((String)headers.get("bcc"));
+
+        env.from = parseAddressList((String) headers.get("from"));
+        env.sender = parseAddressList((String) headers.get("sender"));
+        env.to = parseAddressList((String) headers.get("to"));
+        env.cc = parseAddressList((String) headers.get("cc"));
+        env.bcc = parseAddressList((String) headers.get("bcc"));
+
         try {
-            env.date = StringParser.parseDateString((String)headers.get("date"));
+            env.date = StringParser.parseDateString((String) headers.get("date"));
         } catch (Exception e) {
             env.date = Calendar.getInstance().getTime();
         }
-        env.replyTo = parseAddressList((String)headers.get("reply-to"));
-        env.messageId = (String)headers.get("message-id");
-        env.inReplyTo = (String)headers.get("in-reply-to");
+
+        env.replyTo = parseAddressList((String) headers.get("reply-to"));
+        env.messageId = (String) headers.get("message-id");
+        env.inReplyTo = (String) headers.get("in-reply-to");
+
         return env;
     }
 
     /**
      * Generates the message headers corresponding to the provided envelope.
-     * 
+     *
      * @param envelope The message envelope.
      * @param includeUserAgent True to include the User-Agent line.
      * @return The headers, one per line, with CRLF line separators.
      */
-    public static String generateMessageHeaders(MessageEnvelope envelope, boolean includeUserAgent) {
+    public static String generateMessageHeaders(MessageEnvelope envelope,
+        boolean includeUserAgent) {
         StringBuffer buffer = new StringBuffer();
 
         // Create the message headers
         buffer.append("From: ");
         buffer.append(StringParser.makeCsvString(envelope.from));
         buffer.append(strCRLF);
-        
+
         buffer.append("To: ");
         buffer.append(StringParser.makeCsvString(envelope.to));
         buffer.append(strCRLF);
@@ -121,14 +130,14 @@ public class MailMessageParser {
         buffer.append(StringParser.createDateString(envelope.date));
         buffer.append(strCRLF);
 
-        if(includeUserAgent) {
-	        buffer.append("User-Agent: ");
-	        buffer.append(AppInfo.getName());
-	        buffer.append('/');
-	        buffer.append(AppInfo.getVersion());
-	        buffer.append(strCRLF);
+        if (includeUserAgent) {
+            buffer.append("User-Agent: ");
+            buffer.append(AppInfo.getName());
+            buffer.append('/');
+            buffer.append(AppInfo.getVersion());
+            buffer.append(strCRLF);
         }
-        
+
         buffer.append("Subject: ");
         buffer.append(envelope.subject);
         buffer.append(strCRLF);
@@ -138,50 +147,62 @@ public class MailMessageParser {
             buffer.append(envelope.inReplyTo);
             buffer.append(strCRLF);
         }
-    	return buffer.toString();
+
+        return buffer.toString();
     }
-    
+
     /**
      * Separates a list of addresses contained within a message header.
      * This is slightly more complicated than a string tokenizer, as it
      * has to deal with quoting and escaping.
-     * 
+     *
      * @param text The header line containing the addresses.
      * @return The separated addresses.
      */
     private static String[] parseAddressList(String text) {
         String[] addresses = StringParser.parseCsvString(text);
-        for(int i=0; i<addresses.length; i++) {
+
+        for (int i = 0; i < addresses.length; i++) {
             addresses[i] = StringParser.parseEncodedHeader(addresses[i]);
-            if(addresses[i].length() > 0 && addresses[i].charAt(0) == '"') {
+
+            if ((addresses[i].length() > 0) && (addresses[i].charAt(0) == '"')) {
                 int p = addresses[i].indexOf('<');
-                while(p > 0 && addresses[i].charAt(p) != '"') p--;
-                if(p > 0 && p+1 < addresses[i].length()) {
-                    addresses[i] = addresses[i].substring(1, p) + addresses[i].substring(p+1);
+
+                while ((p > 0) && (addresses[i].charAt(p) != '"'))
+                    p--;
+
+                if ((p > 0) && ((p + 1) < addresses[i].length())) {
+                    addresses[i] = addresses[i].substring(1, p) +
+                        addresses[i].substring(p + 1);
                 }
             }
         }
+
         return addresses;
     }
-    
+
     /**
      * Parses the raw message body.
-     * 
+     *
      * @param inputStream The stream to read the raw message from
      * @return The root message part.
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public static MessagePart parseRawMessage(InputStream inputStream) throws IOException {
+    public static MessagePart parseRawMessage(InputStream inputStream)
+        throws IOException {
         MIMEInputStream mimeInputStream = null;
+
         try {
             mimeInputStream = new MIMEInputStream(inputStream);
         } catch (MIMEParsingException e) {
             return null;
         }
+
         MessagePart rootPart = getMessagePart(mimeInputStream);
+
         return rootPart;
     }
-    
+
     /**
      * Recursively walk the provided MIMEInputStream, building a message
      * tree in the process.
@@ -189,51 +210,66 @@ public class MailMessageParser {
      * @param mimeInputStream MIMEInputStream of the downloaded message data
      * @return Root MessagePart element for this portion of the message tree
      */
-    private static MessagePart getMessagePart(MIMEInputStream mimeInputStream) throws IOException {
+    private static MessagePart getMessagePart(MIMEInputStream mimeInputStream)
+        throws IOException {
         // Parse out the MIME type and relevant header fields
         String mimeType = mimeInputStream.getContentType();
         String type = mimeType.substring(0, mimeType.indexOf('/'));
         String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
         String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
         String charset = mimeInputStream.getContentTypeParameter("charset");
-        
+
         // Default parameters used when headers are missing
-        if(encoding == null) {
+        if (encoding == null) {
             encoding = "7bit";
         }
-        
+
         // Handle the multi-part case
-        if(mimeInputStream.isMultiPart() && type.equalsIgnoreCase("multipart")) {
-            MessagePart part = MessagePartFactory.createMessagePart(type, subtype, null, null, null);
+        if (mimeInputStream.isMultiPart() &&
+                type.equalsIgnoreCase("multipart")) {
+            MessagePart part = MessagePartFactory.createMessagePart(type,
+                    subtype, null, null, null);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
-            for(int i=0;i<mimeSubparts.length;i++) {
+
+            for (int i = 0; i < mimeSubparts.length; i++) {
                 MessagePart subPart = getMessagePart(mimeSubparts[i]);
-                if(subPart != null) {
-                    ((MultiPart)part).addPart(subPart);
+
+                if (subPart != null) {
+                    ((MultiPart) part).addPart(subPart);
                 }
             }
+
             return part;
         }
         // Handle the single-part case
         else {
             byte[] buffer;
+
             // Handle encoded binary data (should be more encoding-agnostic)
-            if(encoding.equalsIgnoreCase("base64") && mimeInputStream.isPartComplete()!=0) {
+            if (encoding.equalsIgnoreCase("base64") &&
+                    (mimeInputStream.isPartComplete() != 0)) {
                 SharedInputStream sis = mimeInputStream.getRawMIMEInputStream();
                 buffer = StringParser.readWholeStream(sis);
 
                 int offset = 0;
-                while((offset+3 < buffer.length) &&
-                        !(buffer[offset]=='\r' && buffer[offset+1]=='\n' &&
-                        buffer[offset+2]=='\r' && buffer[offset+3]=='\n')) {
+
+                while (((offset + 3) < buffer.length) &&
+                        !((buffer[offset] == '\r') &&
+                        (buffer[offset + 1] == '\n') &&
+                        (buffer[offset + 2] == '\r') &&
+                        (buffer[offset + 3] == '\n'))) {
                     offset++;
                 }
+
                 int size = buffer.length - offset;
-                return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer, offset, size));
-            }
-            else {
+
+                return MessagePartFactory.createMessagePart(type, subtype,
+                    encoding, charset, new String(buffer, offset, size));
+            } else {
                 buffer = StringParser.readWholeStream(mimeInputStream);
-                return MessagePartFactory.createMessagePart(type, subtype, encoding, charset, new String(buffer));
+
+                return MessagePartFactory.createMessagePart(type, subtype,
+                    encoding, charset, new String(buffer));
             }
         }
     }
