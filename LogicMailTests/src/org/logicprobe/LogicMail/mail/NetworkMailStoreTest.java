@@ -297,6 +297,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public boolean openCalled = false;
 		public boolean closeCalled = false;
 		public FolderTreeItem activeFolder;
+		public FolderTreeItem inboxFolder;
 		public int firstIndex;
 		public int lastIndex;
 		public FolderMessage[] folderMessages;
@@ -316,6 +317,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public boolean hasFolders() { return true; }
 		public boolean hasUndelete() { return true; }
 		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
+		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
 		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
 				throws IOException, MailException { this.firstIndex = firstIndex; this.lastIndex = lastIndex; return this.folderMessages; }

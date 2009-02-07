@@ -100,12 +100,23 @@ public interface IncomingMailClient extends MailClient {
         throws IOException, MailException;
     
     /**
+     * Gets the INBOX folder.
+     * This method returns the special folder that is considered the
+     * primary mailbox for the connected user on the server.
+     * Even protocols that do not support folders must provide a fake
+     * INBOX folder through this method.
+     * 
+     * @return The FolderTreeItem object describing the INBOX mailbox
+     */
+    public abstract FolderTreeItem getInboxFolder();
+    
+    /**
      * Get the active mail folder.
      * This method is only useful if the protocol supports
      * folders, and should otherwise return null or
-     * a single inbox folder
+     * a single INBOX folder
      *
-     * @return The FolderItem object describing the active mailbox
+     * @return The FolderTreeItem object describing the active mailbox
      */
     public abstract FolderTreeItem getActiveFolder();
     
@@ -113,9 +124,9 @@ public interface IncomingMailClient extends MailClient {
      * Select a new active mail folder.
      * This method is only useful if the protocol supports
      * folders, and should otherwise be ignored or limited
-     * to a single inbox folder
+     * to a single INBOX folder
      * 
-     * @param folderItem The FolderItem object describing the new active folderItem
+     * @param folderItem The FolderTreeItem object describing the new active folderItem
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */

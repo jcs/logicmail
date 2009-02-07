@@ -51,6 +51,8 @@ import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.DataStore;
+import org.logicprobe.LogicMail.util.DataStoreFactory;
 
 /**
  * 
@@ -90,6 +92,11 @@ public class ImapClient implements IncomingMailClient {
     private FolderTreeItem activeMailbox = null;
 
     /**
+     * Special INBOX mailbox reference.
+     */
+    private FolderTreeItem inboxMailbox = null;
+    
+    /**
      * Seen mailboxes, used to track whether fetching new
      * messages should be based on a limited range, or
      * the UIDNEXT parameter.
@@ -102,6 +109,8 @@ public class ImapClient implements IncomingMailClient {
      * to other classes.
      */
     private Hashtable knownMailboxes = new Hashtable();
+
+    private static String strINBOX = "INBOX";
     
     public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
         this.accountConfig = accountConfig;
@@ -287,8 +296,8 @@ public class ImapClient implements IncomingMailClient {
             // If the STATUS fails, a MailException will be thrown, which we can
             // safely ignore.  Otherwise, create a folder item and add it.
             try {
-                imapProtocol.executeStatus(new String[] { "INBOX" });
-                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, "INBOX", "INBOX", folderDelim, true, true);
+                imapProtocol.executeStatus(new String[] { strINBOX });
+                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, strINBOX, strINBOX, folderDelim, true, true);
                 rootItem.addChild(inboxItem);
             } catch (MailException exp) { }
             
@@ -305,6 +314,12 @@ public class ImapClient implements IncomingMailClient {
             getFolderTreeImpl(rootItem, 0, childrenExtension);
         }
 
+        // Find and save the INBOX folder
+    	FolderTreeItem inbox = findInboxFolder(rootItem);
+    	if(inbox != null) {
+        	setInboxFolder(inbox);
+    	}
+    	
         return rootItem;
     }
 
@@ -321,30 +336,31 @@ public class ImapClient implements IncomingMailClient {
         for(int i=0;i<size;++i) {
             ImapProtocol.ListResponse resp = (ImapProtocol.ListResponse)respList.elementAt(i);
             FolderTreeItem childItem = getFolderItem(baseFolder, resp.name, resp.canSelect);
-                baseFolder.addChild(childItem);
-                if(resp.hasChildren || (!resp.noInferiors && !childrenExtension)) {
-                    // The folder has children, so lets go and list them
-                    if(depth+1 < accountConfig.getMaxFolderDepth()) {
-                        getFolderTreeImpl(childItem, depth+1, childrenExtension);
-                    }
-                }
-                else if(depth == 0 &&
-                        nsPersonal != null &&
-                        (resp.name + nsPersonal.delimiter).equals(nsPersonal.prefix) &&
-                        accountConfig.getMaxFolderDepth() > 1) {
-                    // The folder claims to have no children, but it is a root
-                    // folder that matches the personal namespace prefix, so
-                    // look for children anyways.
+            baseFolder.addChild(childItem);
+            if(resp.hasChildren || (!resp.noInferiors && !childrenExtension)) {
+                // The folder has children, so lets go and list them
+                if(depth+1 < accountConfig.getMaxFolderDepth()) {
                     getFolderTreeImpl(childItem, depth+1, childrenExtension);
                 }
             }
+            else if(depth == 0 &&
+                    nsPersonal != null &&
+                    (resp.name + nsPersonal.delimiter).equals(nsPersonal.prefix) &&
+                    accountConfig.getMaxFolderDepth() > 1) {
+                // The folder claims to have no children, but it is a root
+                // folder that matches the personal namespace prefix, so
+                // look for children anyways.
+                getFolderTreeImpl(childItem, depth+1, childrenExtension);
+            }
         }
+    }
 
     public void refreshFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
+        int i;
+    	
         // Construct an array of mailbox paths to match the folder vector
         Vector mboxPaths = new Vector();
         Hashtable mboxMap = new Hashtable();
-        int i;
         for(i=0; i<folders.length; i++) {
             FolderTreeItem item = folders[i];
             if(item.isSelectable()) {
@@ -364,6 +380,64 @@ public class ImapClient implements IncomingMailClient {
             item.setMsgCount(response[i].exists);
             item.setUnseenCount(response[i].unseen);
         }
+    }
+    
+    /**
+     * Recursively search a folder tree for the INBOX folder.
+     * 
+     * @param mailbox Starting folder
+     * @return INBOX folder
+     */
+    private FolderTreeItem findInboxFolder(FolderTreeItem mailbox) {
+    	if(mailbox.getName().equals(strINBOX)) {
+    		return mailbox;
+    	}
+    	else {
+    		FolderTreeItem[] children = mailbox.children();
+    		for(int i=0; i<children.length; i++) {
+    			FolderTreeItem result = findInboxFolder(children[i]);
+    			if(result != null) {
+    				return result;
+    			}
+    		}
+    	}
+    	return null;
+    }
+    
+    /**
+     * Gets the INBOX folder.
+     * If no INBOX folder is available, this method will attempt
+     * to load a persisted folder item that may have been associated
+     * with the account configuration.
+     * 
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getInboxFolder()
+     */
+    public FolderTreeItem getInboxFolder() {
+    	if(this.inboxMailbox == null) {
+        	DataStore dataStore = DataStoreFactory.getConnectionCacheStore();
+	    	Object loadedObject = dataStore.getNamedObject(Long.toString(accountConfig.getUniqueId()) + "_INBOX");
+        	if(loadedObject instanceof FolderTreeItem) {
+        		this.inboxMailbox = (FolderTreeItem)loadedObject;
+        	}
+    	}
+    	return this.inboxMailbox;
+    }
+
+    /**
+     * Sets the INBOX folder.
+     * This method also persists the INBOX folder in association
+     * with the account configuration.
+     * 
+     * @param mailbox the new INBOX folder
+     */
+    private void setInboxFolder(FolderTreeItem mailbox) {
+    	if(this.inboxMailbox != mailbox) {
+    		mailbox = new FolderTreeItem(mailbox);
+	    	DataStore dataStore = DataStoreFactory.getConnectionCacheStore();
+	    	dataStore.putNamedObject(Long.toString(accountConfig.getUniqueId()) + "_INBOX", mailbox);
+	    	dataStore.save();
+	    	this.inboxMailbox = mailbox;
+    	}
     }
     
     public FolderTreeItem getActiveFolder() {

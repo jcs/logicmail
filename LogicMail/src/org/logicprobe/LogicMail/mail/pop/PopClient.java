@@ -219,6 +219,10 @@ public class PopClient implements IncomingMailClient {
         }
     }
 
+    public FolderTreeItem getInboxFolder() {
+    	return activeMailbox;
+    }
+    
     public FolderTreeItem getActiveFolder() {
         return activeMailbox;
     }

@@ -159,10 +159,21 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			
 			// If the idle state was ended due to a timeout, perform a no-operation
 			// command on the mail server as a final explicit check for new messages.
-			if(idleTime >= IDLE_TIMEOUT && incomingClient.noop()) {
-				addRequest(
-						IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-						new Object[] { incomingClient.getActiveFolder() });
+			if(idleTime >= IDLE_TIMEOUT) {
+				if(incomingClient.noop()) {
+					addRequest(
+							IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
+							new Object[] { incomingClient.getActiveFolder() });
+				}
+				else {
+					// If we had a non-INBOX folder selected, then an idle timeout
+					// should switch the active folder back to the INBOX.
+					FolderTreeItem inboxMailbox = incomingClient.getInboxFolder();
+					FolderTreeItem activeMailbox = incomingClient.getActiveFolder();
+					if(inboxMailbox != null && !inboxMailbox.getPath().equalsIgnoreCase(activeMailbox.getPath())) {
+						incomingClient.setActiveFolder(inboxMailbox);
+					}
+				}
 			}
 		}
 		else {
