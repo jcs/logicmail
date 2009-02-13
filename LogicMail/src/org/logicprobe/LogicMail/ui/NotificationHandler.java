@@ -35,7 +35,11 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailEventSource;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.AccountNodeEvent;
+import org.logicprobe.LogicMail.model.AccountNodeListener;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailManagerEvent;
 import org.logicprobe.LogicMail.model.MailManagerListener;
@@ -45,9 +49,11 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
+import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.HolsterListener;
+import net.rim.device.api.system.RuntimeStore;
 
 /**
  * Handles new message notification through the various
@@ -70,6 +76,14 @@ public class NotificationHandler {
 		updateAccountSubscriptions();
 	}
 
+	private AccountNodeListener accountNodeListener = new AccountNodeListener() {
+		public void accountStatusChanged(AccountNodeEvent e) {
+			if(e.getType() == AccountNodeEvent.TYPE_MAILBOX_TREE) {
+				updateAccountMap((AccountNode)e.getSource());
+			}
+		}
+	};
+	
 	/**
 	 * Gets the NotificationHandler instance.
 	 * 
@@ -131,7 +145,7 @@ public class NotificationHandler {
 					}
 				}
 				if(raiseNotification) {
-					notifyNewMessages();
+					notifyNewMessages(mailboxNode);
 				}
 			}
 		}
@@ -145,31 +159,36 @@ public class NotificationHandler {
 		}
 	}
 	
+	/**
+	 * Update the account subscriptions.
+	 */
 	private void updateAccountSubscriptions() {
+		// Get the registered event sources from the runtime store
+		Hashtable eventSourceMap = (Hashtable)RuntimeStore.getRuntimeStore().get(AppInfo.GUID);
+		if(eventSourceMap == null) {
+			eventSourceMap = new Hashtable();
+			RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
+		}
+		
 		// Subscribe to any new accounts
 		AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
 		for(int i=0; i<accountNodes.length; i++) {
 			if(accountNodes[i].getStatus() != AccountNode.STATUS_LOCAL) {
-				MailboxNode rootMailbox = accountNodes[i].getRootMailbox();
-				if(rootMailbox != null) {
-					MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
-					MailboxNode inboxNode = null;
-					for(int j=0; j<mailboxNodes.length; j++) {
-						if(mailboxNodes[j].toString().equalsIgnoreCase("INBOX")) {
-							inboxNode = mailboxNodes[j];
-							break;
-						}
-					}
-					
-					if(inboxNode != null) {
-						if(accountMap.containsKey(accountNodes[i]) && accountMap.get(accountNodes[i]) != inboxNode) {
-							((MailboxNode)accountMap.get(accountNodes[i])).removeMailboxNodeListener(mailboxNodeListener);
-						}
-						else if(!accountMap.containsKey(accountNodes[i])) {
-							inboxNode.addMailboxNodeListener(mailboxNodeListener);
-							accountMap.put(accountNodes[i], inboxNode);
-						}
-					}
+				updateAccountMap(accountNodes[i]);
+				
+				accountNodes[i].addAccountNodeListener(accountNodeListener);
+				
+				// Register the notification source, if necessary
+				AccountConfig accountConfig = accountNodes[i].getAccountConfig();
+				LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(new Long(accountConfig.getUniqueId()));
+				if(eventSource == null || !eventSource.getAccountName().equals(accountConfig.getAcctName())) {
+					eventSource =
+						new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+	            	NotificationsManager.registerSource(
+	        			eventSource.getEventSourceId(),
+	        			eventSource,
+	        			NotificationsConstants.CASUAL);
+	            	eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
 				}
 			}
 		}
@@ -196,22 +215,69 @@ public class NotificationHandler {
 			AccountNode accountNode = (AccountNode)e.nextElement();
 			((MailboxNode)accountMap.get(accountNode)).removeMailboxNodeListener(mailboxNodeListener);
 			accountMap.remove(accountNode);
+			accountNode.removeAccountNodeListener(accountNodeListener);
+
+			// Unregister the notification source
+			Long eventSourceKey = new Long(accountNode.getAccountConfig().getUniqueId());
+			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
+			if(eventSource != null) {
+				NotificationsManager.deregisterSource(eventSource.getEventSourceId());
+				eventSourceMap.remove(eventSourceKey);
+			}
 		}
 	}
 	
+	/**
+	 * Update the INBOX subscription for the provided account node.
+	 * 
+	 * @param accountNode The account node
+	 */
+	private void updateAccountMap(AccountNode accountNode) {
+		MailboxNode rootMailbox = accountNode.getRootMailbox();
+		if(rootMailbox != null) {
+			MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
+			MailboxNode inboxNode = null;
+			for(int j=0; j<mailboxNodes.length; j++) {
+				if(mailboxNodes[j].toString().equalsIgnoreCase("INBOX")) {
+					inboxNode = mailboxNodes[j];
+					break;
+				}
+			}
+			
+			if(inboxNode != null) {
+				if(accountMap.containsKey(accountNode) && accountMap.get(accountNode) != inboxNode) {
+					((MailboxNode)accountMap.get(accountNode)).removeMailboxNodeListener(mailboxNodeListener);
+				}
+				else if(!accountMap.containsKey(accountNode)) {
+					inboxNode.addMailboxNodeListener(mailboxNodeListener);
+					accountMap.put(accountNode, inboxNode);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Notify the user of new messages.
 	 * 
 	 * @param mailboxNode The mailbox node containing the new messages
 	 */
-	private void notifyNewMessages() {
-		NotificationsManager.triggerImmediateEvent(AppInfo.GUID, 0, this, null);
+	private void notifyNewMessages(MailboxNode mailboxNode) {
+		long sourceId = AppInfo.GUID + mailboxNode.getParentAccount().getAccountConfig().getUniqueId();
+		NotificationsManager.triggerImmediateEvent(sourceId, 0, this, null);
 		setAppIcon(true);
 	}
 
+	/**
+	 * Cancel all existing notifications.
+	 */
 	public void cancelNotification() {
-		NotificationsManager.cancelImmediateEvent(AppInfo.GUID, 0, this, null);
+		Enumeration e = accountMap.keys();
+		while(e.hasMoreElements()) {
+			AccountNode accountNode = (AccountNode)e.nextElement();
+			long sourceId = AppInfo.GUID + accountNode.getAccountConfig().getUniqueId();
+			NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
+		}
+		
 		setAppIcon(false);
 	}
 	

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,15 +32,19 @@
 package org.logicprobe.LogicMail;
 
 import java.util.Calendar;
+import java.util.Hashtable;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.ui.UiApplication;
+
 import org.logicprobe.LogicMail.ui.MailHomeScreen;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
 /*
@@ -109,13 +113,6 @@ public class LogicMail extends UiApplication {
     	enterEventDispatcher();
     }
     
-    /** The constant event source object. */
-    private static final Object eventSource = new Object() {
-		public String toString() {
-	    	return "LogicMail New Message";
-		}
-	};
-	
     /**
      * Method to execute in autostart mode.
      */
@@ -140,15 +137,31 @@ public class LogicMail extends UiApplication {
                         // Configure the rollover icons
                         HomeScreen.updateIcon(AppInfo.getIcon(), 0);
                         HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
-                        // Configure the notification source
-                        NotificationsManager.registerSource(AppInfo.GUID, eventSource, NotificationsConstants.CASUAL);
+
+                        // Configure a notification source for each account
+                        MailSettings mailSettings = MailSettings.getInstance();
+                        mailSettings.loadSettings();
+                        int numAccounts = mailSettings.getNumAccounts();
+                        Hashtable eventSourceMap = new Hashtable(numAccounts);
+                        for(int i=0; i<numAccounts; i++) {
+                        	AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+                        	LogicMailEventSource eventSource =
+                        		new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+                        	NotificationsManager.registerSource(
+                    			eventSource.getEventSourceId(),
+                    			eventSource,
+                    			NotificationsConstants.CASUAL);
+                        	eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
+                        }
                         
+                        // Save the registered event sources in the runtime store
+                        RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
                         keepGoing = false;
                     }
                  }
                  //Exit the application.
                  System.exit(0);
             }
-        });    	
+        });
     }
 } 
