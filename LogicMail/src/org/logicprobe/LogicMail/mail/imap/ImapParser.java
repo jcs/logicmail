@@ -389,6 +389,7 @@ class ImapParser {
         Vector sectionList) {
         MessageSection sec = new MessageSection();
         Vector tmpVec;
+        int size;
 
         if (sectionList.elementAt(0) instanceof String) {
             sec.type = ((String) sectionList.elementAt(0)).toLowerCase();
@@ -403,13 +404,16 @@ class ImapParser {
         if (sectionList.elementAt(2) instanceof Vector) {
             tmpVec = (Vector) sectionList.elementAt(2);
 
-            if (tmpVec.size() >= 2) {
-                if ((tmpVec.elementAt(0) instanceof String) &&
-                        ((String) tmpVec.elementAt(0)).equalsIgnoreCase(
-                            "charset") &&
-                        tmpVec.elementAt(1) instanceof String) {
-                    sec.charset = (String) tmpVec.elementAt(1);
-                }
+            size = tmpVec.size();
+            for(int i=0; i < size - 1; i+=2) {
+            	if(tmpVec.elementAt(i) instanceof String &&
+            	   tmpVec.elementAt(i+1) instanceof String) {
+            		String key = (String)tmpVec.elementAt(i);
+            		String value = (String)tmpVec.elementAt(i+1);
+            		if(key.equalsIgnoreCase("charset")) {
+            			sec.charset = value;
+            		}
+            	}
             }
         }
 
