@@ -659,12 +659,13 @@ public class ImapProtocol {
 
         if (messageLength != -1) {
             for (int i = 1; i < rawList.length; i++) {
-                if ((rawList[i].length() + 2) <= messageLength) {
+            	int rawListLength = rawList[i].length();
+                if ((rawListLength + 2) <= messageLength) {
                     msgBuf.append(rawList[i]);
-                    messageLength -= rawList[i].length();
+                    messageLength -= rawListLength;
                     msgBuf.append("\r\n");
                     messageLength -= 2;
-                } else {
+                } else if (!(messageLength == 1 && rawListLength == 1 && rawList[i].charAt(0) == ')')) {
                     msgBuf.append(rawList[i].substring(0, messageLength));
                 }
             }

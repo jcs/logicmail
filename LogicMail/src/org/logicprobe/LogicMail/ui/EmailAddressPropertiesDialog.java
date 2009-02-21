@@ -31,9 +31,16 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Enumeration;
+
+import javax.microedition.pim.Contact;
+import javax.microedition.pim.PIM;
+import javax.microedition.pim.PIMException;
+
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.StringParser;
 
+import net.rim.blackberry.api.pdap.BlackBerryContactList;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Field;
@@ -63,6 +70,7 @@ public class EmailAddressPropertiesDialog extends Dialog {
         this.address = address;
         
         initFields();
+        checkAddressBook();
     }
 
     public EmailAddressPropertiesDialog(String recipient) {
@@ -95,6 +103,46 @@ public class EmailAddressPropertiesDialog extends Dialog {
         this.add(addressEditField);
         this.add(new LabelField("", Field.NON_FOCUSABLE));
         this.add(okButton);
+    }
+    
+    private void checkAddressBook() {
+    	// Quick 'n dirty address-book lookup test
+    	
+    	// The plan is to search the address book for the contact, and provide
+    	// the following actions depending on the result:
+    	// - Go to contact in address book
+    	// - Add to address book
+    	// These options would be more convenient in the EmailAddressBookEditField
+    	// context menu, but will be implemented here to mitigate any performance
+    	// concerns of the lookup.
+    	// Ideally, this dialog should be replaced with a direct pass-thru to the
+    	// contact page, if available.
+    	
+    	Contact contact = null;
+		try {
+			BlackBerryContactList list = (BlackBerryContactList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
+	    	Enumeration e = list.items(this.address, BlackBerryContactList.SEARCH_CONTACTS);
+	    	if(e.hasMoreElements()) {
+	    		contact = (Contact)e.nextElement();
+	    	}
+		} catch (PIMException exp) {
+		}
+		if(contact != null) {
+			add(new LabelField("In Address Book"));
+		}
+		else {
+			add(new LabelField("Not found"));
+		}
+    }
+
+    /**
+     * Sets whether the contents of the dialog are editable.
+     * 
+     * @param editable True if editable, false if read-only
+     */
+    public void setEditable(boolean editable) {
+    	nameEditField.setEditable(editable);
+    	addressEditField.setEditable(editable);
     }
     
     public String getName() {

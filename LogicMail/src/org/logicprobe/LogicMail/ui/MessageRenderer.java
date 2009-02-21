@@ -31,14 +31,28 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Vector;
 
+import net.rim.blackberry.api.browser.Browser;
+import net.rim.blackberry.api.browser.BrowserSession;
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.io.Base64OutputStream;
+import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BitmapField;
+import net.rim.device.api.ui.component.ButtonField;
+import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.RichTextField;
+import net.rim.device.api.ui.container.VerticalFieldManager;
+import net.rim.device.api.util.DataBuffer;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.message.ImagePart;
+import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartVisitor;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.TextPart;
@@ -62,7 +76,46 @@ public class MessageRenderer implements MessagePartVisitor {
     }
 
     public void visitTextPart(TextPart part) {
-        messageFields.addElement(new RichTextField(part.getText()));
+    	if(part.getMimeSubtype().equalsIgnoreCase("html")) {
+    		ButtonField browserButtonField = new ButtonField("Open HTML in browser...", Field.FIELD_HCENTER);
+    		browserButtonField.setChangeListener(new MessageFieldChangeListener(part) {
+				public void fieldChanged(Field field, int context) {
+					TextPart textPart = (TextPart)getPart();
+					try {
+						DataBuffer buffer = new DataBuffer();
+						buffer.write(textPart.getText().getBytes());
+						
+						ByteArrayOutputStream output = new ByteArrayOutputStream();
+						Base64OutputStream boutput = new Base64OutputStream(output);
+						
+						// Write out the special sequence which indicates to the browser
+						// that it should treat this as HTML data in base64 format.
+						output.write("data:text/html;base64,".getBytes());
+						boutput.write(buffer.getArray());
+						boutput.flush();
+						boutput.close();
+						output.flush();
+						output.close();
+
+						// Invoke the browser with the encoded HTML content.
+						BrowserSession browserSession = Browser.getDefaultSession();
+						browserSession.displayPage(output.toString());
+					} catch (Throwable t) {
+						EventLogger.logEvent(AppInfo.GUID, ("Error launching browser: " + t.toString()).getBytes(), EventLogger.ERROR);
+						Dialog.alert("Unable to display the HTML message in the browser.");
+					}
+				}
+    		});
+    		
+    		VerticalFieldManager browserButtonFieldManager = new VerticalFieldManager(Field.USE_ALL_WIDTH);
+    		browserButtonFieldManager.add(new LabelField());
+    		browserButtonFieldManager.add(browserButtonField);
+    		browserButtonFieldManager.add(new LabelField());
+    		messageFields.addElement(browserButtonFieldManager);
+    	}
+    	else {
+    		messageFields.addElement(new RichTextField(part.getText()));
+    	}
     }
 
     public void visitImagePart(ImagePart part) {
@@ -70,11 +123,19 @@ public class MessageRenderer implements MessagePartVisitor {
     }
 
     public void visitUnsupportedPart(UnsupportedPart part) {
-        messageFields.addElement(new RichTextField(resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED) + " "+part.getMimeType()+"/"+part.getMimeSubtype()));
+        messageFields.addElement(new RichTextField(resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED) + ' ' + part.getMimeType() + '/' + part.getMimeSubtype()));
     }
 
     public Vector getMessageFields() {
         return messageFields;
     }
-    
+
+    private static abstract class MessageFieldChangeListener implements FieldChangeListener {
+    	private MessagePart part;
+    	public MessageFieldChangeListener(MessagePart part) {
+    		this.part = part;
+    	}
+    	
+    	protected MessagePart getPart() { return part; }
+    }
 }

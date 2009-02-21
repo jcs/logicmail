@@ -122,7 +122,7 @@ public class MessagePartFactory {
         }
 
         // Check for a supported text sub-type and decode if necessary
-        if (mimeSubtype.equalsIgnoreCase("plain")) {
+        if (mimeSubtype.equalsIgnoreCase("plain") || mimeSubtype.equalsIgnoreCase("html")) {
             TextPart textPart = new TextPart(mimeSubtype, data);
             textPart.setCharset(charset);
 
@@ -166,7 +166,9 @@ public class MessagePartFactory {
     }
 
     private static boolean isTextPartSupported(String mimeSubtype) {
-        return (mimeSubtype.equalsIgnoreCase("plain"));
+    	// TODO: Add logic to only load plain or html, not both
+    	return (mimeSubtype.equalsIgnoreCase("plain") ||
+        		mimeSubtype.equalsIgnoreCase("html"));
     }
 
     private static boolean isImagePartSupported(String mimeSubtype) {
