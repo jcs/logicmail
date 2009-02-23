@@ -110,7 +110,7 @@ public class GlobalConfig implements Serializable {
         
         Enumeration e = FileSystemRegistry.listRoots();
         if(e.hasMoreElements()) {
-        	this.localDataLocation = (String)e.nextElement();
+        	this.localDataLocation = "file:///" + (String)e.nextElement();
         }
         else {
         	this.localDataLocation = "file:///LogicMail/";
