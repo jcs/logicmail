@@ -392,7 +392,7 @@ public class ImapClient implements IncomingMailClient {
     	if(mailbox.getName().equals(strINBOX)) {
     		return mailbox;
     	}
-    	else {
+    	else if(mailbox.hasChildren()) {
     		FolderTreeItem[] children = mailbox.children();
     		for(int i=0; i<children.length; i++) {
     			FolderTreeItem result = findInboxFolder(children[i]);
