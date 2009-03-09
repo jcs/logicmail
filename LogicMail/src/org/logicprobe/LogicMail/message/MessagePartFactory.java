@@ -30,11 +30,11 @@
  */
 package org.logicprobe.LogicMail.message;
 
+import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.system.EncodedImage;
 
 import org.logicprobe.LogicMail.util.StringFactory;
 import org.logicprobe.LogicMail.util.StringParser;
-import org.logicprobe.LogicMail.util.UtilProxy;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -104,7 +104,7 @@ public class MessagePartFactory {
             byte[] textBytes;
 
             try {
-                textBytes = UtilProxy.getInstance().Base64Decode(data);
+                textBytes = Base64InputStream.decode(data);
             } catch (IOException exp) {
                 return createUnsupportedPart("text", mimeSubtype, data);
             }
@@ -156,7 +156,7 @@ public class MessagePartFactory {
         // Decode the binary data, and create an image
         if (encoding.equalsIgnoreCase("base64")) {
             try {
-                byte[] imgBytes = UtilProxy.getInstance().Base64Decode(data);
+                byte[] imgBytes = Base64InputStream.decode(data);
                 EncodedImage encImage = EncodedImage.createEncodedImage(imgBytes,
                         0, imgBytes.length, "image/" +
                         mimeSubtype.toLowerCase());

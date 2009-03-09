@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.util;
 
+import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.DateTimeUtilities;
 import net.rim.device.api.util.NumberUtilities;
@@ -751,9 +752,8 @@ public class StringParser {
         } else if (encoding.charAt(0) == 'B') {
             // Base64
             try {
-                result = new String(UtilProxy.getInstance().Base64Decode(encodedText),
-                        charset);
-            } catch (Exception e) {
+            	result = new String(Base64InputStream.decode(encodedText), charset);
+            } catch (IOException e) {
                 result = "";
             }
         } else {

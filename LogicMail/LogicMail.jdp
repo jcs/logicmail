@@ -168,7 +168,6 @@ src\org\logicprobe\LogicMail\ui\OutgoingConfigScreen.java
 src\org\logicprobe\LogicMail\ui\ThrobberField.java
 src\org\logicprobe\LogicMail\ui\WizardController.java
 src\org\logicprobe\LogicMail\ui\WizardScreen.java
-src\org\logicprobe\LogicMail\util\bb40\Base64.java
 src\org\logicprobe\LogicMail\util\Connection.java
 src\org\logicprobe\LogicMail\util\DataStore.java
 src\org\logicprobe\LogicMail\util\DataStoreFactory.java
@@ -189,9 +188,6 @@ src\org\logicprobe\LogicMail\util\StringFactory.java
 src\org\logicprobe\LogicMail\util\StringParser.java
 src\org\logicprobe\LogicMail\util\ThreadQueue.java
 src\org\logicprobe\LogicMail\util\UniqueIdGenerator.java
-src\org\logicprobe\LogicMail\util\UtilProxy.java
-src\org\logicprobe\LogicMail\util\UtilProxyBB40.java
-src\org\logicprobe\LogicMail\util\UtilProxyBB41.java
 ]
 HaveAlxImports=0
 HaveDefs=0
