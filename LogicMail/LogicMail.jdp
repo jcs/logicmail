@@ -185,6 +185,7 @@ src\org\logicprobe\LogicMail\util\Serializable.java
 src\org\logicprobe\LogicMail\util\SerializableHashtable.java
 src\org\logicprobe\LogicMail\util\SerializableVector.java
 src\org\logicprobe\LogicMail\util\SerializationUtils.java
+src\org\logicprobe\LogicMail\util\StringFactory.java
 src\org\logicprobe\LogicMail\util\StringParser.java
 src\org\logicprobe\LogicMail\util\ThreadQueue.java
 src\org\logicprobe\LogicMail\util\UniqueIdGenerator.java

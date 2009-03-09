@@ -28,15 +28,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.message;
+
+import net.rim.device.api.mime.MIMEOutputStream;
+
+import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.UtilProxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
 import java.util.Hashtable;
-import net.rim.device.api.mime.MIMEOutputStream;
-import org.logicprobe.LogicMail.util.StringParser;
-import org.logicprobe.LogicMail.util.UtilProxy;
+
 
 /**
  * Converts a message into the equivalent MIME structure
@@ -45,10 +48,10 @@ public class MessageMimeConverter implements MessagePartVisitor {
     private ByteArrayOutputStream byteArrayOutputStream;
     private MIMEOutputStream mimeOutputStream;
     private UtilProxy utilProxy;
-    
+
     /** maps message parts to MIMEOutputStream objects */
     private Hashtable partMimeMap;
-    
+
     /** Creates a new instance of MessageMimeConverter */
     public MessageMimeConverter() {
         byteArrayOutputStream = new ByteArrayOutputStream();
@@ -70,22 +73,27 @@ public class MessageMimeConverter implements MessagePartVisitor {
             mimeOutputStream.close();
         } catch (IOException ex) {
             System.err.println("Unable to close MIMEOutputStream");
+
             return "";
         }
+
         return byteArrayOutputStream.toString();
     }
-    
+
     public void visitMultiPart(MultiPart part) {
         // Handle the case of this being the root part
-        if(mimeOutputStream == null) {
-            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream, true, null);
-            mimeOutputStream.setContentType(part.getMimeType() + "/" + part.getMimeSubtype());
+        if (mimeOutputStream == null) {
+            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream,
+                    true, null);
+            mimeOutputStream.setContentType(part.getMimeType() + "/" +
+                part.getMimeSubtype());
             partMimeMap.put(part, mimeOutputStream);
         }
         // Otherwise handle the case of this being a child part
         else {
-            MIMEOutputStream parentStream = (MIMEOutputStream)partMimeMap.get(part.getParent());
-            MIMEOutputStream currentStream = parentStream.getPartOutputStream(true, null);
+            MIMEOutputStream parentStream = (MIMEOutputStream) partMimeMap.get(part.getParent());
+            MIMEOutputStream currentStream = parentStream.getPartOutputStream(true,
+                    null);
             partMimeMap.put(part, currentStream);
         }
     }
@@ -96,81 +104,85 @@ public class MessageMimeConverter implements MessagePartVisitor {
         boolean isQP;
         String encoding;
         String text = part.getText();
-        
+
         // Find the maximum character value in the text
         char maxChar = 0;
-        for(int i = text.length() - 1; i != 0; --i) {
+
+        for (int i = text.length() - 1; i >= 0; --i) {
             char ch = text.charAt(i);
-            if(ch > maxChar) {
+
+            if (ch > maxChar) {
                 maxChar = ch;
             }
         }
-        
+
         // Determine the charset and encoding from the characteristics of the
         // text, instead of the properties of the TextPart.  We do it this way
         // because the TextPart already contains decoded text that could be
         // reencoded in a variety of ways, and because there is no way to
         // easily create a TextPart from a local unencoded String that has the
         // charset and encoding properties set correctly.
-        if(maxChar > 255) {
+        if (maxChar > 255) {
             charset = "UTF-8";
             isBinary = true;
             isQP = false;
             encoding = "base64";
-        }
-        else if(maxChar > 127) {
+        } else if (maxChar > 127) {
             charset = "ISO-8859-1";
             isBinary = false;
             isQP = true;
             encoding = "quoted-printable";
-        }
-        else {
+        } else {
             charset = "US-ASCII";
             isBinary = false;
             isQP = false;
             encoding = "7bit";
         }
-        
-//        if(charset.equalsIgnoreCase("US-ASCII")) {
-//            isBinary = false;
-//            isQP = false;
-//            encoding = "7bit";
-//        }
-//        else if(charset.equalsIgnoreCase("ISO-8859-1")) {
-//            isBinary = false;
-//            isQP = true;
-//            encoding = "quoted-printable";
-//        }
-//        else {
-//            isBinary = true;
-//            isQP = false;
-//            encoding = "base64";
-//        }
-        
+
+        //        if(charset.equalsIgnoreCase("US-ASCII")) {
+        //            isBinary = false;
+        //            isQP = false;
+        //            encoding = "7bit";
+        //        }
+        //        else if(charset.equalsIgnoreCase("ISO-8859-1")) {
+        //            isBinary = false;
+        //            isQP = true;
+        //            encoding = "quoted-printable";
+        //        }
+        //        else {
+        //            isBinary = true;
+        //            isQP = false;
+        //            encoding = "base64";
+        //        }
         MIMEOutputStream currentStream;
-        if(mimeOutputStream == null) {
-            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream, false, encoding);
+
+        if (mimeOutputStream == null) {
+            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream,
+                    false, encoding);
             currentStream = mimeOutputStream;
-        }
-        else {
-            MIMEOutputStream parentStream = (MIMEOutputStream)partMimeMap.get(part.getParent());
+        } else {
+            MIMEOutputStream parentStream = (MIMEOutputStream) partMimeMap.get(part.getParent());
             currentStream = parentStream.getPartOutputStream(false, encoding);
         }
+
         partMimeMap.put(part, currentStream);
-        currentStream.setContentType(part.getMimeType() + "/" + part.getMimeSubtype());
+        currentStream.setContentType(part.getMimeType() + "/" +
+            part.getMimeSubtype());
         currentStream.addContentTypeParameter("charset", charset.toLowerCase());
 
         // Add the content, encoding as necessary
         try {
-            if(!isBinary) {
-                if(isQP)
-                    currentStream.write(StringParser.encodeQuotedPrintable(text).getBytes(charset));
-                else
+            if (!isBinary) {
+                if (isQP) {
+                    currentStream.write(StringParser.encodeQuotedPrintable(text)
+                                                    .getBytes(charset));
+                } else {
                     currentStream.write(text.getBytes(charset));
-            }
-            else {
+                }
+            } else {
                 byte[] data = text.getBytes(charset);
-                currentStream.write(utilProxy.Base64Encode(data, 0, data.length, true, true));
+                currentStream.write(utilProxy.Base64Encode(data, 0,
+                        data.length, true, true));
             }
         } catch (IOException e) {
             System.err.println("Error encoding content");
@@ -179,20 +191,24 @@ public class MessageMimeConverter implements MessagePartVisitor {
 
     public void visitImagePart(ImagePart part) {
         MIMEOutputStream currentStream;
-        if(mimeOutputStream == null) {
-            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream, false, "base64");
+
+        if (mimeOutputStream == null) {
+            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream,
+                    false, "base64");
             currentStream = mimeOutputStream;
-        }
-        else {
-            MIMEOutputStream parentStream = (MIMEOutputStream)partMimeMap.get(part.getParent());
+        } else {
+            MIMEOutputStream parentStream = (MIMEOutputStream) partMimeMap.get(part.getParent());
             currentStream = parentStream.getPartOutputStream(false, "base64");
         }
+
         partMimeMap.put(part, currentStream);
-        currentStream.setContentType(part.getMimeType() + "/" + part.getMimeSubtype());
-        
+        currentStream.setContentType(part.getMimeType() + "/" +
+            part.getMimeSubtype());
+
         try {
             byte[] data = part.getImage().getData();
-            currentStream.write(utilProxy.Base64Encode(data, 0, data.length, true, true));
+            currentStream.write(utilProxy.Base64Encode(data, 0, data.length,
+                    true, true));
         } catch (IOException e) {
             System.err.println("Error encoding content");
         }
@@ -200,16 +216,19 @@ public class MessageMimeConverter implements MessagePartVisitor {
 
     public void visitUnsupportedPart(UnsupportedPart part) {
         MIMEOutputStream currentStream;
-        if(mimeOutputStream == null) {
-            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream, false, "7bit");
+
+        if (mimeOutputStream == null) {
+            mimeOutputStream = new MIMEOutputStream(byteArrayOutputStream,
+                    false, "7bit");
             currentStream = mimeOutputStream;
-        }
-        else {
-            MIMEOutputStream parentStream = (MIMEOutputStream)partMimeMap.get(part.getParent());
+        } else {
+            MIMEOutputStream parentStream = (MIMEOutputStream) partMimeMap.get(part.getParent());
             currentStream = parentStream.getPartOutputStream(false, "7bit");
         }
+
         partMimeMap.put(part, currentStream);
         currentStream.setContentType("text/plain");
+
         try {
             currentStream.write("Unable to encode part".getBytes());
         } catch (IOException e) {

@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.message;
 
 import net.rim.device.api.system.EncodedImage;
 
+import org.logicprobe.LogicMail.util.StringFactory;
 import org.logicprobe.LogicMail.util.StringParser;
 import org.logicprobe.LogicMail.util.UtilProxy;
 
@@ -109,20 +110,38 @@ public class MessagePartFactory {
             }
 
             try {
+                // If a charset is not provided, ISO-8859-1 is assumed
                 if (charset == null) {
                     charset = "ISO-8859-1";
                 }
 
-                data = new String(textBytes, charset.toUpperCase());
+                data = StringFactory.create(textBytes, charset);
             } catch (UnsupportedEncodingException exp) {
                 // If encoding type is bad, attempt with the default encoding
                 // so the user will at least see something.
                 data = new String(textBytes);
             }
+        } else if ((charset != null) &&
+                !charset.equalsIgnoreCase("ISO-8859-1") &&
+                !charset.equalsIgnoreCase("US-ASCII")) {
+            // If the text is not encoded (i.e. 7bit or 8bit) and uses a
+            // non-Latin charset, then bring the text back to a byte array
+            // and attempt to decode it based on the charset parameter.
+            byte[] textBytes = data.getBytes();
+
+            try {
+                data = StringFactory.create(textBytes, charset);
+            } catch (UnsupportedEncodingException exp) {
+                // If encoding type is bad, leave the message text as
+                // it was originally.  This may result in the user seeing
+                // garbage, but at least they'll know there was a
+                // decoding problem.
+            }
         }
 
         // Check for a supported text sub-type and decode if necessary
-        if (mimeSubtype.equalsIgnoreCase("plain") || mimeSubtype.equalsIgnoreCase("html")) {
+        if (mimeSubtype.equalsIgnoreCase("plain") ||
+                mimeSubtype.equalsIgnoreCase("html")) {
             TextPart textPart = new TextPart(mimeSubtype, data);
             textPart.setCharset(charset);
 
@@ -166,9 +185,9 @@ public class MessagePartFactory {
     }
 
     private static boolean isTextPartSupported(String mimeSubtype) {
-    	// TODO: Add logic to only load plain or html, not both
-    	return (mimeSubtype.equalsIgnoreCase("plain") ||
-        		mimeSubtype.equalsIgnoreCase("html"));
+        // TODO: Add logic to only load plain or html, not both
+        return (mimeSubtype.equalsIgnoreCase("plain") ||
+        mimeSubtype.equalsIgnoreCase("html"));
     }
 
     private static boolean isImagePartSupported(String mimeSubtype) {
