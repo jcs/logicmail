@@ -414,11 +414,17 @@ public class MailHomeScreen extends BaseScreen {
 			Graphics graphics,
 			int node, int y, int width, int indent) {
 		TreeNode treeNode = (TreeNode)treeField.getCookie(node);
-		int height = treeField.getRowHeight();
+		int rowHeight = treeField.getRowHeight();
+		int fontHeight = graphics.getFont().getHeight();
 		
 		Bitmap icon = NodeIcons.getIcon(treeNode.node);
-		
-		graphics.drawBitmap(indent, y+((height-icon.getHeight())/2), height-2, height-2, icon, 0, 0);
+
+		graphics.drawBitmap(
+				indent + (rowHeight/2 - icon.getWidth()/2),
+				y + (fontHeight/2 - icon.getWidth()/2),
+				icon.getWidth(),
+				icon.getHeight(),
+				icon, 0, 0);
 		
 		Font origFont = graphics.getFont();
 		StringBuffer buf = new StringBuffer();
@@ -445,7 +451,7 @@ public class MailHomeScreen extends BaseScreen {
                 graphics.setFont(origFont.derive(Font.PLAIN));
 			}
 		}
-		graphics.drawText(buf.toString(), indent + height, y, Graphics.ELLIPSIS, width);
+		graphics.drawText(buf.toString(), indent + rowHeight, y, Graphics.ELLIPSIS, width);
 	}
 	
 	/**
