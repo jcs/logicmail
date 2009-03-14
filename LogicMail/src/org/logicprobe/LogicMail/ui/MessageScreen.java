@@ -327,7 +327,7 @@ public class MessageScreen extends BaseScreen {
                     messageFieldManager.add((Field)messageFields.elementAt(i));
                 }
                 if(i != size-1) {
-                	messageFieldManager.add(new SeparatorField(Field.FOCUSABLE));
+                	messageFieldManager.add(new SeparatorField());
                 }
             }
             messageFieldManager.add(new NullField(Field.FOCUSABLE));
