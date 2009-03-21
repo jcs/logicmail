@@ -58,6 +58,7 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  */
 public abstract class BaseScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+	private NavigationController navigationController;
 	private HeaderField headerField;
 	private LabelField statusLabel;
 	private boolean isExposed = false;
@@ -65,24 +66,27 @@ public abstract class BaseScreen extends MainScreen {
 	private final static int MENU_CONTEXT = 0x10000;
 	private final static int MENU_MAIN = 0x40000000;
 	
-    public BaseScreen() {
+    public BaseScreen(NavigationController navigationController) {
         super();
-		statusLabel = new LabelField();
+        this.navigationController = navigationController;
+		this.statusLabel = new LabelField();
 		setStatus(null);
     }
 
-    public BaseScreen(long style) {
+    public BaseScreen(NavigationController navigationController, long style) {
     	super(style);
-		statusLabel = new LabelField();
+    	this.navigationController = navigationController;
+    	this.statusLabel = new LabelField();
 		setStatus(null);
     }
     
-    public BaseScreen(String title) {
+    public BaseScreen(NavigationController navigationController, String title) {
         super();
+        this.navigationController = navigationController;
         // Create screen elements
-        headerField = new HeaderField("LogicMail - " + title);
+        this.headerField = new HeaderField("LogicMail - " + title);
         setTitle(headerField);
-		statusLabel = new LabelField();
+        this.statusLabel = new LabelField();
 		setStatus(null);
     }
     
@@ -93,6 +97,10 @@ public abstract class BaseScreen extends MainScreen {
         setTitle(headerField);
 		statusLabel = new LabelField();
 		setStatus(null);
+    }
+    
+    protected NavigationController getNavigationController() {
+    	return this.navigationController;
     }
     
     private MailConnectionListener mailConnectionListener = new MailConnectionListener() {

@@ -52,6 +52,7 @@ import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
@@ -115,9 +116,11 @@ public class CompositionScreen extends BaseScreen {
     /**
      * Creates a new instance of CompositionScreen.
      *
+     * @param navigationController Controller for screen navigation
      * @param accountNode Account node
      */
-    public CompositionScreen(AccountNode accountNode) {
+    public CompositionScreen(NavigationController navigationController, AccountNode accountNode) {
+    	super(navigationController);
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
@@ -133,14 +136,17 @@ public class CompositionScreen extends BaseScreen {
      * Used for working with an already created message,
      * such as a draft, reply, or forward.
      *
+     * @param navigationController Controller for screen navigation
      * @param accountNode Account node
      * @param messageNode Message we are composing
      * @param composeType Type of message we are creating
      */
     public CompositionScreen(
+    		NavigationController navigationController,
     		AccountNode accountNode,
     		MessageNode messageNode,
     		int composeType) {
+    	super(navigationController);
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
@@ -148,8 +154,8 @@ public class CompositionScreen extends BaseScreen {
         initFields();
 
         if(composeType == COMPOSE_NORMAL) {
-        	if(messageNode.getMessage() != null) {
-        		populateFromMessage(messageNode.getMessage());
+        	if(messageNode.getMessageBody() != null) {
+        		populateFromMessage(messageNode);
         		messageEditField.setEditable(true);
         	}
         	else {
@@ -161,22 +167,24 @@ public class CompositionScreen extends BaseScreen {
         {
 	        this.replyToMessageNode = messageNode;
 	
-	        Message message = replyToMessageNode.getMessage();
+	        MessageNode populateMessage;
 	
 	        switch (composeType) {
 	        case COMPOSE_REPLY:
-	            message = message.toReplyMessage();
+	        	this.replyToMessageNode = messageNode.toReplyMessage();
+	        	populateMessage = messageNode.toReplyMessage();
 	            break;
-	
 	        case COMPOSE_REPLY_ALL:
-	            message = message.toReplyAllMessage(identityConfig.getEmailAddress());
+	        	populateMessage = messageNode.toReplyAllMessage(identityConfig.getEmailAddress());
 	            break;
-	
 	        case COMPOSE_FORWARD:
-	            message = message.toForwardMessage();
+	        	populateMessage = messageNode.toForwardMessage();
 	            break;
+            default:
+            	populateMessage = messageNode;
+            	break;
 	        }
-	        populateFromMessage(message);
+	        populateFromMessage(populateMessage);
 	        appendSignature();
     		messageEditField.setEditable(true);
         }
@@ -188,17 +196,16 @@ public class CompositionScreen extends BaseScreen {
 				public void run() {
 			    	MessageNode messageNode = (MessageNode)getEvent().getSource();
 		    		messageNode.removeMessageNodeListener(messageNodeListener);
-		    		populateFromMessage(messageNode.getMessage());
+		    		populateFromMessage(messageNode);
 		    		messageEditField.setEditable(true);
 				}
     		});
     	}
     }
 
-    private void populateFromMessage(Message message) {
+    private void populateFromMessage(MessageNode message) {
         int i;
-        MessagePart body = message.getBody();
-        MessageEnvelope env = message.getEnvelope();
+        MessagePart body = message.getMessageBody();
 
         // Currently only all-text reply bodies are supported
         if (body instanceof TextPart) {
@@ -208,36 +215,31 @@ public class CompositionScreen extends BaseScreen {
         }
 
         // Set the subject
-        subjectEditField.setText(env.subject);
+        subjectEditField.setText(message.getSubject());
 
         // Set the recipients
-        if (env.to != null) {
-            for (i = 0; i < env.to.length; i++) {
-                if (env.to[i].indexOf('@') != -1) {
-                    insertRecipientField(EmailAddressBookEditField.ADDRESS_TO)
-                        .setText(env.to[i]);
-                }
+        Address[] recipients = message.getTo();
+        if (recipients != null) {
+            for (i = 0; i < recipients.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setText(recipients[i].toString());
             }
         }
 
-        if (env.cc != null) {
-            for (i = 0; i < env.cc.length; i++) {
-                if (env.cc[i].indexOf('@') != -1) {
-                    insertRecipientField(EmailAddressBookEditField.ADDRESS_CC)
-                        .setText(env.cc[i]);
-                }
+        recipients = message.getCc();
+        if (recipients != null) {
+            for (i = 0; i < recipients.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_CC).setText(recipients[i].toString());
             }
         }
 
-        if (env.bcc != null) {
-            for (i = 0; i < env.bcc.length; i++) {
-                if (env.bcc[i].indexOf('@') != -1) {
-                    insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC)
-                        .setText(env.bcc[i]);
-                }
+        recipients = message.getBcc();
+        if (recipients != null) {
+            for (i = 0; i < recipients.length; i++) {
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC).setText(recipients[i].toString());
             }
         }
-        inReplyTo = env.inReplyTo;
+
+        inReplyTo = message.getInReplyTo();
     }
     
     private void appendSignature() {

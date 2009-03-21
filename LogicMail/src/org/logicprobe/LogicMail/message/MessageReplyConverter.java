@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.util.Date;
+
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -41,14 +43,37 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class MessageReplyConverter implements MessagePartVisitor {
     private TextPart originalTextPart;
-    private MessageEnvelope envelope;
+    private Date date;
+    private String senderName;
     
+    /**
+     * Creates a new instance of MessageReplyConverter.
+     * @param date The date on which the original message was sent.
+     * @param senderName The name of the sender of the message to convert.
+     */
+    public MessageReplyConverter(Date date, String senderName) {
+    	this.date = date;
+    	this.senderName = senderName;
+    }
+
     /**
      * Creates a new instance of MessageReplyConverter.
      * @param envelope Envelope of the message to convert
      */
     public MessageReplyConverter(MessageEnvelope envelope) {
-        this.envelope = envelope;
+        if(envelope.sender != null && envelope.sender.length > 0) {
+            int p = envelope.sender[0].indexOf('<');
+            if(p > 0) {
+                this.senderName = envelope.sender[0].substring(0, p-1);
+            }
+            else {
+            	this.senderName = envelope.sender[0];
+            }
+        }
+        else {
+        	this.senderName = "";
+        }
+        this.date = envelope.date;
     }
 
     /**
@@ -57,21 +82,12 @@ public class MessageReplyConverter implements MessagePartVisitor {
      */
     public MessagePart toReplyBody() {
         StringBuffer buf = new StringBuffer();
-        int p;
         
         // Create the first line of the reply text
         buf.append("On ");
-        buf.append(StringParser.createDateString(envelope.date));
+        buf.append(StringParser.createDateString(date));
         buf.append(", ");
-        if(envelope.sender != null && envelope.sender.length > 0) {
-            p = envelope.sender[0].indexOf('<');
-            if(p > 0) {
-                buf.append(envelope.sender[0].substring(0, p-1));
-            }
-            else {
-                buf.append(envelope.sender[0]);
-            }
-        }
+        buf.append(senderName);
         buf.append(" wrote:\r\n");
         
         // Generate the quoted message text
@@ -109,5 +125,4 @@ public class MessageReplyConverter implements MessagePartVisitor {
 
     public void visitUnsupportedPart(UnsupportedPart part) {
     }
-    
 }

@@ -258,7 +258,10 @@ public class MaildirFolder {
 					}
 				} catch (Exception exp) {
 					// Prevent message-reading errors from being fatal
-					// TODO: Log a useful error message here
+					EventLogger.logEvent(AppInfo.GUID,
+							("Unable to read envelope for "
+							+ mailFileConnection.getURL()).getBytes(),
+							EventLogger.ERROR);
 				}
 			}
 			

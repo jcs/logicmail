@@ -139,7 +139,7 @@ public class NotificationHandler {
 				boolean raiseNotification = false;
 				MessageNode[] messages = e.getAffectedMessages();
 				for(int i=0; i<messages.length; i++) {
-					if(messages[i].getFolderMessage().getFlags().isRecent()) {
+					if((messages[i].getFlags() & MessageNode.Flag.RECENT) != 0) {
 						raiseNotification = true;
 						break;
 					}

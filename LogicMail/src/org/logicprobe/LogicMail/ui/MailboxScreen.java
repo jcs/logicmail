@@ -41,6 +41,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -72,10 +73,11 @@ public class MailboxScreen extends BaseScreen {
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
      * 
+     * @param navigationController Controller for screen navigation
      * @param mailboxNode Mailbox node to view.
      */
-    public MailboxScreen(MailboxNode mailboxNode) {
-    	super(mailboxNode.toString());
+    public MailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
+    	super(navigationController, mailboxNode.toString());
     	this.mailboxNode = mailboxNode;
     	this.knownMessages = new Vector();
     	this.messageFieldMap = new Hashtable();
@@ -182,7 +184,7 @@ public class MailboxScreen extends BaseScreen {
     };
     private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 120, 10) {
         public void run() {
-            UiApplication.getUiApplication().pushScreen(new CompositionScreen(mailboxNode.getParentAccount()));
+        	getNavigationController().displayComposition(mailboxNode.getParentAccount());
         }
     };
     private MenuItem deleteItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE), 130, 10) {
@@ -210,7 +212,7 @@ public class MailboxScreen extends BaseScreen {
         }
         if(fieldWithFocus instanceof MailboxMessageField) {
         	MessageNode messageNode = ((MailboxMessageField)fieldWithFocus).getMessageNode();
-            if(messageNode.getFolderMessage().isDeleted()) {
+            if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0) {
                 if(mailboxNode.getParentAccount().hasUndelete()) {
                     menu.add(undeleteItem);
                 }
@@ -254,7 +256,7 @@ public class MailboxScreen extends BaseScreen {
      * @return True if it should be displayed, false otherwise.
      */
     private boolean isMessageDisplayable(MessageNode messageNode) {
-    	if(messageNode.getFolderMessage().isDeleted() &&
+    	if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0 &&
     	   mailSettings.getGlobalConfig().getHideDeletedMsg()) {
     		return false;
     	}
@@ -270,16 +272,17 @@ public class MailboxScreen extends BaseScreen {
      * @param messageNode Message to insert.
      */
     private void insertDisplayableMessage(MessageNode messageNode) {
+    	// TODO: Make sorting by mailbox order vs message date an option
     	int selectedIndex = messageFieldManager.getFieldWithFocusIndex();
     	
 		if(messageFieldManager.getFieldCount() > 0) {
-			int msgId = messageNode.getId();
+			Comparator comparator = MessageNode.getComparator();
 			int index = messageFieldManager.getFieldCount();
 			
 			if(mailSettings.getGlobalConfig().getDispOrder()) {
 				// Ascending order
 				MessageNode lastMessage = getLastDisplayedMessage(index - 1);
-				while(lastMessage != null && index > 0 && lastMessage.getId() > msgId) {
+				while(lastMessage != null && index > 0 && comparator.compare(lastMessage, messageNode) >= 0) {
 					index--;
 					if(index > 0) { lastMessage = getLastDisplayedMessage(index - 1); }
 				}
@@ -287,7 +290,7 @@ public class MailboxScreen extends BaseScreen {
 			else {
 				// Descending order
 				MessageNode lastMessage = getLastDisplayedMessage(index - 1);
-				while(lastMessage != null && index > 0 && lastMessage.getId() < msgId) {
+				while(lastMessage != null && index > 0 && comparator.compare(lastMessage, messageNode) <= 0) {
 					index--;
 					if(index > 0) { lastMessage = getLastDisplayedMessage(index - 1); }
 				}
@@ -385,7 +388,7 @@ public class MailboxScreen extends BaseScreen {
     			openDraftMessage(messageNode);
     		}
     		else {
-    			UiApplication.getUiApplication().pushScreen(new MessageScreen(messageNode));
+    			getNavigationController().displayMessage(messageNode);
     		}
     		return true;
     	}
@@ -431,8 +434,7 @@ public class MailboxScreen extends BaseScreen {
     	}
 
     	// Show the message composition screen
-    	UiApplication.getUiApplication().pushScreen(
-			new CompositionScreen(account, messageNode, CompositionScreen.COMPOSE_NORMAL));
+    	getNavigationController().displayComposition(account, messageNode);
 
 		return true;
     }

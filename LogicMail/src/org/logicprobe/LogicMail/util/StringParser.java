@@ -853,6 +853,26 @@ public class StringParser {
     }
 
     /**
+     * Create a simple CSV string from the provided input strings.
+     *
+     * @param input Array of objects with usable <tt>toString()</tt> methods.
+     * @return Comma-separated value string.
+     */
+    public static String makeCsvString(Object[] input) {
+    	if ((input == null) || (input.length == 0)) {
+    		return "";
+	    } else if (input.length == 1) {
+	        return input[0].toString();
+	    } else {
+	    	String[] stringArray = new String[input.length];
+	    	for(int i=0; i<input.length; i++) {
+	    		stringArray[i] = input[i].toString();
+	    	}
+	    	return makeCsvString(stringArray);
+	    }
+    }
+
+    /**
      * Parse an input string that contains an encoding type,
      * and return a valid encoding type supported by RIM.
      */
@@ -1122,5 +1142,34 @@ public class StringParser {
         }
 
         return result;
+    }
+    
+    /**
+     * Converts an array of objects to an array of Strings returned
+     * by calling their {@link Object#toString()} methods.
+     * 
+     * @param input Source array
+     * @return String array
+     */
+    public static String[] toStringArray(Object[] input) {
+    	String[] result;
+    	if(input == null) {
+    		result = null;
+    	}
+    	else if(input.length == 0) {
+    		result = new String[0];
+    	}
+    	else {
+    		result = new String[input.length];
+    		for(int i=0; i<input.length; i++) {
+    			if(input[i] != null) {
+    				result[i] = input[i].toString();
+    			}
+    			else {
+    				result[i] = null;
+    			}
+    		}
+    	}
+    	return result;
     }
 }

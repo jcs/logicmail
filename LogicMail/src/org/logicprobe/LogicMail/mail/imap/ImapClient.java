@@ -50,6 +50,7 @@ import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
@@ -542,8 +543,14 @@ public class ImapClient implements IncomingMailClient {
             }
             part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, structure.charset, data);
         }
-        else
+        else if(structure.address.equals("1")) {
+        	// If this was the root part, and still could not be loaded,
+        	// insert a placeholder to avoid having to return null.
+        	part = new UnsupportedPart(structure.type, structure.subtype);
+        }
+        else {	
             part = null;
+        }
 
         if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
             for(int i=0;i<structure.subsections.length;i++) {

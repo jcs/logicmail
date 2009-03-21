@@ -127,6 +127,7 @@ src\org\logicprobe\LogicMail\message\UnsupportedPart.java
 src\org\logicprobe\LogicMail\model\AccountNode.java
 src\org\logicprobe\LogicMail\model\AccountNodeEvent.java
 src\org\logicprobe\LogicMail\model\AccountNodeListener.java
+src\org\logicprobe\LogicMail\model\Address.java
 src\org\logicprobe\LogicMail\model\MailboxNode.java
 src\org\logicprobe\LogicMail\model\MailboxNodeEvent.java
 src\org\logicprobe\LogicMail\model\MailboxNodeListener.java
@@ -162,6 +163,7 @@ src\org\logicprobe\LogicMail\ui\MailHomeScreen.java
 src\org\logicprobe\LogicMail\ui\MessagePropertiesDialog.java
 src\org\logicprobe\LogicMail\ui\MessageRenderer.java
 src\org\logicprobe\LogicMail\ui\MessageScreen.java
+src\org\logicprobe\LogicMail\ui\NavigationController.java
 src\org\logicprobe\LogicMail\ui\NodeIcons.java
 src\org\logicprobe\LogicMail\ui\NotificationHandler.java
 src\org\logicprobe\LogicMail\ui\OutgoingConfigScreen.java
@@ -199,7 +201,7 @@ HaveImports=0
 [Imports
 ]
 Listing=0
-Options=-quiet -define=PREPROCESSOR;BLACKBERRY_4_5
+Options=-quiet -define=PREPROCESSOR
 OutputFileName=LogicMail
 [PackageProtection
 ]

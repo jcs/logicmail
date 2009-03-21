@@ -94,8 +94,7 @@ public class AccountNode implements Node {
 
         this.mailStore = mailStore;
 
-        // TODO: Have a better way to deal with network vs. local
-        if (mailStore instanceof NetworkMailStore) {
+        if (!mailStore.isLocal()) {
             this.accountConfig = ((NetworkMailStore) mailStore).getAccountConfig();
             this.status = STATUS_OFFLINE;
         } else {
@@ -370,7 +369,7 @@ public class AccountNode implements Node {
         				outgoingFolderMessage,
         				this, mailSender);
         	
-        	outgoingMessage.setMessage(message);
+        	outgoingMessage.setMessageBody(message.getBody());
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
         }
     }
@@ -392,7 +391,7 @@ public class AccountNode implements Node {
         		new OutgoingMessageNode(
         				outgoingFolderMessage,
         				this, mailSender, originalMessageNode);
-        	outgoingMessage.setMessage(message);
+        	outgoingMessage.setMessageBody(message.getBody());
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
         }
     }
@@ -560,9 +559,7 @@ public class AccountNode implements Node {
             Vector addedMessages = new Vector();
 
             for (int i = 0; i < folderMessages.length; i++) {
-                if (!mailboxNode.containsMessage(folderMessages[i].getIndex())) {
-                    addedMessages.addElement(new MessageNode(folderMessages[i]));
-                }
+                addedMessages.addElement(new MessageNode(folderMessages[i]));
             }
 
             MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
@@ -580,7 +577,7 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForEvent(e);
 
         if (messageNode != null) {
-            messageNode.setMessage(e.getMessage());
+            messageNode.setMessageBody(e.getMessage().getBody());
             messageNode.setMessageSource(e.getMessageSource());
         }
     }
@@ -631,12 +628,12 @@ public class AccountNode implements Node {
      * @return Message node, or null if none was found.
      */
     private MessageNode findMessageForEvent(MessageEvent e) {
-        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder()
-                                                                    .getPath());
+        MailboxNode mailboxNode =
+        	(MailboxNode)pathMailboxMap.get(e.getFolder().getPath());
 
         if (mailboxNode != null) {
-            // Change this to use the UID once implemented
-            return mailboxNode.getMessage(e.getFolderMessage().getIndex());
+            // Change this to use the a real tag object once implemented
+            return mailboxNode.getMessageByTag(e.getFolderMessage());
         } else {
             return null;
         }

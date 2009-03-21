@@ -81,13 +81,13 @@ public class MailHomeScreen extends BaseScreen {
 		}
 	}
 	
-	public MailHomeScreen() {
-		super(resources.getString(LogicMailResource.MAILHOME_TITLE));
+	public MailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {
+		super(navigationController, resources.getString(LogicMailResource.MAILHOME_TITLE));
 	
 		initFields();
-		nodeIdMap = new Hashtable();
-		mailManager = MailManager.getInstance();
-		mailRootNode = mailManager.getMailRootNode();
+		this.nodeIdMap = new Hashtable();
+		this.mailManager = MailManager.getInstance();
+		this.mailRootNode = mailRootNode;
 		
 		mailManagerListener = new MailManagerListener() {
 			public void mailConfigurationChanged(MailManagerEvent e) {
@@ -173,7 +173,7 @@ public class MailHomeScreen extends BaseScreen {
         			accountNode = null;
         		}
         		if(accountNode != null) {
-                    UiApplication.getUiApplication().pushScreen(new CompositionScreen(accountNode));
+        			getNavigationController().displayComposition(accountNode);
         		}
         	}
         }
@@ -465,8 +465,7 @@ public class MailHomeScreen extends BaseScreen {
 			Node node = ((TreeNode)treeField.getCookie(id)).node;
 			if(node instanceof MailboxNode) {
 				MailboxNode mailboxNode = (MailboxNode)node;
-				MailboxScreen mailboxScreen = new MailboxScreen(mailboxNode);
-				UiApplication.getUiApplication().pushScreen(mailboxScreen);
+				getNavigationController().displayMailbox(mailboxNode);
 				return true;
 			}
 		}

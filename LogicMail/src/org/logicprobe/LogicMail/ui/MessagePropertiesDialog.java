@@ -36,13 +36,12 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MessageNode;
-import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.MessageEnvelope;
 
 public class MessagePropertiesDialog extends Dialog {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-	private FolderMessage folderMessage;
+	private MessageNode messageNode;
 	
 	public MessagePropertiesDialog(MessageNode messageNode) {
 		super(
@@ -52,24 +51,21 @@ public class MessagePropertiesDialog extends Dialog {
 			Dialog.OK, NodeIcons.getIcon(messageNode),
 			VERTICAL_SCROLL | VERTICAL_SCROLLBAR);
 		setEscapeEnabled(true);
-		
-		this.folderMessage = messageNode.getFolderMessage();
+		this.messageNode = messageNode;
 		initFields();
-		
 	}
 	
 	private void initFields() {
-		MessageEnvelope envelope = folderMessage.getEnvelope();
-		add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + envelope.subject, Field.FOCUSABLE));
-		add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + " " + envelope.date, Field.FOCUSABLE));
+		add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + messageNode.getSubject(), Field.FOCUSABLE));
+		add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + " " + messageNode.getDate(), Field.FOCUSABLE));
 		
-		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM), envelope.from);
-		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO), envelope.replyTo);
-		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO), envelope.to);
-		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC), envelope.cc);
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM), messageNode.getFrom());
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO), messageNode.getReplyTo());
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO), messageNode.getTo());
+		initFieldAddress(resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC), messageNode.getCc());
 	}
 	
-	private void initFieldAddress(String prefix, String[] addresses) {
+	private void initFieldAddress(String prefix, Address[] addresses) {
 		if(addresses != null) {
 			if(addresses.length == 1) {
 				add(new LabelField(prefix + " " + addresses[0], Field.FOCUSABLE));

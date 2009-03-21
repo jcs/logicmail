@@ -31,8 +31,9 @@
 package org.logicprobe.LogicMail.ui;
 
 import java.util.Calendar;
+import java.util.Date;
 
-import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 
@@ -123,7 +124,6 @@ public class MailboxMessageField extends Field {
 	 * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
 	 */
 	protected void paint(Graphics graphics) {
-        MessageEnvelope envelope = messageNode.getFolderMessage().getEnvelope();
         String senderText = createSenderText();
     	String dateString = createDisplayDate();
 
@@ -152,9 +152,10 @@ public class MailboxMessageField extends Field {
         }
         
         // Draw the subject text
-        if(envelope.subject != null) {
+        String subject = messageNode.getSubject();
+        if(subject != null) {
             if(!isFocus) { graphics.setColor(0x7B7B7B); }
-            graphics.drawText((String)envelope.subject, 20, lineHeight,
+            graphics.drawText(subject, 20, lineHeight,
                               DrawStyle.ELLIPSIS,
                               maxWidth-20);
             if(!isFocus) { graphics.setColor(originalColor); }
@@ -178,30 +179,30 @@ public class MailboxMessageField extends Field {
 	 * @return Sender display text
 	 */
 	private String createSenderText() {
-        MessageEnvelope envelope = messageNode.getFolderMessage().getEnvelope();
-        String senderText = null;
+        Address sender = null;
         if(mailboxNode.getType() == MailboxNode.TYPE_SENT) {
-            if(envelope.to != null && envelope.to.length > 0) {
-            	senderText = envelope.to[0];
+        	Address[] to = messageNode.getTo();
+        	if(to != null && to.length > 0) {
+            	sender = to[0];
             }
         }
         else {
-            if(envelope.from != null && envelope.from.length > 0) {
-            	senderText = envelope.from[0];
+        	Address[] from = messageNode.getFrom();
+            if(from != null && from.length > 0) {
+            	sender = from[0];
             }
         }
         
-        // Chop the sender text to only show the full name, if the
-        // sender string contains both the name and the E-Mail address.
-        if(senderText != null) {
-        	int p = senderText.indexOf('<');
-        	int q = senderText.indexOf('>');
-        	if(p != -1 && q != -1 && p < q && p > 0 && senderText.charAt(p - 1) == ' ') {
-        		senderText = senderText.substring(0, p - 1);
+        if(sender != null) {
+        	String senderText = sender.getName();
+        	if(senderText == null || senderText.length() == 0) {
+        		senderText = sender.getAddress();
         	}
+        	return senderText;
         }
-        
-        return senderText;
+        else {
+        	return null;
+        }
 	}
 	
 	/**
@@ -212,8 +213,8 @@ public class MailboxMessageField extends Field {
 	 * @return The date string to display
 	 */
 	private String createDisplayDate() {
-        MessageEnvelope envelope = messageNode.getFolderMessage().getEnvelope();
-        if(envelope.date == null) {
+        Date date = messageNode.getDate();
+        if(date == null) {
         	return null;
         }
         
@@ -221,7 +222,7 @@ public class MailboxMessageField extends Field {
         Calendar dispCal = Calendar.getInstance();
         DateFormat dateFormat;
 
-        dispCal.setTime(envelope.date);
+        dispCal.setTime(date);
 
         // Determine the date format to display,
         // based on the distance from the current time

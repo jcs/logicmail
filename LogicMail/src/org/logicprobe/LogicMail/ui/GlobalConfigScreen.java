@@ -113,7 +113,7 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	            resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
 	        };
 	
-	    if (!existingConfig.getDispOrder()) {
+	    if (existingConfig.getDispOrder()) {
 	        displayOrderChoiceField = new ObjectChoiceField(
 	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
 	                orderTypes, 0);
@@ -197,9 +197,9 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
         } catch (Exception e) { }
 
         if (displayOrderChoiceField.getSelectedIndex() == 0) {
-            config.setDispOrder(false);
-        } else {
             config.setDispOrder(true);
+        } else {
+            config.setDispOrder(false);
         }
 
         config.setHideDeletedMsg(hideDeletedMessagesCheckboxField.getChecked());

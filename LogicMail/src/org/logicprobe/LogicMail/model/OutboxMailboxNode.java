@@ -38,8 +38,11 @@ import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.util.StringParser;
 
 public class OutboxMailboxNode extends MailboxNode {
 	private int lastMessageId = 0;
@@ -126,7 +129,23 @@ public class OutboxMailboxNode extends MailboxNode {
 	 * @param outgoingMessageNode the outgoing message node
 	 */
 	private void handleNewMessage(OutgoingMessageNode outgoingMessageNode) {
-		Message message = outgoingMessageNode.getMessage();
+		// Build the envelope object
+		MessageEnvelope envelope = new MessageEnvelope();
+		envelope.date = outgoingMessageNode.getDate();
+		envelope.subject = outgoingMessageNode.getSubject();
+		envelope.from = StringParser.toStringArray(outgoingMessageNode.getFrom());
+		envelope.sender = StringParser.toStringArray(outgoingMessageNode.getSender());
+		envelope.replyTo = StringParser.toStringArray(outgoingMessageNode.getReplyTo());
+		envelope.to = StringParser.toStringArray(outgoingMessageNode.getTo());
+		envelope.cc = StringParser.toStringArray(outgoingMessageNode.getCc());
+		envelope.bcc = StringParser.toStringArray(outgoingMessageNode.getBcc());
+		envelope.inReplyTo = outgoingMessageNode.getInReplyTo();
+		envelope.messageId = outgoingMessageNode.getMessageId();
+		
+		// Create a protocol-compatible message object
+		Message message = new Message(envelope, outgoingMessageNode.getMessageBody());
+		
+		// Update the outbound map and request the message to be sent
 		outboundMessageMap.put(message, outgoingMessageNode);
 		outgoingMessageNode.getMailSender().requestSendMessage(message);
 	}
@@ -150,12 +169,12 @@ public class OutboxMailboxNode extends MailboxNode {
 
     		// Update replied-to message flags
     		MessageNode replyToMessageNode = outgoingMessageNode.getReplyToMessageNode();
-    		if(replyToMessageNode != null) {
+    		if(replyToMessageNode != null && replyToMessageNode.getMessageTag() instanceof FolderMessage) {
     			AbstractMailStore sendingMailStore = outgoingMessageNode.getSendingAccount().getMailStore();
     			if(sendingMailStore.hasFlags()) {
     				sendingMailStore.requestMessageAnswered(
     						replyToMessageNode.getParent().getFolderTreeItem(),
-    						replyToMessageNode.getFolderMessage());
+    						(FolderMessage)replyToMessageNode.getMessageTag());
     			}
     		}
     		

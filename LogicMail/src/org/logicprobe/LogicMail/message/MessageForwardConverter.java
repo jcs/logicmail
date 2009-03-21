@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.util.Date;
+
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -41,14 +43,34 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class MessageForwardConverter implements MessagePartVisitor {
     private TextPart originalTextPart;
-    private MessageEnvelope envelope;
+    private String subject;
+    private Date date;
+    private String fromString;
+    private String toString;
+    private String ccString;
+    
+    /**
+     * Creates a new instance of MessageForwardConverter.
+     * @param subject Subject of the message
+     * @param date Date the message was sent
+     * @param from "From" field of the message
+     * @param to "To" field of the message
+     * @param cc "CC" field of the message
+     */
+    public MessageForwardConverter(String subject, Date date, String[] from, String[] to, String[] cc) {
+    	this.subject = subject;
+    	this.date = date;
+    	this.fromString = StringParser.makeCsvString(from);
+    	this.toString = StringParser.makeCsvString(to);
+    	this.ccString = StringParser.makeCsvString(cc);
+    }
     
     /**
      * Creates a new instance of MessageForwardConverter.
      * @param envelope Envelope of the message to convert
      */
     public MessageForwardConverter(MessageEnvelope envelope) {
-        this.envelope = envelope;
+    	this(envelope.subject, envelope.date, envelope.from, envelope.to, envelope.cc);
     }
 
     /**
@@ -63,28 +85,32 @@ public class MessageForwardConverter implements MessagePartVisitor {
         
         // Add the subject
         buf.append("Subject: ");
-        buf.append(envelope.subject);
+        buf.append(subject);
         buf.append("\r\n");
 
         // Add the date
         buf.append("Date: ");
-        buf.append(StringParser.createDateString(envelope.date));
+        buf.append(StringParser.createDateString(date));
         buf.append("\r\n");
         
         // Add the from field
-        buf.append("From: ");
-        buf.append(makeCsvString(envelope.from));
-        buf.append("\r\n");
-
+        if(fromString != null && fromString.length() > 0) {
+	        buf.append("From: ");
+	        buf.append(fromString);
+	        buf.append("\r\n");
+        }
+        
         // Add the from field
-        buf.append("To: ");
-        buf.append(makeCsvString(envelope.to));
-        buf.append("\r\n");
-
-        // Add the CC field, if required
-        if(envelope.cc != null && envelope.cc.length > 0) {
+        if(toString != null && toString.length() > 0) {
+	        buf.append("To: ");
+	        buf.append(toString);
+	        buf.append("\r\n");
+        }
+        
+        // Add the CC field
+        if(ccString != null && ccString.length() > 0) {
             buf.append("Cc: ");
-            buf.append(makeCsvString(envelope.cc));
+            buf.append(ccString);
             buf.append("\r\n");
         }
 
@@ -102,19 +128,6 @@ public class MessageForwardConverter implements MessagePartVisitor {
         
         // Return the final result of the buffer
         return new TextPart("plain", buf.toString());
-    }
-    
-    private String makeCsvString(String[] text) {
-        StringBuffer buf = new StringBuffer();
-        if(text != null) {
-            for(int i=0; i<text.length; i++) {
-                buf.append(text[i]);
-                if(i < text.length - 1) {
-                    buf.append(", ");
-                }
-            }
-        }
-        return buf.toString();
     }
     
     public void visitMultiPart(MultiPart part) {

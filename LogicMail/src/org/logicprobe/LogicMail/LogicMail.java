@@ -42,7 +42,7 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.ui.UiApplication;
 
-import org.logicprobe.LogicMail.ui.MailHomeScreen;
+import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -61,6 +61,8 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application.
  */
 public class LogicMail extends UiApplication {
+	NavigationController navigationController;
+	
     /**
      * Instantiates a new instance of the application.
      * 
@@ -95,14 +97,20 @@ public class LogicMail extends UiApplication {
 	            buf.append("Version: ");
 	            buf.append(AppInfo.getVersion());
 	            buf.append("\r\n");
+	            buf.append("Platform: ");
+	            buf.append(AppInfo.getPlatformVersion());
+	            buf.append("\r\n");
 	            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
 	        }
 
 	        // Initialize the notification handler
 	        NotificationHandler.getInstance().setEnabled(true);
 	        
+	        // Initialize the navigation controller
+	        navigationController = new NavigationController(this);
+	        
 	        // Push the mail home screen
-	        pushScreen(new MailHomeScreen());
+	        navigationController.displayMailHome();
     	}
     }
 

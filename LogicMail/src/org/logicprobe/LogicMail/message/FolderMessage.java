@@ -31,16 +31,32 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
+
 /**
  * This class provides a message in the context of a folder.
  * It contains the message's envelope, along with other information
  * only relevant when looking at a view of the folder.
  */
-public class FolderMessage {
+public class FolderMessage implements Serializable {
+    private long uniqueId;
     private MessageEnvelope envelope;
     private int index;
     private int uid;
     private MessageFlags messageFlags;
+
+    /**
+     * Creates a new empty instance of FolderMessage.
+     */
+    public FolderMessage() {
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+        this.messageFlags = new MessageFlags();
+    }
     
     /**
      * Creates a new instance of FolderMessage.
@@ -48,10 +64,10 @@ public class FolderMessage {
      * @param index The index of the message within the folder
      */
     public FolderMessage(MessageEnvelope envelope, int index, int uid) {
+    	this();
         this.envelope = envelope;
         this.index = index;
         this.uid = uid;
-        this.messageFlags = new MessageFlags();
     }
 
     /**
@@ -183,4 +199,46 @@ public class FolderMessage {
     public void setJunk(boolean junk) {
     	messageFlags.setJunk(junk);
     }
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+	 */
+	public long getUniqueId() {
+		return this.uniqueId;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		output.writeLong(uniqueId);
+		output.writeInt(index);
+		output.writeInt(uid);
+		envelope.serialize(output);
+		output.writeBoolean(messageFlags.isSeen());
+		output.writeBoolean(messageFlags.isAnswered());
+		output.writeBoolean(messageFlags.isFlagged());
+		output.writeBoolean(messageFlags.isDeleted());
+		output.writeBoolean(messageFlags.isDraft());
+		output.writeBoolean(messageFlags.isRecent());
+		output.writeBoolean(messageFlags.isJunk());
+		
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		uniqueId = input.readLong();
+		index = input.readInt();
+		uid = input.readInt();
+		envelope.deserialize(input);
+		messageFlags.setSeen(input.readBoolean());
+		messageFlags.setAnswered(input.readBoolean());
+		messageFlags.setFlagged(input.readBoolean());
+		messageFlags.setDeleted(input.readBoolean());
+		messageFlags.setDraft(input.readBoolean());
+		messageFlags.setRecent(input.readBoolean());
+		messageFlags.setJunk(input.readBoolean());
+	}
 }

@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.util.SimpleSortingVector;
+
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -56,8 +58,9 @@ public class MailboxNode implements Node, Serializable {
 	private AccountNode parentAccount;
 	private MailboxNode parentMailbox;
 	private Vector mailboxes;
-	private Vector messages;
+	private SimpleSortingVector messages;
 	private Hashtable messageMap;
+	private Hashtable messageTagMap;
 	private EventListenerList listenerList = new EventListenerList();
 	private int type;
 	private FolderTreeItem folderTreeItem;
@@ -80,8 +83,11 @@ public class MailboxNode implements Node, Serializable {
 	MailboxNode(FolderTreeItem folderTreeItem, boolean hasAppend, int type) {
 		this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
 		this.mailboxes = new Vector();
-		this.messages = new Vector();
+		this.messages = new SimpleSortingVector();
+		this.messages.setSortComparator(MessageNode.getComparator());
+		this.messages.setSort(true);
 		this.messageMap = new Hashtable();
+		this.messageTagMap = new Hashtable();
 		if(folderTreeItem != null) {
 			this.setFolderTreeItem(new FolderTreeItem(folderTreeItem));
 		}
@@ -248,14 +254,25 @@ public class MailboxNode implements Node, Serializable {
 		String rawMessage = message.getMessageSource();
 		if(rawMessage == null) {
 			// Generate the message source
-	        rawMessage = generateRawMessage(message.getMessage());
+	        rawMessage = message.toMimeMessage(false);
 		}
 
+		// Generate the protocol-layer-compatible flag object
+		int flags = message.getFlags();
+		MessageFlags messageFlags = new MessageFlags();
+		messageFlags.setSeen((flags & MessageNode.Flag.SEEN) != 0);
+		messageFlags.setAnswered((flags & MessageNode.Flag.ANSWERED) != 0);
+		messageFlags.setFlagged((flags & MessageNode.Flag.FLAGGED) != 0);
+		messageFlags.setDeleted((flags & MessageNode.Flag.DELETED) != 0);
+		messageFlags.setDraft((flags & MessageNode.Flag.DRAFT) != 0);
+		messageFlags.setRecent((flags & MessageNode.Flag.RECENT) != 0);
+		messageFlags.setJunk((flags & MessageNode.Flag.JUNK) != 0);
+		
 		// Append the message to the folder
 		parentAccount.getMailStore().requestMessageAppend(
 				this.folderTreeItem,
 				rawMessage,
-				message.getFolderMessage().getFlags());
+				messageFlags);
 	}
 
 	/**
@@ -396,23 +413,11 @@ public class MailboxNode implements Node, Serializable {
 	 * @param message The message to add.
 	 */
 	private void addMessageImpl(MessageNode message) {
-		if(!messageMap.containsKey(new Integer(message.getId()))) {
-			if(messages.size() > 0) {
-				int msgId = message.getId();
-				int index = messages.size();
-				MessageNode lastMessage = (MessageNode)messages.lastElement();
-				while(index > 0 && lastMessage.getId() > msgId) {
-					index--;
-					if(index > 0) { lastMessage = (MessageNode)messages.elementAt(index - 1); }
-				}
-				
-				messages.insertElementAt(message, index);
-			}
-			else {
-				messages.addElement(message);
-			}
+		if(!messageMap.containsKey(message)) {
 			message.setParent(this);
-			messageMap.put(new Integer(message.getId()), message);
+			messages.addElement(message);
+			messageMap.put(message, message);
+			messageTagMap.put(message.getMessageTag(), message);
 		}
 	}
 	
@@ -423,9 +428,11 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	void removeMessage(MessageNode message) {
 		synchronized(messages) {
-			if(messageMap.containsKey(new Integer(message.getId()))) {
+			if(messageMap.containsKey(message)) {
 				messages.removeElement(message);
-				messageMap.remove(new Integer(message.getId()));
+				message.setParent(null);
+				messageMap.remove(message);
+				messageTagMap.remove(message.getMessageTag());
 			}
 		}
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
@@ -436,8 +443,15 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	void clearMessages() {
 		synchronized(messages) {
+			// Clear message parent references
+			int size = messages.size();
+			for(int i=0; i<size; i++) {
+				((MessageNode)messages.elementAt(i)).setParent(null);
+			}
+			// Clear out the collections
 			messages.removeAllElements();
 			messageMap.clear();
+			messageTagMap.clear();
 		}
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 	}
@@ -445,24 +459,36 @@ public class MailboxNode implements Node, Serializable {
 	/**
 	 * Gets whether this mailbox contains a particular message.
 	 * 
-	 * @param id The message ID to look for.
+	 * @param messageNode The message to look for.
 	 * @return True if it exists, false otherwise.
 	 */
-	boolean containsMessage(int id) {
+	boolean containsMessage(MessageNode messageNode) {
 		synchronized(messages) {
-			return messageMap.containsKey(new Integer(id));
+			return messageMap.containsKey(messageNode);
+		}
+	}
+
+	/**
+	 * Gets whether this mailbox contains a particular message.
+	 * 
+	 * @param messageTag The message tag object to look for.
+	 * @return True if it exists, false otherwise.
+	 */
+	boolean containsMessageByTag(Object messageTag) {
+		synchronized(messages) {
+			return messageTagMap.containsKey(messageTag);
 		}
 	}
 	
 	/**
 	 * Gets a particular message.
 	 * 
-	 * @param id The message ID to look for.
+	 * @param messageTag The message tag object to look for.
 	 * @return The message if it exists, null otherwise.
 	 */
-	MessageNode getMessage(int id) {
+	MessageNode getMessageByTag(Object messageTag) {
 		synchronized(messages) {
-			MessageNode message = (MessageNode)messageMap.get(new Integer(id));
+			MessageNode message = (MessageNode)messageTagMap.get(messageTag);
 			return message;
 		}
 	}
