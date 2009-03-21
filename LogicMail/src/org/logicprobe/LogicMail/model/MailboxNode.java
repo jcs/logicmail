@@ -384,10 +384,13 @@ public class MailboxNode implements Node, Serializable {
 	 * @param message The message to add.
 	 */
 	void addMessage(MessageNode message) {
+		boolean messageAdded;
 		synchronized(messages) {
-			addMessageImpl(message);
+			messageAdded = addMessageImpl(message);
 		}
-		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, new MessageNode[] { message });
+		if(messageAdded) {
+			fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, new MessageNode[] { message });
+		}
 	}
 	
 	/**
@@ -396,12 +399,22 @@ public class MailboxNode implements Node, Serializable {
 	 * @param messages The messages to add.
 	 */
 	void addMessages(MessageNode[] messages) {
+		Vector addedMessages = null;
 		synchronized(messages) {
 			for(int i=0; i<messages.length; i++) {
-				addMessageImpl(messages[i]);
+				if(addMessageImpl(messages[i])) {
+					if(addedMessages == null) {
+						addedMessages = new Vector();
+					}
+					addedMessages.addElement(messages[i]);
+				}
 			}
 		}
-		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, messages);
+		if(addedMessages != null) {
+			MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
+			addedMessages.copyInto(addedMessagesArray);
+			fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, addedMessagesArray);
+		}
 	}
 	
 	/**
@@ -411,13 +424,18 @@ public class MailboxNode implements Node, Serializable {
 	 * called from within a "synchronized(messages)" block.
 	 *  
 	 * @param message The message to add.
+	 * @return True if the message was added, false otherwise
 	 */
-	private void addMessageImpl(MessageNode message) {
+	private boolean addMessageImpl(MessageNode message) {
 		if(!messageMap.containsKey(message)) {
 			message.setParent(this);
 			messages.addElement(message);
 			messageMap.put(message, message);
 			messageTagMap.put(message.getMessageTag(), message);
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 	
