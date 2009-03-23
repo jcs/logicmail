@@ -35,7 +35,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.SerializationUtils;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
@@ -45,6 +47,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  */
 public class FolderMessage implements Serializable {
     private long uniqueId;
+    private MessageToken messageToken;
     private MessageEnvelope envelope;
     private int index;
     private int uid;
@@ -55,6 +58,7 @@ public class FolderMessage implements Serializable {
      */
     public FolderMessage() {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+        this.envelope = new MessageEnvelope();
         this.messageFlags = new MessageFlags();
     }
     
@@ -63,13 +67,23 @@ public class FolderMessage implements Serializable {
      * @param envelope The message's envelope
      * @param index The index of the message within the folder
      */
-    public FolderMessage(MessageEnvelope envelope, int index, int uid) {
+    public FolderMessage(MessageToken messageToken, MessageEnvelope envelope, int index, int uid) {
     	this();
+    	this.messageToken = messageToken;
         this.envelope = envelope;
         this.index = index;
         this.uid = uid;
     }
 
+    /**
+     * Gets the token for referencing this message.
+     * 
+     * @return The message token.
+     */
+    public MessageToken getMessageToken() {
+    	return messageToken;
+    }
+    
     /**
      * Get the envelope associated with this message.
      * @return Message envelope
@@ -212,6 +226,11 @@ public class FolderMessage implements Serializable {
 	 */
 	public void serialize(DataOutputStream output) throws IOException {
 		output.writeLong(uniqueId);
+		
+		byte[] tokenBytes = SerializationUtils.serializeClass(messageToken);
+		output.writeInt(tokenBytes.length);
+		output.write(tokenBytes);
+
 		output.writeInt(index);
 		output.writeInt(uid);
 		envelope.serialize(output);
@@ -230,6 +249,12 @@ public class FolderMessage implements Serializable {
 	 */
 	public void deserialize(DataInputStream input) throws IOException {
 		uniqueId = input.readLong();
+
+		int len = input.readInt();
+		byte[] tokenBytes = new byte[len];
+		input.read(tokenBytes);
+		messageToken = (MessageToken)SerializationUtils.deserializeClass(tokenBytes);
+		
 		index = input.readInt();
 		uid = input.readInt();
 		envelope.deserialize(input);

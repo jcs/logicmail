@@ -128,26 +128,26 @@ public class NetworkMailStore extends AbstractMailStore {
 				new Object[] { folder });
 	}
 	
-	public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) {
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { folder, folderMessage });
+	public void requestMessage(MessageToken messageToken) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken });
 	}
 
-	public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) {
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { folder, folderMessage });
+	public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags });
 	}
 
-	public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) {
+	public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) {
 		if(!client.hasUndelete()) {
 			throw new UnsupportedOperationException();
 		}
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { folder, folderMessage });
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken, messageFlags });
 	}
 
-	public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) {
+	public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) {
 		if(!this.hasFlags()) {
 			throw new UnsupportedOperationException();
 		}
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { folder, folderMessage });
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags });
 	}
 
 	public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
@@ -177,19 +177,19 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
 			results = (Object[])result;
-			fireMessageAvailable((FolderTreeItem)results[0], (FolderMessage)results[1], (Message)results[2], null);
+			fireMessageAvailable((MessageToken)results[0], (Message)results[1], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
 			results = (Object[])result;
-			fireMessageDeleted((FolderTreeItem)results[0], (FolderMessage)results[1]);
+			fireMessageDeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
 			results = (Object[])result;
-			fireMessageUndeleted((FolderTreeItem)results[0], (FolderMessage)results[1]);
+			fireMessageUndeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
 			results = (Object[])result;
-			fireMessageFlagsChanged((FolderTreeItem)results[0], (FolderMessage)results[1]);
+			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
 			results = (Object[])result;

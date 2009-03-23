@@ -5,6 +5,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.Queue;
 
 public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler {
@@ -52,7 +53,7 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 		switch(type) {
 		case REQUEST_SEND_MESSAGE:
 			handleRequestSendMessage(
-					(Message)params[0]);
+					(MessageEnvelope)params[0], (Message)params[1]);
 			break;
 		}
 	}
@@ -91,12 +92,12 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
-	private void handleRequestSendMessage(Message message) throws IOException, MailException {
-		String messageSource = outgoingClient.sendMessage(message);
+	private void handleRequestSendMessage(MessageEnvelope envelope, Message message) throws IOException, MailException {
+		String messageSource = outgoingClient.sendMessage(envelope, message);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messageSource != null && messageSource.length() > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { message, messageSource });
+			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { envelope, message, messageSource });
 		}
 	}
 }

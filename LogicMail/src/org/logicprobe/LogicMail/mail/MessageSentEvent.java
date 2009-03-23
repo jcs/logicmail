@@ -32,19 +32,30 @@
 package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 
 /**
  * Object for sent message events. 
  */
 public class MessageSentEvent extends MailSenderEvent {
+	private MessageEnvelope envelope;
 	private Message message;
 	private String messageSource;
 	
 	/** Creates a new instance of MessageSentEvent */
-	public MessageSentEvent(Object source, Message message, String messageSource) {
+	public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource) {
 		super(source);
 		this.message = message;
 		this.messageSource = messageSource;
+	}
+	
+	/**
+	 * Gets the envelope for the message that was sent.
+	 * 
+	 * @return Sent message envelope.
+	 */
+	public MessageEnvelope getEnvelope() {
+		return this.envelope;
 	}
 	
 	/**

@@ -42,9 +42,11 @@ import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -67,6 +69,7 @@ public class AccountNode implements Node {
     public final static int STATUS_OFFLINE = 1;
     public final static int STATUS_ONLINE = 2;
     private AbstractMailStore mailStore;
+    private boolean usePersistedState;
     private AbstractMailSender mailSender;
     private MailRootNode parent;
     private MailboxNode rootMailbox;
@@ -87,14 +90,26 @@ public class AccountNode implements Node {
      * Construct a new node for a network account.
      *
      * @param accountConfig Account configuration.
+     * @param loadState True to load the stored account state, false to construct fresh
      */
     AccountNode(AbstractMailStore mailStore) {
+    	this(mailStore, true);
+    }
+    
+    /**
+     * Construct a new node for a network account.
+     *
+     * @param accountConfig Account configuration.
+     * @param usePersistedState True to use persisted account state, false otherwise
+     */
+    AccountNode(AbstractMailStore mailStore, boolean usePersistedState) {
         this.rootMailbox = null;
         this.pathMailboxMap = new Hashtable();
 
         this.mailStore = mailStore;
+        this.usePersistedState = usePersistedState;
 
-        if (!mailStore.isLocal()) {
+        if (!mailStore.isLocal() && mailStore instanceof NetworkMailStore) {
             this.accountConfig = ((NetworkMailStore) mailStore).getAccountConfig();
             this.status = STATUS_OFFLINE;
         } else {
@@ -150,7 +165,7 @@ public class AccountNode implements Node {
         }
 
         // Load any saved tree data
-        load();
+        if(usePersistedState) { load(); }
     }
 
     public void accept(NodeVisitor visitor) {
@@ -356,12 +371,13 @@ public class AccountNode implements Node {
     /**
      * Sends a message from this account.
      *
+     * @param envelope Envelope of the message to send
      * @param message Message to send.
      */
-    public void sendMessage(Message message) {
+    public void sendMessage(MessageEnvelope envelope, Message message) {
         if (mailSender != null) {
         	// Construct an outgoing message node
-        	FolderMessage outgoingFolderMessage = new FolderMessage(message.getEnvelope(), -1, -1);
+        	FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
         	outgoingFolderMessage.setSeen(false);
         	outgoingFolderMessage.setRecent(true);
         	OutgoingMessageNode outgoingMessage =
@@ -377,14 +393,15 @@ public class AccountNode implements Node {
     /**
      * Sends a reply message from this account.
      *
+     * @param envelope Envelope of the message to send
      * @param message Message to send.
      * @param originalMessageNode Message node this was in reply to.
      */
-    public void sendMessageReply(Message message,
+    public void sendMessageReply(MessageEnvelope envelope, Message message,
         MessageNode originalMessageNode) {
         if (mailSender != null) {
         	// Construct an outgoing message node
-        	FolderMessage outgoingFolderMessage = new FolderMessage(message.getEnvelope(), -1, -1);
+        	FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
         	outgoingFolderMessage.setSeen(false);
         	outgoingFolderMessage.setRecent(true);
         	OutgoingMessageNode outgoingMessage =
@@ -439,7 +456,7 @@ public class AccountNode implements Node {
             populateMailboxNodes(rootFolder, rootMailbox, remainingMailboxMap);
         }
 
-        save();
+        if(usePersistedState) { save(); }
         fireAccountStatusChanged(AccountNodeEvent.TYPE_MAILBOX_TREE);
     }
 
@@ -574,7 +591,7 @@ public class AccountNode implements Node {
      * @param e Event data.
      */
     private void mailStore_messageAvailable(MessageEvent e) {
-        MessageNode messageNode = findMessageForEvent(e);
+        MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
             messageNode.setMessageBody(e.getMessage().getBody());
@@ -588,7 +605,7 @@ public class AccountNode implements Node {
      * @param e Event data.
      */
     private void mailStore_messageFlagsChanged(MessageEvent e) {
-        MessageNode messageNode = findMessageForEvent(e);
+        MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
             messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
@@ -601,7 +618,7 @@ public class AccountNode implements Node {
      * @param e Event data.
      */
     private void mailStore_messageDeleted(MessageEvent e) {
-        MessageNode messageNode = findMessageForEvent(e);
+        MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
             messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
@@ -614,7 +631,7 @@ public class AccountNode implements Node {
      * @param e Event data.
      */
     private void mailStore_messageUndeleted(MessageEvent e) {
-        MessageNode messageNode = findMessageForEvent(e);
+        MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
             messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
@@ -622,23 +639,31 @@ public class AccountNode implements Node {
     }
 
     /**
-     * Finds the message node matching a particular event.
+     * Finds the message node matching a particular token.
      *
-     * @param e Event data.
+     * @param messageToken
      * @return Message node, or null if none was found.
      */
-    private MessageNode findMessageForEvent(MessageEvent e) {
-        MailboxNode mailboxNode =
-        	(MailboxNode)pathMailboxMap.get(e.getFolder().getPath());
-
+    private MessageNode findMessageForToken(MessageToken messageToken) {
+    	MailboxNode mailboxNode = null;
+    	Enumeration e = pathMailboxMap.elements();
+    	while(e.hasMoreElements()) {
+    		MailboxNode currentMailbox = (MailboxNode)e.nextElement();
+    		if(messageToken.containedWithin(currentMailbox.getFolderTreeItem())) {
+    			mailboxNode = currentMailbox;
+    			break;
+    		}
+    	}
+    	
         if (mailboxNode != null) {
             // Change this to use the a real tag object once implemented
-            return mailboxNode.getMessageByTag(e.getFolderMessage());
+            return mailboxNode.getMessageByToken(messageToken);
         } else {
             return null;
         }
     }
 
+    
     /**
      * Handles a message being sent.
      *

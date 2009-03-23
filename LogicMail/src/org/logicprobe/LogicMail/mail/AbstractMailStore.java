@@ -159,10 +159,9 @@ public abstract class AbstractMailStore {
      * <p>Successful completion is indicated by a call to
      * {@link MessageListener#messageAvailable(MessageEvent)}.
      * 
-     * @param folder The folder that the message is located in
-     * @param folderMessage The envelope information for the message to request
+     * @param messageToken The token used to identify the message
      */
-    public abstract void requestMessage(FolderTreeItem folder, FolderMessage folderMessage);
+    public abstract void requestMessage(MessageToken messageToken);
     
     /**
      * Requests a particular message to be deleted.
@@ -170,10 +169,10 @@ public abstract class AbstractMailStore {
      * <p>Successful completion is indicated by a call to
      * {@link MessageListener#messageDeleted(MessageEvent)}.
      * 
-     * @param folder The folder that the message is located in
-     * @param folderMessage The envelope information for the message to delete
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
      */
-    public abstract void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage);
+    public abstract void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags);
     
     /**
      * Requests a particular message to be undeleted.
@@ -185,10 +184,10 @@ public abstract class AbstractMailStore {
      * then this method should throw an
      * <tt>UnsupportedOperationException</tt>.
      * 
-     * @param folder The folder that the message is located in
-     * @param folderMessage The envelope information for the message to undelete
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
      */
-    public abstract void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage);
+    public abstract void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags);
     
     /**
      * Requests a particular message to be marked as answered.
@@ -200,10 +199,10 @@ public abstract class AbstractMailStore {
      * then this method should throw an
      * <tt>UnsupportedOperationException</tt>.
      * 
-     * @param folder The folder that the message is located in
-     * @param folderMessage The envelope information for the message to change
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
      */
-    public abstract void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage);
+    public abstract void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags);
     
     /**
      * Requests a message to be appended to a folder.
@@ -366,17 +365,16 @@ public abstract class AbstractMailStore {
      * Notifies all registered <tt>MessageListener</tt>s that
      * a message has been loaded.
      * 
-     * @param folder The folder in which a message has become available
-     * @param folderMessage The folder data for the message
+     * @param messageToken The token identifying the message
      * @param message The message itself
      * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(FolderTreeItem folder, FolderMessage folderMessage, Message message, String messageSource) {
+    protected void fireMessageAvailable(MessageToken messageToken, Message message, String messageSource) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, folder, folderMessage, message, messageSource);
+                e = new MessageEvent(this, messageToken, message, messageSource);
             }
             ((MessageListener)listeners[i]).messageAvailable(e);
         }
@@ -386,15 +384,15 @@ public abstract class AbstractMailStore {
      * Notifies all registered <tt>MessageListener</tt>s that
      * a message's flags have changed.
      * 
-     * @param folder The folder in which a message's flags have changed
-     * @param folderMessage The updated folder data for the message
+     * @param messageToken The token identifying the message
+     * @param messageFlags The updated message flags
      */
-    protected void fireMessageFlagsChanged(FolderTreeItem folder, FolderMessage folderMessage) {
+    protected void fireMessageFlagsChanged(MessageToken messageToken, MessageFlags messageFlags) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, folder, folderMessage);
+                e = new MessageEvent(this, messageToken, messageFlags);
             }
             ((MessageListener)listeners[i]).messageFlagsChanged(e);
         }
@@ -404,15 +402,15 @@ public abstract class AbstractMailStore {
      * Notifies all registered <tt>MessageListener</tt>s that
      * a message has been deleted.
      * 
-     * @param folder The folder in which a message has been undeleted
-     * @param folderMessage The folder data for the message
+     * @param messageToken The token identifying the message
+     * @param messageFlags The updated message flags
      */
-    protected void fireMessageDeleted(FolderTreeItem folder, FolderMessage folderMessage) {
+    protected void fireMessageDeleted(MessageToken messageToken, MessageFlags messageFlags) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, folder, folderMessage);
+                e = new MessageEvent(this, messageToken, messageFlags);
             }
             ((MessageListener)listeners[i]).messageDeleted(e);
         }
@@ -422,15 +420,15 @@ public abstract class AbstractMailStore {
      * Notifies all registered <tt>MessageListener</tt>s that
      * a message has been undeleted.
      * 
-     * @param folder The folder in which a message has been undeleted
-     * @param folderMessage The folder data for the message
+     * @param messageToken The token identifying the message
+     * @param messageFlags The updated message flags
      */
-    protected void fireMessageUndeleted(FolderTreeItem folder, FolderMessage folderMessage) {
+    protected void fireMessageUndeleted(MessageToken messageToken, MessageFlags messageFlags) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, folder, folderMessage);
+                e = new MessageEvent(this, messageToken, messageFlags);
             }
             ((MessageListener)listeners[i]).messageUndeleted(e);
         }

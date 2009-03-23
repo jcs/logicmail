@@ -42,9 +42,11 @@ import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.MailMessageParser;
@@ -232,6 +234,11 @@ public class PopClient implements IncomingMailClient {
         activeMailbox.setMsgCount(popProtocol.executeStat());
     }
 
+    public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
+        // Mailbox cannot be changed, so we just pull the message counts
+        activeMailbox.setMsgCount(popProtocol.executeStat());
+    }
+    
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
         FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
         int index = 0;
@@ -242,7 +249,9 @@ public class PopClient implements IncomingMailClient {
             headerText = popProtocol.executeTop(i, 0);
             uid = popProtocol.executeUidl(i);
             env = MailMessageParser.parseMessageEnvelope(headerText);
-            folderMessages[index++] = new FolderMessage(env, i, uid.hashCode());
+            folderMessages[index++] = new FolderMessage(
+            		new PopMessageToken(i, uid),
+            		env, i, uid.hashCode());
         }
         return folderMessages;
     }
@@ -254,24 +263,28 @@ public class PopClient implements IncomingMailClient {
     	return getFolderMessages(firstIndex, activeMailbox.getMsgCount());
     }
 
-    public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
+    public Message getMessage(MessageToken messageToken) throws IOException, MailException {
+    	PopMessageToken popMessageToken = (PopMessageToken)messageToken;
+    	
         // Figure out the max number of lines
         int maxLines = accountConfig.getMaxMessageLines();
 
         // Download the message text
-        String[] message = popProtocol.executeTop((folderMessage.getIndex()), maxLines);
+        String[] message = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines);
         
         MessagePart rootPart = MailMessageParser.parseRawMessage(StringParser.createInputStream(message));
-        Message msg = new Message(folderMessage.getEnvelope(), rootPart);
+        Message msg = new Message(rootPart);
         return msg;
     }
 
-    public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {
-        popProtocol.executeDele(folderMessage.getIndex());
-        folderMessage.setDeleted(true);
+    public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    	PopMessageToken popMessageToken = (PopMessageToken)messageToken;
+    	
+        popProtocol.executeDele(popMessageToken.getMessageIndex());
+        messageFlags.setDeleted(true);
     }
 
-    public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+    public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
         // Undelete is not supported, so we do nothing here.
     }
 

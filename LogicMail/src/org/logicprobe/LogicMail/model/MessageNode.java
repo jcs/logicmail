@@ -37,6 +37,7 @@ import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -45,7 +46,6 @@ import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessageReplyConverter;
 import org.logicprobe.LogicMail.util.EventListenerList;
-import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -73,7 +73,8 @@ public class MessageNode implements Node {
 				MessageNode message1 = (MessageNode)o1;
 				MessageNode message2 = (MessageNode)o2;
 				int result;
-				
+				//TODO: Add comparator for MessageToken objects
+				/*
 				if(message1.messageTag instanceof FolderMessage && message2.messageTag instanceof FolderMessage) {
 					// First try folder index comparison
 					int index1 = ((FolderMessage)message1.messageTag).getIndex();
@@ -82,7 +83,8 @@ public class MessageNode implements Node {
 					else if(index1 > index2) { result = 1; }
 					else { result = 0; }
 				}
-				else if(message1.date != null && message2.date != null) {
+				*/
+				if(message1.date != null && message2.date != null) {
 					// Then try date comparison
 					long time1 = message1.date.getTime();
 					long time2 = message2.date.getTime();
@@ -107,8 +109,8 @@ public class MessageNode implements Node {
 	/** Static comparator used to compare message nodes for insertion ordering */
 	private static MessageNodeComparator comparator = new MessageNodeComparator();
 
-	/** The tag object used to identify the message to the protocol layer */
-	private Serializable messageTag;
+	/** The token object used to identify the message to the protocol layer */
+	private MessageToken messageToken;
 	/** Hash code used to verify uniqueness of message nodes */
 	private int hashCode = -1;
 	/** Bit-field set of message flags. */
@@ -147,16 +149,8 @@ public class MessageNode implements Node {
 	 */
 	MessageNode(FolderMessage folderMessage) {
 		// Populate fields corresponding to FolderMessage members
-		this.messageTag = folderMessage;
-		// TODO: Create a real tag object instead of the oversized FolderMessage
-		MessageFlags folderMessageFlags = folderMessage.getFlags();
-		if(folderMessageFlags.isSeen()) { this.flags |= Flag.SEEN; }
-		if(folderMessageFlags.isAnswered()) { this.flags |= Flag.ANSWERED; }
-		if(folderMessageFlags.isFlagged()) { this.flags |= Flag.FLAGGED; }
-		if(folderMessageFlags.isDeleted()) { this.flags |= Flag.DELETED; }
-		if(folderMessageFlags.isDraft()) { this.flags |= Flag.DRAFT; }
-		if(folderMessageFlags.isRecent()) { this.flags |= Flag.RECENT; }
-		if(folderMessageFlags.isJunk()) { this.flags |= Flag.JUNK; }
+		this.messageToken = folderMessage.getMessageToken();
+		this.flags = convertMessageFlags(folderMessage.getFlags());
 		
 		// Populate fields corresponding to MessageEnvelope members
 		MessageEnvelope envelope = folderMessage.getEnvelope();
@@ -214,12 +208,11 @@ public class MessageNode implements Node {
 	 */
 	public int hashCode() {
 		if(hashCode == -1) {
-			if(messageId != null) {
-				hashCode = messageId.hashCode();
+			if(messageToken != null) {
+				hashCode = 31 * 7 + messageToken.hashCode();
 			}
-			else if(messageTag instanceof FolderMessage) {
-				FolderMessage folderMessage = (FolderMessage)messageTag;
-				hashCode = folderMessage.getUid();
+			else if(messageId != null) {
+				hashCode = messageId.hashCode();
 			}
 			else {
 				hashCode = super.hashCode();
@@ -254,14 +247,12 @@ public class MessageNode implements Node {
 	}
 	
 	/**
-	 * Gets the tag object used to identify the message to the protocol layer.
-	 * This is currently implemented as an instance of {@link FolderMessage},
-	 * however it should be changed to a lightweight object.
+	 * Gets the token object used to identify the message to the protocol layer.
 	 * 
-	 * @return the message tag.
+	 * @return the message token.
 	 */
-	public Object getMessageTag() {
-		return this.messageTag;
+	public MessageToken getMessageToken() {
+		return this.messageToken;
 	}
 	
 	/**
@@ -736,13 +727,10 @@ public class MessageNode implements Node {
      * the limits defined in the configuration options.
      */
 	public void refreshMessage() {
-		FolderMessage folderMessage = (FolderMessage)messageTag;
-		
 		if(!refreshInProgress) {
 			refreshInProgress = true;
 			parent.getParentAccount().getMailStore().requestMessage(
-					parent.getFolderTreeItem(),
-					folderMessage);
+					messageToken);
 		}
 	}
 	
@@ -752,11 +740,9 @@ public class MessageNode implements Node {
 	 * change event for the message flags.
 	 */
 	public void deleteMessage() {
-		FolderMessage folderMessage = (FolderMessage)messageTag;
-
 		parent.getParentAccount().getMailStore().requestMessageDelete(
-				parent.getFolderTreeItem(),
-				folderMessage);
+				messageToken,
+				createMessageFlags(this.flags));
 	}
 	
 	/**
@@ -770,13 +756,11 @@ public class MessageNode implements Node {
 	 * </p>
 	 */
 	public void undeleteMessage() {
-		FolderMessage folderMessage = (FolderMessage)messageTag;
-
 		AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
 		if(mailStore.hasUndelete()) {
 			mailStore.requestMessageUndelete(
-					parent.getFolderTreeItem(),
-					folderMessage);
+				messageToken,
+				createMessageFlags(this.flags));
 		}
 	}
 	
@@ -825,4 +809,43 @@ public class MessageNode implements Node {
             ((MessageNodeListener)listeners[i]).messageStatusChanged(e);
         }
     }
+
+    /**
+     * Convert a protocol-later message flags object into the bit-field
+     * representation needed for the object model.
+     * 
+     * @param messageFlags Message flags object.
+     * @return Bit-field message flags.
+     */
+    static int convertMessageFlags(MessageFlags messageFlags) {
+		int flags = 0;
+		if(messageFlags.isSeen()) { flags |= Flag.SEEN; }
+		if(messageFlags.isAnswered()) { flags |= Flag.ANSWERED; }
+		if(messageFlags.isFlagged()) { flags |= Flag.FLAGGED; }
+		if(messageFlags.isDeleted()) { flags |= Flag.DELETED; }
+		if(messageFlags.isDraft()) { flags |= Flag.DRAFT; }
+		if(messageFlags.isRecent()) { flags |= Flag.RECENT; }
+		if(messageFlags.isJunk()) { flags |= Flag.JUNK; }
+		return flags;
+	}
+
+    /**
+     * Convert a bit-field message flag representation from the
+     * object model into a message flags object needed by the
+     * protocol-later.
+     * 
+     * @param flags Bit-field message flags.
+     * @return Message flags object.
+     */
+	static MessageFlags createMessageFlags(int flags) {
+		MessageFlags messageFlags = new MessageFlags();
+		messageFlags.setSeen((flags & Flag.SEEN) != 0);
+		messageFlags.setAnswered((flags & Flag.ANSWERED) != 0);
+		messageFlags.setFlagged((flags & Flag.FLAGGED) != 0);
+		messageFlags.setDeleted((flags & Flag.DELETED) != 0);
+		messageFlags.setDraft((flags & Flag.DRAFT) != 0);
+		messageFlags.setRecent((flags & Flag.RECENT) != 0);
+		messageFlags.setJunk((flags & Flag.JUNK) != 0);
+		return messageFlags;
+	}
 }

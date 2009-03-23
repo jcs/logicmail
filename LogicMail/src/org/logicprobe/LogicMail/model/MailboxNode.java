@@ -39,7 +39,9 @@ import java.util.Vector;
 import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -60,7 +62,7 @@ public class MailboxNode implements Node, Serializable {
 	private Vector mailboxes;
 	private SimpleSortingVector messages;
 	private Hashtable messageMap;
-	private Hashtable messageTagMap;
+	private Hashtable messageTokenMap;
 	private EventListenerList listenerList = new EventListenerList();
 	private int type;
 	private FolderTreeItem folderTreeItem;
@@ -87,7 +89,7 @@ public class MailboxNode implements Node, Serializable {
 		this.messages.setSortComparator(MessageNode.getComparator());
 		this.messages.setSort(true);
 		this.messageMap = new Hashtable();
-		this.messageTagMap = new Hashtable();
+		this.messageTokenMap = new Hashtable();
 		if(folderTreeItem != null) {
 			this.setFolderTreeItem(new FolderTreeItem(folderTreeItem));
 		}
@@ -284,16 +286,17 @@ public class MailboxNode implements Node, Serializable {
 	 * updated until the mail store informs the object model of
 	 * the new message.
 	 * 
+	 * @param envelope Envelope of the message to append
 	 * @param message Message to append
 	 * @param messageFlags Flags for the message
 	 */
-	public void appendMessage(Message message, MessageFlags messageFlags) {
+	public void appendMessage(MessageEnvelope envelope, Message message, MessageFlags messageFlags) {
 		// Sanity check
 		if(!this.hasAppend) {
 			return;
 		}
 		// Generate the message source
-        String rawMessage = generateRawMessage(message);
+        String rawMessage = generateRawMessage(envelope, message);
 
 		// Append the message to the folder
 		parentAccount.getMailStore().requestMessageAppend(
@@ -305,12 +308,13 @@ public class MailboxNode implements Node, Serializable {
 	/**
 	 * Generate raw message source for an object-structured message.
 	 * 
+	 * @param envelope The envelope of the message to transform
 	 * @param message The message to transform
 	 * @return The raw source
 	 */
-	private String generateRawMessage(Message message) {
+	private String generateRawMessage(MessageEnvelope envelope, Message message) {
 		StringBuffer buf = new StringBuffer();
-		buf.append(MailMessageParser.generateMessageHeaders(message.getEnvelope(), false));
+		buf.append(MailMessageParser.generateMessageHeaders(envelope, false));
 		
         MessageMimeConverter messageMime = new MessageMimeConverter();
         message.getBody().accept(messageMime);
@@ -431,7 +435,7 @@ public class MailboxNode implements Node, Serializable {
 			message.setParent(this);
 			messages.addElement(message);
 			messageMap.put(message, message);
-			messageTagMap.put(message.getMessageTag(), message);
+			messageTokenMap.put(message.getMessageToken(), message);
 			return true;
 		}
 		else {
@@ -450,7 +454,7 @@ public class MailboxNode implements Node, Serializable {
 				messages.removeElement(message);
 				message.setParent(null);
 				messageMap.remove(message);
-				messageTagMap.remove(message.getMessageTag());
+				messageTokenMap.remove(message.getMessageToken());
 			}
 		}
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
@@ -469,7 +473,7 @@ public class MailboxNode implements Node, Serializable {
 			// Clear out the collections
 			messages.removeAllElements();
 			messageMap.clear();
-			messageTagMap.clear();
+			messageTokenMap.clear();
 		}
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 	}
@@ -489,24 +493,24 @@ public class MailboxNode implements Node, Serializable {
 	/**
 	 * Gets whether this mailbox contains a particular message.
 	 * 
-	 * @param messageTag The message tag object to look for.
+	 * @param messageToken The message token to look for.
 	 * @return True if it exists, false otherwise.
 	 */
-	boolean containsMessageByTag(Object messageTag) {
+	boolean containsMessageByTag(MessageToken messageToken) {
 		synchronized(messages) {
-			return messageTagMap.containsKey(messageTag);
+			return messageTokenMap.containsKey(messageToken);
 		}
 	}
 	
 	/**
 	 * Gets a particular message.
 	 * 
-	 * @param messageTag The message tag object to look for.
+	 * @param messageToken The message token to look for.
 	 * @return The message if it exists, null otherwise.
 	 */
-	MessageNode getMessageByTag(Object messageTag) {
+	MessageNode getMessageByToken(MessageToken messageToken) {
 		synchronized(messages) {
-			MessageNode message = (MessageNode)messageTagMap.get(messageTag);
+			MessageNode message = (MessageNode)messageTokenMap.get(messageToken);
 			return message;
 		}
 	}

@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail.imap;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -44,6 +45,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -446,7 +448,12 @@ public class ImapClient implements IncomingMailClient {
     }
 
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
-        // change active mailbox
+    	// Shortcut out if a folder change is not necessary
+    	if(activeMailbox != null && activeMailbox.getPath().equals(mailbox.getPath())) {
+    		return;
+    	}
+
+    	// change active mailbox
         ImapProtocol.SelectResponse response = imapProtocol.executeSelect(mailbox.getPath());
 
         this.activeMailbox = mailbox;
@@ -456,8 +463,49 @@ public class ImapClient implements IncomingMailClient {
         // ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
     }
+    
+    public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	String folderPath = imapMessageToken.getFolderPath();
+    	
+    	// Shortcut out if a folder change is not necessary
+    	if(activeMailbox != null && activeMailbox.getPath().equals(imapMessageToken.getFolderPath())) {
+    		return;
+    	}
+    	
+        // change active mailbox
+        ImapProtocol.SelectResponse response = imapProtocol.executeSelect(folderPath);
 
+        FolderTreeItem mailbox = null;
+        Enumeration e = knownMailboxes.keys();
+        while(e.hasMoreElements()) {
+        	FolderTreeItem currentMailbox = (FolderTreeItem)e.nextElement();
+        	if(currentMailbox.getPath().equals(folderPath)) {
+        		mailbox = currentMailbox;
+        		break;
+        	}
+        }
+        if(mailbox == null) {
+        	int p = folderPath.lastIndexOf(folderDelim.charAt(0));
+        	if(p != -1 && p < folderPath.length() - 1) {
+        		mailbox = new FolderTreeItem(folderPath.substring(p + 1), folderPath, folderDelim);
+        	}
+        	else {
+        		mailbox = new FolderTreeItem("", folderPath, folderDelim);
+        	}
+        }
+        
+        this.activeMailbox = mailbox;
+        activeMailbox.setMsgCount(response.exists);
+        knownMailboxes.put(activeMailbox, response);
+    }
+    
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
+    	// Sanity check
+    	if(activeMailbox == null) {
+    		throw new MailException("Mailbox not selected");
+    	}
+    	
         // Make sure we do not FETCH an empty folder
         if(firstIndex > lastIndex) {
             return new FolderMessage[0];
@@ -500,7 +548,11 @@ public class ImapClient implements IncomingMailClient {
     private FolderMessage[] prepareFolderMessages(ImapProtocol.FetchEnvelopeResponse[] response) {
         FolderMessage[] folderMessages = new FolderMessage[response.length];
         for(int i=0;i<response.length;i++) {
-            folderMessages[i] = new FolderMessage(response[i].envelope, response[i].index, response[i].uid);
+            folderMessages[i] = new FolderMessage(
+            		new ImapMessageToken(activeMailbox.getPath(), response[i].uid),
+            		response[i].envelope,
+            		response[i].index,
+            		response[i].uid);
             folderMessages[i].setSeen(response[i].flags.seen);
             folderMessages[i].setAnswered(response[i].flags.answered);
             folderMessages[i].setDeleted(response[i].flags.deleted);
@@ -512,12 +564,17 @@ public class ImapClient implements IncomingMailClient {
     	return folderMessages;
     }
     
-    public Message getMessage(FolderMessage folderMessage) throws IOException, MailException {
-        ImapParser.MessageSection structure = getMessageStructure(folderMessage.getUid());
+    public Message getMessage(MessageToken messageToken) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+    		throw new MailException("Invalid mailbox for message");
+    	}
+    	
+        ImapParser.MessageSection structure = getMessageStructure(imapMessageToken.getMessageUid());
         MessagePart rootPart =
-            getMessagePart(folderMessage.getUid(),
+            getMessagePart(imapMessageToken.getMessageUid(),
                            structure, accountConfig.getMaxMessageSize());
-        Message msg = new Message(folderMessage.getEnvelope(), rootPart);
+        Message msg = new Message(rootPart);
         return msg;
     }
 
@@ -602,17 +659,27 @@ public class ImapClient implements IncomingMailClient {
         return imapProtocol.executeFetchBody(uid, address);
     }
     
-    public void deleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+    public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+    		throw new MailException("Invalid mailbox for message");
+    	}
+    	
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(folderMessage.getUid(), true, new String[] { "\\Deleted" });
-        refreshMessageFlags(updatedFlags, folderMessage);
+            imapProtocol.executeStore(imapMessageToken.getMessageUid(), true, new String[] { "\\Deleted" });
+        refreshMessageFlags(updatedFlags, messageFlags);
     }
 
 
-    public void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException {
+    public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+    		throw new MailException("Invalid mailbox for message");
+    	}
+    	
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(folderMessage.getUid(), false, new String[] { "\\Deleted" });
-        refreshMessageFlags(updatedFlags, folderMessage);
+            imapProtocol.executeStore(imapMessageToken.getMessageUid(), false, new String[] { "\\Deleted" });
+        refreshMessageFlags(updatedFlags, messageFlags);
     }
     
     /**
@@ -621,20 +688,25 @@ public class ImapClient implements IncomingMailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public void messageAnswered(FolderMessage folderMessage) throws IOException, MailException {
+    public void messageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+    		throw new MailException("Invalid mailbox for message");
+    	}
+    	
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(folderMessage.getUid(), true, new String[] { "\\Answered" });
-        refreshMessageFlags(updatedFlags, folderMessage);
+            imapProtocol.executeStore(imapMessageToken.getMessageUid(), true, new String[] { "\\Answered" });
+        refreshMessageFlags(updatedFlags, messageFlags);
     }
     
-    private void refreshMessageFlags(ImapProtocol.MessageFlags updatedFlags, FolderMessage folderMessage) {
+    private static void refreshMessageFlags(ImapProtocol.MessageFlags updatedFlags, MessageFlags messageFlags) {
         if(updatedFlags != null) {
-            folderMessage.setAnswered(updatedFlags.answered);
-            folderMessage.setDeleted(updatedFlags.deleted);
-            folderMessage.setDraft(updatedFlags.draft);
-            folderMessage.setFlagged(updatedFlags.draft);
-            folderMessage.setRecent(updatedFlags.recent);
-            folderMessage.setSeen(updatedFlags.seen);
+        	messageFlags.setAnswered(updatedFlags.answered);
+        	messageFlags.setDeleted(updatedFlags.deleted);
+            messageFlags.setDraft(updatedFlags.draft);
+            messageFlags.setFlagged(updatedFlags.draft);
+            messageFlags.setRecent(updatedFlags.recent);
+            messageFlags.setSeen(updatedFlags.seen);
         }
     }
     

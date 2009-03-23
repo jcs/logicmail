@@ -65,24 +65,25 @@ import org.logicprobe.LogicMail.util.MailMessageParser;
  * parsed just to generate a mailbox listing.
  */
 public class MaildirFolder {
+	private String folderPath;
 	private String folderUrl;
 	private boolean initialized;
 	private FileConnection fileConnection;
 	private Hashtable messageEnvelopeMap;
 	private boolean messageEnvelopeMapDirty = true;
-	private Hashtable uidMessageMap;
 	private int nextIndex = 0;
 	private static String EOF_MARKER = "----";
 	
 	/**
 	 * Creates a new instance of the <tt>MaildirFolder</tt> class.
 	 * 
-	 * @param folderUrl Path to the root folder of the maildir.
+	 * @param folderPath Reference path to the folder, used for message tokens
+	 * @param folderUrl File URL to the root folder of the maildir.
 	 */
-	public MaildirFolder(String folderUrl) {
+	public MaildirFolder(String folderPath, String folderUrl) {
+		this.folderPath = folderPath;
 		this.folderUrl = folderUrl;
 		messageEnvelopeMap = new Hashtable();
-		uidMessageMap = new Hashtable();
 	}
 	
 	/**
@@ -123,7 +124,6 @@ public class MaildirFolder {
 						MessageEnvelope envelope = new MessageEnvelope();
 						envelope.deserialize(inputStream);
 						messageEnvelopeMap.put(uniqueId, envelope);
-						uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 					}
 					messageEnvelopeMapDirty = false;
 				} catch (IOException exp) {
@@ -241,10 +241,11 @@ public class MaildirFolder {
 							envelope = getMessageEnvelope(inputStream);
 							inputStream.close();
 							messageEnvelopeMap.put(uniqueId, envelope);
-							uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 							messageEnvelopeMapDirty = true;
 						}
-						FolderMessage folderMessage = new FolderMessage(envelope, nextIndex++, uniqueId.hashCode());
+						FolderMessage folderMessage = new FolderMessage(
+								new LocalMessageToken(folderPath, uniqueId),
+								envelope, nextIndex++, uniqueId.hashCode());
 						
 						// Check for flags
 						p += 3;
@@ -309,14 +310,14 @@ public class MaildirFolder {
 	/**
 	 * Gets the message source from the maildir.
 	 * 
-	 * @param folderMessage The folder message containing header information for the message to get.
+	 * @param localMessageToken The token for the message to get.
 	 * @return The message source
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public String getMessageSource(FolderMessage folderMessage) throws IOException {
+	public String getMessageSource(LocalMessageToken localMessageToken) throws IOException {
 		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
 			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.getMessageSource(): " + folderMessage.getIndex()).getBytes(),
+                ("MaildirFolder.getMessageSource(): " + localMessageToken.getMessageUid()).getBytes(),
                 EventLogger.DEBUG_INFO);
         }
 		if(fileConnection == null) {
@@ -324,7 +325,7 @@ public class MaildirFolder {
 		}
 		
 		// Get the filename unique id prefix, and shortcut out if not found
-		String uniqueId = (String)uidMessageMap.get(new Integer(folderMessage.getUid()));
+		String uniqueId = localMessageToken.getMessageUid();
 		if(uniqueId == null) {
 			return null;
 		}
@@ -437,7 +438,6 @@ public class MaildirFolder {
 			mailFileConnection.close();
 			
 			messageEnvelopeMap.put(uniqueId, envelope);
-			uidMessageMap.put(new Integer(uniqueId.hashCode()), uniqueId);
 			messageEnvelopeMapDirty = true;
 		} catch (IOException exp) {
 			if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
@@ -450,7 +450,9 @@ public class MaildirFolder {
 		FolderMessage result;
 		
 		if(envelope != null) {
-			result = new FolderMessage(envelope, nextIndex++, uniqueId.hashCode());
+			result = new FolderMessage(
+					new LocalMessageToken(folderPath, uniqueId),
+					envelope, nextIndex++, uniqueId.hashCode());
 			result.setAnswered(initialFlags.isAnswered());
 			result.setDeleted(initialFlags.isDeleted());
 			result.setDraft(initialFlags.isDraft());

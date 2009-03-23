@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -38,6 +40,7 @@ import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.TextPart;
 
 import j2meunit.framework.Test;
@@ -187,8 +190,8 @@ public class NetworkMailStoreTest extends TestCase {
     
     public void testRequestFolderMessages() {
     	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-    		new FolderMessage(new MessageEnvelope(), 42, 52),
-    		new FolderMessage(new MessageEnvelope(), 43, 53),
+    		new FolderMessage(new FakeMessageToken(1), new MessageEnvelope(), 42, 52),
+    		new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 43, 53),
     	};
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	instance.requestFolderMessagesRange(folder, 42, 43);
@@ -203,51 +206,57 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessage() {
-    	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
-    	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52);
-    	instance.requestMessage(folder, folderMessage);
+    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	FakeMessageToken messageToken = new FakeMessageToken(1);
+    	instance.requestMessage(messageToken);
     	instance.shutdown(true);
     	
     	assertNotNull(eventMessageAvailable);
     	assertNotNull(eventMessageAvailable.getMessage());
     	assertEquals(fakeIncomingMailClient.message, eventMessageAvailable.getMessage());
-    	assertNotNull(eventMessageAvailable.getFolderMessage());
+    	assertNotNull(eventMessageAvailable.getMessageToken());
+    	assertEquals(fakeIncomingMailClient.messageToken, eventMessageAvailable.getMessageToken());
     }
     
     public void testRequestMessageDelete() {
-    	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
-    	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52);
-    	instance.requestMessageDelete(folder, folderMessage);
+    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	FakeMessageToken messageToken = new FakeMessageToken(1);
+    	MessageFlags messageFlags = new MessageFlags();
+    	messageFlags.setDeleted(false);
+    	instance.requestMessageDelete(messageToken, messageFlags);
     	instance.shutdown(true);
     	
     	assertNotNull(eventMessageDeleted);
     	assertNull(eventMessageDeleted.getMessage());
-    	assertNotNull(eventMessageDeleted.getFolderMessage());
-    	assertTrue(eventMessageDeleted.getFolderMessage().isDeleted());
+    	assertNotNull(eventMessageDeleted.getMessageToken());
+    	assertEquals(fakeIncomingMailClient.messageToken, eventMessageDeleted.getMessageToken());
+    	assertTrue(eventMessageDeleted.getMessageFlags().isDeleted());
     }
     
     public void testRequestMessageUndelete() {
-    	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
-    	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	FolderMessage folderMessage = new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52);
-    	instance.requestMessageUndelete(folder, folderMessage);
+    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	FakeMessageToken messageToken = new FakeMessageToken(1);
+    	MessageFlags messageFlags = new MessageFlags();
+    	messageFlags.setDeleted(true);
+    	instance.requestMessageUndelete(messageToken, messageFlags);
     	instance.shutdown(true);
     	
     	assertNotNull(eventMessageUndeleted);
     	assertNull(eventMessageUndeleted.getMessage());
-    	assertNotNull(eventMessageUndeleted.getFolderMessage());
-    	assertTrue(!eventMessageUndeleted.getFolderMessage().isDeleted());
+    	assertNotNull(eventMessageUndeleted.getMessageToken());
+    	assertEquals(fakeIncomingMailClient.messageToken, eventMessageUndeleted.getMessageToken());
+    	assertTrue(!eventMessageUndeleted.getMessageFlags().isDeleted());
     }
     
     public void testRequestBatch() {
-    	fakeIncomingMailClient.message = new Message(new MessageEnvelope(), new TextPart("plain", "Hello World"));
+    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	fakeIncomingMailClient.folderTree = folder;
+    	FakeMessageToken messageToken1 = new FakeMessageToken(1);
+    	FakeMessageToken messageToken2 = new FakeMessageToken(2);
     	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-        		new FolderMessage(fakeIncomingMailClient.message.getEnvelope(), 42, 52),
-        		new FolderMessage(new MessageEnvelope(), 43, 53),
+        		new FolderMessage(messageToken1, new MessageEnvelope(), 42, 52),
+        		new FolderMessage(messageToken2, new MessageEnvelope(), 43, 53),
         };
 
     	// Do a whole batch of non-conflicting requests to make
@@ -255,7 +264,7 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestFolderTree();
     	instance.requestFolderStatus(new FolderTreeItem[] { folder });
     	instance.requestFolderMessagesRange(folder, 42, 43);
-    	instance.requestMessage(folder, fakeIncomingMailClient.folderMessages[0]);
+    	instance.requestMessage(messageToken1);
     	instance.shutdown(true);
     	
     	// We know the requests work individually, so lets just
@@ -303,8 +312,8 @@ public class NetworkMailStoreTest extends TestCase {
 		public FolderMessage[] folderMessages;
 		public FolderTreeItem folderTree;
 		public Message message;
-		public FolderMessage deletedMessage;
-		public FolderMessage undeletedMessage;
+		public MessageToken messageToken;
+		public MessageFlags messageFlags;
 		public int refreshedMsgCount;
 		
 		public boolean isConnected() { return true; }
@@ -323,16 +332,18 @@ public class NetworkMailStoreTest extends TestCase {
 				throws IOException, MailException { this.firstIndex = firstIndex; this.lastIndex = lastIndex; return this.folderMessages; }
 		public FolderMessage[] getNewFolderMessages() throws IOException, MailException { return null; }
 		public FolderTreeItem getFolderTree() throws IOException, MailException { return this.folderTree; }
-		public Message getMessage(FolderMessage folderMessage)
-				throws IOException, MailException { return this.message; }
+		public Message getMessage(MessageToken messageToken)
+				throws IOException, MailException { this.messageToken = messageToken; return this.message; }
 		public void refreshFolderStatus(FolderTreeItem[] folders)
 				throws IOException, MailException { folders[0].setMsgCount(refreshedMsgCount); }
 		public void setActiveFolder(FolderTreeItem folderItem)
-				throws IOException, MailException { this.activeFolder = folderItem; }
-		public void deleteMessage(FolderMessage folderMessage)
-		throws IOException, MailException { folderMessage.setDeleted(true); this.deletedMessage = folderMessage; }
-		public void undeleteMessage(FolderMessage folderMessage)
-				throws IOException, MailException { folderMessage.setDeleted(false); this.undeletedMessage = folderMessage; }
+		throws IOException, MailException { this.activeFolder = folderItem; }
+		public void setActiveFolder(MessageToken messageToken)
+				throws IOException, MailException { this.messageToken = messageToken; }
+		public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags)
+		throws IOException, MailException { messageFlags.setDeleted(true); this.messageToken = messageToken;  }
+		public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags)
+				throws IOException, MailException { messageFlags.setDeleted(false); this.messageToken = messageToken;  }
 		public ConnectionConfig getConnectionConfig() { return null; }
 		public boolean noop() throws IOException, MailException { return false; }
 		public boolean hasIdle() { return false; }
@@ -340,4 +351,13 @@ public class NetworkMailStoreTest extends TestCase {
 		public void idleModeEnd() throws IOException, MailException { }
 		public boolean idleModePoll() throws IOException, MailException { return false; }
 	};
+	
+	private class FakeMessageToken implements MessageToken {
+		private long uniqueId;
+		public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
+		public long getUniqueId() { return uniqueId; }
+		public void deserialize(DataInputStream input) throws IOException { }
+		public void serialize(DataOutputStream output) throws IOException { }
+		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
+	}
 }

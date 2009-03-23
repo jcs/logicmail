@@ -38,7 +38,6 @@ import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
-import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -143,11 +142,11 @@ public class OutboxMailboxNode extends MailboxNode {
 		envelope.messageId = outgoingMessageNode.getMessageId();
 		
 		// Create a protocol-compatible message object
-		Message message = new Message(envelope, outgoingMessageNode.getMessageBody());
+		Message message = new Message(outgoingMessageNode.getMessageBody());
 		
 		// Update the outbound map and request the message to be sent
 		outboundMessageMap.put(message, outgoingMessageNode);
-		outgoingMessageNode.getMailSender().requestSendMessage(message);
+		outgoingMessageNode.getMailSender().requestSendMessage(envelope, message);
 	}
 	
     private void mailSender_MessageSent(MessageSentEvent e) {
@@ -169,12 +168,12 @@ public class OutboxMailboxNode extends MailboxNode {
 
     		// Update replied-to message flags
     		MessageNode replyToMessageNode = outgoingMessageNode.getReplyToMessageNode();
-    		if(replyToMessageNode != null && replyToMessageNode.getMessageTag() instanceof FolderMessage) {
+    		if(replyToMessageNode != null) {
     			AbstractMailStore sendingMailStore = outgoingMessageNode.getSendingAccount().getMailStore();
     			if(sendingMailStore.hasFlags()) {
     				sendingMailStore.requestMessageAnswered(
-    						replyToMessageNode.getParent().getFolderTreeItem(),
-    						(FolderMessage)replyToMessageNode.getMessageTag());
+    						replyToMessageNode.getMessageToken(),
+    						MessageNode.createMessageFlags(replyToMessageNode.getFlags()));
     			}
     		}
     		

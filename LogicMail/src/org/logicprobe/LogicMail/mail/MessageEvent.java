@@ -31,48 +31,59 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 /**
  * Object for message events.
  */
 public class MessageEvent extends MailStoreEvent {
-	private FolderTreeItem folder;
-	private FolderMessage folderMessage;
+	private MessageToken messageToken;
+	private MessageFlags messageFlags;
 	private Message message;
 	private String messageSource;
 	
-    /** Creates a new instance of MessageEvent */
-	public MessageEvent(Object source, FolderTreeItem folder, FolderMessage folderMessage, Message message) {
-		super(source);
-		this.folder = folder;
-		this.folderMessage = folderMessage;
-		this.message = message;
-	}
-
 	/** Creates a new instance of MessageEvent */
-	public MessageEvent(Object source, FolderTreeItem folder, FolderMessage folderMessage, Message message, String messageSource) {
-		this(source, folder, folderMessage, message);
+	public MessageEvent(Object source, MessageToken messageToken, MessageFlags messageFlags, Message message, String messageSource) {
+		super(source);
+		this.messageToken = messageToken;
+		this.messageFlags = messageFlags;
+		this.message = message;
 		this.messageSource = messageSource;
 	}
 
-	public MessageEvent(Object source, FolderTreeItem folder, FolderMessage folderMessage) {
-		this(source, folder, folderMessage, null);
+	/** Creates a new instance of MessageEvent */
+	public MessageEvent(Object source, MessageToken messageToken, Message message, String messageSource) {
+		this(source, messageToken, null, message, messageSource);
+	}
+
+	/** Creates a new instance of MessageEvent */
+	public MessageEvent(Object source, MessageToken messageToken, Message message) {
+		this(source, messageToken, null, message, null);
+	}
+
+	/** Creates a new instance of MessageEvent */
+	public MessageEvent(Object source, MessageToken messageToken) {
+		this(source, messageToken, null, null, null);
+	}
+
+	/** Creates a new instance of MessageEvent */
+	public MessageEvent(Object source, MessageToken messageToken, MessageFlags messageFlags) {
+		this(source, messageToken, messageFlags, null, null);
+	}
+	
+	/**
+	 * Gets the token for the message this event applies to.
+	 */
+	public MessageToken getMessageToken() {
+		return messageToken;
 	}
 
 	/**
-	 * Gets the folder this event applies to.
+	 * Gets the updated message flags, if they are available for this particular event.
 	 */
-	public FolderTreeItem getFolder() {
-		return folder;
-	}
-
-	/**
-	 * Gets the folder-specific message data for this event.
-	 */
-	public FolderMessage getFolderMessage() {
-		return folderMessage;
+	public MessageFlags getMessageFlags() {
+		return messageFlags;
 	}
 	
 	/**

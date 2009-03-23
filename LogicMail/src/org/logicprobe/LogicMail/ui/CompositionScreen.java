@@ -298,8 +298,10 @@ public class CompositionScreen extends BaseScreen {
         						resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
         		if(choice == 0) {
         			// Save as draft, then close
+        			MessageEnvelope envelope = generateEnvelope();
         			Message message = generateMessage();
-        			message.getEnvelope().date = Calendar.getInstance().getTime();
+        			
+        			envelope.date = Calendar.getInstance().getTime();
         			MessageFlags messageFlags = new MessageFlags(
         					false,
         					false,
@@ -308,7 +310,7 @@ public class CompositionScreen extends BaseScreen {
         					true,
         					true,
         					false);
-        			draftMailbox.appendMessage(message, messageFlags);
+        			draftMailbox.appendMessage(envelope, message, messageFlags);
         	    	// TODO: Save reply-to information with the draft message
         			shouldClose = true;
         		}
@@ -351,7 +353,7 @@ public class CompositionScreen extends BaseScreen {
         menu.addSeparator();
     }
 
-    private Message generateMessage() {
+    private MessageEnvelope generateEnvelope() {
         // Simplest possible implementation for now,
         // which turns the content of the screen into
         // a message containing a single text/plain section
@@ -427,20 +429,24 @@ public class CompositionScreen extends BaseScreen {
         // Set the subject
         env.subject = subjectEditField.getText();
 
+        return env;
+    }
+    private Message generateMessage() {
         MessagePart bodyPart = MessagePartFactory.createMessagePart("text",
                 "plain", "7bit", "us-ascii", messageEditField.getText());
 
-        Message message = new Message(env, bodyPart);
+        Message message = new Message(bodyPart);
     	return message;
     }
     
     private void sendMessage() {
+    	MessageEnvelope envelope = generateEnvelope();
     	Message message = generateMessage();
     	
         if (replyToMessageNode != null) {
-            accountNode.sendMessageReply(message, replyToMessageNode);
+            accountNode.sendMessageReply(envelope, message, replyToMessageNode);
         } else {
-            accountNode.sendMessage(message);
+            accountNode.sendMessage(envelope, message);
         }
 
         messageSent = true;

@@ -105,16 +105,16 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 					(FolderTreeItem)params[0]);
 			break;
 		case REQUEST_MESSAGE:
-			handleRequestMessage((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			handleRequestMessage((MessageToken)params[0]);
 			break;
 		case REQUEST_MESSAGE_DELETE:
-			handleRequestMessageDelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1]);
 			break;
 		case REQUEST_MESSAGE_UNDELETE:
-			handleRequestMessageUndelete((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			handleRequestMessageUndelete((MessageToken)params[0], (MessageFlags)params[1]);
 			break;
 		case REQUEST_MESSAGE_ANSWERED:
-			handleRequestMessageAnswered((FolderTreeItem)params[0], (FolderMessage)params[1]);
+			handleRequestMessageAnswered((MessageToken)params[0], (MessageFlags)params[1]);
 			break;
 		case REQUEST_MESSAGE_APPEND:
 			handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2]);
@@ -243,53 +243,57 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
-	private void handleRequestMessage(FolderTreeItem folder, FolderMessage folderMessage) throws IOException, MailException {
-		checkActiveFolder(folder);
+	private void handleRequestMessage(MessageToken messageToken) throws IOException, MailException {
+		checkActiveFolder(messageToken);
 		
-		Message message = incomingClient.getMessage(folderMessage);
+		Message message = incomingClient.getMessage(messageToken);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(message != null && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { folder, folderMessage, message });
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { messageToken, message });
 		}
 	}
 	
-	private void handleRequestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) throws IOException, MailException {
-		checkActiveFolder(folder);
+	private void handleRequestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+		checkActiveFolder(messageToken);
 		
-		incomingClient.deleteMessage(folderMessage);
+		incomingClient.deleteMessage(messageToken, messageFlags);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_DELETE, new Object[] { folder, folderMessage });
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags });
 		}
 	}
 	
-	private void handleRequestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) throws IOException, MailException {
-		checkActiveFolder(folder);
+	private void handleRequestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+		checkActiveFolder(messageToken);
 		
-		incomingClient.undeleteMessage(folderMessage);
+		incomingClient.undeleteMessage(messageToken, messageFlags);
 
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, new Object[] { folder, folderMessage });
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken, messageFlags });
 		}
 	}
 	
-	private void handleRequestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) throws IOException, MailException {
+	private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
 		// Replace this with a more general method:
-		((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).messageAnswered(folderMessage);
-		folderMessage.setAnswered(true);
+		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
+			((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).messageAnswered(messageToken, messageFlags);
+		}
+		messageFlags.setAnswered(true);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, new Object[] { folder, folderMessage });
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags });
 		}
 	}
 	
 	private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
 		// Clean up this interface:
-		((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).appendMessage(folder, rawMessage, initialFlags);
+		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
+			((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).appendMessage(folder, rawMessage, initialFlags);
+		}
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
@@ -302,5 +306,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		if(incomingClient.getActiveFolder() == null || !incomingClient.getActiveFolder().getPath().equals(requestFolder.getPath())) {
 			incomingClient.setActiveFolder(requestFolder);
 		}
+	}
+
+	private void checkActiveFolder(MessageToken messageToken) throws IOException, MailException {
+		incomingClient.setActiveFolder(messageToken);
 	}
 }

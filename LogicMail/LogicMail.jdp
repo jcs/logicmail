@@ -78,11 +78,13 @@ src\org\logicprobe\LogicMail\mail\FolderListener.java
 src\org\logicprobe\LogicMail\mail\FolderMessagesEvent.java
 src\org\logicprobe\LogicMail\mail\FolderTreeItem.java
 src\org\logicprobe\LogicMail\mail\imap\ImapClient.java
+src\org\logicprobe\LogicMail\mail\imap\ImapMessageToken.java
 src\org\logicprobe\LogicMail\mail\imap\ImapParser.java
 src\org\logicprobe\LogicMail\mail\imap\ImapProtocol.java
 src\org\logicprobe\LogicMail\mail\IncomingMailClient.java
 src\org\logicprobe\LogicMail\mail\IncomingMailConnectionHandler.java
 src\org\logicprobe\LogicMail\mail\LocalMailStore.java
+src\org\logicprobe\LogicMail\mail\LocalMessageToken.java
 src\org\logicprobe\LogicMail\mail\MailClient.java
 src\org\logicprobe\LogicMail\mail\MailClientFactory.java
 src\org\logicprobe\LogicMail\mail\MailConnectionEvent.java
@@ -102,11 +104,13 @@ src\org\logicprobe\LogicMail\mail\MailStoreListener.java
 src\org\logicprobe\LogicMail\mail\MessageEvent.java
 src\org\logicprobe\LogicMail\mail\MessageListener.java
 src\org\logicprobe\LogicMail\mail\MessageSentEvent.java
+src\org\logicprobe\LogicMail\mail\MessageToken.java
 src\org\logicprobe\LogicMail\mail\NetworkMailSender.java
 src\org\logicprobe\LogicMail\mail\NetworkMailStore.java
 src\org\logicprobe\LogicMail\mail\OutgoingMailClient.java
 src\org\logicprobe\LogicMail\mail\OutgoingMailConnectionHandler.java
 src\org\logicprobe\LogicMail\mail\pop\PopClient.java
+src\org\logicprobe\LogicMail\mail\pop\PopMessageToken.java
 src\org\logicprobe\LogicMail\mail\pop\PopProtocol.java
 src\org\logicprobe\LogicMail\mail\smtp\SmtpClient.java
 src\org\logicprobe\LogicMail\mail\smtp\SmtpProtocol.java

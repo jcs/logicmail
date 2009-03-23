@@ -34,7 +34,7 @@ import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MessageFlags;
 
 import j2meunit.framework.Test;
@@ -68,7 +68,7 @@ public class AccountNodeTest extends TestCase {
     	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("One", "INBOX.One", "."));
     	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("Two", "INBOX.Two", "."));
     	
-        instance = new AccountNode(mailStore);
+        instance = new AccountNode(mailStore, false);
     	instance.addAccountNodeListener(new AccountNodeListener() {
     		public void accountStatusChanged(AccountNodeEvent e) {
     			accountNodeEvent = e;
@@ -240,14 +240,14 @@ public class AccountNodeTest extends TestCase {
 			fireFolderStatusChanged(statusUpdatedRootFolder);
 		}
 		
-		public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) { }
-		public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) { }
-		public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) { }
+		public void requestMessage(MessageToken messageToken) { }
+		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) { }
+		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) { }
+		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) { }
 		public void shutdown(boolean wait) { }
 		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) { }
 		public void requestFolderMessagesRecent(FolderTreeItem folder) { }
 		public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) { }
-		public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) { }
 		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) { }
     }
 }

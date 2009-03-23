@@ -1,5 +1,11 @@
 package org.logicprobe.LogicMail.model;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 
@@ -28,10 +34,10 @@ public class MailboxNodeTest extends TestCase {
     }
     
     public void testAddMessage() {
-    	MessageNode message1 = new MessageNode(new FolderMessage(new MessageEnvelope(), 1, 11));
-    	MessageNode message2 = new MessageNode(new FolderMessage(new MessageEnvelope(), 2, 12));
-    	MessageNode message3 = new MessageNode(new FolderMessage(new MessageEnvelope(), 3, 13));
-    	MessageNode message4 = new MessageNode(new FolderMessage(new MessageEnvelope(), 4, 14));
+    	MessageNode message1 = new MessageNode(new FolderMessage(new FakeMessageToken(1), new MessageEnvelope(), 1, 11));
+    	MessageNode message2 = new MessageNode(new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 2, 12));
+    	MessageNode message3 = new MessageNode(new FolderMessage(new FakeMessageToken(3), new MessageEnvelope(), 3, 13));
+    	MessageNode message4 = new MessageNode(new FolderMessage(new FakeMessageToken(4), new MessageEnvelope(), 4, 14));
     	
     	// Add messages in-order
     	instance.addMessage(message1);
@@ -74,4 +80,13 @@ public class MailboxNodeTest extends TestCase {
 
         return suite;
     }
+
+    private class FakeMessageToken implements MessageToken {
+		private long uniqueId;
+		public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
+		public long getUniqueId() { return uniqueId; }
+		public void deserialize(DataInputStream input) throws IOException { }
+		public void serialize(DataOutputStream output) throws IOException { }
+		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
+	}
 }

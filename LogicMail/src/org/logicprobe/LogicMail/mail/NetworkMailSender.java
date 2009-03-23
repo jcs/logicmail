@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 
 public class NetworkMailSender extends AbstractMailSender {
 	private OutgoingMailClient client;
@@ -74,16 +75,16 @@ public class NetworkMailSender extends AbstractMailSender {
 		}
 	}
 	
-	public void requestSendMessage(Message message) {
-		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { message });
+	public void requestSendMessage(MessageEnvelope envelope, Message message) {
+		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { envelope, message });
 	}
 	
 	private void connectionHandler_mailConnectionRequestComplete(int type, Object result) {
 		Object[] results;
 		switch(type) {
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
+		case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
 			results = (Object[])result;
-			fireMessageSent((Message)results[0], (String)results[1]);
+			fireMessageSent((MessageEnvelope)results[0], (Message)results[1], (String)results[2]);
 			break;
 		}
 	}

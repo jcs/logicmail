@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -31,22 +31,26 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import java.io.IOException;
-import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
- * Create a generic interface to outgoing mail protocols.
+ * Common tagging interface for all message token objects.
+ * <p>
+ * A message token is intended to be a serializable object
+ * that provides a memento for tracking a mail message across
+ * the application.  It is designed to prevent the need for
+ * protocol-specific message properties to be exposed beyond
+ * the protocol layer, while still allowing other layers to
+ * perform message operations.
+ * </p>
  */
-public interface OutgoingMailClient extends MailClient {
-    /**
-     * Send a message
-     *
-     * @param envelope Envelope of the message to send.
-     * @param message Message to send.
-     * @return Actual raw message text that was sent.
-     * @throws IOException on I/O errors
-     * @throws MailException on protocol errors
-     */
-    public abstract String sendMessage(MessageEnvelope envelope, Message message) throws IOException, MailException;
+public interface MessageToken extends Serializable {
+	/**
+	 * Returns whether this token represents a message contained within
+	 * the specified mail folder.
+	 * 
+	 * @param folderTreeItem Folder item to check
+	 * @return True if contained, false otherwise
+	 */
+	public abstract boolean containedWithin(FolderTreeItem folderTreeItem);
 }

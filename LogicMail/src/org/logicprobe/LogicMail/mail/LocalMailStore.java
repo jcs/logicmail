@@ -134,7 +134,7 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void requestFolderMessagesRecent(FolderTreeItem folder) {
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder);
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
         
         if(requestFolder != null) {
         	threadQueue.invokeLater(new RequestFolderMessagesRecentRunnable(requestFolder));
@@ -162,20 +162,22 @@ public class LocalMailStore extends AbstractMailStore {
 		}
     }
     
-    public void requestMessage(FolderTreeItem folder, FolderMessage folderMessage) {
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder);
+    public void requestMessage(MessageToken messageToken) {
+    	LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
+    	
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
         
-        if(requestFolder != null && folderMessage != null) {
-        	threadQueue.invokeLater(new RequestMessageRunnable(requestFolder, folderMessage));
+        if(requestFolder != null && requestFolder != null) {
+        	threadQueue.invokeLater(new RequestMessageRunnable(requestFolder, localMessageToken));
         }
     }
 
     private class RequestMessageRunnable extends MaildirRunnable {
-    	private FolderMessage folderMessage;
+    	private LocalMessageToken localMessageToken;
     	
-    	public RequestMessageRunnable(FolderTreeItem requestFolder, FolderMessage folderMessage) {
+    	public RequestMessageRunnable(FolderTreeItem requestFolder, LocalMessageToken localMessageToken) {
     		super(requestFolder);
-    		this.folderMessage = folderMessage;
+    		this.localMessageToken = localMessageToken;
     	}
     	
 		public void run() {
@@ -183,36 +185,36 @@ public class LocalMailStore extends AbstractMailStore {
 			Message message = null;
         	try {
         		maildirFolder.open();
-        		messageSource = maildirFolder.getMessageSource(folderMessage);
+        		messageSource = maildirFolder.getMessageSource(localMessageToken);
         		maildirFolder.close();
         		
         		// Parse the message source
                 MessagePart rootPart = MailMessageParser.parseRawMessage(new ByteArrayInputStream(messageSource.getBytes()));
-                message = new Message(folderMessage.getEnvelope(), rootPart);
+                message = new Message(rootPart);
         	} catch (IOException e) {
         		System.err.println("Unable to read message: " + e.toString());
         	}
         	
         	if(message != null && messageSource != null) {
-        		fireMessageAvailable(requestFolder, folderMessage, message, messageSource);
+        		fireMessageAvailable(localMessageToken, message, messageSource);
         	}
 		}
     }
 
-    public void requestMessageDelete(FolderTreeItem folder, FolderMessage folderMessage) {
+    public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
         // TODO Auto-generated method stub
     }
 
-    public void requestMessageUndelete(FolderTreeItem folder, FolderMessage folderMessage) {
+    public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) {
         // TODO Auto-generated method stub
     }
 
-    public void requestMessageAnswered(FolderTreeItem folder, FolderMessage folderMessage) {
+    public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) {
         // TODO Auto-generated method stub
     }
 
     public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder);
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
         
         if(requestFolder != null && rawMessage != null && rawMessage.length() > 0 && initialFlags != null) {
         	threadQueue.invokeLater(new RequestMessageAppendRunnable(requestFolder, rawMessage, initialFlags));
@@ -251,14 +253,14 @@ public class LocalMailStore extends AbstractMailStore {
      * owned by this mail store, even if the provided parameter is a
      * separately created object with similar properties.
      * 
-     * @param folder The folder parameter.
+     * @param folderPath The folder path.
      * @return The matching folder tree item.
      */
-    private FolderTreeItem getMatchingFolderTreeItem(FolderTreeItem folder) {
+    private FolderTreeItem getMatchingFolderTreeItem(String folderPath) {
         FolderTreeItem[] localFolders = rootFolder.children();
         FolderTreeItem requestFolder = null;
         for (int i = 0; i < localFolders.length; i++) {
-        	if(localFolders[i].getPath().equals(folder.getPath())) {
+        	if(localFolders[i].getPath().equals(folderPath)) {
         		requestFolder = localFolders[i];
         		break;
         	}
@@ -291,7 +293,7 @@ public class LocalMailStore extends AbstractMailStore {
             	StringBuffer buf = new StringBuffer();
             	buf.append(folderUrl);
             	buf.append(requestFolder.getPath());
-        		maildirFolder = new MaildirFolder(buf.toString());
+        		maildirFolder = new MaildirFolder(requestFolder.getPath(), buf.toString());
         		folderMaildirMap.put(requestFolder, maildirFolder);
         	}
     	}

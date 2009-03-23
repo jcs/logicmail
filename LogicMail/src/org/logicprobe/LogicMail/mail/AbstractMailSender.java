@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -68,9 +69,10 @@ public abstract class AbstractMailSender {
      * <p>Successful completion is indicated by a call to
      * {@link MailSenderListener#messageSent(MessageSentEvent)}.
      * 
+     * @param envelope The envelope of the message to send.
      * @param message The message to send.
      */
-	public abstract void requestSendMessage(Message message);
+	public abstract void requestSendMessage(MessageEnvelope envelope, Message message);
 	
     /**
      * Adds a <tt>MailSenderListener</tt> to the mail sender.
@@ -104,15 +106,16 @@ public abstract class AbstractMailSender {
      * Notifies all registered <tt>MailSenderListener</tt>s that
      * a message has sent.
      * 
+     * @param envelope The envelope of the message that was sent.
      * @param message The message that was sent.
      * @param messageSource The raw source for the message that was sent.
      */
-    protected void fireMessageSent(Message message, String messageSource) {
+    protected void fireMessageSent(MessageEnvelope envelope, Message message, String messageSource) {
         Object[] listeners = listenerList.getListeners(MailSenderListener.class);
         MessageSentEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageSentEvent(this, message, messageSource);
+                e = new MessageSentEvent(this, envelope, message, messageSource);
             }
             ((MailSenderListener)listeners[i]).messageSent(e);
         }

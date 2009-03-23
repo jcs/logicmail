@@ -36,7 +36,6 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 import java.util.Calendar;
-import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Unit test for MessageReplyConverter
@@ -75,7 +74,7 @@ public class MessageTest extends TestCase {
         envelope.subject = "The subject";
         envelope.messageId = "1234567890";
         
-        message = new Message(envelope, body);
+        message = new Message(body);
     }
 
     public void tearDown() {
@@ -86,132 +85,132 @@ public class MessageTest extends TestCase {
     }
 
     public void testMessage() {
-        assertEquals(envelope, message.getEnvelope());
         assertEquals(body, message.getBody());
     }
+
+// TODO: Convert these into tests for MessageNode
+//    public void testToReplyMessage() {
+//        Message replyMessage = message.toReplyMessage();
+//        MessageEnvelope replyEnvelope = replyMessage.getEnvelope();
+//        assertNotNull(replyEnvelope);
+//        MessagePart replyBody = replyMessage.getBody();
+//        assertNotNull(replyBody);
+//        
+//        // Perform a simple test to ensure that the reply converter executed
+//        assertTrue(replyBody instanceof TextPart);
+//        String expectedText =
+//            "On "+StringParser.createDateString(envelope.date)+", John Doe wrote:\r\n" +
+//            "> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+//            "> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+//            "> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+//            "> nisi ut aliquip ex ea commodo consequat.";
+//        assertEquals(expectedText, ((TextPart)replyBody).getText());
+//
+//        // Check the reply header fields
+//        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
+//        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
+//        assertEquals(1, replyEnvelope.to.length);
+//        assertEquals(envelope.from[0], replyEnvelope.to[0]);
+//        assertTrue(replyEnvelope.cc == null || replyEnvelope.cc.length == 0);
+//        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
+//        
+//        // Set the Reply-To header and try again
+//        message.getEnvelope().replyTo = new String[] { "John Doe <jdoe@doemail.net>" };
+//        replyMessage = message.toReplyMessage();
+//        replyEnvelope = replyMessage.getEnvelope();
+//        assertNotNull(replyEnvelope);
+//        replyBody = replyMessage.getBody();
+//        assertNotNull(replyBody);
+//        
+//        // Check the reply header fields
+//        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
+//        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
+//        assertEquals(1, replyEnvelope.to.length);
+//        assertEquals(envelope.replyTo[0], replyEnvelope.to[0]);
+//        assertTrue(replyEnvelope.cc == null || replyEnvelope.cc.length == 0);
+//        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
+//    }
+//    
+//    public void testToReplyAllMessage() {
+//        Message replyMessage = message.toReplyAllMessage("jsmith@random.net");
+//        MessageEnvelope replyEnvelope = replyMessage.getEnvelope();
+//        assertNotNull(replyEnvelope);
+//        MessagePart replyBody = replyMessage.getBody();
+//        assertNotNull(replyBody);
+//        
+//        // Perform a simple test to ensure that the reply converter executed
+//        assertTrue(replyBody instanceof TextPart);
+//        String expectedText =
+//            "On "+StringParser.createDateString(envelope.date)+", John Doe wrote:\r\n" +
+//            "> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+//            "> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+//            "> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+//            "> nisi ut aliquip ex ea commodo consequat.";
+//        assertEquals(expectedText, ((TextPart)replyBody).getText());
+//
+//        // Check the reply header fields
+//        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
+//        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
+//
+//        assertEquals(2, replyEnvelope.to.length);
+//        assertEquals(envelope.from[0], replyEnvelope.to[0]);
+//        assertEquals(envelope.to[1], replyEnvelope.to[1]);
+//
+//        assertEquals(1, replyEnvelope.cc.length);
+//        assertEquals(envelope.cc[0], replyEnvelope.cc[0]);
+//
+//        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
+//
+//        // Set the Reply-To header and try again
+//        message.getEnvelope().replyTo = new String[] { "John Doe <jdoe@doemail.net>" };
+//        replyMessage = message.toReplyAllMessage("jsmith@random.net");
+//        replyEnvelope = replyMessage.getEnvelope();
+//        assertNotNull(replyEnvelope);
+//        replyBody = replyMessage.getBody();
+//        assertNotNull(replyBody);
+//        
+//        // Check the reply header fields
+//        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
+//        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
+//        assertEquals(2, replyEnvelope.to.length);
+//        assertEquals(envelope.replyTo[0], replyEnvelope.to[0]);
+//        assertEquals(envelope.to[1], replyEnvelope.to[1]);
+//
+//        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
+//    }
     
-    public void testToReplyMessage() {
-        Message replyMessage = message.toReplyMessage();
-        MessageEnvelope replyEnvelope = replyMessage.getEnvelope();
-        assertNotNull(replyEnvelope);
-        MessagePart replyBody = replyMessage.getBody();
-        assertNotNull(replyBody);
-        
-        // Perform a simple test to ensure that the reply converter executed
-        assertTrue(replyBody instanceof TextPart);
-        String expectedText =
-            "On "+StringParser.createDateString(envelope.date)+", John Doe wrote:\r\n" +
-            "> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
-            "> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
-            "> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
-            "> nisi ut aliquip ex ea commodo consequat.";
-        assertEquals(expectedText, ((TextPart)replyBody).getText());
-
-        // Check the reply header fields
-        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
-        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
-        assertEquals(1, replyEnvelope.to.length);
-        assertEquals(envelope.from[0], replyEnvelope.to[0]);
-        assertTrue(replyEnvelope.cc == null || replyEnvelope.cc.length == 0);
-        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
-        
-        // Set the Reply-To header and try again
-        message.getEnvelope().replyTo = new String[] { "John Doe <jdoe@doemail.net>" };
-        replyMessage = message.toReplyMessage();
-        replyEnvelope = replyMessage.getEnvelope();
-        assertNotNull(replyEnvelope);
-        replyBody = replyMessage.getBody();
-        assertNotNull(replyBody);
-        
-        // Check the reply header fields
-        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
-        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
-        assertEquals(1, replyEnvelope.to.length);
-        assertEquals(envelope.replyTo[0], replyEnvelope.to[0]);
-        assertTrue(replyEnvelope.cc == null || replyEnvelope.cc.length == 0);
-        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
-    }
-    
-    public void testToReplyAllMessage() {
-        Message replyMessage = message.toReplyAllMessage("jsmith@random.net");
-        MessageEnvelope replyEnvelope = replyMessage.getEnvelope();
-        assertNotNull(replyEnvelope);
-        MessagePart replyBody = replyMessage.getBody();
-        assertNotNull(replyBody);
-        
-        // Perform a simple test to ensure that the reply converter executed
-        assertTrue(replyBody instanceof TextPart);
-        String expectedText =
-            "On "+StringParser.createDateString(envelope.date)+", John Doe wrote:\r\n" +
-            "> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
-            "> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
-            "> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
-            "> nisi ut aliquip ex ea commodo consequat.";
-        assertEquals(expectedText, ((TextPart)replyBody).getText());
-
-        // Check the reply header fields
-        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
-        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
-
-        assertEquals(2, replyEnvelope.to.length);
-        assertEquals(envelope.from[0], replyEnvelope.to[0]);
-        assertEquals(envelope.to[1], replyEnvelope.to[1]);
-
-        assertEquals(1, replyEnvelope.cc.length);
-        assertEquals(envelope.cc[0], replyEnvelope.cc[0]);
-
-        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
-
-        // Set the Reply-To header and try again
-        message.getEnvelope().replyTo = new String[] { "John Doe <jdoe@doemail.net>" };
-        replyMessage = message.toReplyAllMessage("jsmith@random.net");
-        replyEnvelope = replyMessage.getEnvelope();
-        assertNotNull(replyEnvelope);
-        replyBody = replyMessage.getBody();
-        assertNotNull(replyBody);
-        
-        // Check the reply header fields
-        assertEquals(envelope.messageId, replyEnvelope.inReplyTo);
-        assertEquals("Re: " + envelope.subject, replyEnvelope.subject);
-        assertEquals(2, replyEnvelope.to.length);
-        assertEquals(envelope.replyTo[0], replyEnvelope.to[0]);
-        assertEquals(envelope.to[1], replyEnvelope.to[1]);
-
-        assertTrue(replyEnvelope.bcc == null || replyEnvelope.bcc.length == 0);
-    }
-    
-    public void testToForwardMessage() {
-        Message forwardMessage = message.toForwardMessage();
-        MessageEnvelope forwardEnvelope = forwardMessage.getEnvelope();
-        assertNotNull(forwardEnvelope);
-        MessagePart forwardBody = forwardMessage.getBody();
-        assertNotNull(forwardBody);
-        
-        // Perform a simple test to ensure that the reply converter executed
-        assertTrue(forwardBody instanceof TextPart);
-        String expectedText =
-                "----Original Message----\r\n"+
-                "Subject: The subject\r\n"+
-                "Date: "+StringParser.createDateString(envelope.date)+"\r\n"+
-                "From: John Doe <jdoe@generic.org>\r\n"+
-                "To: Jim Smith <jsmith@random.net>, Jane Doe <jdoe@generic.org>\r\n"+
-                "Cc: Jane Smith <jane.smith@random.net>\r\n"+
-                "\r\n" +
-                "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
-                "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
-                "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
-                "nisi ut aliquip ex ea commodo consequat.\r\n"+
-                "------------------------";
-        assertEquals(expectedText, ((TextPart)forwardBody).getText());
-
-        // Check the forward headers
-        assertEquals("Fwd: " + envelope.subject, forwardEnvelope.subject);
-        assertNull(forwardEnvelope.sender);
-        assertNull(forwardEnvelope.from);
-        assertNull(forwardEnvelope.to);
-        assertNull(forwardEnvelope.cc);
-        assertNull(forwardEnvelope.inReplyTo);
-    }
+//    public void testToForwardMessage() {
+//        Message forwardMessage = message.toForwardMessage();
+//        MessageEnvelope forwardEnvelope = forwardMessage.getEnvelope();
+//        assertNotNull(forwardEnvelope);
+//        MessagePart forwardBody = forwardMessage.getBody();
+//        assertNotNull(forwardBody);
+//        
+//        // Perform a simple test to ensure that the reply converter executed
+//        assertTrue(forwardBody instanceof TextPart);
+//        String expectedText =
+//                "----Original Message----\r\n"+
+//                "Subject: The subject\r\n"+
+//                "Date: "+StringParser.createDateString(envelope.date)+"\r\n"+
+//                "From: John Doe <jdoe@generic.org>\r\n"+
+//                "To: Jim Smith <jsmith@random.net>, Jane Doe <jdoe@generic.org>\r\n"+
+//                "Cc: Jane Smith <jane.smith@random.net>\r\n"+
+//                "\r\n" +
+//                "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+//                "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+//                "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+//                "nisi ut aliquip ex ea commodo consequat.\r\n"+
+//                "------------------------";
+//        assertEquals(expectedText, ((TextPart)forwardBody).getText());
+//
+//        // Check the forward headers
+//        assertEquals("Fwd: " + envelope.subject, forwardEnvelope.subject);
+//        assertNull(forwardEnvelope.sender);
+//        assertNull(forwardEnvelope.from);
+//        assertNull(forwardEnvelope.to);
+//        assertNull(forwardEnvelope.cc);
+//        assertNull(forwardEnvelope.inReplyTo);
+//    }
     
     public Test suite() {
         TestSuite suite = new TestSuite("Message");
@@ -219,14 +218,14 @@ public class MessageTest extends TestCase {
         suite.addTest(new MessageTest("Message", new TestMethod()
         { public void run(TestCase tc) {((MessageTest)tc).testMessage(); } }));
         
-        suite.addTest(new MessageTest("toReplyMessage", new TestMethod()
-        { public void run(TestCase tc) {((MessageTest)tc).testToReplyMessage(); } }));
-        
-        suite.addTest(new MessageTest("toReplyAllMessage", new TestMethod()
-        { public void run(TestCase tc) {((MessageTest)tc).testToReplyAllMessage(); } }));
-        
-        suite.addTest(new MessageTest("toForwardMessage", new TestMethod()
-        { public void run(TestCase tc) {((MessageTest)tc).testToForwardMessage(); } }));
+//        suite.addTest(new MessageTest("toReplyMessage", new TestMethod()
+//        { public void run(TestCase tc) {((MessageTest)tc).testToReplyMessage(); } }));
+//        
+//        suite.addTest(new MessageTest("toReplyAllMessage", new TestMethod()
+//        { public void run(TestCase tc) {((MessageTest)tc).testToReplyAllMessage(); } }));
+//        
+//        suite.addTest(new MessageTest("toForwardMessage", new TestMethod()
+//        { public void run(TestCase tc) {((MessageTest)tc).testToForwardMessage(); } }));
         
         return suite;
     }

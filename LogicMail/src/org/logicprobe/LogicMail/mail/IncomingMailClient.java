@@ -35,6 +35,7 @@ import java.io.IOException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 /**
  * Provides a generic interface to different incoming mail protocols.
@@ -132,6 +133,19 @@ public interface IncomingMailClient extends MailClient {
      */
     public abstract void setActiveFolder(FolderTreeItem folderItem)
         throws IOException, MailException;
+
+    /**
+     * Select a new active mail folder based on where a particular message is stored.
+     * This method is only useful if the protocol supports
+     * folders, and should otherwise be ignored or limited
+     * to a single INBOX folder
+     * 
+     * @param messageToken The message token object for the message whose folder we want to switch to
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    public abstract void setActiveFolder(MessageToken messageToken)
+        throws IOException, MailException;
     
     /**
      * Get a list of the messages in the selected folder.
@@ -169,7 +183,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract Message getMessage(FolderMessage folderMessage) throws IOException, MailException;
+    public abstract Message getMessage(MessageToken messageToken) throws IOException, MailException;
     
     /**
      * Deletes a particular message from the selected folder.
@@ -180,7 +194,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void deleteMessage(FolderMessage folderMessage) throws IOException, MailException;
+    public abstract void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
     
     /**
      * Undeletes a particular message from the selected folder.
@@ -189,7 +203,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void undeleteMessage(FolderMessage folderMessage) throws IOException, MailException;
+    public abstract void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
 
     /**
      * Sends the underlying protocol's no-operation command.

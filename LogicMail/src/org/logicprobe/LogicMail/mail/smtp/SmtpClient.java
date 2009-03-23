@@ -194,7 +194,7 @@ public class SmtpClient implements OutgoingMailClient {
         this.password = password;
     }
 
-    public String sendMessage(Message message)
+    public String sendMessage(MessageEnvelope envelope, Message message)
         throws IOException, MailException {
         if (!isFresh) {
             smtpProtocol.executeReset();
@@ -208,38 +208,37 @@ public class SmtpClient implements OutgoingMailClient {
 
         String mimeStr = messageMime.toMimeString();
 
-        MessageEnvelope env = message.getEnvelope();
         StringBuffer buffer = new StringBuffer();
 
         // Generate the headers
-        env.date = Calendar.getInstance().getTime();
-        buffer.append(MailMessageParser.generateMessageHeaders(env, true));
+        envelope.date = Calendar.getInstance().getTime();
+        buffer.append(MailMessageParser.generateMessageHeaders(envelope, true));
         
         // Add the body
         buffer.append(mimeStr);
 
         // Send the message
-        if (!smtpProtocol.executeMail(stripEmail(env.from[0]))) {
+        if (!smtpProtocol.executeMail(stripEmail(envelope.from[0]))) {
             throw new MailException("Error with sender");
         }
 
-        for (int i = 0; i < env.to.length; i++) {
-            if (!smtpProtocol.executeRecipient(stripEmail(env.to[i]))) {
+        for (int i = 0; i < envelope.to.length; i++) {
+            if (!smtpProtocol.executeRecipient(stripEmail(envelope.to[i]))) {
                 throw new MailException("Error with recipient");
             }
         }
 
-        if (env.cc != null) {
-            for (int i = 0; i < env.cc.length; i++) {
-                if (!smtpProtocol.executeRecipient(stripEmail(env.cc[i]))) {
+        if (envelope.cc != null) {
+            for (int i = 0; i < envelope.cc.length; i++) {
+                if (!smtpProtocol.executeRecipient(stripEmail(envelope.cc[i]))) {
                     throw new MailException("Error with recipient");
                 }
             }
         }
 
-        if (env.bcc != null) {
-            for (int i = 0; i < env.bcc.length; i++) {
-                if (!smtpProtocol.executeRecipient(stripEmail(env.bcc[i]))) {
+        if (envelope.bcc != null) {
+            for (int i = 0; i < envelope.bcc.length; i++) {
+                if (!smtpProtocol.executeRecipient(stripEmail(envelope.bcc[i]))) {
                     throw new MailException("Error with recipient");
                 }
             }
