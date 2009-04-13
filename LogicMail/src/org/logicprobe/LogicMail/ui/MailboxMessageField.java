@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
@@ -123,7 +124,12 @@ public class MailboxMessageField extends Field {
 	 */
 	protected void paint(Graphics graphics) {
         String senderText = createSenderText();
-    	String dateString = createDisplayDate();
+        String dateString = createDisplayDate();
+        Bitmap attachmentIcon = null;
+        MessagePart[] attachments = messageNode.getMessageAttachments();
+        if(attachments != null && attachments.length > 0) {
+        	attachmentIcon = Bitmap.getBitmapResource("mail_attachment.png");
+        }
 
     	boolean isFocus = this.isFocus();
         int width = this.getWidth();
@@ -140,6 +146,9 @@ public class MailboxMessageField extends Field {
         // Draw the message icon
         Bitmap messageIcon = NodeIcons.getIcon(messageNode);
         graphics.drawBitmap(1, (lineHeight / 2) - (messageIcon.getHeight() / 2), 20, lineHeight*2, messageIcon, 0, 0);
+        if(attachmentIcon != null) {
+            graphics.drawBitmap(1, lineHeight, 20, lineHeight*2, attachmentIcon, 0, 0);
+        }
 
         // Draw the sender text
         if(senderText != null) {

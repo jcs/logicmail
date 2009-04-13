@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Date;
+import java.util.Vector;
 
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.Comparator;
@@ -45,6 +46,9 @@ import org.logicprobe.LogicMail.message.MessageForwardConverter;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessageReplyConverter;
+import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -138,6 +142,7 @@ public class MessageNode implements Node {
 	
 	private MailboxNode parent;
 	private MessagePart messageBody;
+	private MessagePart[] messageAttachments;
 	private String messageSource;
 	private EventListenerList listenerList = new EventListenerList();
 	private boolean refreshInProgress;
@@ -463,10 +468,37 @@ public class MessageNode implements Node {
 		if(this.messageBody != null) {
 			refreshInProgress = false;
 			this.flags &= ~Flag.RECENT; // RECENT = false
+			
+			Vector attachmentParts = new Vector();
+			findMessageAttachments(attachmentParts, this.messageBody);
+			messageAttachments = new MessagePart[attachmentParts.size()];
+			attachmentParts.copyInto(messageAttachments);
+			
 			fireMessageStatusChanged(MessageNodeEvent.TYPE_LOADED);
 		}
 	}
-	
+
+	/**
+	 * Recursively find all message parts that are considered to be
+	 * message attachments.  This will include all parts that are
+	 * not multi, text, or otherwise unsupported.
+	 * 
+	 * @param attachmentParts Collection of found attachments
+	 * @param currentPart Current message part
+	 */
+	private static void findMessageAttachments(Vector attachmentParts, MessagePart currentPart) {
+		if(currentPart instanceof MultiPart) {
+			MultiPart multiPart = (MultiPart)currentPart;
+			MessagePart[] children = multiPart.getParts();
+			for(int i=0; i<children.length; i++) {
+				findMessageAttachments(attachmentParts, children[i]);
+			}
+		}
+		else if(!(currentPart instanceof TextPart) && !(currentPart instanceof UnsupportedPart)) {
+			attachmentParts.addElement(currentPart);
+		}
+	}
+
 	/**
 	 * Gets the message body for this node.
 	 * The message body will be null unless it has been explicitly loaded.
@@ -480,6 +512,21 @@ public class MessageNode implements Node {
 		return this.messageBody;
 	}
 
+	/**
+	 * Gets the message parts that are considered to be message attachments.
+	 * <p>
+	 * This is a convenience method, as it returns an array that is populated
+	 * from the message structure when {@link #setMessageBody(MessagePart)}
+	 * is called.  This array will contain all message parts that are not of
+	 * type multi, text, or unsupported.
+	 * </p>
+	 * 
+	 * @return Message attachments.
+	 */
+	public MessagePart[] getMessageAttachments() {
+		return this.messageAttachments;
+	}
+	
 	/**
 	 * Sets the raw message source.
 	 * 
