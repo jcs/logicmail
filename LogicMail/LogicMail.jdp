@@ -164,6 +164,7 @@ src\org\logicprobe\LogicMail\ui\LoginDialog.java
 src\org\logicprobe\LogicMail\ui\MailboxMessageField.java
 src\org\logicprobe\LogicMail\ui\MailboxScreen.java
 src\org\logicprobe\LogicMail\ui\MailboxSelectionDialog.java
+src\org\logicprobe\LogicMail\ui\MailboxSeparatorField.java
 src\org\logicprobe\LogicMail\ui\MailHomeListener.java
 src\org\logicprobe\LogicMail\ui\MailHomePresenter.java
 src\org\logicprobe\LogicMail\ui\MailHomeScreen.java

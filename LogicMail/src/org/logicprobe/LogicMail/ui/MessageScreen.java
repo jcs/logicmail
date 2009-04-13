@@ -155,34 +155,34 @@ public class MessageScreen extends BaseScreen {
     	super.onUndisplay();
     }
     
-    private MenuItem propsItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_PROPERTIES), 100, 10) {
+    private MenuItem propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 100, 10) {
         public void run() {
         	MessagePropertiesDialog dialog = new MessagePropertiesDialog(messageNode);
         	dialog.doModal();
         }
     };
-    private MenuItem replyItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REPLY), 110, 10) {
+    private MenuItem replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {
         public void run() {
             if(messageNode.getMessageBody() != null) {
                 getNavigationController().displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
             }
         }
     };
-    private MenuItem replyAllItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_REPLYTOALL), 115, 10) {
+    private MenuItem replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 115, 10) {
         public void run() {
             if(messageNode.getMessageBody() != null) {
                 getNavigationController().displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
             }
         }
     };
-    private MenuItem forwardItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_FORWARD), 120, 10) {
+    private MenuItem forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 120, 10) {
         public void run() {
             if(messageNode.getMessageBody() != null) {
                 getNavigationController().displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
             }
         }
     };
-    private MenuItem copyToItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COPY_TO), 125, 10) {
+    private MenuItem copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 125, 10) {
         public void run() {
             if(messageNode.getMessageBody() != null) {
             	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
@@ -200,7 +200,7 @@ public class MessageScreen extends BaseScreen {
             }
         }
     };
-    private MenuItem moveToItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_MOVE_TO), 130, 10) {
+    private MenuItem moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 130, 10) {
         public void run() {
             if(messageNode.getMessageBody() != null) {
             	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
@@ -221,16 +221,17 @@ public class MessageScreen extends BaseScreen {
             }
         }
     };
-    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 150, 10) {
+    private MenuItem compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 150, 10) {
         public void run() {
             getNavigationController().displayComposition(messageNode.getParent().getParentAccount());
         }
     };
-    private MenuItem closeItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_CLOSE), 200000, 10) {
+    private MenuItem closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
         public void run() {
             onClose();
         }
     };
+    
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
         menu.addSeparator();

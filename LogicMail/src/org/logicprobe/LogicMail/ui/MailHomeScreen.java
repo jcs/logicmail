@@ -196,9 +196,34 @@ public class MailHomeScreen extends BaseScreen implements MailHomeView {
 			selectFolderItem.run();
 			retval = true;
 			break;
+		case Keypad.KEY_SPACE:
+			toggleSelectedNode();
+			retval = true;
+			break;
 		}
 		return retval;
 	}
+    
+    /**
+     * Toggles the expansion state of the currently selected node.
+     */
+    private void toggleSelectedNode() {
+        int curNode = treeField.getCurrentNode();
+        
+        // Make sure a node is selected
+        if(curNode == -1) {
+            return;
+        }
+        
+        // Make sure the selected node has children
+        if(treeField.getFirstChild(curNode) == -1) {
+            return;
+        }
+
+        // Toggle the expansion state of the current node
+        treeField.setExpanded(curNode, !treeField.getExpanded(curNode));
+    }
+    
     
 	private void treeField_DrawTreeItem(
 			TreeField treeField,

@@ -172,27 +172,27 @@ public class MailboxScreen extends BaseScreen {
         return true;
     }
 
-    private MenuItem selectItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SELECT), 100, 10) {
+    private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
         public void run() {
             openSelectedMessage();
         }
     };
-    private MenuItem propertiesItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_PROPERTIES), 105, 10) {
+    private MenuItem propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
         public void run() {
             openSelectedMessageProperties();
         }
     };
-    private MenuItem compositionItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL), 120, 10) {
+    private MenuItem compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
         public void run() {
         	getNavigationController().displayComposition(mailboxNode.getParentAccount());
         }
     };
-    private MenuItem deleteItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE), 130, 10) {
+    private MenuItem deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
         public void run() {
         	deleteSelectedMessage();
         }
     };
-    private MenuItem undeleteItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_UNDELETE), 135, 10) {
+    private MenuItem undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 135, 10) {
         public void run() {
         	undeleteSelectedMessage();
         }

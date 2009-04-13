@@ -46,7 +46,7 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 
 /**
- * Field to represent mailbox items on the mailbox screen.
+ * Field to represent message items on the mailbox screen.
  */
 public class MailboxMessageField extends Field {
 	private MailboxNode mailboxNode;
@@ -92,8 +92,6 @@ public class MailboxMessageField extends Field {
 	 */
 	protected void layout(int width, int height) {
         maxWidth = width;
-        //dateWidth = Font.getDefault().getAdvance("00/00/0000");
-        //senderWidth = maxWidth - dateWidth - 20;
         lineHeight = getPreferredHeight() / 2;
 		setExtent(width, getPreferredHeight());
 	}
