@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.UiApplication;
 
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailRootNode;
@@ -48,7 +49,8 @@ public class NavigationController {
 	private MailRootNode mailRootNode;
 	
 	private UiApplication uiApplication;
-	private MailHomeScreen mailHomeScreen;
+	private MailHomeScreen mailHomeView;
+	private MailHomePresenter mailHomePresenter;
 	
 	public NavigationController(UiApplication uiApplication) {
 		this.uiApplication = uiApplication;
@@ -56,10 +58,35 @@ public class NavigationController {
 	}
 	
 	public synchronized void displayMailHome() {
-		if(mailHomeScreen == null) {
-			mailHomeScreen = new MailHomeScreen(this, mailRootNode);
+		if(mailHomePresenter == null) {
+			mailHomeView = new MailHomeScreen();
+			mailHomePresenter = new MailHomePresenter(this, mailRootNode, mailHomeView);
+			mailHomePresenter.initialize();
 		}
-		uiApplication.pushScreen(mailHomeScreen);
+		uiApplication.pushScreen(mailHomeView);
+	}
+	
+	public synchronized void displayAccountConfigurationWizard() {
+		UiApplication.getUiApplication().invokeLater(new Runnable() {
+			public void run() {
+				// Start the new account configuration wizard
+				AccountConfigWizard wizard = new AccountConfigWizard();
+				if(wizard.start()) {
+					AccountConfig newAccountConfig = wizard.getAccountConfig();
+					
+					// Find the newly created account, and trigger a folder refresh (if applicable)
+					AccountNode[] accounts = mailRootNode.getAccounts();
+					for(int i=0; i<accounts.length; i++) {
+						if(accounts[i].getAccountConfig() == newAccountConfig) {
+							if(accounts[i].hasFolders()) {
+								accounts[i].refreshMailboxes();
+							}
+							break;
+						}
+					}
+				}
+			}
+		});
 	}
 	
 	public synchronized void displayMailbox(MailboxNode mailboxNode) {

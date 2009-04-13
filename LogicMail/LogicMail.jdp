@@ -151,6 +151,7 @@ src\org\logicprobe\LogicMail\ui\AccountConfigWizard.java
 src\org\logicprobe\LogicMail\ui\AcctCfgScreen.java
 src\org\logicprobe\LogicMail\ui\BaseCfgScreen.java
 src\org\logicprobe\LogicMail\ui\BaseScreen.java
+src\org\logicprobe\LogicMail\ui\BaseView.java
 src\org\logicprobe\LogicMail\ui\BorderedFieldManager.java
 src\org\logicprobe\LogicMail\ui\CompositionScreen.java
 src\org\logicprobe\LogicMail\ui\ConfigScreen.java
@@ -163,7 +164,10 @@ src\org\logicprobe\LogicMail\ui\LoginDialog.java
 src\org\logicprobe\LogicMail\ui\MailboxMessageField.java
 src\org\logicprobe\LogicMail\ui\MailboxScreen.java
 src\org\logicprobe\LogicMail\ui\MailboxSelectionDialog.java
+src\org\logicprobe\LogicMail\ui\MailHomeListener.java
+src\org\logicprobe\LogicMail\ui\MailHomePresenter.java
 src\org\logicprobe\LogicMail\ui\MailHomeScreen.java
+src\org\logicprobe\LogicMail\ui\MailHomeView.java
 src\org\logicprobe\LogicMail\ui\MessagePropertiesDialog.java
 src\org\logicprobe\LogicMail\ui\MessageRenderer.java
 src\org\logicprobe\LogicMail\ui\MessageScreen.java
@@ -172,6 +176,7 @@ src\org\logicprobe\LogicMail\ui\NodeIcons.java
 src\org\logicprobe\LogicMail\ui\NotificationHandler.java
 src\org\logicprobe\LogicMail\ui\OutgoingConfigScreen.java
 src\org\logicprobe\LogicMail\ui\ThrobberField.java
+src\org\logicprobe\LogicMail\ui\ViewListener.java
 src\org\logicprobe\LogicMail\ui\WizardController.java
 src\org\logicprobe\LogicMail\ui\WizardScreen.java
 src\org\logicprobe\LogicMail\util\Connection.java
