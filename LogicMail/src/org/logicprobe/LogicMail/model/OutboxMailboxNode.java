@@ -30,6 +30,9 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -38,6 +41,7 @@ import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -117,6 +121,11 @@ public class OutboxMailboxNode extends MailboxNode {
 			int count = ((Integer)mailSenderTable.get(mailSender)).intValue();
 			mailSenderTable.put(mailSender, new Integer(count++));
 		}
+		
+		// Create and set a dummy message token
+		OutboxMessageToken messageToken =
+			new OutboxMessageToken(getFolderTreeItem(), message.getId());
+		message.setMessageToken(messageToken);
     }
 
     /**
@@ -180,5 +189,43 @@ public class OutboxMailboxNode extends MailboxNode {
     		// Remove from this folder
     		removeMessage(outgoingMessageNode);
     	}
+    }
+    
+    /**
+     * Special message token for outbox messages.
+     * This is necessary because Outbox messages do not
+     * normally exist within any real mail store unless
+     * they fail to transmit.
+     *
+     */
+    private static class OutboxMessageToken implements MessageToken {
+		private String folderPath;
+		private int messageId;
+		
+    	public OutboxMessageToken(FolderTreeItem folderTreeItem, int messageId) {
+    		this.folderPath = folderTreeItem.getPath();
+    		this.messageId = messageId;
+    	}
+    	
+    	public int getMessageId() {
+    		return messageId;
+    	}
+    	
+		public boolean containedWithin(FolderTreeItem folderTreeItem) {
+			return folderTreeItem.getPath().equals(folderPath);
+		}
+
+		public long getUniqueId() {
+			// Empty because this special token is not intended to be serialized
+			return 0;
+		}
+
+		public void serialize(DataOutputStream output) throws IOException {
+			// Empty because this special token is not intended to be serialized
+		}
+    	
+		public void deserialize(DataInputStream input) throws IOException {
+			// Empty because this special token is not intended to be serialized
+		}
     }
 }

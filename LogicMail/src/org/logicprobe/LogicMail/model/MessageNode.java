@@ -261,6 +261,15 @@ public class MessageNode implements Node {
 	}
 	
 	/**
+	 * Sets the token object used to identify the message to the protocol later.
+	 * 
+	 * @param messageToken the message token.
+	 */
+	protected void setMessageToken(MessageToken messageToken) {
+		this.messageToken = messageToken;
+	}
+	
+	/**
 	 * Gets the bit-field set of message flags, as specified by {@link Flag}.
 	 * 
 	 * @return the flags
