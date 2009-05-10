@@ -38,6 +38,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
@@ -157,8 +158,10 @@ public class MessageScreen extends BaseScreen {
     
     private MenuItem propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 100, 10) {
         public void run() {
-        	MessagePropertiesDialog dialog = new MessagePropertiesDialog(messageNode);
-        	dialog.doModal();
+        	//MessagePropertiesDialog dialog = new MessagePropertiesDialog(messageNode);
+        	//dialog.doModal();
+        	MessagePropertiesScreen screen = new MessagePropertiesScreen(messageNode);
+        	UiApplication.getUiApplication().pushScreen(screen);
         }
     };
     private MenuItem replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {

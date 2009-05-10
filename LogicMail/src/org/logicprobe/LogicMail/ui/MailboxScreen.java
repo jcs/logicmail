@@ -446,9 +446,9 @@ public class MailboxScreen extends BaseScreen {
     {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
-	        MessagePropertiesDialog dialog =
-	        	new MessagePropertiesDialog(messageNode);
-	        dialog.doModal();
+	        MessagePropertiesScreen propertiesScreen =
+	        	new MessagePropertiesScreen(messageNode);
+	        UiApplication.getUiApplication().pushModalScreen(propertiesScreen);
     	}
     }
 
