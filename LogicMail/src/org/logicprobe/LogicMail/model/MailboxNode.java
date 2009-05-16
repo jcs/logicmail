@@ -316,9 +316,7 @@ public class MailboxNode implements Node, Serializable {
 		StringBuffer buf = new StringBuffer();
 		buf.append(MailMessageParser.generateMessageHeaders(envelope, false));
 		
-        MessageMimeConverter messageMime = new MessageMimeConverter();
-        message.getBody().accept(messageMime);
-		
+        MessageMimeConverter messageMime = new MessageMimeConverter(message);
         buf.append(messageMime.toMimeString());
 
         String rawMessage = buf.toString();

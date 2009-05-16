@@ -45,7 +45,7 @@ public class UiTests extends TestCase {
     
     public Test suite() {
         TestSuite suite = new TestSuite("LogicMail.ui");
-        suite.addTest(new MessageRendererTest().suite());
+        //suite.addTest(new MessageRendererTest().suite());
         return suite;
     }
 }

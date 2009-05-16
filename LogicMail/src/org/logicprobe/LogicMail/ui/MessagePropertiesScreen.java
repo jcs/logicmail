@@ -129,7 +129,7 @@ public class MessagePropertiesScreen extends MainScreen {
 		structureTreeField.setEmptyString("", 0);
 		structureTreeField.setDefaultExpanded(true);
 		structureTreeField.setIndentWidth(20);
-		MessagePart rootPart = messageNode.getMessageBody();
+		MessagePart rootPart = messageNode.getMessageStructure();
 		if(rootPart != null) {
 			populateStructureTreeField(0, rootPart);
 		}

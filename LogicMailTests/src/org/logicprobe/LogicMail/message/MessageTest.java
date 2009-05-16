@@ -43,7 +43,8 @@ import java.util.Calendar;
 public class MessageTest extends TestCase {
     private String sampleText;
     private MessageEnvelope envelope;
-    private MessagePart body;
+    private MessagePart structure;
+    private TextContent textContent;
     private Message message;
     
     public MessageTest() {
@@ -60,7 +61,8 @@ public class MessageTest extends TestCase {
                 "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
                 "nisi ut aliquip ex ea commodo consequat.";
 
-        body = new TextPart("plain", sampleText);
+        structure = new TextPart("plain", "", "");
+        textContent = new TextContent((TextPart)structure, sampleText);
         
         envelope = new MessageEnvelope();
         envelope.from = new String[] { "John Doe <jdoe@generic.org>" };
@@ -74,18 +76,20 @@ public class MessageTest extends TestCase {
         envelope.subject = "The subject";
         envelope.messageId = "1234567890";
         
-        message = new Message(body);
+        message = new Message(structure);
+        message.putContent(structure, textContent);
     }
 
     public void tearDown() {
         sampleText = null;
         envelope = null;
-        body = null;
+        structure = null;
         message = null;
     }
 
     public void testMessage() {
-        assertEquals(body, message.getBody());
+        assertEquals(structure, message.getStructure());
+        assertEquals(textContent, message.getContent(structure));
     }
 
 // TODO: Convert these into tests for MessageNode

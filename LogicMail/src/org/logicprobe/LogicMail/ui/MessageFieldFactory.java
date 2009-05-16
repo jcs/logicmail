@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.ui;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Vector;
+
+import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.message.ImageContent;
+import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.TextContent;
+import org.logicprobe.LogicMail.message.TextPart;
 
 import net.rim.blackberry.api.browser.Browser;
 import net.rim.blackberry.api.browser.BrowserSession;
@@ -49,41 +55,37 @@ import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.DataBuffer;
 
-import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.message.ImagePart;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartVisitor;
-import org.logicprobe.LogicMail.message.MultiPart;
-import org.logicprobe.LogicMail.message.TextPart;
-import org.logicprobe.LogicMail.message.UnsupportedPart;
-
 /**
- * This class implements a visitor that generates UI elements to display
- * a message tree to the user.
+ * Factory to create {@link Field} instances for display of
+ * {@link MessageContent} objects on the user interface.
  */
-public class MessageRenderer implements MessagePartVisitor {
-	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-    private Vector messageFields;
-    
-    /** Creates a new instance of MessageRenderer */
-    public MessageRenderer() {
-        messageFields = new Vector();
-    }
+public class MessageFieldFactory {
+	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 
-    public void visitMultiPart(MultiPart part) {
-        // MultiPart parts are invisible to the user
-    }
+	public static Field createMessageField(MessageContent content) {
+		Field field;
+		if(content instanceof TextContent) {
+			field = createTextMessageField((TextContent)content);
+		}
+		else if(content instanceof ImageContent) {
+			field = createImageMessageField((ImageContent)content);
+		}
+		else {
+			field = createUnsupportedMessageField(content);
+		}
+		return field;
+	}
 
-    public void visitTextPart(TextPart part) {
+	private static Field createTextMessageField(TextContent content) {
+		TextPart part = (TextPart)content.getMessagePart();
     	if(part.getMimeSubtype().equalsIgnoreCase("html")) {
     		ButtonField browserButtonField = new ButtonField("Open HTML in browser...", Field.FIELD_HCENTER);
-    		browserButtonField.setChangeListener(new MessageFieldChangeListener(part) {
+    		browserButtonField.setChangeListener(new MessageFieldChangeListener(content) {
 				public void fieldChanged(Field field, int context) {
-					TextPart textPart = (TextPart)getPart();
+					TextContent content = (TextContent)getContent();
 					try {
 						DataBuffer buffer = new DataBuffer();
-						buffer.write(textPart.getText().getBytes());
+						buffer.write(content.getText().getBytes());
 						
 						ByteArrayOutputStream output = new ByteArrayOutputStream();
 						Base64OutputStream boutput = new Base64OutputStream(output);
@@ -111,31 +113,31 @@ public class MessageRenderer implements MessagePartVisitor {
     		browserButtonFieldManager.add(new LabelField());
     		browserButtonFieldManager.add(browserButtonField);
     		browserButtonFieldManager.add(new LabelField());
-    		messageFields.addElement(browserButtonFieldManager);
+    		return browserButtonFieldManager;
     	}
     	else {
-    		messageFields.addElement(new RichTextField(part.getText()));
+    		return new RichTextField(content.getText());
     	}
-    }
+	}
 
-    public void visitImagePart(ImagePart part) {
-        messageFields.addElement(new BitmapField(part.getImage().getBitmap()));
-    }
-
-    public void visitUnsupportedPart(UnsupportedPart part) {
-        messageFields.addElement(new RichTextField(resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED) + ' ' + part.getMimeType() + '/' + part.getMimeSubtype()));
-    }
-
-    public Vector getMessageFields() {
-        return messageFields;
-    }
-
-    private static abstract class MessageFieldChangeListener implements FieldChangeListener {
-    	private MessagePart part;
-    	public MessageFieldChangeListener(MessagePart part) {
-    		this.part = part;
+	private static abstract class MessageFieldChangeListener implements FieldChangeListener {
+    	private TextContent content;
+    	public MessageFieldChangeListener(TextContent content) {
+    		this.content = content;
     	}
     	
-    	protected MessagePart getPart() { return part; }
+    	protected TextContent getContent() { return content; }
     }
+	
+	private static Field createImageMessageField(ImageContent content) {
+		return new BitmapField(content.getImage().getBitmap());
+	}
+
+	private static Field createUnsupportedMessageField(MessageContent content) {
+		MessagePart part = content.getMessagePart();
+		return new RichTextField(
+				resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED)
+				+ ' ' + part.getMimeType()
+				+ '/' + part.getMimeSubtype());
+	}
 }

@@ -203,8 +203,7 @@ public class SmtpClient implements OutgoingMailClient {
         isFresh = false;
 
         // serialize the message
-        MessageMimeConverter messageMime = new MessageMimeConverter();
-        message.getBody().accept(messageMime);
+        MessageMimeConverter messageMime = new MessageMimeConverter(message);
 
         String mimeStr = messageMime.toMimeString();
 

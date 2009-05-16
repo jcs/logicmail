@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,40 +28,49 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.message;
 
+import java.util.Vector;
+
 /**
- * Text message part (MIME type: "text/????")
+ * Utility class to take a {@link MessagePart} tree and transform
+ * it into a list based on various rules.
  */
-public class TextPart extends MessagePart {
-	private String encoding;
-	private String charset;
-    
-    /** Creates a new instance of TextPart */
-    public TextPart(String mimeSubtype, String encoding, String charset) {
-        super("text", mimeSubtype);
-        this.encoding = encoding;
-        this.charset = charset;
-    }
+public class MessagePartTransformer {
+	/**
+	 * Gets a list of displayable message parts in order.
+	 * @param rootPart The root part of the message.
+	 * @return The displayable parts.
+	 */
+	public static MessagePart[] getDisplayableParts(MessagePart rootPart) {
+		DisplayablePartVisitor visitor = new DisplayablePartVisitor();
+		rootPart.accept(visitor);
+		Vector parts = visitor.getDisplayableParts();
+		MessagePart[] result = new MessagePart[parts.size()];
+		parts.copyInto(result);
+		return result;
+	}
+	
+	private static class DisplayablePartVisitor implements MessagePartVisitor {
+		private Vector displayableParts = new Vector();
+		
+		public Vector getDisplayableParts() { return displayableParts; }
+		
+		public void visitTextPart(TextPart part) {
+			// TODO: Add logic to deal with multipart/alternative cases
+			displayableParts.addElement(part);
+		}
 
-    public void accept(MessagePartVisitor visitor) {
-        visitor.visitTextPart(this);
-    }
+		public void visitImagePart(ImagePart part) {
+			displayableParts.addElement(part);
+		}
 
-    public String getEncoding() {
-    	return encoding;
-    }
-    
-    public void setEncoding(String encoding) {
-    	this.encoding = encoding;
-    }
-    
-    public String getCharset() {
-        return charset;
-    }
-
-    public void setCharset(String charset) {
-        this.charset = charset;
-    }
+		public void visitUnsupportedPart(UnsupportedPart part) {
+			// No need to display unknown things
+		}
+		
+		public void visitMultiPart(MultiPart part) {
+			// MultiPart sections are not displayed
+		}
+	}
 }

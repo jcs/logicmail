@@ -46,7 +46,9 @@ import net.rim.device.api.ui.component.NullField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MessagePartTransformer;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailManager;
@@ -135,7 +137,7 @@ public class MessageScreen extends BaseScreen {
     protected void onDisplay() {
     	super.onDisplay();
     	messageNode.addMessageNodeListener(messageNodeListener);
-    	if(messageNode.getMessageBody() == null) {
+    	if(!messageNode.hasMessageContent()) {
     		throbberField = new ThrobberField(this.getWidth() / 4, Field.FIELD_HCENTER);
     		add(throbberField);
     		messageNode.refreshMessage();
@@ -166,28 +168,28 @@ public class MessageScreen extends BaseScreen {
     };
     private MenuItem replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {
         public void run() {
-            if(messageNode.getMessageBody() != null) {
+            if(messageNode.hasMessageContent()) {
                 getNavigationController().displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
             }
         }
     };
     private MenuItem replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 115, 10) {
         public void run() {
-            if(messageNode.getMessageBody() != null) {
+            if(messageNode.hasMessageContent()) {
                 getNavigationController().displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
             }
         }
     };
     private MenuItem forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 120, 10) {
         public void run() {
-            if(messageNode.getMessageBody() != null) {
+            if(messageNode.hasMessageContent()) {
                 getNavigationController().displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
             }
         }
     };
     private MenuItem copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 125, 10) {
         public void run() {
-            if(messageNode.getMessageBody() != null) {
+            if(messageNode.hasMessageContent()) {
             	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
             	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
             			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_COPY_TO),
@@ -205,7 +207,7 @@ public class MessageScreen extends BaseScreen {
     };
     private MenuItem moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 130, 10) {
         public void run() {
-            if(messageNode.getMessageBody() != null) {
+            if(messageNode.hasMessageContent()) {
             	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
             	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
             			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_MOVE_TO),
@@ -274,7 +276,7 @@ public class MessageScreen extends BaseScreen {
     }
     
     private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
-    	if(e.getType() == MessageNodeEvent.TYPE_LOADED) {
+    	if(e.getType() == MessageNodeEvent.TYPE_CONTENT_LOADED) {
             synchronized(Application.getEventLock()) {
 	    		if(throbberField != null) {
 	    			this.delete(throbberField);
@@ -286,19 +288,21 @@ public class MessageScreen extends BaseScreen {
     }
 
     private void renderMessage() {
-    	MessagePart messageBody = messageNode.getMessageBody();
-		// Prepare the UI elements
-		Vector messageFields;
-		if(messageBody != null) {
-			MessageRenderer messageRenderer = new MessageRenderer();
-			messageBody.accept(messageRenderer);
-			messageFields = messageRenderer.getMessageFields();
-		}
-		else {
-			messageFields = new Vector();
+    	MessagePart[] displayableParts = MessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());
+		Vector messageFields = new Vector();
+    	for(int i=0; i<displayableParts.length; i++) {
+    		MessageContent content = messageNode.getMessageContent(displayableParts[i]);
+    		if(content != null) {
+    			Field field = MessageFieldFactory.createMessageField(content);
+    			messageFields.addElement(field);
+    		}
+    	}
+    	
+    	if(messageFields.size() == 0) {
 			messageFields.addElement(
 					new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
-		}
+    	}
+    	
 		drawMessageFields(messageFields);
 		messageRendered = true;
     }

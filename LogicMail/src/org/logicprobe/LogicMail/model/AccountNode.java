@@ -385,7 +385,8 @@ public class AccountNode implements Node {
         				outgoingFolderMessage,
         				this, mailSender);
         	
-        	outgoingMessage.setMessageBody(message.getBody());
+        	outgoingMessage.setMessageStructure(message.getStructure());
+        	outgoingMessage.putMessageContent(message.getAllContent());
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
         }
     }
@@ -408,7 +409,8 @@ public class AccountNode implements Node {
         		new OutgoingMessageNode(
         				outgoingFolderMessage,
         				this, mailSender, originalMessageNode);
-        	outgoingMessage.setMessageBody(message.getBody());
+        	outgoingMessage.setMessageStructure(message.getStructure());
+        	outgoingMessage.putMessageContent(message.getAllContent());
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
         }
     }
@@ -594,8 +596,10 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
-            messageNode.setMessageBody(e.getMessage().getBody());
+        	Message message = e.getMessage();
+            messageNode.setMessageStructure(message.getStructure());
             messageNode.setMessageSource(e.getMessageSource());
+            messageNode.putMessageContent(message.getAllContent());
         }
     }
 

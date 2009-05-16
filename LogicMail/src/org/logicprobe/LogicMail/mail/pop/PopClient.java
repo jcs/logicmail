@@ -32,6 +32,9 @@
 package org.logicprobe.LogicMail.mail.pop;
 
 import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Hashtable;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -45,6 +48,7 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
@@ -272,8 +276,14 @@ public class PopClient implements IncomingMailClient {
         // Download the message text
         String[] message = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines);
         
-        MessagePart rootPart = MailMessageParser.parseRawMessage(StringParser.createInputStream(message));
+        Hashtable contentMap = new Hashtable();
+        MessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, StringParser.createInputStream(message));
         Message msg = new Message(rootPart);
+        Enumeration e = contentMap.keys();
+        while(e.hasMoreElements()) {
+        	MessagePart part = (MessagePart)e.nextElement();
+        	msg.putContent(part, (MessageContent)contentMap.get(part));
+        }
         return msg;
     }
 

@@ -48,10 +48,13 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.UnsupportedContentException;
 import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.DataStore;
@@ -571,16 +574,24 @@ public class ImapClient implements IncomingMailClient {
     	}
     	
         ImapParser.MessageSection structure = getMessageStructure(imapMessageToken.getMessageUid());
+        Hashtable contentMap = new Hashtable();
         MessagePart rootPart =
-            getMessagePart(imapMessageToken.getMessageUid(),
+            getMessagePart(contentMap, imapMessageToken.getMessageUid(),
                            structure, accountConfig.getMaxMessageSize());
         Message msg = new Message(rootPart);
+        Enumeration e = contentMap.keys();
+        while(e.hasMoreElements()) {
+        	MessagePart part = (MessagePart)e.nextElement();
+        	msg.putContent(part, (MessageContent)contentMap.get(part));
+        }
         return msg;
     }
 
-    private MessagePart getMessagePart(int uid,
-                                       ImapParser.MessageSection structure,
-                                       int maxSize)
+    private MessagePart getMessagePart(
+    		Hashtable contentMap,
+    		int uid,
+            ImapParser.MessageSection structure,
+            int maxSize)
         throws IOException, MailException
     {
         MessagePart part;
@@ -598,7 +609,12 @@ public class ImapClient implements IncomingMailClient {
                     return null;
                 }
             }
-            part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, structure.charset, data);
+            part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, structure.charset);
+            try {
+				contentMap.put(part, MessageContentFactory.createContent(part, structure.encoding, structure.charset, data));
+			} catch (UnsupportedContentException e) {
+				System.err.println("UnsupportedContentException: " + e.getMessage());
+			}
         }
         else if(structure.address.equals("1")) {
         	// If this was the root part, and still could not be loaded,
@@ -611,7 +627,7 @@ public class ImapClient implements IncomingMailClient {
 
         if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
             for(int i=0;i<structure.subsections.length;i++) {
-                MessagePart subPart = getMessagePart(uid, structure.subsections[i], maxSize);
+                MessagePart subPart = getMessagePart(contentMap, uid, structure.subsections[i], maxSize);
                 if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
                 }

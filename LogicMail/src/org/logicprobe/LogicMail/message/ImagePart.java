@@ -31,26 +31,27 @@
 
 package org.logicprobe.LogicMail.message;
 
-import net.rim.device.api.system.EncodedImage;
-
 /**
  * Text message part (MIME type: "image/????")
  */
 public class ImagePart extends MessagePart {
-    private EncodedImage image;
+	private String encoding;
     
     /** Creates a new instance of ImagePart */
-    public ImagePart(String mimeSubtype, EncodedImage image) {
+    public ImagePart(String mimeSubtype, String encoding) {
         super("image", mimeSubtype);
-        this.image = image;
+        this.encoding = encoding;
     }
 
     public void accept(MessagePartVisitor visitor) {
         visitor.visitImagePart(this);
     }
 
-    public EncodedImage getImage() {
-        return image;
+    public String getEncoding() {
+    	return encoding;
     }
-
+    
+    public void setEncoding(String encoding) {
+    	this.encoding = encoding;
+    }
 }

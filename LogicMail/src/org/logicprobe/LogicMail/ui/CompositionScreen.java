@@ -46,11 +46,15 @@ import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.message.UnsupportedContentException;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -154,7 +158,7 @@ public class CompositionScreen extends BaseScreen {
         initFields();
 
         if(composeType == COMPOSE_NORMAL) {
-        	if(messageNode.getMessageBody() != null) {
+        	if(messageNode.getMessageStructure() != null) {
         		populateFromMessage(messageNode);
         		messageEditField.setEditable(true);
         	}
@@ -191,7 +195,7 @@ public class CompositionScreen extends BaseScreen {
     }
 
     private void messageNodeListener_MessageStatusChanged(MessageNodeEvent e) {
-    	if(e.getType() == MessageNodeEvent.TYPE_LOADED) {
+    	if(e.getType() == MessageNodeEvent.TYPE_STRUCTURE_LOADED) {
     		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
 				public void run() {
 			    	MessageNode messageNode = (MessageNode)getEvent().getSource();
@@ -205,13 +209,16 @@ public class CompositionScreen extends BaseScreen {
 
     private void populateFromMessage(MessageNode message) {
         int i;
-        MessagePart body = message.getMessageBody();
+        MessagePart body = message.getMessageStructure();
 
         // Currently only all-text reply bodies are supported
         if (body instanceof TextPart) {
-            messageEditField.insert("\r\n");
-            messageEditField.insert(((TextPart) body).getText());
-            messageEditField.setCursorPosition(0);
+        	MessageContent content = message.getMessageContent(body);
+        	if(content instanceof TextContent) {
+	            messageEditField.insert("\r\n");
+	            messageEditField.insert(((TextContent)content).getText());
+	            messageEditField.setCursorPosition(0);
+        	}
         }
 
         // Set the subject
@@ -432,10 +439,18 @@ public class CompositionScreen extends BaseScreen {
         return env;
     }
     private Message generateMessage() {
-        MessagePart bodyPart = MessagePartFactory.createMessagePart("text",
-                "plain", "7bit", "us-ascii", messageEditField.getText());
-
+        MessagePart bodyPart = MessagePartFactory.createMessagePart(
+        		"text", "plain", "7bit", "us-ascii");
+        MessageContent bodyContent;
+        try {
+			bodyContent = MessageContentFactory.createContent(
+					bodyPart, "7bit", "us-ascii", messageEditField.getText());
+		} catch (UnsupportedContentException e) {
+			bodyContent = null;
+		}
+        
         Message message = new Message(bodyPart);
+        message.putContent(bodyPart, bodyContent);
     	return message;
     }
     

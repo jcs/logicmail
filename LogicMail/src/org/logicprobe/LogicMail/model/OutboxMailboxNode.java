@@ -151,7 +151,7 @@ public class OutboxMailboxNode extends MailboxNode {
 		envelope.messageId = outgoingMessageNode.getMessageId();
 		
 		// Create a protocol-compatible message object
-		Message message = new Message(outgoingMessageNode.getMessageBody());
+		Message message = new Message(outgoingMessageNode.getMessageStructure());
 		
 		// Update the outbound map and request the message to be sent
 		outboundMessageMap.put(message, outgoingMessageNode);

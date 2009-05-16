@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,40 +28,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.message;
 
 /**
- * Text message part (MIME type: "text/????")
+ * Visitor for handling a message content
  */
-public class TextPart extends MessagePart {
-	private String encoding;
-	private String charset;
-    
-    /** Creates a new instance of TextPart */
-    public TextPart(String mimeSubtype, String encoding, String charset) {
-        super("text", mimeSubtype);
-        this.encoding = encoding;
-        this.charset = charset;
-    }
-
-    public void accept(MessagePartVisitor visitor) {
-        visitor.visitTextPart(this);
-    }
-
-    public String getEncoding() {
-    	return encoding;
-    }
-    
-    public void setEncoding(String encoding) {
-    	this.encoding = encoding;
-    }
-    
-    public String getCharset() {
-        return charset;
-    }
-
-    public void setCharset(String charset) {
-        this.charset = charset;
-    }
+public interface MessageContentVisitor {
+	void visit(TextContent content);
+	void visit(ImageContent content);
 }

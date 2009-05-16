@@ -35,10 +35,12 @@ import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.UnsupportedContentException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -184,11 +186,12 @@ public class MailMessageParser {
     /**
      * Parses the raw message body.
      *
+     * @param contentMap Map to populate with MessagePart-to-MessageContent data.
      * @param inputStream The stream to read the raw message from
      * @return The root message part.
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public static MessagePart parseRawMessage(InputStream inputStream)
+    public static MessagePart parseRawMessage(Hashtable contentMap, InputStream inputStream)
         throws IOException {
         MIMEInputStream mimeInputStream = null;
 
@@ -198,7 +201,7 @@ public class MailMessageParser {
             return null;
         }
 
-        MessagePart rootPart = getMessagePart(mimeInputStream);
+        MessagePart rootPart = getMessagePart(contentMap, mimeInputStream);
 
         return rootPart;
     }
@@ -207,10 +210,11 @@ public class MailMessageParser {
      * Recursively walk the provided MIMEInputStream, building a message
      * tree in the process.
      *
+     * @param contentMap Map to populate with MessagePart-to-MessageContent data.
      * @param mimeInputStream MIMEInputStream of the downloaded message data
      * @return Root MessagePart element for this portion of the message tree
      */
-    private static MessagePart getMessagePart(MIMEInputStream mimeInputStream)
+    private static MessagePart getMessagePart(Hashtable contentMap, MIMEInputStream mimeInputStream)
         throws IOException {
         // Parse out the MIME type and relevant header fields
         String mimeType = mimeInputStream.getContentType();
@@ -227,12 +231,12 @@ public class MailMessageParser {
         // Handle the multi-part case
         if (mimeInputStream.isMultiPart() &&
                 type.equalsIgnoreCase("multipart")) {
-            MessagePart part = MessagePartFactory.createMessagePart(type,
-                    subtype, null, null, null);
+            MessagePart part = MessagePartFactory.createMessagePart(
+            		type, subtype, null, null);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
 
             for (int i = 0; i < mimeSubparts.length; i++) {
-                MessagePart subPart = getMessagePart(mimeSubparts[i]);
+                MessagePart subPart = getMessagePart(contentMap, mimeSubparts[i]);
 
                 if (subPart != null) {
                     ((MultiPart) part).addPart(subPart);
@@ -263,13 +267,27 @@ public class MailMessageParser {
 
                 int size = buffer.length - offset;
 
-                return MessagePartFactory.createMessagePart(type, subtype,
-                    encoding, charset, new String(buffer, offset, size));
+                String data = new String(buffer, offset, size);
+                MessagePart part = MessagePartFactory.createMessagePart(
+                		type, subtype, encoding, charset);
+                try {
+					contentMap.put(part, MessageContentFactory.createContent(part, encoding, charset, data));
+				} catch (UnsupportedContentException e) {
+					System.err.println("UnsupportedContentException: " + e.getMessage());
+				}
+                return part;
             } else {
                 buffer = StringParser.readWholeStream(mimeInputStream);
 
-                return MessagePartFactory.createMessagePart(type, subtype,
-                    encoding, charset, new String(buffer));
+                String data = new String(buffer);
+                MessagePart part = MessagePartFactory.createMessagePart(
+                		type, subtype, encoding, charset);
+                try {
+					contentMap.put(part, MessageContentFactory.createContent(part, encoding, charset, data));
+				} catch (UnsupportedContentException e) {
+					System.err.println("UnsupportedContentException: " + e.getMessage());
+				}
+                return part;
             }
         }
     }

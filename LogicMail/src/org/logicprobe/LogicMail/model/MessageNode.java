@@ -31,6 +31,8 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import net.rim.device.api.util.Arrays;
@@ -40,13 +42,16 @@ import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.ImagePart;
+import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessageForwardConverter;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessageReplyConverter;
+import org.logicprobe.LogicMail.message.MessagePartVisitor;
 import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -141,7 +146,8 @@ public class MessageNode implements Node {
 	private String messageId;
 	
 	private MailboxNode parent;
-	private MessagePart messageBody;
+	private MessagePart messageStructure;
+	private Hashtable messageContent = new Hashtable();
 	private MessagePart[] messageAttachments;
 	private String messageSource;
 	private EventListenerList listenerList = new EventListenerList();
@@ -468,22 +474,30 @@ public class MessageNode implements Node {
 	}
 
 	/**
-	 * Sets the message data for this node.
+	 * Sets the message structure for this node.
 	 * 
-	 * @param message The message.
+	 * @param message The message structure.
 	 */
-	void setMessageBody(MessagePart messageBody) {
-		this.messageBody = messageBody;
-		if(this.messageBody != null) {
-			refreshInProgress = false;
-			this.flags &= ~Flag.RECENT; // RECENT = false
-			
-			Vector attachmentParts = new Vector();
-			findMessageAttachments(attachmentParts, this.messageBody);
-			messageAttachments = new MessagePart[attachmentParts.size()];
-			attachmentParts.copyInto(messageAttachments);
-			
-			fireMessageStatusChanged(MessageNodeEvent.TYPE_LOADED);
+	void setMessageStructure(MessagePart messageStructure) {
+		boolean fireEvent;
+		synchronized(messageContent) {
+			this.messageStructure = messageStructure;
+			if(this.messageStructure != null) {
+				refreshInProgress = false;
+				this.flags &= ~Flag.RECENT; // RECENT = false
+				
+				Vector attachmentParts = new Vector();
+				findMessageAttachments(attachmentParts, this.messageStructure);
+				messageAttachments = new MessagePart[attachmentParts.size()];
+				attachmentParts.copyInto(messageAttachments);
+				fireEvent = true;
+			}
+			else {
+				fireEvent = false;
+			}
+		}
+		if(fireEvent) {
+			fireMessageStatusChanged(MessageNodeEvent.TYPE_STRUCTURE_LOADED);
 		}
 	}
 
@@ -509,23 +523,97 @@ public class MessageNode implements Node {
 	}
 
 	/**
-	 * Gets the message body for this node.
-	 * The message body will be null unless it has been explicitly loaded.
+	 * Adds content to this message node.
 	 * 
-	 * @return The message.
+	 * @param messageContent The content to add.
 	 */
-	public MessagePart getMessageBody() {
-		if(this.messageBody != null) {
-			this.flags |= Flag.SEEN; // SEEN = true
+	void putMessageContent(MessageContent messageContent) {
+		synchronized(messageContent) {
+			this.messageContent.put(messageContent.getMessagePart(), messageContent);
 		}
-		return this.messageBody;
+		fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
 	}
 
+	/**
+	 * Adds content to this message node.
+	 * <p>
+	 * This method provides for a batch addition of content, causing a
+	 * single event to be fired afterwards.
+	 * </p>
+	 * 
+	 * @param messageContent The content sections to add.
+	 */
+	void putMessageContent(MessageContent[] messageContent) {
+		synchronized(messageContent) {
+			for(int i=0; i<messageContent.length; i++) {
+				this.messageContent.put(messageContent[i].getMessagePart(), messageContent[i]);
+			}
+		}
+		fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
+	}
+	
+	/**
+	 * Gets the message structure for this node.
+	 * The message structure will be null unless it has been explicitly loaded.
+	 * 
+	 * @return The message structure.
+	 */
+	public MessagePart getMessageStructure() {
+		synchronized(messageContent) {
+			if(this.messageStructure != null) {
+				this.flags |= Flag.SEEN; // SEEN = true
+			}
+			return this.messageStructure;
+		}
+	}
+
+	/**
+	 * Gets message content.
+	 * 
+	 * @param messagePart The part that represents the content's structural placement.
+	 * @return The content.
+	 */
+	public MessageContent getMessageContent(MessagePart messagePart) {
+		synchronized(messageContent) {
+			return (MessageContent)messageContent.get(messagePart);
+		}
+    }
+	
+	/**
+	 * Gets whether this message has any content available.
+	 * This is intended to be used as a quick check to determine
+	 * whether message content needs to be loaded.
+	 * 
+	 * @return True if content is available, false otherwise
+	 */
+	public boolean hasMessageContent() {
+		synchronized(messageContent) {
+			return (messageStructure != null) && (!messageContent.isEmpty());
+		}
+	}
+	
+	/**
+	 * Gets all message content.
+	 * 
+	 * @return All the content.
+	 */
+	public MessageContent[] getAllMessageContent() {
+		synchronized(messageContent) {
+			MessageContent[] result = new MessageContent[messageContent.size()];
+			Enumeration e = messageContent.keys();
+			int i = 0;
+	    	while(e.hasMoreElements()) {
+	    		result[i++] = (MessageContent)messageContent.get(e.nextElement());
+	    	}
+			return result;
+		}
+	}
+	
 	/**
 	 * Gets the message parts that are considered to be message attachments.
 	 * <p>
 	 * This is a convenience method, as it returns an array that is populated
-	 * from the message structure when {@link #setMessageBody(MessagePart)}
+	 * from the message structure when {@link #setMessageStructure(MessagePart)}
 	 * is called.  This array will contain all message parts that are not of
 	 * type multi, text, or unsupported.
 	 * </p>
@@ -533,7 +621,9 @@ public class MessageNode implements Node {
 	 * @return Message attachments.
 	 */
 	public MessagePart[] getMessageAttachments() {
-		return this.messageAttachments;
+		synchronized(messageContent) {
+			return this.messageAttachments;
+		}
 	}
 	
 	/**
@@ -621,13 +711,21 @@ public class MessageNode implements Node {
             buffer.append(strCRLF);
         }
 		
-		// Generate the body
-        MessageMimeConverter messageMime = new MessageMimeConverter();
-        messageBody.accept(messageMime);
-        buffer.append(messageMime.toMimeString());
-
-		// Return the result
-		return buffer.toString();
+        synchronized(messageContent) {
+			// Generate the body
+	        Message message = new Message(messageStructure);
+	        Enumeration en = messageContent.keys();
+	        while(en.hasMoreElements()) {
+	        	MessagePart part = (MessagePart)en.nextElement();
+	        	message.putContent(part, (MessageContent)messageContent.get(part));
+	        }
+	        
+	        MessageMimeConverter messageMime = new MessageMimeConverter(message);
+	        buffer.append(messageMime.toMimeString());
+	
+			// Return the result
+			return buffer.toString();
+        }
 	}
 	
 	//TODO: Weed out duplicates from reply headers
@@ -648,16 +746,48 @@ public class MessageNode implements Node {
 		else {
 			senderName = "";
 		}
-        MessageReplyConverter replyConverter = new MessageReplyConverter(this.date, senderName);
-        if(this.messageBody != null) {
-            this.messageBody.accept(replyConverter);
-        }
-        
-        MessageNode replyNode = new MessageNode();
-        replyNode.messageBody = replyConverter.toReplyBody();
-        populateReplyEnvelope(replyNode);
 		
-		return replyNode;
+		synchronized(messageContent) {
+	        FindFirstTextPartVisitor findVisitor = new FindFirstTextPartVisitor();
+	        if(this.messageStructure != null) {
+	        	this.messageStructure.accept(findVisitor);
+	        }
+	        TextPart originalTextPart = findVisitor.getFirstTextPart();
+	        TextContent originalTextContent = (TextContent)messageContent.get(originalTextPart);
+			
+	        StringBuffer buf = new StringBuffer();
+	        
+	        // Create the first line of the reply text
+	        buf.append("On ");
+	        buf.append(StringParser.createDateString(date));
+	        buf.append(", ");
+	        buf.append(senderName);
+	        buf.append(" wrote:\r\n");
+	        
+	        // Generate the quoted message text
+	        buf.append("> ");
+	        if(originalTextContent != null) {
+	            String originalText = originalTextContent.getText();
+	            int size = originalText.length();
+	            char ch;
+	            for(int i=0; i<size; i++) {
+	                ch = originalText.charAt(i);
+	                buf.append(ch);
+	                if(ch == '\n' && i < size - 1) {
+	                    buf.append("> ");
+	                }
+	            }
+	        }
+	        
+	        MessageNode replyNode = new MessageNode();
+	        TextPart replyPart = new TextPart("plain", "", "");
+	        replyNode.messageStructure = replyPart;
+	        replyNode.putMessageContent(new TextContent(replyPart, buf.toString()));
+	        
+	        populateReplyEnvelope(replyNode);
+	        
+			return replyNode;
+		}
 	}
 
 	/**
@@ -711,31 +841,101 @@ public class MessageNode implements Node {
      * @return Forwarded message
      */
     public MessageNode toForwardMessage() {
-        // Generate the forward message body
-        MessageForwardConverter forwardConverter = new MessageForwardConverter(
-        		subject, date,
-        		StringParser.toStringArray(from),
-        		StringParser.toStringArray(to),
-        		StringParser.toStringArray(cc));
-        
-        if(this.messageBody != null) {
-            this.messageBody.accept(forwardConverter);
+    	
+        String fromString = StringParser.makeCsvString(StringParser.toStringArray(from));
+        String toString = StringParser.makeCsvString(StringParser.toStringArray(to));
+        String ccString = StringParser.makeCsvString(StringParser.toStringArray(cc));
+    	
+        synchronized(messageContent) {
+	        FindFirstTextPartVisitor findVisitor = new FindFirstTextPartVisitor();
+	        if(this.messageStructure != null) {
+	        	this.messageStructure.accept(findVisitor);
+	        }
+	        TextPart originalTextPart = findVisitor.getFirstTextPart();
+	        TextContent originalTextContent = (TextContent)messageContent.get(originalTextPart);
+	
+	        StringBuffer buf = new StringBuffer();
+	
+	        // Create the first line of the reply text
+	        buf.append("----Original Message----\r\n");
+	        
+	        // Add the subject
+	        buf.append("Subject: ");
+	        buf.append(subject);
+	        buf.append("\r\n");
+	
+	        // Add the date
+	        buf.append("Date: ");
+	        buf.append(StringParser.createDateString(date));
+	        buf.append("\r\n");
+	        
+	        // Add the from field
+	        if(fromString != null && fromString.length() > 0) {
+		        buf.append("From: ");
+		        buf.append(fromString);
+		        buf.append("\r\n");
+	        }
+	        
+	        // Add the from field
+	        if(toString != null && toString.length() > 0) {
+		        buf.append("To: ");
+		        buf.append(toString);
+		        buf.append("\r\n");
+	        }
+	        
+	        // Add the CC field
+	        if(ccString != null && ccString.length() > 0) {
+	            buf.append("Cc: ");
+	            buf.append(ccString);
+	            buf.append("\r\n");
+	        }
+	
+	        // Add a blank like
+	        buf.append("\r\n");
+	        
+	        // Add the original text
+	        if(originalTextContent != null) {
+	            buf.append(originalTextContent.getText());
+	            buf.append("\r\n");
+	        }
+	        
+	        // Add the footer
+	        buf.append("------------------------");
+	
+	        // Build the forward node
+	        MessageNode forwardNode = new MessageNode();
+	        TextPart forwardPart = new TextPart("plain", "", "");
+	        forwardNode.messageStructure = forwardPart;
+	        forwardNode.putMessageContent(new TextContent(forwardPart, buf.toString()));
+	
+	        // Set the forward subject
+	        if(subject.toLowerCase().startsWith("fwd:")) {
+	        	forwardNode.subject = subject;
+	        }
+	        else {
+	        	forwardNode.subject = "Fwd: " + subject;
+	        }
+	        
+	    	return forwardNode;
         }
-
-        MessageNode forwardNode = new MessageNode();
-        forwardNode.messageBody = forwardConverter.toForwardBody();
-
-        // Set the forward subject
-        if(subject.toLowerCase().startsWith("fwd:")) {
-        	forwardNode.subject = subject;
-        }
-        else {
-        	forwardNode.subject = "Fwd: " + subject;
-        }
-        
-    	return forwardNode;
     }
 
+    private class FindFirstTextPartVisitor implements MessagePartVisitor {
+        private TextPart firstTextPart;
+
+        public TextPart getFirstTextPart() { return firstTextPart; }
+        
+		public void visitTextPart(TextPart part) {
+	        if(firstTextPart == null) {
+	        	firstTextPart = part;
+	        }
+		}
+
+		public void visitImagePart(ImagePart part) { }
+		public void visitMultiPart(MultiPart part) { }
+		public void visitUnsupportedPart(UnsupportedPart part) { }
+    };
+    
     /**
      * Populate the envelope for a reply to this message
      * 

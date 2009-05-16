@@ -31,27 +31,64 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.util.Enumeration;
+import java.util.Hashtable;
+
 /**
  * This class encapsulates all the data to represent an E-Mail message.
+ * <p>
+ * Note: This class remains only as a shim to support refactoring,
+ * and should be removed as soon as the new structure/content model
+ * is in place and functional.
+ * </p>
  */
 public class Message {
-    private MessagePart body;
+    private MessagePart structure;
+    private Hashtable content = new Hashtable();
     
     /**
      * Creates a new instance of Message
      * @param envelope The envelope for the message
      * @param body The structured message body tree
      */
-    public Message(MessagePart body) {
+    public Message(MessagePart structure) {
     	// TODO: Consider removing the Message object completely
-        this.body = body;
+        this.structure = structure;
     }
     
     /**
      * Get the message body
      * @return Body
      */
-    public MessagePart getBody() {
-        return body;
+    public MessagePart getStructure() {
+        return structure;
+    }
+    
+    public void putContent(MessagePart messagePart, MessageContent messageContent) {
+    	content.put(messagePart, messageContent);
+    }
+    
+    public MessageContent getContent(MessagePart messagePart) {
+    	return (MessageContent)content.get(messagePart);
+    }
+    
+    public MessageContent[] getAllContent() {
+		MessageContent[] result = new MessageContent[content.size()];
+		Enumeration e = content.keys();
+		int i = 0;
+    	while(e.hasMoreElements()) {
+    		result[i++] = (MessageContent)content.get(e.nextElement());
+    	}
+		return result;
+    }
+    
+    public Hashtable getContentMap() {
+    	Hashtable result = new Hashtable();
+    	Enumeration e = content.keys();
+    	while(e.hasMoreElements()) {
+    		MessagePart part = (MessagePart)e.nextElement();
+    		result.put(part, content.get(part));
+    	}
+    	return result;
     }
 }

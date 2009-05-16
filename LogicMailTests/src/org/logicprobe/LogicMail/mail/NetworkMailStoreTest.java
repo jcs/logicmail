@@ -41,6 +41,7 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 
 import j2meunit.framework.Test;
@@ -206,7 +207,10 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessage() {
-    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	TextPart part = new TextPart("plain", "", "");
+    	TextContent content = new TextContent(part, "Hello World");
+    	fakeIncomingMailClient.message = new Message(part);
+    	fakeIncomingMailClient.message.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
     	instance.requestMessage(messageToken);
     	instance.shutdown(true);
@@ -219,7 +223,10 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessageDelete() {
-    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	TextPart part = new TextPart("plain", "", "");
+    	TextContent content = new TextContent(part, "Hello World");
+    	fakeIncomingMailClient.message = new Message(part);
+    	fakeIncomingMailClient.message.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
     	MessageFlags messageFlags = new MessageFlags();
     	messageFlags.setDeleted(false);
@@ -234,7 +241,10 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessageUndelete() {
-    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	TextPart part = new TextPart("plain", "", "");
+    	TextContent content = new TextContent(part, "Hello World");
+    	fakeIncomingMailClient.message = new Message(part);
+    	fakeIncomingMailClient.message.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
     	MessageFlags messageFlags = new MessageFlags();
     	messageFlags.setDeleted(true);
@@ -249,7 +259,10 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestBatch() {
-    	fakeIncomingMailClient.message = new Message(new TextPart("plain", "Hello World"));
+    	TextPart part = new TextPart("plain", "", "");
+    	TextContent content = new TextContent(part, "Hello World");
+    	fakeIncomingMailClient.message = new Message(part);
+    	fakeIncomingMailClient.message.putContent(part, content);
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	fakeIncomingMailClient.folderTree = folder;
     	FakeMessageToken messageToken1 = new FakeMessageToken(1);

@@ -38,8 +38,14 @@ import org.logicprobe.LogicMail.util.EventObject;
 public class MessageNodeEvent extends EventObject {
 	private int type;
 	
-	public final static int TYPE_LOADED = 0;
-	public final static int TYPE_FLAGS  = 1;
+	/** The message structure has been loaded */
+	public final static int TYPE_STRUCTURE_LOADED = 0;
+	
+	/** Message content has been loaded */
+	public final static int TYPE_CONTENT_LOADED = 1;
+	
+	/** The message flags have changed */
+	public final static int TYPE_FLAGS  = 2;
 	
 	/** Creates a new instance of MessageNodeEvent */
 	public MessageNodeEvent(Object source, int type) {

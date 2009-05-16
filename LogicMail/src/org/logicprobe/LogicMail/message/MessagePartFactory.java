@@ -30,16 +30,6 @@
  */
 package org.logicprobe.LogicMail.message;
 
-import net.rim.device.api.io.Base64InputStream;
-import net.rim.device.api.system.EncodedImage;
-
-import org.logicprobe.LogicMail.util.StringFactory;
-import org.logicprobe.LogicMail.util.StringParser;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-
-
 /**
  * Creates message parts, doing the necessary decoding.
  */
@@ -50,19 +40,23 @@ public class MessagePartFactory {
      * @param mimeSubtype MIME subtype
      * @param encoding Encoding type (i.e. 7bit, base64)
      * @param param Type-specific parameter (i.e. charset, filename)
-     * @param data Actual text data for the section
      */
-    public static MessagePart createMessagePart(String mimeType,
-        String mimeSubtype, String encoding, String param, String data) {
+    public static MessagePart createMessagePart(
+    		String mimeType,
+    		String mimeSubtype,
+    		String encoding,
+    		String param) {
+    	MessagePart part;
         if (mimeType.equalsIgnoreCase("multipart")) {
-            return createMultiPart(mimeSubtype);
+            part = new MultiPart(mimeSubtype);
         } else if (mimeType.equalsIgnoreCase("text")) {
-            return createTextPart(mimeSubtype, encoding, param, data);
+        	part = new TextPart(mimeSubtype, encoding, param);
         } else if (mimeType.equalsIgnoreCase("image")) {
-            return createImagePart(mimeSubtype, encoding, data);
+        	part = new ImagePart(mimeSubtype, encoding);
         } else {
-            return createUnsupportedPart(mimeType, mimeSubtype, data);
+            part = new UnsupportedPart(mimeType, mimeSubtype);
         }
+        return part;
     }
 
     /**
@@ -89,92 +83,6 @@ public class MessagePartFactory {
         } else {
             return false;
         }
-    }
-
-    private static MessagePart createMultiPart(String mimeSubtype) {
-        return new MultiPart(mimeSubtype);
-    }
-
-    private static MessagePart createTextPart(String mimeSubtype,
-        String encoding, String charset, String data) {
-        // Check for any encodings that need to be handled
-        if (encoding.equalsIgnoreCase("quoted-printable")) {
-            data = StringParser.decodeQuotedPrintable(data);
-        } else if (encoding.equalsIgnoreCase("base64")) {
-            byte[] textBytes;
-
-            try {
-                textBytes = Base64InputStream.decode(data);
-            } catch (IOException exp) {
-                return createUnsupportedPart("text", mimeSubtype, data);
-            }
-
-            try {
-                // If a charset is not provided, ISO-8859-1 is assumed
-                if (charset == null) {
-                    charset = "ISO-8859-1";
-                }
-
-                data = StringFactory.create(textBytes, charset);
-            } catch (UnsupportedEncodingException exp) {
-                // If encoding type is bad, attempt with the default encoding
-                // so the user will at least see something.
-                data = new String(textBytes);
-            }
-        } else if ((charset != null) &&
-                !charset.equalsIgnoreCase("ISO-8859-1") &&
-                !charset.equalsIgnoreCase("US-ASCII")) {
-            // If the text is not encoded (i.e. 7bit or 8bit) and uses a
-            // non-Latin charset, then bring the text back to a byte array
-            // and attempt to decode it based on the charset parameter.
-            byte[] textBytes = data.getBytes();
-
-            try {
-                data = StringFactory.create(textBytes, charset);
-            } catch (UnsupportedEncodingException exp) {
-                // If encoding type is bad, leave the message text as
-                // it was originally.  This may result in the user seeing
-                // garbage, but at least they'll know there was a
-                // decoding problem.
-            }
-        }
-
-        // Check for a supported text sub-type and decode if necessary
-        if (mimeSubtype.equalsIgnoreCase("plain") ||
-                mimeSubtype.equalsIgnoreCase("html")) {
-            TextPart textPart = new TextPart(mimeSubtype, data);
-            textPart.setCharset(charset);
-
-            return textPart;
-        } else {
-            return createUnsupportedPart("text", mimeSubtype, data);
-        }
-    }
-
-    private static MessagePart createImagePart(String mimeSubtype,
-        String encoding, String data) {
-        // Decode the binary data, and create an image
-        if (encoding.equalsIgnoreCase("base64")) {
-            try {
-                byte[] imgBytes = Base64InputStream.decode(data);
-                EncodedImage encImage = EncodedImage.createEncodedImage(imgBytes,
-                        0, imgBytes.length, "image/" +
-                        mimeSubtype.toLowerCase());
-
-                return new ImagePart(mimeSubtype, encImage);
-            } catch (Exception exp) {
-                return createUnsupportedPart("image", mimeSubtype, data);
-            }
-        } else {
-            return createUnsupportedPart("image", mimeSubtype, data);
-        }
-    }
-
-    private static MessagePart createUnsupportedPart(String mimeType,
-        String mimeSubtype, String data) {
-        UnsupportedPart part = new UnsupportedPart(mimeType, mimeSubtype);
-
-        return part;
     }
 
     private static boolean isMultiPartSupported(String mimeSubtype) {

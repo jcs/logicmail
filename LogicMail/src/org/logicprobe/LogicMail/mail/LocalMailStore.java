@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 
 import javax.microedition.io.Connector;
@@ -40,6 +41,7 @@ import javax.microedition.io.file.FileConnection;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.util.MailMessageParser;
@@ -189,8 +191,14 @@ public class LocalMailStore extends AbstractMailStore {
         		maildirFolder.close();
         		
         		// Parse the message source
-                MessagePart rootPart = MailMessageParser.parseRawMessage(new ByteArrayInputStream(messageSource.getBytes()));
+        		Hashtable contentMap = new Hashtable();
+                MessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, new ByteArrayInputStream(messageSource.getBytes()));
                 message = new Message(rootPart);
+                Enumeration e = contentMap.keys();
+                while(e.hasMoreElements()) {
+                	MessagePart part = (MessagePart)e.nextElement();
+                	message.putContent(part, (MessageContent)contentMap.get(part));
+                }
         	} catch (IOException e) {
         		System.err.println("Unable to read message: " + e.toString());
         	}

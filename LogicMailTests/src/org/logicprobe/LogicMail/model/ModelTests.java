@@ -47,6 +47,7 @@ public class ModelTests extends TestCase {
         TestSuite testSuite = new TestSuite("LogicMail.model");
         testSuite.addTest(new AccountNodeTest().suite());
         testSuite.addTest(new MailboxNodeTest().suite());
+        testSuite.addTest(new MessageNodeTest().suite());
         return testSuite;
     }
 }
