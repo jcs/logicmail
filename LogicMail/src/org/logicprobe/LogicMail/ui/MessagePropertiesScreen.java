@@ -47,6 +47,7 @@ import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.ObjectChoiceField;
+import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.MainScreen;
@@ -101,10 +102,15 @@ public class MessagePropertiesScreen extends MainScreen {
 	private void initGeneralFields() {
 		generalPageManager = new VerticalFieldManager();
 		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ' + messageNode.getSubject(), Field.FOCUSABLE));
+		generalPageManager.add(new SeparatorField());
 		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + ' ' + messageNode.getDate(), Field.FOCUSABLE));
+		generalPageManager.add(new SeparatorField());
 		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM), messageNode.getFrom());
+		generalPageManager.add(new SeparatorField());
 		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO), messageNode.getReplyTo());
+		generalPageManager.add(new SeparatorField());
 		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO), messageNode.getTo());
+		generalPageManager.add(new SeparatorField());
 		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC), messageNode.getCc());
 	}
 
