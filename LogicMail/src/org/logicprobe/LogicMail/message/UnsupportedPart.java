@@ -40,10 +40,19 @@ package org.logicprobe.LogicMail.message;
 public class UnsupportedPart extends MessagePart {
     
     /** Creates a new instance of UnsupportedPart */
-    public UnsupportedPart(String mimeType, String mimeSubtype) {
-        super(mimeType, mimeSubtype);
+    public UnsupportedPart(String mimeType, String mimeSubtype, String tag) {
+        super(mimeType, mimeSubtype, -1, tag);
     }
 
+    public UnsupportedPart(String mimeType, String mimeSubtype) {
+        this(mimeType, mimeSubtype, "");
+    }
+
+    /** Creates a new instance for deserialization */
+    public UnsupportedPart() {
+    	this("", "", "");
+    }
+    
     public void accept(MessagePartVisitor visitor) {
         visitor.visitUnsupportedPart(this);
     }

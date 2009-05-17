@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.model;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.Vector;
 
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.Comparator;
@@ -49,6 +48,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MessagePartTransformer;
 import org.logicprobe.LogicMail.message.MessagePartVisitor;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.TextContent;
@@ -148,7 +148,7 @@ public class MessageNode implements Node {
 	private MailboxNode parent;
 	private MessagePart messageStructure;
 	private Hashtable messageContent = new Hashtable();
-	private MessagePart[] messageAttachments;
+	private MessagePart[] attachmentParts;
 	private String messageSource;
 	private EventListenerList listenerList = new EventListenerList();
 	private boolean refreshInProgress;
@@ -175,6 +175,10 @@ public class MessageNode implements Node {
 		this.bcc = createAddressArray(envelope.bcc);
 		this.inReplyTo = envelope.inReplyTo;
 		this.messageId = envelope.messageId;
+		this.messageStructure = folderMessage.getStructure();
+		if(this.messageStructure != null) {
+			this.attachmentParts = MessagePartTransformer.getAttachmentParts(this.messageStructure);
+		}
 	}
 
 	/**
@@ -485,11 +489,7 @@ public class MessageNode implements Node {
 			if(this.messageStructure != null) {
 				refreshInProgress = false;
 				this.flags &= ~Flag.RECENT; // RECENT = false
-				
-				Vector attachmentParts = new Vector();
-				findMessageAttachments(attachmentParts, this.messageStructure);
-				messageAttachments = new MessagePart[attachmentParts.size()];
-				attachmentParts.copyInto(messageAttachments);
+				this.attachmentParts = MessagePartTransformer.getAttachmentParts(this.messageStructure);
 				fireEvent = true;
 			}
 			else {
@@ -498,27 +498,6 @@ public class MessageNode implements Node {
 		}
 		if(fireEvent) {
 			fireMessageStatusChanged(MessageNodeEvent.TYPE_STRUCTURE_LOADED);
-		}
-	}
-
-	/**
-	 * Recursively find all message parts that are considered to be
-	 * message attachments.  This will include all parts that are
-	 * not multi, text, or otherwise unsupported.
-	 * 
-	 * @param attachmentParts Collection of found attachments
-	 * @param currentPart Current message part
-	 */
-	private static void findMessageAttachments(Vector attachmentParts, MessagePart currentPart) {
-		if(currentPart instanceof MultiPart) {
-			MultiPart multiPart = (MultiPart)currentPart;
-			MessagePart[] children = multiPart.getParts();
-			for(int i=0; i<children.length; i++) {
-				findMessageAttachments(attachmentParts, children[i]);
-			}
-		}
-		else if(!(currentPart instanceof TextPart) && !(currentPart instanceof UnsupportedPart)) {
-			attachmentParts.addElement(currentPart);
 		}
 	}
 
@@ -620,9 +599,9 @@ public class MessageNode implements Node {
 	 * 
 	 * @return Message attachments.
 	 */
-	public MessagePart[] getMessageAttachments() {
+	public MessagePart[] getAttachmentParts() {
 		synchronized(messageContent) {
-			return this.messageAttachments;
+			return this.attachmentParts;
 		}
 	}
 	
@@ -780,9 +759,10 @@ public class MessageNode implements Node {
 	        }
 	        
 	        MessageNode replyNode = new MessageNode();
-	        TextPart replyPart = new TextPart("plain", "", "");
+	        String contentText = buf.toString();
+	        TextPart replyPart = new TextPart("plain", "", "", contentText.length());
 	        replyNode.messageStructure = replyPart;
-	        replyNode.putMessageContent(new TextContent(replyPart, buf.toString()));
+	        replyNode.putMessageContent(new TextContent(replyPart, contentText));
 	        
 	        populateReplyEnvelope(replyNode);
 	        
@@ -904,9 +884,10 @@ public class MessageNode implements Node {
 	
 	        // Build the forward node
 	        MessageNode forwardNode = new MessageNode();
-	        TextPart forwardPart = new TextPart("plain", "", "");
+	        String contentText = buf.toString();
+	        TextPart forwardPart = new TextPart("plain", "", "", contentText.length());
 	        forwardNode.messageStructure = forwardPart;
-	        forwardNode.putMessageContent(new TextContent(forwardPart, buf.toString()));
+	        forwardNode.putMessageContent(new TextContent(forwardPart, contentText));
 	
 	        // Set the forward subject
 	        if(subject.toLowerCase().startsWith("fwd:")) {

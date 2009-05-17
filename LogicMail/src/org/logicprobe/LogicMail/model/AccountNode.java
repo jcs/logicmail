@@ -570,8 +570,7 @@ public class AccountNode implements Node {
                 return;
             }
 
-            MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder()
-                                                                        .getPath());
+            MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder().getPath());
 
             // Determine what MessageNodes need to be created, and add them.
             FolderMessage[] folderMessages = e.getMessages();

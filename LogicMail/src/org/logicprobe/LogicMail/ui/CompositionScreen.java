@@ -438,13 +438,15 @@ public class CompositionScreen extends BaseScreen {
 
         return env;
     }
+    
     private Message generateMessage() {
+    	String contentText = messageEditField.getText();
         MessagePart bodyPart = MessagePartFactory.createMessagePart(
-        		"text", "plain", "7bit", "us-ascii");
+        		"text", "plain", "7bit", "us-ascii", contentText.length());
         MessageContent bodyContent;
         try {
 			bodyContent = MessageContentFactory.createContent(
-					bodyPart, "7bit", "us-ascii", messageEditField.getText());
+					bodyPart, "7bit", "us-ascii", contentText);
 		} catch (UnsupportedContentException e) {
 			bodyContent = null;
 		}

@@ -31,6 +31,12 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.logicprobe.LogicMail.util.SerializationUtils;
+
 import net.rim.device.api.util.Arrays;
 
 /**
@@ -44,8 +50,8 @@ public class MultiPart extends MessagePart {
     private boolean partSigned;
     
     /** Creates a new instance of MultiPart */
-    public MultiPart(String mimeSubtype) {
-        super("multipart", mimeSubtype);
+    public MultiPart(String mimeSubtype, String tag) {
+        super("multipart", mimeSubtype, -1, tag);
         partMixed = false;
         partAlternative = false;
         partRelated = false;
@@ -65,6 +71,15 @@ public class MultiPart extends MessagePart {
         }
     }
 
+    public MultiPart(String mimeSubtype) {
+    	this(mimeSubtype, "");
+    }
+
+    /** Creates a new instance for deserialization */
+    public MultiPart() {
+    	this("", "");
+    }
+    
     public void accept(MessagePartVisitor visitor) {
         visitor.visitMultiPart(this);
         if(parts != null) {
@@ -103,4 +118,39 @@ public class MultiPart extends MessagePart {
     public boolean isPartSigned() {
         return partSigned;
     }
+    
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		super.serialize(output);
+
+		output.writeBoolean(partMixed);
+		output.writeBoolean(partAlternative);
+		output.writeBoolean(partRelated);
+		output.writeBoolean(partSigned);
+		
+		output.writeInt(parts.length);
+		for(int i=0; i<parts.length; i++) {
+			SerializationUtils.serializeClass(parts[i], output);
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		super.deserialize(input);
+		
+	    partMixed = input.readBoolean();
+	    partAlternative = input.readBoolean();
+	    partRelated = input.readBoolean();
+	    partSigned = input.readBoolean();
+		
+		int partCount = input.readInt();
+		for(int i=0; i<partCount; i++) {
+			MessagePart part = (MessagePart)SerializationUtils.deserializeClass(input);
+			this.addPart(part);
+		}
+	}
 }

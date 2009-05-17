@@ -31,6 +31,10 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
  * Text message part (MIME type: "text/????")
  */
@@ -39,12 +43,21 @@ public class TextPart extends MessagePart {
 	private String charset;
     
     /** Creates a new instance of TextPart */
-    public TextPart(String mimeSubtype, String encoding, String charset) {
-        super("text", mimeSubtype);
+    public TextPart(String mimeSubtype, String encoding, String charset, int size, String tag) {
+        super("text", mimeSubtype, size, tag);
         this.encoding = encoding;
         this.charset = charset;
     }
 
+    public TextPart(String mimeSubtype, String encoding, String charset, int size) {
+        this(mimeSubtype, encoding, charset, size, "");
+    }
+    
+    /** Creates a new instance for deserialization */
+    public TextPart() {
+    	this("", "", "", -1, "");
+    }
+    
     public void accept(MessagePartVisitor visitor) {
         visitor.visitTextPart(this);
     }
@@ -64,4 +77,22 @@ public class TextPart extends MessagePart {
     public void setCharset(String charset) {
         this.charset = charset;
     }
+
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		super.serialize(output);
+		output.writeUTF(encoding);
+		output.writeUTF(charset);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		super.deserialize(input);
+		encoding = input.readUTF();
+		charset = input.readUTF();
+	}
 }

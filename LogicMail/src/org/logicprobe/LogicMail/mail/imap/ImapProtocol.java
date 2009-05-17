@@ -425,7 +425,7 @@ public class ImapProtocol {
     }
 
     /**
-     * Execute the "FETCH (FLAGS UID ENVELOPE)" command
+     * Execute the "FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
      * @return Array of FetchEnvelopeResponse objects
@@ -440,13 +440,13 @@ public class ImapProtocol {
 
         String[] rawList = execute("FETCH",
                 Integer.toString(firstIndex) + ":" +
-                Integer.toString(lastIndex) + " (FLAGS UID ENVELOPE)");
+                Integer.toString(lastIndex) + " (FLAGS UID ENVELOPE BODYSTRUCTURE)");
 
         return prepareFetchEnvelopeResponse(rawList);
     }
 
     /**
-     * Execute the "UID FETCH (FLAGS UID ENVELOPE)" command
+     * Execute the "UID FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param uidNext Unique ID of the next message
      * @return Array of FetchEnvelopeResponse objects
      */
@@ -459,7 +459,7 @@ public class ImapProtocol {
         }
 
         String[] rawList = execute("UID FETCH",
-                Integer.toString(uidNext) + ":*" + " (FLAGS UID ENVELOPE)");
+                Integer.toString(uidNext) + ":*" + " (FLAGS UID ENVELOPE BODYSTRUCTURE)");
 
         return prepareFetchEnvelopeResponse(rawList);
     }
@@ -498,6 +498,7 @@ public class ImapProtocol {
                 String rawText = (String) rawList2.elementAt(i);
 
                 MessageEnvelope env = null;
+                ImapParser.MessageSection structure = null;
                 Vector parsedText = null;
 
                 try {
@@ -516,25 +517,30 @@ public class ImapProtocol {
 
                 for (int j = 0; j < parsedSize; j++) {
                     if (parsedText.elementAt(j) instanceof String) {
-                        if (((String) parsedText.elementAt(j)).equals("FLAGS") &&
-                                (parsedSize > (j + 1)) &&
-                                parsedText.elementAt(j + 1) instanceof Vector) {
-                            envRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j +
-                                        1));
-                        } else if (((String) parsedText.elementAt(j)).equals(
-                                    "UID") && (parsedSize > (j + 1)) &&
-                                parsedText.elementAt(j + 1) instanceof String) {
+                        if (((String)parsedText.elementAt(j)).equals("FLAGS")
+                        		&& (parsedSize > (j + 1))
+                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                            envRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j + 1));
+                        }
+                        else if (((String)parsedText.elementAt(j)).equals("UID")
+                        		&& (parsedSize > (j + 1))
+                        		&& parsedText.elementAt(j + 1) instanceof String) {
                             try {
-                                envRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j +
-                                            1));
+                                envRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j + 1));
                             } catch (NumberFormatException e) {
                                 envRespItem.uid = -1;
                             }
-                        } else if (((String) parsedText.elementAt(j)).equals(
-                                    "ENVELOPE") && (parsedSize > (j + 1)) &&
-                                parsedText.elementAt(j + 1) instanceof Vector) {
-                            env = ImapParser.parseMessageEnvelope((Vector) parsedText.elementAt(j +
-                                        1));
+                        }
+                        else if (((String)parsedText.elementAt(j)).equals("ENVELOPE")
+                        		&& (parsedSize > (j + 1))
+                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                            env = ImapParser.parseMessageEnvelope((Vector) parsedText.elementAt(j + 1));
+                        }
+                        else if (((String)parsedText.elementAt(j)).equals("BODYSTRUCTURE")
+                        		&& (parsedSize > (j + 1))
+                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                        	structure = ImapParser.parseMessageStructureParameter(
+                        			(Vector)parsedText.elementAt(j + 1));
                         }
                     }
                 }
@@ -555,6 +561,7 @@ public class ImapProtocol {
 
                 envRespItem.index = midx;
                 envRespItem.envelope = env;
+                envRespItem.structure = structure;
                 envResponses.addElement(envRespItem);
             } catch (Exception exp) {
                 System.err.println("Parse error: " + exp);
@@ -611,8 +618,7 @@ public class ImapProtocol {
 
         for (int i = 0; i < size; i++) {
             try {
-                msgStructure = ImapParser.parseMessageStructure((String) rawList2.elementAt(
-                            i));
+                msgStructure = ImapParser.parseMessageStructure((String) rawList2.elementAt(i));
             } catch (Exception exp) {
                 System.out.println("Parse error: " + exp);
             }
@@ -1289,6 +1295,7 @@ public class ImapProtocol {
         public int uid;
         public MessageFlags flags;
         public MessageEnvelope envelope;
+        public ImapParser.MessageSection structure;
     }
 
     /**

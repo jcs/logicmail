@@ -44,6 +44,9 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  * This class provides a message in the context of a folder.
  * It contains the message's envelope, along with other information
  * only relevant when looking at a view of the folder.
+ * Also optionally contains the message structure tree, for
+ * use with protocols that support independent retrieval
+ * of the structure from the content.
  */
 public class FolderMessage implements Serializable {
     private long uniqueId;
@@ -52,6 +55,7 @@ public class FolderMessage implements Serializable {
     private int index;
     private int uid;
     private MessageFlags messageFlags;
+    private MessagePart structure;
 
     /**
      * Creates a new empty instance of FolderMessage.
@@ -214,6 +218,22 @@ public class FolderMessage implements Serializable {
     	messageFlags.setJunk(junk);
     }
 
+    /**
+     * Gets the structure of the message, if available.
+     * @return Root part of the message structure tree
+     */
+    public MessagePart getStructure() {
+    	return this.structure;
+    }
+
+    /**
+     * Sets the structure of the message.
+     * @param structure Root part of the message structure tree
+     */
+    public void setStructure(MessagePart structure) {
+    	this.structure = structure;
+    }
+    
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
 	 */
@@ -227,10 +247,8 @@ public class FolderMessage implements Serializable {
 	public void serialize(DataOutputStream output) throws IOException {
 		output.writeLong(uniqueId);
 		
-		byte[] tokenBytes = SerializationUtils.serializeClass(messageToken);
-		output.writeInt(tokenBytes.length);
-		output.write(tokenBytes);
-
+		SerializationUtils.serializeClass(messageToken, output);
+		
 		output.writeInt(index);
 		output.writeInt(uid);
 		envelope.serialize(output);
@@ -242,6 +260,13 @@ public class FolderMessage implements Serializable {
 		output.writeBoolean(messageFlags.isRecent());
 		output.writeBoolean(messageFlags.isJunk());
 		
+		if(structure == null) {
+			output.writeBoolean(false);
+		}
+		else {
+			output.writeBoolean(true);
+			SerializationUtils.serializeClass(structure, output);
+		}
 	}
 
 	/* (non-Javadoc)
@@ -250,10 +275,7 @@ public class FolderMessage implements Serializable {
 	public void deserialize(DataInputStream input) throws IOException {
 		uniqueId = input.readLong();
 
-		int len = input.readInt();
-		byte[] tokenBytes = new byte[len];
-		input.read(tokenBytes);
-		messageToken = (MessageToken)SerializationUtils.deserializeClass(tokenBytes);
+		messageToken = (MessageToken)SerializationUtils.deserializeClass(input);
 		
 		index = input.readInt();
 		uid = input.readInt();
@@ -265,5 +287,10 @@ public class FolderMessage implements Serializable {
 		messageFlags.setDraft(input.readBoolean());
 		messageFlags.setRecent(input.readBoolean());
 		messageFlags.setJunk(input.readBoolean());
+		
+		boolean hasStructure = input.readBoolean();
+		if(hasStructure) {
+			structure = (MessagePart)SerializationUtils.deserializeClass(input);
+		}
 	}
 }

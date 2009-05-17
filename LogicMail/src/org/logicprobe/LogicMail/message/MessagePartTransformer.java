@@ -39,6 +39,7 @@ import java.util.Vector;
 public class MessagePartTransformer {
 	/**
 	 * Gets a list of displayable message parts in order.
+	 * 
 	 * @param rootPart The root part of the message.
 	 * @return The displayable parts.
 	 */
@@ -71,6 +72,55 @@ public class MessagePartTransformer {
 		
 		public void visitMultiPart(MultiPart part) {
 			// MultiPart sections are not displayed
+		}
+	}
+	
+	/**
+	 * Gets a list of message parts that are considered to be attachments.
+	 * <p>
+	 * This includes all parts that are <b>not</b> of one of the following types:
+	 * <ul>
+	 * <li>multipart</li>
+	 * <li>text/plain</li>
+	 * <li>text/html</li>
+	 * <li>unsupported</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @param rootPart The root part of the message.
+	 * @return The displayable parts.
+	 */
+	public static MessagePart[] getAttachmentParts(MessagePart rootPart) {
+		AttachmentPartVisitor visitor = new AttachmentPartVisitor();
+		rootPart.accept(visitor);
+		Vector parts = visitor.getAttachmentParts();
+		MessagePart[] result = new MessagePart[parts.size()];
+		parts.copyInto(result);
+		return result;
+	}
+
+	private static class AttachmentPartVisitor implements MessagePartVisitor {
+		private Vector attachmentParts = new Vector();
+		
+		public Vector getAttachmentParts() { return attachmentParts; }
+		
+		public void visitTextPart(TextPart part) {
+			String subtype = part.getMimeSubtype();
+			if(!subtype.equalsIgnoreCase("plain") && !subtype.equalsIgnoreCase("html")) {
+				attachmentParts.addElement(part);
+			}
+		}
+
+		public void visitImagePart(ImagePart part) {
+			attachmentParts.addElement(part);
+		}
+
+		public void visitUnsupportedPart(UnsupportedPart part) {
+			// Not an attachment part
+		}
+		
+		public void visitMultiPart(MultiPart part) {
+			// Not an attachment part
 		}
 	}
 }

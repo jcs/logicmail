@@ -563,6 +563,7 @@ public class ImapClient implements IncomingMailClient {
             folderMessages[i].setFlagged(response[i].flags.flagged);
             folderMessages[i].setDraft(response[i].flags.draft);
             folderMessages[i].setJunk(response[i].flags.junk);
+            folderMessages[i].setStructure(createMessagePartTree(response[i].structure));
         }
     	return folderMessages;
     }
@@ -609,7 +610,13 @@ public class ImapClient implements IncomingMailClient {
                     return null;
                 }
             }
-            part = MessagePartFactory.createMessagePart(structure.type, structure.subtype, structure.encoding, structure.charset);
+            part = MessagePartFactory.createMessagePart(
+            		structure.type,
+            		structure.subtype,
+            		structure.encoding,
+            		structure.charset,
+            		structure.size,
+            		structure.address);
             try {
 				contentMap.put(part, MessageContentFactory.createContent(part, structure.encoding, structure.charset, data));
 			} catch (UnsupportedContentException e) {
@@ -630,6 +637,28 @@ public class ImapClient implements IncomingMailClient {
                 MessagePart subPart = getMessagePart(contentMap, uid, structure.subsections[i], maxSize);
                 if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
+                }
+            }
+        }
+        return part;
+    }
+
+    private MessagePart createMessagePartTree(ImapParser.MessageSection structure) {
+    	if(structure == null) { return null; }
+        MessagePart part = MessagePartFactory.createMessagePart(
+        		structure.type,
+        		structure.subtype,
+        		structure.encoding,
+        		structure.charset,
+        		structure.size,
+        		structure.address);
+
+        if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
+        	MultiPart multiPart = (MultiPart)part;
+            for(int i=0; i<structure.subsections.length; i++) {
+                MessagePart subPart = createMessagePartTree(structure.subsections[i]);
+                if(subPart != null) {
+                	multiPart.addPart(subPart);
                 }
             }
         }

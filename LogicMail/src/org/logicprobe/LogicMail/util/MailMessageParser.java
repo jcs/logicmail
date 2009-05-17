@@ -232,7 +232,7 @@ public class MailMessageParser {
         if (mimeInputStream.isMultiPart() &&
                 type.equalsIgnoreCase("multipart")) {
             MessagePart part = MessagePartFactory.createMessagePart(
-            		type, subtype, null, null);
+            		type, subtype, null, null, -1);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
 
             for (int i = 0; i < mimeSubparts.length; i++) {
@@ -269,7 +269,7 @@ public class MailMessageParser {
 
                 String data = new String(buffer, offset, size);
                 MessagePart part = MessagePartFactory.createMessagePart(
-                		type, subtype, encoding, charset);
+                		type, subtype, encoding, charset, size);
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, encoding, charset, data));
 				} catch (UnsupportedContentException e) {
@@ -281,7 +281,7 @@ public class MailMessageParser {
 
                 String data = new String(buffer);
                 MessagePart part = MessagePartFactory.createMessagePart(
-                		type, subtype, encoding, charset);
+                		type, subtype, encoding, charset, data.length());
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, encoding, charset, data));
 				} catch (UnsupportedContentException e) {

@@ -31,6 +31,10 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
  * Text message part (MIME type: "image/????")
  */
@@ -38,11 +42,20 @@ public class ImagePart extends MessagePart {
 	private String encoding;
     
     /** Creates a new instance of ImagePart */
-    public ImagePart(String mimeSubtype, String encoding) {
-        super("image", mimeSubtype);
+    public ImagePart(String mimeSubtype, String encoding, int size, String tag) {
+        super("image", mimeSubtype, size, tag);
         this.encoding = encoding;
     }
 
+    public ImagePart(String mimeSubtype, String encoding, int size) {
+        this(mimeSubtype, encoding, size, "");
+    }
+
+    /** Creates a new instance for deserialization */
+    public ImagePart() {
+    	this("", "", -1, "");
+    }
+    
     public void accept(MessagePartVisitor visitor) {
         visitor.visitImagePart(this);
     }
@@ -54,4 +67,20 @@ public class ImagePart extends MessagePart {
     public void setEncoding(String encoding) {
     	this.encoding = encoding;
     }
+    
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		super.serialize(output);
+		output.writeUTF(encoding);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		super.deserialize(input);
+		encoding = input.readUTF();
+	}
 }

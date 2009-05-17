@@ -126,7 +126,7 @@ public class MailboxMessageField extends Field {
         String senderText = createSenderText();
         String dateString = createDisplayDate();
         Bitmap attachmentIcon = null;
-        MessagePart[] attachments = messageNode.getMessageAttachments();
+        MessagePart[] attachments = messageNode.getAttachmentParts();
         if(attachments != null && attachments.length > 0) {
         	attachmentIcon = Bitmap.getBitmapResource("mail_attachment.png");
         }

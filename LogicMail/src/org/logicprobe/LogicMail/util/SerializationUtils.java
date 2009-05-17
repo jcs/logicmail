@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, ${author}
+ * Copyright (c) 2008, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,23 @@ public final class SerializationUtils {
         }
         return buffer.toByteArray();
     }
+
+    /**
+     * Utility method to serialize any serializable class and then
+     * write it to a {@link DataOutputStream}.
+     * This combines a call to {@link #serializeClass(Serializable)}
+     * with the calls to actually write the length and contents of
+     * the resulting byte array to the stream.
+     * 
+     * @param input The object to serialize
+     * @param output The stream to write the serialized object onto
+     * @throws IOException if an I/O error occurs
+     */
+    public static void serializeClass(Serializable input, DataOutputStream output) throws IOException {
+		byte[] classBytes = SerializationUtils.serializeClass(input);
+		output.writeInt(classBytes.length);
+		output.write(classBytes);
+    }
     
     /**
      * Utility method to deserialize any class.
@@ -95,5 +112,24 @@ public final class SerializationUtils {
             result = null;
         }
         return result;
+    }
+    
+    /**
+     * Utility method to deserialize any class from the provided
+     * {@link DataInputStream}.
+     * This combines a call to {@link #deserializeClass(byte[])}
+     * with the calls to actually read the length and contents of
+     * the serialized byte array from the stream.
+     * 
+     * @param input The stream to read the serialized object from
+     * @return The deserialized object
+     * @throws IOException if an I/O error occurs
+     */
+    public static Serializable deserializeClass(DataInputStream input) throws IOException {
+		int classLength = input.readInt();
+		byte[] classBytes = new byte[classLength];
+		input.read(classBytes);
+		Serializable result = SerializationUtils.deserializeClass(classBytes);
+    	return result;
     }
 }

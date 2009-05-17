@@ -192,6 +192,21 @@ public class MessagePropertiesScreen extends MainScreen {
     	buf.append(part.getMimeType());
     	buf.append('/');
     	buf.append(part.getMimeSubtype());
+    	
+    	int partSize = part.getSize();
+    	if(partSize > 0) {
+    		buf.append(" (");
+    		if(partSize < 1024) {
+    			buf.append(partSize);
+    			buf.append('B');
+    		}
+    		else {
+    			partSize /= 1024;
+    			buf.append(partSize);
+    			buf.append("kB");
+    		}
+    		buf.append(')');
+    	}
     	graphics.drawText(buf.toString(), indent, y, Graphics.ELLIPSIS, width);
 	}
 }

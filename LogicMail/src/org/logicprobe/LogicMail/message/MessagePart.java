@@ -31,18 +31,31 @@
 
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
+
 /**
  * Abstract representation of a message part
  */
-public abstract class MessagePart {
+public abstract class MessagePart implements Serializable {
+    private long uniqueId;
+    private String tag;
     private String mimeType;
     private String mimeSubtype;
+    private int size;
     private MessagePart parent;
 
     /** Creates a new instance of MessagePart */
-    protected MessagePart(String mimeType, String mimeSubtype) {
+    protected MessagePart(String mimeType, String mimeSubtype, int size, String tag) {
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+        this.tag = tag;
         this.mimeType = mimeType;
         this.mimeSubtype = mimeSubtype;
+        this.size = size;
         this.parent = null;
     }
 
@@ -51,6 +64,16 @@ public abstract class MessagePart {
      * @param visitor The visitor instance
      */
     public abstract void accept(MessagePartVisitor visitor);
+    
+    /**
+     * Gets the tag used to embed protocol-specific address
+     * information in the part.
+     * 
+     * @return The tag
+     */
+    public String getTag() {
+    	return tag;
+    }
     
     /**
      * Get the MIME type for this part
@@ -69,6 +92,14 @@ public abstract class MessagePart {
     }
 
     /**
+     * Get the size of the content this part describes
+     * @return Size if available, or -1 otherwise
+     */
+    public int getSize() {
+    	return size;
+    }
+    
+    /**
      * Set the parent of this part
      * @param parent The parent message part, or null if this is the root
      */
@@ -83,4 +114,33 @@ public abstract class MessagePart {
     public MessagePart getParent() {
         return parent;
     }
+
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+	 */
+	public long getUniqueId() {
+		return this.uniqueId;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		output.writeLong(uniqueId);
+		output.writeUTF(tag);
+		output.writeUTF(mimeType);
+		output.writeUTF(mimeSubtype);
+		output.writeInt(size);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		uniqueId = input.readLong();
+		tag = input.readUTF();
+		mimeType = input.readUTF();
+		mimeSubtype = input.readUTF();
+		size = input.readInt();
+	}
 }
