@@ -61,7 +61,7 @@ public class MessageTest extends TestCase {
                 "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
                 "nisi ut aliquip ex ea commodo consequat.";
 
-        structure = new TextPart("plain", "", "");
+        structure = new TextPart("plain", "", "", -1);
         textContent = new TextContent((TextPart)structure, sampleText);
         
         envelope = new MessageEnvelope();

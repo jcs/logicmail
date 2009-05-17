@@ -207,7 +207,7 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessage() {
-    	TextPart part = new TextPart("plain", "", "");
+    	TextPart part = new TextPart("plain", "", "", -1);
     	TextContent content = new TextContent(part, "Hello World");
     	fakeIncomingMailClient.message = new Message(part);
     	fakeIncomingMailClient.message.putContent(part, content);
@@ -223,7 +223,7 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessageDelete() {
-    	TextPart part = new TextPart("plain", "", "");
+    	TextPart part = new TextPart("plain", "", "", -1);
     	TextContent content = new TextContent(part, "Hello World");
     	fakeIncomingMailClient.message = new Message(part);
     	fakeIncomingMailClient.message.putContent(part, content);
@@ -241,7 +241,7 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestMessageUndelete() {
-    	TextPart part = new TextPart("plain", "", "");
+    	TextPart part = new TextPart("plain", "", "", -1);
     	TextContent content = new TextContent(part, "Hello World");
     	fakeIncomingMailClient.message = new Message(part);
     	fakeIncomingMailClient.message.putContent(part, content);
@@ -259,7 +259,7 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void testRequestBatch() {
-    	TextPart part = new TextPart("plain", "", "");
+    	TextPart part = new TextPart("plain", "", "", -1);
     	TextContent content = new TextContent(part, "Hello World");
     	fakeIncomingMailClient.message = new Message(part);
     	fakeIncomingMailClient.message.putContent(part, content);

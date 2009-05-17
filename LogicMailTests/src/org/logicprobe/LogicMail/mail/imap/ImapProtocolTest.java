@@ -349,7 +349,7 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope1() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE)",
+            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (FLAGS (\\Answered \\Seen) UID 10 " +
                     "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
@@ -358,11 +358,11 @@ public class ImapProtocolTest extends TestCase {
                     "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
                     "((\"John Doe\" NIL \"jdoe\" \"generic.test\")) " +
                     "NIL NIL " + "\"<200703121933.25327.jdoe@generic.test>\" " +
-                    "\"<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>\"))"
+                    "\"<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>\") " +
+                    "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1,
-                    1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -418,6 +418,13 @@ public class ImapProtocolTest extends TestCase {
             assertEquals("<200703121933.25327.jdoe@generic.test>", env.inReplyTo);
             assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>",
                 env.messageId);
+            
+            ImapParser.MessageSection structure = result[0].structure;
+            assertNotNull(structure);
+            assertEquals("text", structure.type);
+            assertEquals("plain", structure.subtype);
+            assertEquals("us-ascii", structure.charset);
+            assertEquals("7bit", structure.encoding);
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
@@ -426,7 +433,7 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope2() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE)",
+            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (" +
                     "ENVELOPE (\"Sun, 08 Jul 2007 09:48:47 +0100\" \"A Test\" " +
@@ -435,11 +442,11 @@ public class ImapProtocolTest extends TestCase {
                     "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
                     "((\"\" NIL \"test\" \"generic.test\")) " + "NIL NIL " +
                     "NIL " + "\"<4690A4EF.3070302@mail.scratch.test>\") " +
-                    "FLAGS (\\Seen) UID 10)"
+                    "FLAGS (\\Seen) UID 10 " +
+                    "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1,
-                    1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -494,6 +501,13 @@ public class ImapProtocolTest extends TestCase {
 
             assertEquals("", env.inReplyTo);
             assertEquals("<4690A4EF.3070302@mail.scratch.test>", env.messageId);
+
+            ImapParser.MessageSection structure = result[0].structure;
+            assertNotNull(structure);
+            assertEquals("text", structure.type);
+            assertEquals("plain", structure.subtype);
+            assertEquals("us-ascii", structure.charset);
+            assertEquals("7bit", structure.encoding);
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
@@ -502,7 +516,7 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope3() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE)",
+            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (" + "FLAGS (\\Seen) UID 10 " +
                     "ENVELOPE (\"Wed, 06 Aug 2008 02:23:30 -0000\" " +
@@ -512,11 +526,11 @@ public class ImapProtocolTest extends TestCase {
                     "((NIL NIL \"trac\" \"scratch.test\")) " +
                     "((NIL NIL \"undisclosed-recipients\" NIL)) " +
                     "NIL NIL NIL " +
-                    "\"<060.de38dad18d49d570300daa4869e9abed@scratch.test>\"))"
+                    "\"<060.de38dad18d49d570300daa4869e9abed@scratch.test>\") " +
+                    "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1,
-                    1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -574,6 +588,13 @@ public class ImapProtocolTest extends TestCase {
             assertEquals("", env.inReplyTo);
             assertEquals("<060.de38dad18d49d570300daa4869e9abed@scratch.test>",
                 env.messageId);
+
+            ImapParser.MessageSection structure = result[0].structure;
+            assertNotNull(structure);
+            assertEquals("text", structure.type);
+            assertEquals("plain", structure.subtype);
+            assertEquals("us-ascii", structure.charset);
+            assertEquals("7bit", structure.encoding);
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
@@ -582,7 +603,7 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope4() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE)",
+            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (FLAGS (\\Seen) UID 10 " +
                     "ENVELOPE (\"Sun, 10 Aug 2008 14:47:16 -0000\" " +
@@ -592,11 +613,11 @@ public class ImapProtocolTest extends TestCase {
                     "((NIL NIL \"trac\" \"scratch.test\")) " +
                     "((NIL NIL \"undisclosed-recipients\" NIL)) " + "NIL NIL " +
                     "\"<060.dbfdcb41f7f58c1f764727b7af599d3a@scratch.test>\" " +
-                    "\"<069.001addbae7c31283d93b5f5d97756e65@scratch.test>\"))"
+                    "\"<069.001addbae7c31283d93b5f5d97756e65@scratch.test>\") " +
+                    "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1,
-                    1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -654,6 +675,13 @@ public class ImapProtocolTest extends TestCase {
                 env.inReplyTo);
             assertEquals("<069.001addbae7c31283d93b5f5d97756e65@scratch.test>",
                 env.messageId);
+
+            ImapParser.MessageSection structure = result[0].structure;
+            assertNotNull(structure);
+            assertEquals("text", structure.type);
+            assertEquals("plain", structure.subtype);
+            assertEquals("us-ascii", structure.charset);
+            assertEquals("7bit", structure.encoding);
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
