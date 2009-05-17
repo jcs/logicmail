@@ -37,7 +37,9 @@ import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.util.Queue;
 
 public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler {
@@ -51,10 +53,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	public static final int REQUEST_FOLDER_MESSAGES_SET     = 13;
 	public static final int REQUEST_FOLDER_MESSAGES_RECENT  = 14;
 	public static final int REQUEST_MESSAGE                 = 20;
-	public static final int REQUEST_MESSAGE_DELETE          = 21;
-	public static final int REQUEST_MESSAGE_UNDELETE        = 22;
-	public static final int REQUEST_MESSAGE_ANSWERED        = 23;
-	public static final int REQUEST_MESSAGE_APPEND          = 24;
+	public static final int REQUEST_MESSAGE_PART            = 21;
+	public static final int REQUEST_MESSAGE_DELETE          = 22;
+	public static final int REQUEST_MESSAGE_UNDELETE        = 23;
+	public static final int REQUEST_MESSAGE_ANSWERED        = 24;
+	public static final int REQUEST_MESSAGE_APPEND          = 25;
 	
 	/**
 	 * Maximum amount of time to spend in the idle state.
@@ -107,6 +110,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		case REQUEST_MESSAGE:
 			handleRequestMessage((MessageToken)params[0]);
 			break;
+		case REQUEST_MESSAGE_PART:
+			handleRequestMessagePart((MessageToken)params[0], (MessagePart)params[1]);
 		case REQUEST_MESSAGE_DELETE:
 			handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1]);
 			break;
@@ -250,7 +255,25 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(message != null && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { messageToken, message });
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { messageToken, message.getStructure(), message.getAllContent() });
+		}
+	}
+
+	private void handleRequestMessagePart(MessageToken messageToken, MessagePart messagePart) throws IOException, MailException {
+		checkActiveFolder(messageToken);
+
+		MessageContent messageContent;
+		// Replace this with a more general method:
+		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
+			messageContent = ((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messagePart);
+		}
+		else {
+			messageContent = null;
+		}
+		
+		MailConnectionHandlerListener listener = getListener();
+		if(messageContent != null && listener != null) {
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_PART, new Object[] { messageToken, messageContent });
 		}
 	}
 	

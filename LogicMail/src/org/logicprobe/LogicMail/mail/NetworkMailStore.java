@@ -35,8 +35,9 @@ import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MessagePart;
 
 public class NetworkMailStore extends AbstractMailStore {
 	private IncomingMailClient client;
@@ -86,6 +87,11 @@ public class NetworkMailStore extends AbstractMailStore {
 		return client.hasFolders();
 	}
 
+	public boolean hasMessageParts() {
+		// Fix this kludge later
+		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
+	}
+	
 	public boolean hasFlags() {
 		// Fix this kludge later
 		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
@@ -132,6 +138,10 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken });
 	}
 
+	public void requestMessagePart(MessageToken messageToken, MessagePart messagePart) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PART, new Object[] { messageToken, messagePart });
+	}
+	
 	public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags });
 	}
@@ -177,7 +187,11 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
 			results = (Object[])result;
-			fireMessageAvailable((MessageToken)results[0], (Message)results[1], null);
+			fireMessageAvailable((MessageToken)results[0], (MessagePart)results[1], (MessageContent[])results[2], null);
+			break;
+		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PART:
+			results = (Object[])result;
+			fireMessagePartAvailable((MessageToken)results[0], (MessageContent[])results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
 			results = (Object[])result;

@@ -32,8 +32,9 @@
 package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -78,6 +79,17 @@ public abstract class AbstractMailStore {
      */
     public abstract boolean hasFolders();
 
+    /**
+     * Returns whether the mail store supports retrieving message
+     * parts individually.  If this is true, it should be expected
+     * that {@link FolderMessage} objects used by this mail store
+     * also have their {@link FolderMessage#getStructure()} field
+     * populated.
+     * 
+     * @return True if individual message part retrieval is supported, false otherwise
+     */
+    public abstract boolean hasMessageParts();
+    
     /**
      * Returns whether the mail store supports message flags.
      * 
@@ -162,6 +174,21 @@ public abstract class AbstractMailStore {
      * @param messageToken The token used to identify the message
      */
     public abstract void requestMessage(MessageToken messageToken);
+    
+    /**
+     * Requests a particular message part to be loaded.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageAvailable(MessageEvent)}.
+     * 
+     * <p>If <tt>hasMessageParts()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messagePart The part of the message to load
+     */
+    public abstract void requestMessagePart(MessageToken messageToken, MessagePart messagePart);
     
     /**
      * Requests a particular message to be deleted.
@@ -366,15 +393,34 @@ public abstract class AbstractMailStore {
      * a message has been loaded.
      * 
      * @param messageToken The token identifying the message
-     * @param message The message itself
+     * @param messageStructure The message structure
+     * @param messageContent The message content
      * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(MessageToken messageToken, Message message, String messageSource) {
+    protected void fireMessageAvailable(MessageToken messageToken, MessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, messageToken, message, messageSource);
+                e = new MessageEvent(this, messageToken, messageStructure, messageContent, messageSource);
+            }
+            ((MessageListener)listeners[i]).messageAvailable(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>MessageListener</tt>s that
+     * a message has been loaded.
+     * 
+     * @param messageToken The token identifying the message
+     * @param messageContent The message content
+     */
+    protected void fireMessagePartAvailable(MessageToken messageToken, MessageContent[] messageContent) {
+        Object[] listeners = listenerList.getListeners(MessageListener.class);
+        MessageEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new MessageEvent(this, messageToken, messageContent);
             }
             ((MessageListener)listeners[i]).messageAvailable(e);
         }

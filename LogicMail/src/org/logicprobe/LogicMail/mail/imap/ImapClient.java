@@ -588,6 +588,11 @@ public class ImapClient implements IncomingMailClient {
         return msg;
     }
 
+    public MessageContent getMessagePart(MessageToken messageToken, MessagePart messagePart) {
+		// TODO Auto-generated method stub
+    	return null;
+	}
+
     private MessagePart getMessagePart(
     		Hashtable contentMap,
     		int uid,

@@ -31,45 +31,91 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MessagePart;
 
 /**
  * Object for message events.
  */
 public class MessageEvent extends MailStoreEvent {
+	private int type;
 	private MessageToken messageToken;
 	private MessageFlags messageFlags;
-	private Message message;
+	private MessagePart messageStructure;
+	private MessageContent[] messageContent;
 	private String messageSource;
 	
-	/** Creates a new instance of MessageEvent */
-	public MessageEvent(Object source, MessageToken messageToken, MessageFlags messageFlags, Message message, String messageSource) {
+	public final static int TYPE_FULLY_LOADED = 0;
+	public final static int TYPE_CONTENT_LOADED = 1;
+	public final static int TYPE_FLAGS_CHANGED = 2;
+	
+	/**
+	 * Creates a new instance of MessageEvent.
+	 * 
+	 * @param source the source of the event
+	 * @param type the type of the event
+	 * @param messageToken the message token
+	 * @param messageFlags the message flags
+	 * @param messageStructure the message structure
+	 * @param messageContent the message content
+	 * @param messageSource the message source
+	 */
+	public MessageEvent(Object source, int type, MessageToken messageToken, MessageFlags messageFlags, MessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
 		super(source);
+		this.type = type;
 		this.messageToken = messageToken;
 		this.messageFlags = messageFlags;
-		this.message = message;
+		this.messageStructure = messageStructure;
+		this.messageContent = messageContent;
 		this.messageSource = messageSource;
 	}
 
-	/** Creates a new instance of MessageEvent */
-	public MessageEvent(Object source, MessageToken messageToken, Message message, String messageSource) {
-		this(source, messageToken, null, message, messageSource);
+	/**
+	 * Creates a new instance of MessageEvent to indicate that some of
+	 * the message content has been loaded.
+	 * 
+	 * @param source the source of the event
+	 * @param messageToken the message token
+	 * @param messageContent the loaded message content
+	 */
+	public MessageEvent(Object source, MessageToken messageToken, MessageContent[] messageContent) {
+		this(source, TYPE_CONTENT_LOADED, messageToken, null, null, messageContent, null);
 	}
 
-	/** Creates a new instance of MessageEvent */
-	public MessageEvent(Object source, MessageToken messageToken, Message message) {
-		this(source, messageToken, null, message, null);
+	/**
+	 * Creates a new instance of MessageEvent to indicate that all possible
+	 * message content has been loaded, as well as the raw source for the message.
+	 * 
+	 * @param source the source of the event
+	 * @param messageToken the message token
+	 * @param messageStructure the message structure
+	 * @param messageContent the message content
+	 * @param messageSource the message source
+	 */
+	public MessageEvent(Object source, MessageToken messageToken, MessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+		this(source, TYPE_FULLY_LOADED, messageToken, null, messageStructure, messageContent, messageSource);
 	}
 
-	/** Creates a new instance of MessageEvent */
-	public MessageEvent(Object source, MessageToken messageToken) {
-		this(source, messageToken, null, null, null);
-	}
-
-	/** Creates a new instance of MessageEvent */
+	/**
+	 * Creates a new instance of MessageEvent to indicate that the
+	 * message flags have changed.
+	 * 
+	 * @param source the source of the event
+	 * @param messageToken the message token
+	 * @param messageFlags the message flags
+	 */
 	public MessageEvent(Object source, MessageToken messageToken, MessageFlags messageFlags) {
-		this(source, messageToken, messageFlags, null, null);
+		this(source, TYPE_FLAGS_CHANGED, messageToken, messageFlags, null, null, null);
+	}
+	
+	/**
+	 * Gets the type of this message event.
+	 * 
+	 * @return Event type.
+	 */
+	public int getType() {
+		return this.type;
 	}
 	
 	/**
@@ -87,12 +133,21 @@ public class MessageEvent extends MailStoreEvent {
 	}
 	
 	/**
-	 * Gets the message itself, if it is available for this particular event.
+	 * Gets the message structure, if it is available for this particular event.
 	 */
-	public Message getMessage() {
-		return message;
+	public MessagePart getMessageStructure() {
+		return messageStructure;
 	}
 
+	/**
+	 * Get the message content, if it is available for this particular event.
+	 * This should be all the content that was just loaded, and may not necessarily
+	 * be all the content that could be loaded for the message.
+	 */
+	public MessageContent[] getMessageContent() {
+		return messageContent;
+	}
+	
 	/**
 	 * Gets the message source, if it is available for this particular event.
 	 */

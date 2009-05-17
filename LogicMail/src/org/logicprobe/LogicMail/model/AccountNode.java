@@ -595,10 +595,9 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
-        	Message message = e.getMessage();
-            messageNode.setMessageStructure(message.getStructure());
+            messageNode.setMessageStructure(e.getMessageStructure());
             messageNode.setMessageSource(e.getMessageSource());
-            messageNode.putMessageContent(message.getAllContent());
+            messageNode.putMessageContent(e.getMessageContent());
         }
     }
 

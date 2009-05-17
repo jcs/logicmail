@@ -89,6 +89,10 @@ public class LocalMailStore extends AbstractMailStore {
         return true;
     }
 
+    public boolean hasMessageParts() {
+    	return false;
+    }
+    
     public boolean hasFlags() {
         return true;
     }
@@ -204,11 +208,15 @@ public class LocalMailStore extends AbstractMailStore {
         	}
         	
         	if(message != null && messageSource != null) {
-        		fireMessageAvailable(localMessageToken, message, messageSource);
+        		fireMessageAvailable(localMessageToken, message.getStructure(), message.getAllContent(), messageSource);
         	}
 		}
     }
 
+    public void requestMessagePart(MessageToken messageToken, MessagePart messagePart) {
+    	throw new UnsupportedOperationException();
+    }
+    
     public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
         // TODO Auto-generated method stub
     }

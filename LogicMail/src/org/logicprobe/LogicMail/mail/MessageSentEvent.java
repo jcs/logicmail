@@ -45,6 +45,7 @@ public class MessageSentEvent extends MailSenderEvent {
 	/** Creates a new instance of MessageSentEvent */
 	public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource) {
 		super(source);
+		this.envelope = envelope;
 		this.message = message;
 		this.messageSource = messageSource;
 	}

@@ -216,8 +216,11 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.shutdown(true);
     	
     	assertNotNull(eventMessageAvailable);
-    	assertNotNull(eventMessageAvailable.getMessage());
-    	assertEquals(fakeIncomingMailClient.message, eventMessageAvailable.getMessage());
+    	assertEquals(MessageEvent.TYPE_FULLY_LOADED, eventMessageAvailable.getType());
+    	assertNotNull(eventMessageAvailable.getMessageStructure());
+    	assertNotNull(eventMessageAvailable.getMessageContent());
+    	assertEquals(fakeIncomingMailClient.message.getStructure(), eventMessageAvailable.getMessageStructure());
+    	assertEquals(fakeIncomingMailClient.message.getContent(part), eventMessageAvailable.getMessageContent()[0]);
     	assertNotNull(eventMessageAvailable.getMessageToken());
     	assertEquals(fakeIncomingMailClient.messageToken, eventMessageAvailable.getMessageToken());
     }
@@ -234,7 +237,7 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.shutdown(true);
     	
     	assertNotNull(eventMessageDeleted);
-    	assertNull(eventMessageDeleted.getMessage());
+    	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageDeleted.getType());
     	assertNotNull(eventMessageDeleted.getMessageToken());
     	assertEquals(fakeIncomingMailClient.messageToken, eventMessageDeleted.getMessageToken());
     	assertTrue(eventMessageDeleted.getMessageFlags().isDeleted());
@@ -252,7 +255,7 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.shutdown(true);
     	
     	assertNotNull(eventMessageUndeleted);
-    	assertNull(eventMessageUndeleted.getMessage());
+    	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageUndeleted.getType());
     	assertNotNull(eventMessageUndeleted.getMessageToken());
     	assertEquals(fakeIncomingMailClient.messageToken, eventMessageUndeleted.getMessageToken());
     	assertTrue(!eventMessageUndeleted.getMessageFlags().isDeleted());
