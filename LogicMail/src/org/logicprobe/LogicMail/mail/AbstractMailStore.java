@@ -188,7 +188,7 @@ public abstract class AbstractMailStore {
      * @param messageToken The token used to identify the message
      * @param messagePart The part of the message to load
      */
-    public abstract void requestMessagePart(MessageToken messageToken, MessagePart messagePart);
+    public abstract void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts);
     
     /**
      * Requests a particular message to be deleted.
@@ -415,7 +415,7 @@ public abstract class AbstractMailStore {
      * @param messageToken The token identifying the message
      * @param messageContent The message content
      */
-    protected void fireMessagePartAvailable(MessageToken messageToken, MessageContent[] messageContent) {
+    protected void fireMessageContentAvailable(MessageToken messageToken, MessageContent[] messageContent) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {

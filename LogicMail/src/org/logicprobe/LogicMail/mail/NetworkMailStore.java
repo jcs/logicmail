@@ -138,8 +138,8 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken });
 	}
 
-	public void requestMessagePart(MessageToken messageToken, MessagePart messagePart) {
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PART, new Object[] { messageToken, messagePart });
+	public void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageParts });
 	}
 	
 	public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
@@ -189,9 +189,9 @@ public class NetworkMailStore extends AbstractMailStore {
 			results = (Object[])result;
 			fireMessageAvailable((MessageToken)results[0], (MessagePart)results[1], (MessageContent[])results[2], null);
 			break;
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PART:
+		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
 			results = (Object[])result;
-			fireMessagePartAvailable((MessageToken)results[0], (MessageContent[])results[1]);
+			fireMessageContentAvailable((MessageToken)results[0], (MessageContent[])results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
 			results = (Object[])result;

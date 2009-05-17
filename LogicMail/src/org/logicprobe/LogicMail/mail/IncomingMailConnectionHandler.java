@@ -53,7 +53,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	public static final int REQUEST_FOLDER_MESSAGES_SET     = 13;
 	public static final int REQUEST_FOLDER_MESSAGES_RECENT  = 14;
 	public static final int REQUEST_MESSAGE                 = 20;
-	public static final int REQUEST_MESSAGE_PART            = 21;
+	public static final int REQUEST_MESSAGE_PARTS           = 21;
 	public static final int REQUEST_MESSAGE_DELETE          = 22;
 	public static final int REQUEST_MESSAGE_UNDELETE        = 23;
 	public static final int REQUEST_MESSAGE_ANSWERED        = 24;
@@ -110,8 +110,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		case REQUEST_MESSAGE:
 			handleRequestMessage((MessageToken)params[0]);
 			break;
-		case REQUEST_MESSAGE_PART:
-			handleRequestMessagePart((MessageToken)params[0], (MessagePart)params[1]);
+		case REQUEST_MESSAGE_PARTS:
+			handleRequestMessageParts((MessageToken)params[0], (MessagePart[])params[1]);
+			break;
 		case REQUEST_MESSAGE_DELETE:
 			handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1]);
 			break;
@@ -259,13 +260,15 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 
-	private void handleRequestMessagePart(MessageToken messageToken, MessagePart messagePart) throws IOException, MailException {
+	private void handleRequestMessageParts(MessageToken messageToken, MessagePart[] messageParts) throws IOException, MailException {
 		checkActiveFolder(messageToken);
 
-		MessageContent messageContent;
+		MessageContent[] messageContent = new MessageContent[messageParts.length];
 		// Replace this with a more general method:
 		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
-			messageContent = ((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messagePart);
+			for(int i=0; i<messageParts.length; i++) {
+				messageContent[i] = ((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i]);
+			}
 		}
 		else {
 			messageContent = null;
@@ -273,7 +276,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messageContent != null && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_PART, new Object[] { messageToken, messageContent });
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageContent });
 		}
 	}
 	

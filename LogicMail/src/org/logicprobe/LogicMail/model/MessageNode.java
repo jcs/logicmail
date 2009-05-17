@@ -33,11 +33,14 @@ package org.logicprobe.LogicMail.model;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Vector;
 
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -960,14 +963,47 @@ public class MessageNode implements Node {
     
     /**
      * Called to load the message data for this node.
-     * This loads as much of the message as allowed within
-     * the limits defined in the configuration options.
+     * <p>
+     * This loads as much of the displayable parts of the message
+     * as allowed within the limits defined in the configuration options.
+     * It is intended to be a convenience request for the UI,
+     * as individual parts can be requested for attachment download.
+     * Since multiple parts are downloaded in response to this request,
+     * multiple events may be fired as the retrieval process completes.
+     * </p>
      */
 	public void refreshMessage() {
 		if(!refreshInProgress) {
 			refreshInProgress = true;
-			parent.getParentAccount().getMailStore().requestMessage(
-					messageToken);
+			AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+			if(mailStore.hasMessageParts()) {
+				int maxSize = Integer.MAX_VALUE;
+				MessagePart[] displayableParts = MessagePartTransformer.getDisplayableParts(this.messageStructure);
+				AccountConfig accountConfig = parent.getParentAccount().getAccountConfig();
+				if(accountConfig instanceof ImapConfig) {
+					maxSize = ((ImapConfig)accountConfig).getMaxMessageSize();
+				}
+				Vector partsToFetch = new Vector();
+				int sizeRequested = 0;
+				for(int i=0; i<displayableParts.length; i++) {
+					sizeRequested += displayableParts[i].getSize();
+					if(sizeRequested <= maxSize) {
+						partsToFetch.addElement(displayableParts[i]);
+					}
+					else {
+						break;
+					}
+				}
+				
+				if(partsToFetch.size() > 0) {
+					displayableParts = new MessagePart[partsToFetch.size()];
+					partsToFetch.copyInto(displayableParts);
+					mailStore.requestMessageParts(messageToken, displayableParts);
+				}
+			}
+			else {
+				mailStore.requestMessage(messageToken);
+			}
 		}
 	}
 	

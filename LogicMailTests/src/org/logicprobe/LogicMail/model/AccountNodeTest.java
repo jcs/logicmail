@@ -246,7 +246,7 @@ public class AccountNodeTest extends TestCase {
 		}
 		
 		public void requestMessage(MessageToken messageToken) { }
-		public void requestMessagePart(MessageToken messageToken, MessagePart messagePart) { }
+		public void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts) { }
 		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) { }
 		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) { }
 		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) { }

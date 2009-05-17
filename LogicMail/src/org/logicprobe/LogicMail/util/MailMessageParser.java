@@ -271,7 +271,7 @@ public class MailMessageParser {
                 MessagePart part = MessagePartFactory.createMessagePart(
                 		type, subtype, encoding, charset, size);
                 try {
-					contentMap.put(part, MessageContentFactory.createContent(part, encoding, charset, data));
+					contentMap.put(part, MessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {
 					System.err.println("UnsupportedContentException: " + e.getMessage());
 				}
@@ -283,7 +283,7 @@ public class MailMessageParser {
                 MessagePart part = MessagePartFactory.createMessagePart(
                 		type, subtype, encoding, charset, data.length());
                 try {
-					contentMap.put(part, MessageContentFactory.createContent(part, encoding, charset, data));
+					contentMap.put(part, MessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {
 					System.err.println("UnsupportedContentException: " + e.getMessage());
 				}

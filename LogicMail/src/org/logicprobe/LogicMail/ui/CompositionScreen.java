@@ -446,7 +446,7 @@ public class CompositionScreen extends BaseScreen {
         MessageContent bodyContent;
         try {
 			bodyContent = MessageContentFactory.createContent(
-					bodyPart, "7bit", "us-ascii", contentText);
+					bodyPart, contentText);
 		} catch (UnsupportedContentException e) {
 			bodyContent = null;
 		}

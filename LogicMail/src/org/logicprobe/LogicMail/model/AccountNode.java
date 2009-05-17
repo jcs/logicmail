@@ -595,9 +595,16 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
-            messageNode.setMessageStructure(e.getMessageStructure());
-            messageNode.setMessageSource(e.getMessageSource());
-            messageNode.putMessageContent(e.getMessageContent());
+        	switch(e.getType()) {
+        	case MessageEvent.TYPE_FULLY_LOADED:
+                messageNode.setMessageStructure(e.getMessageStructure());
+                messageNode.setMessageSource(e.getMessageSource());
+                messageNode.putMessageContent(e.getMessageContent());
+                break;
+        	case MessageEvent.TYPE_CONTENT_LOADED:
+                messageNode.putMessageContent(e.getMessageContent());
+                break;
+        	}
         }
     }
 

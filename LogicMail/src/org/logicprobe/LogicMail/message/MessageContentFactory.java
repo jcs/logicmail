@@ -48,13 +48,15 @@ public class MessageContentFactory {
 	 * 
 	 * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
 	 */
-	public static MessageContent createContent(MessagePart messagePart, String encoding, String param, String data) throws UnsupportedContentException {
+	public static MessageContent createContent(MessagePart messagePart, String data) throws UnsupportedContentException {
     	MessageContent content;
     	if(messagePart instanceof TextPart) {
-    		content = new TextContent((TextPart)messagePart, encoding, param, data);
+    		TextPart textPart = (TextPart)messagePart;
+    		content = new TextContent(textPart, textPart.getEncoding(), textPart.getCharset(), data);
     	}
     	else if(messagePart instanceof ImagePart) {
-    		content = new ImageContent((ImagePart)messagePart, encoding, data);
+    		ImagePart imagePart = (ImagePart)messagePart;
+    		content = new ImageContent(imagePart, imagePart.getEncoding(), data);
     	}
     	else {
     		throw new UnsupportedContentException("Unsupported content type");

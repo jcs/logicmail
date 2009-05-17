@@ -588,9 +588,32 @@ public class ImapClient implements IncomingMailClient {
         return msg;
     }
 
-    public MessageContent getMessagePart(MessageToken messageToken, MessagePart messagePart) {
-		// TODO Auto-generated method stub
-    	return null;
+    public MessageContent getMessagePart(MessageToken messageToken, MessagePart messagePart) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+    		throw new MailException("Invalid mailbox for message");
+    	}
+
+    	// Get the relevant data from the MessagePart object
+    	String partAddress = messagePart.getTag();
+    	String mimeType = messagePart.getMimeType();
+    	String mimeSubtype = messagePart.getMimeSubtype();
+    	
+    	// Make sure we can actually get this part
+    	if(partAddress == null || mimeType == null || mimeSubtype == null) { return null; }
+    	if(!MessagePartFactory.isMessagePartSupported(mimeType, mimeSubtype)) { return null; }
+    	if(mimeType.equalsIgnoreCase("multipart")) { return null; }
+    	if(!(messageToken instanceof ImapMessageToken)) { return null; }
+
+    	
+    	String data = getMessageBody(imapMessageToken.getMessageUid(), partAddress);
+    	MessageContent content;
+    	try {
+			content = MessageContentFactory.createContent(messagePart, data);
+		} catch (UnsupportedContentException e) {
+			content = null;
+		}
+    	return content;
 	}
 
     private MessagePart getMessagePart(
@@ -623,7 +646,7 @@ public class ImapClient implements IncomingMailClient {
             		structure.size,
             		structure.address);
             try {
-				contentMap.put(part, MessageContentFactory.createContent(part, structure.encoding, structure.charset, data));
+				contentMap.put(part, MessageContentFactory.createContent(part, data));
 			} catch (UnsupportedContentException e) {
 				System.err.println("UnsupportedContentException: " + e.getMessage());
 			}

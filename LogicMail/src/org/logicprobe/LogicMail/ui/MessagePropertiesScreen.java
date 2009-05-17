@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.model.Address;
@@ -39,6 +40,7 @@ import org.logicprobe.LogicMail.model.MessageNode;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
@@ -207,6 +209,28 @@ public class MessagePropertiesScreen extends MainScreen {
     		}
     		buf.append(')');
     	}
+
+    	// The display rules are as follows:
+    	//   Normal: multipart and supported parts that have not been loaded
+    	//   Bold:   supported parts that have been loaded
+    	//   Italic: unsupported parts
+    	Font originalFont = graphics.getFont();
+    	Font displayFont;
+    	if(part instanceof MultiPart) {
+    		displayFont = originalFont;
+    	}
+    	else if(!MessageContentFactory.isContentSupported(part)) {
+    		displayFont = originalFont.derive(Font.ITALIC);
+    	}
+    	else if(messageNode.getMessageContent(part) != null) {
+    		displayFont = originalFont.derive(Font.BOLD);
+    	}
+    	else {
+    		displayFont = originalFont;
+    	}
+    	
+    	graphics.setFont(displayFont);
     	graphics.drawText(buf.toString(), indent, y, Graphics.ELLIPSIS, width);
+    	graphics.setFont(originalFont);
 	}
 }

@@ -213,7 +213,7 @@ public class LocalMailStore extends AbstractMailStore {
 		}
     }
 
-    public void requestMessagePart(MessageToken messageToken, MessagePart messagePart) {
+    public void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts) {
     	throw new UnsupportedOperationException();
     }
     
