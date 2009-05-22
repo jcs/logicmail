@@ -33,8 +33,11 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Vector;
 import net.rim.device.api.system.Application;
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
+import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
@@ -43,9 +46,12 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.NullField;
+import net.rim.device.api.ui.component.TreeField;
+import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MessagePartTransformer;
@@ -63,6 +69,7 @@ import org.logicprobe.LogicMail.model.MessageNodeListener;
 public class MessageScreen extends BaseScreen {
 	private BorderedFieldManager addressFieldManager;
 	private BorderedFieldManager subjectFieldManager;
+	private TreeField attachmentsTreeField;
 	private VerticalFieldManager messageFieldManager;
 	
 	private AccountConfig accountConfig;
@@ -134,19 +141,29 @@ public class MessageScreen extends BaseScreen {
 		}
     };
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
+     */
     protected void onDisplay() {
     	super.onDisplay();
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(!messageNode.hasMessageContent()) {
-    		throbberField = new ThrobberField(this.getWidth() / 4, Field.FIELD_HCENTER);
-    		add(throbberField);
-    		messageNode.refreshMessage();
+    		if(messageNode.refreshMessage()) {
+        		throbberField = new ThrobberField(this.getWidth() / 4, Field.FIELD_HCENTER);
+        		add(throbberField);
+    		}
+    		else {
+    			renderMessage();
+    		}
     	}
     	else if(!messageRendered) {
     		renderMessage();
     	}
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#onUndisplay()
+     */
     protected void onUndisplay() {
     	messageNode.removeMessageNodeListener(messageNodeListener);
         synchronized(Application.getEventLock()) {
@@ -237,6 +254,9 @@ public class MessageScreen extends BaseScreen {
         }
     };
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
+     */
     protected void makeMenu(Menu menu, int instance) {
         menu.add(propsItem);
         menu.addSeparator();
@@ -254,6 +274,9 @@ public class MessageScreen extends BaseScreen {
         menu.add(closeItem);
     }
 
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
+     */
     public boolean keyChar(char key,
                            int status,
                            int time)
@@ -262,16 +285,26 @@ public class MessageScreen extends BaseScreen {
         switch(key) {
             case Keypad.KEY_ENTER:
             case Keypad.KEY_SPACE:
-                if(status == 0) {
-                    scroll(Manager.DOWNWARD);
-                    retval = true;
-                }
-                else if(status == KeypadListener.STATUS_ALT) {
-                    scroll(Manager.UPWARD);
-                    retval = true;
-                }
+            	if(this.getFieldWithFocus() == messageFieldManager
+            			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
+            		int node = attachmentsTreeField.getCurrentNode();
+            		if(node != -1 && attachmentsTreeField.getFirstChild(node) != -1) {
+            			attachmentsTreeField.setExpanded(node, !attachmentsTreeField.getExpanded(node));
+            			retval = true;
+            		}
+            	}
+            	else {
+	            	if(status == 0) {
+	                    scroll(Manager.DOWNWARD);
+	                    retval = true;
+	                }
+	                else if(status == KeypadListener.STATUS_ALT) {
+	                    scroll(Manager.UPWARD);
+	                    retval = true;
+	                }
+            	}
                 break;
-        }
+	        }
         return retval;
     }
     
@@ -288,8 +321,25 @@ public class MessageScreen extends BaseScreen {
     }
 
     private void renderMessage() {
-    	MessagePart[] displayableParts = MessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());
 		Vector messageFields = new Vector();
+
+		// Add a collapsed TreeField to show attachments, if any exist
+    	MessagePart[] attachmentParts = messageNode.getAttachmentParts();
+    	if(attachmentParts.length > 0) {
+    		attachmentsTreeField = new TreeField(new TreeFieldCallback() {
+    			public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
+    				attachmentsTreeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
+    			}}, Field.FOCUSABLE);
+    		attachmentsTreeField.setDefaultExpanded(false);
+    		int id = attachmentsTreeField.addChildNode(0, "Attachments");
+    		for(int i=attachmentParts.length - 1; i>=0; --i) {
+    			attachmentsTreeField.addChildNode(id, attachmentParts[i]);
+    		}
+    		messageFields.addElement(attachmentsTreeField);
+    	}
+    	
+    	// Add fields to display the message body
+    	MessagePart[] displayableParts = MessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());    	
     	for(int i=0; i<displayableParts.length; i++) {
     		MessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {
@@ -306,13 +356,15 @@ public class MessageScreen extends BaseScreen {
 		drawMessageFields(messageFields);
 		messageRendered = true;
     }
-    
-    private void drawMessageFields(Vector messageFields) {
+
+	private void drawMessageFields(Vector messageFields) {
         if(messageFields == null) {
             return;
         }
         synchronized(Application.getEventLock()) {
-            int size = messageFields.size();
+        	messageFieldManager.deleteAll();
+        	
+        	int size = messageFields.size();
             for(int i=0;i<size;++i) {
                 if(messageFields.elementAt(i) != null) {
                     messageFieldManager.add((Field)messageFields.elementAt(i));
@@ -324,4 +376,70 @@ public class MessageScreen extends BaseScreen {
             messageFieldManager.add(new NullField(Field.FOCUSABLE));
         }
     }
+
+	private void attachmentsTreeField_DrawTreeItem(
+			TreeField treeField,
+			Graphics graphics,
+			int node,
+			int y,
+			int width,
+			int indent) {
+		Object cookie = attachmentsTreeField.getCookie(node);
+		if(cookie instanceof ContentPart) {
+			ContentPart messagePart = (ContentPart)cookie;
+			
+	    	StringBuffer buf = new StringBuffer();
+	    	buf.append(messagePart.getName());
+	    	if(buf.length() == 0) {
+	    		buf.append(messagePart.getMimeType());
+	    		buf.append('/');
+	    		buf.append(messagePart.getMimeSubtype());
+	    	}
+
+	    	int partSize = messagePart.getSize();
+	    	if(partSize > 0) {
+	    		buf.append(" (");
+	    		if(partSize < 1024) {
+	    			buf.append(partSize);
+	    			buf.append('B');
+	    		}
+	    		else {
+	    			partSize /= 1024;
+	    			buf.append(partSize);
+	    			buf.append("kB");
+	    		}
+	    		buf.append(')');
+	    	}
+
+	    	Bitmap icon = MessageIcons.getIcon(messagePart);
+	    	if(icon != null) {
+	    		int rowHeight = treeField.getRowHeight();
+	    		int fontHeight = graphics.getFont().getHeight();
+
+	    		graphics.drawBitmap(
+	    				indent + (rowHeight/2 - icon.getWidth()/2),
+	    				y + (fontHeight/2 - icon.getWidth()/2),
+	    				icon.getWidth(),
+	    				icon.getHeight(),
+	    				icon, 0, 0);
+	    		
+	    		indent += rowHeight;
+	    	}
+	    	
+	    	Font originalFont = graphics.getFont();
+	    	Font displayFont;
+	    	if(messageNode.getMessageContent(messagePart) != null) {
+	    		displayFont = originalFont.derive(Font.BOLD);
+	    	}
+	    	else {
+	    		displayFont = originalFont;
+	    	}
+	    	graphics.setFont(displayFont);
+	    	graphics.drawText(buf.toString(), indent, y, Graphics.ELLIPSIS, width);
+	    	graphics.setFont(originalFont);
+		}
+		else {
+			graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
+		}
+	}
 }

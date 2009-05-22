@@ -442,7 +442,7 @@ public class CompositionScreen extends BaseScreen {
     private Message generateMessage() {
     	String contentText = messageEditField.getText();
         MessagePart bodyPart = MessagePartFactory.createMessagePart(
-        		"text", "plain", "7bit", "us-ascii", contentText.length());
+        		"text", "plain", null, "7bit", "us-ascii", null, contentText.length());
         MessageContent bodyContent;
         try {
 			bodyContent = MessageContentFactory.createContent(

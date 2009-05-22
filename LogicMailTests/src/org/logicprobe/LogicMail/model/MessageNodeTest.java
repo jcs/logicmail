@@ -68,7 +68,7 @@ public class MessageNodeTest extends TestCase {
     		"eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
     		"ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
     		"nisi ut aliquip ex ea commodo consequat.";
-    	TextPart part = new TextPart("plain", "", "", -1);
+    	TextPart part = new TextPart("plain", "", "", "", "", -1);
     	TextContent content = new TextContent(part, sampleText);
 
     	MessageEnvelope env = new MessageEnvelope();
@@ -106,7 +106,7 @@ public class MessageNodeTest extends TestCase {
             "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
             "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
             "nisi ut aliquip ex ea commodo consequat.";
-    	TextPart part = new TextPart("plain", "", "", -1);
+    	TextPart part = new TextPart("plain", "", "", "", "", -1);
     	TextContent content = new TextContent(part, sampleText);
 	    
 	    MessageEnvelope env = new MessageEnvelope();

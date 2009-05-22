@@ -222,17 +222,28 @@ public class MailMessageParser {
         String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
         String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
         String charset = mimeInputStream.getContentTypeParameter("charset");
+        String name = mimeInputStream.getContentTypeParameter("name");
+        String disposition = mimeInputStream.getHeader("Content-Disposition");
 
         // Default parameters used when headers are missing
         if (encoding == null) {
             encoding = "7bit";
         }
 
+        // Clean up the disposition field
+        if(disposition != null) {
+	        int p = disposition.indexOf(';');
+	        if(p != -1) {
+	        	disposition = disposition.substring(0, p);
+	        }
+        	disposition = disposition.toLowerCase();
+        }
+        
         // Handle the multi-part case
         if (mimeInputStream.isMultiPart() &&
                 type.equalsIgnoreCase("multipart")) {
             MessagePart part = MessagePartFactory.createMessagePart(
-            		type, subtype, null, null, -1);
+            		type, subtype, null, null, null, null, -1);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
 
             for (int i = 0; i < mimeSubparts.length; i++) {
@@ -269,7 +280,7 @@ public class MailMessageParser {
 
                 String data = new String(buffer, offset, size);
                 MessagePart part = MessagePartFactory.createMessagePart(
-                		type, subtype, encoding, charset, size);
+                		type, subtype, name, encoding, charset, disposition, size);
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {
@@ -281,7 +292,7 @@ public class MailMessageParser {
 
                 String data = new String(buffer);
                 MessagePart part = MessagePartFactory.createMessagePart(
-                		type, subtype, encoding, charset, data.length());
+                		type, subtype, name, encoding, charset, disposition, data.length());
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {

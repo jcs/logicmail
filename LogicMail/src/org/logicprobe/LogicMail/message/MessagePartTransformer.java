@@ -59,11 +59,15 @@ public class MessagePartTransformer {
 		
 		public void visitTextPart(TextPart part) {
 			// TODO: Add logic to deal with multipart/alternative cases
-			displayableParts.addElement(part);
+			if(MessageContentFactory.isContentSupported(part)) {
+				displayableParts.addElement(part);
+			}
 		}
 
 		public void visitImagePart(ImagePart part) {
-			displayableParts.addElement(part);
+			if(MessageContentFactory.isContentSupported(part)) {
+				displayableParts.addElement(part);
+			}
 		}
 
 		public void visitUnsupportedPart(UnsupportedPart part) {

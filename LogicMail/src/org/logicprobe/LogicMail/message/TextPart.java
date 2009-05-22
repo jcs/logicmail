@@ -38,38 +38,28 @@ import java.io.IOException;
 /**
  * Text message part (MIME type: "text/????")
  */
-public class TextPart extends MessagePart {
-	private String encoding;
+public class TextPart extends ContentPart {
 	private String charset;
     
     /** Creates a new instance of TextPart */
-    public TextPart(String mimeSubtype, String encoding, String charset, int size, String tag) {
-        super("text", mimeSubtype, size, tag);
-        this.encoding = encoding;
+    public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, int size, String tag) {
+        super("text", mimeSubtype, name, encoding, disposition, size, tag);
         this.charset = charset;
     }
 
-    public TextPart(String mimeSubtype, String encoding, String charset, int size) {
-        this(mimeSubtype, encoding, charset, size, "");
+    public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, int size) {
+        this(mimeSubtype, name, encoding, charset, disposition, size, "");
     }
     
     /** Creates a new instance for deserialization */
     public TextPart() {
-    	this("", "", "", -1, "");
+    	this("", "", "", "", "", -1, "");
     }
     
     public void accept(MessagePartVisitor visitor) {
         visitor.visitTextPart(this);
     }
 
-    public String getEncoding() {
-    	return encoding;
-    }
-    
-    public void setEncoding(String encoding) {
-    	this.encoding = encoding;
-    }
-    
     public String getCharset() {
         return charset;
     }
@@ -83,7 +73,6 @@ public class TextPart extends MessagePart {
 	 */
 	public void serialize(DataOutputStream output) throws IOException {
 		super.serialize(output);
-		output.writeUTF(encoding);
 		output.writeUTF(charset);
 	}
 	
@@ -92,7 +81,6 @@ public class TextPart extends MessagePart {
 	 */
 	public void deserialize(DataInputStream input) throws IOException {
 		super.deserialize(input);
-		encoding = input.readUTF();
 		charset = input.readUTF();
 	}
 }

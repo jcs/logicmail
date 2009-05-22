@@ -641,8 +641,10 @@ public class ImapClient implements IncomingMailClient {
             part = MessagePartFactory.createMessagePart(
             		structure.type,
             		structure.subtype,
+            		structure.name,
             		structure.encoding,
             		structure.charset,
+            		structure.disposition,
             		structure.size,
             		structure.address);
             try {
@@ -676,8 +678,10 @@ public class ImapClient implements IncomingMailClient {
         MessagePart part = MessagePartFactory.createMessagePart(
         		structure.type,
         		structure.subtype,
+        		structure.name,
         		structure.encoding,
         		structure.charset,
+        		structure.disposition,
         		structure.size,
         		structure.address);
 

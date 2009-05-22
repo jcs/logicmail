@@ -763,7 +763,7 @@ public class MessageNode implements Node {
 	        
 	        MessageNode replyNode = new MessageNode();
 	        String contentText = buf.toString();
-	        TextPart replyPart = new TextPart("plain", "", "", contentText.length());
+	        TextPart replyPart = new TextPart("plain", "", "", "", "", contentText.length());
 	        replyNode.messageStructure = replyPart;
 	        replyNode.putMessageContent(new TextContent(replyPart, contentText));
 	        
@@ -888,7 +888,7 @@ public class MessageNode implements Node {
 	        // Build the forward node
 	        MessageNode forwardNode = new MessageNode();
 	        String contentText = buf.toString();
-	        TextPart forwardPart = new TextPart("plain", "", "", contentText.length());
+	        TextPart forwardPart = new TextPart("plain", "", "", "", "", contentText.length());
 	        forwardNode.messageStructure = forwardPart;
 	        forwardNode.putMessageContent(new TextContent(forwardPart, contentText));
 	
@@ -971,8 +971,11 @@ public class MessageNode implements Node {
      * Since multiple parts are downloaded in response to this request,
      * multiple events may be fired as the retrieval process completes.
      * </p>
+     * 
+     * @return True if a refresh was trigger, false otherwise
      */
-	public void refreshMessage() {
+	public boolean refreshMessage() {
+		boolean result = false;
 		if(!refreshInProgress) {
 			refreshInProgress = true;
 			AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
@@ -999,12 +1002,15 @@ public class MessageNode implements Node {
 					displayableParts = new MessagePart[partsToFetch.size()];
 					partsToFetch.copyInto(displayableParts);
 					mailStore.requestMessageParts(messageToken, displayableParts);
+					result = true;
 				}
 			}
 			else {
 				mailStore.requestMessage(messageToken);
+				result = true;
 			}
 		}
+		return result;
 	}
 	
 	/**

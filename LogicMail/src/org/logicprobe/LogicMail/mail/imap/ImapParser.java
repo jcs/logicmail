@@ -396,11 +396,10 @@ class ImapParser {
         return null;
     }
 
-    private static MessageSection parseMessageStructureSection(
-        Vector sectionList) {
+    private static MessageSection parseMessageStructureSection(Vector sectionList) {
         MessageSection sec = new MessageSection();
         Vector tmpVec;
-        int size;
+        int sectionListSize = sectionList.size();
 
         if (sectionList.elementAt(0) instanceof String) {
             sec.type = ((String) sectionList.elementAt(0)).toLowerCase();
@@ -415,7 +414,7 @@ class ImapParser {
         if (sectionList.elementAt(2) instanceof Vector) {
             tmpVec = (Vector) sectionList.elementAt(2);
 
-            size = tmpVec.size();
+            int size = tmpVec.size();
             for(int i=0; i < size - 1; i+=2) {
             	if(tmpVec.elementAt(i) instanceof String &&
             	   tmpVec.elementAt(i+1) instanceof String) {
@@ -423,6 +422,9 @@ class ImapParser {
             		String value = (String)tmpVec.elementAt(i+1);
             		if(key.equalsIgnoreCase("charset")) {
             			sec.charset = value;
+            		}
+            		else if(key.equalsIgnoreCase("name")) {
+            			sec.name = value;
             		}
             	}
             }
@@ -440,6 +442,12 @@ class ImapParser {
             }
         }
 
+        if (sectionListSize > 8 && sectionList.elementAt(8) instanceof Vector) {
+        	tmpVec = (Vector) sectionList.elementAt(8);
+        	if(tmpVec.elementAt(0) instanceof String) {
+        		sec.disposition = ((String)tmpVec.elementAt(0)).toLowerCase();
+        	}
+        }
         return sec;
     }
 
@@ -551,9 +559,11 @@ class ImapParser {
     public static class MessageSection {
         public String address;
         public String type;
+        public String name;
         public String subtype;
         public String encoding;
         public String charset;
+        public String disposition;
         public int size;
         public MessageSection[] subsections;
     }

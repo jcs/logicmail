@@ -36,14 +36,14 @@ package org.logicprobe.LogicMail.message;
  * major MIME type that is supported.
  */
 public abstract class MessageContent {
-	private MessagePart messagePart;
+	private ContentPart messagePart;
 	
 	/**
 	 * Instantiates a new message content object
 	 * 
 	 * @param messagePart the message part
 	 */
-	protected MessageContent(MessagePart messagePart) {
+	protected MessageContent(ContentPart messagePart) {
 		this.messagePart = messagePart;
 	}
 	
@@ -53,7 +53,7 @@ public abstract class MessageContent {
 	 * 
 	 * @return the message part
 	 */
-	public MessagePart getMessagePart() {
+	public ContentPart getMessagePart() {
 		return this.messagePart;
 	}
 }

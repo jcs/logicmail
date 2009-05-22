@@ -38,25 +38,37 @@ public class MessagePartFactory {
      * Create a new message part
      * @param mimeType MIME type
      * @param mimeSubtype MIME subtype
+     * @param name Name of the message part
      * @param encoding Encoding type (i.e. 7bit, base64)
      * @param param Type-specific parameter (i.e. charset, filename)
+     * @param disposition Content disposition for the part
      * @param size Size of the content this part refers to, or -1 if not available
      * @param tag Protocol-specific tag for addressing the part
      */
     public static MessagePart createMessagePart(
     		String mimeType,
     		String mimeSubtype,
+    		String name,
     		String encoding,
     		String param,
+    		String disposition,
     		int size,
     		String tag) {
+    	
+    	// Make sure we aren't creating any null fields
+    	if(name == null) { name = ""; }
+    	if(encoding == null) { encoding = ""; }
+    	if(param == null) { param = ""; }
+    	if(param == disposition) { disposition = ""; }
+    	if(tag == null) { tag = ""; }
+    	
     	MessagePart part;
         if (mimeType.equalsIgnoreCase("multipart")) {
             part = new MultiPart(mimeSubtype, tag);
         } else if (mimeType.equalsIgnoreCase("text")) {
-        	part = new TextPart(mimeSubtype, encoding, param, size, tag);
+        	part = new TextPart(mimeSubtype, name, encoding, param, disposition, size, tag);
         } else if (mimeType.equalsIgnoreCase("image")) {
-        	part = new ImagePart(mimeSubtype, encoding, size, tag);
+        	part = new ImagePart(mimeSubtype, name, encoding, disposition, size, tag);
         } else {
             part = new UnsupportedPart(mimeType, mimeSubtype, tag);
         }
@@ -67,17 +79,21 @@ public class MessagePartFactory {
      * Create a new message part
      * @param mimeType MIME type
      * @param mimeSubtype MIME subtype
+     * @param name Name of the message part
      * @param encoding Encoding type (i.e. 7bit, base64)
      * @param param Type-specific parameter (i.e. charset, filename)
+     * @param disposition Content disposition for the part
      * @param size Size of the content this part refers to, or -1 if not available
      */
     public static MessagePart createMessagePart(
     		String mimeType,
     		String mimeSubtype,
+    		String name,
     		String encoding,
     		String param,
+    		String disposition,
     		int size) {
-    	return MessagePartFactory.createMessagePart(mimeType, mimeSubtype, encoding, param, size, "");
+    	return MessagePartFactory.createMessagePart(mimeType, mimeSubtype, name, encoding, param, disposition, size, "");
     }
     
     /**

@@ -49,6 +49,11 @@ src\icons\mail_opened.png
 src\icons\mail_replied.png
 src\icons\mail_unknown.png
 src\icons\mail_unopened.png
+src\icons\mime_application.png
+src\icons\mime_audio.png
+src\icons\mime_image.png
+src\icons\mime_text.png
+src\icons\mime_video.png
 src\org\logicprobe\LogicMail\AppInfo.java
 src\org\logicprobe\LogicMail\conf\AccountConfig.java
 src\org\logicprobe\LogicMail\conf\ConnectionConfig.java
@@ -115,6 +120,7 @@ src\org\logicprobe\LogicMail\mail\pop\PopMessageToken.java
 src\org\logicprobe\LogicMail\mail\pop\PopProtocol.java
 src\org\logicprobe\LogicMail\mail\smtp\SmtpClient.java
 src\org\logicprobe\LogicMail\mail\smtp\SmtpProtocol.java
+src\org\logicprobe\LogicMail\message\ContentPart.java
 src\org\logicprobe\LogicMail\message\FolderMessage.java
 src\org\logicprobe\LogicMail\message\ImageContent.java
 src\org\logicprobe\LogicMail\message\ImagePart.java
@@ -176,6 +182,7 @@ src\org\logicprobe\LogicMail\ui\MailHomePresenter.java
 src\org\logicprobe\LogicMail\ui\MailHomeScreen.java
 src\org\logicprobe\LogicMail\ui\MailHomeView.java
 src\org\logicprobe\LogicMail\ui\MessageFieldFactory.java
+src\org\logicprobe\LogicMail\ui\MessageIcons.java
 src\org\logicprobe\LogicMail\ui\MessagePropertiesScreen.java
 src\org\logicprobe\LogicMail\ui\MessageScreen.java
 src\org\logicprobe\LogicMail\ui\NavigationController.java
