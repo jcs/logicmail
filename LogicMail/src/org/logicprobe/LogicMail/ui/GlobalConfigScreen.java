@@ -35,6 +35,7 @@ import java.util.Vector;
 
 import javax.microedition.io.file.FileSystemRegistry;
 
+import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
@@ -54,12 +55,16 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     private MailSettings mailSettings;
     private GlobalConfig existingConfig;
     private String localHostname;
+    private String[] languageChoices;
+    private String[] languageCodes;
     private String[] fileSystemRoots;
     private int selectedFileSystemRootIndex;
 
     private static String LOCAL_FILE_BASE = "LogicMail/";
     
     private RichTextField globalSettingsLabel;
+    private ObjectChoiceField languageChoiceField;
+    private CheckboxField unicodeNormalizationCheckboxField;
     private BasicEditField messageCountEditField;
     private ObjectChoiceField displayOrderChoiceField;
     private CheckboxField hideDeletedMessagesCheckboxField;
@@ -76,6 +81,28 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
         mailSettings = MailSettings.getInstance();
         existingConfig = mailSettings.getGlobalConfig();
         localHostname = existingConfig.getLocalHostname();
+        languageChoices = new String[] {
+                "BlackBerry", // System default
+                "Dansk",        // Danish: da
+                "Deutsch",      // German: de
+                "English",      // English: en
+                "Español",      // Spanish: es
+                "Français",     // French: fr
+                "Nederlands",   // Dutch: nl
+                "Ti\u00ea\u0301ng Vi\u00ea\u0323t", // Vietnamese: vi
+                "\u4E2D\u6587", // Chinese: zh
+        };
+        languageCodes = new String[] {
+                "", // System default
+                "da", // Danish
+                "de", // German
+                "en", // English
+                "es", // Spanish
+                "fr", // French
+                "nl", // Dutch
+                "vi", // Vietnamese
+                "zh", // Chinese
+        };
 
         // Populate fileSystemRoots with a list of all
         // available storage devices
@@ -102,6 +129,25 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
         globalSettingsLabel = new RichTextField(
         		resources.getString(LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS),
         		Field.NON_FOCUSABLE);
+
+        String languageCode = existingConfig.getLanguageCode();
+        int languageIndex = 0;
+        if(languageCode != null && languageCode.length() != 0) {
+            for(int i=0; i<languageCodes.length; i++) {
+                if(languageCodes[i].equals(languageCode)) {
+                    languageIndex = i;
+                    break;
+                }
+            }
+        }
+        languageChoiceField = new ObjectChoiceField(
+        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_LANGUAGE),
+        		languageChoices,
+        		languageIndex);
+        
+		unicodeNormalizationCheckboxField = new CheckboxField(
+				resources.getString(LogicMailResource.CONFIG_GLOBAL_UNICODE_NORMALIZATION),
+				existingConfig.getUnicodeNormalization());
 
 	    messageCountEditField = new BasicEditField(
 	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
@@ -165,6 +211,8 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
                 existingConfig.getConnDebug());
 	
 	    add(globalSettingsLabel);
+		add(languageChoiceField);
+		add(unicodeNormalizationCheckboxField);
 	    add(messageCountEditField);
 	    add(displayOrderChoiceField);
 	    add(hideDeletedMessagesCheckboxField);
@@ -192,6 +240,20 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     public void save() {
         GlobalConfig config = mailSettings.getGlobalConfig();
 
+        String languageCode = languageCodes[languageChoiceField.getSelectedIndex()];
+        if(languageCode != null && languageCode.length() != 0) {
+            try {
+                Locale.setDefault(Locale.get(languageCode));
+                config.setLanguageCode(languageCode);
+            } catch (Exception e) { }
+        }
+        else {
+            Locale.setDefault(Locale.getDefault());
+            config.setLanguageCode("");
+        }
+        
+        config.setUnicodeNormalization(unicodeNormalizationCheckboxField.getChecked());
+        
         try {
             config.setRetMsgCount(Integer.parseInt(messageCountEditField.getText()));
         } catch (Exception e) { }

@@ -35,6 +35,7 @@ import java.util.Calendar;
 import java.util.Hashtable;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
+import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.ApplicationManager;
@@ -83,7 +84,15 @@ public class LogicMail extends UiApplication {
     	else {
 	        // Load the configuration
 	        MailSettings.getInstance().loadSettings();
-	
+            // Set the language, if configured
+            String languageCode =
+                MailSettings.getInstance().getGlobalConfig().getLanguageCode();
+            if(languageCode != null) {
+                try {
+                    Locale.setDefault(Locale.get(languageCode));
+                } catch (Exception e) { }
+            }
+        
 	        // Log application startup information
 	        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
 	            StringBuffer buf = new StringBuffer();

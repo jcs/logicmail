@@ -51,6 +51,7 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessagePart;
@@ -62,6 +63,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 /**
  * Display an E-Mail message
@@ -77,6 +79,8 @@ public class MessageScreen extends BaseScreen {
     private boolean isSentFolder;
     private boolean messageRendered;
     private ThrobberField throbberField;
+
+    private UnicodeNormalizer unicodeNormalizer;
     
     public MessageScreen(NavigationController navigationController, MessageNode messageNode)
     {
@@ -84,6 +88,10 @@ public class MessageScreen extends BaseScreen {
         this.messageNode = messageNode;
         this.accountConfig = messageNode.getParent().getParentAccount().getAccountConfig();
         
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+            unicodeNormalizer = UnicodeNormalizer.getInstance();
+        }
+
         // Determine if this screen is viewing a sent message
         int mailboxType = messageNode.getParent().getType();
         this.isSentFolder = (mailboxType == MailboxNode.TYPE_SENT) || (mailboxType == MailboxNode.TYPE_OUTBOX);
@@ -102,11 +110,11 @@ public class MessageScreen extends BaseScreen {
         if(isSentFolder) {
         	Address[] to = messageNode.getTo();
         	if(to != null && to.length > 0) {
-            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + " " + to[0]));
+            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + " " + normalize(to[0].toString())));
                 if(to.length > 1) {
                     for(int i=1;i<to.length;i++) {
                         if(to[i] != null) {
-                        	addressFieldManager.add(new RichTextField("    " + to[i]));
+                        	addressFieldManager.add(new RichTextField("    " + normalize(to[i].toString())));
                         }
                     }
                 }
@@ -115,11 +123,11 @@ public class MessageScreen extends BaseScreen {
         else {
         	Address[] from = messageNode.getFrom();
             if(from != null && from.length > 0) {
-            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + " " + from[0]));
+            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + " " + normalize(from[0].toString())));
                 if(from.length > 1) {
                     for(int i=1;i<from.length;i++) {
                         if(from[i] != null) {
-                        	addressFieldManager.add(new RichTextField("      " + from[i]));
+                        	addressFieldManager.add(new RichTextField("      " + normalize(from[i].toString())));
                         }
                     }
                 }
@@ -127,7 +135,7 @@ public class MessageScreen extends BaseScreen {
         }
         String subject = messageNode.getSubject();
         if(subject != null) {
-            subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + subject));
+            subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + normalize(subject)));
         }
 
         add(addressFieldManager);
@@ -442,4 +450,22 @@ public class MessageScreen extends BaseScreen {
 			graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
 		}
 	}
+	
+	/**
+     * Run the Unicode normalizer on the provide string,
+     * only if normalization is enabled in the configuration.
+     * If normalization is disabled, this method returns
+     * the input unmodified.
+     * 
+     * @param input Input string
+     * @return Normalized string
+     */
+    private String normalize(String input) {
+        if(unicodeNormalizer == null) {
+            return input;
+        }
+        else {
+            return unicodeNormalizer.normalize(input);
+        }
+    }
 }

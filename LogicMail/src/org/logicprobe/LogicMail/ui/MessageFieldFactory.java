@@ -34,11 +34,13 @@ import java.io.ByteArrayOutputStream;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ImageContent;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 import net.rim.blackberry.api.browser.Browser;
 import net.rim.blackberry.api.browser.BrowserSession;
@@ -83,9 +85,11 @@ public class MessageFieldFactory {
     		browserButtonField.setChangeListener(new MessageFieldChangeListener(content) {
 				public void fieldChanged(Field field, int context) {
 					TextContent content = (TextContent)getContent();
+		    		String text = getNormalizedText(content);
+					
 					try {
 						DataBuffer buffer = new DataBuffer();
-						buffer.write(content.getText().getBytes());
+						buffer.write(text.getBytes());
 						
 						ByteArrayOutputStream output = new ByteArrayOutputStream();
 						Base64OutputStream boutput = new Base64OutputStream(output);
@@ -116,10 +120,40 @@ public class MessageFieldFactory {
     		return browserButtonFieldManager;
     	}
     	else {
-    		return new RichTextField(content.getText());
+    		return new RichTextField(getNormalizedText(content));
     	}
 	}
 
+    /**
+     * Run the Unicode normalizer on the provide content,
+     * only if normalization is enabled in the configuration.
+     * If normalization is disabled, this method returns
+     * the input unmodified.
+     * 
+     * @param input Input content
+     * @return Normalized string
+     */
+    private static String getNormalizedText(TextContent content) {
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+        	String text = content.getText();
+        	
+            // If the encoding type is QP, then we need to do a charset
+            // juggle to make sure that the data is using the right
+            // characters instead of ISO-8859-1 characters
+        	if(((TextPart)content.getMessagePart()).getEncoding().equalsIgnoreCase("quoted-printable")) {
+                try{
+                    byte[] encodedBytes = text.getBytes();
+                    text = new String(encodedBytes, ((TextPart)content.getMessagePart()).getCharset());
+                } catch(Exception e){}
+        	}
+        	
+        	return UnicodeNormalizer.getInstance().normalize(text);
+        }
+        else {
+            return content.getText();
+        }
+    }
+	
 	private static abstract class MessageFieldChangeListener implements FieldChangeListener {
     	private TextContent content;
     	public MessageFieldChangeListener(TextContent content) {

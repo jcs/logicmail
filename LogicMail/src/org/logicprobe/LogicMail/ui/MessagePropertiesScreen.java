@@ -31,11 +31,13 @@
 package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
@@ -60,6 +62,7 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
  */
 public class MessagePropertiesScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    private UnicodeNormalizer unicodeNormalizer;
 	private MessageNode messageNode;
 
 	private ObjectChoiceField sectionChoiceField;
@@ -75,6 +78,9 @@ public class MessagePropertiesScreen extends MainScreen {
 	public MessagePropertiesScreen(MessageNode messageNode) {
 		super(VERTICAL_SCROLL | VERTICAL_SCROLLBAR);
 		this.messageNode = messageNode;
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+            unicodeNormalizer = UnicodeNormalizer.getInstance();
+        }
 		initFields();
 	}
 
@@ -101,7 +107,7 @@ public class MessagePropertiesScreen extends MainScreen {
 	
 	private void initGeneralFields() {
 		generalPageManager = new VerticalFieldManager();
-		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ' + messageNode.getSubject(), Field.FOCUSABLE));
+		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ' + normalize(messageNode.getSubject()), Field.FOCUSABLE));
 		generalPageManager.add(new SeparatorField());
 		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + ' ' + messageNode.getDate(), Field.FOCUSABLE));
 		generalPageManager.add(new SeparatorField());
@@ -114,15 +120,15 @@ public class MessagePropertiesScreen extends MainScreen {
 		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC), messageNode.getCc());
 	}
 
-	private static void initFieldAddress(Manager manager, String prefix, Address[] addresses) {
+	private void initFieldAddress(Manager manager, String prefix, Address[] addresses) {
 		if(addresses != null) {
 			if(addresses.length == 1) {
-				manager.add(new LabelField(prefix + ' ' + addresses[0], Field.FOCUSABLE));
+				manager.add(new LabelField(prefix + ' ' + normalize(addresses[0].toString()), Field.FOCUSABLE));
 			}
 			else if(addresses.length > 1) {
 				manager.add(new LabelField(prefix));
 				for(int i=0; i<addresses.length; i++) {
-					manager.add(new LabelField("  " + addresses[i], Field.FOCUSABLE));
+					manager.add(new LabelField("  " + normalize(addresses[i].toString()), Field.FOCUSABLE));
 				}
 			}
 		}
@@ -239,4 +245,22 @@ public class MessagePropertiesScreen extends MainScreen {
     	graphics.drawText(buf.toString(), indent, y, Graphics.ELLIPSIS, width);
     	graphics.setFont(originalFont);
 	}
+
+    /**
+     * Run the Unicode normalizer on the provide string,
+     * only if normalization is enabled in the configuration.
+     * If normalization is disabled, this method returns
+     * the input unmodified.
+     * 
+     * @param input Input string
+     * @return Normalized string
+     */
+    private String normalize(String input) {
+        if(unicodeNormalizer == null) {
+            return input;
+        }
+        else {
+            return unicodeNormalizer.normalize(input);
+        }
+    }
 }

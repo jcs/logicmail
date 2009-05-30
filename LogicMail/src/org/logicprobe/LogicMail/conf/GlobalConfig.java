@@ -55,7 +55,10 @@ public class GlobalConfig implements Serializable {
     /** Always use WiFi */
     final public static int WIFI_ALWAYS = 2;
     private long uniqueId;
-
+    /** language code to use for the UI, or null for system default */
+    private String languageCode;
+    /** true to enable Unicode normalization */
+    private boolean unicodeNormalization;
     /** Number of message headers to retrieve */
     private int retMsgCount;
 
@@ -102,6 +105,8 @@ public class GlobalConfig implements Serializable {
      */
     private void setDefaults() {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+        this.languageCode = "";
+        this.unicodeNormalization = false;
         this.retMsgCount = 30;
         this.dispOrder = false;
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
@@ -115,6 +120,21 @@ public class GlobalConfig implements Serializable {
         else {
         	this.localDataLocation = "file:///LogicMail/";
         }
+    }
+    public void setLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
+    }
+    
+    public String getLanguageCode() {
+        return languageCode;
+    }
+    
+    public void setUnicodeNormalization(boolean unicodeNormalization) {
+        this.unicodeNormalization = unicodeNormalization;
+    }
+    
+    public boolean getUnicodeNormalization() {
+        return unicodeNormalization;
     }
 
     /**
@@ -250,7 +270,9 @@ public class GlobalConfig implements Serializable {
         output.writeLong(uniqueId);
 
         SerializableHashtable table = new SerializableHashtable();
-
+        
+        table.put("global_languageCode", languageCode);
+        table.put("global_unicodeNormalization", new Boolean(unicodeNormalization));
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_localDataLocation", localDataLocation);
@@ -274,6 +296,14 @@ public class GlobalConfig implements Serializable {
 
         Object value;
 
+        value = table.get("global_languageCode");
+        if(value != null && value instanceof String) {
+            languageCode = (String)value;
+        }
+        value = table.get("global_unicodeNormalization");
+        if(value != null && value instanceof Boolean) {
+            unicodeNormalization = ((Boolean)value).booleanValue();
+        }
         value = table.get("global_retMsgCount");
         if ((value != null) && value instanceof Integer) {
             retMsgCount = ((Integer) value).intValue();

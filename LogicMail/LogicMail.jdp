@@ -73,6 +73,7 @@ src\org\logicprobe\LogicMail\LogicMail_de.rrc
 src\org\logicprobe\LogicMail\LogicMail_es.rrc
 src\org\logicprobe\LogicMail\LogicMail_fr.rrc
 src\org\logicprobe\LogicMail\LogicMail_nl.rrc
+src\org\logicprobe\LogicMail\LogicMail_vi.rrc
 src\org\logicprobe\LogicMail\LogicMail_zh.rrc
 src\org\logicprobe\LogicMail\LogicMail_zh_CN.rrc
 src\org\logicprobe\LogicMail\LogicMailEventSource.java
@@ -212,6 +213,7 @@ src\org\logicprobe\LogicMail\util\SerializationUtils.java
 src\org\logicprobe\LogicMail\util\StringFactory.java
 src\org\logicprobe\LogicMail\util\StringParser.java
 src\org\logicprobe\LogicMail\util\ThreadQueue.java
+src\org\logicprobe\LogicMail\util\UnicodeNormalizer.java
 src\org\logicprobe\LogicMail\util\UniqueIdGenerator.java
 ]
 HaveAlxImports=0

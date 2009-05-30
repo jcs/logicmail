@@ -932,31 +932,34 @@ public class StringParser {
         StringBuffer buffer = new StringBuffer();
         int index = 0;
         int length = text.length();
-
-        while (index < length) {
-            if (text.charAt(index) == '=') {
-                if ((index + 2) >= length) {
+        while(index < length) {
+            if(text.charAt(index) == '=') {
+                if(index+2 >= length) {
                     break;
-                } else {
-                    char ch1 = text.charAt(index + 1);
-                    char ch2 = text.charAt(index + 2);
-
-                    if ((ch1 == '\r') && (ch2 == '\n')) {
+                }
+                else {
+                    char ch1 = text.charAt(index+1);
+                    char ch2 = text.charAt(index+2);
+                    if(ch1 == '\r' && ch2 == '\n') {
                         index += 3;
-                    } else if (ch1 == '\n') {
+                    }
+                    else if(ch1 == '\n') {
                         index += 2;
-                    } else {
+                    }
+                    else {
                         try {
-                            int charVal = Integer.parseInt(text.substring(index +
-                                        1, index + 3), 16);
-                            buffer.append((char) charVal);
-                        } catch (NumberFormatException exp) {
-                        }
-
+                            int charVal = Integer.parseInt(text.substring(index+1, index+3), 16);
+                            buffer.append((char)charVal);
+                        } catch (NumberFormatException exp) { }
                         index += 3;
                     }
                 }
-            } else {
+            }
+            else if(text.charAt(index) == '_') {
+                buffer.append(' ');
+                index++;
+            }
+            else {
                 buffer.append(text.charAt(index));
                 index++;
             }

@@ -33,10 +33,12 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Calendar;
 import java.util.Date;
 
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Bitmap;
@@ -54,6 +56,7 @@ public class MailboxMessageField extends Field {
 	private MessageNode messageNode;
 	private int lineHeight;
     private int maxWidth;
+    private UnicodeNormalizer unicodeNormalizer;
 	
 	/**
 	 * Instantiates a new mailbox message field.
@@ -64,6 +67,9 @@ public class MailboxMessageField extends Field {
 	public MailboxMessageField(MailboxNode mailboxNode, MessageNode messageNode) {
 		this.mailboxNode = mailboxNode;
 		this.messageNode = messageNode;
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+            unicodeNormalizer = UnicodeNormalizer.getInstance();
+        }
 	}
 
 	/**
@@ -77,6 +83,9 @@ public class MailboxMessageField extends Field {
 		super(style);
 		this.mailboxNode = mailboxNode;
 		this.messageNode = messageNode;
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+            unicodeNormalizer = UnicodeNormalizer.getInstance();
+        }
 	}
 	
 	/**
@@ -153,7 +162,7 @@ public class MailboxMessageField extends Field {
         // Draw the sender text
         if(senderText != null) {
             graphics.drawText(
-	    		senderText, 20, 0,
+	    		normalize(senderText), 20, 0,
 	    		DrawStyle.ELLIPSIS,
 	    		senderWidth);
         }
@@ -162,7 +171,7 @@ public class MailboxMessageField extends Field {
         String subject = messageNode.getSubject();
         if(subject != null) {
             if(!isFocus) { graphics.setColor(0x7B7B7B); }
-            graphics.drawText(subject, 20, lineHeight,
+            graphics.drawText(normalize(subject), 20, lineHeight,
                               DrawStyle.ELLIPSIS,
                               maxWidth-20);
             if(!isFocus) { graphics.setColor(originalColor); }
@@ -250,4 +259,22 @@ public class MailboxMessageField extends Field {
         dateFormat.format(dispCal, buffer, null);
         return buffer.toString();
 	}
+
+	/**
+     * Run the Unicode normalizer on the provide string,
+     * only if normalization is enabled in the configuration.
+     * If normalization is disabled, this method returns
+     * the input unmodified.
+     * 
+     * @param input Input string
+     * @return Normalized string
+     */
+    private String normalize(String input) {
+        if(unicodeNormalizer == null) {
+            return input;
+        }
+        else {
+            return unicodeNormalizer.normalize(input);
+        }
+    }
 }

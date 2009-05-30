@@ -45,6 +45,7 @@ import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageContentFactory;
@@ -62,6 +63,7 @@ import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
+import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 
 /**
@@ -75,6 +77,7 @@ public class CompositionScreen extends BaseScreen {
     
     private AccountNode accountNode;
     private AccountConfig accountConfig;
+    private UnicodeNormalizer unicodeNormalizer;
     
     private BorderedFieldManager recipientsFieldManager;
 	private BorderedFieldManager subjectFieldManager;
@@ -128,6 +131,9 @@ public class CompositionScreen extends BaseScreen {
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+            unicodeNormalizer = UnicodeNormalizer.getInstance();
+        }
 
         initFields();
 
@@ -154,6 +160,9 @@ public class CompositionScreen extends BaseScreen {
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
+        if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
+            unicodeNormalizer = UnicodeNormalizer.getInstance();
+        }
 
         initFields();
 
@@ -216,33 +225,33 @@ public class CompositionScreen extends BaseScreen {
         	MessageContent content = message.getMessageContent(body);
         	if(content instanceof TextContent) {
 	            messageEditField.insert("\r\n");
-	            messageEditField.insert(((TextContent)content).getText());
+	            messageEditField.insert(normalize(((TextContent)content).getText()));
 	            messageEditField.setCursorPosition(0);
         	}
         }
 
         // Set the subject
-        subjectEditField.setText(message.getSubject());
+        subjectEditField.setText(normalize(message.getSubject()));
 
         // Set the recipients
         Address[] recipients = message.getTo();
         if (recipients != null) {
             for (i = 0; i < recipients.length; i++) {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setText(recipients[i].toString());
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO).setText(normalize(recipients[i].toString()));
             }
         }
 
         recipients = message.getCc();
         if (recipients != null) {
             for (i = 0; i < recipients.length; i++) {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_CC).setText(recipients[i].toString());
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_CC).setText(normalize(recipients[i].toString()));
             }
         }
 
         recipients = message.getBcc();
         if (recipients != null) {
             for (i = 0; i < recipients.length; i++) {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC).setText(recipients[i].toString());
+                insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC).setText(normalize(recipients[i].toString()));
             }
         }
 
@@ -262,7 +271,6 @@ public class CompositionScreen extends BaseScreen {
     }
     
     private void initFields() {
-
     	recipientsFieldManager = new BorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
@@ -564,5 +572,23 @@ public class CompositionScreen extends BaseScreen {
         }
 
         return super.keyChar(key, status, time);
+    }
+
+    /**
+     * Run the Unicode normalizer on the provide string,
+     * only if normalization is enabled in the configuration.
+     * If normalization is disabled, this method returns
+     * the input unmodified.
+     * 
+     * @param input Input string
+     * @return Normalized string
+     */
+    private String normalize(String input) {
+        if(unicodeNormalizer == null) {
+            return input;
+        }
+        else {
+            return unicodeNormalizer.normalize(input);
+        }
     }
 }
