@@ -59,19 +59,25 @@
  ******************************************************************************/
 package org.logicprobe.LogicMail.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Vector;
-import javax.microedition.io.SocketConnection;
-import javax.microedition.io.StreamConnection;
-import javax.microedition.io.Connector;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.util.DataBuffer;
+
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import java.util.Vector;
+
+import javax.microedition.io.Connector;
+import javax.microedition.io.SocketConnection;
+import javax.microedition.io.StreamConnection;
+
 
 /**
  * Is the abstract base class for socket connections used inside the SMTP,
@@ -92,6 +98,15 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * is the only way to get rid of compile-time dependencies on these classes.
  */
 public class Connection {
+    /**
+     * Byte array holding carriage return and line feed
+     */
+    private static final byte[] CRLF = new byte[] { 13, 10 };
+
+    /**
+     * Holds a list of open connections
+     */
+    private static Vector openConnections = new Vector();
     private String serverName;
     private int serverPort;
     private boolean useSSL;
@@ -103,23 +118,19 @@ public class Connection {
     protected OutputStream output;
     private boolean useWiFi;
     private int fakeAvailable = -1;
-    
-    /**
-     * Byte array holding carriage return and line feed
-     */
-    private static final byte[] CRLF = new byte[] {13, 10};
-    
+
     /**
      * Provides a buffer used for incoming data.
      */
     private byte[] buffer = new byte[128];
-    
+
     /**
-     * Holds a list of open connections
+     * Provides a dynamic buffer for building results
      */
-    private static Vector openConnections = new Vector();
-    
-    public Connection(String serverName, int serverPort, boolean useSSL, boolean deviceSide) {
+    DataBuffer resultBuffer = new DataBuffer();
+
+    public Connection(String serverName, int serverPort, boolean useSSL,
+        boolean deviceSide) {
         this.serverName = serverName;
         this.serverPort = serverPort;
         this.useSSL = useSSL;
@@ -129,85 +140,92 @@ public class Connection {
         this.socket = null;
         this.globalConfig = MailSettings.getInstance().getGlobalConfig();
     }
-    
+
     /**
      * Opens a connection.
      */
-    public void open() throws IOException {
-        if(input != null || output != null || socket != null) {
+    public synchronized void open() throws IOException {
+        if ((input != null) || (output != null) || (socket != null)) {
             close();
         }
 
-        synchronized(openConnections) {
-            if(!openConnections.contains(this)) {
+        synchronized (openConnections) {
+            if (!openConnections.contains(this)) {
                 openConnections.addElement(this);
             }
         }
-        
+
         String protocolStr = (useSSL ? "ssl" : "socket");
+
         // This parameter, which allows bypassing the MDS proxy, should probably
         // be a global user configurable option
         String paramStr = (deviceSide ? ";deviceside=true" : "");
 
         useWiFi = false;
-        if(globalConfig.getWifiMode() == GlobalConfig.WIFI_PROMPT) {
+
+        if (globalConfig.getWifiMode() == GlobalConfig.WIFI_PROMPT) {
             UiApplication.getUiApplication().invokeAndWait(new Runnable() {
-                public void run() {
-                    useWiFi = (Dialog.ask(Dialog.D_YES_NO, "Connect through WiFi?") == Dialog.YES);
-                }
-            });
-        }
-        else if(globalConfig.getWifiMode() == GlobalConfig.WIFI_ALWAYS) {
+                    public void run() {
+                        useWiFi = (Dialog.ask(Dialog.D_YES_NO,
+                                "Connect through WiFi?") == Dialog.YES);
+                    }
+                });
+        } else if (globalConfig.getWifiMode() == GlobalConfig.WIFI_ALWAYS) {
             useWiFi = true;
         }
-        
-        if(useWiFi) {
+
+        if (useWiFi) {
             paramStr = paramStr + ";interface=wifi";
         }
-        
-        String connectStr = protocolStr + "://" + serverName + ":" + serverPort + paramStr;
-        
-        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-            String msg = "Opening connection:\r\n"+connectStr+"\r\n";
-            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.INFORMATION);
+
+        String connectStr = protocolStr + "://" + serverName + ":" +
+            serverPort + paramStr;
+
+        if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
+            String msg = "Opening connection:\r\n" + connectStr + "\r\n";
+            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(),
+                EventLogger.INFORMATION);
         }
-        
-        socket = (StreamConnection)Connector.open(connectStr, Connector.READ_WRITE, true);
+
+        socket = (StreamConnection) Connector.open(connectStr,
+                Connector.READ_WRITE, true);
         input = socket.openDataInputStream();
         output = socket.openDataOutputStream();
-        localAddress = ((SocketConnection)socket).getLocalAddress();
+        localAddress = ((SocketConnection) socket).getLocalAddress();
 
-        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-            String msg =
-                "Connection established:\r\n"+
-                "Socket: "+socket.getClass().toString()+"\r\n"+
-                "Local address: "+localAddress+"\r\n";
-            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(), EventLogger.INFORMATION);
+        if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
+            String msg = "Connection established:\r\n" + "Socket: " +
+                socket.getClass().toString() + "\r\n" + "Local address: " +
+                localAddress + "\r\n";
+            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(),
+                EventLogger.INFORMATION);
         }
     }
-    
+
     /**
      * Closes a connection.
      */
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         try {
-            if(input != null) {
+            if (input != null) {
                 input.close();
                 input = null;
             }
         } catch (Exception exp) {
             input = null;
         }
+
         try {
-            if(output != null) {
+            if (output != null) {
                 output.close();
                 output = null;
             }
         } catch (Exception exp) {
             output = null;
         }
+
         try {
-            if(socket != null) {
+            if (socket != null) {
                 socket.close();
                 socket = null;
             }
@@ -215,15 +233,16 @@ public class Connection {
             socket = null;
         }
 
-        synchronized(openConnections) {
-            if(openConnections.contains(this)) {
+        synchronized (openConnections) {
+            if (openConnections.contains(this)) {
                 openConnections.removeElement(this);
             }
         }
-        
-        EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(), EventLogger.INFORMATION);
+
+        EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
+            EventLogger.INFORMATION);
     }
-    
+
     /**
      * Determine whether open connections exist
      *
@@ -231,38 +250,44 @@ public class Connection {
      */
     public static boolean hasOpenConnections() {
         boolean result;
-        synchronized(openConnections) {
+
+        synchronized (openConnections) {
             result = !openConnections.isEmpty();
         }
+
         return result;
     }
-    
+
     /**
      * Close all open connections
      */
     public static void closeAllConnections() {
-        synchronized(openConnections) {
+        synchronized (openConnections) {
             int size = openConnections.size();
-            for(int i = 0; i < size; i++) {
+
+            for (int i = 0; i < size; i++) {
                 try {
-                    ((Connection)openConnections.elementAt(i)).close();
-                } catch (IOException e) { }
+                    ((Connection) openConnections.elementAt(i)).close();
+                } catch (IOException e) {
+                }
             }
+
             openConnections.removeAllElements();
         }
     }
-    
+
     /**
      * Determine whether we are currently connected
      * @return True if connected
      */
     public boolean isConnected() {
-        if(socket != null)
+        if (socket != null) {
             return true;
-        else
+        } else {
             return false;
+        }
     }
-    
+
     /**
      * Get the local address to which this connection is bound
      * @return Local address
@@ -270,7 +295,7 @@ public class Connection {
     public String getLocalAddress() {
         return localAddress;
     }
-    
+
     /**
      * Get the server name used when this connection was created
      * @return Server name
@@ -278,7 +303,7 @@ public class Connection {
     public String getServerName() {
         return serverName;
     }
-    
+
     /**
      * Sends a string to the server. This method is used internally for
      * all outgoing communication to the server. The main thing it does
@@ -288,18 +313,19 @@ public class Connection {
      *
      * @see #receive
      */
-    public void send(String s) throws IOException {
+    public synchronized void send(String s) throws IOException {
         byte[] bytes = s.getBytes();
         int length = bytes.length;
-        
+
         /**
          * Special case for empty strings: Only CR/LF is sent.
          */
         if (s.length() == 0) {
-            if(globalConfig.getConnDebug()) {
-                EventLogger.logEvent(AppInfo.GUID, "[SEND]".getBytes(), EventLogger.DEBUG_INFO);
+            if (globalConfig.getConnDebug()) {
+                EventLogger.logEvent(AppInfo.GUID, "[SEND]".getBytes(),
+                    EventLogger.DEBUG_INFO);
             }
-            
+
             output.write(CRLF, 0, 2);
         }
         /**
@@ -307,58 +333,65 @@ public class Connection {
          */
         else {
             int i = 0;
+
             while (i < length) {
                 int j = i;
-                
+
                 /**
                  * Find next occurrence of a line separator or the end of the
                  * string.
                  */
-                while ((j < length) && (bytes[j] != 0x0A) && (bytes[j] != 0x0D)) {
+                while ((j < length) && (bytes[j] != 0x0A) &&
+                        (bytes[j] != 0x0D)) {
                     j++;
                 }
-                
-                if(globalConfig.getConnDebug()) {
-                    EventLogger.logEvent(AppInfo.GUID, ("[SEND] " + s.substring(i, j)).getBytes(), EventLogger.DEBUG_INFO);
+
+                if (globalConfig.getConnDebug()) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                        ("[SEND] " + s.substring(i, j)).getBytes(),
+                        EventLogger.DEBUG_INFO);
                 }
-                
+
                 /**
                  * Write the string up to there and terminate it properly.
                  */
-                output.write((s.substring(i, j)+"\r\n").getBytes());
-                
+                output.write((s.substring(i, j) + "\r\n").getBytes());
+
                 /**
                  * If we stopped at a CR, ignore a possibly following LF.
                  */
-                if ((j < length - 1) && (bytes[j] == 0x0D) && (bytes[j + 1] == 0x0A)) {
+                if ((j < (length - 1)) && (bytes[j] == 0x0D) &&
+                        (bytes[j + 1] == 0x0A)) {
                     j++;
                 }
-                
+
                 i = j + 1;
             }
         }
+
         output.flush();
     }
-    
+
     /**
      * Sends a string to the server, terminating it with a CRLF.
      * No cleanup is performed, as it is expected that the string
      * is a prepared protocol command.
      */
-    public void sendCommand(String s) throws IOException {
-        if(globalConfig.getConnDebug()) {
-            EventLogger.logEvent(AppInfo.GUID, ("[SEND CMD] " + s).getBytes(), EventLogger.DEBUG_INFO);
+    public synchronized void sendCommand(String s) throws IOException {
+        if (globalConfig.getConnDebug()) {
+            EventLogger.logEvent(AppInfo.GUID, ("[SEND CMD] " + s).getBytes(),
+                EventLogger.DEBUG_INFO);
         }
 
-        if(s == null) {
+        if (s == null) {
             output.write(CRLF, 0, 2);
+        } else {
+            output.write((s + "\r\n").getBytes());
         }
-        else {
-            output.write((s+"\r\n").getBytes());
-        }
+
         output.flush();
     }
-    
+
     /**
      * Sends a string to the server. This method is used to bypass all
      * the processing done by the normal send method, and is most useful
@@ -367,33 +400,33 @@ public class Connection {
      *
      * @see #send
      */
-    public void sendRaw(String s) throws IOException {
+    public synchronized void sendRaw(String s) throws IOException {
         byte[] bytes = s.getBytes();
-        
-        if(globalConfig.getConnDebug()) {
-            EventLogger.logEvent(AppInfo.GUID, ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
+
+        if (globalConfig.getConnDebug()) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
         }
-        
+
         output.write(bytes, 0, bytes.length);
-        
+
         output.flush();
     }
 
     /**
      * Returns the number of bytes available for reading.
      * Used to poll the connection without blocking.
-     * 
+     *
      * @see InputStream#available()
      */
     public int available() throws IOException {
-    	if(fakeAvailable == -1) {
-    		return input.available();
-    	}
-    	else {
-    		return fakeAvailable;
-    	}
+        if (fakeAvailable == -1) {
+            return input.available();
+        } else {
+            return fakeAvailable;
+        }
     }
-    
+
     /**
      * Receives a string from the server. This method is used internally for
      * incoming communication from the server. The main thing it does is
@@ -403,7 +436,7 @@ public class Connection {
      *
      * @see #send
      */
-    public String receive() throws IOException {
+    public synchronized String receive() throws IOException {
         /**
          * A note on how this method works and why it is designed the
          * way it is: A previous implementation tried to read multiple
@@ -431,12 +464,13 @@ public class Connection {
          * 512 characters), temporary Strings will again be necessary,
          * but there's not much one can about that.
          */
-        StringBuffer resultBuffer = new StringBuffer();
         boolean stop = false;
+        resultBuffer.reset();
+
         int actualAvailable = input.available();
         int readBytes = 0;
         int count;
-        
+
         /**
          * The "stop" flag will be set as soon as we have received
          * a complete line, that is, a line terminated by CR/LF. Until
@@ -444,7 +478,7 @@ public class Connection {
          */
         while (!stop) {
             count = 0;
-            
+
             /**
              * The inner block reads single bytes from the InputStream
              * until, again, a line terminator is read or the buffer is
@@ -452,7 +486,7 @@ public class Connection {
              */
             while (true) {
                 int actual = input.read(buffer, count, 1);
-                
+
                 /**
                  * If -1 is returned, the InputStream is already closed,
                  * probably because the connection is broken, or the server
@@ -460,14 +494,17 @@ public class Connection {
                  * any errors that might result from this.
                  */
                 if (actual == -1) {
-                    EventLogger.logEvent(AppInfo.GUID, "Unable to read from socket, closing connection".getBytes(), EventLogger.INFORMATION);
+                    EventLogger.logEvent(AppInfo.GUID,
+                        "Unable to read from socket, closing connection".getBytes(),
+                        EventLogger.INFORMATION);
+
                     try {
                         close();
-                    } catch (IOException e) { }
-                    
+                    } catch (IOException e) {
+                    }
+
                     throw new IOException("Connection closed");
                 }
-                
                 /**
                  * If no bytes have been received, we wait a little
                  * while (by yielding processing time to other threads).
@@ -475,19 +512,20 @@ public class Connection {
                 else if (actual == 0) {
                     try {
                         Thread.yield();
-                    } catch (Exception e) { }
+                    } catch (Exception e) {
+                    }
                 }
-                
                 /**
                  * If a byte has been read, examine it and put it in the
                  * buffer.
                  */
+
                 // Note: We really should look for CRLF, and not use this
                 // approach which screws up on mid-line LFs. (DK)
                 else {
                     byte b = buffer[count];
                     readBytes++;
-                    
+
                     /**
                      * Ignore all CRs.
                      */
@@ -499,6 +537,7 @@ public class Connection {
                      */
                     else if (b == 0x0A) {
                         stop = true;
+
                         break;
                     }
                     /**
@@ -506,26 +545,31 @@ public class Connection {
                      */
                     else {
                         count++;
+
                         if (count == buffer.length) {
                             break;
                         }
                     }
                 }
             }
-            resultBuffer.append(new String(buffer, 0, count));
+
+            resultBuffer.write(buffer, 0, count);
         }
-        
-        if(globalConfig.getConnDebug()) {
-            EventLogger.logEvent(AppInfo.GUID, ("[RECV] " + resultBuffer.toString()).getBytes(), EventLogger.DEBUG_INFO);
+
+        String result = new String(resultBuffer.toArray());
+
+        if (globalConfig.getConnDebug()) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("[RECV] " + result).getBytes(),
+                EventLogger.DEBUG_INFO);
         }
-        if(actualAvailable > readBytes) {
-        	fakeAvailable = actualAvailable - readBytes;
+
+        if (actualAvailable > readBytes) {
+            fakeAvailable = actualAvailable - readBytes;
+        } else {
+            fakeAvailable = -1;
         }
-        else {
-        	fakeAvailable = -1;
-        }
-        
-        return resultBuffer.toString();
+
+        return result;
     }
 }
-

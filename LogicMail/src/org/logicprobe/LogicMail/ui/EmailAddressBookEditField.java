@@ -107,16 +107,16 @@ public class EmailAddressBookEditField extends EditField {
     public void setAddressType(int addressType) {
         switch(addressType) {
         case ADDRESS_TO:
-        	this.setLabel("To: ");
+        	this.setLabel(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + ' ');
         	break;
         case ADDRESS_CC:
-        	this.setLabel("Cc: ");
+        	this.setLabel(resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC) + ' ');
         	break;
         case ADDRESS_BCC:
-        	this.setLabel("Bcc: ");
+        	this.setLabel(resources.getString(LogicMailResource.MESSAGEPROPERTIES_BCC) + ' ');
         	break;
     	default:
-    		this.setLabel("To: ");
+    		this.setLabel(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + ' ');
     		addressType = ADDRESS_TO;
         }
 

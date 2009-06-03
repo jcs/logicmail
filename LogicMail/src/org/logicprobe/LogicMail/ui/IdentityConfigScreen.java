@@ -88,7 +88,7 @@ public class IdentityConfigScreen extends BaseCfgScreen {
         add(emailAddressField);
         add(replyToAddressField);
         add(new SeparatorField());
-        add(new RichTextField("Signature:", Field.NON_FOCUSABLE));
+        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_IDENTITY_SIGNATURE), Field.NON_FOCUSABLE));
         add(msgSignatureField);
         add(new SeparatorField());
         add(saveButton);

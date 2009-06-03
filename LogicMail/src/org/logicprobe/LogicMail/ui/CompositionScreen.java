@@ -284,7 +284,7 @@ public class CompositionScreen extends BaseScreen {
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
         		| BorderedFieldManager.BOTTOM_BORDER_LINE);
-        subjectEditField = new AutoTextEditField("Subject: ", "");
+        subjectEditField = new AutoTextEditField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ', "");
         subjectFieldManager.add(subjectEditField);
         
         messageFieldManager = new VerticalFieldManager();

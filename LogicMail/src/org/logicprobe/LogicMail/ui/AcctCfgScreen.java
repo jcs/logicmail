@@ -102,7 +102,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
     
     private class NullOutgoingConfig extends OutgoingConfig {
         public String toString() {
-            return "None";
+            return resources.getString(LogicMailResource.CONFIG_ACCOUNT_NONE);
         }
         public long getUniqueId() {
             return -1;
@@ -405,7 +405,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
 			buf.append(mailboxNode.toString());
     	}
     	else {
-    		buf.append("<NONE>");
+    		buf.append('<' + resources.getString(LogicMailResource.CONFIG_ACCOUNT_NONE) + '>');
     	}
 		return buf.toString();
     }

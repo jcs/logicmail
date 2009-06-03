@@ -185,8 +185,6 @@ public class MessageScreen extends BaseScreen {
     
     private MenuItem propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 100, 10) {
         public void run() {
-        	//MessagePropertiesDialog dialog = new MessagePropertiesDialog(messageNode);
-        	//dialog.doModal();
         	MessagePropertiesScreen screen = new MessagePropertiesScreen(messageNode);
         	UiApplication.getUiApplication().pushScreen(screen);
         }
@@ -339,7 +337,7 @@ public class MessageScreen extends BaseScreen {
     				attachmentsTreeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
     			}}, Field.FOCUSABLE);
     		attachmentsTreeField.setDefaultExpanded(false);
-    		int id = attachmentsTreeField.addChildNode(0, "Attachments");
+    		int id = attachmentsTreeField.addChildNode(0, resources.getString(LogicMailResource.MESSAGE_ATTACHMENTS));
     		for(int i=attachmentParts.length - 1; i>=0; --i) {
     			attachmentsTreeField.addChildNode(id, attachmentParts[i]);
     		}
