@@ -43,6 +43,7 @@ import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.Message;
+import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.StringParser;
@@ -152,13 +153,19 @@ public class OutboxMailboxNode extends MailboxNode {
 		
 		// Create a protocol-compatible message object
 		Message message = new Message(outgoingMessageNode.getMessageStructure());
+
+		// Populate the message content
+		MessageContent[] content = outgoingMessageNode.getAllMessageContent();
+		for(int i=0; i<content.length; i++) {
+			message.putContent(content[i].getMessagePart(), content[i]);
+		}
 		
 		// Update the outbound map and request the message to be sent
 		outboundMessageMap.put(message, outgoingMessageNode);
 		outgoingMessageNode.getMailSender().requestSendMessage(envelope, message);
 	}
 	
-    private void mailSender_MessageSent(MessageSentEvent e) {
+	private void mailSender_MessageSent(MessageSentEvent e) {
     	// Find out whether we know about this message
     	if(outboundMessageMap.get(e.getMessage()) instanceof OutgoingMessageNode) {
     		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
