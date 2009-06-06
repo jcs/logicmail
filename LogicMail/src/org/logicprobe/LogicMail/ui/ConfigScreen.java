@@ -44,6 +44,7 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -138,49 +139,61 @@ public class ConfigScreen extends BaseCfgScreen {
         graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
     }
     
-    private MenuItem selectItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_EDIT), 100, 10) {
+    private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 100, 10) {
         public void run() {
             openSelectedNode();
         }
     };
 
-    private MenuItem newAccountWizardItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD), 110, 10) {
+    private MenuItem moveUpItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_UP, 100, 10) {
+        public void run() {
+            moveSelectedNodeUp();
+        }
+    };
+
+    private MenuItem moveDownItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_DOWN, 100, 10) {
+        public void run() {
+            moveSelectedNodeDown();
+        }
+    };
+
+    private MenuItem newAccountWizardItem = new MenuItem(resources, LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD, 110, 10) {
         public void run() {
         	newAccountWizard();
         }
     };
     
-    private MenuItem addIdentityItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_IDENTITY), 120, 10) {
+    private MenuItem addIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_IDENTITY, 120, 10) {
         public void run() {
             addIdentity();
         }
     };
 
-    private MenuItem deleteIdentityItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_IDENTITY), 130, 10) {
+    private MenuItem deleteIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_IDENTITY, 130, 10) {
         public void run() {
             deleteSelectedIdentity();
         }
     };
 
-    private MenuItem addAccountItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_ACCOUNT), 120, 10) {
+    private MenuItem addAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_ACCOUNT, 120, 10) {
         public void run() {
             addAccount();
         }
     };
 
-    private MenuItem deleteAccountItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_ACCOUNT), 130, 10) {
+    private MenuItem deleteAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_ACCOUNT, 130, 10) {
         public void run() {
             deleteSelectedAccount();
         }
     };
 
-    private MenuItem addOutgoingItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER), 120, 10) {
+    private MenuItem addOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, 120, 10) {
         public void run() {
             addOutgoingServer();
         }
     };
 
-    private MenuItem deleteOutgoingItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER), 130, 10) {
+    private MenuItem deleteOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER, 130, 10) {
         public void run() {
             deleteSelectedOutgoingServer();
         }
@@ -191,13 +204,24 @@ public class ConfigScreen extends BaseCfgScreen {
      */
     protected void makeMenu(Menu menu, int instance) {
         int id = configTreeField.getCurrentNode();
+        Object cookie = configTreeField.getCookie(id);
         if(id != identitiesId && id != accountsId && id != outgoingId) {
             menu.add(selectItem);
+            if(cookie instanceof ConnectionConfig) {
+	            if(configTreeField.getPreviousSibling(id) != -1) {
+	            	menu.add(moveUpItem);
+	            }
+	            if(configTreeField.getNextSibling(id) != -1) {
+	            	menu.add(moveDownItem);
+	            }
+            }
+            menu.addSeparator();
         }
+        
         if(id == identitiesId) {
             menu.add(addIdentityItem);
         }
-        else if(configTreeField.getCookie(id) instanceof IdentityConfig) {
+        else if(cookie instanceof IdentityConfig) {
             menu.add(addIdentityItem);
             menu.add(deleteIdentityItem);
         }
@@ -205,7 +229,7 @@ public class ConfigScreen extends BaseCfgScreen {
         	menu.add(newAccountWizardItem);
             menu.add(addAccountItem);
         }
-        else if(configTreeField.getCookie(id) instanceof AccountConfig) {
+        else if(cookie instanceof AccountConfig) {
         	menu.add(newAccountWizardItem);
             menu.add(addAccountItem);
             menu.add(deleteAccountItem);
@@ -213,14 +237,14 @@ public class ConfigScreen extends BaseCfgScreen {
         else if(id == outgoingId) {
             menu.add(addOutgoingItem);
         }
-        else if(configTreeField.getCookie(id) instanceof OutgoingConfig) {
+        else if(cookie instanceof OutgoingConfig) {
             menu.add(addOutgoingItem);
             menu.add(deleteOutgoingItem);
         }
         super.makeMenu(menu, instance);
     }
     
-    /* (non-Javadoc)
+	/* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     public boolean keyChar(char key, int status, int time) {
@@ -316,10 +340,121 @@ public class ConfigScreen extends BaseCfgScreen {
         return result;
     }
 
+	private void moveSelectedNodeUp() {
+        int curNode = configTreeField.getCurrentNode();
+        if(curNode == -1) { return; }
+        int prevNode = configTreeField.getPreviousSibling(curNode);
+        if(prevNode == -1) { return; }
+
+        Object cookie = configTreeField.getCookie(curNode);
+        
+        boolean result = false;
+        
+        if(cookie instanceof IdentityConfig) {
+        	IdentityConfig curConfig = (IdentityConfig)cookie;
+        	IdentityConfig prevConfig = (IdentityConfig)configTreeField.getCookie(prevNode);
+        	
+        	int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
+        	mailSettings.removeAccountConfig(curConfigIndex);
+
+        	int prevConfigIndex = mailSettings.indexOfIdentityConfig(prevConfig);
+        	mailSettings.insertIdentityConfigAt(curConfig, prevConfigIndex);
+        	result = true;
+        }
+        else if(cookie instanceof AccountConfig) {
+        	AccountConfig curConfig = (AccountConfig)cookie;
+        	AccountConfig prevConfig = (AccountConfig)configTreeField.getCookie(prevNode);
+        	
+        	int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
+        	mailSettings.removeAccountConfig(curConfigIndex);
+
+        	int prevConfigIndex = mailSettings.indexOfAccountConfig(prevConfig);
+        	mailSettings.insertAccountConfigAt(curConfig, prevConfigIndex);
+        	result = true;
+        }
+        else if(cookie instanceof OutgoingConfig) {
+        	OutgoingConfig curConfig = (OutgoingConfig)cookie;
+        	OutgoingConfig prevConfig = (OutgoingConfig)configTreeField.getCookie(prevNode);
+        	
+        	int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
+        	mailSettings.removeAccountConfig(curConfigIndex);
+
+        	int prevConfigIndex = mailSettings.indexOfOutgoingConfig(prevConfig);
+        	mailSettings.insertOutgoingConfigAt(curConfig, prevConfigIndex);
+        	result = true;
+        }
+        
+        if(result) {
+            mailSettings.saveSettings();
+            configurationChanged = true;
+        	buildAccountsList();
+        }
+	}
+
+	private void moveSelectedNodeDown() {
+        int curNode = configTreeField.getCurrentNode();
+        if(curNode == -1) { return; }
+        int nextNode = configTreeField.getNextSibling(curNode);
+        if(nextNode == -1) { return; }
+
+        Object cookie = configTreeField.getCookie(curNode);
+        
+        boolean result = false;
+
+        if(cookie instanceof IdentityConfig) {
+        	IdentityConfig curConfig = (IdentityConfig)cookie;
+        	IdentityConfig nextConfig = (IdentityConfig)configTreeField.getCookie(nextNode);
+        	
+        	int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
+        	mailSettings.removeAccountConfig(curConfigIndex);
+
+        	int nextConfigIndex = mailSettings.indexOfIdentityConfig(nextConfig);
+        	mailSettings.insertIdentityConfigAt(curConfig, nextConfigIndex + 1);
+        	result = true;
+        }
+        else if(cookie instanceof AccountConfig) {
+        	AccountConfig curConfig = (AccountConfig)cookie;
+        	AccountConfig nextConfig = (AccountConfig)configTreeField.getCookie(nextNode);
+        	
+        	int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
+        	mailSettings.removeAccountConfig(curConfigIndex);
+
+        	int nextConfigIndex = mailSettings.indexOfAccountConfig(nextConfig);
+        	mailSettings.insertAccountConfigAt(curConfig, nextConfigIndex + 1);
+        	result = true;
+        }
+        else if(cookie instanceof OutgoingConfig) {
+        	OutgoingConfig curConfig = (OutgoingConfig)cookie;
+        	OutgoingConfig nextConfig = (OutgoingConfig)configTreeField.getCookie(nextNode);
+        	
+        	int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
+        	mailSettings.removeAccountConfig(curConfigIndex);
+
+        	int nextConfigIndex = mailSettings.indexOfOutgoingConfig(nextConfig);
+        	mailSettings.insertOutgoingConfigAt(curConfig, nextConfigIndex + 1);
+        	result = true;
+        }
+        
+        if(result) {
+            mailSettings.saveSettings();
+            configurationChanged = true;
+        	buildAccountsList();
+        }
+	}
+
     /**
      * Builds the accounts list.
      */
     private void buildAccountsList() {
+    	Object curCookie;
+    	int curNode = configTreeField.getCurrentNode();
+    	if(curNode != -1) {
+    		curCookie = configTreeField.getCookie(curNode);
+    	}
+    	else {
+    		curCookie = null;
+    	}
+    	
         int numIdentities = mailSettings.getNumIdentities();
         identityIndexMap.clear();
         int numAccounts = mailSettings.getNumAccounts();
@@ -356,6 +491,19 @@ public class ConfigScreen extends BaseCfgScreen {
             outgoingConfig = mailSettings.getOutgoingConfig(i);
             configTreeField.addChildNode(outgoingId, outgoingConfig);
             outgoingIndexMap.put(outgoingConfig, new Integer(i));
+        }
+        
+        if(curCookie != null) {
+        	int node = configTreeField.nextNode(0, 0, true);
+        	while(node != -1) {
+        		if(configTreeField.getCookie(node) == curCookie) {
+        			configTreeField.setCurrentNode(node);
+        			break;
+        		}
+        		else {
+        			node = configTreeField.nextNode(node, 0, true);
+        		}
+        	}
         }
     }
     

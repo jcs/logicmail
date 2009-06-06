@@ -119,6 +119,26 @@ public class MailSettings {
     }
     
     /**
+     * Insert an identity configuration at a particular index.
+     * 
+     * @param identityConfig the identity configuration
+     * @param index where to insert the identity configuration
+     */
+    public void insertIdentityConfigAt(IdentityConfig identityConfig, int index) {
+    	identityConfigs.insertElementAt(identityConfig, index);
+    }
+
+    /**
+     * Searches for the index of the identity configuration.
+     * 
+     * @param identityConfig the identity configuration
+     * @return index of the configuration, or -1 if it is not found
+     */
+    public int indexOfIdentityConfig(IdentityConfig identityConfig) {
+    	return identityConfigs.indexOf(identityConfig);
+    }
+    
+    /**
      * Remove the identity configuration at the specified index
      */
     public void removeIdentityConfig(int index) {
@@ -144,6 +164,26 @@ public class MailSettings {
      */
     public void addAccountConfig(AccountConfig accountConfig) {
         accountConfigs.addElement(accountConfig);
+    }
+    
+    /**
+     * Insert an account configuration at a particular index.
+     * 
+     * @param accountConfig the account configuration
+     * @param index where to insert the account configuration
+     */
+    public void insertAccountConfigAt(AccountConfig accountConfig, int index) {
+    	accountConfigs.insertElementAt(accountConfig, index);
+    }
+    
+    /**
+     * Searches for the index of the account configuration.
+     * 
+     * @param accountConfig the account configuration
+     * @return index of the configuration, or -1 if it is not found
+     */
+    public int indexOfAccountConfig(AccountConfig accountConfig) {
+    	return accountConfigs.indexOf(accountConfig);
     }
     
     /**
@@ -195,6 +235,26 @@ public class MailSettings {
      */
     public void addOutgoingConfig(OutgoingConfig outgoingConfig) {
         outgoingConfigs.addElement(outgoingConfig);
+    }
+    
+    /**
+     * Insert an outgoing server configuration at a particular index.
+     * 
+     * @param outgoingConfig the outgoing server configuration
+     * @param index where to insert the outgoing server configuration
+     */
+    public void insertOutgoingConfigAt(OutgoingConfig outgoingConfig, int index) {
+    	outgoingConfigs.insertElementAt(outgoingConfig, index);
+    }
+    
+    /**
+     * Searches for the index of the outgoing server configuration.
+     * 
+     * @param outgoingConfig the outgoing server configuration
+     * @return index of the configuration, or -1 if it is not found
+     */
+    public int indexOfOutgoingConfig(OutgoingConfig outgoingConfig) {
+    	return outgoingConfigs.indexOf(outgoingConfig);
     }
     
     /**
