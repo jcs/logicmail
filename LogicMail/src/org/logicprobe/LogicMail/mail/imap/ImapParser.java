@@ -430,6 +430,10 @@ class ImapParser {
             }
         }
 
+        if (sectionList.elementAt(3) instanceof String) {
+        	sec.contentId = (String) sectionList.elementAt(3);
+        }
+        
         if (sectionList.elementAt(5) instanceof String) {
             sec.encoding = ((String) sectionList.elementAt(5)).toLowerCase();
         }
@@ -448,6 +452,7 @@ class ImapParser {
         		sec.disposition = ((String)tmpVec.elementAt(0)).toLowerCase();
         	}
         }
+        
         return sec;
     }
 
@@ -564,6 +569,7 @@ class ImapParser {
         public String encoding;
         public String charset;
         public String disposition;
+        public String contentId;
         public int size;
         public MessageSection[] subsections;
     }

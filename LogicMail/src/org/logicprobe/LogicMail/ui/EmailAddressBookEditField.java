@@ -167,7 +167,7 @@ public class EmailAddressBookEditField extends EditField {
 
     /**
      * Set the address contained within the field.
-     * Supports handling the "John Doe <jdoe@generic.org>" format.
+     * Supports handling the "John Doe &lt;jdoe@generic.org&gt;" format.
      * 
      * @param text Address to set the field to
      */

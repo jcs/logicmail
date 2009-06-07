@@ -36,6 +36,7 @@ import net.rim.device.api.system.Application;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
@@ -95,7 +96,11 @@ public class MessageScreen extends BaseScreen {
         // Determine if this screen is viewing a sent message
         int mailboxType = messageNode.getParent().getType();
         this.isSentFolder = (mailboxType == MailboxNode.TYPE_SENT) || (mailboxType == MailboxNode.TYPE_OUTBOX);
-        
+     
+        initFields();
+    }
+    
+    private void initFields() {
         // Create screen elements
         addressFieldManager = new BorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
@@ -149,6 +154,12 @@ public class MessageScreen extends BaseScreen {
 		}
     };
     
+    private FieldChangeListener fieldChangeListener = new FieldChangeListener() {
+		public void fieldChanged(Field field, int context) {
+			message_FieldChanged(field, context);
+		}
+    };
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
@@ -169,7 +180,7 @@ public class MessageScreen extends BaseScreen {
     	}
     }
 
-    /* (non-Javadoc)
+	/* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onUndisplay()
      */
     protected void onUndisplay() {
@@ -349,7 +360,7 @@ public class MessageScreen extends BaseScreen {
     	for(int i=0; i<displayableParts.length; i++) {
     		MessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {
-    			Field field = MessageFieldFactory.createMessageField(content);
+    			Field field = MessageFieldFactory.createMessageField(messageNode, content);
     			messageFields.addElement(field);
     		}
     	}
@@ -367,10 +378,10 @@ public class MessageScreen extends BaseScreen {
         if(messageFields == null) {
             return;
         }
+    	int size = messageFields.size();
         synchronized(Application.getEventLock()) {
         	messageFieldManager.deleteAll();
         	
-        	int size = messageFields.size();
             for(int i=0;i<size;++i) {
                 if(messageFields.elementAt(i) != null) {
                     messageFieldManager.add((Field)messageFields.elementAt(i));
@@ -380,6 +391,14 @@ public class MessageScreen extends BaseScreen {
                 }
             }
             messageFieldManager.add(new NullField(Field.FOCUSABLE));
+
+            for(int i=0;i<size;++i) {
+            	Field field = (Field)messageFields.elementAt(i);
+            	if(field != null) {
+                	MessageFieldFactory.handleRenderedField(field);
+            		field.setChangeListener(fieldChangeListener);
+            	}
+            }
         }
     }
 
@@ -448,7 +467,23 @@ public class MessageScreen extends BaseScreen {
 			graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
 		}
 	}
-	
+
+	/**
+	 * Invoked by a field when a property changes. 
+	 * @param field The field that changed.
+	 * @param context Information specifying the origin of the change
+	 * 
+	 * @see FieldChangeListener#fieldChanged(Field, int)
+	 */
+    private void message_FieldChanged(Field field, int context) {
+    	if(field instanceof BrowserFieldManager) {
+    		if((context & BrowserFieldManager.ACTION_SEND_EMAIL) != 0) {
+    			String address = ((BrowserFieldManager)field).getSelectedToken();
+                getNavigationController().displayComposition(messageNode.getParent().getParentAccount(), address);
+    		}
+    	}
+	}
+
 	/**
      * Run the Unicode normalizer on the provide string,
      * only if normalization is enabled in the configuration.

@@ -46,6 +46,8 @@ import javax.microedition.io.file.FileSystemRegistry;
  * Store the global configuration for LogicMail.
  */
 public class GlobalConfig implements Serializable {
+    private long uniqueId;
+
     /** WiFi support is disabled, best for non-WiFi devices */
     final public static int WIFI_DISABLED = 0;
 
@@ -54,11 +56,22 @@ public class GlobalConfig implements Serializable {
 
     /** Always use WiFi */
     final public static int WIFI_ALWAYS = 2;
-    private long uniqueId;
+    
+    /** Prefer plain text display for messages */
+    final public static int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
+    
+    /** Prefer HTML display for messages */
+    final public static int MESSAGE_DISPLAY_HTML = 1;
+    
     /** language code to use for the UI, or null for system default */
     private String languageCode;
+    
     /** true to enable Unicode normalization */
     private boolean unicodeNormalization;
+
+    /** Preferred message display format */
+    private int messageDisplayFormat;
+    
     /** Number of message headers to retrieve */
     private int retMsgCount;
 
@@ -107,6 +120,7 @@ public class GlobalConfig implements Serializable {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.languageCode = "";
         this.unicodeNormalization = false;
+        this.messageDisplayFormat = GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT;
         this.retMsgCount = 30;
         this.dispOrder = false;
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
@@ -121,22 +135,61 @@ public class GlobalConfig implements Serializable {
         	this.localDataLocation = "file:///LogicMail/";
         }
     }
+    
+    /**
+     * Sets the language code.
+     * 
+     * @param languageCode the new language code, or an empty string for the system default.
+     */
     public void setLanguageCode(String languageCode) {
         this.languageCode = languageCode;
     }
     
+    /**
+     * Gets the language code.
+     * 
+     * @return the language code, or an empty string for the system default.
+     */
     public String getLanguageCode() {
         return languageCode;
     }
     
+    /**
+     * Sets whether unicode normalization is enabled.
+     * 
+     * @param unicodeNormalization True if unicode normalization is enabled
+     */
     public void setUnicodeNormalization(boolean unicodeNormalization) {
         this.unicodeNormalization = unicodeNormalization;
     }
     
+    /**
+     * Gets whether unicode normalization is enabled.
+     * 
+     * @return True if unicode normalization is enabled
+     */
     public boolean getUnicodeNormalization() {
         return unicodeNormalization;
     }
 
+    /**
+     * Sets the preferred message display format.
+     * 
+     * @param messageDisplayFormat the new preferred message display format
+     */
+    public void setMessageDisplayFormat(int messageDisplayFormat) {
+    	this.messageDisplayFormat = messageDisplayFormat;
+    }
+    
+    /**
+     * Gets the preferred message display format.
+     * 
+     * @return the preferred message display format
+     */
+    public int getMessageDisplayFormat() {
+    	return messageDisplayFormat;
+    }
+    
     /**
      * Set the number of message headers to retrieve.
      * 
@@ -273,6 +326,7 @@ public class GlobalConfig implements Serializable {
         
         table.put("global_languageCode", languageCode);
         table.put("global_unicodeNormalization", new Boolean(unicodeNormalization));
+        table.put("global_messageDisplayFormat", new Integer(messageDisplayFormat));
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_localDataLocation", localDataLocation);
@@ -300,10 +354,17 @@ public class GlobalConfig implements Serializable {
         if(value != null && value instanceof String) {
             languageCode = (String)value;
         }
+        
         value = table.get("global_unicodeNormalization");
         if(value != null && value instanceof Boolean) {
             unicodeNormalization = ((Boolean)value).booleanValue();
         }
+        
+        value = table.get("global_messageDisplayFormat");
+        if ((value != null) && value instanceof Integer) {
+        	messageDisplayFormat = ((Integer) value).intValue();
+        }
+        
         value = table.get("global_retMsgCount");
         if ((value != null) && value instanceof Integer) {
             retMsgCount = ((Integer) value).intValue();

@@ -32,6 +32,9 @@ package org.logicprobe.LogicMail.message;
 
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.conf.GlobalConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+
 /**
  * Utility class to take a {@link MessagePart} tree and transform
  * it into a list based on various rules.
@@ -54,12 +57,69 @@ public class MessagePartTransformer {
 	
 	private static class DisplayablePartVisitor implements MessagePartVisitor {
 		private Vector displayableParts = new Vector();
+		int displayFormat;
+		
+		public DisplayablePartVisitor() {
+			displayFormat = MailSettings.getInstance().getGlobalConfig().getMessageDisplayFormat();
+		}
 		
 		public Vector getDisplayableParts() { return displayableParts; }
 		
 		public void visitTextPart(TextPart part) {
-			// TODO: Add logic to deal with multipart/alternative cases
-			if(MessageContentFactory.isContentSupported(part)) {
+			if(!MessageContentFactory.isContentSupported(part)) { return; }
+			
+			if(part.getParent() instanceof MultiPart) {
+				MultiPart parent = (MultiPart)part.getParent();
+				
+				if(parent.getMimeSubtype().equalsIgnoreCase("alternative")) {
+					String subType = part.getMimeSubtype();
+					
+					if(displayFormat == GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT) {
+						if(subType.equalsIgnoreCase("plain")) {
+							displayableParts.addElement(part);
+						}
+						else {
+							MessagePart[] siblings = parent.getParts();
+							boolean otherPlain = false;
+							for(int i=0; i<siblings.length; i++) {
+								if(siblings[i] != part
+									&& siblings[i] instanceof TextPart
+									&& siblings[i].getMimeSubtype().equalsIgnoreCase("plain")) {
+									otherPlain = true;
+									break;
+								}
+							}
+							if(!otherPlain) {
+								displayableParts.addElement(part);
+							}
+						}
+					}
+					else if(displayFormat == GlobalConfig.MESSAGE_DISPLAY_HTML) {
+						if(subType.equalsIgnoreCase("html")) {
+							displayableParts.addElement(part);
+						}
+						else {
+							MessagePart[] siblings = parent.getParts();
+							boolean otherHtml = false;
+							for(int i=0; i<siblings.length; i++) {
+								if(siblings[i] != part
+									&& siblings[i] instanceof TextPart
+									&& siblings[i].getMimeSubtype().equalsIgnoreCase("html")) {
+									otherHtml = true;
+									break;
+								}
+							}
+							if(!otherHtml) {
+								displayableParts.addElement(part);
+							}
+						}
+					}
+				}
+				else {
+					displayableParts.addElement(part);
+				}
+			}
+			else {
 				displayableParts.addElement(part);
 			}
 		}

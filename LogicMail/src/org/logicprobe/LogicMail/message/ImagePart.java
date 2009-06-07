@@ -41,17 +41,17 @@ import java.io.IOException;
 public class ImagePart extends ContentPart {
     
     /** Creates a new instance of ImagePart */
-    public ImagePart(String mimeSubtype, String name, String encoding, String disposition, int size, String tag) {
-        super("image", mimeSubtype, name, encoding, disposition, size, tag);
+    public ImagePart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
+        super("image", mimeSubtype, name, encoding, disposition, contentId, size, tag);
     }
 
-    public ImagePart(String mimeSubtype, String name, String encoding, String disposition, int size) {
-        this(mimeSubtype, name, encoding, disposition, size, "");
+    public ImagePart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
+        this(mimeSubtype, name, encoding, disposition, contentId, size, "");
     }
 
     /** Creates a new instance for deserialization */
     public ImagePart() {
-    	this("", "", "", "", -1, "");
+    	this("", "", "", "", "", -1, "");
     }
     
     public void accept(MessagePartVisitor visitor) {

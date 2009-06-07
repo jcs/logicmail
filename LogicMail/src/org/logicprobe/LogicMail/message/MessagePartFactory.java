@@ -52,6 +52,7 @@ public class MessagePartFactory {
     		String encoding,
     		String param,
     		String disposition,
+    		String contentId,
     		int size,
     		String tag) {
     	
@@ -59,16 +60,17 @@ public class MessagePartFactory {
     	if(name == null) { name = ""; }
     	if(encoding == null) { encoding = ""; }
     	if(param == null) { param = ""; }
-    	if(param == disposition) { disposition = ""; }
+    	if(disposition == null) { disposition = ""; }
+    	if(contentId == null) { contentId = ""; }
     	if(tag == null) { tag = ""; }
     	
     	MessagePart part;
         if (mimeType.equalsIgnoreCase("multipart")) {
             part = new MultiPart(mimeSubtype, tag);
         } else if (mimeType.equalsIgnoreCase("text")) {
-        	part = new TextPart(mimeSubtype, name, encoding, param, disposition, size, tag);
+        	part = new TextPart(mimeSubtype, name, encoding, param, disposition, contentId, size, tag);
         } else if (mimeType.equalsIgnoreCase("image")) {
-        	part = new ImagePart(mimeSubtype, name, encoding, disposition, size, tag);
+        	part = new ImagePart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
         } else {
             part = new UnsupportedPart(mimeType, mimeSubtype, tag);
         }
@@ -92,8 +94,9 @@ public class MessagePartFactory {
     		String encoding,
     		String param,
     		String disposition,
+    		String contentId,
     		int size) {
-    	return MessagePartFactory.createMessagePart(mimeType, mimeSubtype, name, encoding, param, disposition, size, "");
+    	return MessagePartFactory.createMessagePart(mimeType, mimeSubtype, name, encoding, param, disposition, contentId, size, "");
     }
     
     /**

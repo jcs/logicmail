@@ -143,6 +143,20 @@ public class CompositionScreen extends BaseScreen {
 
     /**
      * Creates a new instance of CompositionScreen.
+     *
+     * @param navigationController Controller for screen navigation
+     * @param accountNode Account node
+     * @param recipient Message recipient address to pre-populate the "To" field with
+     */
+    public CompositionScreen(NavigationController navigationController, AccountNode accountNode, String recipient) {
+    	this(navigationController, accountNode);
+
+    	EmailAddressBookEditField toAddressField = (EmailAddressBookEditField) recipientsFieldManager.getField(0);
+    	toAddressField.setText(recipient);
+    }
+
+    /**
+     * Creates a new instance of CompositionScreen.
      * Used for working with an already created message,
      * such as a draft, reply, or forward.
      *
@@ -450,7 +464,7 @@ public class CompositionScreen extends BaseScreen {
     private Message generateMessage() {
     	String contentText = messageEditField.getText();
         MessagePart bodyPart = MessagePartFactory.createMessagePart(
-        		"text", "plain", null, "7bit", "us-ascii", null, contentText.length());
+        		"text", "plain", null, "7bit", "us-ascii", "", "", contentText.length());
         MessageContent bodyContent;
         try {
 			bodyContent = MessageContentFactory.createContent(

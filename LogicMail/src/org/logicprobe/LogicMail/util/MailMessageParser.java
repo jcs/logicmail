@@ -224,6 +224,7 @@ public class MailMessageParser {
         String charset = mimeInputStream.getContentTypeParameter("charset");
         String name = mimeInputStream.getContentTypeParameter("name");
         String disposition = mimeInputStream.getHeader("Content-Disposition");
+        String contentId = mimeInputStream.getHeader("Content-ID");
 
         // Default parameters used when headers are missing
         if (encoding == null) {
@@ -243,7 +244,7 @@ public class MailMessageParser {
         if (mimeInputStream.isMultiPart() &&
                 type.equalsIgnoreCase("multipart")) {
             MessagePart part = MessagePartFactory.createMessagePart(
-            		type, subtype, null, null, null, null, -1);
+            		type, subtype, null, null, null, null, null, -1);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
 
             for (int i = 0; i < mimeSubparts.length; i++) {
@@ -280,7 +281,7 @@ public class MailMessageParser {
 
                 String data = new String(buffer, offset, size);
                 MessagePart part = MessagePartFactory.createMessagePart(
-                		type, subtype, name, encoding, charset, disposition, size);
+                		type, subtype, name, encoding, charset, disposition, contentId, size);
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {
@@ -292,7 +293,7 @@ public class MailMessageParser {
 
                 String data = new String(buffer);
                 MessagePart part = MessagePartFactory.createMessagePart(
-                		type, subtype, name, encoding, charset, disposition, data.length());
+                		type, subtype, name, encoding, charset, disposition, contentId, data.length());
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {

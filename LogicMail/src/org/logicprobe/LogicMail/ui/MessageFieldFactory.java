@@ -30,9 +30,8 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import java.io.ByteArrayOutputStream;
+import java.util.Hashtable;
 
-import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ImageContent;
@@ -40,22 +39,13 @@ import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
-import net.rim.blackberry.api.browser.Browser;
-import net.rim.blackberry.api.browser.BrowserSession;
 import net.rim.device.api.i18n.ResourceBundle;
-import net.rim.device.api.io.Base64OutputStream;
-import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BitmapField;
-import net.rim.device.api.ui.component.ButtonField;
-import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.ui.container.VerticalFieldManager;
-import net.rim.device.api.util.DataBuffer;
 
 /**
  * Factory to create {@link Field} instances for display of
@@ -63,11 +53,11 @@ import net.rim.device.api.util.DataBuffer;
  */
 public class MessageFieldFactory {
 	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-
-	public static Field createMessageField(MessageContent content) {
+	
+	public static Field createMessageField(MessageNode messageNode, MessageContent content) {
 		Field field;
 		if(content instanceof TextContent) {
-			field = createTextMessageField((TextContent)content);
+			field = createTextMessageField(messageNode, (TextContent)content);
 		}
 		else if(content instanceof ImageContent) {
 			field = createImageMessageField((ImageContent)content);
@@ -78,53 +68,17 @@ public class MessageFieldFactory {
 		return field;
 	}
 
-	private static Field createTextMessageField(TextContent content) {
+	private static Field createTextMessageField(MessageNode messageNode, TextContent content) {
 		TextPart part = (TextPart)content.getMessagePart();
     	if(part.getMimeSubtype().equalsIgnoreCase("html")) {
-    		ButtonField browserButtonField = new ButtonField("Open HTML in browser...", Field.FIELD_HCENTER);
-    		browserButtonField.setChangeListener(new MessageFieldChangeListener(content) {
-				public void fieldChanged(Field field, int context) {
-					TextContent content = (TextContent)getContent();
-		    		String text = getNormalizedText(content);
-					
-					try {
-						DataBuffer buffer = new DataBuffer();
-						buffer.write(text.getBytes());
-						
-						ByteArrayOutputStream output = new ByteArrayOutputStream();
-						Base64OutputStream boutput = new Base64OutputStream(output);
-						
-						// Write out the special sequence which indicates to the browser
-						// that it should treat this as HTML data in base64 format.
-						output.write("data:text/html;base64,".getBytes());
-						boutput.write(buffer.getArray());
-						boutput.flush();
-						boutput.close();
-						output.flush();
-						output.close();
-
-						// Invoke the browser with the encoded HTML content.
-						BrowserSession browserSession = Browser.getDefaultSession();
-						browserSession.displayPage(output.toString());
-					} catch (Throwable t) {
-						EventLogger.logEvent(AppInfo.GUID, ("Error launching browser: " + t.toString()).getBytes(), EventLogger.ERROR);
-						Dialog.alert("Unable to display the HTML message in the browser.");
-					}
-				}
-    		});
-    		
-    		VerticalFieldManager browserButtonFieldManager = new VerticalFieldManager(Field.USE_ALL_WIDTH);
-    		browserButtonFieldManager.add(new LabelField());
-    		browserButtonFieldManager.add(browserButtonField);
-    		browserButtonFieldManager.add(new LabelField());
-    		return browserButtonFieldManager;
+    		return createBrowserField(messageNode, content);
     	}
     	else {
     		return new RichTextField(getNormalizedText(content));
     	}
 	}
 
-    /**
+	/**
      * Run the Unicode normalizer on the provide content,
      * only if normalization is enabled in the configuration.
      * If normalization is disabled, this method returns
@@ -154,15 +108,6 @@ public class MessageFieldFactory {
         }
     }
 	
-	private static abstract class MessageFieldChangeListener implements FieldChangeListener {
-    	private TextContent content;
-    	public MessageFieldChangeListener(TextContent content) {
-    		this.content = content;
-    	}
-    	
-    	protected TextContent getContent() { return content; }
-    }
-	
 	private static Field createImageMessageField(ImageContent content) {
 		return new BitmapField(content.getImage().getBitmap());
 	}
@@ -173,5 +118,27 @@ public class MessageFieldFactory {
 				resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED)
 				+ ' ' + part.getMimeType()
 				+ '/' + part.getMimeSubtype());
+	}
+
+	private static Hashtable createdBrowserFields = new Hashtable();
+	
+	private static Field createBrowserField(MessageNode messageNode, TextContent content) {
+		BrowserFieldRenderer fieldRenderer = new BrowserFieldRenderer(messageNode, content);
+
+		Field field = fieldRenderer.getBrowserField();
+		
+		if(field != null) {
+			createdBrowserFields.put(field, fieldRenderer);
+		}
+		
+		return field;
+	}
+
+	public static void handleRenderedField(Field field) {
+		BrowserFieldRenderer fieldRenderer = (BrowserFieldRenderer)createdBrowserFields.get(field);
+		if(fieldRenderer != null) {
+			fieldRenderer.finishLoading();
+			createdBrowserFields.remove(field);
+		}
 	}
 }

@@ -645,6 +645,7 @@ public class ImapClient implements IncomingMailClient {
             		structure.encoding,
             		structure.charset,
             		structure.disposition,
+            		structure.contentId,
             		structure.size,
             		structure.address);
             try {
@@ -682,6 +683,7 @@ public class ImapClient implements IncomingMailClient {
         		structure.encoding,
         		structure.charset,
         		structure.disposition,
+        		structure.contentId,
         		structure.size,
         		structure.address);
 

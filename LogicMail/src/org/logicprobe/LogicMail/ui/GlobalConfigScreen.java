@@ -41,7 +41,6 @@ import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
-import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -62,9 +61,9 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 
     private static String LOCAL_FILE_BASE = "LogicMail/";
     
-    private RichTextField globalSettingsLabel;
     private ObjectChoiceField languageChoiceField;
     private CheckboxField unicodeNormalizationCheckboxField;
+    private ObjectChoiceField messageDisplayChoiceField;
     private BasicEditField messageCountEditField;
     private ObjectChoiceField displayOrderChoiceField;
     private CheckboxField hideDeletedMessagesCheckboxField;
@@ -126,10 +125,6 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
     }
 
     private void initFields() {
-        globalSettingsLabel = new RichTextField(
-        		resources.getString(LogicMailResource.CONFIG_GLOBAL_GLOBAL_SETTINGS),
-        		Field.NON_FOCUSABLE);
-
         String languageCode = existingConfig.getLanguageCode();
         int languageIndex = 0;
         if(languageCode != null && languageCode.length() != 0) {
@@ -141,7 +136,7 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
             }
         }
         languageChoiceField = new ObjectChoiceField(
-        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_LANGUAGE),
+        		resources.getString(LogicMailResource.CONFIG_GLOBAL_LANGUAGE),
         		languageChoices,
         		languageIndex);
         
@@ -149,8 +144,15 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 				resources.getString(LogicMailResource.CONFIG_GLOBAL_UNICODE_NORMALIZATION),
 				existingConfig.getUnicodeNormalization());
 
+		messageDisplayChoiceField = new ObjectChoiceField(
+				resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT),
+				new String[] {
+					resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT_PLAIN_TEXT),
+					"HTML" },
+				existingConfig.getMessageDisplayFormat());
+		
 	    messageCountEditField = new BasicEditField(
-	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
 	            Integer.toString(existingConfig.getRetMsgCount()));
 	    messageCountEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
 	
@@ -161,11 +163,11 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	
 	    if (existingConfig.getDispOrder()) {
 	        displayOrderChoiceField = new ObjectChoiceField(
-	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
 	                orderTypes, 0);
 	    } else {
 	        displayOrderChoiceField = new ObjectChoiceField(
-	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
 	                orderTypes, 1);
 	    }
 	
@@ -179,7 +181,7 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	            resources.getString(LogicMailResource.MENUITEM_ALWAYS)
 	        };
 	    wifiModeChoiceField = new ObjectChoiceField(
-	    		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + ' ',
+	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + ' ',
 	    		wifiModes,
 	    		existingConfig.getWifiMode());
 
@@ -196,12 +198,12 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	
 	    if (overrideHostname) {
 	        localHostnameEditField = new BasicEditField(
-	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
 	                localHostname);
 	    } else {
 	        String hostname = System.getProperty("microedition.hostname");
 	        localHostnameEditField = new BasicEditField(
-	        		"  " + resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
 	                ((hostname != null) ? hostname : "localhost"));
 	        localHostnameEditField.setEditable(false);
 	    }
@@ -210,9 +212,9 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
 	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
                 existingConfig.getConnDebug());
 	
-	    add(globalSettingsLabel);
 		add(languageChoiceField);
 		add(unicodeNormalizationCheckboxField);
+		add(messageDisplayChoiceField);
 	    add(messageCountEditField);
 	    add(displayOrderChoiceField);
 	    add(hideDeletedMessagesCheckboxField);
@@ -253,6 +255,8 @@ public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeList
         }
         
         config.setUnicodeNormalization(unicodeNormalizationCheckboxField.getChecked());
+        
+        config.setMessageDisplayFormat(messageDisplayChoiceField.getSelectedIndex());
         
         try {
             config.setRetMsgCount(Integer.parseInt(messageCountEditField.getText()));

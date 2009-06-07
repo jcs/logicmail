@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+import java.util.Vector;
 
 import net.rim.device.api.system.UnsupportedOperationException;
 
@@ -263,12 +264,20 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	private void handleRequestMessageParts(MessageToken messageToken, MessagePart[] messageParts) throws IOException, MailException {
 		checkActiveFolder(messageToken);
 
-		MessageContent[] messageContent = new MessageContent[messageParts.length];
+		MessageContent[] messageContent;
+		
 		// Replace this with a more general method:
 		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
+			Vector messageContentVector = new Vector();
 			for(int i=0; i<messageParts.length; i++) {
-				messageContent[i] = ((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i]);
+				MessageContent content =
+					((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i]);
+				if(content != null) {
+					messageContentVector.addElement(content);
+				}
 			}
+			messageContent = new MessageContent[messageContentVector.size()];
+			messageContentVector.copyInto(messageContent);
 		}
 		else {
 			messageContent = null;

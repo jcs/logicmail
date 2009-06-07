@@ -763,7 +763,7 @@ public class MessageNode implements Node {
 	        
 	        MessageNode replyNode = new MessageNode();
 	        String contentText = buf.toString();
-	        TextPart replyPart = new TextPart("plain", "", "", "", "", contentText.length());
+	        TextPart replyPart = new TextPart("plain", "", "", "", "", "", contentText.length());
 	        replyNode.messageStructure = replyPart;
 	        replyNode.putMessageContent(new TextContent(replyPart, contentText));
 	        
@@ -888,7 +888,7 @@ public class MessageNode implements Node {
 	        // Build the forward node
 	        MessageNode forwardNode = new MessageNode();
 	        String contentText = buf.toString();
-	        TextPart forwardPart = new TextPart("plain", "", "", "", "", contentText.length());
+	        TextPart forwardPart = new TextPart("plain", "", "", "", "", "", contentText.length());
 	        forwardNode.messageStructure = forwardPart;
 	        forwardNode.putMessageContent(new TextContent(forwardPart, contentText));
 	

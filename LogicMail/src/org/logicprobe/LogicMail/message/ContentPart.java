@@ -11,16 +11,18 @@ public abstract class ContentPart extends MessagePart {
 	private String name;
 	private String encoding;
 	private String disposition;
-
-	public ContentPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, int size, String tag) {
+	private String contentId;
+	
+	public ContentPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
         super(mimeType, mimeSubtype, size, tag);
         this.name = name;
         this.encoding = encoding;
         this.disposition = disposition;
+        this.contentId = contentId;
     }
 
-	public ContentPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, int size) {
-        this(mimeType, mimeSubtype, name, encoding, disposition, size, "");
+	public ContentPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
+        this(mimeType, mimeSubtype, name, encoding, disposition, contentId, size, "");
     }
 
 	public String getName() {
@@ -47,6 +49,14 @@ public abstract class ContentPart extends MessagePart {
     	this.disposition = disposition;
     }
 
+    public String getContentId() {
+    	return contentId;
+    }
+    
+    public void setContentId(String contentId) {
+    	this.contentId = contentId;
+    }
+    
     /* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
 	 */
@@ -55,6 +65,7 @@ public abstract class ContentPart extends MessagePart {
 		output.writeUTF(name);
 		output.writeUTF(encoding);
 		output.writeUTF(disposition);
+		output.writeUTF(contentId);
 	}
 	
 	/* (non-Javadoc)
@@ -65,5 +76,6 @@ public abstract class ContentPart extends MessagePart {
 		name = input.readUTF();
 		encoding = input.readUTF();
 		disposition = input.readUTF();
+		contentId = input.readUTF();
 	}
 }

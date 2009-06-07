@@ -42,18 +42,18 @@ public class TextPart extends ContentPart {
 	private String charset;
     
     /** Creates a new instance of TextPart */
-    public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, int size, String tag) {
-        super("text", mimeSubtype, name, encoding, disposition, size, tag);
+    public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, String contentId, int size, String tag) {
+        super("text", mimeSubtype, name, encoding, disposition, contentId, size, tag);
         this.charset = charset;
     }
 
-    public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, int size) {
-        this(mimeSubtype, name, encoding, charset, disposition, size, "");
+    public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, String contentId, int size) {
+        this(mimeSubtype, name, encoding, charset, disposition, contentId, size, "");
     }
     
     /** Creates a new instance for deserialization */
     public TextPart() {
-    	this("", "", "", "", "", -1, "");
+    	this("", "", "", "", "", "", -1, "");
     }
     
     public void accept(MessagePartVisitor visitor) {

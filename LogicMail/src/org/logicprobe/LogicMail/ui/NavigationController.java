@@ -111,6 +111,11 @@ public class NavigationController {
 				CompositionScreen.COMPOSE_NORMAL);
 		uiApplication.pushScreen(screen);
 	}
+
+	public void displayComposition(AccountNode accountNode, String address) {
+		CompositionScreen screen = new CompositionScreen(this, accountNode, address);
+		uiApplication.pushScreen(screen);
+	}
 	
 	public synchronized void displayCompositionReply(AccountNode accountNode, MessageNode messageNode, boolean replyAll) {
 		CompositionScreen screen = new CompositionScreen(this,
