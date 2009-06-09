@@ -402,7 +402,7 @@ public class MailboxScreen extends BaseScreen {
     	// configured as their drafts folder.
     	Vector matchingAccounts = new Vector();
     	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-    	
+
     	for(int i=0; i<accounts.length; i++) {
     		AccountConfig accountConfig = accounts[i].getAccountConfig();
     		if(accountConfig != null) {
@@ -412,6 +412,17 @@ public class MailboxScreen extends BaseScreen {
     		}
     	}
 
+    	// If no matching accounts were found, then add all
+    	// non-local accounts so we have something for the
+    	// user to select from.
+    	if(matchingAccounts.size() == 0) {
+        	for(int i=0; i<accounts.length; i++) {
+        		if(accounts[i].getAccountConfig() != null) {
+    				matchingAccounts.addElement(accounts[i]);
+        		}
+        	}
+    	}
+    	
     	// Select the account node that matches this mailbox, prompting the
     	// user if necessary.
     	AccountNode account;
@@ -429,8 +440,11 @@ public class MailboxScreen extends BaseScreen {
         		return false;
         	}
     	}
-    	else {
+    	else if(size == 1) {
     		account = (AccountNode)matchingAccounts.elementAt(0);
+    	}
+    	else {
+    		return false;
     	}
 
     	// Show the message composition screen
