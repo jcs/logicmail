@@ -31,9 +31,16 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Vector;
+
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
+
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
@@ -43,13 +50,17 @@ import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.NullField;
+import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.VerticalFieldManager;
+
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -194,7 +205,15 @@ public class MessageScreen extends BaseScreen {
     	super.onUndisplay();
     }
     
-    private MenuItem propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 100, 10) {
+    private MenuItem saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 100, 10) {
+        public void run() {
+    		int node = attachmentsTreeField.getCurrentNode();
+    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof ContentPart) {
+    			saveAttachment((ContentPart)attachmentsTreeField.getCookie(node));
+    		}
+        }
+    };
+    private MenuItem propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
         public void run() {
         	MessagePropertiesScreen screen = new MessagePropertiesScreen(messageNode);
         	UiApplication.getUiApplication().pushScreen(screen);
@@ -275,6 +294,13 @@ public class MessageScreen extends BaseScreen {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     protected void makeMenu(Menu menu, int instance) {
+    	if(this.getFieldWithFocus() == messageFieldManager
+    			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
+    		int node = attachmentsTreeField.getCurrentNode();
+    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof MessagePart) {
+    			menu.add(saveAttachmentItem);
+    		}
+    	}
         menu.add(propsItem);
         menu.addSeparator();
         if(accountConfig != null && accountConfig.getOutgoingConfig() != null) {
@@ -305,9 +331,15 @@ public class MessageScreen extends BaseScreen {
             	if(this.getFieldWithFocus() == messageFieldManager
             			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
             		int node = attachmentsTreeField.getCurrentNode();
-            		if(node != -1 && attachmentsTreeField.getFirstChild(node) != -1) {
-            			attachmentsTreeField.setExpanded(node, !attachmentsTreeField.getExpanded(node));
-            			retval = true;
+            		if(node != -1) {
+	            		if(attachmentsTreeField.getCookie(node) instanceof ContentPart) {
+	            			saveAttachment((ContentPart)attachmentsTreeField.getCookie(node));
+	            			retval = true;
+	            		}
+	            		else if(attachmentsTreeField.getFirstChild(node) != -1) {
+	            			attachmentsTreeField.setExpanded(node, !attachmentsTreeField.getExpanded(node));
+	            			retval = true;
+	            		}
             		}
             	}
             	else {
@@ -325,7 +357,7 @@ public class MessageScreen extends BaseScreen {
         return retval;
     }
     
-    private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
+	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
     	if(e.getType() == MessageNodeEvent.TYPE_CONTENT_LOADED) {
             synchronized(Application.getEventLock()) {
 	    		if(throbberField != null) {
@@ -402,6 +434,62 @@ public class MessageScreen extends BaseScreen {
         }
     }
 
+	/**
+	 * Save the message attachment.
+	 * 
+	 * @param contentPart Attachment part to save
+	 */
+    private void saveAttachment(ContentPart contentPart) {
+    	// TODO: Support on-demand downloading of additional content
+    	MessageContent content = messageNode.getMessageContent(contentPart);
+    	if(content != null) {
+        	FileSaveDialog dialog = new FileSaveDialog(contentPart.getName());
+    		if(dialog.doModal() != Dialog.CANCEL) {
+    			(new SaveAttachmentThread(content, dialog.getFileUrl())).start();
+    			Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
+    		}
+    	}
+	}
+
+    private static class SaveAttachmentThread extends Thread {
+    	private MessageContent content;
+    	private String fileUrl;
+    	
+    	public SaveAttachmentThread(MessageContent content, String fileUrl) {
+    		this.content = content;
+    		this.fileUrl = fileUrl;
+    	}
+
+    	public void run() {
+    		boolean success = false;
+			byte[] rawData = content.getRawData();
+			if(rawData != null) {
+				try {
+					FileConnection fileConnection = (FileConnection)Connector.open(fileUrl);
+					fileConnection.create();
+					DataOutputStream outputStream = fileConnection.openDataOutputStream();
+					outputStream.write(rawData);
+					outputStream.close();
+					fileConnection.close();
+					success = true;
+				} catch (IOException e) {
+					EventLogger.logEvent(AppInfo.GUID, ("Unable to save: " + fileUrl).getBytes(), EventLogger.ERROR);
+					success = false;
+				}
+			}
+			else {
+				// No raw data to save
+				success = false;
+			}
+			
+			if(!success) {
+				synchronized(UiApplication.getEventLock()) {
+					Status.show(resources.getString(LogicMailResource.MESSAGE_UNABLE_TO_SAVE_ATTACHMENT));
+				}
+			}
+    	}
+    }
+    
 	private void attachmentsTreeField_DrawTreeItem(
 			TreeField treeField,
 			Graphics graphics,

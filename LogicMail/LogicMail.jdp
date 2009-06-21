@@ -35,6 +35,8 @@ src\icons\folder_outbox.png
 src\icons\folder_sent.png
 src\icons\folder_trash.png
 src\icons\folder_trash_full.png
+src\icons\fs_root.png
+src\icons\fs_save.png
 src\icons\logicmail-new-rollover.png
 src\icons\logicmail-new.png
 src\icons\logicmail-rollover.png
@@ -165,6 +167,7 @@ src\org\logicprobe\LogicMail\ui\AcctCfgScreen.java
 src\org\logicprobe\LogicMail\ui\BaseCfgScreen.java
 src\org\logicprobe\LogicMail\ui\BaseScreen.java
 src\org\logicprobe\LogicMail\ui\BaseView.java
+src\org\logicprobe\LogicMail\ui\BitmapButtonField.java
 src\org\logicprobe\LogicMail\ui\BorderedFieldManager.java
 src\org\logicprobe\LogicMail\ui\BrowserFieldManager.java
 src\org\logicprobe\LogicMail\ui\BrowserFieldRenderer.java
@@ -172,6 +175,8 @@ src\org\logicprobe\LogicMail\ui\CompositionScreen.java
 src\org\logicprobe\LogicMail\ui\ConfigScreen.java
 src\org\logicprobe\LogicMail\ui\EmailAddressBookEditField.java
 src\org\logicprobe\LogicMail\ui\EmailAddressPropertiesDialog.java
+src\org\logicprobe\LogicMail\ui\FileSaveDialog.java
+src\org\logicprobe\LogicMail\ui\FolderSelectionDialog.java
 src\org\logicprobe\LogicMail\ui\GlobalConfigScreen.java
 src\org\logicprobe\LogicMail\ui\HeaderField.java
 src\org\logicprobe\LogicMail\ui\IdentityConfigScreen.java

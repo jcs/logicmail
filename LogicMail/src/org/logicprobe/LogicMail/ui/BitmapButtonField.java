@@ -28,41 +28,56 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.logicprobe.LogicMail.message;
+package org.logicprobe.LogicMail.ui;
+
+import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.component.ButtonField;
 
 /**
- * Represents content for a message, maintained separately
- * from its structure.  There should be a subclass for every
- * major MIME type that is supported.
+ * Button field with a bitmap as its label.
  */
-public abstract class MessageContent {
-	private ContentPart messagePart;
+public class BitmapButtonField extends ButtonField {
+	private Bitmap bitmap;
 	
 	/**
-	 * Instantiates a new message content object
+	 * Instantiates a new bitmap button field.
 	 * 
-	 * @param messagePart the message part
+	 * @param bitmap the bitmap to use as a label
 	 */
-	protected MessageContent(ContentPart messagePart) {
-		this.messagePart = messagePart;
+	public BitmapButtonField(Bitmap bitmap) {
+		super();
+		this.bitmap = bitmap;
 	}
 	
-	/**
-	 * Gets the message part representing the placement of
-	 * this content within the message structure.
-	 * 
-	 * @return the message part
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.component.ButtonField#layout(int, int)
 	 */
-	public ContentPart getMessagePart() {
-		return this.messagePart;
+	protected void layout(int width, int height) {
+		setExtent(getPreferredWidth(), getPreferredHeight());
 	}
 	
-	/**
-	 * Gets the raw data representing this message content.
-	 * Necessary for saving the content to a file, or
-	 * transmitting it to external systems.
-	 * 
-	 * @return Raw data if available, or null otherwise
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.component.ButtonField#getPreferredWidth()
 	 */
-	public abstract byte[] getRawData();
+	public int getPreferredWidth() {
+		return bitmap.getWidth();
+	}
+	
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.component.ButtonField#getPreferredHeight()
+	 */
+	public int getPreferredHeight() {
+		return bitmap.getHeight();
+	}
+	
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.component.ButtonField#paint(net.rim.device.api.ui.Graphics)
+	 */
+	protected void paint(Graphics graphics) {
+		super.paint(graphics);
+		int width = bitmap.getWidth();
+		int height = bitmap.getHeight();
+		graphics.drawBitmap(0, 0, width, height, bitmap, 0, 0);
+	}
 }

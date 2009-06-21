@@ -40,6 +40,7 @@ import net.rim.device.api.system.EncodedImage;
  */
 public class ImageContent extends MessageContent {
 	private EncodedImage image;
+	private byte[] rawData;
 	
 	public ImageContent(ImagePart imagePart, EncodedImage image) {
 		super(imagePart);
@@ -47,6 +48,7 @@ public class ImageContent extends MessageContent {
 			throw new IllegalArgumentException();
 		}
 		this.image = image;
+		this.rawData = null;
 	}
 
 	public ImageContent(ImagePart imagePart, String encoding, String data) throws UnsupportedContentException {
@@ -54,12 +56,13 @@ public class ImageContent extends MessageContent {
         // Decode the binary data, and create an image
         if (encoding.equalsIgnoreCase("base64")) {
         	try {
-        	String mimeSubtype = imagePart.getMimeSubtype();
-	        byte[] imgBytes = Base64InputStream.decode(data);
-	        this.image = EncodedImage.createEncodedImage(
-	        		imgBytes,
-	                0, imgBytes.length, "image/" +
-	                mimeSubtype.toLowerCase());
+	        	String mimeSubtype = imagePart.getMimeSubtype();
+		        byte[] imgBytes = Base64InputStream.decode(data);
+		        this.image = EncodedImage.createEncodedImage(
+		        		imgBytes,
+		                0, imgBytes.length, "image/" +
+		                mimeSubtype.toLowerCase());
+		        this.rawData = imgBytes;
         	} catch (IOException e) {
         		throw new UnsupportedContentException("Unable to decode");
         	}
@@ -93,4 +96,11 @@ public class ImageContent extends MessageContent {
 	public EncodedImage getImage() {
         return image;
     }
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MessageContent#getRawData()
+	 */
+	public byte[] getRawData() {
+		return rawData;
+	}
 }

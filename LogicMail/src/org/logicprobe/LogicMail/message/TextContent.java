@@ -130,4 +130,11 @@ public class TextContent extends MessageContent {
 	public String getText() {
 		return this.text;
 	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MessageContent#getRawData()
+	 */
+	public byte[] getRawData() {
+		return this.text.getBytes();
+	}
 }
