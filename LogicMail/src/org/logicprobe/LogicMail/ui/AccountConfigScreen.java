@@ -410,6 +410,25 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 		return buf.toString();
     }
     
+    /**
+     * Determines if this screen is dirty.
+     * Custom implementation provided to exempt the page selection field
+     * from the check, but make sure all of the pages themselves are includes.
+     * 
+     * @see net.rim.device.api.ui.Screen#isDirty()
+     */
+    public boolean isDirty() {
+    	if(acctNameField.isDirty()) { return true; }
+    	
+    	for(int i=0; i<pageFieldManagers.length; i++) {
+    		if(pageFieldManagers[i].isDirty()) {
+    			return true;
+    		}
+    	}
+    	
+    	return false;
+    }
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.container.MainScreen#onSavePrompt()
      */
