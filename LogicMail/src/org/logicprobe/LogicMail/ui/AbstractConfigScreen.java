@@ -41,14 +41,14 @@ import net.rim.device.api.ui.component.LabelField;
  * in LogicMail. Its purpose is to provide uniform menu
  * and event handler interfaces for those screens.
  */
-public abstract class BaseCfgScreen extends MainScreen {
+public abstract class AbstractConfigScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 
 	private final static int MENU_CONTEXT = 0x10000;
 	private final static int MENU_MAIN = 0x40000000;
 	
 	/** Creates a new instance of BaseCfgScreen */
-    public BaseCfgScreen(String title) {
+    public AbstractConfigScreen(String title) {
         LabelField titleField =
                 new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleField);

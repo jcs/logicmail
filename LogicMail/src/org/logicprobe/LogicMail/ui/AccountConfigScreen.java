@@ -60,7 +60,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 /**
  * Account configuration screen
  */
-public class AcctCfgScreen extends BaseCfgScreen {
+public class AccountConfigScreen extends AbstractConfigScreen {
 	// Top-level fields
     private BasicEditField acctNameField;
     private LabelField accountTypeLabel;
@@ -114,7 +114,7 @@ public class AcctCfgScreen extends BaseCfgScreen {
      * 
      * @param acctConfig The account configuration instance.
      */
-    public AcctCfgScreen(AccountConfig acctConfig) {
+    public AccountConfigScreen(AccountConfig acctConfig) {
         super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
         
         this.acctConfig = acctConfig;

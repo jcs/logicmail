@@ -57,7 +57,7 @@ import org.logicprobe.LogicMail.model.MailManager;
  * This screen is the main entry point to all the
  * other configuration screens.
  */
-public class ConfigScreen extends BaseCfgScreen {
+public class ConfigScreen extends AbstractConfigScreen {
     private MailSettings mailSettings;
     private TreeField configTreeField;
     private int globalId;
@@ -315,9 +315,9 @@ public class ConfigScreen extends BaseCfgScreen {
             }
             else if(parentNode == accountsId) {
                 AccountConfig acctConfig = (AccountConfig)configTreeField.getCookie(curNode);
-                AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
-                UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-                if(acctCfgScreen.acctSaved()) {
+                AccountConfigScreen accountConfigScreen = new AccountConfigScreen(acctConfig);
+                UiApplication.getUiApplication().pushModalScreen(accountConfigScreen);
+                if(accountConfigScreen.acctSaved()) {
                     mailSettings.saveSettings();
                     configurationChanged = true;
                 }
@@ -575,9 +575,9 @@ public class ConfigScreen extends BaseCfgScreen {
             else {
                 acctConfig = new PopConfig();
             }
-            AcctCfgScreen acctCfgScreen = new AcctCfgScreen(acctConfig);
-            UiApplication.getUiApplication().pushModalScreen(acctCfgScreen);
-            if(acctCfgScreen.acctSaved()) {
+            AccountConfigScreen accountConfigScreen = new AccountConfigScreen(acctConfig);
+            UiApplication.getUiApplication().pushModalScreen(accountConfigScreen);
+            if(accountConfigScreen.acctSaved()) {
                 mailSettings.addAccountConfig(acctConfig);
                 mailSettings.saveSettings();
                 configurationChanged = true;

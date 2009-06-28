@@ -47,7 +47,7 @@ import org.logicprobe.LogicMail.conf.IdentityConfig;
 /**
  * Identity configuration screen
  */
-public class IdentityConfigScreen extends BaseCfgScreen {
+public class IdentityConfigScreen extends AbstractConfigScreen {
     private IdentityConfig identityConfig;
     private boolean configSaved;
 

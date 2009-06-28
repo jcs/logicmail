@@ -50,7 +50,7 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 /**
  * Configuration screen
  */
-public class GlobalConfigScreen extends BaseCfgScreen implements FieldChangeListener {
+public class GlobalConfigScreen extends AbstractConfigScreen implements FieldChangeListener {
     private MailSettings mailSettings;
     private GlobalConfig existingConfig;
     private String localHostname;

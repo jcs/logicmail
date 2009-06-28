@@ -162,9 +162,9 @@ src\org\logicprobe\LogicMail\model\NodeVisitor.java
 src\org\logicprobe\LogicMail\model\OutboxMailboxNode.java
 src\org\logicprobe\LogicMail\model\OutgoingMessageNode.java
 src\org\logicprobe\LogicMail\ui\AboutDialog.java
+src\org\logicprobe\LogicMail\ui\AbstractConfigScreen.java
+src\org\logicprobe\LogicMail\ui\AccountConfigScreen.java
 src\org\logicprobe\LogicMail\ui\AccountConfigWizard.java
-src\org\logicprobe\LogicMail\ui\AcctCfgScreen.java
-src\org\logicprobe\LogicMail\ui\BaseCfgScreen.java
 src\org\logicprobe\LogicMail\ui\BaseScreen.java
 src\org\logicprobe\LogicMail\ui\BaseView.java
 src\org\logicprobe\LogicMail\ui\BitmapButtonField.java

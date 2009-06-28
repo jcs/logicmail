@@ -49,7 +49,7 @@ import org.logicprobe.LogicMail.conf.OutgoingConfig;
 /**
  * Outgoing account configuration screen
  */
-public class OutgoingConfigScreen extends BaseCfgScreen {
+public class OutgoingConfigScreen extends AbstractConfigScreen {
     private BasicEditField acctNameField;
     private BasicEditField serverNameField;
     private CheckboxField serverSslField;
