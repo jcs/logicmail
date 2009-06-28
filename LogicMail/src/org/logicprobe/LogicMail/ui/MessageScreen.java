@@ -90,7 +90,6 @@ public class MessageScreen extends BaseScreen {
     private MessageNode messageNode;
     private boolean isSentFolder;
     private boolean messageRendered;
-    private ThrobberField throbberField;
 
     private UnicodeNormalizer unicodeNormalizer;
     
@@ -178,11 +177,7 @@ public class MessageScreen extends BaseScreen {
     	super.onDisplay();
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(!messageNode.hasMessageContent()) {
-    		if(messageNode.refreshMessage()) {
-        		throbberField = new ThrobberField(this.getWidth() / 4, Field.FIELD_HCENTER);
-        		add(throbberField);
-    		}
-    		else {
+    		if(!messageNode.refreshMessage()) {
     			renderMessage();
     		}
     	}
@@ -196,12 +191,6 @@ public class MessageScreen extends BaseScreen {
      */
     protected void onUndisplay() {
     	messageNode.removeMessageNodeListener(messageNodeListener);
-        synchronized(Application.getEventLock()) {
-    		if(throbberField != null) {
-    			this.delete(throbberField);
-    			throbberField = null;
-    		}
-        }
     	super.onUndisplay();
     }
     
@@ -359,12 +348,6 @@ public class MessageScreen extends BaseScreen {
     
 	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
     	if(e.getType() == MessageNodeEvent.TYPE_CONTENT_LOADED) {
-            synchronized(Application.getEventLock()) {
-	    		if(throbberField != null) {
-	    			this.delete(throbberField);
-	    			throbberField = null;
-	    		}
-            }
     		renderMessage();
     	}
     }

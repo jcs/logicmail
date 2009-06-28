@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -33,38 +33,29 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 
-
 /**
- * Provides a spinning status indicator
+ * Provides a status bar with an animated throbber.
  */
-public class ThrobberField extends Field {
+public class StatusBarField extends Field {
+	private int preferredHeight;
+	private String statusText;
 	private ThrobberRenderer throbberRenderer;
 	private Timer timer;
 	private TimerTask timerTask;
-
+	
 	/**
-	 * Instantiates a new throbber field.
-	 * 
-	 * @param size The size
+	 * Instantiates a new status bar field.
 	 */
-	public ThrobberField(int size) {
-		super();
-		throbberRenderer = new ThrobberRenderer(size);
-		this.timer = new Timer();
-	}
+	public StatusBarField() {
+		super(Field.USE_ALL_WIDTH);
 
-	/**
-	 * Instantiates a new throbber field.
-	 * 
-	 * @param size The field size
-	 * @param style Combination of field style bits to specify display attributes.
-	 */
-	public ThrobberField(int size, long style) {
-		super(style);
-		throbberRenderer = new ThrobberRenderer(size);
+		preferredHeight = Font.getDefault().getHeight() + 2;
+		throbberRenderer = new ThrobberRenderer(preferredHeight);
 		this.timer = new Timer();
 	}
 	
@@ -76,7 +67,7 @@ public class ThrobberField extends Field {
 		timerTask = new AnimationTimerTask();
 		timer.scheduleAtFixedRate(timerTask, 200, 100);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see net.rim.device.api.ui.Field#onUndisplay()
 	 */
@@ -85,35 +76,78 @@ public class ThrobberField extends Field {
 		super.onUndisplay();
 	}
 	
+	/**
+	 * Sets the status text.
+	 * 
+	 * @param statusText the new status text
+	 */
+	public void setStatusText(String statusText) {
+		if(this.statusText != statusText) {
+			this.statusText = statusText;
+			this.invalidate();
+		}
+	}
+	
+	/**
+	 * Gets the status text.
+	 * 
+	 * @return the status text
+	 */
+	public String getStatusText() {
+		return statusText;
+	}
+	
+	/**
+	 * Checks whether status has been set.
+	 * 
+	 * @return true, if set
+	 */
+	public boolean hasStatus() {
+		return (statusText != null && statusText.length() > 0);
+	}
+	
 	/* (non-Javadoc)
 	 * @see net.rim.device.api.ui.Field#layout(int, int)
 	 */
 	protected void layout(int width, int height) {
-		int size = throbberRenderer.getSize();
-		setExtent(size, size);
+		setExtent(getPreferredWidth(), getPreferredHeight());
 	}
 
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
-	 */
-	protected void paint(Graphics graphics) {
-		throbberRenderer.paint(graphics);
-	}
-	
 	/* (non-Javadoc)
 	 * @see net.rim.device.api.ui.Field#getPreferredWidth()
 	 */
 	public int getPreferredWidth() {
-		return throbberRenderer.getSize();
+		return Graphics.getScreenWidth();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see net.rim.device.api.ui.Field#getPreferredHeight()
 	 */
 	public int getPreferredHeight() {
-		return throbberRenderer.getSize();
+		return preferredHeight;
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
+	 */
+	protected void paint(Graphics graphics) {
+		int width = this.getPreferredWidth();
+		int throbberSize = throbberRenderer.getSize();
+		int backgroundColor = graphics.getBackgroundColor();
+		graphics.setBackgroundColor(Color.LIGHTGREY);
+		graphics.clear();
+		
+		graphics.drawRect(0, 0, width, preferredHeight);
+		
+		if(statusText != null && statusText.length() > 0) {
+			graphics.drawText(statusText, 1, 1, Graphics.ELLIPSIS, width - throbberSize - 2);
+		}
+		graphics.pushRegion(width - throbberSize, 0, throbberSize, throbberSize, 0, 0);
+		throbberRenderer.paint(graphics);
+		graphics.popContext();
+		graphics.setBackgroundColor(backgroundColor);
+	}
+	
 	/**
 	 * Internal timer task class to support animation.
 	 */
@@ -123,8 +157,8 @@ public class ThrobberField extends Field {
 		 * @see java.util.TimerTask#run()
 		 */
 		public void run() {
-			ThrobberField.this.throbberRenderer.nextPosition();
-			ThrobberField.this.invalidate();
+			StatusBarField.this.throbberRenderer.nextPosition();
+			StatusBarField.this.invalidate();
 		}
 	}
 }

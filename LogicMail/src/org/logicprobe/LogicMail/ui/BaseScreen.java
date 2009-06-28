@@ -58,9 +58,9 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  */
 public abstract class BaseScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+	protected static StatusBarField statusBarField = new StatusBarField();
 	private NavigationController navigationController;
 	private HeaderField headerField;
-	private LabelField statusLabel;
 	private boolean isExposed = false;
 	
 	private final static int MENU_CONTEXT = 0x10000;
@@ -68,35 +68,27 @@ public abstract class BaseScreen extends MainScreen {
 	
     public BaseScreen(NavigationController navigationController) {
         super();
-        this.navigationController = navigationController;
-		this.statusLabel = new LabelField();
-		setStatus(null);
+    	initialize(navigationController, null);
     }
 
     public BaseScreen(NavigationController navigationController, long style) {
     	super(style);
-    	this.navigationController = navigationController;
-    	this.statusLabel = new LabelField();
-		setStatus(null);
+    	initialize(navigationController, null);
     }
     
     public BaseScreen(NavigationController navigationController, String title) {
         super();
-        this.navigationController = navigationController;
-        // Create screen elements
-        this.headerField = new HeaderField("LogicMail - " + title);
-        setTitle(headerField);
-        this.statusLabel = new LabelField();
-		setStatus(null);
+        initialize(navigationController, title);
     }
     
-    public BaseScreen(String title, long style) {
-    	super(style);
+    private void initialize(NavigationController navigationController, String title) {
+        this.navigationController = navigationController;
+        
         // Create screen elements
-        headerField = new HeaderField("LogicMail - " + title);
-        setTitle(headerField);
-		statusLabel = new LabelField();
-		setStatus(null);
+        if(title != null) {
+	        this.headerField = new HeaderField("LogicMail - " + title);
+	        setTitle(headerField);
+        }
     }
     
     protected NavigationController getNavigationController() {
@@ -125,12 +117,23 @@ public abstract class BaseScreen extends MainScreen {
     protected void onDisplay() {
     	super.onDisplay();
     	isExposed = true;
+        synchronized(statusBarField) {
+        	if(statusBarField.hasStatus()) {
+        		setStatus(statusBarField);
+        	}
+        	else {
+        		setStatus(null);
+        	}
+        }
     	MailConnectionManager.getInstance().addMailConnectionListener(mailConnectionListener);
     	NotificationHandler.getInstance().cancelNotification();
     }
     
     protected void onUndisplay() {
     	isExposed = false;
+        synchronized(statusBarField) {
+    		setStatus(null);
+        }
     	MailConnectionManager.getInstance().removeMailConnectionListener(mailConnectionListener);
     	NotificationHandler.getInstance().cancelNotification();
     	super.onUndisplay();
@@ -272,14 +275,15 @@ public abstract class BaseScreen extends MainScreen {
 		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
 			public void run() {
 		    	String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
-		    	if(message != null) {
-		    		statusLabel.setText(message);
-		    		setStatus(statusLabel);
-		    	}
-		    	else {
-		    		statusLabel.setText("");
-		    		setStatus(null);
-		    	}
+	    		if(isExposed) {
+	    			statusBarField.setStatusText(message);
+	    			if(statusBarField.hasStatus()) {
+	    				BaseScreen.this.setStatus(statusBarField);
+	    			}
+	    			else {
+	    				BaseScreen.this.setStatus(null);
+	    			}
+	    		}
 			}
 		});
     }
