@@ -1,3 +1,33 @@
+/*-
+ * Copyright (c) 2009, ${author}
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution. 
+ * 3. Neither the name of the project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -25,9 +55,6 @@ public abstract class WizardScreen extends MainScreen {
 	private ButtonField prevButton;
 	private ButtonField nextButton;
 
-	private final static int MENU_CONTEXT = 0x10000;
-	private final static int MENU_MAIN = 0x40000000;
-
 	public final static int PAGE_NORMAL = 0;
 	public final static int PAGE_FIRST  = 1;
 	public final static int PAGE_LAST   = 2;
@@ -35,6 +62,8 @@ public abstract class WizardScreen extends MainScreen {
 	public final static int RESULT_CANCEL = 0;
 	public final static int RESULT_PREV   = 1;
 	public final static int RESULT_NEXT   = 2;
+	
+	private final static int MENU_CONTEXT = 0x10000;
 	
 	private String title;
 	private int pageType;
@@ -150,41 +179,24 @@ public abstract class WizardScreen extends MainScreen {
 	public boolean isEnabled() {
 		return this.isEnabled;
 	}
-	
-    public boolean onMenu(int instance) {
-		if (instance == MENU_MAIN) {
-			// Main menu button pressed, display menu
-			return super.onMenu(instance);
-		}
-		else if (instance == MENU_CONTEXT) {
-			// Trackball click, call override method
-			if(!onClick()) {
-				return super.onMenu(instance);
-			}
-			else {
-				return false;
-			}
+
+	/* (non-Javadoc)
+	 * @see net.rim.device.api.ui.Screen#onMenu(int)
+	 */
+	public boolean onMenu(int instance) {
+		boolean result;
+		// Prevent the context menu from being shown if focus
+		// is on the field containing navigation buttons.
+		if (getFieldWithFocus() == statusFieldManager
+				&& instance == MENU_CONTEXT) {
+			result = false;
 		}
 		else {
-			// Trackwheel click, display menu
-			return super.onMenu(instance);
+			result = super.onMenu(instance);
 		}
+		return result;
 	}
-    
-    /**
-     * Invoked when the user clicks the trackball on
-     * devices that have a separate menu button.
-     * 
-     * @return True if the click was handled, false to fall
-     *         through and display the context menu.
-     */
-    protected boolean onClick() {
-    	if(getFieldWithFocus() == statusFieldManager) {
-    		return true;
-    	}
-    	return false;
-    }
-
+	
 	protected boolean keyChar(char c, int status, int time) {
 		return super.keyChar(c, status, time);
 	}

@@ -44,44 +44,10 @@ import net.rim.device.api.ui.component.LabelField;
 public abstract class AbstractConfigScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 
-	private final static int MENU_CONTEXT = 0x10000;
-	private final static int MENU_MAIN = 0x40000000;
-	
 	/** Creates a new instance of BaseCfgScreen */
     public AbstractConfigScreen(String title) {
         LabelField titleField =
                 new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleField);
-    }
-
-    public boolean onMenu(int instance) {
-		if (instance == MENU_MAIN) {
-			// Main menu button pressed, display menu
-			return super.onMenu(instance);
-		}
-		else if (instance == MENU_CONTEXT) {
-			// Trackball click, call override method
-			if(!onClick()) {
-				return super.onMenu(instance);
-			}
-			else {
-				return false;
-			}
-		}
-		else {
-			// Trackwheel click, display menu
-			return super.onMenu(instance);
-		}
-	}
-    
-    /**
-     * Invoked when the user clicks the trackball on
-     * devices that have a separate menu button.
-     * 
-     * @return True if the click was handled, false to fall
-     *         through and display the context menu.
-     */
-    protected boolean onClick() {
-    	return false;
     }
 }

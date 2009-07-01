@@ -202,8 +202,8 @@ public class MailboxSelectionDialog extends Dialog {
 		}
 		return result;
 	}
-	
-	protected boolean trackwheelUnclick(int status, int time) {
+
+	protected boolean navigationClick(int status, int time) {
 		MailboxNode currentMailboxNode = getCurrentMailboxNode();
 		if(currentMailboxNode != null) {
 			this.selectedMailboxNode = currentMailboxNode;
@@ -211,7 +211,7 @@ public class MailboxSelectionDialog extends Dialog {
 			return true;
 		}
 		else {
-			return super.trackwheelClick(status, time);
+			return super.navigationClick(status, time);
 		}
 	}
 	

@@ -495,9 +495,9 @@ public class MailboxScreen extends BaseScreen {
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.ui.BaseScreen#onClick()
+     * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
-    protected boolean onClick() {
+    protected boolean navigationClick(int status, int time) {
     	return openSelectedMessage();
     }
     

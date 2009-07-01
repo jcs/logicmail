@@ -184,7 +184,10 @@ public class MailHomeScreen extends BaseScreen implements MailHomeView {
         super.makeMenu(menu, instance);
     }
 
-    protected boolean onClick() {
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
+     */
+    protected boolean navigationClick(int status, int time) {
     	selectFolderItem.run();
     	return true;
     }
