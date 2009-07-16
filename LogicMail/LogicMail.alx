@@ -15,17 +15,9 @@
 		<copyright>
 			Copyright (c) 2008, Derek Konigsberg
 		</copyright>
-		<fileset Java="1.24" _blackberryVersion="(4.2.1,4.5.0]">
+		<fileset Java="1.24" _blackberryVersion="(4.2.1,)">
 			<directory>
-				421
-			</directory>
-			<files>
-				LogicMail.cod
-			</files>
-		</fileset>
-		<fileset Java="1.24" _blackberryVersion="(4.5.0,)">
-			<directory>
-				450
+				BB421
 			</directory>
 			<files>
 				LogicMail.cod
