@@ -38,6 +38,7 @@ public class AbstractMimeMessagePartVisitor implements MimeMessagePartVisitor {
 	public void visitApplicationPart(ApplicationPart part) { }
 	public void visitAudioPart(AudioPart part) { }
 	public void visitImagePart(ImagePart part) { }
+	public void visitMessagePart(MessagePart part) { }
 	public void visitMultiPart(MultiPart part) { }
 	public void visitTextPart(TextPart part) { }
 	public void visitVideoPart(VideoPart part) { }

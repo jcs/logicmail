@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import org.logicprobe.LogicMail.message.ApplicationPart;
 import org.logicprobe.LogicMail.message.AudioPart;
 import org.logicprobe.LogicMail.message.ImagePart;
+import org.logicprobe.LogicMail.message.MessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartVisitor;
 import org.logicprobe.LogicMail.message.MultiPart;
@@ -51,6 +52,7 @@ public class MessageIcons {
 	private Bitmap mimeAudioBitmap;
 	private Bitmap mimeVideoBitmap;
 	private Bitmap mimeApplicationBitmap;
+	private Bitmap mimeMessageBitmap;
 	
 	private MessageIcons() {
 		
@@ -99,6 +101,14 @@ public class MessageIcons {
 				mimeTextBitmap = Bitmap.getBitmapResource("mime_text.png");
 			}
 			icon = mimeTextBitmap;
+		}
+		
+		public void visitMessagePart(MessagePart part) {
+			if(icon != null) { return; }
+			if(mimeMessageBitmap == null) {
+				mimeMessageBitmap = Bitmap.getBitmapResource("mime_message.png");
+			}
+			icon = mimeMessageBitmap;
 		}
 		
 		public void visitMultiPart(MultiPart part) {

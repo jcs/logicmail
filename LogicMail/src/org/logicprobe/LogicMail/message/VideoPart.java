@@ -40,7 +40,7 @@ import java.io.IOException;
 public class VideoPart extends ContentPart {
 
 	public VideoPart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
-		super("audio", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+		super("video", mimeSubtype, name, encoding, disposition, contentId, size, tag);
 	}
 	
 	public VideoPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
@@ -55,7 +55,7 @@ public class VideoPart extends ContentPart {
 	public void accept(MimeMessagePartVisitor visitor) {
 		visitor.visitVideoPart(this);
 	}
-	
+
     /* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
 	 */

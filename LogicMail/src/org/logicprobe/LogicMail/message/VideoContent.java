@@ -30,14 +30,45 @@
  */
 package org.logicprobe.LogicMail.message;
 
-/**
- * Visitor for handling a message content
- */
-public interface MimeMessageContentVisitor {
-	void visit(ApplicationContent content);
-	void visit(AudioContent content);
-	void visit(ImageContent content);
-	void visit(MessageContent content);
-	void visit(TextContent content);
-	void visit(VideoContent content);
+import java.io.IOException;
+
+import net.rim.device.api.io.Base64InputStream;
+
+public class VideoContent extends MimeMessageContent {
+	private byte[] rawData;
+	
+	public VideoContent(VideoPart videoPart, String encoding, String data) throws UnsupportedContentException {
+		super(videoPart);
+        // Decode the binary data
+        if (encoding.equalsIgnoreCase("base64")) {
+        	try {
+		        this.rawData = Base64InputStream.decode(data);
+        	} catch (IOException e) {
+        		throw new UnsupportedContentException("Unable to decode");
+        	}
+        } else {
+			throw new UnsupportedContentException("Unsupported encoding");
+        }
+	}
+
+	public void accept(MimeMessageContentVisitor visitor) {
+		visitor.visit(this);
+	}
+	
+	/**
+	 * Find out if a content object can be created for the provided
+	 * MIME structure part.
+	 * @param videoPart MIME part to check.
+	 * @return True if the content type is supported, false otherwise.
+	 */
+	public static boolean isPartSupported(VideoPart videoPart) {
+		return true;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MessageContent#getRawData()
+	 */
+	public byte[] getRawData() {
+		return rawData;
+	}
 }

@@ -54,6 +54,7 @@ src\icons\mail_unopened.png
 src\icons\mime_application.png
 src\icons\mime_audio.png
 src\icons\mime_image.png
+src\icons\mime_message.png
 src\icons\mime_text.png
 src\icons\mime_video.png
 src\org\logicprobe\LogicMail\AppInfo.java
@@ -124,16 +125,20 @@ src\org\logicprobe\LogicMail\mail\pop\PopProtocol.java
 src\org\logicprobe\LogicMail\mail\smtp\SmtpClient.java
 src\org\logicprobe\LogicMail\mail\smtp\SmtpProtocol.java
 src\org\logicprobe\LogicMail\message\AbstractMimeMessagePartVisitor.java
+src\org\logicprobe\LogicMail\message\ApplicationContent.java
 src\org\logicprobe\LogicMail\message\ApplicationPart.java
+src\org\logicprobe\LogicMail\message\AudioContent.java
 src\org\logicprobe\LogicMail\message\AudioPart.java
 src\org\logicprobe\LogicMail\message\ContentPart.java
 src\org\logicprobe\LogicMail\message\FolderMessage.java
 src\org\logicprobe\LogicMail\message\ImageContent.java
 src\org\logicprobe\LogicMail\message\ImagePart.java
 src\org\logicprobe\LogicMail\message\Message.java
+src\org\logicprobe\LogicMail\message\MessageContent.java
 src\org\logicprobe\LogicMail\message\MessageEnvelope.java
 src\org\logicprobe\LogicMail\message\MessageFlags.java
 src\org\logicprobe\LogicMail\message\MessageMimeConverter.java
+src\org\logicprobe\LogicMail\message\MessagePart.java
 src\org\logicprobe\LogicMail\message\MimeMessageContent.java
 src\org\logicprobe\LogicMail\message\MimeMessageContentFactory.java
 src\org\logicprobe\LogicMail\message\MimeMessageContentVisitor.java
@@ -146,6 +151,7 @@ src\org\logicprobe\LogicMail\message\TextContent.java
 src\org\logicprobe\LogicMail\message\TextPart.java
 src\org\logicprobe\LogicMail\message\UnsupportedContentException.java
 src\org\logicprobe\LogicMail\message\UnsupportedPart.java
+src\org\logicprobe\LogicMail\message\VideoContent.java
 src\org\logicprobe\LogicMail\message\VideoPart.java
 src\org\logicprobe\LogicMail\model\AccountNode.java
 src\org\logicprobe\LogicMail\model\AccountNodeEvent.java

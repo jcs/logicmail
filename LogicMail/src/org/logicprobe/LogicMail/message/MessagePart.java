@@ -30,14 +30,43 @@
  */
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
- * Visitor for handling a message content
+ * Message message part (MIME type: "message/????")
  */
-public interface MimeMessageContentVisitor {
-	void visit(ApplicationContent content);
-	void visit(AudioContent content);
-	void visit(ImageContent content);
-	void visit(MessageContent content);
-	void visit(TextContent content);
-	void visit(VideoContent content);
+public class MessagePart extends ContentPart {
+
+	public MessagePart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
+		super("message", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+	}
+	
+	public MessagePart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
+		this(mimeSubtype, name, encoding, disposition, contentId, size, "");
+	}
+	
+	/** Creates a new instance for deserialization */
+    public MessagePart() {
+    	this("", "", "", "", "", -1, "");
+    }
+
+	public void accept(MimeMessagePartVisitor visitor) {
+		visitor.visitMessagePart(this);
+	}
+
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		super.serialize(output);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		super.deserialize(input);
+	}
 }

@@ -58,12 +58,28 @@ public class MimeMessageContentFactory {
     		ImagePart imagePart = (ImagePart)mimeMessagePart;
     		content = new ImageContent(imagePart, imagePart.getEncoding(), data);
     	}
+    	else if(mimeMessagePart instanceof ApplicationPart) {
+    		ApplicationPart applicationPart = (ApplicationPart)mimeMessagePart;
+    		content = new ApplicationContent(applicationPart, applicationPart.getEncoding(), data);
+    	}
+    	else if(mimeMessagePart instanceof AudioPart) {
+    		AudioPart audioPart = (AudioPart)mimeMessagePart;
+    		content = new AudioContent(audioPart, audioPart.getEncoding(), data);
+    	}
+    	else if(mimeMessagePart instanceof VideoPart) {
+    		VideoPart videoPart = (VideoPart)mimeMessagePart;
+    		content = new VideoContent(videoPart, videoPart.getEncoding(), data);
+    	}
+    	else if(mimeMessagePart instanceof MessagePart) {
+    		MessagePart messagePart = (MessagePart)mimeMessagePart;
+    		content = new MessageContent(messagePart, messagePart.getEncoding(), data);
+    	}
     	else {
     		throw new UnsupportedContentException("Unsupported content type");
     	}
     	return content;
     }
-	
+
 	/**
      * Find out if a particular message content type is supported
      * without having to create it.  This is useful to optimize
@@ -80,6 +96,18 @@ public class MimeMessageContentFactory {
     	}
     	else if(mimeMessagePart instanceof ImagePart) {
     		result = ImageContent.isPartSupported((ImagePart)mimeMessagePart);
+    	}
+    	else if(mimeMessagePart instanceof ApplicationPart) {
+    		result = ApplicationContent.isPartSupported((ApplicationPart)mimeMessagePart);
+    	}
+    	else if(mimeMessagePart instanceof AudioPart) {
+    		result = AudioContent.isPartSupported((AudioPart)mimeMessagePart);
+    	}
+    	else if(mimeMessagePart instanceof VideoPart) {
+    		result = VideoContent.isPartSupported((VideoPart)mimeMessagePart);
+    	}
+    	else if(mimeMessagePart instanceof MessagePart) {
+    		result = MessageContent.isPartSupported((MessagePart)mimeMessagePart);
     	}
     	else {
     		result = false;

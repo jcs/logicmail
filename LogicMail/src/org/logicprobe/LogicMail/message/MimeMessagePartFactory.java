@@ -71,6 +71,14 @@ public class MimeMessagePartFactory {
         	part = new TextPart(mimeSubtype, name, encoding, param, disposition, contentId, size, tag);
         } else if (mimeType.equalsIgnoreCase("image")) {
         	part = new ImagePart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
+        } else if (mimeType.equalsIgnoreCase("application")) {
+        	part = new ApplicationPart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
+        } else if (mimeType.equalsIgnoreCase("audio")) {
+        	part = new AudioPart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
+        } else if (mimeType.equalsIgnoreCase("video")) {
+        	part = new VideoPart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
+        } else if (mimeType.equalsIgnoreCase("message")) {
+        	part = new MessagePart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
         } else {
             part = new UnsupportedPart(mimeType, mimeSubtype, tag);
         }

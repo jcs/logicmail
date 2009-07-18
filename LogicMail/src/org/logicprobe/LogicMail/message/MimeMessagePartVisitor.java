@@ -35,11 +35,12 @@ package org.logicprobe.LogicMail.message;
  * Visitor for handling a message part structure
  */
 public interface MimeMessagePartVisitor {
-    public abstract void visitApplicationPart(ApplicationPart part);
-    public abstract void visitAudioPart(AudioPart part);
-    public abstract void visitImagePart(ImagePart part);
-    public abstract void visitMultiPart(MultiPart part);
-    public abstract void visitTextPart(TextPart part);
-    public abstract void visitVideoPart(VideoPart part);
-    public abstract void visitUnsupportedPart(UnsupportedPart part);
+    void visitApplicationPart(ApplicationPart part);
+    void visitAudioPart(AudioPart part);
+    void visitImagePart(ImagePart part);
+    void visitMessagePart(MessagePart part);
+    void visitMultiPart(MultiPart part);
+    void visitTextPart(TextPart part);
+    void visitVideoPart(VideoPart part);
+    void visitUnsupportedPart(UnsupportedPart part);
 }

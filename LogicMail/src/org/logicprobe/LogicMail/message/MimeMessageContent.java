@@ -57,6 +57,12 @@ public abstract class MimeMessageContent {
 		return this.messagePart;
 	}
 	
+    /**
+     * Accept a visitor on this message content.
+     * @param visitor The visitor instance
+     */
+	public abstract void accept(MimeMessageContentVisitor visitor);
+	
 	/**
 	 * Gets the raw data representing this message content.
 	 * Necessary for saving the content to a file, or
