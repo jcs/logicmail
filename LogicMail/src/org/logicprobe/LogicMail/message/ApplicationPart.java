@@ -53,7 +53,7 @@ public class ApplicationPart extends ContentPart {
     }
 
 	public void accept(MimeMessagePartVisitor visitor) {
-		// TODO Auto-generated method stub
+		visitor.visitApplicationPart(this);
 	}
 	
     /* (non-Javadoc)

@@ -53,7 +53,7 @@ public class AudioPart extends ContentPart {
     }
 
 	public void accept(MimeMessagePartVisitor visitor) {
-		// TODO Auto-generated method stub
+		visitor.visitAudioPart(this);
 	}
 	
     /* (non-Javadoc)

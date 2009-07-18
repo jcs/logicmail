@@ -53,7 +53,7 @@ public class VideoPart extends ContentPart {
     }
 
 	public void accept(MimeMessagePartVisitor visitor) {
-		// TODO Auto-generated method stub
+		visitor.visitVideoPart(this);
 	}
 	
     /* (non-Javadoc)
