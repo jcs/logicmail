@@ -41,7 +41,7 @@ import javax.microedition.io.file.FileConnection;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.MailMessageParser;
@@ -201,7 +201,7 @@ public class LocalMailStore extends AbstractMailStore {
                 Enumeration e = contentMap.keys();
                 while(e.hasMoreElements()) {
                 	MimeMessagePart part = (MimeMessagePart)e.nextElement();
-                	message.putContent(part, (MessageContent)contentMap.get(part));
+                	message.putContent(part, (MimeMessageContent)contentMap.get(part));
                 }
         	} catch (IOException e) {
         		System.err.println("Unable to read message: " + e.toString());

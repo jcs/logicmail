@@ -32,7 +32,7 @@ package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.message.MessageContentFactory;
+import org.logicprobe.LogicMail.message.MimeMessageContentFactory;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.model.Address;
@@ -231,7 +231,7 @@ public class MessagePropertiesScreen extends MainScreen {
     	if(part instanceof MultiPart) {
     		displayFont = originalFont;
     	}
-    	else if(!MessageContentFactory.isContentSupported(part)) {
+    	else if(!MimeMessageContentFactory.isContentSupported(part)) {
     		displayFont = originalFont.derive(Font.ITALIC);
     	}
     	else if(messageNode.getMessageContent(part) != null) {

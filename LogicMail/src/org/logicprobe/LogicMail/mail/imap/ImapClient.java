@@ -48,8 +48,8 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
-import org.logicprobe.LogicMail.message.MessageContentFactory;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
@@ -583,12 +583,12 @@ public class ImapClient implements IncomingMailClient {
         Enumeration e = contentMap.keys();
         while(e.hasMoreElements()) {
         	MimeMessagePart part = (MimeMessagePart)e.nextElement();
-        	msg.putContent(part, (MessageContent)contentMap.get(part));
+        	msg.putContent(part, (MimeMessageContent)contentMap.get(part));
         }
         return msg;
     }
 
-    public MessageContent getMessagePart(MessageToken messageToken, MimeMessagePart mimeMessagePart) throws IOException, MailException {
+    public MimeMessageContent getMessagePart(MessageToken messageToken, MimeMessagePart mimeMessagePart) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
     		throw new MailException("Invalid mailbox for message");
@@ -607,9 +607,9 @@ public class ImapClient implements IncomingMailClient {
 
     	
     	String data = getMessageBody(imapMessageToken.getMessageUid(), partAddress);
-    	MessageContent content;
+    	MimeMessageContent content;
     	try {
-			content = MessageContentFactory.createContent(mimeMessagePart, data);
+			content = MimeMessageContentFactory.createContent(mimeMessagePart, data);
 		} catch (UnsupportedContentException e) {
 			content = null;
 		}
@@ -649,7 +649,7 @@ public class ImapClient implements IncomingMailClient {
             		structure.size,
             		structure.address);
             try {
-				contentMap.put(part, MessageContentFactory.createContent(part, data));
+				contentMap.put(part, MimeMessageContentFactory.createContent(part, data));
 			} catch (UnsupportedContentException e) {
 				System.err.println("UnsupportedContentException: " + e.getMessage());
 			}

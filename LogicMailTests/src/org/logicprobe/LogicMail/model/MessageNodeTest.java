@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.model;
 import java.util.Calendar;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.TextContent;
@@ -94,7 +94,7 @@ public class MessageNodeTest extends TestCase {
 		assertNotNull("Null result", resultPart);
 		assertTrue("Bad type", resultPart instanceof TextPart);
 
-		MessageContent resultContent = result.getMessageContent(resultPart);
+		MimeMessageContent resultContent = result.getMessageContent(resultPart);
 		assertNotNull("Null result", resultContent);
 		assertTrue("Bad type", resultContent instanceof TextContent);
 		assertEquals("Content mismatch", expectedText, ((TextContent)resultContent).getText());
@@ -139,7 +139,7 @@ public class MessageNodeTest extends TestCase {
 		assertNotNull("Null result", resultPart);
 		assertTrue("Bad type", resultPart instanceof TextPart);
 
-		MessageContent resultContent = result.getMessageContent(resultPart);
+		MimeMessageContent resultContent = result.getMessageContent(resultPart);
 		assertNotNull("Null result", resultContent);
 		assertTrue("Bad type", resultContent instanceof TextContent);
 		assertEquals("Content mismatch", expectedText, ((TextContent)resultContent).getText());

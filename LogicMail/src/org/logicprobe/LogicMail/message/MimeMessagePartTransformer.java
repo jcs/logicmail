@@ -66,7 +66,7 @@ public class MimeMessagePartTransformer {
 		public Vector getDisplayableParts() { return displayableParts; }
 		
 		public void visitTextPart(TextPart part) {
-			if(!MessageContentFactory.isContentSupported(part)) { return; }
+			if(!MimeMessageContentFactory.isContentSupported(part)) { return; }
 			
 			if(part.getParent() instanceof MultiPart) {
 				MultiPart parent = (MultiPart)part.getParent();
@@ -125,7 +125,7 @@ public class MimeMessagePartTransformer {
 		}
 
 		public void visitImagePart(ImagePart part) {
-			if(MessageContentFactory.isContentSupported(part)) {
+			if(MimeMessageContentFactory.isContentSupported(part)) {
 				displayableParts.addElement(part);
 			}
 		}

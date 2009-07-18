@@ -46,7 +46,7 @@ import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
@@ -504,11 +504,11 @@ public class MessageNode implements Node {
 	/**
 	 * Adds content to this message node.
 	 * 
-	 * @param messageContent The content to add.
+	 * @param mimeMessageContent The content to add.
 	 */
-	void putMessageContent(MessageContent messageContent) {
-		synchronized(messageContent) {
-			this.messageContent.put(messageContent.getMessagePart(), messageContent);
+	void putMessageContent(MimeMessageContent mimeMessageContent) {
+		synchronized(mimeMessageContent) {
+			this.messageContent.put(mimeMessageContent.getMessagePart(), mimeMessageContent);
 		}
 		fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
 	}
@@ -522,7 +522,7 @@ public class MessageNode implements Node {
 	 * 
 	 * @param messageContent The content sections to add.
 	 */
-	void putMessageContent(MessageContent[] messageContent) {
+	void putMessageContent(MimeMessageContent[] messageContent) {
 		synchronized(messageContent) {
 			for(int i=0; i<messageContent.length; i++) {
 				this.messageContent.put(messageContent[i].getMessagePart(), messageContent[i]);
@@ -552,9 +552,9 @@ public class MessageNode implements Node {
 	 * @param mimeMessagePart The part that represents the content's structural placement.
 	 * @return The content.
 	 */
-	public MessageContent getMessageContent(MimeMessagePart mimeMessagePart) {
+	public MimeMessageContent getMessageContent(MimeMessagePart mimeMessagePart) {
 		synchronized(messageContent) {
-			return (MessageContent)messageContent.get(mimeMessagePart);
+			return (MimeMessageContent)messageContent.get(mimeMessagePart);
 		}
     }
 	
@@ -576,13 +576,13 @@ public class MessageNode implements Node {
 	 * 
 	 * @return All the content.
 	 */
-	public MessageContent[] getAllMessageContent() {
+	public MimeMessageContent[] getAllMessageContent() {
 		synchronized(messageContent) {
-			MessageContent[] result = new MessageContent[messageContent.size()];
+			MimeMessageContent[] result = new MimeMessageContent[messageContent.size()];
 			Enumeration e = messageContent.keys();
 			int i = 0;
 	    	while(e.hasMoreElements()) {
-	    		result[i++] = (MessageContent)messageContent.get(e.nextElement());
+	    		result[i++] = (MimeMessageContent)messageContent.get(e.nextElement());
 	    	}
 			return result;
 		}
@@ -696,7 +696,7 @@ public class MessageNode implements Node {
 	        Enumeration en = messageContent.keys();
 	        while(en.hasMoreElements()) {
 	        	MimeMessagePart part = (MimeMessagePart)en.nextElement();
-	        	message.putContent(part, (MessageContent)messageContent.get(part));
+	        	message.putContent(part, (MimeMessageContent)messageContent.get(part));
 	        }
 	        
 	        MessageMimeConverter messageMime = new MessageMimeConverter(message);

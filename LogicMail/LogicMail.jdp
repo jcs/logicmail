@@ -131,12 +131,12 @@ src\org\logicprobe\LogicMail\message\FolderMessage.java
 src\org\logicprobe\LogicMail\message\ImageContent.java
 src\org\logicprobe\LogicMail\message\ImagePart.java
 src\org\logicprobe\LogicMail\message\Message.java
-src\org\logicprobe\LogicMail\message\MessageContent.java
-src\org\logicprobe\LogicMail\message\MessageContentFactory.java
-src\org\logicprobe\LogicMail\message\MessageContentVisitor.java
 src\org\logicprobe\LogicMail\message\MessageEnvelope.java
 src\org\logicprobe\LogicMail\message\MessageFlags.java
 src\org\logicprobe\LogicMail\message\MessageMimeConverter.java
+src\org\logicprobe\LogicMail\message\MimeMessageContent.java
+src\org\logicprobe\LogicMail\message\MimeMessageContentFactory.java
+src\org\logicprobe\LogicMail\message\MimeMessageContentVisitor.java
 src\org\logicprobe\LogicMail\message\MimeMessagePart.java
 src\org\logicprobe\LogicMail\message\MimeMessagePartFactory.java
 src\org\logicprobe\LogicMail\message\MimeMessagePartTransformer.java

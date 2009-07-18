@@ -48,7 +48,7 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -282,7 +282,7 @@ public class PopClient implements IncomingMailClient {
         Enumeration e = contentMap.keys();
         while(e.hasMoreElements()) {
         	MimeMessagePart part = (MimeMessagePart)e.nextElement();
-        	msg.putContent(part, (MessageContent)contentMap.get(part));
+        	msg.putContent(part, (MimeMessageContent)contentMap.get(part));
         }
         return msg;
     }

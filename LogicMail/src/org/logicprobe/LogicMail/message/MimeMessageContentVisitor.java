@@ -31,38 +31,9 @@
 package org.logicprobe.LogicMail.message;
 
 /**
- * Represents content for a message, maintained separately
- * from its structure.  There should be a subclass for every
- * major MIME type that is supported.
+ * Visitor for handling a message content
  */
-public abstract class MessageContent {
-	private ContentPart messagePart;
-	
-	/**
-	 * Instantiates a new message content object
-	 * 
-	 * @param messagePart the message part
-	 */
-	protected MessageContent(ContentPart messagePart) {
-		this.messagePart = messagePart;
-	}
-	
-	/**
-	 * Gets the message part representing the placement of
-	 * this content within the message structure.
-	 * 
-	 * @return the message part
-	 */
-	public ContentPart getMessagePart() {
-		return this.messagePart;
-	}
-	
-	/**
-	 * Gets the raw data representing this message content.
-	 * Necessary for saving the content to a file, or
-	 * transmitting it to external systems.
-	 * 
-	 * @return Raw data if available, or null otherwise
-	 */
-	public abstract byte[] getRawData();
+public interface MimeMessageContentVisitor {
+	void visit(TextContent content);
+	void visit(ImageContent content);
 }

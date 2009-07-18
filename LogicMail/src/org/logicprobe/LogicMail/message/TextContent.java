@@ -41,7 +41,7 @@ import org.logicprobe.LogicMail.util.StringParser;
 /**
  * Represents message content of the text type
  */
-public class TextContent extends MessageContent {
+public class TextContent extends MimeMessageContent {
 	private String text;
 	
 	public TextContent(TextPart textPart, String text) {
@@ -123,7 +123,7 @@ public class TextContent extends MessageContent {
                 mimeSubtype.equalsIgnoreCase("html"));
 	}
 	
-	public void accept(MessageContentVisitor visitor) {
+	public void accept(MimeMessageContentVisitor visitor) {
 		visitor.visit(this);
 	}
 	

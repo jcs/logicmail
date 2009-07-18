@@ -65,7 +65,7 @@ import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
 import org.logicprobe.LogicMail.model.AccountNode;
@@ -373,7 +373,7 @@ public class MessageScreen extends BaseScreen {
     	// Add fields to display the message body
     	MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());    	
     	for(int i=0; i<displayableParts.length; i++) {
-    		MessageContent content = messageNode.getMessageContent(displayableParts[i]);
+    		MimeMessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {
     			Field field = MessageFieldFactory.createMessageField(messageNode, content);
     			messageFields.addElement(field);
@@ -424,7 +424,7 @@ public class MessageScreen extends BaseScreen {
 	 */
     private void saveAttachment(ContentPart contentPart) {
     	// TODO: Support on-demand downloading of additional content
-    	MessageContent content = messageNode.getMessageContent(contentPart);
+    	MimeMessageContent content = messageNode.getMessageContent(contentPart);
     	if(content != null) {
         	FileSaveDialog dialog = new FileSaveDialog(contentPart.getName());
     		if(dialog.doModal() != Dialog.CANCEL) {
@@ -435,10 +435,10 @@ public class MessageScreen extends BaseScreen {
 	}
 
     private static class SaveAttachmentThread extends Thread {
-    	private MessageContent content;
+    	private MimeMessageContent content;
     	private String fileUrl;
     	
-    	public SaveAttachmentThread(MessageContent content, String fileUrl) {
+    	public SaveAttachmentThread(MimeMessageContent content, String fileUrl) {
     		this.content = content;
     		this.fileUrl = fileUrl;
     	}

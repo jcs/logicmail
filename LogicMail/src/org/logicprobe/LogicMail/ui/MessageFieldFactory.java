@@ -35,7 +35,7 @@ import java.util.Hashtable;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ImageContent;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
@@ -49,12 +49,12 @@ import net.rim.device.api.ui.component.RichTextField;
 
 /**
  * Factory to create {@link Field} instances for display of
- * {@link MessageContent} objects on the user interface.
+ * {@link MimeMessageContent} objects on the user interface.
  */
 public class MessageFieldFactory {
 	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	
-	public static Field createMessageField(MessageNode messageNode, MessageContent content) {
+	public static Field createMessageField(MessageNode messageNode, MimeMessageContent content) {
 		Field field;
 		if(content instanceof TextContent) {
 			field = createTextMessageField(messageNode, (TextContent)content);
@@ -112,7 +112,7 @@ public class MessageFieldFactory {
 		return new BitmapField(content.getImage().getBitmap());
 	}
 
-	private static Field createUnsupportedMessageField(MessageContent content) {
+	private static Field createUnsupportedMessageField(MimeMessageContent content) {
 		MimeMessagePart part = content.getMessagePart();
 		return new RichTextField(
 				resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED)

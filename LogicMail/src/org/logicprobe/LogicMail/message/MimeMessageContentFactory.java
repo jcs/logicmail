@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.message;
 /**
  * Creates message content objects.
  */
-public class MessageContentFactory {
+public class MimeMessageContentFactory {
 	// TODO: Refactor encoding/param up into the MessagePart classes
 	
     /**
@@ -48,8 +48,8 @@ public class MessageContentFactory {
 	 * 
 	 * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
 	 */
-	public static MessageContent createContent(MimeMessagePart mimeMessagePart, String data) throws UnsupportedContentException {
-    	MessageContent content;
+	public static MimeMessageContent createContent(MimeMessagePart mimeMessagePart, String data) throws UnsupportedContentException {
+    	MimeMessageContent content;
     	if(mimeMessagePart instanceof TextPart) {
     		TextPart textPart = (TextPart)mimeMessagePart;
     		content = new TextContent(textPart, textPart.getEncoding(), textPart.getCharset(), data);

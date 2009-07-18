@@ -38,7 +38,7 @@ import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Queue;
@@ -264,19 +264,19 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	private void handleRequestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) throws IOException, MailException {
 		checkActiveFolder(messageToken);
 
-		MessageContent[] messageContent;
+		MimeMessageContent[] messageContent;
 		
 		// Replace this with a more general method:
 		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
 			Vector messageContentVector = new Vector();
 			for(int i=0; i<messageParts.length; i++) {
-				MessageContent content =
+				MimeMessageContent content =
 					((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i]);
 				if(content != null) {
 					messageContentVector.addElement(content);
 				}
 			}
-			messageContent = new MessageContent[messageContentVector.size()];
+			messageContent = new MimeMessageContent[messageContentVector.size()];
 			messageContentVector.copyInto(messageContent);
 		}
 		else {

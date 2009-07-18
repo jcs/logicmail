@@ -38,7 +38,7 @@ import net.rim.device.api.system.EncodedImage;
 /**
  * Represents message content of the image type
  */
-public class ImageContent extends MessageContent {
+public class ImageContent extends MimeMessageContent {
 	private EncodedImage image;
 	private byte[] rawData;
 	
@@ -89,7 +89,7 @@ public class ImageContent extends MessageContent {
                 mimeSubtype.equalsIgnoreCase("tiff"));
 	}
 
-	public void accept(MessageContentVisitor visitor) {
+	public void accept(MimeMessageContentVisitor visitor) {
 		visitor.visit(this);
 	}
 

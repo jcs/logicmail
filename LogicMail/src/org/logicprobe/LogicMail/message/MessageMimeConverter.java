@@ -109,7 +109,7 @@ public class MessageMimeConverter {
 	        boolean isBinary;
 	        boolean isQP;
 	        String encoding;
-	        MessageContent content = message.getContent(part);
+	        MimeMessageContent content = message.getContent(part);
 	        if(!(content instanceof TextContent)) { return; }
 	        String text = ((TextContent)content).getText();
 	
@@ -199,7 +199,7 @@ public class MessageMimeConverter {
 	    public void visitImagePart(ImagePart part) {
 	        MIMEOutputStream currentStream;
 
-	        MessageContent content = message.getContent(part);
+	        MimeMessageContent content = message.getContent(part);
 	        if(!(content instanceof ImageContent)) { return; }
 	        EncodedImage image = ((ImageContent)content).getImage();
 

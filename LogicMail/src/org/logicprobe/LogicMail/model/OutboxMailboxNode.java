@@ -43,7 +43,7 @@ import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.StringParser;
@@ -155,7 +155,7 @@ public class OutboxMailboxNode extends MailboxNode {
 		Message message = new Message(outgoingMessageNode.getMessageStructure());
 
 		// Populate the message content
-		MessageContent[] content = outgoingMessageNode.getAllMessageContent();
+		MimeMessageContent[] content = outgoingMessageNode.getAllMessageContent();
 		for(int i=0; i<content.length; i++) {
 			message.putContent(content[i].getMessagePart(), content[i]);
 		}

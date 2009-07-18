@@ -44,7 +44,7 @@ import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.ImageContent;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.MessageNode;
@@ -189,9 +189,9 @@ public class BrowserFieldRenderer implements RenderingApplication {
         	int p = url.indexOf("cid:");
         	if(p == -1 || url.length() < 5) { return null; }
         	String contentId = '<' + url.substring(4) + '>';
-        	MessageContent contentMatch = null;
+        	MimeMessageContent contentMatch = null;
         	
-        	MessageContent[] contentArray = messageNode.getAllMessageContent();
+        	MimeMessageContent[] contentArray = messageNode.getAllMessageContent();
         	for(int i=0; i<contentArray.length; i++) {
         		ContentPart part = contentArray[i].getMessagePart();
         		if(contentId.equals(part.getContentId())) {
@@ -232,7 +232,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 		 * 
 		 * @param content the message content
 		 */
-		public LocalDataHttpConnection(MessageContent content) {
+		public LocalDataHttpConnection(MimeMessageContent content) {
 			contentPart = content.getMessagePart();
 			
 			if(content instanceof TextContent) {

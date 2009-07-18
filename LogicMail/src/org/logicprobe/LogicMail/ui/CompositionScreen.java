@@ -47,8 +47,8 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageContent;
-import org.logicprobe.LogicMail.message.MessageContentFactory;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -236,7 +236,7 @@ public class CompositionScreen extends BaseScreen {
 
         // Currently only all-text reply bodies are supported
         if (body instanceof TextPart) {
-        	MessageContent content = message.getMessageContent(body);
+        	MimeMessageContent content = message.getMessageContent(body);
         	if(content instanceof TextContent) {
 	            messageEditField.insert("\r\n");
 	            messageEditField.insert(normalize(((TextContent)content).getText()));
@@ -465,9 +465,9 @@ public class CompositionScreen extends BaseScreen {
     	String contentText = messageEditField.getText();
         MimeMessagePart bodyPart = MimeMessagePartFactory.createMimeMessagePart(
         		"text", "plain", null, "7bit", "us-ascii", "", "", contentText.length());
-        MessageContent bodyContent;
+        MimeMessageContent bodyContent;
         try {
-			bodyContent = MessageContentFactory.createContent(
+			bodyContent = MimeMessageContentFactory.createContent(
 					bodyPart, contentText);
 		} catch (UnsupportedContentException e) {
 			bodyContent = null;

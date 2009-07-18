@@ -35,7 +35,7 @@ import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 
@@ -187,11 +187,11 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
 			results = (Object[])result;
-			fireMessageAvailable((MessageToken)results[0], (MimeMessagePart)results[1], (MessageContent[])results[2], null);
+			fireMessageAvailable((MessageToken)results[0], (MimeMessagePart)results[1], (MimeMessageContent[])results[2], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
 			results = (Object[])result;
-			fireMessageContentAvailable((MessageToken)results[0], (MessageContent[])results[1]);
+			fireMessageContentAvailable((MessageToken)results[0], (MimeMessageContent[])results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
 			results = (Object[])result;

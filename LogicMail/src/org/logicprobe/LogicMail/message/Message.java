@@ -64,20 +64,20 @@ public class Message {
         return structure;
     }
     
-    public void putContent(MimeMessagePart mimeMessagePart, MessageContent messageContent) {
-    	content.put(mimeMessagePart, messageContent);
+    public void putContent(MimeMessagePart mimeMessagePart, MimeMessageContent mimeMessageContent) {
+    	content.put(mimeMessagePart, mimeMessageContent);
     }
     
-    public MessageContent getContent(MimeMessagePart mimeMessagePart) {
-    	return (MessageContent)content.get(mimeMessagePart);
+    public MimeMessageContent getContent(MimeMessagePart mimeMessagePart) {
+    	return (MimeMessageContent)content.get(mimeMessagePart);
     }
     
-    public MessageContent[] getAllContent() {
-		MessageContent[] result = new MessageContent[content.size()];
+    public MimeMessageContent[] getAllContent() {
+		MimeMessageContent[] result = new MimeMessageContent[content.size()];
 		Enumeration e = content.keys();
 		int i = 0;
     	while(e.hasMoreElements()) {
-    		result[i++] = (MessageContent)content.get(e.nextElement());
+    		result[i++] = (MimeMessageContent)content.get(e.nextElement());
     	}
 		return result;
     }

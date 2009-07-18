@@ -32,7 +32,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -397,7 +397,7 @@ public abstract class AbstractMailStore {
      * @param messageContent The message content
      * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+    protected void fireMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -415,7 +415,7 @@ public abstract class AbstractMailStore {
      * @param messageToken The token identifying the message
      * @param messageContent The message content
      */
-    protected void fireMessageContentAvailable(MessageToken messageToken, MessageContent[] messageContent) {
+    protected void fireMessageContentAvailable(MessageToken messageToken, MimeMessageContent[] messageContent) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {

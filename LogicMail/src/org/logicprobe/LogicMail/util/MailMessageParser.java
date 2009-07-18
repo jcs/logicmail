@@ -35,7 +35,7 @@ import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 
 import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.message.MessageContentFactory;
+import org.logicprobe.LogicMail.message.MimeMessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
@@ -283,7 +283,7 @@ public class MailMessageParser {
                 MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
                 		type, subtype, name, encoding, charset, disposition, contentId, size);
                 try {
-					contentMap.put(part, MessageContentFactory.createContent(part, data));
+					contentMap.put(part, MimeMessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {
 					System.err.println("UnsupportedContentException: " + e.getMessage());
 				}
@@ -295,7 +295,7 @@ public class MailMessageParser {
                 MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
                 		type, subtype, name, encoding, charset, disposition, contentId, data.length());
                 try {
-					contentMap.put(part, MessageContentFactory.createContent(part, data));
+					contentMap.put(part, MimeMessageContentFactory.createContent(part, data));
 				} catch (UnsupportedContentException e) {
 					System.err.println("UnsupportedContentException: " + e.getMessage());
 				}

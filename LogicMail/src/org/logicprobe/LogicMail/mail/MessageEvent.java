@@ -31,7 +31,7 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.message.MessageContent;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 
@@ -43,7 +43,7 @@ public class MessageEvent extends MailStoreEvent {
 	private MessageToken messageToken;
 	private MessageFlags messageFlags;
 	private MimeMessagePart messageStructure;
-	private MessageContent[] messageContent;
+	private MimeMessageContent[] mimeMessageContent;
 	private String messageSource;
 	
 	public final static int TYPE_FULLY_LOADED = 0;
@@ -61,13 +61,13 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageContent the message content
 	 * @param messageSource the message source
 	 */
-	public MessageEvent(Object source, int type, MessageToken messageToken, MessageFlags messageFlags, MimeMessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+	public MessageEvent(Object source, int type, MessageToken messageToken, MessageFlags messageFlags, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
 		super(source);
 		this.type = type;
 		this.messageToken = messageToken;
 		this.messageFlags = messageFlags;
 		this.messageStructure = messageStructure;
-		this.messageContent = messageContent;
+		this.mimeMessageContent = messageContent;
 		this.messageSource = messageSource;
 	}
 
@@ -79,7 +79,7 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageToken the message token
 	 * @param messageContent the loaded message content
 	 */
-	public MessageEvent(Object source, MessageToken messageToken, MessageContent[] messageContent) {
+	public MessageEvent(Object source, MessageToken messageToken, MimeMessageContent[] messageContent) {
 		this(source, TYPE_CONTENT_LOADED, messageToken, null, null, messageContent, null);
 	}
 
@@ -93,7 +93,7 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageContent the message content
 	 * @param messageSource the message source
 	 */
-	public MessageEvent(Object source, MessageToken messageToken, MimeMessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+	public MessageEvent(Object source, MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
 		this(source, TYPE_FULLY_LOADED, messageToken, null, messageStructure, messageContent, messageSource);
 	}
 
@@ -144,8 +144,8 @@ public class MessageEvent extends MailStoreEvent {
 	 * This should be all the content that was just loaded, and may not necessarily
 	 * be all the content that could be loaded for the message.
 	 */
-	public MessageContent[] getMessageContent() {
-		return messageContent;
+	public MimeMessageContent[] getMessageContent() {
+		return mimeMessageContent;
 	}
 	
 	/**
