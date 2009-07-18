@@ -39,18 +39,18 @@ import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
- * Abstract representation of a message part
+ * Abstract representation of a MIME message part
  */
-public abstract class MessagePart implements Serializable {
+public abstract class MimeMessagePart implements Serializable {
     private long uniqueId;
     private String tag;
     private String mimeType;
     private String mimeSubtype;
     private int size;
-    private MessagePart parent;
+    private MimeMessagePart parent;
 
     /** Creates a new instance of MessagePart */
-    protected MessagePart(String mimeType, String mimeSubtype, int size, String tag) {
+    protected MimeMessagePart(String mimeType, String mimeSubtype, int size, String tag) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.tag = tag;
         this.mimeType = mimeType;
@@ -63,7 +63,7 @@ public abstract class MessagePart implements Serializable {
      * Accept a visitor on this message part.
      * @param visitor The visitor instance
      */
-    public abstract void accept(MessagePartVisitor visitor);
+    public abstract void accept(MimeMessagePartVisitor visitor);
     
     /**
      * Gets the tag used to embed protocol-specific address
@@ -103,7 +103,7 @@ public abstract class MessagePart implements Serializable {
      * Set the parent of this part
      * @param parent The parent message part, or null if this is the root
      */
-    protected void setParent(MessagePart parent) {
+    protected void setParent(MimeMessagePart parent) {
         this.parent = parent;
     }
     
@@ -111,7 +111,7 @@ public abstract class MessagePart implements Serializable {
      * Get the parent of this part
      * @return Parent, or null if this is the root
      */
-    public MessagePart getParent() {
+    public MimeMessagePart getParent() {
         return parent;
     }
 

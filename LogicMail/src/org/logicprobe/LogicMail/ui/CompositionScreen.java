@@ -51,8 +51,8 @@ import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
@@ -232,7 +232,7 @@ public class CompositionScreen extends BaseScreen {
 
     private void populateFromMessage(MessageNode message) {
         int i;
-        MessagePart body = message.getMessageStructure();
+        MimeMessagePart body = message.getMessageStructure();
 
         // Currently only all-text reply bodies are supported
         if (body instanceof TextPart) {
@@ -463,7 +463,7 @@ public class CompositionScreen extends BaseScreen {
     
     private Message generateMessage() {
     	String contentText = messageEditField.getText();
-        MessagePart bodyPart = MessagePartFactory.createMessagePart(
+        MimeMessagePart bodyPart = MimeMessagePartFactory.createMimeMessagePart(
         		"text", "plain", null, "7bit", "us-ascii", "", "", contentText.length());
         MessageContent bodyContent;
         try {

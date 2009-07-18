@@ -85,7 +85,7 @@ public class MessageMimeConverter {
         return byteArrayOutputStream.toString();
     }
 
-    private class MessageMimeConverterPartVisitor implements MessagePartVisitor {
+    private class MessageMimeConverterPartVisitor extends AbstractMimeMessagePartVisitor {
 	    public void visitMultiPart(MultiPart part) {
 	        // Handle the case of this being the root part
 	        if (mimeOutputStream == null) {

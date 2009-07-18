@@ -51,8 +51,8 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 import org.logicprobe.LogicMail.message.UnsupportedPart;
@@ -576,32 +576,32 @@ public class ImapClient implements IncomingMailClient {
     	
         ImapParser.MessageSection structure = getMessageStructure(imapMessageToken.getMessageUid());
         Hashtable contentMap = new Hashtable();
-        MessagePart rootPart =
+        MimeMessagePart rootPart =
             getMessagePart(contentMap, imapMessageToken.getMessageUid(),
                            structure, accountConfig.getMaxMessageSize());
         Message msg = new Message(rootPart);
         Enumeration e = contentMap.keys();
         while(e.hasMoreElements()) {
-        	MessagePart part = (MessagePart)e.nextElement();
+        	MimeMessagePart part = (MimeMessagePart)e.nextElement();
         	msg.putContent(part, (MessageContent)contentMap.get(part));
         }
         return msg;
     }
 
-    public MessageContent getMessagePart(MessageToken messageToken, MessagePart messagePart) throws IOException, MailException {
+    public MessageContent getMessagePart(MessageToken messageToken, MimeMessagePart mimeMessagePart) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
     		throw new MailException("Invalid mailbox for message");
     	}
 
     	// Get the relevant data from the MessagePart object
-    	String partAddress = messagePart.getTag();
-    	String mimeType = messagePart.getMimeType();
-    	String mimeSubtype = messagePart.getMimeSubtype();
+    	String partAddress = mimeMessagePart.getTag();
+    	String mimeType = mimeMessagePart.getMimeType();
+    	String mimeSubtype = mimeMessagePart.getMimeSubtype();
     	
     	// Make sure we can actually get this part
     	if(partAddress == null || mimeType == null || mimeSubtype == null) { return null; }
-    	if(!MessagePartFactory.isMessagePartSupported(mimeType, mimeSubtype)) { return null; }
+    	if(!MimeMessagePartFactory.isMimeMessagePartSupported(mimeType, mimeSubtype)) { return null; }
     	if(mimeType.equalsIgnoreCase("multipart")) { return null; }
     	if(!(messageToken instanceof ImapMessageToken)) { return null; }
 
@@ -609,22 +609,22 @@ public class ImapClient implements IncomingMailClient {
     	String data = getMessageBody(imapMessageToken.getMessageUid(), partAddress);
     	MessageContent content;
     	try {
-			content = MessageContentFactory.createContent(messagePart, data);
+			content = MessageContentFactory.createContent(mimeMessagePart, data);
 		} catch (UnsupportedContentException e) {
 			content = null;
 		}
     	return content;
 	}
 
-    private MessagePart getMessagePart(
+    private MimeMessagePart getMessagePart(
     		Hashtable contentMap,
     		int uid,
             ImapParser.MessageSection structure,
             int maxSize)
         throws IOException, MailException
     {
-        MessagePart part;
-        if(MessagePartFactory.isMessagePartSupported(structure.type, structure.subtype)) {
+        MimeMessagePart part;
+        if(MimeMessagePartFactory.isMimeMessagePartSupported(structure.type, structure.subtype)) {
             String data;
             if(structure.type.equalsIgnoreCase("multipart"))
                 data = null;
@@ -638,7 +638,7 @@ public class ImapClient implements IncomingMailClient {
                     return null;
                 }
             }
-            part = MessagePartFactory.createMessagePart(
+            part = MimeMessagePartFactory.createMimeMessagePart(
             		structure.type,
             		structure.subtype,
             		structure.name,
@@ -665,7 +665,7 @@ public class ImapClient implements IncomingMailClient {
 
         if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
             for(int i=0;i<structure.subsections.length;i++) {
-                MessagePart subPart = getMessagePart(contentMap, uid, structure.subsections[i], maxSize);
+                MimeMessagePart subPart = getMessagePart(contentMap, uid, structure.subsections[i], maxSize);
                 if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
                 }
@@ -674,9 +674,9 @@ public class ImapClient implements IncomingMailClient {
         return part;
     }
 
-    private MessagePart createMessagePartTree(ImapParser.MessageSection structure) {
+    private MimeMessagePart createMessagePartTree(ImapParser.MessageSection structure) {
     	if(structure == null) { return null; }
-        MessagePart part = MessagePartFactory.createMessagePart(
+        MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
         		structure.type,
         		structure.subtype,
         		structure.name,
@@ -690,7 +690,7 @@ public class ImapClient implements IncomingMailClient {
         if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
         	MultiPart multiPart = (MultiPart)part;
             for(int i=0; i<structure.subsections.length; i++) {
-                MessagePart subPart = createMessagePartTree(structure.subsections[i]);
+                MimeMessagePart subPart = createMessagePartTree(structure.subsections[i]);
                 if(subPart != null) {
                 	multiPart.addPart(subPart);
                 }

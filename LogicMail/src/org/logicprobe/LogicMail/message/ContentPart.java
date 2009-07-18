@@ -7,7 +7,7 @@ import java.io.IOException;
 /**
  * Abstract representation of a message part representing content.
  */
-public abstract class ContentPart extends MessagePart {
+public abstract class ContentPart extends MimeMessagePart {
 	private String name;
 	private String encoding;
 	private String disposition;

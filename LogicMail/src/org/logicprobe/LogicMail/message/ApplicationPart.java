@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
- * Visitor for handling a message part structure
+ * Application message part (MIME type: "application/????")
  */
-public interface MessagePartVisitor {
-    public abstract void visitMultiPart(MultiPart part);
-    public abstract void visitTextPart(TextPart part);
-    public abstract void visitImagePart(ImagePart part);
-    public abstract void visitUnsupportedPart(UnsupportedPart part);
+public class ApplicationPart extends ContentPart {
+
+	public ApplicationPart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
+		super("application", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+	}
+	
+	public ApplicationPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
+		this(mimeSubtype, name, encoding, disposition, contentId, size, "");
+	}
+	
+	/** Creates a new instance for deserialization */
+    public ApplicationPart() {
+    	this("", "", "", "", "", -1, "");
+    }
+
+	public void accept(MimeMessagePartVisitor visitor) {
+		// TODO Auto-generated method stub
+	}
+	
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		super.serialize(output);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		super.deserialize(input);
+	}
 }

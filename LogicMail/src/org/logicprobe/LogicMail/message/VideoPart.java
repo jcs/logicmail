@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,33 +28,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
 /**
- * Unsupported message part.
- * This class provides a placeholder to avoid the need to create
- * MIME type-specific classes for all the types that are not supported
- * by this application.
+ * Video message part (MIME type: "video/????")
  */
-public class UnsupportedPart extends MimeMessagePart {
-    
-    /** Creates a new instance of UnsupportedPart */
-    public UnsupportedPart(String mimeType, String mimeSubtype, String tag) {
-        super(mimeType, mimeSubtype, -1, tag);
+public class VideoPart extends ContentPart {
+
+	public VideoPart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
+		super("audio", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+	}
+	
+	public VideoPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
+		this(mimeSubtype, name, encoding, disposition, contentId, size, "");
+	}
+	
+	/** Creates a new instance for deserialization */
+    public VideoPart() {
+    	this("", "", "", "", "", -1, "");
     }
 
-    public UnsupportedPart(String mimeType, String mimeSubtype) {
-        this(mimeType, mimeSubtype, "");
-    }
-
-    /** Creates a new instance for deserialization */
-    public UnsupportedPart() {
-    	this("", "", "");
-    }
-    
-    public void accept(MimeMessagePartVisitor visitor) {
-        visitor.visitUnsupportedPart(this);
-    }
-    
+	public void accept(MimeMessagePartVisitor visitor) {
+		// TODO Auto-generated method stub
+	}
+	
+    /* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		super.serialize(output);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		super.deserialize(input);
+	}
 }

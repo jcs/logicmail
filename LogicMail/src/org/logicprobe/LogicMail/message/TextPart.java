@@ -56,7 +56,7 @@ public class TextPart extends ContentPart {
     	this("", "", "", "", "", "", -1, "");
     }
     
-    public void accept(MessagePartVisitor visitor) {
+    public void accept(MimeMessagePartVisitor visitor) {
         visitor.visitTextPart(this);
     }
 

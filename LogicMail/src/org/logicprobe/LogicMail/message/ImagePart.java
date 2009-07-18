@@ -54,7 +54,7 @@ public class ImagePart extends ContentPart {
     	this("", "", "", "", "", -1, "");
     }
     
-    public void accept(MessagePartVisitor visitor) {
+    public void accept(MimeMessagePartVisitor visitor) {
         visitor.visitImagePart(this);
     }
 

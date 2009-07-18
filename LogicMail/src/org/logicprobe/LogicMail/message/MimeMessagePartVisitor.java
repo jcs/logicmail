@@ -32,29 +32,14 @@
 package org.logicprobe.LogicMail.message;
 
 /**
- * Unsupported message part.
- * This class provides a placeholder to avoid the need to create
- * MIME type-specific classes for all the types that are not supported
- * by this application.
+ * Visitor for handling a message part structure
  */
-public class UnsupportedPart extends MimeMessagePart {
-    
-    /** Creates a new instance of UnsupportedPart */
-    public UnsupportedPart(String mimeType, String mimeSubtype, String tag) {
-        super(mimeType, mimeSubtype, -1, tag);
-    }
-
-    public UnsupportedPart(String mimeType, String mimeSubtype) {
-        this(mimeType, mimeSubtype, "");
-    }
-
-    /** Creates a new instance for deserialization */
-    public UnsupportedPart() {
-    	this("", "", "");
-    }
-    
-    public void accept(MimeMessagePartVisitor visitor) {
-        visitor.visitUnsupportedPart(this);
-    }
-    
+public interface MimeMessagePartVisitor {
+    public abstract void visitApplicationPart(ApplicationPart part);
+    public abstract void visitAudioPart(AudioPart part);
+    public abstract void visitImagePart(ImagePart part);
+    public abstract void visitMultiPart(MultiPart part);
+    public abstract void visitTextPart(TextPart part);
+    public abstract void visitVideoPart(VideoPart part);
+    public abstract void visitUnsupportedPart(UnsupportedPart part);
 }

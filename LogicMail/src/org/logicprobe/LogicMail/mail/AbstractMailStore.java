@@ -34,7 +34,7 @@ package org.logicprobe.LogicMail.mail;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -188,7 +188,7 @@ public abstract class AbstractMailStore {
      * @param messageToken The token used to identify the message
      * @param messagePart The part of the message to load
      */
-    public abstract void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts);
+    public abstract void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts);
     
     /**
      * Requests a particular message to be deleted.
@@ -397,7 +397,7 @@ public abstract class AbstractMailStore {
      * @param messageContent The message content
      * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(MessageToken messageToken, MessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+    protected void fireMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {

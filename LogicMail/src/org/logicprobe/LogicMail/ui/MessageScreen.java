@@ -66,8 +66,8 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MessageContent;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartTransformer;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailManager;
@@ -286,7 +286,7 @@ public class MessageScreen extends BaseScreen {
     	if(this.getFieldWithFocus() == messageFieldManager
     			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
     		int node = attachmentsTreeField.getCurrentNode();
-    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof MessagePart) {
+    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof MimeMessagePart) {
     			menu.add(saveAttachmentItem);
     		}
     	}
@@ -356,7 +356,7 @@ public class MessageScreen extends BaseScreen {
 		Vector messageFields = new Vector();
 
 		// Add a collapsed TreeField to show attachments, if any exist
-    	MessagePart[] attachmentParts = messageNode.getAttachmentParts();
+    	MimeMessagePart[] attachmentParts = messageNode.getAttachmentParts();
     	if(attachmentParts.length > 0) {
     		attachmentsTreeField = new TreeField(new TreeFieldCallback() {
     			public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
@@ -371,7 +371,7 @@ public class MessageScreen extends BaseScreen {
     	}
     	
     	// Add fields to display the message body
-    	MessagePart[] displayableParts = MessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());    	
+    	MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());    	
     	for(int i=0; i<displayableParts.length; i++) {
     		MessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {

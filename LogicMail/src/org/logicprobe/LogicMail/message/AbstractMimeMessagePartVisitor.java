@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,33 +28,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.message;
 
 /**
- * Unsupported message part.
- * This class provides a placeholder to avoid the need to create
- * MIME type-specific classes for all the types that are not supported
- * by this application.
+ * Abstract implementation for classes wanting to only partially implement
+ * the visitor interface for handling a message part structure.
  */
-public class UnsupportedPart extends MimeMessagePart {
-    
-    /** Creates a new instance of UnsupportedPart */
-    public UnsupportedPart(String mimeType, String mimeSubtype, String tag) {
-        super(mimeType, mimeSubtype, -1, tag);
-    }
-
-    public UnsupportedPart(String mimeType, String mimeSubtype) {
-        this(mimeType, mimeSubtype, "");
-    }
-
-    /** Creates a new instance for deserialization */
-    public UnsupportedPart() {
-    	this("", "", "");
-    }
-    
-    public void accept(MimeMessagePartVisitor visitor) {
-        visitor.visitUnsupportedPart(this);
-    }
-    
+public class AbstractMimeMessagePartVisitor implements MimeMessagePartVisitor {
+	public void visitApplicationPart(ApplicationPart part) { }
+	public void visitAudioPart(AudioPart part) { }
+	public void visitImagePart(ImagePart part) { }
+	public void visitMultiPart(MultiPart part) { }
+	public void visitTextPart(TextPart part) { }
+	public void visitVideoPart(VideoPart part) { }
+	public void visitUnsupportedPart(UnsupportedPart part) { }
 }

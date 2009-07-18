@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.mail;
 
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 
 /**
  * Object for message events.
@@ -42,7 +42,7 @@ public class MessageEvent extends MailStoreEvent {
 	private int type;
 	private MessageToken messageToken;
 	private MessageFlags messageFlags;
-	private MessagePart messageStructure;
+	private MimeMessagePart messageStructure;
 	private MessageContent[] messageContent;
 	private String messageSource;
 	
@@ -61,7 +61,7 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageContent the message content
 	 * @param messageSource the message source
 	 */
-	public MessageEvent(Object source, int type, MessageToken messageToken, MessageFlags messageFlags, MessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+	public MessageEvent(Object source, int type, MessageToken messageToken, MessageFlags messageFlags, MimeMessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
 		super(source);
 		this.type = type;
 		this.messageToken = messageToken;
@@ -93,7 +93,7 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageContent the message content
 	 * @param messageSource the message source
 	 */
-	public MessageEvent(Object source, MessageToken messageToken, MessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
+	public MessageEvent(Object source, MessageToken messageToken, MimeMessagePart messageStructure, MessageContent[] messageContent, String messageSource) {
 		this(source, TYPE_FULLY_LOADED, messageToken, null, messageStructure, messageContent, messageSource);
 	}
 
@@ -135,7 +135,7 @@ public class MessageEvent extends MailStoreEvent {
 	/**
 	 * Gets the message structure, if it is available for this particular event.
 	 */
-	public MessagePart getMessageStructure() {
+	public MimeMessagePart getMessageStructure() {
 		return messageStructure;
 	}
 

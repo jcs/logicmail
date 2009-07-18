@@ -36,7 +36,7 @@ import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ImageContent;
 import org.logicprobe.LogicMail.message.MessageContent;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.MessageNode;
@@ -113,7 +113,7 @@ public class MessageFieldFactory {
 	}
 
 	private static Field createUnsupportedMessageField(MessageContent content) {
-		MessagePart part = content.getMessagePart();
+		MimeMessagePart part = content.getMessagePart();
 		return new RichTextField(
 				resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED)
 				+ ' ' + part.getMimeType()

@@ -51,7 +51,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.StringParser;
@@ -277,11 +277,11 @@ public class PopClient implements IncomingMailClient {
         String[] message = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines);
         
         Hashtable contentMap = new Hashtable();
-        MessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, StringParser.createInputStream(message));
+        MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, StringParser.createInputStream(message));
         Message msg = new Message(rootPart);
         Enumeration e = contentMap.keys();
         while(e.hasMoreElements()) {
-        	MessagePart part = (MessagePart)e.nextElement();
+        	MimeMessagePart part = (MimeMessagePart)e.nextElement();
         	msg.putContent(part, (MessageContent)contentMap.get(part));
         }
         return msg;

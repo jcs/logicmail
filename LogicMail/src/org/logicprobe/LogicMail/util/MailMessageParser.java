@@ -37,8 +37,8 @@ import net.rim.device.api.mime.MIMEParsingException;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartFactory;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 
@@ -191,7 +191,7 @@ public class MailMessageParser {
      * @return The root message part.
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public static MessagePart parseRawMessage(Hashtable contentMap, InputStream inputStream)
+    public static MimeMessagePart parseRawMessage(Hashtable contentMap, InputStream inputStream)
         throws IOException {
         MIMEInputStream mimeInputStream = null;
 
@@ -201,7 +201,7 @@ public class MailMessageParser {
             return null;
         }
 
-        MessagePart rootPart = getMessagePart(contentMap, mimeInputStream);
+        MimeMessagePart rootPart = getMessagePart(contentMap, mimeInputStream);
 
         return rootPart;
     }
@@ -214,7 +214,7 @@ public class MailMessageParser {
      * @param mimeInputStream MIMEInputStream of the downloaded message data
      * @return Root MessagePart element for this portion of the message tree
      */
-    private static MessagePart getMessagePart(Hashtable contentMap, MIMEInputStream mimeInputStream)
+    private static MimeMessagePart getMessagePart(Hashtable contentMap, MIMEInputStream mimeInputStream)
         throws IOException {
         // Parse out the MIME type and relevant header fields
         String mimeType = mimeInputStream.getContentType();
@@ -243,12 +243,12 @@ public class MailMessageParser {
         // Handle the multi-part case
         if (mimeInputStream.isMultiPart() &&
                 type.equalsIgnoreCase("multipart")) {
-            MessagePart part = MessagePartFactory.createMessagePart(
+            MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
             		type, subtype, null, null, null, null, null, -1);
             MIMEInputStream[] mimeSubparts = mimeInputStream.getParts();
 
             for (int i = 0; i < mimeSubparts.length; i++) {
-                MessagePart subPart = getMessagePart(contentMap, mimeSubparts[i]);
+                MimeMessagePart subPart = getMessagePart(contentMap, mimeSubparts[i]);
 
                 if (subPart != null) {
                     ((MultiPart) part).addPart(subPart);
@@ -280,7 +280,7 @@ public class MailMessageParser {
                 int size = buffer.length - offset;
 
                 String data = new String(buffer, offset, size);
-                MessagePart part = MessagePartFactory.createMessagePart(
+                MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
                 		type, subtype, name, encoding, charset, disposition, contentId, size);
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, data));
@@ -292,7 +292,7 @@ public class MailMessageParser {
                 buffer = StringParser.readWholeStream(mimeInputStream);
 
                 String data = new String(buffer);
-                MessagePart part = MessagePartFactory.createMessagePart(
+                MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
                 		type, subtype, name, encoding, charset, disposition, contentId, data.length());
                 try {
 					contentMap.put(part, MessageContentFactory.createContent(part, data));

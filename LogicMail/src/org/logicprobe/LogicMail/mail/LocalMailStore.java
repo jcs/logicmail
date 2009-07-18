@@ -43,7 +43,7 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.ThreadQueue;
 
@@ -196,11 +196,11 @@ public class LocalMailStore extends AbstractMailStore {
         		
         		// Parse the message source
         		Hashtable contentMap = new Hashtable();
-                MessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, new ByteArrayInputStream(messageSource.getBytes()));
+                MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, new ByteArrayInputStream(messageSource.getBytes()));
                 message = new Message(rootPart);
                 Enumeration e = contentMap.keys();
                 while(e.hasMoreElements()) {
-                	MessagePart part = (MessagePart)e.nextElement();
+                	MimeMessagePart part = (MimeMessagePart)e.nextElement();
                 	message.putContent(part, (MessageContent)contentMap.get(part));
                 }
         	} catch (IOException e) {
@@ -213,7 +213,7 @@ public class LocalMailStore extends AbstractMailStore {
 		}
     }
 
-    public void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts) {
+    public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) {
     	throw new UnsupportedOperationException();
     }
     

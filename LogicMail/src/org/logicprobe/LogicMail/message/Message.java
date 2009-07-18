@@ -43,7 +43,7 @@ import java.util.Hashtable;
  * </p>
  */
 public class Message {
-    private MessagePart structure;
+    private MimeMessagePart structure;
     private Hashtable content = new Hashtable();
     
     /**
@@ -51,7 +51,7 @@ public class Message {
      * @param envelope The envelope for the message
      * @param body The structured message body tree
      */
-    public Message(MessagePart structure) {
+    public Message(MimeMessagePart structure) {
     	// TODO: Consider removing the Message object completely
         this.structure = structure;
     }
@@ -60,16 +60,16 @@ public class Message {
      * Get the message body
      * @return Body
      */
-    public MessagePart getStructure() {
+    public MimeMessagePart getStructure() {
         return structure;
     }
     
-    public void putContent(MessagePart messagePart, MessageContent messageContent) {
-    	content.put(messagePart, messageContent);
+    public void putContent(MimeMessagePart mimeMessagePart, MessageContent messageContent) {
+    	content.put(mimeMessagePart, messageContent);
     }
     
-    public MessageContent getContent(MessagePart messagePart) {
-    	return (MessageContent)content.get(messagePart);
+    public MessageContent getContent(MimeMessagePart mimeMessagePart) {
+    	return (MessageContent)content.get(mimeMessagePart);
     }
     
     public MessageContent[] getAllContent() {
@@ -86,7 +86,7 @@ public class Message {
     	Hashtable result = new Hashtable();
     	Enumeration e = content.keys();
     	while(e.hasMoreElements()) {
-    		MessagePart part = (MessagePart)e.nextElement();
+    		MimeMessagePart part = (MimeMessagePart)e.nextElement();
     		result.put(part, content.get(part));
     	}
     	return result;

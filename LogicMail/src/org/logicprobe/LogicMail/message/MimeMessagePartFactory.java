@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.message;
 /**
  * Creates message parts, doing the necessary decoding.
  */
-public class MessagePartFactory {
+public class MimeMessagePartFactory {
     /**
      * Create a new message part
      * @param mimeType MIME type
@@ -45,7 +45,7 @@ public class MessagePartFactory {
      * @param size Size of the content this part refers to, or -1 if not available
      * @param tag Protocol-specific tag for addressing the part
      */
-    public static MessagePart createMessagePart(
+    public static MimeMessagePart createMimeMessagePart(
     		String mimeType,
     		String mimeSubtype,
     		String name,
@@ -64,7 +64,7 @@ public class MessagePartFactory {
     	if(contentId == null) { contentId = ""; }
     	if(tag == null) { tag = ""; }
     	
-    	MessagePart part;
+    	MimeMessagePart part;
         if (mimeType.equalsIgnoreCase("multipart")) {
             part = new MultiPart(mimeSubtype, tag);
         } else if (mimeType.equalsIgnoreCase("text")) {
@@ -87,7 +87,7 @@ public class MessagePartFactory {
      * @param disposition Content disposition for the part
      * @param size Size of the content this part refers to, or -1 if not available
      */
-    public static MessagePart createMessagePart(
+    public static MimeMessagePart createMimeMessagePart(
     		String mimeType,
     		String mimeSubtype,
     		String name,
@@ -96,7 +96,7 @@ public class MessagePartFactory {
     		String disposition,
     		String contentId,
     		int size) {
-    	return MessagePartFactory.createMessagePart(mimeType, mimeSubtype, name, encoding, param, disposition, contentId, size, "");
+    	return MimeMessagePartFactory.createMimeMessagePart(mimeType, mimeSubtype, name, encoding, param, disposition, contentId, size, "");
     }
     
     /**
@@ -112,7 +112,7 @@ public class MessagePartFactory {
      * @param mimeSubtype MIME subtype
      * @return True if supported, false if unsupported
      */
-    public static boolean isMessagePartSupported(String mimeType,
+    public static boolean isMimeMessagePartSupported(String mimeType,
         String mimeSubtype) {
         if (mimeType.equalsIgnoreCase("multipart")) {
             return isMultiPartSupported(mimeSubtype);

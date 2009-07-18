@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
@@ -61,6 +62,7 @@ public abstract class BaseScreen extends MainScreen {
 	private NavigationController navigationController;
 	private HeaderField headerField;
 	private boolean isExposed = false;
+	private Field originalStatusField;
 	
     public BaseScreen(NavigationController navigationController) {
         super();
@@ -75,6 +77,11 @@ public abstract class BaseScreen extends MainScreen {
     public BaseScreen(NavigationController navigationController, String title) {
         super();
         initialize(navigationController, title);
+    }
+    
+    public void setStatus(Field status) {
+    	originalStatusField = status;
+    	super.setStatus(status);
     }
     
     private void initialize(NavigationController navigationController, String title) {
@@ -118,7 +125,7 @@ public abstract class BaseScreen extends MainScreen {
         		setStatus(statusBarField);
         	}
         	else {
-        		setStatus(null);
+        		setStatus(originalStatusField);
         	}
         }
     	MailConnectionManager.getInstance().addMailConnectionListener(mailConnectionListener);
@@ -128,7 +135,7 @@ public abstract class BaseScreen extends MainScreen {
     protected void onUndisplay() {
     	isExposed = false;
         synchronized(statusBarField) {
-    		setStatus(null);
+    		setStatus(originalStatusField);
         }
     	MailConnectionManager.getInstance().removeMailConnectionListener(mailConnectionListener);
     	NotificationHandler.getInstance().cancelNotification();

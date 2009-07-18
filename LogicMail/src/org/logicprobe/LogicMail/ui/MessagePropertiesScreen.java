@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.MessageContentFactory;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MessageNode;
@@ -143,18 +143,18 @@ public class MessagePropertiesScreen extends MainScreen {
 		structureTreeField.setEmptyString("", 0);
 		structureTreeField.setDefaultExpanded(true);
 		structureTreeField.setIndentWidth(20);
-		MessagePart rootPart = messageNode.getMessageStructure();
+		MimeMessagePart rootPart = messageNode.getMessageStructure();
 		if(rootPart != null) {
 			populateStructureTreeField(0, rootPart);
 		}
 		structurePageManager.add(structureTreeField);
 	}
 	
-	private void populateStructureTreeField(int id, MessagePart part) {
+	private void populateStructureTreeField(int id, MimeMessagePart part) {
 		int newId = structureTreeField.addChildNode(id, part);
 		if(part instanceof MultiPart) {
 			MultiPart multiPart = (MultiPart)part;
-			MessagePart[] children = multiPart.getParts();
+			MimeMessagePart[] children = multiPart.getParts();
 			for(int i=children.length - 1; i>=0; --i) {
 				populateStructureTreeField(newId, children[i]);
 			}
@@ -202,7 +202,7 @@ public class MessagePropertiesScreen extends MainScreen {
 			int width,
 			int indent) {
     	StringBuffer buf = new StringBuffer();
-    	MessagePart part = (MessagePart)structureTreeField.getCookie(node);
+    	MimeMessagePart part = (MimeMessagePart)structureTreeField.getCookie(node);
     	buf.append(part.getMimeType());
     	buf.append('/');
     	buf.append(part.getMimeSubtype());

@@ -36,7 +36,7 @@ import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 
 import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
@@ -246,7 +246,7 @@ public class AccountNodeTest extends TestCase {
 		}
 		
 		public void requestMessage(MessageToken messageToken) { }
-		public void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts) { }
+		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) { }
 		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) { }
 		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) { }
 		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) { }

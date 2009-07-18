@@ -39,7 +39,7 @@ public class MessageContentFactory {
     /**
 	 * Creates a new MessageContent object.
 	 * 
-	 * @param messagePart The message part describing the MIME properties for the content.
+	 * @param mimeMessagePart The message part describing the MIME properties for the content.
 	 * @param encoding The encoding for the data.
 	 * @param param The type-specific parameter, if applicable.
 	 * @param data The raw data from which to decode the content.
@@ -48,14 +48,14 @@ public class MessageContentFactory {
 	 * 
 	 * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
 	 */
-	public static MessageContent createContent(MessagePart messagePart, String data) throws UnsupportedContentException {
+	public static MessageContent createContent(MimeMessagePart mimeMessagePart, String data) throws UnsupportedContentException {
     	MessageContent content;
-    	if(messagePart instanceof TextPart) {
-    		TextPart textPart = (TextPart)messagePart;
+    	if(mimeMessagePart instanceof TextPart) {
+    		TextPart textPart = (TextPart)mimeMessagePart;
     		content = new TextContent(textPart, textPart.getEncoding(), textPart.getCharset(), data);
     	}
-    	else if(messagePart instanceof ImagePart) {
-    		ImagePart imagePart = (ImagePart)messagePart;
+    	else if(mimeMessagePart instanceof ImagePart) {
+    		ImagePart imagePart = (ImagePart)mimeMessagePart;
     		content = new ImageContent(imagePart, imagePart.getEncoding(), data);
     	}
     	else {
@@ -70,16 +70,16 @@ public class MessageContentFactory {
      * downloads on protocols that support selective retrieval
      * of message content.
      *
-     * @param messagePart Message part object
+     * @param mimeMessagePart Message part object
      * @return True if supported, false if unsupported
      */
-    public static boolean isContentSupported(MessagePart messagePart) {
+    public static boolean isContentSupported(MimeMessagePart mimeMessagePart) {
     	boolean result;
-    	if(messagePart instanceof TextPart) {
-    		result = TextContent.isPartSupported((TextPart)messagePart);
+    	if(mimeMessagePart instanceof TextPart) {
+    		result = TextContent.isPartSupported((TextPart)mimeMessagePart);
     	}
-    	else if(messagePart instanceof ImagePart) {
-    		result = ImageContent.isPartSupported((ImagePart)messagePart);
+    	else if(mimeMessagePart instanceof ImagePart) {
+    		result = ImageContent.isPartSupported((ImagePart)mimeMessagePart);
     	}
     	else {
     		result = false;

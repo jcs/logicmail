@@ -40,7 +40,7 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Queue;
 
 public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler {
@@ -112,7 +112,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			handleRequestMessage((MessageToken)params[0]);
 			break;
 		case REQUEST_MESSAGE_PARTS:
-			handleRequestMessageParts((MessageToken)params[0], (MessagePart[])params[1]);
+			handleRequestMessageParts((MessageToken)params[0], (MimeMessagePart[])params[1]);
 			break;
 		case REQUEST_MESSAGE_DELETE:
 			handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1]);
@@ -261,7 +261,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 
-	private void handleRequestMessageParts(MessageToken messageToken, MessagePart[] messageParts) throws IOException, MailException {
+	private void handleRequestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) throws IOException, MailException {
 		checkActiveFolder(messageToken);
 
 		MessageContent[] messageContent;

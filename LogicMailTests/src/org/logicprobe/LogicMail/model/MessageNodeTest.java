@@ -35,7 +35,7 @@ import java.util.Calendar;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.util.StringParser;
@@ -90,7 +90,7 @@ public class MessageNodeTest extends TestCase {
 
 		MessageNode result = instance.toReplyMessage();
 
-		MessagePart resultPart = result.getMessageStructure();
+		MimeMessagePart resultPart = result.getMessageStructure();
 		assertNotNull("Null result", resultPart);
 		assertTrue("Bad type", resultPart instanceof TextPart);
 
@@ -135,7 +135,7 @@ public class MessageNodeTest extends TestCase {
 
 	    MessageNode result = instance.toForwardMessage();
 	    
-		MessagePart resultPart = result.getMessageStructure();
+		MimeMessagePart resultPart = result.getMessageStructure();
 		assertNotNull("Null result", resultPart);
 		assertTrue("Bad type", resultPart instanceof TextPart);
 

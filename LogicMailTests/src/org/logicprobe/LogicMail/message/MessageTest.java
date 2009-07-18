@@ -43,7 +43,7 @@ import java.util.Calendar;
 public class MessageTest extends TestCase {
     private String sampleText;
     private MessageEnvelope envelope;
-    private MessagePart structure;
+    private MimeMessagePart structure;
     private TextContent textContent;
     private Message message;
     

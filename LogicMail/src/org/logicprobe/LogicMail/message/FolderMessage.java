@@ -55,7 +55,7 @@ public class FolderMessage implements Serializable {
     private int index;
     private int uid;
     private MessageFlags messageFlags;
-    private MessagePart structure;
+    private MimeMessagePart structure;
 
     /**
      * Creates a new empty instance of FolderMessage.
@@ -222,7 +222,7 @@ public class FolderMessage implements Serializable {
      * Gets the structure of the message, if available.
      * @return Root part of the message structure tree
      */
-    public MessagePart getStructure() {
+    public MimeMessagePart getStructure() {
     	return this.structure;
     }
 
@@ -230,7 +230,7 @@ public class FolderMessage implements Serializable {
      * Sets the structure of the message.
      * @param structure Root part of the message structure tree
      */
-    public void setStructure(MessagePart structure) {
+    public void setStructure(MimeMessagePart structure) {
     	this.structure = structure;
     }
     
@@ -290,7 +290,7 @@ public class FolderMessage implements Serializable {
 		
 		boolean hasStructure = input.readBoolean();
 		if(hasStructure) {
-			structure = (MessagePart)SerializationUtils.deserializeClass(input);
+			structure = (MimeMessagePart)SerializationUtils.deserializeClass(input);
 		}
 	}
 }

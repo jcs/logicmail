@@ -43,20 +43,17 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.ImagePart;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartTransformer;
-import org.logicprobe.LogicMail.message.MessagePartVisitor;
-import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
-import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -149,9 +146,9 @@ public class MessageNode implements Node {
 	private String messageId;
 	
 	private MailboxNode parent;
-	private MessagePart messageStructure;
+	private MimeMessagePart messageStructure;
 	private Hashtable messageContent = new Hashtable();
-	private MessagePart[] attachmentParts;
+	private MimeMessagePart[] attachmentParts;
 	private String messageSource;
 	private EventListenerList listenerList = new EventListenerList();
 	private boolean refreshInProgress;
@@ -180,7 +177,7 @@ public class MessageNode implements Node {
 		this.messageId = envelope.messageId;
 		this.messageStructure = folderMessage.getStructure();
 		if(this.messageStructure != null) {
-			this.attachmentParts = MessagePartTransformer.getAttachmentParts(this.messageStructure);
+			this.attachmentParts = MimeMessagePartTransformer.getAttachmentParts(this.messageStructure);
 		}
 	}
 
@@ -485,14 +482,14 @@ public class MessageNode implements Node {
 	 * 
 	 * @param message The message structure.
 	 */
-	void setMessageStructure(MessagePart messageStructure) {
+	void setMessageStructure(MimeMessagePart messageStructure) {
 		boolean fireEvent;
 		synchronized(messageContent) {
 			this.messageStructure = messageStructure;
 			if(this.messageStructure != null) {
 				refreshInProgress = false;
 				this.flags &= ~Flag.RECENT; // RECENT = false
-				this.attachmentParts = MessagePartTransformer.getAttachmentParts(this.messageStructure);
+				this.attachmentParts = MimeMessagePartTransformer.getAttachmentParts(this.messageStructure);
 				fireEvent = true;
 			}
 			else {
@@ -540,7 +537,7 @@ public class MessageNode implements Node {
 	 * 
 	 * @return The message structure.
 	 */
-	public MessagePart getMessageStructure() {
+	public MimeMessagePart getMessageStructure() {
 		synchronized(messageContent) {
 			if(this.messageStructure != null) {
 				this.flags |= Flag.SEEN; // SEEN = true
@@ -552,12 +549,12 @@ public class MessageNode implements Node {
 	/**
 	 * Gets message content.
 	 * 
-	 * @param messagePart The part that represents the content's structural placement.
+	 * @param mimeMessagePart The part that represents the content's structural placement.
 	 * @return The content.
 	 */
-	public MessageContent getMessageContent(MessagePart messagePart) {
+	public MessageContent getMessageContent(MimeMessagePart mimeMessagePart) {
 		synchronized(messageContent) {
-			return (MessageContent)messageContent.get(messagePart);
+			return (MessageContent)messageContent.get(mimeMessagePart);
 		}
     }
 	
@@ -595,14 +592,14 @@ public class MessageNode implements Node {
 	 * Gets the message parts that are considered to be message attachments.
 	 * <p>
 	 * This is a convenience method, as it returns an array that is populated
-	 * from the message structure when {@link #setMessageStructure(MessagePart)}
+	 * from the message structure when {@link #setMessageStructure(MimeMessagePart)}
 	 * is called.  This array will contain all message parts that are not of
 	 * type multi, text, or unsupported.
 	 * </p>
 	 * 
 	 * @return Message attachments.
 	 */
-	public MessagePart[] getAttachmentParts() {
+	public MimeMessagePart[] getAttachmentParts() {
 		synchronized(messageContent) {
 			return this.attachmentParts;
 		}
@@ -698,7 +695,7 @@ public class MessageNode implements Node {
 	        Message message = new Message(messageStructure);
 	        Enumeration en = messageContent.keys();
 	        while(en.hasMoreElements()) {
-	        	MessagePart part = (MessagePart)en.nextElement();
+	        	MimeMessagePart part = (MimeMessagePart)en.nextElement();
 	        	message.putContent(part, (MessageContent)messageContent.get(part));
 	        }
 	        
@@ -904,7 +901,7 @@ public class MessageNode implements Node {
         }
     }
 
-    private class FindFirstTextPartVisitor implements MessagePartVisitor {
+    private class FindFirstTextPartVisitor extends AbstractMimeMessagePartVisitor {
         private TextPart firstTextPart;
 
         public TextPart getFirstTextPart() { return firstTextPart; }
@@ -914,10 +911,6 @@ public class MessageNode implements Node {
 	        	firstTextPart = part;
 	        }
 		}
-
-		public void visitImagePart(ImagePart part) { }
-		public void visitMultiPart(MultiPart part) { }
-		public void visitUnsupportedPart(UnsupportedPart part) { }
     };
     
     /**
@@ -981,7 +974,7 @@ public class MessageNode implements Node {
 			AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
 			if(mailStore.hasMessageParts()) {
 				int maxSize = Integer.MAX_VALUE;
-				MessagePart[] displayableParts = MessagePartTransformer.getDisplayableParts(this.messageStructure);
+				MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(this.messageStructure);
 				AccountConfig accountConfig = parent.getParentAccount().getAccountConfig();
 				if(accountConfig instanceof ImapConfig) {
 					maxSize = ((ImapConfig)accountConfig).getMaxMessageSize();
@@ -999,7 +992,7 @@ public class MessageNode implements Node {
 				}
 				
 				if(partsToFetch.size() > 0) {
-					displayableParts = new MessagePart[partsToFetch.size()];
+					displayableParts = new MimeMessagePart[partsToFetch.size()];
 					partsToFetch.copyInto(displayableParts);
 					mailStore.requestMessageParts(messageToken, displayableParts);
 					result = true;

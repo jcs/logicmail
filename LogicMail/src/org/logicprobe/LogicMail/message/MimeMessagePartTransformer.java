@@ -36,26 +36,26 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
 /**
- * Utility class to take a {@link MessagePart} tree and transform
+ * Utility class to take a {@link MimeMessagePart} tree and transform
  * it into a list based on various rules.
  */
-public class MessagePartTransformer {
+public class MimeMessagePartTransformer {
 	/**
 	 * Gets a list of displayable message parts in order.
 	 * 
 	 * @param rootPart The root part of the message.
 	 * @return The displayable parts.
 	 */
-	public static MessagePart[] getDisplayableParts(MessagePart rootPart) {
+	public static MimeMessagePart[] getDisplayableParts(MimeMessagePart rootPart) {
 		DisplayablePartVisitor visitor = new DisplayablePartVisitor();
 		rootPart.accept(visitor);
 		Vector parts = visitor.getDisplayableParts();
-		MessagePart[] result = new MessagePart[parts.size()];
+		MimeMessagePart[] result = new MimeMessagePart[parts.size()];
 		parts.copyInto(result);
 		return result;
 	}
 	
-	private static class DisplayablePartVisitor implements MessagePartVisitor {
+	private static class DisplayablePartVisitor extends AbstractMimeMessagePartVisitor {
 		private Vector displayableParts = new Vector();
 		int displayFormat;
 		
@@ -79,7 +79,7 @@ public class MessagePartTransformer {
 							displayableParts.addElement(part);
 						}
 						else {
-							MessagePart[] siblings = parent.getParts();
+							MimeMessagePart[] siblings = parent.getParts();
 							boolean otherPlain = false;
 							for(int i=0; i<siblings.length; i++) {
 								if(siblings[i] != part
@@ -99,7 +99,7 @@ public class MessagePartTransformer {
 							displayableParts.addElement(part);
 						}
 						else {
-							MessagePart[] siblings = parent.getParts();
+							MimeMessagePart[] siblings = parent.getParts();
 							boolean otherHtml = false;
 							for(int i=0; i<siblings.length; i++) {
 								if(siblings[i] != part
@@ -129,14 +129,6 @@ public class MessagePartTransformer {
 				displayableParts.addElement(part);
 			}
 		}
-
-		public void visitUnsupportedPart(UnsupportedPart part) {
-			// No need to display unknown things
-		}
-		
-		public void visitMultiPart(MultiPart part) {
-			// MultiPart sections are not displayed
-		}
 	}
 	
 	/**
@@ -154,16 +146,16 @@ public class MessagePartTransformer {
 	 * @param rootPart The root part of the message.
 	 * @return The displayable parts.
 	 */
-	public static MessagePart[] getAttachmentParts(MessagePart rootPart) {
+	public static MimeMessagePart[] getAttachmentParts(MimeMessagePart rootPart) {
 		AttachmentPartVisitor visitor = new AttachmentPartVisitor();
 		rootPart.accept(visitor);
 		Vector parts = visitor.getAttachmentParts();
-		MessagePart[] result = new MessagePart[parts.size()];
+		MimeMessagePart[] result = new MimeMessagePart[parts.size()];
 		parts.copyInto(result);
 		return result;
 	}
 
-	private static class AttachmentPartVisitor implements MessagePartVisitor {
+	private static class AttachmentPartVisitor extends AbstractMimeMessagePartVisitor {
 		private Vector attachmentParts = new Vector();
 		
 		public Vector getAttachmentParts() { return attachmentParts; }
@@ -178,13 +170,7 @@ public class MessagePartTransformer {
 		public void visitImagePart(ImagePart part) {
 			attachmentParts.addElement(part);
 		}
-
-		public void visitUnsupportedPart(UnsupportedPart part) {
-			// Not an attachment part
-		}
 		
-		public void visitMultiPart(MultiPart part) {
-			// Not an attachment part
-		}
+		// TODO: Add ApplicationPart, AudioPart, VideoPart, and MessagePart
 	}
 }

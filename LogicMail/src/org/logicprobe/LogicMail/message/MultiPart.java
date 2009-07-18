@@ -42,8 +42,8 @@ import net.rim.device.api.util.Arrays;
 /**
  * Multi-part message part (MIME type: "multipart/????")
  */
-public class MultiPart extends MessagePart {
-    private MessagePart[] parts;
+public class MultiPart extends MimeMessagePart {
+    private MimeMessagePart[] parts;
     private boolean partMixed;
     private boolean partAlternative;
     private boolean partRelated;
@@ -80,7 +80,7 @@ public class MultiPart extends MessagePart {
     	this("", "");
     }
     
-    public void accept(MessagePartVisitor visitor) {
+    public void accept(MimeMessagePartVisitor visitor) {
         visitor.visitMultiPart(this);
         if(parts != null) {
             for(int i=0;i<parts.length;i++)
@@ -88,9 +88,9 @@ public class MultiPart extends MessagePart {
         }
     }
 
-    public void addPart(MessagePart part) {
+    public void addPart(MimeMessagePart part) {
         if(parts == null) {
-            parts = new MessagePart[1];
+            parts = new MimeMessagePart[1];
             parts[0] = part;
         }
         else {
@@ -99,7 +99,7 @@ public class MultiPart extends MessagePart {
         part.setParent(this);
     }
     
-    public MessagePart[] getParts() {
+    public MimeMessagePart[] getParts() {
         return parts;
     }
 
@@ -149,7 +149,7 @@ public class MultiPart extends MessagePart {
 		
 		int partCount = input.readInt();
 		for(int i=0; i<partCount; i++) {
-			MessagePart part = (MessagePart)SerializationUtils.deserializeClass(input);
+			MimeMessagePart part = (MimeMessagePart)SerializationUtils.deserializeClass(input);
 			this.addPart(part);
 		}
 	}

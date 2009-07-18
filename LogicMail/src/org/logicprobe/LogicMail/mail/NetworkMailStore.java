@@ -37,7 +37,7 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 
 public class NetworkMailStore extends AbstractMailStore {
 	private IncomingMailClient client;
@@ -138,7 +138,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken });
 	}
 
-	public void requestMessageParts(MessageToken messageToken, MessagePart[] messageParts) {
+	public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageParts });
 	}
 	
@@ -187,7 +187,7 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
 			results = (Object[])result;
-			fireMessageAvailable((MessageToken)results[0], (MessagePart)results[1], (MessageContent[])results[2], null);
+			fireMessageAvailable((MessageToken)results[0], (MimeMessagePart)results[1], (MessageContent[])results[2], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
 			results = (Object[])result;

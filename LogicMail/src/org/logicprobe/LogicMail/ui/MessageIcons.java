@@ -30,12 +30,15 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.message.ApplicationPart;
+import org.logicprobe.LogicMail.message.AudioPart;
 import org.logicprobe.LogicMail.message.ImagePart;
-import org.logicprobe.LogicMail.message.MessagePart;
-import org.logicprobe.LogicMail.message.MessagePartVisitor;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePartVisitor;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.message.UnsupportedPart;
+import org.logicprobe.LogicMail.message.VideoPart;
 
 import net.rim.device.api.system.Bitmap;
 
@@ -49,23 +52,38 @@ public class MessageIcons {
 	private Bitmap mimeVideoBitmap;
 	private Bitmap mimeApplicationBitmap;
 	
-	
 	private MessageIcons() {
 		
 	}
 	
-	public static Bitmap getIcon(MessagePart messagePart) {
-		return instance.getIconImpl(messagePart);
+	public static Bitmap getIcon(MimeMessagePart mimeMessagePart) {
+		return instance.getIconImpl(mimeMessagePart);
 	}
 
-	private Bitmap getIconImpl(MessagePart messagePart) {
+	private Bitmap getIconImpl(MimeMessagePart mimeMessagePart) {
 		visitor.clearIcon();
-		messagePart.accept(visitor);
+		mimeMessagePart.accept(visitor);
 		return visitor.getIcon();
 	}
 	
-	private class MessagePartIconVisitor implements MessagePartVisitor {
+	private class MessagePartIconVisitor implements MimeMessagePartVisitor {
 		private Bitmap icon;
+
+		public void visitApplicationPart(ApplicationPart part) {
+			if(icon != null) { return; }
+			if(mimeApplicationBitmap == null) {
+				mimeApplicationBitmap = Bitmap.getBitmapResource("mime_application.png");
+			}
+			icon = mimeApplicationBitmap;
+		}
+
+		public void visitAudioPart(AudioPart part) {
+			if(icon != null) { return; }
+			if(mimeAudioBitmap == null) {
+				mimeAudioBitmap = Bitmap.getBitmapResource("mime_audio.png");
+			}
+			icon = mimeAudioBitmap;
+		}
 
 		public void visitImagePart(ImagePart part) {
 			if(icon != null) { return; }
@@ -86,28 +104,19 @@ public class MessageIcons {
 		public void visitMultiPart(MultiPart part) {
 			if(icon != null) { return; }
 		}
-		
+
+		public void visitVideoPart(VideoPart part) {
+			if(mimeVideoBitmap == null) {
+				mimeVideoBitmap = Bitmap.getBitmapResource("mime_video.png");
+			}
+			icon = mimeVideoBitmap;
+		}
+
 		public void visitUnsupportedPart(UnsupportedPart part) {
-			if(icon != null) { return; }
-			String type = part.getMimeType();
-			if(type.equals("audio")) {
-				if(mimeAudioBitmap == null) {
-					mimeAudioBitmap = Bitmap.getBitmapResource("mime_audio.png");
-				}
-				icon = mimeAudioBitmap;
-			}
-			else if(type.equals("video")) {
-				if(mimeVideoBitmap == null) {
-					mimeVideoBitmap = Bitmap.getBitmapResource("mime_video.png");
-				}
-				icon = mimeVideoBitmap;
-			}
-			else {
-				if(mimeApplicationBitmap == null) {
-					mimeApplicationBitmap = Bitmap.getBitmapResource("mime_application.png");
-				}
-				icon = mimeApplicationBitmap;
-			}
+			// Use the application icon for unsupported types.
+			// We can safely pass null since the parameter is
+			// not currently used by any of the visitor methods.
+			visitApplicationPart(null);
 		}
 		
 		public void clearIcon() {

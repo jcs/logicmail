@@ -34,7 +34,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
@@ -135,7 +135,7 @@ public class MailboxMessageField extends Field {
         String senderText = createSenderText();
         String dateString = createDisplayDate();
         Bitmap attachmentIcon = null;
-        MessagePart[] attachments = messageNode.getAttachmentParts();
+        MimeMessagePart[] attachments = messageNode.getAttachmentParts();
         if(attachments != null && attachments.length > 0) {
         	attachmentIcon = Bitmap.getBitmapResource("mail_attachment.png");
         }
