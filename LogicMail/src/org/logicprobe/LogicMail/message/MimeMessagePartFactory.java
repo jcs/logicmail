@@ -109,7 +109,7 @@ public class MimeMessagePartFactory {
     
     /**
      * Find out if a particular message part type is supported
-     * without having to create it.  This is useful to optimize
+     * as displayable content.  This is useful to optimize
      * downloads on protocols that support selective retrieval
      * of message parts.
      * Right now the supported subtypes are hard-coded, but they

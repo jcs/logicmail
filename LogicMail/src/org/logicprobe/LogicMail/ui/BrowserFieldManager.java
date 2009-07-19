@@ -34,7 +34,6 @@ import org.logicprobe.LogicMail.util.StringParser;
 
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 

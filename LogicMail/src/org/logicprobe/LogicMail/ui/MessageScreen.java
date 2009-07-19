@@ -425,13 +425,19 @@ public class MessageScreen extends BaseScreen {
     private void saveAttachment(ContentPart contentPart) {
     	// TODO: Support on-demand downloading of additional content
     	MimeMessageContent content = messageNode.getMessageContent(contentPart);
-    	if(content != null) {
-        	FileSaveDialog dialog = new FileSaveDialog(contentPart.getName());
-    		if(dialog.doModal() != Dialog.CANCEL) {
-    			(new SaveAttachmentThread(content, dialog.getFileUrl())).start();
-    			Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
-    		}
-    	}
+    	FileSaveDialog dialog = new FileSaveDialog(contentPart.getName());
+		if(dialog.doModal() != Dialog.CANCEL) {
+	    	if(content != null) {
+	    		// Content has been downloaded already, so just save it
+				(new SaveAttachmentThread(content, dialog.getFileUrl())).start();
+				Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
+	    	}
+	    	else {
+	    		// Download content from server, then save it
+	    		// TODO: Implement on-demand attachment downloading
+	    		Status.show("Attachment has not been downloaded from the server");
+	    	}
+		}
 	}
 
     private static class SaveAttachmentThread extends Thread {

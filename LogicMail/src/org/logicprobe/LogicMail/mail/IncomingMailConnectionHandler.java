@@ -36,6 +36,7 @@ import java.util.Vector;
 
 import net.rim.device.api.system.UnsupportedOperationException;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -199,6 +200,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 
 	private void handleRequestFolderTree() throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE));
 		FolderTreeItem root = incomingClient.getFolderTree();
 
 		MailConnectionHandlerListener listener = getListener();
@@ -208,6 +210,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS));
 		incomingClient.refreshFolderStatus(folders);
 		
 		MailConnectionHandlerListener listener = getListener();
@@ -217,6 +220,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES));
 		checkActiveFolder(folder);
 		
 		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex);
@@ -240,6 +244,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestFolderMessagesRecent(FolderTreeItem folder) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES));
 		checkActiveFolder(folder);
         
 		FolderMessage[] messages = incomingClient.getNewFolderMessages();
@@ -251,6 +256,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestMessage(MessageToken messageToken) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE));
 		checkActiveFolder(messageToken);
 		
 		Message message = incomingClient.getMessage(messageToken);
@@ -262,6 +268,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 
 	private void handleRequestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE));
 		checkActiveFolder(messageToken);
 
 		MimeMessageContent[] messageContent;
@@ -290,6 +297,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_DELETE));
 		checkActiveFolder(messageToken);
 		
 		incomingClient.deleteMessage(messageToken, messageFlags);
@@ -301,6 +309,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UNDELETE));
 		checkActiveFolder(messageToken);
 		
 		incomingClient.undeleteMessage(messageToken, messageFlags);
@@ -312,6 +321,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_ANSWERED));
 		// Replace this with a more general method:
 		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
 			((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).messageAnswered(messageToken, messageFlags);
@@ -325,6 +335,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_APPEND));
 		// Clean up this interface:
 		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
 			((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).appendMessage(folder, rawMessage, initialFlags);

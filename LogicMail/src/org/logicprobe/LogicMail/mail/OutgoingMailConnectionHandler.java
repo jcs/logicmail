@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.Queue;
@@ -93,6 +94,7 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestSendMessage(MessageEnvelope envelope, Message message) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_SEND_MESSAGE));
 		String messageSource = outgoingClient.sendMessage(envelope, message);
 		
 		MailConnectionHandlerListener listener = getListener();

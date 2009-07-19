@@ -38,18 +38,67 @@ import org.logicprobe.LogicMail.conf.ConnectionConfig;
  */
 public class MailConnectionStatusEvent extends MailConnectionEvent {
 	private String message;
+	private int progressType;
+	private int progressPercentage;
 	
-	/** Creates a new instance of MailConnectionStatusEvent */
-	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, String message) {
+	/** The progress is indeterminate. */
+	public static final int PROGRESS_INDETERMINATE = 0;
+	/** The progress is measured incrementally. */
+	public static final int PROGRESS_MEASURED = 0;
+	
+	/**
+	 * Creates a new instance of MailConnectionStatusEvent.
+	 * 
+	 * @param source the source
+	 * @param connectionConfig the connection configuration instance
+	 * @param message the status message
+	 * @param progressType the progress type
+	 * @param progressPercentage the progress percentage
+	 */
+	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, String message, int progressType, int progressPercentage) {
 		super(source, connectionConfig);
 		this.message = message;
+		this.progressType = progressType;
+		this.progressPercentage = progressPercentage;
 	}
 	
 	/**
+	 * Creates a new instance of MailConnectionStatusEvent
+	 * with indeterminate progress.
+	 * 
+	 * @param source the source
+	 * @param connectionConfig the connection configuration instance
+	 * @param message the status message
+	 */
+	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, String message) {
+		this(source, connectionConfig, message, PROGRESS_INDETERMINATE, 0);
+	}
+
+	/**
 	 * Gets the status message.
+	 * 
 	 * @return Status message
 	 */
 	public String getMessage() {
 		return message;
+	}
+	
+	/**
+	 * Gets the progress type.
+	 * 
+	 * @return The progress type.
+	 */
+	public int getProgressType() {
+		return progressType;
+	}
+
+	/**
+	 * Gets the progress percentage.
+	 * Only valid if the progress type is <tt>PROGRESS_MEASURED</tt>.
+	 * 
+	 * @return The progress percentage.
+	 */
+	public int getProgressPercentage() {
+		return progressPercentage;
 	}
 }

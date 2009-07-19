@@ -171,6 +171,16 @@ public class MimeMessagePartTransformer {
 			attachmentParts.addElement(part);
 		}
 		
-		// TODO: Add ApplicationPart, AudioPart, VideoPart, and MessagePart
+		public void visitApplicationPart(ApplicationPart part) {
+			attachmentParts.addElement(part);
+		}
+		
+		public void visitAudioPart(AudioPart part) {
+			attachmentParts.addElement(part);
+		}
+		
+		public void visitVideoPart(VideoPart part) {
+			attachmentParts.addElement(part);
+		}
 	}
 }

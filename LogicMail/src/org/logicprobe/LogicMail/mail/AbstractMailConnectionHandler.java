@@ -33,9 +33,11 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.EventLogger;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.Queue;
 
 /**
@@ -44,6 +46,7 @@ import org.logicprobe.LogicMail.util.Queue;
  * hooks for UI interactions.
  */
 public abstract class AbstractMailConnectionHandler {
+	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private MailClient client;
 	private ConnectionThread connectionThread;
 	private int state;
@@ -194,7 +197,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
      */
 	private void handleOpeningConnection() throws IOException, MailException {
-		showStatus("Opening connection...");
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_OPENING_CONNECTION));
 		if(checkLogin(client)) {
 			if(client.open()) {
 				invalidLogin = false;
@@ -255,8 +258,7 @@ public abstract class AbstractMailConnectionHandler {
 			int type = ((Integer)request[0]).intValue();
 			Object[] params = (Object[])request[1];
 			
-			// Handle the specific request
-			showStatus("Processing requests...");
+			// Delegate to subclasses to handle the specific request
 			handleRequest(type, params);
 			
 			synchronized(requestQueue) {
@@ -268,8 +270,13 @@ public abstract class AbstractMailConnectionHandler {
 
 	/**
 	 * Handles a specific request during the REQUESTS state.
+	 * <p>
 	 * Subclasses should implement this to dispatch requests for all
 	 * the request types they know how to handle.
+	 * Subclasses should also call {@link #showStatus(String)} and/or
+	 * {@link #showStatus(String, int)} as necessary to update the
+	 * user on the status of the operation.
+	 * </p>
 	 * 
 	 * @param type Type identifier for the request.
 	 * @param params Parameters for the request.
@@ -324,7 +331,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
      */
 	private void handleClosingConnection() throws IOException, MailException {
-		showStatus("Closing connection...");
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_CLOSING_CONNECTION));
 		handleBeforeClosing();
 		try { client.close(); } catch (IOException e) {} catch (MailException e) {}
 		setConnectionState(STATE_CLOSED);
@@ -397,8 +404,18 @@ public abstract class AbstractMailConnectionHandler {
 	 * 
 	 * @param message The message to show
 	 */
-	private void showStatus(String message) {
+	protected void showStatus(String message) {
 		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), message);
+	}
+	
+	/**
+	 * Show a status message with a progress percentage.
+	 * 
+	 * @param message The message to show
+	 * @param progress The progress percentage
+	 */
+	protected void showStatus(String message, int progress) {
+		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), message, progress);
 	}
 	
 	/**
