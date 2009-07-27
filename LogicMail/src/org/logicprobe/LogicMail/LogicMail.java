@@ -87,7 +87,7 @@ public class LogicMail extends UiApplication {
             // Set the language, if configured
             String languageCode =
                 MailSettings.getInstance().getGlobalConfig().getLanguageCode();
-            if(languageCode != null) {
+            if(languageCode != null && languageCode.length() > 0) {
                 try {
                     Locale.setDefault(Locale.get(languageCode));
                 } catch (Exception e) { }
