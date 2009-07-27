@@ -40,10 +40,17 @@ import org.logicprobe.LogicMail.message.MessageFlags;
 /**
  * Provides a generic interface to different incoming mail protocols.
  * This class allows most of the UI code to be protocol-agnostic.
- *
+ * <p>
  * Since a number of features may not be supported by all protocols,
- * a variety of hasXXXX() methods are provided by this interface to
+ * a variety of <tt>hasXXXX()</tt> methods are provided by this interface to
  * determine whether those features exist.
+ * </p>
+ * <p>
+ * Methods that involve a noticeable amount of network traffic and/or
+ * parsing overhead take an instance of {@link MailProgressHandler} as
+ * a parameter.  This allows more granular progress monitoring than would
+ * otherwise be available.
+ * </p>
  */
 public interface IncomingMailClient extends MailClient {
     /**
@@ -82,22 +89,27 @@ public interface IncomingMailClient extends MailClient {
      * If the tree has no singular root node, then this should
      * reference an invisible root node.  Otherwise, this should
      * reference the visible root folder.
-     *
+     * 
+     * @param progressHandler the progress handler
+     * 
      * @return Root folder of the tree, and all children below it
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract FolderTreeItem getFolderTree()
+    public abstract FolderTreeItem getFolderTree(MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
      * Refresh the folder status.
-     *
+     * 
      * @param folders The folders to refresh
+     * @param progressHandler the progress handler
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void refreshFolderStatus(FolderTreeItem[] folders)
+    public abstract void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
@@ -149,14 +161,17 @@ public interface IncomingMailClient extends MailClient {
     
     /**
      * Get a list of the messages in the selected folder.
-     *
+     * 
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
+     * @param progressHandler the progress handler
+     * 
      * @return List of message envelopes
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
+    public abstract FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
@@ -168,22 +183,30 @@ public interface IncomingMailClient extends MailClient {
      * mailbox since.  Otherwise, it will behave the same as it
      * did on the first invocation.
      * 
+     * @param progressHandler the progress handler
+     * 
      * @return List of message envelopes
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract FolderMessage[] getNewFolderMessages() throws IOException, MailException;
+    public abstract FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Get a particular message from the selected folder.
      * The details of message retrieval should be constrained by
      * protocol-specific capabilities, application-wide data
      * format capabilities, and user configuration options.
-     *
+     * 
+     * @param messageToken the message token
+     * @param progressHandler the progress handler
+     * 
+     * @return the message
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract Message getMessage(MessageToken messageToken) throws IOException, MailException;
+    public abstract Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Deletes a particular message from the selected folder.

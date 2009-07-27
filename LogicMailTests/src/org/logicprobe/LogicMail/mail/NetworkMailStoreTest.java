@@ -344,13 +344,13 @@ public class NetworkMailStoreTest extends TestCase {
 		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
 		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
-		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex)
+		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
 				throws IOException, MailException { this.firstIndex = firstIndex; this.lastIndex = lastIndex; return this.folderMessages; }
-		public FolderMessage[] getNewFolderMessages() throws IOException, MailException { return null; }
-		public FolderTreeItem getFolderTree() throws IOException, MailException { return this.folderTree; }
-		public Message getMessage(MessageToken messageToken)
+		public FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException { return null; }
+		public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException { return this.folderTree; }
+		public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler)
 				throws IOException, MailException { this.messageToken = messageToken; return this.message; }
-		public void refreshFolderStatus(FolderTreeItem[] folders)
+		public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler)
 				throws IOException, MailException { folders[0].setMsgCount(refreshedMsgCount); }
 		public void setActiveFolder(FolderTreeItem folderItem)
 		throws IOException, MailException { this.activeFolder = folderItem; }

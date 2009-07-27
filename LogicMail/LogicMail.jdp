@@ -107,6 +107,7 @@ src\org\logicprobe\LogicMail\mail\MailConnectionStatusEvent.java
 src\org\logicprobe\LogicMail\mail\MaildirFolder.java
 src\org\logicprobe\LogicMail\mail\MailException.java
 src\org\logicprobe\LogicMail\mail\MailFactory.java
+src\org\logicprobe\LogicMail\mail\MailProgressHandler.java
 src\org\logicprobe\LogicMail\mail\MailSenderEvent.java
 src\org\logicprobe\LogicMail\mail\MailSenderListener.java
 src\org\logicprobe\LogicMail\mail\MailStoreEvent.java

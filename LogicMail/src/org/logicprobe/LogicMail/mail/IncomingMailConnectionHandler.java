@@ -200,8 +200,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 
 	private void handleRequestFolderTree() throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE));
-		FolderTreeItem root = incomingClient.getFolderTree();
+		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE);
+		showStatus(message);
+		FolderTreeItem root = incomingClient.getFolderTree(getProgressHandler(message));
 
 		MailConnectionHandlerListener listener = getListener();
 		if(root != null && listener != null) {
@@ -210,8 +211,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS));
-		incomingClient.refreshFolderStatus(folders);
+		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);
+		showStatus(message);
+		incomingClient.refreshFolderStatus(folders, getProgressHandler(message));
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
@@ -220,10 +222,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES));
+		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
+		showStatus(message + "...");
 		checkActiveFolder(folder);
 		
-		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex);
+		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex, getProgressHandler(message));
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messages != null && messages.length > 0 && listener != null) {
@@ -244,10 +247,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestFolderMessagesRecent(FolderTreeItem folder) throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES));
+		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
+		showStatus(message + "...");
 		checkActiveFolder(folder);
         
-		FolderMessage[] messages = incomingClient.getNewFolderMessages();
+		FolderMessage[] messages = incomingClient.getNewFolderMessages(getProgressHandler(message));
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messages != null && messages.length > 0 && listener != null) {
@@ -256,10 +260,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 	
 	private void handleRequestMessage(MessageToken messageToken) throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE));
+		String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
+		showStatus(statusMessage);
 		checkActiveFolder(messageToken);
 		
-		Message message = incomingClient.getMessage(messageToken);
+		Message message = incomingClient.getMessage(messageToken, getProgressHandler(statusMessage));
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(message != null && listener != null) {
@@ -268,7 +273,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	}
 
 	private void handleRequestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE));
+		String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
+		showStatus(statusMessage);
 		checkActiveFolder(messageToken);
 
 		MimeMessageContent[] messageContent;
@@ -278,7 +284,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			Vector messageContentVector = new Vector();
 			for(int i=0; i<messageParts.length; i++) {
 				MimeMessageContent content =
-					((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i]);
+					((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i], getProgressHandler(statusMessage));
 				if(content != null) {
 					messageContentVector.addElement(content);
 				}

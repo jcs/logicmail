@@ -36,6 +36,7 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.util.Connection;
 
 /**
@@ -121,13 +122,23 @@ public class PopProtocol {
      * @param lines Number of lines to retrieve
      */
     public String[] executeTop(int index, int lines) throws IOException, MailException {
+    	return executeTop(index, lines, null);
+    }
+    
+    /**
+     * Execute the "TOP" command
+     * @param index Message index
+     * @param lines Number of lines to retrieve
+     * @param progressHandler progress handler
+     */
+    public String[] executeTop(int index, int lines, MailProgressHandler progressHandler) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
             ("PopProtocol.executeTop("+index+", "+lines+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        return executeFollow("TOP " + index + " " + lines);
+        return executeFollow("TOP " + index + " " + lines, progressHandler);
     }
     
     /**
@@ -187,16 +198,24 @@ public class PopProtocol {
      * receiving every new line until a lone "." is encountered.
      *
      * @param command The command to execute
+     * @param progressHandler progress handler
      * @return An array of lines containing the response
      */
-    private String[] executeFollow(String command) throws IOException, MailException {
+    private String[] executeFollow(String command, MailProgressHandler progressHandler) throws IOException, MailException {
+    	int preCount = connection.getBytesReceived();
         execute(command);
-            
+        
         String buffer = connection.receive();
+        int postCount = connection.getBytesReceived();
+        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
+
         String[] lines = new String[0];
         while(buffer != null && !buffer.equals(".")) {
             Arrays.add(lines, buffer);
+            preCount = postCount;
             buffer = connection.receive();
+            postCount = connection.getBytesReceived();
+            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }
         return lines;
     }

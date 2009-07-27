@@ -1175,4 +1175,26 @@ public class StringParser {
     	}
     	return result;
     }
+    
+    /**
+     * Converts a numerical byte quantity into a nicer human-readable
+     * unit representation.
+     * 
+     * @param dataSize Size in bytes
+     * @return Printable string
+     */
+    public static String toDataSizeString(int dataSize) {
+    	StringBuffer buf = new StringBuffer();
+
+    	if(dataSize < 1024) {
+			buf.append(dataSize);
+			buf.append('B');
+		}
+		else {
+			buf.append((int)(dataSize / 1024));
+			buf.append('k');
+		}
+    	
+    	return buf.toString();
+    }
 }

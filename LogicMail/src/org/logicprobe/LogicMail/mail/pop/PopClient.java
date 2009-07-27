@@ -45,6 +45,7 @@ import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -131,14 +132,23 @@ public class PopClient implements IncomingMailClient {
 		}
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getAcctConfig()
+     */
     public AccountConfig getAcctConfig() {
         return accountConfig;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getConnectionConfig()
+     */
     public ConnectionConfig getConnectionConfig() {
 		return getAcctConfig();
 	}
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#open()
+     */
     public boolean open() throws IOException, MailException {
         if(!openStarted) {
             connection.open();
@@ -161,6 +171,9 @@ public class PopClient implements IncomingMailClient {
         return true;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#close()
+     */
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
             try {
@@ -181,100 +194,158 @@ public class PopClient implements IncomingMailClient {
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#isConnected()
+     */
     public boolean isConnected() {
         return connection.isConnected();
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getUsername()
+     */
     public String getUsername() {
         return username;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#setUsername(java.lang.String)
+     */
     public void setUsername(String username) {
         this.username = username;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getPassword()
+     */
     public String getPassword() {
         return password;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#setPassword(java.lang.String)
+     */
     public void setPassword(String password) {
         this.password = password;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasFolders()
+     */
     public boolean hasFolders() {
         return false;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasUndelete()
+     */
     public boolean hasUndelete() {
         return false;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
+     */
     public boolean hasIdle() {
 		return false;
 	}
 
-    public FolderTreeItem getFolderTree() throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderTree(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException {
         return null;
     }
 
-    public void refreshFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
-        // Only one mailbox can exist, so we just pull the message counts
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#refreshFolderStatus(org.logicprobe.LogicMail.mail.FolderTreeItem[], org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler) throws IOException, MailException {
+        // Only one mailbox can exist, so we just pull the message counts.
+    	// Since this is a single operation with POP, there is no reason to
+    	// provide more detailed status through the progress handler.
         activeMailbox.setMsgCount(popProtocol.executeStat());
         if(folders.length == 1 && folders[0] != activeMailbox) {
         	folders[0].setMsgCount(activeMailbox.getMsgCount());
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getInboxFolder()
+     */
     public FolderTreeItem getInboxFolder() {
     	return activeMailbox;
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getActiveFolder()
+     */
     public FolderTreeItem getActiveFolder() {
         return activeMailbox;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.FolderTreeItem)
+     */
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.MessageToken)
+     */
     public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
     }
     
-    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
-        FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler) throws IOException, MailException {
+    	FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
         int index = 0;
         String[] headerText;
         String uid;
         MessageEnvelope env;
+        int preCount;
+        int postCount = connection.getBytesReceived();
         for(int i=firstIndex; i<=lastIndex; i++) {
+        	preCount = postCount;
             headerText = popProtocol.executeTop(i, 0);
             uid = popProtocol.executeUidl(i);
             env = MailMessageParser.parseMessageEnvelope(headerText);
             folderMessages[index++] = new FolderMessage(
             		new PopMessageToken(i, uid),
             		env, i, uid.hashCode());
+            postCount = connection.getBytesReceived();
+            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }
         return folderMessages;
     }
 
-    public FolderMessage[] getNewFolderMessages() throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException {
     	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
 		int msgCount = activeMailbox.getMsgCount();
         int firstIndex = Math.max(1, msgCount - count);
-    	return getFolderMessages(firstIndex, activeMailbox.getMsgCount());
+    	return getFolderMessages(firstIndex, activeMailbox.getMsgCount(), progressHandler);
     }
 
-    public Message getMessage(MessageToken messageToken) throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {
     	PopMessageToken popMessageToken = (PopMessageToken)messageToken;
     	
         // Figure out the max number of lines
         int maxLines = accountConfig.getMaxMessageLines();
 
         // Download the message text
-        String[] message = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines);
+        String[] message = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines, progressHandler);
         
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, StringParser.createInputStream(message));
@@ -287,6 +358,9 @@ public class PopClient implements IncomingMailClient {
         return msg;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
     public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
     	PopMessageToken popMessageToken = (PopMessageToken)messageToken;
     	
@@ -294,26 +368,40 @@ public class PopClient implements IncomingMailClient {
         messageFlags.setDeleted(true);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#undeleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
     public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
         // Undelete is not supported, so we do nothing here.
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
+     */
     public boolean noop() throws IOException, MailException {
     	popProtocol.executeNoop();
 		return false;
 	}
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeBegin()
+	 */
 	public void idleModeBegin() throws IOException, MailException {
 		// Idle mode is not supported, so we do nothing here.
 	}
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeEnd()
+	 */
 	public void idleModeEnd() throws IOException, MailException {
 		// Idle mode is not supported, so we do nothing here.
 	}
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModePoll()
+	 */
 	public boolean idleModePoll() throws IOException, MailException {
 		// Idle mode is not supported, so we do nothing here.
 		return false;
 	}
-
 }

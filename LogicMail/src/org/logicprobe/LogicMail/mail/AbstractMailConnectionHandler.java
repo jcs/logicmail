@@ -39,6 +39,7 @@ import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.Queue;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * This class is responsible for managing the lifecycle of a mail
@@ -419,6 +420,21 @@ public abstract class AbstractMailConnectionHandler {
 	}
 	
 	/**
+	 * Gets a progress handler for a request with the provided status message.
+	 * <p>
+	 * This default progress handler displays the message along with the
+	 * amount of data downloaded for network updates, and percentage complete
+	 * for processing updates.
+	 * </p>
+	 * 
+	 * @param message The status message for the request
+	 * @return The progress handler
+	 */
+	protected MailProgressHandler getProgressHandler(String message) {
+		return new MailConnectionProgressHandler(message);
+	}
+	
+	/**
 	 * Show an error message.
 	 * 
 	 * @param message The message to show
@@ -612,4 +628,37 @@ public abstract class AbstractMailConnectionHandler {
         	}
         }
 	}
+	
+	/**
+	 * Standard progress handler to be used for mail connection handlers.
+	 * This takes the operation's message and appends a relevant status
+	 * indicator to it.
+	 */
+	private class MailConnectionProgressHandler implements MailProgressHandler {
+		private int total = 0;
+		private int lastTotal = 0;
+		private int threshold = 128;
+		private String messageStart;
+		private String networkMessageEnd = ")...";
+		private String processingMessageEnd = "%)...";
+		
+		public MailConnectionProgressHandler(String message) {
+			this.messageStart = message + " (";
+		}
+		
+		public void mailProgress(int type, int count, int max) {
+			if(type == MailProgressHandler.TYPE_NETWORK) {
+				total += count;
+				if((total - lastTotal) >= threshold) {
+					showStatus(messageStart + StringParser.toDataSizeString(total) + networkMessageEnd);
+					lastTotal = total;
+					if(threshold < 1024 && total >= 1024) { threshold = 1024; }
+				}
+			}
+			else if(type == MailProgressHandler.TYPE_PROCESSING && max > 0){
+				if(count > 0) { count = count / max; }
+				showStatus(messageStart + count + processingMessageEnd);
+			}
+		}
+	};
 }

@@ -35,6 +35,7 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 
+import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -153,7 +154,7 @@ public class ImapProtocolTest extends TestCase {
             instance.addExecuteExpectation("LIST", "\"\" \"%\"",
                 new String[] { "* LIST (\\HasChildren) \".\" \"INBOX\"" });
 
-            Vector result = instance.executeList("", "%");
+            Vector result = instance.executeList("", "%", null);
             assertNotNull(result);
             assertEquals(1, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
@@ -180,7 +181,7 @@ public class ImapProtocolTest extends TestCase {
                     "* LIST (\\HasNoChildren) \".\" \"INBOX.Sent\"",
                 });
 
-            Vector result = instance.executeList("INBOX.", "%");
+            Vector result = instance.executeList("INBOX.", "%", null);
             assertNotNull(result);
             assertEquals(2, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
@@ -215,7 +216,7 @@ public class ImapProtocolTest extends TestCase {
                     "* LIST (\\HasNoChildren) \"/\" Sent"
                 });
 
-            Vector result = instance.executeList("", "%");
+            Vector result = instance.executeList("", "%", null);
             assertNotNull(result);
             assertEquals(2, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
@@ -251,7 +252,7 @@ public class ImapProtocolTest extends TestCase {
                     "* LIST (\\HasNoChildren) \".\" \"INBOX.Sent\"",
                 });
 
-            Vector result = instance.executeList("INBOX.", "%");
+            Vector result = instance.executeList("INBOX.", "%", null);
             assertNotNull(result);
             assertEquals(2, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
@@ -286,7 +287,7 @@ public class ImapProtocolTest extends TestCase {
                     "* LIST (\\HasNoChildren) \"\\\\\" \"INBOX\\Sent\"",
                 });
 
-            Vector result = instance.executeList("INBOX\\", "%");
+            Vector result = instance.executeList("INBOX\\", "%", null);
             assertNotNull(result);
             assertEquals(2, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
@@ -321,7 +322,7 @@ public class ImapProtocolTest extends TestCase {
                     "* LIST (\\HasNoChildren) \"\\\\\" {12}", "2007\\Q4-2007"
                 });
 
-            Vector result = instance.executeList("2007\\", "%");
+            Vector result = instance.executeList("2007\\", "%", null);
             assertNotNull(result);
             assertEquals(2, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
@@ -362,7 +363,7 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -446,7 +447,7 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -530,7 +531,7 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -617,7 +618,7 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1);
+            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -857,7 +858,7 @@ public class ImapProtocolTest extends TestCase {
             assertTrue("Expectations failed", executeExpectations.isEmpty());
         }
 
-        protected String[] execute(String command, String arguments) {
+        protected String[] execute(String command, String arguments, MailProgressHandler progressHandler) {
             assertTrue("No expectations", !executeExpectations.isEmpty());
 
             ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();

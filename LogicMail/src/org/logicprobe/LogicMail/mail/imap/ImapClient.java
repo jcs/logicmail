@@ -45,6 +45,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
+import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -167,6 +168,9 @@ public class ImapClient implements IncomingMailClient {
 		}
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#open()
+     */
     public boolean open() throws IOException, MailException {
         try {
             if(!openStarted) {
@@ -203,7 +207,7 @@ public class ImapClient implements IncomingMailClient {
             // so the folder delimiter will be acquired differently.
             if(nsPersonal == null) {
                 // Discover folder delimiter
-                Vector resp = imapProtocol.executeList("", "");
+                Vector resp = imapProtocol.executeList("", "", null);
                 if(resp.size() > 0) {
                     folderDelim = ((ImapProtocol.ListResponse)resp.elementAt(0)).delim;
                 }
@@ -221,6 +225,9 @@ public class ImapClient implements IncomingMailClient {
         return true;
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#close()
+     */
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
             // Not closing to avoid expunging deleted messages
@@ -246,47 +253,80 @@ public class ImapClient implements IncomingMailClient {
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#isConnected()
+     */
     public boolean isConnected() {
         return connection.isConnected();
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getAcctConfig()
+     */
     public AccountConfig getAcctConfig() {
         return accountConfig;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getConnectionConfig()
+     */
     public ConnectionConfig getConnectionConfig() {
 		return getAcctConfig();
 	}
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getUsername()
+     */
     public String getUsername() {
         return username;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#setUsername(java.lang.String)
+     */
     public void setUsername(String username) {
         this.username = username;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getPassword()
+     */
     public String getPassword() {
         return password;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#setPassword(java.lang.String)
+     */
     public void setPassword(String password) {
         this.password = password;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasFolders()
+     */
     public boolean hasFolders() {
         return true;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasUndelete()
+     */
     public boolean hasUndelete() {
         return true;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
+     */
     public boolean hasIdle() {
 		return true;
 	}
     
-    public FolderTreeItem getFolderTree() throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderTree(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException {
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
         
         boolean childrenExtension = capabilities.containsKey("CHILDREN");
@@ -295,14 +335,14 @@ public class ImapClient implements IncomingMailClient {
         String folderPrefix = accountConfig.getFolderPrefix();
         if(folderPrefix != null && folderPrefix.length() > 0) {
             FolderTreeItem fakeRootItem = new FolderTreeItem("", folderPrefix, folderDelim);
-            getFolderTreeImpl(fakeRootItem, 0, childrenExtension);
+            getFolderTreeImpl(fakeRootItem, 0, childrenExtension, progressHandler);
             
             // Since we have no way to find the inbox with a hard-coded prefix,
             // assume it to be there and then do a STATUS to verify.
             // If the STATUS fails, a MailException will be thrown, which we can
             // safely ignore.  Otherwise, create a folder item and add it.
             try {
-                imapProtocol.executeStatus(new String[] { strINBOX });
+                imapProtocol.executeStatus(new String[] { strINBOX }, null);
                 FolderTreeItem inboxItem = new FolderTreeItem(rootItem, strINBOX, strINBOX, folderDelim, true, true);
                 rootItem.addChild(inboxItem);
             } catch (MailException exp) { }
@@ -317,7 +357,7 @@ public class ImapClient implements IncomingMailClient {
             }
         }
         else {
-            getFolderTreeImpl(rootItem, 0, childrenExtension);
+            getFolderTreeImpl(rootItem, 0, childrenExtension, progressHandler);
         }
 
         // Find and save the INBOX folder
@@ -329,13 +369,13 @@ public class ImapClient implements IncomingMailClient {
         return rootItem;
     }
 
-    private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth, boolean childrenExtension) throws IOException, MailException {
+    private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth, boolean childrenExtension, MailProgressHandler progressHandler) throws IOException, MailException {
         Vector respList;
         if(depth == 0) {
-            respList = imapProtocol.executeList(baseFolder.getPath(), "%");
+            respList = imapProtocol.executeList(baseFolder.getPath(), "%", progressHandler);
         }
         else {
-            respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%");
+            respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%", progressHandler);
         }
 
         int size = respList.size();
@@ -346,7 +386,7 @@ public class ImapClient implements IncomingMailClient {
             if(resp.hasChildren || (!resp.noInferiors && !childrenExtension)) {
                 // The folder has children, so lets go and list them
                 if(depth+1 < accountConfig.getMaxFolderDepth()) {
-                    getFolderTreeImpl(childItem, depth+1, childrenExtension);
+                    getFolderTreeImpl(childItem, depth+1, childrenExtension, progressHandler);
                 }
             }
             else if(depth == 0 &&
@@ -356,12 +396,15 @@ public class ImapClient implements IncomingMailClient {
                 // The folder claims to have no children, but it is a root
                 // folder that matches the personal namespace prefix, so
                 // look for children anyways.
-                getFolderTreeImpl(childItem, depth+1, childrenExtension);
+                getFolderTreeImpl(childItem, depth+1, childrenExtension, progressHandler);
             }
         }
     }
 
-    public void refreshFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#refreshFolderStatus(org.logicprobe.LogicMail.mail.FolderTreeItem[])
+     */
+    public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler) throws IOException, MailException {
         int i;
     	
         // Construct an array of mailbox paths to match the folder vector
@@ -378,7 +421,7 @@ public class ImapClient implements IncomingMailClient {
         mboxPaths.copyInto(mboxPathsArray);
         
         // Execute the STATUS command on the folders
-        ImapProtocol.StatusResponse[] response = imapProtocol.executeStatus(mboxPathsArray);
+        ImapProtocol.StatusResponse[] response = imapProtocol.executeStatus(mboxPathsArray, progressHandler);
         
         // Iterate through the results and update the FolderTreeItem objects
         for(i=0; i<mboxPathsArray.length; i++) {
@@ -446,10 +489,16 @@ public class ImapClient implements IncomingMailClient {
     	}
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getActiveFolder()
+     */
     public FolderTreeItem getActiveFolder() {
         return activeMailbox;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.FolderTreeItem)
+     */
     public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
     	// Shortcut out if a folder change is not necessary
     	if(activeMailbox != null && activeMailbox.getPath().equals(mailbox.getPath())) {
@@ -467,6 +516,9 @@ public class ImapClient implements IncomingMailClient {
         // and populate the appropriate fields of the activeMailbox FolderItem
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.MessageToken)
+     */
     public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	String folderPath = imapMessageToken.getFolderPath();
@@ -503,7 +555,10 @@ public class ImapClient implements IncomingMailClient {
         knownMailboxes.put(activeMailbox, response);
     }
     
-    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex) throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler) throws IOException, MailException {
     	// Sanity check
     	if(activeMailbox == null) {
     		throw new MailException("Mailbox not selected");
@@ -515,12 +570,15 @@ public class ImapClient implements IncomingMailClient {
         }
         
         ImapProtocol.FetchEnvelopeResponse[] response =
-                imapProtocol.executeFetchEnvelope(firstIndex, lastIndex);
+                imapProtocol.executeFetchEnvelope(firstIndex, lastIndex, progressHandler);
         
         return prepareFolderMessages(response);
     }
 
-    public FolderMessage[] getNewFolderMessages() throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException {
     	// Sanity check
     	if(activeMailbox == null) {
     		throw new MailException("Mailbox not selected");
@@ -531,13 +589,13 @@ public class ImapClient implements IncomingMailClient {
 	    	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
 			int msgCount = activeMailbox.getMsgCount();
 	        int firstIndex = Math.max(1, msgCount - count);
-	    	result = getFolderMessages(firstIndex, activeMailbox.getMsgCount());
+	    	result = getFolderMessages(firstIndex, activeMailbox.getMsgCount(), progressHandler);
 	    	seenMailboxes.put(activeMailbox, new Object());
     	}
     	else {
     		int uidNext = ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext;
     		ImapProtocol.FetchEnvelopeResponse[] response =
-    			imapProtocol.executeFetchEnvelopeUid(uidNext);
+    			imapProtocol.executeFetchEnvelopeUid(uidNext, progressHandler);
     		result = prepareFolderMessages(response);
     		
     		if(result.length > 0) {
@@ -568,7 +626,10 @@ public class ImapClient implements IncomingMailClient {
     	return folderMessages;
     }
     
-    public Message getMessage(MessageToken messageToken) throws IOException, MailException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
     		throw new MailException("Invalid mailbox for message");
@@ -578,7 +639,8 @@ public class ImapClient implements IncomingMailClient {
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart =
             getMessagePart(contentMap, imapMessageToken.getMessageUid(),
-                           structure, accountConfig.getMaxMessageSize());
+                           structure, accountConfig.getMaxMessageSize(),
+                           progressHandler);
         Message msg = new Message(rootPart);
         Enumeration e = contentMap.keys();
         while(e.hasMoreElements()) {
@@ -588,7 +650,7 @@ public class ImapClient implements IncomingMailClient {
         return msg;
     }
 
-    public MimeMessageContent getMessagePart(MessageToken messageToken, MimeMessagePart mimeMessagePart) throws IOException, MailException {
+    public MimeMessageContent getMessagePart(MessageToken messageToken, MimeMessagePart mimeMessagePart, MailProgressHandler progressHandler) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
     		throw new MailException("Invalid mailbox for message");
@@ -606,7 +668,7 @@ public class ImapClient implements IncomingMailClient {
     	if(!(messageToken instanceof ImapMessageToken)) { return null; }
 
     	
-    	String data = getMessageBody(imapMessageToken.getMessageUid(), partAddress);
+    	String data = getMessageBody(imapMessageToken.getMessageUid(), partAddress, progressHandler);
     	MimeMessageContent content;
     	try {
 			content = MimeMessageContentFactory.createContent(mimeMessagePart, data);
@@ -620,7 +682,8 @@ public class ImapClient implements IncomingMailClient {
     		Hashtable contentMap,
     		int uid,
             ImapParser.MessageSection structure,
-            int maxSize)
+            int maxSize,
+            MailProgressHandler progressHandler)
         throws IOException, MailException
     {
         MimeMessagePart part;
@@ -630,7 +693,7 @@ public class ImapClient implements IncomingMailClient {
                 data = null;
             else {
                 if(structure.size < maxSize) {
-                    data = getMessageBody(uid, structure.address);
+                    data = getMessageBody(uid, structure.address, progressHandler);
                     maxSize -= structure.size;
                 }
                 else {
@@ -665,7 +728,7 @@ public class ImapClient implements IncomingMailClient {
 
         if((part instanceof MultiPart)&&(structure.subsections != null)&&(structure.subsections.length > 0)) {
             for(int i=0;i<structure.subsections.length;i++) {
-                MimeMessagePart subPart = getMessagePart(contentMap, uid, structure.subsections[i], maxSize);
+                MimeMessagePart subPart = getMessagePart(contentMap, uid, structure.subsections[i], maxSize, progressHandler);
                 if(subPart != null) {
                     ((MultiPart)part).addPart(subPart);
                 }
@@ -730,14 +793,16 @@ public class ImapClient implements IncomingMailClient {
         return item;
     }
 
-    private String getMessageBody(int uid, String address) throws IOException, MailException {
+    private String getMessageBody(int uid, String address, MailProgressHandler progressHandler) throws IOException, MailException {
         if(activeMailbox.equals("")) {
             throw new MailException("Mailbox not selected");
         }
-        
-        return imapProtocol.executeFetchBody(uid, address);
+        return imapProtocol.executeFetchBody(uid, address, progressHandler);
     }
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
     public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
@@ -750,6 +815,9 @@ public class ImapClient implements IncomingMailClient {
     }
 
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#undeleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
     public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
     	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
     	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
@@ -809,19 +877,31 @@ public class ImapClient implements IncomingMailClient {
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
     }
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
+	 */
 	public boolean noop() throws IOException, MailException {
 		boolean result = imapProtocol.executeNoop();
 		return result;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeBegin()
+	 */
 	public void idleModeBegin() throws IOException, MailException {
 		imapProtocol.executeIdle();
 	}
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeEnd()
+	 */
 	public void idleModeEnd() throws IOException, MailException {
 		imapProtocol.executeIdleDone();
 	}
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModePoll()
+	 */
 	public boolean idleModePoll() throws IOException, MailException {
 		return imapProtocol.executeIdlePoll();
 	}

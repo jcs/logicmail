@@ -118,7 +118,9 @@ public class Connection {
     protected OutputStream output;
     private boolean useWiFi;
     private int fakeAvailable = -1;
-
+    private int bytesSent = 0;
+    private int bytesReceived = 0;
+    
     /**
      * Provides a buffer used for incoming data.
      */
@@ -192,7 +194,9 @@ public class Connection {
         input = socket.openDataInputStream();
         output = socket.openDataOutputStream();
         localAddress = ((SocketConnection) socket).getLocalAddress();
-
+        bytesSent = 0;
+        bytesReceived = 0;
+        
         if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
             String msg = "Connection established:\r\n" + "Socket: " +
                 socket.getClass().toString() + "\r\n" + "Local address: " +
@@ -305,6 +309,34 @@ public class Connection {
     }
 
     /**
+     * Gets the number of bytes that have been sent since the
+     * connection was opened.
+     * <p>
+     * The counter is not synchronized, so it should only be
+     * called from the same thread as the send and receive
+     * methods.
+     * </p>
+     * @return bytes sent
+     */
+    public int getBytesSent() {
+    	return bytesSent;
+    }
+    
+    /**
+     * Gets the number of bytes that have been received since the
+     * connection was opened.
+     * <p>
+     * The counter is not synchronized, so it should only be
+     * called from the same thread as the send and receive
+     * methods.
+     * </p>
+     * @return bytes received
+     */
+    public int getBytesReceived() {
+    	return bytesReceived;
+    }
+    
+    /**
      * Sends a string to the server. This method is used internally for
      * all outgoing communication to the server. The main thing it does
      * it terminate the line with a CR/LF. If there are occurrences of CR or
@@ -327,6 +359,7 @@ public class Connection {
             }
 
             output.write(CRLF, 0, 2);
+            bytesSent += 2;
         }
         /**
          * The usual case goes here.
@@ -355,7 +388,9 @@ public class Connection {
                 /**
                  * Write the string up to there and terminate it properly.
                  */
-                output.write((s.substring(i, j) + "\r\n").getBytes());
+                byte[] buf = (s.substring(i, j) + "\r\n").getBytes();
+                output.write(buf);
+                bytesSent += buf.length;
 
                 /**
                  * If we stopped at a CR, ignore a possibly following LF.
@@ -385,8 +420,11 @@ public class Connection {
 
         if (s == null) {
             output.write(CRLF, 0, 2);
+            bytesSent += 2;
         } else {
-            output.write((s + "\r\n").getBytes());
+        	byte[] buf = (s + "\r\n").getBytes();
+            output.write(buf);
+            bytesSent += buf.length;
         }
 
         output.flush();
@@ -401,15 +439,16 @@ public class Connection {
      * @see #send
      */
     public synchronized void sendRaw(String s) throws IOException {
-        byte[] bytes = s.getBytes();
+        byte[] buf = s.getBytes();
 
         if (globalConfig.getConnDebug()) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
         }
 
-        output.write(bytes, 0, bytes.length);
-
+        output.write(buf, 0, buf.length);
+        bytesSent += buf.length;
+        
         output.flush();
     }
 
@@ -486,7 +525,7 @@ public class Connection {
              */
             while (true) {
                 int actual = input.read(buffer, count, 1);
-
+                
                 /**
                  * If -1 is returned, the InputStream is already closed,
                  * probably because the connection is broken, or the server
@@ -523,6 +562,8 @@ public class Connection {
                 // Note: We really should look for CRLF, and not use this
                 // approach which screws up on mid-line LFs. (DK)
                 else {
+                	bytesReceived += actual;
+                	
                     byte b = buffer[count];
                     readBytes++;
 

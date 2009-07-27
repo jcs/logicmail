@@ -37,6 +37,7 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.util.StringParser;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 import net.rim.device.api.i18n.ResourceBundle;
@@ -210,15 +211,7 @@ public class MessagePropertiesScreen extends MainScreen {
     	int partSize = part.getSize();
     	if(partSize > 0) {
     		buf.append(" (");
-    		if(partSize < 1024) {
-    			buf.append(partSize);
-    			buf.append('B');
-    		}
-    		else {
-    			partSize /= 1024;
-    			buf.append(partSize);
-    			buf.append("kB");
-    		}
+    		buf.append(StringParser.toDataSizeString(partSize));
     		buf.append(')');
     	}
 
