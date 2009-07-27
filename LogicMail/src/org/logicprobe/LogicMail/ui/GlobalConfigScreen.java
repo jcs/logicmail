@@ -48,7 +48,7 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
 /**
- * Configuration screen
+ * Global Configuration screen
  */
 public class GlobalConfigScreen extends AbstractConfigScreen implements FieldChangeListener {
     private MailSettings mailSettings;
@@ -81,12 +81,13 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
         existingConfig = mailSettings.getGlobalConfig();
         localHostname = existingConfig.getLocalHostname();
         languageChoices = new String[] {
-                "BlackBerry", // System default
+                "BlackBerry",   // System default
                 "Dansk",        // Danish: da
                 "Deutsch",      // German: de
                 "English",      // English: en
                 "Español",      // Spanish: es
                 "Français",     // French: fr
+                "Italiano",     // Italian: it
                 "Nederlands",   // Dutch: nl
                 "Ti\u00ea\u0301ng Vi\u00ea\u0323t", // Vietnamese: vi
                 "\u4E2D\u6587", // Chinese: zh
@@ -98,6 +99,7 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
                 "en", // English
                 "es", // Spanish
                 "fr", // French
+                "it", // Italian
                 "nl", // Dutch
                 "vi", // Vietnamese
                 "zh", // Chinese
