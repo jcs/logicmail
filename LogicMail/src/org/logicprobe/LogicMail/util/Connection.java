@@ -59,15 +59,19 @@
  ******************************************************************************/
 package org.logicprobe.LogicMail.util;
 
+import net.rim.device.api.crypto.tls.tls10.TLS10Connection;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.util.DataBuffer;
+import net.rim.device.cldc.io.ssl.TLSException;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -613,4 +617,69 @@ public class Connection {
 
         return result;
     }
+
+	/**
+	 * Switches the underlying connection to SSL mode, as commonly done after
+	 * sending a <tt>STARTTLS</tt> command to the server.
+	 * 
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
+	public void startTLS() throws IOException {
+		// Shortcut the method if we're already in SSL mode
+		if(socket instanceof TLS10Connection) { return; }
+		
+		try {
+			TLS10Connection tlsSocket = new TLS10Connection(
+					new StreamConnectionWrapper(
+						socket,
+						(DataInputStream)input,
+						(DataOutputStream)output),
+					serverName + ':' + serverPort,
+					true);
+			
+			socket = tlsSocket;
+			input = socket.openDataInputStream();
+			output = socket.openDataOutputStream();
+		} catch (IOException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+            throw new IOException("Unable to switch to TLS mode");
+		} catch (TLSException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+            throw new IOException("Unable to switch to TLS mode");
+		}
+	}
+	
+	/**
+	 * Decorator to wrap an existing stream connection so its I/O streams
+	 * can be reopened without throwing exceptions.
+	 */
+	private static class StreamConnectionWrapper implements StreamConnection {
+		private StreamConnection stream;
+		private DataInputStream dataInputStream;
+		private DataOutputStream dataOutputStream;
+		
+		public StreamConnectionWrapper(StreamConnection stream, DataInputStream dataInputStream, DataOutputStream dataOutputStream) {
+			this.stream = stream;
+			this.dataInputStream = dataInputStream;
+			this.dataOutputStream = dataOutputStream;
+		}
+		
+		public DataInputStream openDataInputStream() throws IOException {
+			return dataInputStream;
+		}
+		public InputStream openInputStream() throws IOException {
+			return dataInputStream;
+		}
+		public void close() throws IOException {
+			stream.close();
+		}
+		public DataOutputStream openDataOutputStream() throws IOException {
+			return dataOutputStream;
+		}
+		public OutputStream openOutputStream() throws IOException {
+			return dataOutputStream;
+		}
+	}
 }
