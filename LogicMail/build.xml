@@ -153,8 +153,10 @@
       <mkdir dir="@{dest}"/>
       <delete failonerror="false"><fileset dir="@{dest}" includes="*.*"/></delete>
       <copy todir="@{dest}">
-	<fileset dir="@{src}" includes="*.jar, *.jad"/>
+        <fileset dir="@{src}" includes="*.jar, *.jad"/>
       </copy>
+      <replaceregexp file="@{dest}/LogicMail.jad" match="MIDlet-Jar-URL(.*)\n" replace="" />
+      <replaceregexp file="@{dest}/LogicMail.jad" match="MIDlet-Jar-Size(.*)\n" replace="" />
       <unzip src="@{src}/${module.name}.cod" dest="@{dest}"/>
     </sequential>
   </macrodef>
