@@ -91,7 +91,7 @@ public class AccountConfigTest extends TestCase {
         AccountConfig instance = new ImapConfig();
         assertEquals("", instance.getAcctName());
         assertEquals("", instance.getServerName());
-        assertTrue(!instance.getServerSSL());
+        assertEquals(ConnectionConfig.SECURITY_NONE, instance.getServerSecurity());
         assertEquals("", instance.getServerUser());
         assertEquals("", instance.getServerPass());
         assertEquals(143, instance.getServerPort());
@@ -104,7 +104,7 @@ public class AccountConfigTest extends TestCase {
             AccountConfig instance = new ImapConfig();
             instance.setAcctName("FooMail");
             instance.setServerName("mail.foomail.test");
-            instance.setServerSSL(true);
+            instance.setServerSecurity(ConnectionConfig.SECURITY_SSL);
             instance.setServerUser("jdoe");
             instance.setServerPass("12345");
             instance.setServerPort(995);
@@ -122,7 +122,7 @@ public class AccountConfigTest extends TestCase {
             // Verify results
             assertEquals("FooMail", instance.getAcctName());
             assertEquals("mail.foomail.test", instance.getServerName());
-            assertTrue(instance.getServerSSL());
+            assertEquals(ConnectionConfig.SECURITY_SSL, instance.getServerSecurity());
             assertEquals("jdoe", instance.getServerUser());
             assertEquals("12345", instance.getServerPass());
             assertEquals(995, instance.getServerPort());
