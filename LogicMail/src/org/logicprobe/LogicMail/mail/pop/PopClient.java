@@ -72,6 +72,11 @@ public class PopClient implements IncomingMailClient {
     private boolean configChanged;
     
     /**
+     * Table of supported server capabilities
+     */
+    private Hashtable capabilities;
+    
+    /**
      * Active mailbox.  Since POP3 does not support multiple
      * mailboxes for a user, it is used to contain some
      * relevant information for the user's single mailbox.
@@ -84,7 +89,7 @@ public class PopClient implements IncomingMailClient {
         connection = new Connection(
                 accountConfig.getServerName(),
                 accountConfig.getServerPort(),
-                accountConfig.getServerSSL(),
+                accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                 accountConfig.getDeviceSide());
         popProtocol = new PopProtocol(connection);
         username = accountConfig.getServerUser();
@@ -115,7 +120,7 @@ public class PopClient implements IncomingMailClient {
 	            connection = new Connection(
 	                    accountConfig.getServerName(),
 	                    accountConfig.getServerPort(),
-	                    accountConfig.getServerSSL(),
+	                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
 	                    accountConfig.getDeviceSide());
 	            popProtocol = new PopProtocol(connection);
 	        }
@@ -157,6 +162,17 @@ public class PopClient implements IncomingMailClient {
             openStarted = true;
         }
         
+        // Find out server capabilities
+        capabilities = popProtocol.executeCapa();
+        
+        // TLS initialization
+        int serverSecurity = accountConfig.getServerSecurity();
+        if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey("STARTTLS"))
+        		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
+        	popProtocol.executeStartTLS();
+        	connection.startTLS();
+        }
+        
         try {
             // Login to the server
             popProtocol.executeUser(username);
@@ -187,7 +203,7 @@ public class PopClient implements IncomingMailClient {
             connection = new Connection(
                     accountConfig.getServerName(),
                     accountConfig.getServerPort(),
-                    accountConfig.getServerSSL(),
+                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                     accountConfig.getDeviceSide());
             popProtocol = new PopProtocol(connection);
             configChanged = false;

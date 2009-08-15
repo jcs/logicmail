@@ -2,6 +2,7 @@ package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -229,7 +230,7 @@ public class AccountConfigWizard extends WizardController {
 		private FieldChangeListener fieldChangeListener;
 		private LabelField descriptionLabelField;
 		private BasicEditField nameEditField;
-		private CheckboxField sslCheckboxField;
+		private ObjectChoiceField securityChoiceField;
 		private BasicEditField portEditField;
 		private CheckboxField useMdsCheckboxField;
 		
@@ -244,8 +245,15 @@ public class AccountConfigWizard extends WizardController {
 			nameEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + " ", "");
 			nameEditField.setChangeListener(fieldChangeListener);
 			
-			sslCheckboxField = new CheckboxField("SSL", false);
-			sslCheckboxField.setChangeListener(fieldChangeListener);
+			securityChoiceField = new ObjectChoiceField(
+	        		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
+	        		new Object[] {
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
+	        			ConnectionConfig.SECURITY_NONE);
+			securityChoiceField.setChangeListener(fieldChangeListener);
 			
 			portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + " ", Integer.toString(143));
 			portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
@@ -255,15 +263,15 @@ public class AccountConfigWizard extends WizardController {
 			
 			add(descriptionLabelField);
 			add(nameEditField);
-			add(sslCheckboxField);
+			add(securityChoiceField);
 			add(portEditField);
 			add(useMdsCheckboxField);
 		}
 		
 		private void mailServerWizardScreen_fieldChanged(Field field, int context) {
-	        if(field == sslCheckboxField) {
+	        if(field == securityChoiceField) {
 	            if(accountType == ACCOUNT_TYPE_POP) {
-	                if(sslCheckboxField.getChecked()) {
+	                if(securityChoiceField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
 	                	portEditField.setText("995");
 	                }
 	                else {
@@ -271,7 +279,7 @@ public class AccountConfigWizard extends WizardController {
 	                }
 	            }
 	            else if(accountType == ACCOUNT_TYPE_IMAP) {
-	                if(sslCheckboxField.getChecked()) {
+	                if(securityChoiceField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
 	                	portEditField.setText("993");
 	                }
 	                else {
@@ -289,7 +297,7 @@ public class AccountConfigWizard extends WizardController {
 		}
 		public void gatherResults() {
 			accountConfig.setServerName(nameEditField.getText());
-			accountConfig.setServerSSL(sslCheckboxField.getChecked());
+			accountConfig.setServerSecurity(securityChoiceField.getSelectedIndex());
 			accountConfig.setServerPort(Integer.parseInt(portEditField.getText()));
 			accountConfig.setDeviceSide(!useMdsCheckboxField.getChecked());
 		}
@@ -329,7 +337,7 @@ public class AccountConfigWizard extends WizardController {
 		private FieldChangeListener fieldChangeListener;
 		private ObjectChoiceField outgoingChoiceField;
 		private BasicEditField nameEditField;
-		private CheckboxField sslCheckboxField;
+		private ObjectChoiceField securityChoiceField;
 		private BasicEditField portEditField;
 		private CheckboxField useMdsCheckboxField;
 		
@@ -356,8 +364,15 @@ public class AccountConfigWizard extends WizardController {
 			nameEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', "");
 			nameEditField.setChangeListener(fieldChangeListener);
 			
-			sslCheckboxField = new CheckboxField("SSL", false);
-			sslCheckboxField.setChangeListener(fieldChangeListener);
+			securityChoiceField = new ObjectChoiceField(
+	        		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
+	        		new Object[] {
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
+	        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
+	        			ConnectionConfig.SECURITY_NONE);
+			securityChoiceField.setChangeListener(fieldChangeListener);
 			
 			portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(25));
 			portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
@@ -367,7 +382,7 @@ public class AccountConfigWizard extends WizardController {
 
 			add(outgoingChoiceField);
 			add(nameEditField);
-			add(sslCheckboxField);
+			add(securityChoiceField);
 			add(portEditField);
 			add(useMdsCheckboxField);
 			
@@ -376,8 +391,8 @@ public class AccountConfigWizard extends WizardController {
 		}
 
 		private void outgoingServerWizardScreen_fieldChanged(Field field, int context) {
-			if(field == sslCheckboxField) {
-                if(sslCheckboxField.getChecked()) {
+			if(field == securityChoiceField) {
+                if(securityChoiceField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
                 	portEditField.setText("465");
                 }
                 else {
@@ -404,23 +419,23 @@ public class AccountConfigWizard extends WizardController {
 			if(item instanceof OutgoingConfig) {
 				OutgoingConfig outgoingConfig = (OutgoingConfig)item;
 				nameEditField.setText(outgoingConfig.getServerName());
-				sslCheckboxField.setChecked(outgoingConfig.getServerSSL());
+				securityChoiceField.setSelectedIndex(outgoingConfig.getServerSecurity());
 				portEditField.setText(Integer.toString(outgoingConfig.getServerPort()));
 				useMdsCheckboxField.setChecked(!outgoingConfig.getDeviceSide());
 				
 				nameEditField.setEditable(false);
-				sslCheckboxField.setEditable(false);
+				securityChoiceField.setEditable(false);
 				portEditField.setEditable(false);
 				useMdsCheckboxField.setEditable(false);
 			}
 			else {
 				nameEditField.setText("");
-				sslCheckboxField.setChecked(false);
+				securityChoiceField.setSelectedIndex(ConnectionConfig.SECURITY_NONE);
 				portEditField.setText("25");
 				useMdsCheckboxField.setChecked(true);
 				
 				nameEditField.setEditable(true);
-				sslCheckboxField.setEditable(true);
+				securityChoiceField.setEditable(true);
 				portEditField.setEditable(true);
 				useMdsCheckboxField.setEditable(true);
 			}
@@ -445,7 +460,7 @@ public class AccountConfigWizard extends WizardController {
 			else {
 				outgoingConfig.setAcctName(accountConfig.getAcctName());
 				outgoingConfig.setServerName(nameEditField.getText());
-				outgoingConfig.setServerSSL(sslCheckboxField.getChecked());
+				outgoingConfig.setServerSecurity(securityChoiceField.getSelectedIndex());
 				outgoingConfig.setServerPort(Integer.parseInt(portEditField.getText()));
 				outgoingConfig.setDeviceSide(!useMdsCheckboxField.getChecked());
 				outgoingCreated = true;

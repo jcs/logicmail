@@ -48,6 +48,7 @@ import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -69,7 +70,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 	
 	// Basic settings fields
     private BasicEditField serverNameField;
-    private CheckboxField serverSslField;
+    private ObjectChoiceField serverSecurityField;
     private BasicEditField serverPortField;
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
@@ -212,8 +213,15 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private Manager initFieldsBasic() {
     	Manager manager = new VerticalFieldManager();
         serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName());
-        serverSslField = new CheckboxField("SSL", acctConfig.getServerSSL());
-        serverSslField.setChangeListener(fieldChangeListener);
+        serverSecurityField = new ObjectChoiceField(
+        		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
+        		new Object[] {
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
+        		acctConfig.getServerSecurity());
+        serverSecurityField.setChangeListener(fieldChangeListener);
         serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(acctConfig.getServerPort()));
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
         serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', acctConfig.getServerUser());
@@ -224,7 +232,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 
         manager.add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER), Field.NON_FOCUSABLE));
         manager.add(serverNameField);
-        manager.add(serverSslField);
+        manager.add(serverSecurityField);
         manager.add(serverPortField);
         manager.add(serverUserField);
         manager.add(serverPassField);
@@ -296,9 +304,9 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     }
     
     public void AcctCfgScreen_fieldChanged(Field field, int context) {
-        if(field == serverSslField) {
+        if(field == serverSecurityField) {
             if(acctConfig instanceof PopConfig) {
-                if(serverSslField.getChecked()) {
+                if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
                     serverPortField.setText("995");
                 }
                 else {
@@ -306,7 +314,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 }
             }
             else if(acctConfig instanceof ImapConfig) {
-                if(serverSslField.getChecked()) {
+                if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
                     serverPortField.setText("993");
                 }
                 else {
@@ -459,7 +467,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     public void save() {
         this.acctConfig.setAcctName(acctNameField.getText());
         this.acctConfig.setServerName(serverNameField.getText());
-        this.acctConfig.setServerSSL(serverSslField.getChecked());
+        this.acctConfig.setServerSecurity(serverSecurityField.getSelectedIndex());
         this.acctConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
         this.acctConfig.setServerUser(serverUserField.getText());
         this.acctConfig.setServerPass(serverPassField.getText());

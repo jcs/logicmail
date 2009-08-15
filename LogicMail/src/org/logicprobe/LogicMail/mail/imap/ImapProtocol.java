@@ -64,6 +64,21 @@ public class ImapProtocol {
         this.connection = connection;
     }
 
+
+    /**
+     * Execute the "STARTTLS" command.
+     * The underlying connection mode must be switched after the
+     * successful execution of this command.
+     */
+	public void executeStartTLS() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeStartTLS()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+		execute("STARTTLS", null, null);
+	}
+	
     /**
      * Execute the "LOGIN" command
      * @param username The username to login with

@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -124,7 +125,7 @@ public class ImapClient implements IncomingMailClient {
         connection = new Connection(
                 accountConfig.getServerName(),
                 accountConfig.getServerPort(),
-                accountConfig.getServerSSL(),
+                accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                 accountConfig.getDeviceSide());
         imapProtocol = new ImapProtocol(connection);
         username = accountConfig.getServerUser();
@@ -151,7 +152,7 @@ public class ImapClient implements IncomingMailClient {
 	            connection = new Connection(
 	                    accountConfig.getServerName(),
 	                    accountConfig.getServerPort(),
-	                    accountConfig.getServerSSL(),
+	                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
 	                    accountConfig.getDeviceSide());
 	            imapProtocol = new ImapProtocol(connection);
 	        }
@@ -182,8 +183,18 @@ public class ImapClient implements IncomingMailClient {
 
                 // Find out server capabilities
                 capabilities = imapProtocol.executeCapability();
+                
                 openStarted = true;
             }
+            
+            // TLS initialization
+            int serverSecurity = accountConfig.getServerSecurity();
+            if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey("STARTTLS"))
+            		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
+            	imapProtocol.executeStartTLS();
+            	connection.startTLS();
+            }
+            
             // Authenticate with the server
             if(!imapProtocol.executeLogin(username, password)) {
                 return false;
@@ -246,7 +257,7 @@ public class ImapClient implements IncomingMailClient {
             connection = new Connection(
                     accountConfig.getServerName(),
                     accountConfig.getServerPort(),
-                    accountConfig.getServerSSL(),
+                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                     accountConfig.getDeviceSide());
             imapProtocol = new ImapProtocol(connection);
         	configChanged = false;
@@ -663,7 +674,6 @@ public class ImapClient implements IncomingMailClient {
     	
     	// Make sure we can actually get this part
     	if(partAddress == null || mimeType == null || mimeSubtype == null) { return null; }
-    	if(!MimeMessagePartFactory.isMimeMessagePartSupported(mimeType, mimeSubtype)) { return null; }
     	if(mimeType.equalsIgnoreCase("multipart")) { return null; }
     	if(!(messageToken instanceof ImapMessageToken)) { return null; }
 

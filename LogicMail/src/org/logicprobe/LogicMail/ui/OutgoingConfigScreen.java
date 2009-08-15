@@ -44,6 +44,7 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 
 /**
@@ -52,7 +53,7 @@ import org.logicprobe.LogicMail.conf.OutgoingConfig;
 public class OutgoingConfigScreen extends AbstractConfigScreen {
     private BasicEditField acctNameField;
     private BasicEditField serverNameField;
-    private CheckboxField serverSslField;
+    private ObjectChoiceField serverSecurityField;
     private BasicEditField serverPortField;
     private ObjectChoiceField useAuthField;
     private BasicEditField serverUserField;
@@ -90,11 +91,17 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         serverNameField =
             new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + " ", outgoingConfig.getServerName());
         
-        serverSslField =
-            new CheckboxField("SSL", outgoingConfig.getServerSSL());
-        serverSslField.setChangeListener(new FieldChangeListener() {
+        serverSecurityField = new ObjectChoiceField(
+        		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
+        		new Object[] {
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
+        			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
+        			outgoingConfig.getServerSecurity());
+        serverSecurityField.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
-                serverSslField_FieldChanged(field, context);
+            	serverSecurityField_FieldChanged(field, context);
             }});
         
         serverPortField =
@@ -132,7 +139,7 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         add(acctNameField);
         add(new SeparatorField());
         add(serverNameField);
-        add(serverSslField);
+        add(serverSecurityField);
         add(serverPortField);
         add(useAuthField);
         add(serverUserField);
@@ -143,8 +150,8 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         setStatus(statusLabel);
     }
     
-    private void serverSslField_FieldChanged(Field field, int context) {
-        if(serverSslField.getChecked()) {
+    private void serverSecurityField_FieldChanged(Field field, int context) {
+        if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
             serverPortField.setText("465");
         }
         else {
@@ -196,7 +203,7 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
     public void save() {
         this.outgoingConfig.setAcctName(acctNameField.getText());
         this.outgoingConfig.setServerName(serverNameField.getText());
-        this.outgoingConfig.setServerSSL(serverSslField.getChecked());
+        this.outgoingConfig.setServerSecurity(serverSecurityField.getSelectedIndex());
         this.outgoingConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
         this.outgoingConfig.setServerUser(serverUserField.getText());
         this.outgoingConfig.setServerPass(serverPassField.getText());

@@ -47,7 +47,7 @@ import org.logicprobe.LogicMail.util.MailMessageParser;
 import java.io.IOException;
 
 import java.util.Calendar;
-
+import java.util.Hashtable;
 
 /**
  * Implements an SMTP client
@@ -62,6 +62,12 @@ public class SmtpClient implements OutgoingMailClient {
     private String username;
     private String password;
     private boolean configChanged;
+    
+    /**
+     * Table of supported server capabilities
+     */
+    private Hashtable capabilities;
+    
     private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
             public void mailSettingsSaved(MailSettingsEvent e) {
                 mailSettings_MailSettingsSaved(e);
@@ -72,8 +78,10 @@ public class SmtpClient implements OutgoingMailClient {
     public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
     	this.globalConfig = globalConfig;
         this.outgoingConfig = outgoingConfig;
-        connection = new Connection(outgoingConfig.getServerName(),
-                outgoingConfig.getServerPort(), outgoingConfig.getServerSSL(),
+        connection = new Connection(
+        		outgoingConfig.getServerName(),
+                outgoingConfig.getServerPort(),
+                outgoingConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                 outgoingConfig.getDeviceSide());
         smtpProtocol = new SmtpProtocol(connection);
 
@@ -98,9 +106,10 @@ public class SmtpClient implements OutgoingMailClient {
 
             if (!isConnected()) {
                 // Rebuild the connection to include new settings
-                connection = new Connection(outgoingConfig.getServerName(),
+                connection = new Connection(
+                		outgoingConfig.getServerName(),
                         outgoingConfig.getServerPort(),
-                        outgoingConfig.getServerSSL(),
+                        outgoingConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                         outgoingConfig.getDeviceSide());
                 smtpProtocol = new SmtpProtocol(connection);
             } else {
@@ -132,10 +141,18 @@ public class SmtpClient implements OutgoingMailClient {
                 }
             }
 
-            smtpProtocol.executeExtendedHello(hostname);
+            capabilities = smtpProtocol.executeExtendedHello(hostname);
             openStarted = true;
         }
-
+        
+        // TLS initialization
+        int serverSecurity = outgoingConfig.getServerSecurity();
+        if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey("STARTTLS"))
+        		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
+        	smtpProtocol.executeStartTLS();
+        	connection.startTLS();
+        }
+        
         if (outgoingConfig.getUseAuth() > 0) {
             boolean result = smtpProtocol.executeAuth(outgoingConfig.getUseAuth(),
                     username, password);
@@ -161,9 +178,10 @@ public class SmtpClient implements OutgoingMailClient {
 
         if (configChanged) {
             // Rebuild the connection to include new settings
-            connection = new Connection(outgoingConfig.getServerName(),
+            connection = new Connection(
+            		outgoingConfig.getServerName(),
                     outgoingConfig.getServerPort(),
-                    outgoingConfig.getServerSSL(),
+                    outgoingConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
                     outgoingConfig.getDeviceSide());
             smtpProtocol = new SmtpProtocol(connection);
             configChanged = false;

@@ -32,7 +32,7 @@
 package org.logicprobe.LogicMail.mail.smtp;
 
 import java.io.IOException;
-import java.util.Vector;
+import java.util.Hashtable;
 
 import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.io.Base64OutputStream;
@@ -263,9 +263,9 @@ public class SmtpProtocol {
     /**
      * Execute the "EHLO" command.
      * @param domain Domain name of the client
-     * @return List of returned strings
+     * @return Table of returned strings
      */
-    public Vector executeExtendedHello(String domain) throws IOException, MailException {
+    public Hashtable executeExtendedHello(String domain) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
@@ -273,14 +273,28 @@ public class SmtpProtocol {
             EventLogger.DEBUG_INFO);
         }
         String[] result = executeFollow("EHLO " + domain);
-        Vector items = new Vector();
+        Hashtable items = new Hashtable();
         for(int i=0; i<result.length; i++) {
             if(result[i].length() > 4) {
-                items.addElement(result[i].substring(4));
+                items.put(result[i].substring(4), Boolean.TRUE);
             }
         }
         return items;
     }
+
+    /**
+     * Execute the "STARTTLS" command.
+     * The underlying connection mode must be switched after the
+     * successful execution of this command.
+     */
+    public void executeStartTLS() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("SmtpProtocol.executeStartTLS()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+		execute("STARTTLS");
+	}
 
     /**
      * Execute the "MAIL FROM" command.

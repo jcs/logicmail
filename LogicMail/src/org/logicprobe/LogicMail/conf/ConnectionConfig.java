@@ -47,9 +47,18 @@ public abstract class ConnectionConfig implements Serializable {
     private long uniqueId;
     private String acctName;
     private String serverName;
-    private boolean serverSSL;
+    private int serverSecurity;
     private int serverPort;
     private boolean deviceSide;
+
+    /** Connection is not encrypted */
+    public static final int SECURITY_NONE = 0;
+    /** Connection should use TLS if available */
+    public static final int SECURITY_TLS_IF_AVAILABLE = 1;
+    /** Connection should always use TLS */
+    public static final int SECURITY_TLS = 2;
+    /** Connection should use SSL */
+    public static final int SECURITY_SSL = 3;
     
     /**
      * Instantiates a new connection configuration with defaults.
@@ -80,7 +89,7 @@ public abstract class ConnectionConfig implements Serializable {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         acctName = "";
         serverName = "";
-        serverSSL = false;
+        serverSecurity = SECURITY_NONE;
         serverPort = 110;
         deviceSide = false;
     }
@@ -121,24 +130,29 @@ public abstract class ConnectionConfig implements Serializable {
         this.serverName = serverName;
     }
 
+//    public boolean getServerSSL() {
+//    	// TODO: Remove this method
+//    	return serverSecurity == SECURITY_SSL;
+//    }
+    
     /**
-     * Gets whether the server connection should use SSL.
+     * Gets the server connection security mode.
      * 
-     * @return The SSL mode
+     * @return the server connection security mode
      */
-    public boolean getServerSSL() {
-        return serverSSL;
+    public int getServerSecurity() {
+    	return serverSecurity;
     }
     
     /**
-     * Sets whether the server connection should use SSL.
+     * Sets the server connection security mode.
      * 
-     * @param serverSSL The new SSL mode
+     * @param serverSecurity the new server connection security mode
      */
-    public void setServerSSL(boolean serverSSL) {
-        this.serverSSL = serverSSL;
+    public void setServerSecurity(int serverSecurity) {
+    	this.serverSecurity = serverSecurity;
     }
-
+    
     /**
      * Gets the server connection port.
      * 
@@ -206,7 +220,7 @@ public abstract class ConnectionConfig implements Serializable {
     protected void writeConfigItems(SerializableHashtable table) {
         table.put("account_acctName", acctName);
         table.put("account_serverName", serverName);
-        table.put("account_serverSSL", new Boolean(serverSSL));
+        table.put("account_serverSecurity", new Integer(serverSecurity));
         table.put("account_serverPort", new Integer(serverPort));
         table.put("account_deviceSide", new Boolean(deviceSide));
     }
@@ -222,23 +236,23 @@ public abstract class ConnectionConfig implements Serializable {
         Object value;
 
         value = table.get("account_acctName");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             acctName = (String)value;
         }
         value = table.get("account_serverName");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             serverName = (String)value;
         }
-        value = table.get("account_serverSSL");
-        if(value != null && value instanceof Boolean) {
-            serverSSL = ((Boolean)value).booleanValue();
+        value = table.get("account_serverSecurity");
+        if(value instanceof Integer) {
+        	serverSecurity = ((Integer)value).intValue();
         }
         value = table.get("account_serverPort");
-        if(value != null && value instanceof Integer) {
+        if(value instanceof Integer) {
             serverPort = ((Integer)value).intValue();
         }
         value = table.get("account_deviceSide");
-        if(value != null && value instanceof Boolean) {
+        if(value instanceof Boolean) {
             deviceSide = ((Boolean)value).booleanValue();
         }
     }

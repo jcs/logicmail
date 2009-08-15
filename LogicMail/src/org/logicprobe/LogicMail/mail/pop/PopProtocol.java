@@ -32,6 +32,8 @@
 package org.logicprobe.LogicMail.mail.pop;
 
 import java.io.IOException;
+import java.util.Hashtable;
+
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.AppInfo;
@@ -50,6 +52,53 @@ public class PopProtocol {
         this.connection = connection;
     }
     
+    /**
+     * Execute the "CAPA" command
+     * @return Table of server capabilities
+     */
+	public Hashtable executeCapa() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("PopProtocol.executeCapa()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+        String[] replyText = executeFollow("CAPA", null);
+        
+        if ((replyText == null) || (replyText.length < 1)) {
+            throw new MailException("Unable to query server capabilities");
+        }
+
+        Hashtable table = new Hashtable();
+
+        for(int i=0; i<replyText.length; i++) {
+        	System.err.println('"' + replyText[i] + '"');
+        	int p = replyText[i].indexOf(' ');
+        	int len = replyText[i].length();
+        	if(p != -1 && p + 1 < len) {
+        		table.put(replyText[i].substring(0, p), replyText[i].substring(p + 1, len));
+        	}
+        	else {
+        		table.put(replyText[i], Boolean.TRUE);
+        	}
+        }
+        
+		return table;
+	}
+	
+    /**
+     * Execute the "STARTTLS" command.
+     * The underlying connection mode must be switched after the
+     * successful execution of this command.
+     */
+	public void executeStartTLS() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("PopProtocol.executeStartTLS()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+        execute("STARTTLS");
+	}
+	
     /**
      * Execute the "USER" command
      * @param username Username to login with
