@@ -44,6 +44,7 @@ import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
+import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -965,7 +966,7 @@ public class MessageNode implements Node {
      * multiple events may be fired as the retrieval process completes.
      * </p>
      * 
-     * @return True if a refresh was trigger, false otherwise
+     * @return True if a refresh was triggered, false otherwise
      */
 	public boolean refreshMessage() {
 		boolean result = false;
@@ -1004,6 +1005,18 @@ public class MessageNode implements Node {
 			}
 		}
 		return result;
+	}
+	
+	/**
+	 * Called to load a specific message part for this node.
+	 * 
+	 * @param messagePart Content part to load
+	 */
+	public void requestContentPart(ContentPart messagePart) {
+		AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+		if(mailStore.hasMessageParts()) {
+			mailStore.requestMessageParts(messageToken, new MimeMessagePart[] { messagePart });
+		}
 	}
 	
 	/**

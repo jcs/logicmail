@@ -49,8 +49,7 @@ public class NavigationController {
 	private MailRootNode mailRootNode;
 	
 	private UiApplication uiApplication;
-	private MailHomeScreen mailHomeView;
-	private MailHomePresenter mailHomePresenter;
+	private StandardScreen mailHomeScreen;
 	
 	public NavigationController(UiApplication uiApplication) {
 		this.uiApplication = uiApplication;
@@ -58,12 +57,10 @@ public class NavigationController {
 	}
 	
 	public synchronized void displayMailHome() {
-		if(mailHomePresenter == null) {
-			mailHomeView = new MailHomeScreen();
-			mailHomePresenter = new MailHomePresenter(this, mailRootNode, mailHomeView);
-			mailHomePresenter.initialize();
+		if(mailHomeScreen == null) {
+			mailHomeScreen = new StandardScreen(this, new MailHomeScreen(mailRootNode));
 		}
-		uiApplication.pushScreen(mailHomeView);
+		uiApplication.pushScreen(mailHomeScreen);
 	}
 	
 	public synchronized void displayAccountConfigurationWizard() {
@@ -90,46 +87,46 @@ public class NavigationController {
 	}
 	
 	public synchronized void displayMailbox(MailboxNode mailboxNode) {
-		MailboxScreen screen = new MailboxScreen(this, mailboxNode);
+		StandardScreen screen = new StandardScreen(this, new MailboxScreen(mailboxNode));
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayMessage(MessageNode messageNode) {
-		MessageScreen screen = new MessageScreen(this, messageNode);
+		StandardScreen screen = new StandardScreen(this, new MessageScreen(messageNode));
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayComposition(AccountNode accountNode) {
-		CompositionScreen screen = new CompositionScreen(this, accountNode);
+		StandardScreen screen = new StandardScreen(this, new CompositionScreen(accountNode));
 		uiApplication.pushScreen(screen);
 	}
 
 	public synchronized void displayComposition(AccountNode accountNode, MessageNode messageNode) {
-		CompositionScreen screen = new CompositionScreen(this,
+		StandardScreen screen = new StandardScreen(this, new CompositionScreen(
 				accountNode,
 				messageNode,
-				CompositionScreen.COMPOSE_NORMAL);
+				CompositionScreen.COMPOSE_NORMAL));
 		uiApplication.pushScreen(screen);
 	}
 
 	public void displayComposition(AccountNode accountNode, String address) {
-		CompositionScreen screen = new CompositionScreen(this, accountNode, address);
+		StandardScreen screen = new StandardScreen(this, new CompositionScreen(accountNode, address));
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayCompositionReply(AccountNode accountNode, MessageNode messageNode, boolean replyAll) {
-		CompositionScreen screen = new CompositionScreen(this,
+		StandardScreen screen = new StandardScreen(this, new CompositionScreen(
 				accountNode,
 				messageNode,
-				replyAll ? CompositionScreen.COMPOSE_REPLY_ALL : CompositionScreen.COMPOSE_REPLY);
+				replyAll ? CompositionScreen.COMPOSE_REPLY_ALL : CompositionScreen.COMPOSE_REPLY));
 		uiApplication.pushScreen(screen);
 	}
 
 	public synchronized void displayCompositionForward(AccountNode accountNode, MessageNode messageNode) {
-		CompositionScreen screen = new CompositionScreen(this,
+		StandardScreen screen = new StandardScreen(this, new CompositionScreen(
 				accountNode,
 				messageNode,
-				CompositionScreen.COMPOSE_FORWARD);
+				CompositionScreen.COMPOSE_FORWARD));
 		uiApplication.pushScreen(screen);
 	}
 }

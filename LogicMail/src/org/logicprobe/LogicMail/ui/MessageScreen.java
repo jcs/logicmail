@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail.ui;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -49,6 +51,7 @@ import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
@@ -80,22 +83,23 @@ import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 /**
  * Display an E-Mail message
  */
-public class MessageScreen extends BaseScreen {
+public class MessageScreen extends AbstractScreenProvider {
 	private BorderedFieldManager addressFieldManager;
 	private BorderedFieldManager subjectFieldManager;
 	private TreeField attachmentsTreeField;
 	private VerticalFieldManager messageFieldManager;
+	private Screen screen;
 	
 	private AccountConfig accountConfig;
     private MessageNode messageNode;
     private boolean isSentFolder;
     private boolean messageRendered;
-
+    private Hashtable requestedContentSet = new Hashtable();
+    
     private UnicodeNormalizer unicodeNormalizer;
     
-    public MessageScreen(NavigationController navigationController, MessageNode messageNode)
+    public MessageScreen(MessageNode messageNode)
     {
-        super(navigationController, Manager.VERTICAL_SCROLLBAR);
         this.messageNode = messageNode;
         this.accountConfig = messageNode.getParent().getParentAccount().getAccountConfig();
         
@@ -106,11 +110,9 @@ public class MessageScreen extends BaseScreen {
         // Determine if this screen is viewing a sent message
         int mailboxType = messageNode.getParent().getType();
         this.isSentFolder = (mailboxType == MailboxNode.TYPE_SENT) || (mailboxType == MailboxNode.TYPE_OUTBOX);
-     
-        initFields();
     }
     
-    private void initFields() {
+    public void initFields(Screen screen) {
         // Create screen elements
         addressFieldManager = new BorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
@@ -153,9 +155,10 @@ public class MessageScreen extends BaseScreen {
             subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + normalize(subject)));
         }
 
-        add(addressFieldManager);
-        add(subjectFieldManager);
-        add(messageFieldManager);
+        screen.add(addressFieldManager);
+        screen.add(subjectFieldManager);
+        screen.add(messageFieldManager);
+        this.screen = screen;
     }
     
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
@@ -173,8 +176,7 @@ public class MessageScreen extends BaseScreen {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
-    protected void onDisplay() {
-    	super.onDisplay();
+    public void onDisplay() {
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(!messageNode.hasMessageContent()) {
     		if(!messageNode.refreshMessage()) {
@@ -189,9 +191,8 @@ public class MessageScreen extends BaseScreen {
 	/* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onUndisplay()
      */
-    protected void onUndisplay() {
+    public void onUndisplay() {
     	messageNode.removeMessageNodeListener(messageNodeListener);
-    	super.onUndisplay();
     }
     
     private MenuItem saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 100, 10) {
@@ -211,21 +212,21 @@ public class MessageScreen extends BaseScreen {
     private MenuItem replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {
         public void run() {
             if(messageNode.hasMessageContent()) {
-                getNavigationController().displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
+                navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
             }
         }
     };
     private MenuItem replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 115, 10) {
         public void run() {
             if(messageNode.hasMessageContent()) {
-                getNavigationController().displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
+                navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
             }
         }
     };
     private MenuItem forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 120, 10) {
         public void run() {
             if(messageNode.hasMessageContent()) {
-                getNavigationController().displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
+                navigationController.displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
             }
         }
     };
@@ -270,20 +271,20 @@ public class MessageScreen extends BaseScreen {
     };
     private MenuItem compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 150, 10) {
         public void run() {
-            getNavigationController().displayComposition(messageNode.getParent().getParentAccount());
+            navigationController.displayComposition(messageNode.getParent().getParentAccount());
         }
     };
     private MenuItem closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
         public void run() {
-            onClose();
+        	screen.onClose();
         }
     };
     
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
-    protected void makeMenu(Menu menu, int instance) {
-    	if(this.getFieldWithFocus() == messageFieldManager
+    public void makeMenu(Menu menu, int instance) {
+    	if(screen.getFieldWithFocus() == messageFieldManager
     			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
     		int node = attachmentsTreeField.getCurrentNode();
     		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof MimeMessagePart) {
@@ -317,7 +318,7 @@ public class MessageScreen extends BaseScreen {
         switch(key) {
             case Keypad.KEY_ENTER:
             case Keypad.KEY_SPACE:
-            	if(this.getFieldWithFocus() == messageFieldManager
+            	if(screen.getFieldWithFocus() == messageFieldManager
             			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
             		int node = attachmentsTreeField.getCurrentNode();
             		if(node != -1) {
@@ -333,11 +334,11 @@ public class MessageScreen extends BaseScreen {
             	}
             	else {
 	            	if(status == 0) {
-	                    scroll(Manager.DOWNWARD);
+	                    screen.scroll(Manager.DOWNWARD);
 	                    retval = true;
 	                }
 	                else if(status == KeypadListener.STATUS_ALT) {
-	                    scroll(Manager.UPWARD);
+	                	screen.scroll(Manager.UPWARD);
 	                    retval = true;
 	                }
             	}
@@ -348,7 +349,24 @@ public class MessageScreen extends BaseScreen {
     
 	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
     	if(e.getType() == MessageNodeEvent.TYPE_CONTENT_LOADED) {
-    		renderMessage();
+    		boolean contentSaved = false;
+    		synchronized(requestedContentSet) {
+	    		if(requestedContentSet.size() > 0) {
+	    			Enumeration en = requestedContentSet.keys();
+	    			while(en.hasMoreElements()) {
+	    				ContentPart part = (ContentPart)en.nextElement();
+	    				MimeMessageContent content = (MimeMessageContent)messageNode.getMessageContent(part);
+	    				if(content != null) {
+	    					saveAttachmentInBackground(content, (String)requestedContentSet.get(part));
+	    					requestedContentSet.remove(part);
+	    					contentSaved = true;
+	    				}
+	    			}
+	    		}
+    		}
+    		if(!contentSaved) {
+    			renderMessage();
+    		}
     	}
     }
 
@@ -423,23 +441,30 @@ public class MessageScreen extends BaseScreen {
 	 * @param contentPart Attachment part to save
 	 */
     private void saveAttachment(ContentPart contentPart) {
-    	// TODO: Support on-demand downloading of additional content
     	MimeMessageContent content = messageNode.getMessageContent(contentPart);
     	FileSaveDialog dialog = new FileSaveDialog(contentPart.getName());
 		if(dialog.doModal() != Dialog.CANCEL) {
 	    	if(content != null) {
 	    		// Content has been downloaded already, so just save it
-				(new SaveAttachmentThread(content, dialog.getFileUrl())).start();
-				Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
+	    		saveAttachmentInBackground(content, dialog.getFileUrl());
 	    	}
 	    	else {
+	    		// Add the requested content to the expected set
+	    		synchronized(requestedContentSet) {
+	    			requestedContentSet.put(contentPart, dialog.getFileUrl());
+	    		}
+	    		
 	    		// Download content from server, then save it
-	    		// TODO: Implement on-demand attachment downloading
-	    		Status.show("Attachment has not been downloaded from the server");
+	    		messageNode.requestContentPart(contentPart);
 	    	}
 		}
 	}
 
+    private void saveAttachmentInBackground(MimeMessageContent content, String fileUrl) {
+		(new SaveAttachmentThread(content, fileUrl)).start();
+		Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
+    }
+    
     private static class SaveAttachmentThread extends Thread {
     	private MimeMessageContent content;
     	private String fileUrl;
@@ -556,7 +581,7 @@ public class MessageScreen extends BaseScreen {
     	if(field instanceof BrowserFieldManager) {
     		if((context & BrowserFieldManager.ACTION_SEND_EMAIL) != 0) {
     			String address = ((BrowserFieldManager)field).getSelectedToken();
-                getNavigationController().displayComposition(messageNode.getParent().getParentAccount(), address);
+                navigationController.displayComposition(messageNode.getParent().getParentAccount(), address);
     		}
     	}
 	}

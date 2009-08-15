@@ -37,6 +37,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.container.VerticalFieldManager;
@@ -62,30 +63,31 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  * for the provided account, then the display fields will be
  * adjusted accordingly.
  */
-public class MailboxScreen extends BaseScreen {
+public class MailboxScreen extends AbstractScreenProvider {
 	private MailboxNode mailboxNode;
     private Vector knownMessages;
     private Hashtable messageFieldMap;
     private boolean firstDisplay = true;
     private MailSettings mailSettings;
     private VerticalFieldManager messageFieldManager;
+    private Screen screen;
     
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
      * 
-     * @param navigationController Controller for screen navigation
      * @param mailboxNode Mailbox node to view.
      */
-    public MailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-    	super(navigationController, mailboxNode.toString());
+    public MailboxScreen(MailboxNode mailboxNode) {
     	this.mailboxNode = mailboxNode;
     	this.knownMessages = new Vector();
     	this.messageFieldMap = new Hashtable();
     	mailSettings = MailSettings.getInstance();
-    	
-    	initFields();
     }
 
+    public String getTitle() {
+    	return mailboxNode.toString();
+    }
+    
     /**
      * Gets the mailbox node being displayed by this screen.
      * 
@@ -120,8 +122,7 @@ public class MailboxScreen extends BaseScreen {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
-    protected void onDisplay() {
-    	super.onDisplay();
+    public void onDisplay() {
         this.mailboxNode.addMailboxNodeListener(mailboxNodeListener);
         if(firstDisplay) {
             MessageNode[] initialMessages = this.mailboxNode.getMessages();
@@ -147,30 +148,22 @@ public class MailboxScreen extends BaseScreen {
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.BaseScreen#onUndisplay()
 	 */
-	protected void onUndisplay() {
+	public void onUndisplay() {
         this.mailboxNode.removeMailboxNodeListener(mailboxNodeListener);
         int size = knownMessages.size();
         for(int i=0; i<size; i++) {
         	((MessageNode)knownMessages.elementAt(i)).removeMessageNodeListener(messageNodeListener);
         }
-        
-    	super.onUndisplay();
     }
     
 	/**
 	 * Initializes the fields.
 	 */
-	private void initFields() {
+	public void initFields(Screen screen) {
 		messageFieldManager = new VerticalFieldManager(Manager.USE_ALL_WIDTH | Manager.USE_ALL_HEIGHT);
-        add(messageFieldManager);
+        screen.add(messageFieldManager);
+        this.screen = screen;
 	}    
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.ui.BaseScreen#onSavePrompt()
-     */
-    protected boolean onSavePrompt() {
-        return true;
-    }
 
     private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
         public void run() {
@@ -184,7 +177,7 @@ public class MailboxScreen extends BaseScreen {
     };
     private MenuItem compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
         public void run() {
-        	getNavigationController().displayComposition(mailboxNode.getParentAccount());
+        	navigationController.displayComposition(mailboxNode.getParentAccount());
         }
     };
     private MenuItem deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
@@ -201,7 +194,7 @@ public class MailboxScreen extends BaseScreen {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
-    protected void makeMenu(Menu menu, int instance) {
+    public void makeMenu(Menu menu, int instance) {
     	Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
     	if(fieldWithFocus instanceof MailboxMessageField) {
     		menu.add(selectItem);
@@ -221,7 +214,6 @@ public class MailboxScreen extends BaseScreen {
                 menu.add(deleteItem);
             }
         }
-        super.makeMenu(menu, instance);
     }
 
     /**
@@ -240,7 +232,7 @@ public class MailboxScreen extends BaseScreen {
 	    			insertDisplayableMessage(messageNodes[i]);
     			}
     			
-    			if(isDisplayed()) {
+    			if(screen != null && screen.isDisplayed()) {
     				messageNodes[i].addMessageNodeListener(messageNodeListener);
     			}
     		}
@@ -388,7 +380,7 @@ public class MailboxScreen extends BaseScreen {
     			openDraftMessage(messageNode);
     		}
     		else {
-    			getNavigationController().displayMessage(messageNode);
+    			navigationController.displayMessage(messageNode);
     		}
     		return true;
     	}
@@ -448,7 +440,7 @@ public class MailboxScreen extends BaseScreen {
     	}
 
     	// Show the message composition screen
-    	getNavigationController().displayComposition(account, messageNode);
+    	navigationController.displayComposition(account, messageNode);
 
 		return true;
     }
@@ -497,7 +489,7 @@ public class MailboxScreen extends BaseScreen {
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
-    protected boolean navigationClick(int status, int time) {
+    public boolean navigationClick(int status, int time) {
     	return openSelectedMessage();
     }
     

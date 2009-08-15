@@ -35,6 +35,7 @@ import java.util.Calendar;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Dialog;
@@ -69,16 +70,19 @@ import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 /**
  * This is the message composition screen.
  */
-public class CompositionScreen extends BaseScreen {
+public class CompositionScreen extends AbstractScreenProvider {
     public final static int COMPOSE_NORMAL = 0;
     public final static int COMPOSE_REPLY = 1;
     public final static int COMPOSE_REPLY_ALL = 2;
     public final static int COMPOSE_FORWARD = 3;
     
+    private int composeType = -1;
+    private MessageNode sourceMessageNode;
     private AccountNode accountNode;
     private AccountConfig accountConfig;
     private UnicodeNormalizer unicodeNormalizer;
     
+    private Screen screen;
     private BorderedFieldManager recipientsFieldManager;
 	private BorderedFieldManager subjectFieldManager;
 	private VerticalFieldManager messageFieldManager;
@@ -123,33 +127,25 @@ public class CompositionScreen extends BaseScreen {
     /**
      * Creates a new instance of CompositionScreen.
      *
-     * @param navigationController Controller for screen navigation
      * @param accountNode Account node
      */
-    public CompositionScreen(NavigationController navigationController, AccountNode accountNode) {
-    	super(navigationController);
+    public CompositionScreen(AccountNode accountNode) {
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
         }
-
-        initFields();
-
-        appendSignature();
-		messageEditField.setEditable(true);
     }
 
     /**
      * Creates a new instance of CompositionScreen.
      *
-     * @param navigationController Controller for screen navigation
      * @param accountNode Account node
      * @param recipient Message recipient address to pre-populate the "To" field with
      */
-    public CompositionScreen(NavigationController navigationController, AccountNode accountNode, String recipient) {
-    	this(navigationController, accountNode);
+    public CompositionScreen(AccountNode accountNode, String recipient) {
+    	this(accountNode);
 
     	EmailAddressBookEditField toAddressField = (EmailAddressBookEditField) recipientsFieldManager.getField(0);
     	toAddressField.setText(recipient);
@@ -160,17 +156,14 @@ public class CompositionScreen extends BaseScreen {
      * Used for working with an already created message,
      * such as a draft, reply, or forward.
      *
-     * @param navigationController Controller for screen navigation
      * @param accountNode Account node
      * @param messageNode Message we are composing
      * @param composeType Type of message we are creating
      */
     public CompositionScreen(
-    		NavigationController navigationController,
     		AccountNode accountNode,
     		MessageNode messageNode,
     		int composeType) {
-    	super(navigationController);
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
@@ -178,43 +171,8 @@ public class CompositionScreen extends BaseScreen {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
         }
 
-        initFields();
-
-        if(composeType == COMPOSE_NORMAL) {
-        	if(messageNode.getMessageStructure() != null) {
-        		populateFromMessage(messageNode);
-        		messageEditField.setEditable(true);
-        	}
-        	else {
-        		messageNode.addMessageNodeListener(messageNodeListener);
-        		messageNode.refreshMessage();
-        	}
-        }
-        else
-        {
-	        this.replyToMessageNode = messageNode;
-	
-	        MessageNode populateMessage;
-	
-	        switch (composeType) {
-	        case COMPOSE_REPLY:
-	        	this.replyToMessageNode = messageNode.toReplyMessage();
-	        	populateMessage = messageNode.toReplyMessage();
-	            break;
-	        case COMPOSE_REPLY_ALL:
-	        	populateMessage = messageNode.toReplyAllMessage(identityConfig.getEmailAddress());
-	            break;
-	        case COMPOSE_FORWARD:
-	        	populateMessage = messageNode.toForwardMessage();
-	            break;
-            default:
-            	populateMessage = messageNode;
-            	break;
-	        }
-	        populateFromMessage(populateMessage);
-	        appendSignature();
-    		messageEditField.setEditable(true);
-        }
+        this.composeType = composeType;
+        this.sourceMessageNode = messageNode;
     }
 
     private void messageNodeListener_MessageStatusChanged(MessageNodeEvent e) {
@@ -284,7 +242,7 @@ public class CompositionScreen extends BaseScreen {
         }
     }
     
-    private void initFields() {
+    public void initFields(Screen screen) {
     	recipientsFieldManager = new BorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
@@ -306,9 +264,51 @@ public class CompositionScreen extends BaseScreen {
 		messageEditField.setEditable(false);
         messageFieldManager.add(messageEditField);
         
-        add(recipientsFieldManager);
-        add(subjectFieldManager);
-        add(messageFieldManager);
+        screen.add(recipientsFieldManager);
+        screen.add(subjectFieldManager);
+        screen.add(messageFieldManager);
+        
+        if(sourceMessageNode == null) {
+            appendSignature();
+    		messageEditField.setEditable(true);
+        }
+        else if(composeType == COMPOSE_NORMAL) {
+        	if(sourceMessageNode.getMessageStructure() != null) {
+        		populateFromMessage(sourceMessageNode);
+        		messageEditField.setEditable(true);
+        	}
+        	else {
+        		sourceMessageNode.addMessageNodeListener(messageNodeListener);
+        		sourceMessageNode.refreshMessage();
+        	}
+        }
+        else
+        {
+	        this.replyToMessageNode = sourceMessageNode;
+	
+	        MessageNode populateMessage;
+	
+	        switch (composeType) {
+	        case COMPOSE_REPLY:
+	        	this.replyToMessageNode = sourceMessageNode.toReplyMessage();
+	        	populateMessage = sourceMessageNode.toReplyMessage();
+	            break;
+	        case COMPOSE_REPLY_ALL:
+	        	populateMessage = sourceMessageNode.toReplyAllMessage(identityConfig.getEmailAddress());
+	            break;
+	        case COMPOSE_FORWARD:
+	        	populateMessage = sourceMessageNode.toForwardMessage();
+	            break;
+            default:
+            	populateMessage = sourceMessageNode;
+            	break;
+	        }
+	        populateFromMessage(populateMessage);
+	        appendSignature();
+    		messageEditField.setEditable(true);
+        }
+        
+        this.screen = screen;
     }
 
     public boolean onClose() {
@@ -358,18 +358,18 @@ public class CompositionScreen extends BaseScreen {
         	}
         	
             if (shouldClose) {
-                close();
+            	screen.close();
                 return true;
             } else {
                 return false;
             }
         } else {
-            close();
+        	screen.close();
             return true;
         }
     }
 
-    protected void makeMenu(Menu menu, int instance) {
+    public void makeMenu(Menu menu, int instance) {
         if (((EmailAddressBookEditField) recipientsFieldManager.getField(0)).getText()
                  .length() > 0) {
             menu.add(sendMenuItem);
@@ -489,8 +489,8 @@ public class CompositionScreen extends BaseScreen {
         }
 
         messageSent = true;
-        setDirty(false);
-        close();
+        screen.setDirty(false);
+        screen.close();
     }
 
     /**
