@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2007, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,20 +32,15 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.util.Random;
-import org.logicprobe.LogicMail.AppInfo;
+import net.rim.device.api.synchronization.UIDGenerator;
 
 /**
  * This class provides a simple unique ID generator.
  */
 public class UniqueIdGenerator {
     private static UniqueIdGenerator instance;
-    private long base;
-    private long offset;
     
     private UniqueIdGenerator() {
-        base = AppInfo.GUID + (new Random()).nextLong();
-        offset = 0;
     }
     
     /**
@@ -60,6 +55,6 @@ public class UniqueIdGenerator {
     }
     
     public long getUniqueId() {
-        return base + offset++;
+    	return UIDGenerator.makeLUID(UIDGenerator.getUniqueScopingValue(), UIDGenerator.getUID());
     }
 }
