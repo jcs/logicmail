@@ -53,6 +53,20 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	}
 
 	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#hasShortcuts()
+	 */
+	public boolean hasShortcuts() {
+		return false;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#getShortcuts()
+	 */
+	public ShortcutItem[] getShortcuts() {
+		return null;
+	}
+	
+	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#setNavigationController(org.logicprobe.LogicMail.ui.NavigationController)
 	 */
 	public void setNavigationController(NavigationController navigationController) {
@@ -115,5 +129,11 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	 */
 	public boolean onSavePrompt() {
 		return true;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#shortcutAction(org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem)
+	 */
+	public void shortcutAction(ShortcutItem item) {
 	}
 }

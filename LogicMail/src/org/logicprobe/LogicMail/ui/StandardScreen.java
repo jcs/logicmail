@@ -65,7 +65,7 @@ public class StandardScreen extends MainScreen {
 	private boolean isExposed = false;
 	private Field originalStatusField;
 	
-	private ScreenProvider screenProvider;
+	protected ScreenProvider screenProvider;
 	
     /**
      * Instantiates a new standard screen.
@@ -301,6 +301,29 @@ public class StandardScreen extends MainScreen {
     		result = super.keyChar(c, status, time);
     	}
     	return result;
+    }
+    
+    /**
+     * Gets the enabled state of a shortcut button.
+     * Provided for subclasses that support shortcut buttons.
+     * 
+     * @param id the ID of the button
+     * @return the enabled state
+     */
+    public boolean isShortcutEnabled(int id) {
+    	// Shortcuts not supported by the base screen class
+    	return false;
+    }
+    
+    /**
+     * Sets the enabled state of a shortcut button.
+     * Provided for subclasses that support shortcut buttons.
+     * 
+     * @param id the ID of the button
+     * @param enabled the enabled state
+     */
+    public void setShortcutEnabled(int id, boolean enabled) {
+    	// Shortcuts not supported by the base screen class
     }
     
 	/**

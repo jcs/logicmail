@@ -35,9 +35,11 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.ui.FocusChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
@@ -64,7 +66,10 @@ import org.logicprobe.LogicMail.model.Node;
  * view of accounts and folders.
  */
 public class MailHomeScreen extends AbstractScreenProvider {
-	// TODO: Clean up and reorder methods
+	private static final int SHORTCUT_COMPOSE = 0;
+	private static final int SHORTCUT_FOLDER = 1;
+	private static final int SHORTCUT_UP = 3;
+	private static final int SHORTCUT_DOWN = 4;
 	
 	private Screen screen;
 	private MailRootNode mailRootNode;
@@ -113,10 +118,53 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		};
 	}
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#getTitle()
+	 */
 	public String getTitle() {
 		return resources.getString(LogicMailResource.MAILHOME_TITLE);
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#hasShortcuts()
+	 */
+	public boolean hasShortcuts() {
+		return true;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#getShortcuts()
+	 */
+	public ShortcutItem[] getShortcuts() {
+		// Note: This method is only called once, during initialization of the screen,
+		// and only on devices that have touchscreen support.  The strings for the
+		// shortcuts are contained within the main application library's resources.
+		// However, the icons are contained within the platform support library
+		// containing actual touchscreen API support.
+		return new ShortcutItem[] {
+			new ShortcutItem(
+					SHORTCUT_COMPOSE,
+					resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL),
+					"shortcut-compose.png", "shortcut-compose-d.png"),
+			new ShortcutItem(
+					SHORTCUT_FOLDER,
+					resources.getString(LogicMailResource.MENUITEM_TOGGLE_FOLDER),
+					"shortcut-folder.png", "shortcut-folder-d.png"),
+			null,
+			new ShortcutItem(
+					SHORTCUT_UP,
+					resources.getString(LogicMailResource.MENUITEM_SCROLL_UP),
+					"shortcut-up.png", "shortcut-up-d.png"),
+			new ShortcutItem(
+					SHORTCUT_DOWN,
+					resources.getString(LogicMailResource.MENUITEM_SCROLL_DOWN),
+					"shortcut-down.png", "shortcut-down-d.png")
+		};
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#initFields(net.rim.device.api.ui.Screen)
+	 */
 	public void initFields(Screen screen) {
 		treeField = new TreeField(new TreeFieldCallback() {
 			public void drawTreeItem(TreeField treeField, Graphics graphics,
@@ -127,7 +175,11 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		treeField.setEmptyString(resources.getString(LogicMailResource.MAILHOME_NOACCOUNTS), 0);
 		treeField.setDefaultExpanded(true);
 		treeField.setIndentWidth(20);
-		
+		treeField.setFocusListener(new FocusChangeListener() {
+			public void focusChanged(Field field, int eventType) {
+				treeField_FocusChanged(field, eventType);
+			}
+		});
 		screen.add(treeField);
 		
 		initMenuItems();
@@ -136,7 +188,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		refreshMailTree();
 		mailManager.addMailManagerListener(mailManagerListener);
 	}
-	
+
 	private void initMenuItems() {
 	    selectFolderItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 8) {
 			public void run() {
@@ -288,8 +340,10 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 	
 	private void selectFolderItemHandler(TreeNode treeNode) {
-		MailboxNode mailboxNode = (MailboxNode)treeNode.node;
-		navigationController.displayMailbox(mailboxNode);
+		if(treeNode.node instanceof MailboxNode) {
+			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
+			navigationController.displayMailbox(mailboxNode);
+		}
 	}
 
 	private void refreshStatusItemHandler(TreeNode treeNode) {
@@ -319,7 +373,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	private void compositionItemHandler(TreeNode treeNode) {
 		AccountNode accountNode = getAccountForTreeNode(treeNode);
 
-		if(accountNode != null) {
+		if(accountNode != null && accountNode.getAccountConfig() != null) {
 			navigationController.displayComposition(accountNode);
 		}
 	}
@@ -395,7 +449,9 @@ public class MailHomeScreen extends AbstractScreenProvider {
     	TreeNode treeNode = (TreeNode)treeField.getCookie(treeField.getCurrentNode());
 		if(treeNode.node instanceof MailboxNode) {
 			menu.add(selectFolderItem);
-			menu.add(compositionItem);
+			if(((MailboxNode)treeNode.node).getParentAccount().hasMailSender()) {
+				menu.add(compositionItem);
+			}
 		}
 		else if(treeNode.node instanceof AccountNode) {
 			AccountNode accountNode = (AccountNode)treeNode.node; 
@@ -438,6 +494,26 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		return retval;
 	}
     
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#shortcutAction(org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem)
+     */
+    public void shortcutAction(ShortcutItem item) {
+    	switch(item.getId()) {
+    	case SHORTCUT_COMPOSE:
+    		compositionItem.run();
+    		break;
+    	case SHORTCUT_FOLDER:
+    		toggleSelectedNode();
+    		break;
+    	case SHORTCUT_UP:
+    		screen.scroll(Manager.UPWARD);
+    		break;
+    	case SHORTCUT_DOWN:
+    		screen.scroll(Manager.DOWNWARD);
+    		break;
+    	}
+    }
+    
     /**
      * Toggles the expansion state of the currently selected node.
      */
@@ -457,6 +533,51 @@ public class MailHomeScreen extends AbstractScreenProvider {
         // Toggle the expansion state of the current node
         treeField.setExpanded(curNode, !treeField.getExpanded(curNode));
     }
+	
+	private void treeField_FocusChanged(Field field, int eventType) {
+    	boolean enableCompose;
+    	boolean enableFolder;
+    	
+    	int curNode = treeField.getCurrentNode();
+        if(curNode == -1) {
+        	enableFolder = false;
+        	enableCompose = false;
+        }
+        else {
+        	// Check whether we can enable folder expansion
+        	if(treeField.getFirstChild(curNode) == -1) {
+        		enableFolder = false;
+        	}
+        	else {
+        		enableFolder = true;
+        	}
+        	
+        	// Check whether we can enable composition
+        	TreeNode treeNode = (TreeNode)treeField.getCookie(curNode);
+        	if(treeNode.node instanceof AccountNode) {
+        		if(((AccountNode)treeNode.node).hasMailSender()) {
+        			enableCompose = true;
+        		}
+        		else {
+        			enableCompose = false;
+        		}
+        	}
+        	else if(treeNode.node instanceof MailboxNode) {
+        		if(((MailboxNode)treeNode.node).getParentAccount().hasMailSender()) {
+        			enableCompose = true;
+        		}
+        		else {
+        			enableCompose = false;
+        		}
+        	}
+        	else {
+        		enableCompose = false;
+        	}
+        }
+        
+        ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_COMPOSE, enableCompose);
+        ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_FOLDER, enableFolder);
+	}
     
 	private void treeField_DrawTreeItem(
 			TreeField treeField,

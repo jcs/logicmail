@@ -46,6 +46,22 @@ public interface ScreenProvider {
 	String getTitle();
 	
 	/**
+	 * Returns <tt>true</tt> if this screen contains shortcut bar items.
+	 * 
+	 * @return whether shortcut items exist.
+	 */
+	boolean hasShortcuts();
+	
+	/**
+	 * Array of shortcut bar items this screen provides.
+	 * This array should contain up to 5 elements, using null values
+	 * for any blank separator items.
+	 * 
+	 * @return shortcut bar items
+	 */
+	ShortcutItem[] getShortcuts();
+	
+	/**
 	 * Sets the navigation controller.
 	 * 
 	 * @param navigationController the navigation controller
@@ -101,4 +117,33 @@ public interface ScreenProvider {
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
 	boolean keyChar(char c, int status, int time);
+
+	/**
+	 * Called when a shortcut bar item is selected.
+	 * 
+	 * @param item Selected item.
+	 */
+	void shortcutAction(ShortcutItem item);
+	
+	/**
+	 * Container class representing a shortcut bar item.
+	 */
+	static class ShortcutItem {
+		private int id;
+		private String name;
+		private String enabledIcon;
+		private String disabledIcon;
+		
+		public ShortcutItem(int id, String name, String enabledIcon, String disabledIcon) {
+			this.id = id;
+			this.name = name;
+			this.enabledIcon = enabledIcon;
+			this.disabledIcon = disabledIcon;
+		}
+		
+		public int getId() { return id; }
+		public String getName() { return name; }
+		public String getEnabledIcon() { return enabledIcon; }
+		public String getDisabledIcon() { return disabledIcon; }
+	}
 }

@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.model.MessageNode;
  * in terms of viewing data model objects.
  */
 public class NavigationController {
+	private ScreenFactory screenFactory;
 	private MailRootNode mailRootNode;
 	
 	private UiApplication uiApplication;
@@ -53,12 +54,13 @@ public class NavigationController {
 	
 	public NavigationController(UiApplication uiApplication) {
 		this.uiApplication = uiApplication;
+		this.screenFactory = ScreenFactory.getInstance();
 		this.mailRootNode = MailManager.getInstance().getMailRootNode();
 	}
 	
 	public synchronized void displayMailHome() {
 		if(mailHomeScreen == null) {
-			mailHomeScreen = new StandardScreen(this, new MailHomeScreen(mailRootNode));
+			mailHomeScreen = screenFactory.getMailHomeScreen(this, mailRootNode);
 		}
 		uiApplication.pushScreen(mailHomeScreen);
 	}
@@ -87,46 +89,47 @@ public class NavigationController {
 	}
 	
 	public synchronized void displayMailbox(MailboxNode mailboxNode) {
-		StandardScreen screen = new StandardScreen(this, new MailboxScreen(mailboxNode));
+		StandardScreen screen = screenFactory.getMailboxScreen(this, mailboxNode);
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayMessage(MessageNode messageNode) {
-		StandardScreen screen = new StandardScreen(this, new MessageScreen(messageNode));
+		StandardScreen screen = screenFactory.getMessageScreen(this, messageNode);
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayComposition(AccountNode accountNode) {
-		StandardScreen screen = new StandardScreen(this, new CompositionScreen(accountNode));
+		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode);
 		uiApplication.pushScreen(screen);
 	}
 
 	public synchronized void displayComposition(AccountNode accountNode, MessageNode messageNode) {
-		StandardScreen screen = new StandardScreen(this, new CompositionScreen(
+		StandardScreen screen = screenFactory.getCompositionScreen(
+				this,
 				accountNode,
-				messageNode,
-				CompositionScreen.COMPOSE_NORMAL));
+				messageNode);
 		uiApplication.pushScreen(screen);
 	}
 
 	public void displayComposition(AccountNode accountNode, String address) {
-		StandardScreen screen = new StandardScreen(this, new CompositionScreen(accountNode, address));
+		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode, address);
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayCompositionReply(AccountNode accountNode, MessageNode messageNode, boolean replyAll) {
-		StandardScreen screen = new StandardScreen(this, new CompositionScreen(
+		StandardScreen screen = screenFactory.getCompositionReplyScreen(
+				this,
 				accountNode,
 				messageNode,
-				replyAll ? CompositionScreen.COMPOSE_REPLY_ALL : CompositionScreen.COMPOSE_REPLY));
+				replyAll);
 		uiApplication.pushScreen(screen);
 	}
 
 	public synchronized void displayCompositionForward(AccountNode accountNode, MessageNode messageNode) {
-		StandardScreen screen = new StandardScreen(this, new CompositionScreen(
+		StandardScreen screen = screenFactory.getCompositionForwardScreen(
+				this,
 				accountNode,
-				messageNode,
-				CompositionScreen.COMPOSE_FORWARD));
+				messageNode);
 		uiApplication.pushScreen(screen);
 	}
 }
