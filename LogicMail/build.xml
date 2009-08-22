@@ -163,6 +163,8 @@
       </jadtool>
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-URL(.*)\n" replace="" />
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-Size(.*)\n" replace="" />
+      <!-- Workaround for strange temporary phantom subdirectory created on the build server -->
+      <copy file="@{dest}/*/${module.name}.cod" todir="@{dest}" failonerror="false" />
       <sleep milliseconds="${task.sleep}"/>
     </sequential>
   </macrodef>
