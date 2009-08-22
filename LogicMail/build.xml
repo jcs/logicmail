@@ -207,8 +207,8 @@
     <zip destfile="../LogicMail-ota-${module.version}.zip">
       <fileset dir="${dist.ota.dir}">
         <include name="download-entry.xml"/>
-      	<include name="${module.version}/BB*/*.jad"/>
-      	<include name="${module.version}/BB*/*.cod"/>
+      	<include name="${module.version}/BB*/${module.name}.jad"/>
+      	<include name="${module.version}/BB*/${module.name}*.cod"/>
       </fileset>
     </zip>
   </target>
