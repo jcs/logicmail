@@ -10,6 +10,7 @@
   <property name="dist.alx.dir" location="distalx"/>
   <property name="docs.dir" location="docs"/>
   <property name="startup.src.dir" location="../LogicMailStartup/src"/>
+  <property name="bb470.src.dir" location="../LogicMail_BB47/src"/>
   <property file="project.properties"/>
   
   <!-- Task definitions -->
@@ -29,39 +30,39 @@
     <attribute name="jdehome"/>
     <attribute name="platform"/>
     <attribute name="defines"/>
+  	<attribute name="platformfileset"/>
     <sequential>
       <mkdir dir="${dist.dir}/@{platform}"/>
       <copy file="${src.dir}/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
       <rapc output="${module.name}"
-	    srcdir="${src.dir}"
-	    destdir="${dist.dir}/@{platform}"
-	    jdehome="@{jdehome}"
-	    defines="@{preprocessor}">
-	<jdp title="${module.title}"
-	     vendor="${module.vendor}"
-	     version="${module.version}"
-	     type="cldc"
-	     midletclass="org.logicprobe.LogicMail.LogicMail"
-	     icon="logicmail.png"
-	     arguments="-build:${module.build}">
-	  <entry arguments="-build:${module.build} autostartup"
-		 systemmodule="true"
-		 runonstartup="true"
-		 startuptier="7"/>
-	</jdp>
-	<src>
-	  <fileset dir="${src.dir}">
-	    <include name="**/*.java"/>
-	    <include name="**/*.rrc"/>
-	    <include name="**/*.rrh"/>
-	    <exclude name="**/bb40"/>
-	    <exclude name="**/*BB40.java"/>
-	    <include name="**/*.png"/>
-	  </fileset>
-	  <fileset dir="${startup.src.dir}">
-	    <include name="**/*.java"/>
-	  </fileset>
-	</src>
+            srcdir="${src.dir}"
+            destdir="${dist.dir}/@{platform}"
+            jdehome="@{jdehome}"
+            defines="@{preprocessor}">
+        <jdp title="${module.title}"
+             vendor="${module.vendor}"
+             version="${module.version}"
+             type="cldc"
+             midletclass="org.logicprobe.LogicMail.LogicMail"
+             icon="logicmail.png"
+             arguments="-build:${module.build}">
+          <entry arguments="-build:${module.build} autostartup"
+                 systemmodule="true"
+                 runonstartup="true"
+                 startuptier="7"/>
+        </jdp>
+        <src>
+          <fileset dir="${src.dir}">
+            <include name="**/*.java"/>
+            <include name="**/*.rrc"/>
+            <include name="**/*.rrh"/>
+            <include name="**/*.png"/>
+          </fileset>
+          <fileset dir="${startup.src.dir}">
+            <include name="**/*.java"/>
+          </fileset>
+          <fileset refid="@{platformfileset}" />
+        </src>
       </rapc>
       <delete file="${dist.dir}/@{platform}/logicmail.png"/>
     </sequential>
@@ -70,47 +71,50 @@
   <!-- Build the application -->
   <target name="build">
     <if><isset property="jde421.home"/><then>
-	<build-platform jdehome="${jde421.home}" platform="BB421" defines="BLACKBERRY_4_2_1" />
+      <fileset id="bb421_fileset" dir="${src.dir}" />
+      <build-platform jdehome="${jde421.home}" platform="BB421" defines="BLACKBERRY_4_2_1" platformfileset="bb421_fileset"/>
     </then></if>
-    <if><isset property="jde450.home"/><then>
-    	<build-platform jdehome="${jde450.home}" platform="BB450" defines="BLACKBERRY_4_5_0" />
+    <if><isset property="jde470.home"/><then>
+      <fileset id="bb470_fileset" dir="${bb470.src.dir}">
+        <include name="**/*.java"/>
+        <include name="**/*.png"/>
+      </fileset>
+      <build-platform jdehome="${jde470.home}" platform="BB470" defines="BLACKBERRY_4_7_0" platformfileset="bb470_fileset"/>
     </then></if>
   </target>
 
   <!-- Sign the application -->
   <target name="sign" depends="build" if="sigtool.password">
     <if><isset property="jde421.home"/><then>
-        <sigtool jdehome="${jde421.home}"
-                 password="${sigtool.password}"
-                 forceclose="true"
-                 codfile="${dist.dir}/BB421/${module.name}.cod"/>
+      <sigtool jdehome="${jde421.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB421/${module.name}.cod"/>
     </then></if>
-    <if><isset property="jde450.home"/><then>
-        <sigtool jdehome="${jde450.home}"
-                 password="${sigtool.password}"
-                 forceclose="true"
-                 codfile="${dist.dir}/BB450/${module.name}.cod"/>
+    <if><isset property="jde470.home"/><then>
+      <sigtool jdehome="${jde470.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB470/${module.name}.cod"/>
     </then></if>
   </target>
   
   <!-- Build the code documentation -->
   <target name="javadoc" depends="build">
     <javadoc destdir="${docs.dir}"
-	     author="true"
-	     version="true"
-	     use="true"
-	     windowtitle="${module.description}">
+             author="true"
+             version="true"
+             use="true"
+             windowtitle="${module.description}">
       <fileset dir="${src.dir}">
-	<include name="**/*.java"/>
-	<exclude name="**/bb40"/>
-	<exclude name="**/*BB40.java"/>
+        <include name="**/*.java"/>
       </fileset>
       <fileset dir="${startup.src.dir}">
-	<include name="**/*.java"/>
+        <include name="**/*.java"/>
       </fileset>
       <classpath>
-	<pathelement path="${jde421.home}/lib/net_rim_api.jar"/>
-	<pathelement path="${dist.dir}/BB421/${module.name}.jar"/>
+        <pathelement path="${jde421.home}/lib/net_rim_api.jar"/>
+        <pathelement path="${dist.dir}/BB421/${module.name}.jar"/>
       </classpath>
     </javadoc>
   </target>
@@ -118,32 +122,30 @@
   <!-- Build the desktop loader distribution -->
   <target name="dist-alx" depends="build">
     <mkdir dir="${dist.alx.dir}" />
-    
-    <!-- Copy the files -->
-    <if><isset property="jde421.home"/><then>
-	<mkdir dir="${dist.alx.dir}/BB421" />
-	<copy todir="${dist.alx.dir}/BB421">
-	  <fileset dir="${dist.dir}/BB421" includes="*.jar *.jad *.cod"/>
-	</copy>
-    </then></if>
-    <if><isset property="jde450.home"/><then>
-	<mkdir dir="${dist.alx.dir}/BB450" />
-	<copy todir="${dist.alx.dir}/BB450">
-	  <fileset dir="${dist.dir}/BB450" includes="*.jar *.jad *.cod"/>
-	</copy>
-    </then></if>
+	<alx destdir="${dist.alx.dir}" filename="${module.name}.alx">
+      <application
+          id="${module.name}"
+          name="${module.title}"
+          description="${module.description}"
+          vendor="${module.vendor}"
+          version="${module.version}"
+      	  copyright="${module.copyright}">
+      	<!--
+          Since there is no easy way to conditionally define these elements,
+          they will need to be manually edited if executing this task without
+          all supported JDE versions defined.
+      	-->
+        <codset dir="BB421" greaterthanequal="4.2.1" lessthan="4.7.0">
+          <fileset dir="${dist.dir}/BB421" includes="*.cod" />
+        </codset>
+        <codset dir="BB470" greaterthanequal="4.7.0">
+          <fileset dir="${dist.dir}/BB470" includes="*.cod" />
+        </codset>
+      </application>
+	</alx>
     <copy todir="${dist.alx.dir}">
       <fileset dir=".." includes="README.txt, LICENSE.txt, ChangeLog.txt"/>
     </copy>
-    
-    <!-- Modify and copy the ALX file -->
-    <!-- TODO: Add version conditionals -->
-    <xmltask
-       source="LogicMail.alx"
-       dest="${dist.alx.dir}/${module.name}.alx">
-      <replace path="loader/application/version/text()" withText="${module.version}"/>
-      <replace path="loader/application/fileset/files/text()" withText="${module.name}.cod"/>
-    </xmltask>
   </target>
   
   <macrodef name="copy-ota-files">
@@ -174,21 +176,21 @@
        </insert>
        <attr path="/downloads/entry" attr="name" value="${module.title} ${module.version}"/>
        <insert if="jde421.home" path="/downloads/entry">
-   	<![CDATA[
-          <file name="${module.version}/BB421/${module.name}.jad" target="4.2.1"/>
-        ]]>
+         <![CDATA[
+           <file name="${module.version}/BB421/${module.name}.jad" target="4.2.1"/>
+         ]]>
       </insert>
-      <insert if="jde450.home" path="/downloads/entry">
+      <insert if="jde470.home" path="/downloads/entry">
         <![CDATA[
-          <file name="${module.version}/BB450/${module.name}.jad" target="4.5.0"/>
+          <file name="${module.version}/BB470/${module.name}.jad" target="4.7.0"/>
         ]]>
       </insert>
     </xmltask>
     <if><isset property="jde421.home"/><then>
-	<copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
+      <copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
     </then></if>
-    <if><isset property="jde450.home"/><then>
-	<copy-ota-files src="${dist.dir}/BB450" dest="${dist.ota.dir}/${module.version}/BB450"/>
+    <if><isset property="jde470.home"/><then>
+      <copy-ota-files src="${dist.dir}/BB470" dest="${dist.ota.dir}/${module.version}/BB470"/>
     </then></if>
   </target>
   

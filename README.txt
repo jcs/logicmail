@@ -11,4 +11,4 @@ initial protocol code.
 The project website is located at:
   http://www.logicprobe.org/proj/logicmail
 
-- Derek Konigsberg <octo@logicprobe.org>
+- Derek Konigsberg <dkonigsberg@logicprobe.org>
