@@ -163,8 +163,6 @@
       </jadtool>
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-URL(.*)\n" replace="" />
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-Size(.*)\n" replace="" />
-      <!-- Workaround for strange temporary phantom subdirectory created on the build server -->
-      <copy file="@{dest}/*/${module.name}.cod" todir="@{dest}" failonerror="false" />
       <sleep milliseconds="${task.sleep}"/>
     </sequential>
   </macrodef>
@@ -207,11 +205,7 @@
       <fileset dir="${dist.alx.dir}" />
     </zip>
     <zip destfile="../LogicMail-ota-${module.version}.zip">
-      <fileset dir="${dist.ota.dir}">
-        <include name="download-entry.xml"/>
-      	<include name="${module.version}/BB*/${module.name}.jad"/>
-      	<include name="${module.version}/BB*/${module.name}*.cod"/>
-      </fileset>
+      <fileset dir="${dist.ota.dir}" />
     </zip>
   </target>
   
