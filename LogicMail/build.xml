@@ -65,6 +65,7 @@
         </src>
       </rapc>
       <delete file="${dist.dir}/@{platform}/logicmail.png"/>
+      <sleep milliseconds="${task.sleep}"/>
     </sequential>
   </macrodef>
   
@@ -90,12 +91,14 @@
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB421/${module.name}.cod"/>
+      <sleep milliseconds="${task.sleep}"/>
     </then></if>
     <if><isset property="jde470.home"/><then>
       <sigtool jdehome="${jde470.home}"
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB470/${module.name}.cod"/>
+      <sleep milliseconds="${task.sleep}"/>
     </then></if>
   </target>
   
@@ -146,6 +149,7 @@
     <copy todir="${dist.alx.dir}">
       <fileset dir=".." includes="README.txt, LICENSE.txt, ChangeLog.txt"/>
     </copy>
+    <sleep milliseconds="${task.sleep}"/>
   </target>
   
   <macrodef name="copy-ota-files">
@@ -159,6 +163,7 @@
       </jadtool>
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-URL(.*)\n" replace="" />
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-Size(.*)\n" replace="" />
+      <sleep milliseconds="${task.sleep}"/>
     </sequential>
   </macrodef>
   
@@ -185,6 +190,7 @@
         ]]>
       </insert>
     </xmltask>
+  	<sleep milliseconds="${task.sleep}"/>
     <if><isset property="jde421.home"/><then>
       <copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
     </then></if>
