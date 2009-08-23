@@ -54,7 +54,6 @@ public class HeaderField extends Field {
     private boolean showSignal;
     private boolean showBattery;
     private boolean showTitle;
-    private int fieldWidth;
     private int fieldHeight;
     private int fontColor;
     private int backgroundColor;
@@ -78,7 +77,6 @@ public class HeaderField extends Field {
         this.batteryBackground = 0x999999;
         this.signalBarColor = Color.BLUE;
         this.fieldHeight = headerFont.getHeight();
-        this.fieldWidth = Display.getWidth();
         signalLevel = RadioInfo.getSignalLevel();
         batteryLevel = DeviceInfo.getBatteryLevel();
         
@@ -229,7 +227,7 @@ public class HeaderField extends Field {
     }
     
     public int getPreferredWidth() {
-        return fieldWidth;
+        return Display.getWidth();
     }
     
     public int getPreferredHeight() {
