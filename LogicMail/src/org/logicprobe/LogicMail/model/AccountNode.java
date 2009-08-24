@@ -696,28 +696,35 @@ public class AccountNode implements Node {
     /**
      * Attempts to determine the folder type based on its name,
      * and any configuration options.
+     * <p>
+     * This approach is only necessary to for local folders and general
+     * defaults.  Explicitly configured special folders have their type set
+     * later in the account loading process.
+     * </p>
      * @param folderTreeItem Source folder tree item.
      * @return Mailbox type
      */
     private int getMailboxType(FolderTreeItem folderTreeItem) {
-        // TODO: Base Drafts/Sent/Trash on account configuration for non-local accounts
+    	int mailboxType = MailboxNode.TYPE_NORMAL;
         if (folderTreeItem.getPath().equalsIgnoreCase("INBOX")) {
-            return MailboxNode.TYPE_INBOX;
-        } else if ((status == STATUS_LOCAL) &&
-                folderTreeItem.getPath().equalsIgnoreCase("Outbox")) {
-            return MailboxNode.TYPE_OUTBOX;
-        } else if ((status == STATUS_LOCAL) &&
-                folderTreeItem.getPath().equalsIgnoreCase("Drafts")) {
-            return MailboxNode.TYPE_DRAFTS;
-        } else if ((status == STATUS_LOCAL) &&
-                folderTreeItem.getPath().equalsIgnoreCase("Sent")) {
-            return MailboxNode.TYPE_SENT;
-        } else if ((status == STATUS_LOCAL) &&
-                folderTreeItem.getPath().equalsIgnoreCase("Trash")) {
-            return MailboxNode.TYPE_TRASH;
-        } else {
-            return MailboxNode.TYPE_NORMAL;
+        	mailboxType = MailboxNode.TYPE_INBOX;
         }
+        else if(status == STATUS_LOCAL) {
+        	String path = folderTreeItem.getPath();
+            if (path.equalsIgnoreCase("Outbox")) {
+            	mailboxType = MailboxNode.TYPE_OUTBOX;
+            }
+            else if (path.equalsIgnoreCase("Drafts")) {
+            	mailboxType = MailboxNode.TYPE_DRAFTS;
+            }
+            else if (path.equalsIgnoreCase("Sent")) {
+            	mailboxType = MailboxNode.TYPE_SENT;
+            }
+            else if (path.equalsIgnoreCase("Trash")) {
+            	mailboxType = MailboxNode.TYPE_TRASH;
+            }
+        }
+        return mailboxType;
     }
 
     /**

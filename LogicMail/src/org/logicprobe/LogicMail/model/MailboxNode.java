@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -59,7 +60,7 @@ public class MailboxNode implements Node, Serializable {
 	private long uniqueId;
 	private AccountNode parentAccount;
 	private MailboxNode parentMailbox;
-	private Vector mailboxes;
+	private SimpleSortingVector mailboxes;
 	private SimpleSortingVector messages;
 	private Hashtable messageMap;
 	private Hashtable messageTokenMap;
@@ -75,6 +76,41 @@ public class MailboxNode implements Node, Serializable {
 	public final static int TYPE_SENT   = 4;
 	public final static int TYPE_TRASH  = 5;
 
+	private static class MailboxNodeComparator implements Comparator {
+		public int compare(Object o1, Object o2) {
+			if(o1 instanceof MailboxNode && o2 instanceof MailboxNode) {
+				MailboxNode mailbox1 = (MailboxNode)o1;
+				int mailboxType1 = mailbox1.getType();
+				MailboxNode mailbox2 = (MailboxNode)o2;
+				int mailboxType2 = mailbox2.getType();
+				int result = 0;
+				
+				if(mailboxType1 == MailboxNode.TYPE_INBOX) {
+					result = -1;
+				}
+				else if(mailboxType2 == MailboxNode.TYPE_INBOX) {
+					result = 1;
+				}
+				else if(mailboxType1 != MailboxNode.TYPE_NORMAL && mailboxType2 == MailboxNode.TYPE_NORMAL) {
+					result = -1;
+				}
+				else if(mailboxType1 == MailboxNode.TYPE_NORMAL && mailboxType2 != MailboxNode.TYPE_NORMAL) {
+					result = 1;
+				}
+				else {
+					result = mailbox1.toString().compareTo(mailbox2.toString());
+				}
+				return result;
+			}
+			else {
+				throw new ClassCastException("Cannot compare types");
+			}
+		}
+	}
+
+	/** Static comparator used to compare mailbox nodes for insertion ordering */
+	private static MailboxNodeComparator comparator = new MailboxNodeComparator();
+	
 	/**
 	 * Initializes a new instance of <tt>MailboxNode</tt>.
 	 * 
@@ -84,7 +120,9 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	MailboxNode(FolderTreeItem folderTreeItem, boolean hasAppend, int type) {
 		this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
-		this.mailboxes = new Vector();
+		this.mailboxes = new SimpleSortingVector();
+		this.mailboxes.setSortComparator(MailboxNode.getComparator());
+		this.mailboxes.setSort(true);
 		this.messages = new SimpleSortingVector();
 		this.messages.setSortComparator(MessageNode.getComparator());
 		this.messages.setSort(true);
@@ -131,6 +169,16 @@ public class MailboxNode implements Node, Serializable {
 		visitor.visit(this);
 	}
 
+	/**
+	 * Gets the comparator used to compare mailbox nodes for insertion ordering.
+	 * 
+	 * @return the comparator
+	 */
+	public static Comparator getComparator() {
+		return MailboxNode.comparator;
+	}
+	
+	
 	/**
 	 * Sets the account which this mailbox is contained within.
 	 * 
@@ -549,7 +597,12 @@ public class MailboxNode implements Node, Serializable {
 	 * @param type The type.
 	 */
 	void setType(int type) {
-		this.type = type;
+		if(this.type != type) {
+			this.type = type;
+			if(this.getParentMailbox() != null) {
+				this.getParentMailbox().mailboxes.reSort();
+			}
+		}
 	}
 	
 	/**

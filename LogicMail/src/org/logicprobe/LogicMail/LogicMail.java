@@ -43,6 +43,7 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.ui.UiApplication;
 
+import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -112,6 +113,9 @@ public class LogicMail extends UiApplication {
 	            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
 	        }
 
+	        // Initialize the data model explicitly
+	        MailManager.initialize();
+	        
 	        // Initialize the notification handler
 	        NotificationHandler.getInstance().setEnabled(true);
 	        

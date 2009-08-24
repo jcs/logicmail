@@ -130,11 +130,6 @@ public abstract class ConnectionConfig implements Serializable {
         this.serverName = serverName;
     }
 
-//    public boolean getServerSSL() {
-//    	// TODO: Remove this method
-//    	return serverSecurity == SECURITY_SSL;
-//    }
-    
     /**
      * Gets the server connection security mode.
      * 

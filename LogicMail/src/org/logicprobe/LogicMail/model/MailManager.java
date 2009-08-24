@@ -73,6 +73,7 @@ public class MailManager {
 		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
 			public void mailSettingsSaved(MailSettingsEvent e) {
 				mailSettings_MailSettingsSaved(e);
+				refreshMailboxTypes();
 			}
 		});
 		
@@ -102,6 +103,27 @@ public class MailManager {
 				break;
 			}
 		}
+	}
+	
+	private void refreshMailboxTypes() {
+		int num = mailSettings.getNumAccounts();
+		for(int i=0; i<num; i++) {
+			AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+			MailboxNode mailbox;
+			mailbox = accountConfig.getDraftMailbox();
+			if(mailbox != null) { mailbox.setType(MailboxNode.TYPE_DRAFTS); }
+			mailbox = accountConfig.getSentMailbox();
+			if(mailbox != null) { mailbox.setType(MailboxNode.TYPE_SENT); }
+		}
+	}
+	
+	/**
+	 * First time initialization sequence, should only be invoked on
+	 * application startup.
+	 */
+	public static void initialize() {
+		MailManager mailManager = MailManager.getInstance();
+		mailManager.refreshMailboxTypes();
 	}
 	
 	/**
