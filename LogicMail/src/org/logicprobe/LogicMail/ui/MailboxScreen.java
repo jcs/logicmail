@@ -33,22 +33,20 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Hashtable;
 import java.util.Vector;
+
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.component.Menu;
-import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.model.AccountNode;
-import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
@@ -71,6 +69,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     private MailSettings mailSettings;
     private VerticalFieldManager messageFieldManager;
     private Screen screen;
+    private MessageActions messageActions;
 
     private MenuItem selectItem;
 	private MenuItem propertiesItem;
@@ -180,18 +179,19 @@ public class MailboxScreen extends AbstractScreenProvider {
 		};
         screen.add(messageFieldManager);
         this.screen = screen;
+    	this.messageActions = new MessageActions(navigationController);
         initMenuItems();
 	}    
 	
 	private void initMenuItems() {
-	    selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
-	        public void run() {
-	            openSelectedMessage();
+	    selectItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
+	        public void runNode(MessageNode messageNode) {
+	        	messageActions.openMessage(messageNode);
 	        }
 	    };
-	    propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
-	        public void run() {
-	            openSelectedMessageProperties();
+	    propertiesItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
+	        public void runNode(MessageNode messageNode) {
+	            messageActions.openMessageProperties(messageNode);
 	        }
 	    };
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
@@ -199,16 +199,31 @@ public class MailboxScreen extends AbstractScreenProvider {
 	        	navigationController.displayComposition(mailboxNode.getParentAccount());
 	        }
 	    };
-	    deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
-	        public void run() {
-	        	deleteSelectedMessage();
+	    deleteItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
+	        public void runNode(MessageNode messageNode) {
+	        	messageActions.deleteMessage(messageNode);
 	        }
 	    };
-	    undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 135, 10) {
-	        public void run() {
-	        	undeleteSelectedMessage();
+	    undeleteItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 135, 10) {
+	        public void runNode(MessageNode messageNode) {
+	        	messageActions.undeleteMessage(messageNode);
 	        }
 	    };
+	}
+
+	private abstract class MailboxMessageMenuItem extends MenuItem {
+		public MailboxMessageMenuItem(ResourceBundle bundle, int id, int ordinal, int priority) {
+			super(bundle, id, ordinal, priority);
+		}
+
+		public final void run() {
+			MessageNode messageNode = getSelectedMessage();
+			if(messageNode != null) {
+				runNode(messageNode);
+			}
+		}
+		
+		public abstract void runNode(MessageNode messageNode);
 	}
 
     /* (non-Javadoc)
@@ -387,130 +402,18 @@ public class MailboxScreen extends AbstractScreenProvider {
     	}
     }
     
-    /**
-     * Opens the selected message.
-     * 
-     * @return True, if successful
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
-    private boolean openSelectedMessage()
-    {
+    public boolean navigationClick(int status, int time) {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
-    		if(mailboxNode.getType() == MailboxNode.TYPE_DRAFTS) {
-    			openDraftMessage(messageNode);
-    		}
-    		else {
-    			navigationController.displayMessage(messageNode);
-    		}
+    		messageActions.openMessage(messageNode);
     		return true;
     	}
     	else {
     		return false;
     	}
-    }
-
-    private boolean openDraftMessage(MessageNode messageNode) {
-    	// Build a list of all the accounts that have this mailbox
-    	// configured as their drafts folder.
-    	Vector matchingAccounts = new Vector();
-    	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-
-    	for(int i=0; i<accounts.length; i++) {
-    		AccountConfig accountConfig = accounts[i].getAccountConfig();
-    		if(accountConfig != null) {
-    			if(accountConfig.getDraftMailbox() == mailboxNode) {
-    				matchingAccounts.addElement(accounts[i]);
-    			}
-    		}
-    	}
-
-    	// If no matching accounts were found, then add all
-    	// non-local accounts so we have something for the
-    	// user to select from.
-    	if(matchingAccounts.size() == 0) {
-        	for(int i=0; i<accounts.length; i++) {
-        		if(accounts[i].getAccountConfig() != null) {
-    				matchingAccounts.addElement(accounts[i]);
-        		}
-        	}
-    	}
-    	
-    	// Select the account node that matches this mailbox, prompting the
-    	// user if necessary.
-    	AccountNode account;
-    	int size = matchingAccounts.size();
-    	if(size > 1) {
-    		AccountNode[] choices = new AccountNode[size];
-    		matchingAccounts.copyInto(choices);
-        	int result = Dialog.ask(
-    			resources.getString(LogicMailResource.MAILBOX_DRAFT_MULTIPLE_ACCOUNTS),
-    			choices, 0);
-        	if(result != -1) {
-        		account = choices[result];
-        	}
-        	else {
-        		return false;
-        	}
-    	}
-    	else if(size == 1) {
-    		account = (AccountNode)matchingAccounts.elementAt(0);
-    	}
-    	else {
-    		return false;
-    	}
-
-    	// Show the message composition screen
-    	navigationController.displayComposition(account, messageNode);
-
-		return true;
-    }
-    
-    /**
-     * Open selected message properties.
-     */
-    private void openSelectedMessageProperties()
-    {
-    	MessageNode messageNode = getSelectedMessage();
-    	if(messageNode != null) {
-	        MessagePropertiesScreen propertiesScreen =
-	        	new MessagePropertiesScreen(messageNode);
-	        UiApplication.getUiApplication().pushModalScreen(propertiesScreen);
-    	}
-    }
-
-    /**
-     * Delete selected message.
-     * 
-     * @return True, if successful
-     */
-    private boolean deleteSelectedMessage() {
-    	MessageNode messageNode = getSelectedMessage();
-    	if(messageNode != null) {
-	        if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT)) == Dialog.YES) {
-	        	messageNode.deleteMessage();
-	        }
-	        return true;
-    	}
-    	else {
-    		return false;
-    	}
-    }
-    
-    /**
-     * Undelete selected message.
-     */
-    private void undeleteSelectedMessage() {
-    	MessageNode messageNode = getSelectedMessage();
-    	if(messageNode != null) {
-    		messageNode.undeleteMessage();
-    	}
-    }
-    
-    /* (non-Javadoc)
-     * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
-     */
-    public boolean navigationClick(int status, int time) {
-    	return openSelectedMessage();
     }
     
     /* (non-Javadoc)
@@ -518,12 +421,21 @@ public class MailboxScreen extends AbstractScreenProvider {
      */
     public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
+        MessageNode messageNode;
         switch(key) {
             case Keypad.KEY_ENTER:
-                retval = openSelectedMessage();
+            	messageNode = getSelectedMessage();
+            	if(messageNode != null) {
+            		messageActions.openMessage(messageNode);
+            		retval = true;
+            	}
                 break;
             case Keypad.KEY_BACKSPACE:
-            	retval = deleteSelectedMessage();
+            	messageNode = getSelectedMessage();
+            	if(messageNode != null) {
+            		messageActions.deleteMessage(messageNode);
+            		retval = true;
+            	}
             	break;
         }
         return retval;

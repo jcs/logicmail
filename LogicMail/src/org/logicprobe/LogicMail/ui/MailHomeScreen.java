@@ -34,6 +34,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.FocusChangeListener;
 import net.rim.device.api.ui.Font;
@@ -190,46 +191,46 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 
 	private void initMenuItems() {
-	    selectFolderItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 8) {
-			public void run() {
-				int nodeId = treeField.getCurrentNode();
-				if(nodeId != -1) {
-					selectFolderItemHandler((TreeNode)treeField.getCookie(nodeId));
-				}
+	    selectFolderItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 8) {
+			public void runNode(TreeNode treeNode) {
+				selectFolderItemHandler(treeNode);
 			}
 		};
-		refreshStatusItem = new MenuItem(resources, LogicMailResource.MENUITEM_REFRESH_STATUS, 110, 10) {
-			public void run() {
-				int nodeId = treeField.getCurrentNode();
-				if(nodeId != -1) {
-					refreshStatusItemHandler((TreeNode)treeField.getCookie(nodeId));
-				}
+		refreshStatusItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_STATUS, 110, 10) {
+			public void runNode(TreeNode treeNode) {
+				refreshStatusItemHandler(treeNode);
 			}
 		};
-		refreshFoldersItem = new MenuItem(resources, LogicMailResource.MENUITEM_REFRESH_FOLDERS, 111, 10) {
-			public void run() {
-				int nodeId = treeField.getCurrentNode();
-				if(nodeId != -1) {
-					refreshFoldersItemHandler((TreeNode)treeField.getCookie(nodeId));
-				}
+		refreshFoldersItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_FOLDERS, 111, 10) {
+			public void runNode(TreeNode treeNode) {
+				refreshFoldersItemHandler(treeNode);
 			}
 		};
-		compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 200000, 9) {
-			public void run() {
-				int nodeId = treeField.getCurrentNode();
-				if(nodeId != -1) {
-					compositionItemHandler((TreeNode)treeField.getCookie(nodeId));
-				}
+		compositionItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 200000, 9) {
+			public void runNode(TreeNode treeNode) {
+				compositionItemHandler(treeNode);
 			}
 		};
-		disconnectItem = new MenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 200000, 9) {
-			public void run() {
-				int nodeId = treeField.getCurrentNode();
-				if(nodeId != -1) {
-					disconnectItemHandler((TreeNode)treeField.getCookie(nodeId));
-				}
+		disconnectItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 200000, 9) {
+			public void runNode(TreeNode treeNode) {
+				disconnectItemHandler(treeNode);
 			}
 		};
+	}
+	
+	private abstract class TreeNodeMenuItem extends MenuItem {
+		public TreeNodeMenuItem(ResourceBundle bundle, int id, int ordinal, int priority) {
+			super(bundle, id, ordinal, priority);
+		}
+
+		public final void run() {
+			int nodeId = treeField.getCurrentNode();
+			if(nodeId != -1) {
+				runNode((TreeNode)treeField.getCookie(nodeId));
+			}
+		}
+		
+		public abstract void runNode(TreeNode treeNode);
 	}
 	
 	private void mailManager_MailConfigurationChanged(MailManagerEvent e) {
