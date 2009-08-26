@@ -88,20 +88,23 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 
 	public boolean hasMessageParts() {
-		// Fix this kludge later
+		// TODO Fix this type-specific kludge
 		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
 	}
 	
 	public boolean hasFlags() {
-		// Fix this kludge later
+		// TODO Fix this type-specific kludge
 		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
 	}
 	
 	public boolean hasAppend() {
-		// Fix this kludge later
-		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
+		return client.hasAppend();
 	}
 
+	public boolean hasCopy() {
+		return client.hasCopy();
+	}
+	
 	public boolean hasUndelete() {
 		return client.hasUndelete();
 	}
@@ -167,6 +170,13 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND, new Object[] { folder, rawMessage, initialFlags });
 	}
 	
+	public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) {
+		if(!this.hasCopy()) {
+			throw new UnsupportedOperationException();
+		}
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder });
+	}
+	
 	private void connectionHandler_mailConnectionRequestComplete(int type, Object result) {
 		Object[] results;
 		switch(type) {
@@ -208,6 +218,8 @@ public class NetworkMailStore extends AbstractMailStore {
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
 			results = (Object[])result;
 			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1]);
+			break;
+		case IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY:
 			break;
 		}
 	}

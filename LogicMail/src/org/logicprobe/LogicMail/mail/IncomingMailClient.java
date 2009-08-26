@@ -57,47 +57,64 @@ public interface IncomingMailClient extends MailClient {
      * Get the account configuration.
      * Should probably find a way to remove the need for this.
      */
-    public abstract AccountConfig getAcctConfig();
+    AccountConfig getAcctConfig();
     
     /**
      * Return whether the underlying protocol supports mail folders.
+     * <p>
      * This enables actions to be taken without having to unnecessarily
      * execute a potentially costly getFolderTree() operation.
+     * </p>
      *
      * @return True if folders supported, false otherwise
      */
-    public abstract boolean hasFolders();
-
+    boolean hasFolders();
+    
+    /**
+     * Returns whether the underlying protocol supports appending messages to mailboxes.
+     * 
+     * @return True of append is supported
+     */
+    boolean hasAppend();
+    
+    /**
+     * Returns whether the underlying protocol supports copying messages between its mailboxes.
+     * 
+     * @return True if copy is supported
+     */
+    boolean hasCopy();
+    
     /**
      * Return whether the underlying protocol supports undeletion of messages.
      *
      * @return True if undelete supported, false otherwise
      */
-    public abstract boolean hasUndelete();
+    boolean hasUndelete();
     
     /**
      * Return whether the underlying protocol supports an idle connection mode.
      * 
      * @return True if an idle mode is supported, false otherwise
      */
-    public abstract boolean hasIdle();
+    boolean hasIdle();
     
     /**
      * Get the mail folder tree.
+     * <p>
      * This should return null if folders are not supported
      * by the underlying protocol.
      * If the tree has no singular root node, then this should
      * reference an invisible root node.  Otherwise, this should
      * reference the visible root folder.
+     * </p>
      * 
      * @param progressHandler the progress handler
-     * 
      * @return Root folder of the tree, and all children below it
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract FolderTreeItem getFolderTree(MailProgressHandler progressHandler)
+    FolderTreeItem getFolderTree(MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
@@ -109,54 +126,63 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler)
+    void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
      * Gets the INBOX folder.
+     * <p>
      * This method returns the special folder that is considered the
      * primary mailbox for the connected user on the server.
      * Even protocols that do not support folders must provide a fake
      * INBOX folder through this method.
+     * </p>
      * 
      * @return The FolderTreeItem object describing the INBOX mailbox
      */
-    public abstract FolderTreeItem getInboxFolder();
+    FolderTreeItem getInboxFolder();
     
     /**
      * Get the active mail folder.
+     * <p>
      * This method is only useful if the protocol supports
      * folders, and should otherwise return null or
      * a single INBOX folder
+     * </p>
      *
      * @return The FolderTreeItem object describing the active mailbox
      */
-    public abstract FolderTreeItem getActiveFolder();
+    FolderTreeItem getActiveFolder();
     
     /**
      * Select a new active mail folder.
+     * <p>
      * This method is only useful if the protocol supports
      * folders, and should otherwise be ignored or limited
      * to a single INBOX folder
+     * </p>
      * 
      * @param folderItem The FolderTreeItem object describing the new active folderItem
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void setActiveFolder(FolderTreeItem folderItem)
+    void setActiveFolder(FolderTreeItem folderItem)
         throws IOException, MailException;
 
     /**
      * Select a new active mail folder based on where a particular message is stored.
+     * <p>
      * This method is only useful if the protocol supports
      * folders, and should otherwise be ignored or limited
      * to a single INBOX folder
+     * </p>
      * 
      * @param messageToken The message token object for the message whose folder we want to switch to
+     *
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void setActiveFolder(MessageToken messageToken)
+    void setActiveFolder(MessageToken messageToken)
         throws IOException, MailException;
     
     /**
@@ -165,59 +191,62 @@ public interface IncomingMailClient extends MailClient {
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
      * @param progressHandler the progress handler
-     * 
      * @return List of message envelopes
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
+    FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
      * Get a list of new messages in the selected folder.
+     * <p>
      * On the first invocation, it will return the most recent messages
      * up to the limit configured in the global configuration.
      * On subsequent invocations, if the underlying protocol supports it,
      * this method should return all new messages that have entered the
      * mailbox since.  Otherwise, it will behave the same as it
      * did on the first invocation.
+     * </p>
      * 
      * @param progressHandler the progress handler
-     * 
      * @return List of message envelopes
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException;
+    FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Get a particular message from the selected folder.
+     * <p>
      * The details of message retrieval should be constrained by
      * protocol-specific capabilities, application-wide data
      * format capabilities, and user configuration options.
+     * </p>
      * 
      * @param messageToken the message token
      * @param progressHandler the progress handler
-     * 
      * @return the message
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException;
+    Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Deletes a particular message from the selected folder.
+     * <p>
      * If the protocol supports a two-stage (mark and expunge)
      * deletion process, then this command should only mark the
      * message as deleted.
+     * </p>
      *
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
     
     /**
      * Undeletes a particular message from the selected folder.
@@ -226,21 +255,50 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
 
     /**
+     * Appends a message to the specified folder, and flags it as seen.
+     * This is intended for use when saving sent or draft messages.
+     * This should do nothing if the underlying protocol does not support appending.
+     *
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException;
+    
+    /**
+     * Copies a message from its current location to the specified folder.
+     * This should do nothing if the underlying protocol does not support copying.
+     * <p>
+     * This method should only be implemented when the underlying protocol directly
+     * supports the copy operation in a way that does not require downloading the
+     * message to the client.
+     * </p>
+     * 
+     * @param messageToken Token identifying the message to be copied
+     * @param destinationFolder Destination folder to copy the message into
+     *
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    void copyMessage(MessageToken messageToken, FolderTreeItem destinationFolder) throws IOException, MailException;
+    
+    /**
      * Sends the underlying protocol's no-operation command.
+     * <p>
      * On some protocols, this can be an explicit way of checking
      * for the availability of new messages, so the return value
      * is used to indicate the result of that check.
      * If no such command is supported by the underlying protocol,
      * then a false should be immediately returned.
+     * </p>
      * 
      * @return True if the mailbox has new data, false otherwise.
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract boolean noop() throws IOException, MailException;
+    boolean noop() throws IOException, MailException;
     
     /**
      * Begins the idle mode for the underlying protocol.
@@ -249,7 +307,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void idleModeBegin() throws IOException, MailException;
+    void idleModeBegin() throws IOException, MailException;
     
     /**
      * Ends the idle mode for the underlying protocol.
@@ -258,7 +316,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void idleModeEnd() throws IOException, MailException;
+    void idleModeEnd() throws IOException, MailException;
 
     /**
      * Polls the connecting during the idle mode for the underlying protocol.
@@ -268,5 +326,5 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract boolean idleModePoll() throws IOException, MailException;
+    boolean idleModePoll() throws IOException, MailException;
 }

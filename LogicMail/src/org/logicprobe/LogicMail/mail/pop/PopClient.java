@@ -260,6 +260,20 @@ public class PopClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAppend()
+     */
+    public boolean hasAppend() {
+    	return false;
+    }
+
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasCopy()
+     */
+    public boolean hasCopy() {
+		return false;
+	}
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
      */
     public boolean hasIdle() {
@@ -391,6 +405,20 @@ public class PopClient implements IncomingMailClient {
         // Undelete is not supported, so we do nothing here.
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#appendMessage(org.logicprobe.LogicMail.mail.FolderTreeItem, java.lang.String, org.logicprobe.LogicMail.message.MessageFlags)
+     */
+    public void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
+    	// Append is not supported, so we do nothing here.
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#copyMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.FolderTreeItem)
+     */
+    public void copyMessage(MessageToken messageToken, FolderTreeItem destinationFolder) throws IOException, MailException {
+    	// Copy is not supported, so we do nothing here.
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
      */

@@ -101,6 +101,11 @@ public class LocalMailStore extends AbstractMailStore {
         return true;
     }
 
+    public boolean hasCopy() {
+    	// TODO Implement copy for local messages
+    	return false;
+    }
+    
     public boolean hasUndelete() {
         return false;
     }
@@ -261,6 +266,13 @@ public class LocalMailStore extends AbstractMailStore {
         		fireFolderMessagesAvailable(requestFolder, new FolderMessage[] { folderMessage });
         	}
 		}
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.AbstractMailStore#requestMessageCopy(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.FolderTreeItem)
+     */
+    public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) {
+    	throw new UnsupportedOperationException();
     }
     
     /**

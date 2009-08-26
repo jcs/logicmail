@@ -64,6 +64,11 @@ public class StandardScreen extends MainScreen {
 	private HeaderField headerField;
 	private boolean isExposed = false;
 	private Field originalStatusField;
+    
+    private MenuItem configItem;
+    private MenuItem aboutItem;
+    private MenuItem closeItem;
+    private MenuItem exitItem;
 	
 	protected ScreenProvider screenProvider;
 	
@@ -94,6 +99,7 @@ public class StandardScreen extends MainScreen {
 	        setTitle(headerField);
         }
         
+        initMenuItems();
         screenProvider.setNavigationController(navigationController);
         screenProvider.initFields(this);
     }
@@ -194,32 +200,33 @@ public class StandardScreen extends MainScreen {
     	screenProvider.onVisibilityChange(visible);
     }
     
-    // Create menu items
-    private MenuItem configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 10020, 10) {
-        public void run() {
-            showConfigScreen();
-        }
-    };
-    private MenuItem aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 10050, 10) {
-        public void run() {
-            // Show the about dialog
-        	AboutDialog dialog = new AboutDialog();
-        	dialog.doModal();
-        }
-    };
-    private MenuItem closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
-        public void run() {
-        	// TODO: Deal with closing/hiding while still running
-        	
-            StandardScreen.super.onClose();
-        }
-    };
-    private MenuItem exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 200001, 10) {
-        public void run() {
-        	tryShutdownApplication();
-        }
-    };
-
+    private void initMenuItems() {
+	    configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 10020, 10) {
+	        public void run() {
+	            showConfigScreen();
+	        }
+	    };
+	    aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 10050, 10) {
+	        public void run() {
+	            // Show the about dialog
+	        	AboutDialog dialog = new AboutDialog();
+	        	dialog.doModal();
+	        }
+	    };
+	    closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
+	        public void run() {
+	        	// TODO: Deal with closing/hiding while still running
+	        	
+	            StandardScreen.super.onClose();
+	        }
+	    };
+	    exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 200001, 10) {
+	        public void run() {
+	        	tryShutdownApplication();
+	        }
+	    };
+    }
+    
     public void tryShutdownApplication() {
     	// Get all accounts
     	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();

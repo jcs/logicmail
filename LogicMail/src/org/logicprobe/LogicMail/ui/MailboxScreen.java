@@ -71,6 +71,12 @@ public class MailboxScreen extends AbstractScreenProvider {
     private MailSettings mailSettings;
     private VerticalFieldManager messageFieldManager;
     private Screen screen;
+
+    private MenuItem selectItem;
+	private MenuItem propertiesItem;
+	private MenuItem compositionItem;
+	private MenuItem deleteItem;
+	private MenuItem undeleteItem;
     
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
@@ -160,36 +166,50 @@ public class MailboxScreen extends AbstractScreenProvider {
 	 * Initializes the fields.
 	 */
 	public void initFields(Screen screen) {
-		messageFieldManager = new VerticalFieldManager(Manager.USE_ALL_WIDTH | Manager.USE_ALL_HEIGHT);
+		messageFieldManager = new VerticalFieldManager(Manager.USE_ALL_WIDTH | Manager.USE_ALL_HEIGHT) {
+			protected boolean navigationMovement(int dx, int dy, int status, int time) {
+				// Prevent downward navigation if on the last field in the message list.
+				// This is necessary to prevent weird scrolling behavior.
+				if(dy > 0 && messageFieldManager.getFieldWithFocusIndex() == messageFieldManager.getFieldCount() - 1) {
+					return true;
+				}
+				else {
+					return super.navigationMovement(dx, dy, status, time);
+				}
+			}
+		};
         screen.add(messageFieldManager);
         this.screen = screen;
+        initMenuItems();
 	}    
-
-    private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
-        public void run() {
-            openSelectedMessage();
-        }
-    };
-    private MenuItem propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
-        public void run() {
-            openSelectedMessageProperties();
-        }
-    };
-    private MenuItem compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
-        public void run() {
-        	navigationController.displayComposition(mailboxNode.getParentAccount());
-        }
-    };
-    private MenuItem deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
-        public void run() {
-        	deleteSelectedMessage();
-        }
-    };
-    private MenuItem undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 135, 10) {
-        public void run() {
-        	undeleteSelectedMessage();
-        }
-    };
+	
+	private void initMenuItems() {
+	    selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
+	        public void run() {
+	            openSelectedMessage();
+	        }
+	    };
+	    propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
+	        public void run() {
+	            openSelectedMessageProperties();
+	        }
+	    };
+	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
+	        public void run() {
+	        	navigationController.displayComposition(mailboxNode.getParentAccount());
+	        }
+	    };
+	    deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
+	        public void run() {
+	        	deleteSelectedMessage();
+	        }
+	    };
+	    undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 135, 10) {
+	        public void run() {
+	        	undeleteSelectedMessage();
+	        }
+	    };
+	}
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)

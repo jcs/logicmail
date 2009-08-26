@@ -226,6 +226,10 @@ public class AccountNodeTest extends TestCase {
 			return true;
 		}
 		
+		public boolean hasCopy() {
+			return false;
+		}
+		
 		public boolean hasUndelete() {
 			return false;
 		}
@@ -255,5 +259,6 @@ public class AccountNodeTest extends TestCase {
 		public void requestFolderMessagesRecent(FolderTreeItem folder) { }
 		public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) { }
 		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) { }
+		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) { }
     }
 }

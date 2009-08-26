@@ -392,6 +392,24 @@ public class MailboxNode implements Node, Serializable {
 	}
 
 	/**
+	 * Copies a message into this mailbox from another mailbox within the same account.
+	 * This method will request the underlying mail store to copy the message
+	 * on the server side.  If the mail store does not support this operation, then
+	 * this method will have no effect.
+	 * 
+	 * @param messageNode Message to copy into this mailbox
+	 */
+	public void copyMessageInto(MessageNode messageNode) {
+		// Sanity check
+		if(!(this.hasAppend
+				&& this.hasCopy()
+				&& messageNode.getParent().getParentAccount() == this.parentAccount)) {
+			return;
+		}
+		parentAccount.getMailStore().requestMessageCopy(messageNode.getMessageToken(), this.folderTreeItem);
+	}
+
+	/**
 	 * Adds a mailbox to this mailbox.
 	 * 
 	 * @param mailbox The mailbox to add.
@@ -589,6 +607,16 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	public boolean hasAppend() {
 		return this.hasAppend;
+	}
+	
+	/**
+	 * Gets whether messages can be copied into this mailbox
+	 * from other mailboxes on the same account.
+	 * 
+	 * @return True if messages can be copied into this mailbox.
+	 */
+	public boolean hasCopy() {
+		return parentAccount != null && parentAccount.getMailStore().hasCopy();
 	}
 	
 	/**

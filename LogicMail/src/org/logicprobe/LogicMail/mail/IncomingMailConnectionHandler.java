@@ -60,6 +60,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	public static final int REQUEST_MESSAGE_UNDELETE        = 23;
 	public static final int REQUEST_MESSAGE_ANSWERED        = 24;
 	public static final int REQUEST_MESSAGE_APPEND          = 25;
+	public static final int REQUEST_MESSAGE_COPY            = 26;
 	
 	/**
 	 * Maximum amount of time to spend in the idle state.
@@ -127,6 +128,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		case REQUEST_MESSAGE_APPEND:
 			handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2]);
 			break;
+		case REQUEST_MESSAGE_COPY:
+			handleRequestMessageCopy((MessageToken)params[0], (FolderTreeItem)params[1]);
 		}
 	}
 
@@ -343,14 +346,28 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
 		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_APPEND));
 		// Clean up this interface:
-		if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
-			((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).appendMessage(folder, rawMessage, initialFlags);
+		if(incomingClient.hasAppend()) {
+			incomingClient.appendMessage(folder, rawMessage, initialFlags);
 		}
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(listener != null) {
 			// Using a null FolderMessage since no information is returned on the appended message:
 			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_APPEND, new Object[] { folder, null });
+		}
+	}
+
+	private void handleRequestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) throws IOException, MailException {
+		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_COPY));
+		if(incomingClient.hasCopy()) {
+			checkActiveFolder(messageToken);
+			incomingClient.copyMessage(messageToken, destinationFolder);
+		}
+		
+		MailConnectionHandlerListener listener = getListener();
+		if(listener != null) {
+			// Using a null FolderMessage since no information is returned on the appended message:
+			listener.mailConnectionRequestComplete(REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder });
 		}
 	}
 	

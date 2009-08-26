@@ -89,6 +89,16 @@ public class MessageScreen extends AbstractScreenProvider {
 	private TreeField attachmentsTreeField;
 	private VerticalFieldManager messageFieldManager;
 	private Screen screen;
+    
+    private MenuItem saveAttachmentItem;
+    private MenuItem propsItem;
+    private MenuItem replyItem;
+    private MenuItem replyAllItem;
+    private MenuItem forwardItem;
+    private MenuItem copyToItem;
+    private MenuItem moveToItem;
+    private MenuItem compositionItem;
+    private MenuItem closeItem;
 	
 	private AccountConfig accountConfig;
     private MessageNode messageNode;
@@ -159,6 +169,7 @@ public class MessageScreen extends AbstractScreenProvider {
         screen.add(subjectFieldManager);
         screen.add(messageFieldManager);
         this.screen = screen;
+        initMenuItems();
     }
     
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
@@ -195,90 +206,98 @@ public class MessageScreen extends AbstractScreenProvider {
     	messageNode.removeMessageNodeListener(messageNodeListener);
     }
     
-    private MenuItem saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 100, 10) {
-        public void run() {
-    		int node = attachmentsTreeField.getCurrentNode();
-    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof ContentPart) {
-    			saveAttachment((ContentPart)attachmentsTreeField.getCookie(node));
-    		}
-        }
-    };
-    private MenuItem propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
-        public void run() {
-        	MessagePropertiesScreen screen = new MessagePropertiesScreen(messageNode);
-        	UiApplication.getUiApplication().pushScreen(screen);
-        }
-    };
-    private MenuItem replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {
-        public void run() {
-            if(messageNode.hasMessageContent()) {
-                navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
-            }
-        }
-    };
-    private MenuItem replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 115, 10) {
-        public void run() {
-            if(messageNode.hasMessageContent()) {
-                navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
-            }
-        }
-    };
-    private MenuItem forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 120, 10) {
-        public void run() {
-            if(messageNode.hasMessageContent()) {
-                navigationController.displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
-            }
-        }
-    };
-    private MenuItem copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 125, 10) {
-        public void run() {
-            if(messageNode.hasMessageContent()) {
-            	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
-            	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
-            			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_COPY_TO),
-            			accountNodes);
-            	dialog.setSelectedMailboxNode(messageNode.getParent());
-            	dialog.addUnselectableNode(messageNode.getParent());
-            	dialog.doModal();
-            	
-            	MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
-            	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
-            		selectedMailbox.appendMessage(messageNode);
-            	}
-            }
-        }
-    };
-    private MenuItem moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 130, 10) {
-        public void run() {
-            if(messageNode.hasMessageContent()) {
-            	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
-            	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
-            			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_MOVE_TO),
-            			accountNodes);
-            	dialog.setSelectedMailboxNode(messageNode.getParent());
-            	dialog.addUnselectableNode(messageNode.getParent());
-            	dialog.doModal();
-            	
-            	MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
-            	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
-            		selectedMailbox.appendMessage(messageNode);
-            		//TODO: Move To Folder should delete after append
-            		//This should only be executed after the append was successful
-            		//messageNode.deleteMessage();
-            	}
-            }
-        }
-    };
-    private MenuItem compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 150, 10) {
-        public void run() {
-            navigationController.displayComposition(messageNode.getParent().getParentAccount());
-        }
-    };
-    private MenuItem closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
-        public void run() {
-        	screen.onClose();
-        }
-    };
+    private void initMenuItems() {
+	    saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 100, 10) {
+	        public void run() {
+	    		int node = attachmentsTreeField.getCurrentNode();
+	    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof ContentPart) {
+	    			saveAttachment((ContentPart)attachmentsTreeField.getCookie(node));
+	    		}
+	        }
+	    };
+	    propsItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
+	        public void run() {
+	        	MessagePropertiesScreen screen = new MessagePropertiesScreen(messageNode);
+	        	UiApplication.getUiApplication().pushScreen(screen);
+	        }
+	    };
+	    replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {
+	        public void run() {
+	            if(messageNode.hasMessageContent()) {
+	                navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
+	            }
+	        }
+	    };
+	    replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 115, 10) {
+	        public void run() {
+	            if(messageNode.hasMessageContent()) {
+	                navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
+	            }
+	        }
+	    };
+	    forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 120, 10) {
+	        public void run() {
+	            if(messageNode.hasMessageContent()) {
+	                navigationController.displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
+	            }
+	        }
+	    };
+	    copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 125, 10) {
+	        public void run() {
+	            if(messageNode.hasMessageContent()) {
+	            	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
+	            	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
+	            			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_COPY_TO),
+	            			accountNodes);
+	            	dialog.setSelectedMailboxNode(messageNode.getParent());
+	            	dialog.addUnselectableNode(messageNode.getParent());
+	            	dialog.doModal();
+	            	
+	            	MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
+	            	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
+	            		if(selectedMailbox.hasCopy()
+	            				&& selectedMailbox.getParentAccount() == messageNode.getParent().getParentAccount()) {
+	            			selectedMailbox.copyMessageInto(messageNode);
+	            		}
+	            		else {
+	            			selectedMailbox.appendMessage(messageNode);
+	            		}
+	            	}
+	            }
+	        }
+	    };
+	    moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 130, 10) {
+	        public void run() {
+	            if(messageNode.hasMessageContent()) {
+	            	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
+	            	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
+	            			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_MOVE_TO),
+	            			accountNodes);
+	            	dialog.setSelectedMailboxNode(messageNode.getParent());
+	            	dialog.addUnselectableNode(messageNode.getParent());
+	            	dialog.doModal();
+	            	
+	            	MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
+	            	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
+	            		selectedMailbox.appendMessage(messageNode);
+	            		//TODO: Move To Folder should delete after append
+	            		//This should only be executed after the append was successful
+	            		//messageNode.deleteMessage();
+	            	}
+	            }
+	        }
+	    };
+	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 150, 10) {
+	        public void run() {
+	            navigationController.displayComposition(messageNode.getParent().getParentAccount());
+	        }
+	    };
+	    closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
+	        public void run() {
+	        	screen.onClose();
+	        }
+	    };
+    }
     
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)

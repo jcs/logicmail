@@ -105,6 +105,13 @@ public abstract class AbstractMailStore {
     public abstract boolean hasAppend();
     
     /**
+     * Returns whether the mail store supports server-side copying of messages between mailboxes.
+     * 
+     * @return True if message copying is supported
+     */
+	public abstract boolean hasCopy();
+	
+    /**
      * Returns whether the mail store supports undeletion of messages.
      *
      * @return True if undelete supported, false otherwise
@@ -250,6 +257,26 @@ public abstract class AbstractMailStore {
      * @param initialFlags The initial flags for the message
      */
     public abstract void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags);
+    
+    /**
+     * Requests a message to be copied into a folder on the server-side.
+     * 
+     * <p>
+     * If <tt>hasCopy()</tt> returns <tt>false</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * </p>
+     * 
+     * <p>
+     * Notification of successful completion is not directly provided,
+     * however the destination folder should contain the message if queried.
+     * </p>
+     * 
+     * @param messageToken The token used to identify the message
+     * @param destinationFolder The folder to copy the message into
+     */
+    public abstract void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder);
+	//TODO Come up with a notification event for copy
     
     /**
      * Adds a <tt>MailStoreListener</tt> to the mail store.

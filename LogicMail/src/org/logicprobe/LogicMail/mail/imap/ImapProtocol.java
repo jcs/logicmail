@@ -829,6 +829,25 @@ public class ImapProtocol {
     }
 
     /**
+     * Execute the "COPY" command to copy a message from the current mailbox
+     * to a different mailbox.
+     * 
+     * @param uid The IMAP unique ID of the message to copy. 
+     * @param mboxPath The path of the destination mailbox
+     */
+	public void executeCopy(int uid, String mboxPath) throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeCopy(\"" + uid + "\", \"" + mboxPath +
+                "\")").getBytes(), EventLogger.DEBUG_INFO);
+        }
+        
+        execute("UID COPY",
+        		uid + " \"" + StringParser.addEscapedChars(mboxPath) + "\"",
+        		null);
+	}
+
+    /**
      * Execute the "LIST" command, and return a fully parsed response.
      * 
      * @param refName Reference name

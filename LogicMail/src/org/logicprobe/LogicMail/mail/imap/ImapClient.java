@@ -328,6 +328,20 @@ public class ImapClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAppend()
+     */
+    public boolean hasAppend() {
+    	return true;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasCopy()
+     */
+    public boolean hasCopy() {
+    	return true;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
      */
     public boolean hasIdle() {
@@ -867,12 +881,8 @@ public class ImapClient implements IncomingMailClient {
         }
     }
     
-    /**
-     * Appends a message to the specified folder, and flags it as seen.
-     * This is intended for use when saving sent or draft messages.
-     *
-     * @throws IOException on I/O errors
-     * @throws MailException on protocol errors
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#appendMessage(org.logicprobe.LogicMail.mail.FolderTreeItem, java.lang.String, org.logicprobe.LogicMail.message.MessageFlags)
      */
     public void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
         ImapProtocol.MessageFlags flags = new ImapProtocol.MessageFlags();
@@ -887,6 +897,18 @@ public class ImapClient implements IncomingMailClient {
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#copyMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.FolderTreeItem)
+     */
+    public void copyMessage(MessageToken messageToken, FolderTreeItem destinationFolder) throws IOException, MailException {
+    	ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+    	if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+    		throw new MailException("Invalid mailbox for message");
+    	}
+    	
+    	imapProtocol.executeCopy(imapMessageToken.getMessageUid(), destinationFolder.getPath());
+    }
+    
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
 	 */

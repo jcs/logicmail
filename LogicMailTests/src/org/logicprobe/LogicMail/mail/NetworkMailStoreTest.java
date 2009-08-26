@@ -341,6 +341,8 @@ public class NetworkMailStoreTest extends TestCase {
 		public void setUsername(String username) { fakeAccountConfig.setServerUser(username); }
 		public boolean hasFolders() { return true; }
 		public boolean hasUndelete() { return true; }
+		public boolean hasAppend() { return false; }
+		public boolean hasCopy() { return false; }
 		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
 		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
@@ -360,6 +362,10 @@ public class NetworkMailStoreTest extends TestCase {
 		throws IOException, MailException { messageFlags.setDeleted(true); this.messageToken = messageToken;  }
 		public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags)
 				throws IOException, MailException { messageFlags.setDeleted(false); this.messageToken = messageToken;  }
+		public void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags)
+				throws IOException, MailException { }
+		public void copyMessage(MessageToken messageToken, FolderTreeItem destinationFolder)
+				throws IOException, MailException { }
 		public ConnectionConfig getConnectionConfig() { return null; }
 		public boolean noop() throws IOException, MailException { return false; }
 		public boolean hasIdle() { return false; }
