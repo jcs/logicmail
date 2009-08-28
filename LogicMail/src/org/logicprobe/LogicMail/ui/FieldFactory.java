@@ -30,44 +30,29 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import org.logicprobe.LogicMail.model.AccountNode;
-import org.logicprobe.LogicMail.model.MailRootNode;
-import org.logicprobe.LogicMail.model.MailboxNode;
-import org.logicprobe.LogicMail.model.MessageNode;
+import net.rim.device.api.ui.component.TreeField;
+import net.rim.device.api.ui.component.TreeFieldCallback;
+
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
-public abstract class ScreenFactory {
-	private static ScreenFactory instance;
+public abstract class FieldFactory {
+	private static FieldFactory instance;
 	
 	/**
-	 * Array of concrete ScreenFactory classes, in order from the highest
+	 * Array of concrete FieldFactory classes, in order from the highest
 	 * API version to the lowest.
 	 */
 	private static String[] factoryClasses = {
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB47",
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB42"
+		"org.logicprobe.LogicMail.ui.FieldFactoryBB47",
+		"org.logicprobe.LogicMail.ui.FieldFactoryBB42"
 	};
 	
-	public static synchronized ScreenFactory getInstance() {
+	public static synchronized FieldFactory getInstance() {
 		if(instance == null) {
-			instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClasses);
+			instance = (FieldFactory)PlatformUtils.getFactoryInstance(factoryClasses);
 		}
 		return instance;
 	}
-	
-	public abstract StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode);
-	
-	public abstract StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode);
-	
-	public abstract StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode);
 
-	public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode);
-	
-	public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
-	
-	public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, String address);
-	
-	public abstract StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll);
-	
-	public abstract StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
+	public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
 }

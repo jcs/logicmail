@@ -167,7 +167,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#initFields(net.rim.device.api.ui.Screen)
 	 */
 	public void initFields(Screen screen) {
-		treeField = new TreeField(new TreeFieldCallback() {
+		treeField = FieldFactory.getInstance().getScreenTreeField(new TreeFieldCallback() {
 			public void drawTreeItem(TreeField treeField, Graphics graphics,
 					int node, int y, int width, int indent) {
 				treeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
@@ -626,7 +626,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 	
 	/** Tree node data class */
-	private static class TreeNode {
+	static class TreeNode {
 		public static final int TYPE_ACCOUNT = 1;
 		public static final int TYPE_MAILBOX = 2;
 		

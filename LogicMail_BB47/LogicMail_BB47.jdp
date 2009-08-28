@@ -30,10 +30,12 @@ src\icons\shortcut-folder-d.png
 src\icons\shortcut-folder.png
 src\icons\shortcut-up-d.png
 src\icons\shortcut-up.png
+src\org\logicprobe\LogicMail\ui\FieldFactoryBB47.java
 src\org\logicprobe\LogicMail\ui\ScreenFactoryBB47.java
 src\org\logicprobe\LogicMail\ui\ShortcutBarButtonField.java
 src\org\logicprobe\LogicMail\ui\ShortcutBarManager.java
 src\org\logicprobe\LogicMail\ui\StandardTouchScreen.java
+src\org\logicprobe\LogicMail\ui\TouchScreenTreeField.java
 ]
 HaveAlxImports=0
 HaveDefs=0

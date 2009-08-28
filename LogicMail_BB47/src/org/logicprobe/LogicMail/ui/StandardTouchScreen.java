@@ -94,12 +94,10 @@ public class StandardTouchScreen extends StandardScreen {
 					screenProvider.shortcutAction(item);
 				}
 				else if(context == ShortcutBarButtonField.CHANGE_HOVER_GAINED) {
-					System.err.println('"' + item.getName() + "\" => Gained");
 					hoverField = field;
 					invalidate();
 				}
 				else if(context == ShortcutBarButtonField.CHANGE_HOVER_LOST) {
-					System.err.println('"' + item.getName() + "\" => Lost");
 					hoverField = null;
 					invalidate();
 				}
