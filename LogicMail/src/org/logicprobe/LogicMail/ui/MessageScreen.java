@@ -285,6 +285,25 @@ public class MessageScreen extends AbstractScreenProvider {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#navigationClick(int, int)
+     */
+    public boolean navigationClick(int status, int time) {
+    	if(attachmentsTreeField != null && attachmentsTreeField == screen.getLeafFieldWithFocus()) {
+    		int node = attachmentsTreeField.getCurrentNode();
+    		if(node != -1 && attachmentsTreeField.getFirstChild(node) != -1) {
+    			attachmentsTreeField.setExpanded(node, !attachmentsTreeField.getExpanded(node));
+    			return true;
+    		}
+    		else {
+    			return false;
+    		}
+    	}
+    	else {
+    		return false;
+    	}
+    }
+    
+    /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     public boolean keyChar(char key,
