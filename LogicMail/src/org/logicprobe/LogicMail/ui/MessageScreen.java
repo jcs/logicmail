@@ -97,7 +97,6 @@ public class MessageScreen extends AbstractScreenProvider {
     private MenuItem copyToItem;
     private MenuItem moveToItem;
     private MenuItem compositionItem;
-    private MenuItem closeItem;
 	
 	private AccountConfig accountConfig;
     private MessageNode messageNode;
@@ -250,11 +249,6 @@ public class MessageScreen extends AbstractScreenProvider {
 	            navigationController.displayComposition(messageNode.getParent().getParentAccount());
 	        }
 	    };
-	    closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
-	        public void run() {
-	        	screen.onClose();
-	        }
-	    };
     }
     
     /* (non-Javadoc)
@@ -280,8 +274,6 @@ public class MessageScreen extends AbstractScreenProvider {
         }
         menu.add(copyToItem);
         menu.add(moveToItem);
-        menu.addSeparator();
-        menu.add(closeItem);
     }
 
     /* (non-Javadoc)
