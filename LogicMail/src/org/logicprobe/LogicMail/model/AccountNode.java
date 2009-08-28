@@ -617,6 +617,7 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
+        	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
             messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
         }
     }
@@ -630,6 +631,7 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
+        	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
             messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
         }
     }
@@ -643,6 +645,7 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
+        	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
             messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
         }
     }
