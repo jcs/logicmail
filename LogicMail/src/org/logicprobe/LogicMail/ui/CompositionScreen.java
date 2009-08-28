@@ -236,7 +236,7 @@ public class CompositionScreen extends AbstractScreenProvider {
             String sig = identityConfig.getMsgSignature();
 
             if ((sig != null) && (sig.length() > 0)) {
-                messageEditField.insert("\r\n--\r\n" + sig);
+                messageEditField.insert("\r\n-- \r\n" + sig);
                 messageEditField.setCursorPosition(0);
             }
         }
