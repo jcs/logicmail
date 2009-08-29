@@ -30,14 +30,25 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.Status;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.mail.MailConnectionListener;
+import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
+import org.logicprobe.LogicMail.mail.MailConnectionManager;
+import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
+import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
  * Controller class for screen creation.
@@ -45,19 +56,34 @@ import org.logicprobe.LogicMail.model.MessageNode;
  * from the rest of the UI, and provide a simple interface
  * in terms of viewing data model objects.
  */
-public class NavigationController {
+public final class NavigationController {
+	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private ScreenFactory screenFactory;
 	private MailRootNode mailRootNode;
 	
 	private UiApplication uiApplication;
 	private StandardScreen mailHomeScreen;
+	private String currentStatus;
 	
 	public NavigationController(UiApplication uiApplication) {
 		this.uiApplication = uiApplication;
 		this.screenFactory = ScreenFactory.getInstance();
 		this.mailRootNode = MailManager.getInstance().getMailRootNode();
+		
+		MailConnectionManager.getInstance().addMailConnectionListener(new MailConnectionListener() {
+			public void mailConnectionStateChanged(MailConnectionStateEvent e) { }
+			public void mailConnectionStatus(MailConnectionStatusEvent e) {
+				handleMailConnectionStatus(e);
+			}
+			public void mailConnectionError(MailConnectionStatusEvent e) {
+				handleMailConnectionError(e);
+			}
+			public void mailConnectionLogin(MailConnectionLoginEvent e) {
+				handleMailConnectionLogin(e);
+			}
+		});
 	}
-	
+
 	public synchronized void displayMailHome() {
 		if(mailHomeScreen == null) {
 			mailHomeScreen = screenFactory.getMailHomeScreen(this, mailRootNode);
@@ -131,5 +157,61 @@ public class NavigationController {
 				accountNode,
 				messageNode);
 		uiApplication.pushScreen(screen);
+	}
+	
+	/**
+	 * Gets the current status text.
+	 * 
+	 * @return the current status text
+	 */
+	public String getCurrentStatus() {
+		return currentStatus;
+	}
+	
+	private void handleMailConnectionStatus(MailConnectionStatusEvent e) {
+		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			public void run() {
+		    	currentStatus = ((MailConnectionStatusEvent)getEvent()).getMessage();
+                Screen activeScreen =
+                    UiApplication.getUiApplication().getActiveScreen();
+		    	if(activeScreen instanceof StandardScreen) {
+		    		StandardScreen screen = (StandardScreen)activeScreen;
+		    		screen.updateStatus(currentStatus);
+		    	}
+			}
+		});
+	}
+
+	private void handleMailConnectionError(MailConnectionStatusEvent e) {
+		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			public void run() {
+				String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
+				if(message == null) { message = resources.getString(LogicMailResource.ERROR_UNKNOWN); }
+	            try {
+	                Screen activeScreen =
+	                        UiApplication.getUiApplication().getActiveScreen();
+	                if(activeScreen instanceof Status) {
+	                    UiApplication.getUiApplication().popScreen(activeScreen);
+	                }
+	            } catch (Exception e) { }
+	            Status.show(message, 5000);
+			}
+		});
+	}
+
+	private void handleMailConnectionLogin(MailConnectionLoginEvent e) {
+		UiApplication.getUiApplication().invokeAndWait(new EventObjectRunnable(e) {
+			public void run() {
+				MailConnectionLoginEvent e = (MailConnectionLoginEvent)getEvent();
+				LoginDialog dialog = new LoginDialog(e.getUsername(), e.getPassword());
+				if(dialog.doModal() == Dialog.OK) {
+					e.setUsername(dialog.getUsername());
+					e.setPassword(dialog.getPassword());
+				}
+				else {
+					e.setCanceled(true);
+				}
+			}
+		});
 	}
 }

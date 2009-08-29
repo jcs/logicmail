@@ -31,23 +31,15 @@
 package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.mail.MailConnectionListener;
-import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
-import org.logicprobe.LogicMail.mail.MailConnectionManager;
-import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
-import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
-import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.MenuItem;
-import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
-import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.MainScreen;
 
 /**
@@ -62,7 +54,6 @@ public class StandardScreen extends MainScreen {
 	protected static StatusBarField statusBarField = new StatusBarField();
 	private NavigationController navigationController;
 	private HeaderField headerField;
-	private boolean isExposed = false;
 	private Field originalStatusField;
     
     private MenuItem configItem;
@@ -111,41 +102,28 @@ public class StandardScreen extends MainScreen {
     	originalStatusField = status;
     	super.setStatus(status);
     }
-    
-    private MailConnectionListener mailConnectionListener = new MailConnectionListener() {
-		public void mailConnectionStateChanged(MailConnectionStateEvent e) { }
-		public void mailConnectionStatus(MailConnectionStatusEvent e) {
-			if(isExposed) {
-				mailConnectionListener_MailConnectionStatus(e);
-			}
-		}
-		public void mailConnectionError(MailConnectionStatusEvent e) {
-			if(isExposed) {
-				mailConnectionListener_MailConnectionError(e);
-			}
-		}
-		public void mailConnectionLogin(MailConnectionLoginEvent e) {
-			if(isExposed) {
-				mailConnectionListener_MailConnectionLogin(e);
-			}
-		}
-    };
 
+    /**
+     * Update status text, showing or hiding the status bar as necessary.
+     * 
+     * @param statusText the status text
+     */
+    public void updateStatus(String statusText) {
+    	statusBarField.setStatusText(statusText);
+    	if(statusBarField.hasStatus()) {
+    		super.setStatus(statusBarField);
+    	}
+    	else {
+    		super.setStatus(originalStatusField);
+    	}
+    }
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#onDisplay()
      */
     protected void onDisplay() {
     	super.onDisplay();
-    	isExposed = true;
-        synchronized(statusBarField) {
-        	if(statusBarField.hasStatus()) {
-        		setStatus(statusBarField);
-        	}
-        	else {
-        		setStatus(originalStatusField);
-        	}
-        }
-    	MailConnectionManager.getInstance().addMailConnectionListener(mailConnectionListener);
+    	updateStatus(navigationController.getCurrentStatus());
     	NotificationHandler.getInstance().cancelNotification();
     	screenProvider.onDisplay();
     }
@@ -155,11 +133,8 @@ public class StandardScreen extends MainScreen {
      */
     protected void onUndisplay() {
     	screenProvider.onUndisplay();
-    	isExposed = false;
-        synchronized(statusBarField) {
-    		setStatus(originalStatusField);
-        }
-    	MailConnectionManager.getInstance().removeMailConnectionListener(mailConnectionListener);
+    	super.setStatus(originalStatusField);
+		statusBarField.setStatusText(null);
     	NotificationHandler.getInstance().cancelNotification();
     	super.onUndisplay();
     }
@@ -169,7 +144,7 @@ public class StandardScreen extends MainScreen {
      */
     protected void onExposed() {
     	super.onExposed();
-    	isExposed = true;
+    	updateStatus(navigationController.getCurrentStatus());
     }
     
     /* (non-Javadoc)
@@ -177,7 +152,8 @@ public class StandardScreen extends MainScreen {
      */
     protected void onObscured() {
     	super.onObscured();
-    	isExposed = false;
+    	super.setStatus(originalStatusField);
+   		statusBarField.setStatusText(null);
     }
     
     /* (non-Javadoc)
@@ -331,72 +307,5 @@ public class StandardScreen extends MainScreen {
      */
     public void setShortcutEnabled(int id, boolean enabled) {
     	// Shortcuts not supported by the base screen class
-    }
-    
-	/**
-	 * Invoked when there is a change in status from
-	 * the mail connection.
-	 *
-	 * @param e Status event data
-	 */
-    protected void mailConnectionListener_MailConnectionStatus(MailConnectionStatusEvent e) {
-		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
-			public void run() {
-		    	String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
-	    		if(isExposed) {
-	    			statusBarField.setStatusText(message);
-	    			if(statusBarField.hasStatus()) {
-	    				StandardScreen.this.setStatus(statusBarField);
-	    			}
-	    			else {
-	    				StandardScreen.this.setStatus(null);
-	    			}
-	    		}
-			}
-		});
-    }
-    
-	/**
-	 * Invoked when an error occurs with the mail connection.
-	 *
-	 * @param e Error event data
-	 */
-    protected void mailConnectionListener_MailConnectionError(MailConnectionStatusEvent e) {
-		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
-			public void run() {
-				String message = ((MailConnectionStatusEvent)getEvent()).getMessage();
-				if(message == null) { message = resources.getString(LogicMailResource.ERROR_UNKNOWN); }
-	            try {
-	                Screen activeScreen =
-	                        UiApplication.getUiApplication().getActiveScreen();
-	                if(activeScreen instanceof Status) {
-	                    UiApplication.getUiApplication().popScreen(activeScreen);
-	                }
-	            } catch (Exception e) { }
-	            Status.show(message, 5000);
-			}
-		});
-    }
-    
-	/**
-	 * Invoked when the mail connection needs login
-	 * information to be provided by the user interface.
-	 * 
-	 * @param e Login event data
-	 */
-    protected void mailConnectionListener_MailConnectionLogin(MailConnectionLoginEvent e) {
-		UiApplication.getUiApplication().invokeAndWait(new EventObjectRunnable(e) {
-			public void run() {
-				MailConnectionLoginEvent e = (MailConnectionLoginEvent)getEvent();
-				LoginDialog dialog = new LoginDialog(e.getUsername(), e.getPassword());
-				if(dialog.doModal() == Dialog.OK) {
-					e.setUsername(dialog.getUsername());
-					e.setPassword(dialog.getPassword());
-				}
-				else {
-					e.setCanceled(true);
-				}
-			}
-		});
     }
 }
