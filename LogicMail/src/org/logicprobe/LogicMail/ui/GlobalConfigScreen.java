@@ -85,8 +85,8 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
                 "Dansk",        // Danish: da
                 "Deutsch",      // German: de
                 "English",      // English: en
-                "Español",      // Spanish: es
-                "Français",     // French: fr
+                "Espa\u00f1ol",      // Spanish: es
+                "Fran\u00e7ais",     // French: fr
                 "Italiano",     // Italian: it
                 "Nederlands",   // Dutch: nl
                 "Ti\u00ea\u0301ng Vi\u00ea\u0323t", // Vietnamese: vi
