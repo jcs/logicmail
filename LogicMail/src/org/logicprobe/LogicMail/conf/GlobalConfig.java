@@ -34,8 +34,8 @@ import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Enumeration;
 
@@ -105,7 +105,7 @@ public class GlobalConfig implements Serializable {
      * 
      * @param input The input data to deserialize the contents from
      */
-    public GlobalConfig(DataInputStream input) {
+    public GlobalConfig(DataInput input) {
         try {
             deserialize(input);
         } catch (IOException ex) {
@@ -317,9 +317,9 @@ public class GlobalConfig implements Serializable {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
      */
-    public void serialize(DataOutputStream output) throws IOException {
+    public void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
 
         SerializableHashtable table = new SerializableHashtable();
@@ -339,9 +339,9 @@ public class GlobalConfig implements Serializable {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
      */
-    public void deserialize(DataInputStream input) throws IOException {
+    public void deserialize(DataInput input) throws IOException {
         setDefaults();
         uniqueId = input.readLong();
 

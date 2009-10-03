@@ -339,10 +339,13 @@ public class MailSettings {
             configIds = (SerializableVector)loadedObj;
             size = configIds.size();
             for(int i=0; i<size; ++i) {
-                loadedObj = configStore.getObject(((Long)configIds.elementAt(i)).longValue());
-                if(loadedObj instanceof IdentityConfig) {
-                    identityConfigs.addElement(loadedObj);
-                }
+            	loadedObj = configIds.elementAt(i);
+            	if(loadedObj instanceof Long) {
+            		loadedObj = configStore.getObject(((Long)loadedObj).longValue());
+	                if(loadedObj instanceof IdentityConfig) {
+	                    identityConfigs.addElement(loadedObj);
+	                }
+            	}
             }
         }
 
@@ -351,10 +354,13 @@ public class MailSettings {
             configIds = (SerializableVector)loadedObj;
             size = configIds.size();
             for(int i=0; i<size; ++i) {
-                loadedObj = configStore.getObject(((Long)configIds.elementAt(i)).longValue());
-                if(loadedObj instanceof AccountConfig) {
-                    accountConfigs.addElement(loadedObj);
-                }
+            	loadedObj = configIds.elementAt(i);
+            	if(loadedObj instanceof Long) {
+	                loadedObj = configStore.getObject(((Long)loadedObj).longValue());
+	                if(loadedObj instanceof AccountConfig) {
+	                    accountConfigs.addElement(loadedObj);
+	                }
+            	}
             }
         }
 
@@ -363,10 +369,13 @@ public class MailSettings {
             configIds = (SerializableVector)loadedObj;
             size = configIds.size();
             for(int i=0; i<size; ++i) {
-                loadedObj = configStore.getObject(((Long)configIds.elementAt(i)).longValue());
-                if(loadedObj instanceof OutgoingConfig) {
-                    outgoingConfigs.addElement(loadedObj);
-                }
+            	loadedObj = configIds.elementAt(i);
+            	if(loadedObj instanceof Long) {
+	                loadedObj = configStore.getObject(((Long)loadedObj).longValue());
+	                if(loadedObj instanceof OutgoingConfig) {
+	                    outgoingConfigs.addElement(loadedObj);
+	                }
+            	}
             }
         }
     }

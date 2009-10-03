@@ -110,8 +110,10 @@ public class PersistentObjectDataStore implements DataStore {
 		byte[] byteArray;
 		Enumeration e = objectMap.elements();
         while (e.hasMoreElements()) {
-            byteArray = SerializationUtils.serializeClass((Serializable)e.nextElement());
-            objectData.addElement(byteArray);
+        	try {
+	            byteArray = SerializationUtils.serializeClass((Serializable)e.nextElement());
+	            objectData.addElement(byteArray);
+        	} catch (Exception exp) { }
         }
 
 		Object[] storeData = { nameMap, objectData };
@@ -137,10 +139,12 @@ public class PersistentObjectDataStore implements DataStore {
 			Object deserializedObject;
 			int size = newObjectMap.size();
 			for(int i=0; i<size; i++) {
-				deserializedObject = SerializationUtils.deserializeClass((byte[])newObjectMap.elementAt(i));
-                if(deserializedObject instanceof Serializable) {
-                    objectMap.put(new Long(((Serializable)deserializedObject).getUniqueId()), deserializedObject);
-                }
+	        	try {
+					deserializedObject = SerializationUtils.deserializeClass((byte[])newObjectMap.elementAt(i));
+	                if(deserializedObject instanceof Serializable) {
+	                    objectMap.put(new Long(((Serializable)deserializedObject).getUniqueId()), deserializedObject);
+	                }
+	        	} catch (Exception exp) { }
 			}
 		}
 	}

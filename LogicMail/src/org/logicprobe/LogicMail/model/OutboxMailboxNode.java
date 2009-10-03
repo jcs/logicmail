@@ -30,8 +30,8 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Hashtable;
 
@@ -227,11 +227,11 @@ public class OutboxMailboxNode extends MailboxNode {
 			return 0;
 		}
 
-		public void serialize(DataOutputStream output) throws IOException {
+		public void serialize(DataOutput output) throws IOException {
 			// Empty because this special token is not intended to be serialized
 		}
     	
-		public void deserialize(DataInputStream input) throws IOException {
+		public void deserialize(DataInput input) throws IOException {
 			// Empty because this special token is not intended to be serialized
 		}
     }

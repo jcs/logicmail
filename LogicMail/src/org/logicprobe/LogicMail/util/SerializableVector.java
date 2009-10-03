@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Vector;
 
@@ -62,8 +62,8 @@ public class SerializableVector extends Vector implements Serializable {
     /**
      * Creates a new instance of SerializableVector.
      * This class only supports vectors containing objects which
-     * wrap the various primitive types supported by DataOutputStream
-     * and DataInputStream.
+     * wrap the various primitive types supported by {@link DataOutput}
+     * and {@link DataInput}.
      */
     public SerializableVector() {
         super();
@@ -73,8 +73,8 @@ public class SerializableVector extends Vector implements Serializable {
     /**
      * Creates a new instance of SerializableVector.
      * This class only supports vectors containing objects which
-     * wrap the various primitive types supported by DataOutputStream
-     * and DataInputStream.
+     * wrap the various primitive types supported by {@link DataOutput}
+     * and {@link DataInput}.
      *
      * @param initialCapacity Initial capacity of the vector.
      */
@@ -83,51 +83,51 @@ public class SerializableVector extends Vector implements Serializable {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
 
-    private static void writeObject(DataOutputStream output, Object item) throws IOException {
+    private static void writeObject(DataOutput output, Object item) throws IOException {
         if(item instanceof Boolean) {
-            output.write(TYPE_BOOLEAN);
+            output.writeInt(TYPE_BOOLEAN);
             output.writeBoolean(((Boolean)item).booleanValue());
         }
         else if(item instanceof Byte) {
-            output.write(TYPE_BYTE);
+            output.writeInt(TYPE_BYTE);
             output.writeByte(((Byte)item).byteValue());
         }
         else if(item instanceof Character) {
-            output.write(TYPE_CHAR);
+            output.writeInt(TYPE_CHAR);
             output.writeChar(((Character)item).charValue());
         }
         else if(item instanceof String) {
-            output.write(TYPE_STRING);
+            output.writeInt(TYPE_STRING);
             output.writeUTF(((String)item));
         }
         else if(item instanceof Double) {
-            output.write(TYPE_DOUBLE);
+            output.writeInt(TYPE_DOUBLE);
             output.writeDouble(((Double)item).doubleValue());
         }
         else if(item instanceof Float) {
-            output.write(TYPE_FLOAT);
+            output.writeInt(TYPE_FLOAT);
             output.writeFloat(((Float)item).floatValue());
         }
         else if(item instanceof Integer) {
-            output.write(TYPE_INT);
+            output.writeInt(TYPE_INT);
             output.writeInt(((Integer)item).intValue());
         }
         else if(item instanceof Long) {
-            output.write(TYPE_LONG);
+            output.writeInt(TYPE_LONG);
             output.writeLong(((Long)item).longValue());
         }
         else if(item instanceof Short) {
-            output.write(TYPE_SHORT);
+            output.writeInt(TYPE_SHORT);
             output.writeShort(((Short)item).shortValue());
         }
         else {
-            output.write(TYPE_NULL);
+            output.writeInt(TYPE_NULL);
             output.write(0);
         }
     }
 
-    private static Object readObject(DataInputStream input) throws IOException {
-        int type = input.read();
+    private static Object readObject(DataInput input) throws IOException {
+        int type = input.readInt();
         switch(type) {
             case TYPE_BOOLEAN:
                 return new Boolean(input.readBoolean());
@@ -154,7 +154,7 @@ public class SerializableVector extends Vector implements Serializable {
         }
     }
 
-    public void serialize(DataOutputStream output) throws IOException {
+    public void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
         int size = this.size();
         output.writeInt(size);
@@ -163,7 +163,7 @@ public class SerializableVector extends Vector implements Serializable {
         }
     }
 
-    public void deserialize(DataInputStream input) throws IOException {
+    public void deserialize(DataInput input) throws IOException {
         this.removeAllElements();
         uniqueId = input.readLong();
         int size = input.readInt();

@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.message;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
@@ -63,11 +63,17 @@ public class MessageEnvelope implements Serializable {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
     public long getUniqueId() {
         return uniqueId;
 	}
 
-	public void serialize(DataOutputStream output) throws IOException {
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
+	 */
+	public void serialize(DataOutput output) throws IOException {
 		output.writeLong(uniqueId);
         output.writeLong(date.getTime());
         output.writeUTF((subject != null) ? subject : "");
@@ -81,14 +87,17 @@ public class MessageEnvelope implements Serializable {
         output.writeUTF((messageId != null) ? messageId : "");
 	}
 
-	private static void serializeArray(DataOutputStream output, String[] array) throws IOException {
+	private static void serializeArray(DataOutput output, String[] array) throws IOException {
 		output.writeInt(array.length);
 		for(int i=0; i<array.length; i++) {
 			output.writeUTF(array[i]);
 		}
 	}
 	
-	public void deserialize(DataInputStream input) throws IOException {
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
+	 */
+	public void deserialize(DataInput input) throws IOException {
 		uniqueId = input.readLong();
         long dateValue = input.readLong();
         date = Calendar.getInstance().getTime();
@@ -105,7 +114,7 @@ public class MessageEnvelope implements Serializable {
         messageId = input.readUTF();
 	}
 
-	private static String[] deserializeArray(DataInputStream input) throws IOException {
+	private static String[] deserializeArray(DataInput input) throws IOException {
 		int length = input.readInt();
 		String[] result = new String[length];
 		for(int i=0; i<length; i++) {

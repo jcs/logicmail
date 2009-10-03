@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.message;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import org.logicprobe.LogicMail.util.SerializationUtils;
@@ -119,10 +119,10 @@ public class MultiPart extends MimeMessagePart {
         return partSigned;
     }
     
-    /* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MimeMessagePart#serialize(java.io.DataOutput)
 	 */
-	public void serialize(DataOutputStream output) throws IOException {
+	public void serialize(DataOutput output) throws IOException {
 		super.serialize(output);
 
 		output.writeBoolean(partMixed);
@@ -137,9 +137,9 @@ public class MultiPart extends MimeMessagePart {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 * @see org.logicprobe.LogicMail.message.MimeMessagePart#deserialize(java.io.DataInput)
 	 */
-	public void deserialize(DataInputStream input) throws IOException {
+	public void deserialize(DataInput input) throws IOException {
 		super.deserialize(input);
 		
 	    partMixed = input.readBoolean();

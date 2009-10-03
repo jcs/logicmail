@@ -33,7 +33,9 @@ package org.logicprobe.LogicMail.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
@@ -74,7 +76,7 @@ public final class SerializationUtils {
      * @param output The stream to write the serialized object onto
      * @throws IOException if an I/O error occurs
      */
-    public static void serializeClass(Serializable input, DataOutputStream output) throws IOException {
+    public static void serializeClass(Serializable input, DataOutput output) throws IOException {
 		byte[] classBytes = SerializationUtils.serializeClass(input);
 		output.writeInt(classBytes.length);
 		output.write(classBytes);
@@ -125,10 +127,10 @@ public final class SerializationUtils {
      * @return The deserialized object
      * @throws IOException if an I/O error occurs
      */
-    public static Serializable deserializeClass(DataInputStream input) throws IOException {
+    public static Serializable deserializeClass(DataInput input) throws IOException {
 		int classLength = input.readInt();
 		byte[] classBytes = new byte[classLength];
-		input.read(classBytes);
+		input.readFully(classBytes);
 		Serializable result = SerializationUtils.deserializeClass(classBytes);
     	return result;
     }

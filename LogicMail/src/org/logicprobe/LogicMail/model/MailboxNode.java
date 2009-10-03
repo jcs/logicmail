@@ -30,8 +30,8 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -746,9 +746,9 @@ public class MailboxNode implements Node, Serializable {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
 	 */
-	public void serialize(DataOutputStream output) throws IOException {
+	public void serialize(DataOutput output) throws IOException {
 		output.writeLong(uniqueId);
 		output.writeBoolean(hasAppend);
 		output.writeInt(type);
@@ -766,9 +766,9 @@ public class MailboxNode implements Node, Serializable {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
 	 */
-	public void deserialize(DataInputStream input) throws IOException {
+	public void deserialize(DataInput input) throws IOException {
 		uniqueId = input.readLong();
 		hasAppend = input.readBoolean();
 		type = input.readInt();
@@ -783,7 +783,7 @@ public class MailboxNode implements Node, Serializable {
 					throw new IOException();
 				}
 				byte[] serializedBytes = new byte[length];
-				input.read(serializedBytes);
+				input.readFully(serializedBytes);
 				Object deserializedObject = SerializationUtils.deserializeClass(serializedBytes);
 				if(deserializedObject instanceof MailboxNode) {
 					MailboxNode child = (MailboxNode)deserializedObject;

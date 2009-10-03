@@ -31,7 +31,7 @@
 
 package org.logicprobe.LogicMail.conf;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
@@ -53,7 +53,7 @@ public class PopConfig extends AccountConfig {
      * 
      * @param input The input stream to deserialize from
      */
-    public PopConfig(DataInputStream input) {
+    public PopConfig(DataInput input) {
         super(input);
     }
     

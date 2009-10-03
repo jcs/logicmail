@@ -31,7 +31,7 @@
 
 package org.logicprobe.LogicMail.conf;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
@@ -67,7 +67,7 @@ public abstract class AccountConfig extends ConnectionConfig {
      * 
      * @param input The input stream to deserialize from
      */
-    public AccountConfig(DataInputStream input) {
+    public AccountConfig(DataInput input) {
         super(input);
     }
 

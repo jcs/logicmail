@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,8 @@
  */
 package org.logicprobe.LogicMail.util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -44,14 +44,14 @@ public interface Serializable {
      * 
      * @param output Stream to contain the data represented by this class
      */
-    public void serialize(DataOutputStream output) throws IOException;
+    public void serialize(DataOutput output) throws IOException;
     
     /**
      * Deserialize.
      * 
      * @param input Stream containing the data for this class to represent
      */
-    public void deserialize(DataInputStream input) throws IOException;
+    public void deserialize(DataInput input) throws IOException;
     
     /**
      * Gets the unique ID for this class.

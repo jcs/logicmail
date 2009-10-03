@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.mail.pop;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -120,16 +120,16 @@ public class PopMessageToken implements MessageToken {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
 	 */
-	public void serialize(DataOutputStream output) throws IOException {
+	public void serialize(DataOutput output) throws IOException {
 		output.writeLong(uniqueId);
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
 	 */
-	public void deserialize(DataInputStream input) throws IOException {
+	public void deserialize(DataInput input) throws IOException {
 		uniqueId = input.readLong();
 	}
 

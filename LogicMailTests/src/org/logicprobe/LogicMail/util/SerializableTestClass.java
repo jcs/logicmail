@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -51,12 +51,12 @@ public class SerializableTestClass implements Serializable {
     public int getValue() { return value; }
     public void setValue(int value) { this.value = value; }
 
-    public void serialize(DataOutputStream output) throws IOException {
+    public void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
         output.writeInt(value);
     }
 
-    public void deserialize(DataInputStream input) throws IOException {
+    public void deserialize(DataInput input) throws IOException {
         uniqueId = input.readLong();
         value = input.readInt();
     }

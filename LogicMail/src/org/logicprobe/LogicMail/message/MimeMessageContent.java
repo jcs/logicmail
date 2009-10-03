@@ -30,8 +30,8 @@
  */
 package org.logicprobe.LogicMail.message;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 import org.logicprobe.LogicMail.util.Serializable;
@@ -99,9 +99,9 @@ public abstract class MimeMessageContent implements Serializable {
 	}
 
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
 	 */
-	public void serialize(DataOutputStream output) throws IOException {
+	public void serialize(DataOutput output) throws IOException {
 		output.writeLong(uniqueId);
 		SerializationUtils.serializeClass(messagePart, output);
 		byte[] data = getRawData();
@@ -110,14 +110,14 @@ public abstract class MimeMessageContent implements Serializable {
 	}
 	
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
 	 */
-	public void deserialize(DataInputStream input) throws IOException {
+	public void deserialize(DataInput input) throws IOException {
 		uniqueId = input.readLong();
 		messagePart = (ContentPart)SerializationUtils.deserializeClass(input);
 		int len = input.readInt();
 		byte[] data = new byte[len];
-		input.read(data, 0, len);
+		input.readFully(data, 0, len);
 		putRawData(data);
 	}
 }

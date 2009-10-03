@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.util.Serializable;
@@ -118,7 +118,10 @@ public class FolderTreeItem implements Serializable {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
     
-    public void serialize(DataOutputStream output) throws IOException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
+     */
+    public void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
         output.writeUTF(name);
         output.writeUTF(path);
@@ -135,7 +138,10 @@ public class FolderTreeItem implements Serializable {
             output.writeInt(0);
     }
     
-    public void deserialize(DataInputStream input) throws IOException {
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
+     */
+    public void deserialize(DataInput input) throws IOException {
         uniqueId = input.readLong();
         name = input.readUTF();
         path = input.readUTF();
@@ -154,6 +160,9 @@ public class FolderTreeItem implements Serializable {
         }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
     public long getUniqueId() {
         return uniqueId;
     }

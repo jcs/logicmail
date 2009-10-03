@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Enumeration;
@@ -66,8 +66,8 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     /**
      * Creates a new instance of SerializableHashtable.
      * This class only supports hash tables containing objects which
-     * wrap the various primitive types supported by DataOutputStream
-     * and DataInputStream.
+     * wrap the various primitive types supported by {@link DataOutput}
+     * and {@link DataInput}.
      */
     public SerializableHashtable() {
         super();
@@ -77,8 +77,8 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     /**
      * Creates a new instance of SerializableHashtable.
      * This class only supports hash tables containing objects which
-     * wrap the various primitive types supported by DataOutputStream
-     * and DataInputStream.
+     * wrap the various primitive types supported by {@link DataOutput}
+     * and {@link DataInput}.
      *
      * @param initialCapacity Initial capacity of the hashtable.
      */
@@ -87,25 +87,25 @@ public class SerializableHashtable extends Hashtable implements Serializable {
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
     
-    private static void writeObject(DataOutputStream output, Object item) throws IOException {
+    private static void writeObject(DataOutput output, Object item) throws IOException {
         if(item instanceof Boolean) {
-            output.write(TYPE_BOOLEAN);
+            output.writeInt(TYPE_BOOLEAN);
             output.writeBoolean(((Boolean)item).booleanValue());
         }
         else if(item instanceof Byte) {
-            output.write(TYPE_BYTE);
+            output.writeInt(TYPE_BYTE);
             output.writeByte(((Byte)item).byteValue());
         }
         else if(item instanceof Character) {
-            output.write(TYPE_CHAR);
+            output.writeInt(TYPE_CHAR);
             output.writeChar(((Character)item).charValue());
         }
         else if(item instanceof String) {
-            output.write(TYPE_STRING);
+            output.writeInt(TYPE_STRING);
             output.writeUTF(((String)item));
         }
         else if(item instanceof String[]) {
-            output.write(TYPE_STRING_ARRAY);
+            output.writeInt(TYPE_STRING_ARRAY);
             String[] stringArray = (String[])item;
             output.writeInt(stringArray.length);
             for(int i = 0; i < stringArray.length; i++) {
@@ -113,37 +113,37 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             }
         }
         else if(item instanceof Double) {
-            output.write(TYPE_DOUBLE);
+            output.writeInt(TYPE_DOUBLE);
             output.writeDouble(((Double)item).doubleValue());
         }
         else if(item instanceof Float) {
-            output.write(TYPE_FLOAT);
+            output.writeInt(TYPE_FLOAT);
             output.writeFloat(((Float)item).floatValue());
         }
         else if(item instanceof Integer) {
-            output.write(TYPE_INT);
+            output.writeInt(TYPE_INT);
             output.writeInt(((Integer)item).intValue());
         }
         else if(item instanceof Long) {
-            output.write(TYPE_LONG);
+            output.writeInt(TYPE_LONG);
             output.writeLong(((Long)item).longValue());
         }
         else if(item instanceof Short) {
-            output.write(TYPE_SHORT);
+            output.writeInt(TYPE_SHORT);
             output.writeShort(((Short)item).shortValue());
         }
         else if(item instanceof Date) {
-        	output.write(TYPE_DATE);
+        	output.writeInt(TYPE_DATE);
         	output.writeLong(((Date)item).getTime());
         }
         else {
-            output.write(TYPE_NULL);
+            output.writeInt(TYPE_NULL);
             output.write(0);
         }
     }
 
-    private static Object readObject(DataInputStream input) throws IOException {
-        int type = input.read();
+    private static Object readObject(DataInput input) throws IOException {
+        int type = input.readInt();
         switch(type) {
             case TYPE_BOOLEAN:
                 return new Boolean(input.readBoolean());
@@ -179,7 +179,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
         }
     }
     
-    public void serialize(DataOutputStream output) throws IOException {
+    public void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
         output.writeInt(this.size());
         Enumeration e = this.keys();
@@ -191,7 +191,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
         }
     }
 
-    public void deserialize(DataInputStream input) throws IOException {
+    public void deserialize(DataInput input) throws IOException {
         this.clear();
         uniqueId = input.readLong();
         int size = input.readInt();

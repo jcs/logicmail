@@ -31,7 +31,7 @@
 
 package org.logicprobe.LogicMail.conf;
 
-import java.io.DataInputStream;
+import java.io.DataInput;
 
 import org.logicprobe.LogicMail.mail.smtp.SmtpProtocol;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
@@ -57,7 +57,7 @@ public class OutgoingConfig extends ConnectionConfig {
      * 
      * @param input The input stream to deserialize from
      */
-    public OutgoingConfig(DataInputStream input) {
+    public OutgoingConfig(DataInput input) {
         super(input);
     }
 

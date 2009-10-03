@@ -32,7 +32,9 @@ package org.logicprobe.LogicMail.model;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
@@ -206,11 +208,11 @@ public class MessageNodeWriterTest extends TestCase {
 			return false;
 		}
 
-		public void serialize(DataOutputStream output) throws IOException {
+		public void serialize(DataOutput output) throws IOException {
 			output.writeInt(42);
 		}
 		
-		public void deserialize(DataInputStream input) throws IOException {
+		public void deserialize(DataInput input) throws IOException {
 			input.readInt();
 		}
 
