@@ -66,8 +66,8 @@ public class AccountNodeTest extends TestCase {
     	mailStore = new TestMailStore();
     	mailStore.rootFolder = new FolderTreeItem("", "", "");
     	mailStore.rootFolder.addChild(new FolderTreeItem("INBOX", "INBOX", "."));
-    	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("One", "INBOX.One", "."));
-    	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("Two", "INBOX.Two", "."));
+    	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("1_One", "INBOX.1_One", "."));
+    	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("2_Two", "INBOX.2_Two", "."));
     	
         instance = new AccountNode(mailStore, false);
     	instance.addAccountNodeListener(new AccountNodeListener() {
@@ -103,14 +103,14 @@ public class AccountNodeTest extends TestCase {
     	assertNotNull("childMailboxes2", childMailboxes);
     	assertEquals(2, childMailboxes.length);
     	assertNotNull("childMailboxes2[0]", childMailboxes[0]);
-    	assertEquals("One", childMailboxes[0].toString());
+    	assertEquals("1_One", childMailboxes[0].toString());
     	MailboxNode oneNode = childMailboxes[0];
     	assertNotNull("childMailboxes2[1]", childMailboxes[1]);
-    	assertEquals("Two", childMailboxes[1].toString());
+    	assertEquals("2_Two", childMailboxes[1].toString());
     	MailboxNode twoNode = childMailboxes[1];
     	
     	// Add another child node
-    	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("Three", "INBOX.Three", "."));
+    	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("3_Three", "INBOX.3_Three", "."));
     	
     	// Now make sure another refresh will return the same
     	// nodes for the mailboxes that have not changed.
@@ -135,7 +135,7 @@ public class AccountNodeTest extends TestCase {
     	assertNotNull("childMailboxes2[1]", childMailboxes[1]);
     	assertEquals(twoNode, childMailboxes[1]);
     	assertNotNull("childMailboxes2[2]", childMailboxes[2]);
-    	assertEquals("Three", childMailboxes[2].toString());
+    	assertEquals("3_Three", childMailboxes[2].toString());
     }
     
     public void testRefreshMailboxStatus() {
@@ -161,8 +161,8 @@ public class AccountNodeTest extends TestCase {
     	// structure with updated status counts
     	mailStore.statusUpdatedRootFolder = new FolderTreeItem("", "", "");
     	mailStore.statusUpdatedRootFolder.addChild(new FolderTreeItem("INBOX", "INBOX", "."));
-    	mailStore.statusUpdatedRootFolder.children()[0].addChild(new FolderTreeItem("One", "INBOX.One", "."));
-    	mailStore.statusUpdatedRootFolder.children()[0].addChild(new FolderTreeItem("Two", "INBOX.Two", "."));
+    	mailStore.statusUpdatedRootFolder.children()[0].addChild(new FolderTreeItem("1_One", "INBOX.1_One", "."));
+    	mailStore.statusUpdatedRootFolder.children()[0].addChild(new FolderTreeItem("2_Two", "INBOX.2_Two", "."));
     	mailStore.statusUpdatedRootFolder.children()[0].setUnseenCount(5);
     	mailStore.statusUpdatedRootFolder.children()[0].setMsgCount(10);
     	mailStore.statusUpdatedRootFolder.children()[0].children()[0].setUnseenCount(6);
