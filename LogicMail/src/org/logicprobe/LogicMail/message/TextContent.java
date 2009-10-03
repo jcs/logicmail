@@ -111,6 +111,13 @@ public class TextContent extends MimeMessageContent {
         }
     }
 	
+    /**
+     * Instantiates a new text content object for deserialization.
+     */
+    public TextContent() {
+		super(null);
+	}
+    
 	/**
 	 * Find out if a content object can be created for the provided
 	 * MIME structure part.
@@ -136,5 +143,12 @@ public class TextContent extends MimeMessageContent {
 	 */
 	public byte[] getRawData() {
 		return this.text.getBytes();
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MimeMessageContent#putRawData(byte[])
+	 */
+	protected void putRawData(byte[] rawData) {
+		this.text = new String(rawData);
 	}
 }

@@ -40,6 +40,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+
 import net.rim.device.api.util.Arrays;
 
 /**
@@ -99,6 +103,10 @@ public class SerializableHashtableTest extends TestCase {
             table.put("Seven", new Float(1.42));
             table.put("Eight", new Double(2.14));
             table.put("Nine", Boolean.TRUE);
+            Date testDate = createTestDate();
+            table.put("Ten", testDate);
+            String[] testStringArray = new String[] { "Red", "Blue" }; 
+            table.put("Eleven", testStringArray);
             int size = table.size();
             
             // Serialize
@@ -121,10 +129,28 @@ public class SerializableHashtableTest extends TestCase {
             assertEquals(new Float(1.42), (Float)table.get("Seven"));
             assertEquals(new Double(2.14), (Double)table.get("Eight"));
             assertTrue(((Boolean)table.get("Nine")).booleanValue());
+            assertEquals(testDate.getTime(), ((Date)table.get("Ten")).getTime());
+            
+            String[] resultStringArray = (String[])table.get("Eleven");
+            assertTrue(resultStringArray.length == 2);
+            assertEquals(testStringArray[0], resultStringArray[0]);
+            assertEquals(testStringArray[1], resultStringArray[1]);
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
             t.printStackTrace();
         }
+    }
+    
+    private static Date createTestDate() {
+    	// "Sat, 10 Feb 2007 21:27:01 -0500"
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT-5"));
+        cal.set(Calendar.YEAR, 2007);
+        cal.set(Calendar.MONTH, 1);
+        cal.set(Calendar.DAY_OF_MONTH, 10);
+        cal.set(Calendar.HOUR_OF_DAY, 21);
+        cal.set(Calendar.MINUTE, 27);
+        cal.set(Calendar.SECOND, 1);
+    	return cal.getTime();
     }
     
     public Test suite() {

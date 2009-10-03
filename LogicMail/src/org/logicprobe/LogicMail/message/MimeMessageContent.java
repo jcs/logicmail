@@ -30,12 +30,21 @@
  */
 package org.logicprobe.LogicMail.message;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+
+import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.SerializationUtils;
+import org.logicprobe.LogicMail.util.UniqueIdGenerator;
+
 /**
  * Represents content for a message, maintained separately
  * from its structure.  There should be a subclass for every
  * major MIME type that is supported.
  */
-public abstract class MimeMessageContent {
+public abstract class MimeMessageContent implements Serializable {
+    private long uniqueId;
 	private ContentPart messagePart;
 	
 	/**
@@ -44,6 +53,7 @@ public abstract class MimeMessageContent {
 	 * @param messagePart the message part
 	 */
 	protected MimeMessageContent(ContentPart messagePart) {
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
 		this.messagePart = messagePart;
 	}
 	
@@ -71,4 +81,43 @@ public abstract class MimeMessageContent {
 	 * @return Raw data if available, or null otherwise
 	 */
 	public abstract byte[] getRawData();
+
+	/**
+	 * Populates the message content object from raw data.
+	 * Necessary for recreating the object from a serialized
+	 * form.
+	 * 
+	 * @param rawData Raw data for the message content
+	 */
+	protected abstract void putRawData(byte[] rawData);
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+	 */
+	public long getUniqueId() {
+		return this.uniqueId;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutputStream)
+	 */
+	public void serialize(DataOutputStream output) throws IOException {
+		output.writeLong(uniqueId);
+		SerializationUtils.serializeClass(messagePart, output);
+		byte[] data = getRawData();
+		output.writeInt(data.length);
+		output.write(data);
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInputStream)
+	 */
+	public void deserialize(DataInputStream input) throws IOException {
+		uniqueId = input.readLong();
+		messagePart = (ContentPart)SerializationUtils.deserializeClass(input);
+		int len = input.readInt();
+		byte[] data = new byte[len];
+		input.read(data, 0, len);
+		putRawData(data);
+	}
 }

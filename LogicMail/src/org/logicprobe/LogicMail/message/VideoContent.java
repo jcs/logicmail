@@ -51,6 +51,13 @@ public class VideoContent extends MimeMessageContent {
         }
 	}
 
+	/**
+	 * Instantiates a new video content object for deserialization.
+	 */
+	public VideoContent() {
+		super(null);
+	}
+	
 	public void accept(MimeMessageContentVisitor visitor) {
 		visitor.visit(this);
 	}
@@ -70,5 +77,12 @@ public class VideoContent extends MimeMessageContent {
 	 */
 	public byte[] getRawData() {
 		return rawData;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MimeMessageContent#putRawData(byte[])
+	 */
+	protected void putRawData(byte[] rawData) {
+		this.rawData = rawData;
 	}
 }

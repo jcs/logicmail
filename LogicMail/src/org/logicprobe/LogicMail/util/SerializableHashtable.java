@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.util;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -50,11 +51,13 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     final private static int TYPE_BYTE    = 2;
     final private static int TYPE_CHAR    = 3;
     final private static int TYPE_STRING  = 4;
+    final private static int TYPE_STRING_ARRAY = 104;
     final private static int TYPE_DOUBLE  = 5;
     final private static int TYPE_FLOAT   = 6;
     final private static int TYPE_INT     = 7;
     final private static int TYPE_LONG    = 8;
     final private static int TYPE_SHORT   = 9;
+    final private static int TYPE_DATE    = 10;
 
     final private static int MAX_ITEMS = 1000;
     
@@ -101,6 +104,14 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             output.write(TYPE_STRING);
             output.writeUTF(((String)item));
         }
+        else if(item instanceof String[]) {
+            output.write(TYPE_STRING_ARRAY);
+            String[] stringArray = (String[])item;
+            output.writeInt(stringArray.length);
+            for(int i = 0; i < stringArray.length; i++) {
+            	output.writeUTF(stringArray[i]);
+            }
+        }
         else if(item instanceof Double) {
             output.write(TYPE_DOUBLE);
             output.writeDouble(((Double)item).doubleValue());
@@ -121,6 +132,10 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             output.write(TYPE_SHORT);
             output.writeShort(((Short)item).shortValue());
         }
+        else if(item instanceof Date) {
+        	output.write(TYPE_DATE);
+        	output.writeLong(((Date)item).getTime());
+        }
         else {
             output.write(TYPE_NULL);
             output.write(0);
@@ -138,6 +153,13 @@ public class SerializableHashtable extends Hashtable implements Serializable {
                 return new Character(input.readChar());
             case TYPE_STRING:
                 return input.readUTF();
+            case TYPE_STRING_ARRAY:
+            	int len = input.readInt();
+            	String[] stringArray = new String[len];
+            	for(int i=0; i<len; i++) {
+            		stringArray[i] = input.readUTF();
+            	}
+            	return stringArray;
             case TYPE_DOUBLE:
                 return new Double(input.readDouble());
             case TYPE_FLOAT:
@@ -148,6 +170,8 @@ public class SerializableHashtable extends Hashtable implements Serializable {
                 return new Long(input.readLong());
             case TYPE_SHORT:
                 return new Short(input.readShort());
+            case TYPE_DATE:
+            	return new Date(input.readLong());
             case TYPE_NULL:
                 return null;
             default:

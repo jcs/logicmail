@@ -181,6 +181,15 @@ public class MessageNode implements Node {
 			this.attachmentParts = MimeMessagePartTransformer.getAttachmentParts(this.messageStructure);
 		}
 	}
+	
+	/**
+	 * Instantiates a new empty message node.
+	 * 
+	 * @param messageToken the message token
+	 */
+	MessageNode(MessageToken messageToken) {
+		this.messageToken = messageToken;
+	}
 
 	/**
 	 * Instantiates a new message node.

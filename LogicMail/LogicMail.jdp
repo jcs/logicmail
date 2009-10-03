@@ -169,6 +169,8 @@ src\org\logicprobe\LogicMail\model\MailRootNode.java
 src\org\logicprobe\LogicMail\model\MessageNode.java
 src\org\logicprobe\LogicMail\model\MessageNodeEvent.java
 src\org\logicprobe\LogicMail\model\MessageNodeListener.java
+src\org\logicprobe\LogicMail\model\MessageNodeReader.java
+src\org\logicprobe\LogicMail\model\MessageNodeWriter.java
 src\org\logicprobe\LogicMail\model\Node.java
 src\org\logicprobe\LogicMail\model\NodeVisitor.java
 src\org\logicprobe\LogicMail\model\OutboxMailboxNode.java

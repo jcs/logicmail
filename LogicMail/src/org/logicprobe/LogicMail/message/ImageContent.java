@@ -72,6 +72,13 @@ public class ImageContent extends MimeMessageContent {
 	}
 	
 	/**
+	 * Instantiates a new image content object for deserialization.
+	 */
+	public ImageContent() {
+		super(null);
+	}
+	
+	/**
 	 * Find out if a content object can be created for the provided
 	 * MIME structure part.
 	 * @param imagePart MIME part to check.
@@ -102,5 +109,15 @@ public class ImageContent extends MimeMessageContent {
 	 */
 	public byte[] getRawData() {
 		return rawData;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MimeMessageContent#putRawData(byte[])
+	 */
+	protected void putRawData(byte[] rawData) {
+		this.rawData = rawData;
+		ContentPart part = getMessagePart();
+		String mimeType = part.getMimeType() + '/' + part.getMimeSubtype();
+		this.image = EncodedImage.createEncodedImage(this.rawData, 0, this.rawData.length, mimeType);
 	}
 }

@@ -40,6 +40,7 @@ src\org\logicprobe\LogicMail\message\MessageTests.java
 src\org\logicprobe\LogicMail\model\AccountNodeTest.java
 src\org\logicprobe\LogicMail\model\MailboxNodeTest.java
 src\org\logicprobe\LogicMail\model\MessageNodeTest.java
+src\org\logicprobe\LogicMail\model\MessageNodeWriterTest.java
 src\org\logicprobe\LogicMail\model\ModelTests.java
 src\org\logicprobe\LogicMail\ui\UiTests.java
 src\org\logicprobe\LogicMail\util\EventListenerListTest.java

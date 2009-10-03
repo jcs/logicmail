@@ -51,6 +51,13 @@ public class ApplicationContent extends MimeMessageContent {
         }
 	}
 
+	/**
+	 * Instantiates a new application content object for deserialization.
+	 */
+	public ApplicationContent() {
+		super(null);
+	}
+	
 	public void accept(MimeMessageContentVisitor visitor) {
 		visitor.visit(this);
 	}
@@ -70,5 +77,12 @@ public class ApplicationContent extends MimeMessageContent {
 	 */
 	public byte[] getRawData() {
 		return rawData;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.message.MimeMessageContent#putRawData(byte[])
+	 */
+	protected void putRawData(byte[] rawData) {
+		this.rawData = rawData;
 	}
 }
