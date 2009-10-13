@@ -436,7 +436,8 @@ public class StringParser {
 
         buf.append(' ');
 
-        int tzOffset = cal.getTimeZone().getOffset(1, cal.get(Calendar.YEAR),
+        int tzOffset = cal.getTimeZone()
+                          .getOffset(1, cal.get(Calendar.YEAR),
                 cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
                 cal.get(Calendar.DAY_OF_WEEK),
                 (int) (((long) cal.get(Calendar.HOUR_OF_DAY) * ONE_HOUR) +
@@ -623,8 +624,15 @@ public class StringParser {
                 line = line + "\r\n" + rawLines[i];
             } else {
                 if (line.length() != 0) {
-                    table.put((line.substring(0, line.indexOf(':'))).toLowerCase(),
-                        line.substring(line.indexOf(' ') + 1));
+                    int p = line.indexOf(':');
+                    int q = line.indexOf(' ');
+
+                    if ((p == -1) || (q == -1)) {
+                        break;
+                    }
+
+                    table.put((line.substring(0, p)).toLowerCase(),
+                        line.substring(q + 1));
                 }
 
                 line = rawLines[i];
@@ -632,8 +640,15 @@ public class StringParser {
 
             // Special case for last item
             if ((i == (rawLines.length - 1)) && (line.length() != 0)) {
-                table.put((line.substring(0, line.indexOf(':'))).toLowerCase(),
-                    line.substring(line.indexOf(' ') + 1));
+                int p = line.indexOf(':');
+                int q = line.indexOf(' ');
+
+                if ((p == -1) || (q == -1)) {
+                    break;
+                }
+
+                table.put((line.substring(0, p)).toLowerCase(),
+                    line.substring(q + 1));
             }
         }
 
@@ -752,7 +767,8 @@ public class StringParser {
         } else if (encoding.charAt(0) == 'B') {
             // Base64
             try {
-            	result = new String(Base64InputStream.decode(encodedText), charset);
+                result = new String(Base64InputStream.decode(encodedText),
+                        charset);
             } catch (IOException e) {
                 result = "";
             }
@@ -859,17 +875,19 @@ public class StringParser {
      * @return Comma-separated value string.
      */
     public static String makeCsvString(Object[] input) {
-    	if ((input == null) || (input.length == 0)) {
-    		return "";
-	    } else if (input.length == 1) {
-	        return input[0].toString();
-	    } else {
-	    	String[] stringArray = new String[input.length];
-	    	for(int i=0; i<input.length; i++) {
-	    		stringArray[i] = input[i].toString();
-	    	}
-	    	return makeCsvString(stringArray);
-	    }
+        if ((input == null) || (input.length == 0)) {
+            return "";
+        } else if (input.length == 1) {
+            return input[0].toString();
+        } else {
+            String[] stringArray = new String[input.length];
+
+            for (int i = 0; i < input.length; i++) {
+                stringArray[i] = input[i].toString();
+            }
+
+            return makeCsvString(stringArray);
+        }
     }
 
     /**
@@ -932,34 +950,34 @@ public class StringParser {
         StringBuffer buffer = new StringBuffer();
         int index = 0;
         int length = text.length();
-        while(index < length) {
-            if(text.charAt(index) == '=') {
-                if(index+2 >= length) {
+
+        while (index < length) {
+            if (text.charAt(index) == '=') {
+                if ((index + 2) >= length) {
                     break;
-                }
-                else {
-                    char ch1 = text.charAt(index+1);
-                    char ch2 = text.charAt(index+2);
-                    if(ch1 == '\r' && ch2 == '\n') {
+                } else {
+                    char ch1 = text.charAt(index + 1);
+                    char ch2 = text.charAt(index + 2);
+
+                    if ((ch1 == '\r') && (ch2 == '\n')) {
                         index += 3;
-                    }
-                    else if(ch1 == '\n') {
+                    } else if (ch1 == '\n') {
                         index += 2;
-                    }
-                    else {
+                    } else {
                         try {
-                            int charVal = Integer.parseInt(text.substring(index+1, index+3), 16);
-                            buffer.append((char)charVal);
-                        } catch (NumberFormatException exp) { }
+                            int charVal = Integer.parseInt(text.substring(index +
+                                        1, index + 3), 16);
+                            buffer.append((char) charVal);
+                        } catch (NumberFormatException exp) {
+                        }
+
                         index += 3;
                     }
                 }
-            }
-            else if(text.charAt(index) == '_') {
+            } else if (text.charAt(index) == '_') {
                 buffer.append(' ');
                 index++;
-            }
-            else {
+            } else {
                 buffer.append(text.charAt(index));
                 index++;
             }
@@ -1146,55 +1164,54 @@ public class StringParser {
 
         return result;
     }
-    
+
     /**
      * Converts an array of objects to an array of Strings returned
      * by calling their {@link Object#toString()} methods.
-     * 
+     *
      * @param input Source array
      * @return String array
      */
     public static String[] toStringArray(Object[] input) {
-    	String[] result;
-    	if(input == null) {
-    		result = null;
-    	}
-    	else if(input.length == 0) {
-    		result = new String[0];
-    	}
-    	else {
-    		result = new String[input.length];
-    		for(int i=0; i<input.length; i++) {
-    			if(input[i] != null) {
-    				result[i] = input[i].toString();
-    			}
-    			else {
-    				result[i] = null;
-    			}
-    		}
-    	}
-    	return result;
+        String[] result;
+
+        if (input == null) {
+            result = null;
+        } else if (input.length == 0) {
+            result = new String[0];
+        } else {
+            result = new String[input.length];
+
+            for (int i = 0; i < input.length; i++) {
+                if (input[i] != null) {
+                    result[i] = input[i].toString();
+                } else {
+                    result[i] = null;
+                }
+            }
+        }
+
+        return result;
     }
-    
+
     /**
      * Converts a numerical byte quantity into a nicer human-readable
      * unit representation.
-     * 
+     *
      * @param dataSize Size in bytes
      * @return Printable string
      */
     public static String toDataSizeString(int dataSize) {
-    	StringBuffer buf = new StringBuffer();
+        StringBuffer buf = new StringBuffer();
 
-    	if(dataSize < 1024) {
-			buf.append(dataSize);
-			buf.append('B');
-		}
-		else {
-			buf.append((int)(dataSize / 1024));
-			buf.append('k');
-		}
-    	
-    	return buf.toString();
+        if (dataSize < 1024) {
+            buf.append(dataSize);
+            buf.append('B');
+        } else {
+            buf.append((int) (dataSize / 1024));
+            buf.append('k');
+        }
+
+        return buf.toString();
     }
 }

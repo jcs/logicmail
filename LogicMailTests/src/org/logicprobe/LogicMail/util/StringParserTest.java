@@ -266,8 +266,7 @@ public class StringParserTest extends TestCase {
     public void testNestedParenStringLexerEnvelope2() {
         System.out.println("nestedParenStringLexer (Envelope2)");
 
-        String rawText =
-            "(FLAGS () ENVELOPE (\"Sun, 18 Mar 2007 09:04:29 -0700\" {23}\r\n" +
+        String rawText = "(FLAGS () ENVELOPE (\"Sun, 18 Mar 2007 09:04:29 -0700\" {23}\r\n" +
             "[list] \"this is a test\" " +
             "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
             "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
@@ -535,6 +534,25 @@ public class StringParserTest extends TestCase {
     }
 
     /**
+     * Test of parseMailHeaders method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testParseMailHeadersNoBlank() {
+        // Test for correct handling of invalid input where there is no
+        // blank line between the last header and the message body.
+        System.out.println("parseMailHeadersNoBlank");
+
+        String[] rawLines = {
+                "Return-Path: <jdoe@generic.test>", "Subject: Some test message",
+                "Some random content", "More random content"
+            };
+
+        Hashtable result = StringParser.parseMailHeaders(rawLines);
+        assertEquals("Number of headers", 2, result.size());
+        assertEquals("<jdoe@generic.test>", result.get("return-path"));
+        assertEquals("Some test message", result.get("subject"));
+    }
+
+    /**
      * Test of parseEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseEncodedHeader() {
@@ -703,56 +721,57 @@ public class StringParserTest extends TestCase {
     }
 
     public void testParseRecipient() {
-    	System.out.println("parseRecipient");
-    	
-    	String text = "John Doe <doej@generic.org>";
-    	String[] expected = new String[] { "John Doe", "doej@generic.org" };
-    	String[] actual = StringParser.parseRecipient(text);
-    	assertEquals("Unquoted normal case", expected, actual);
+        System.out.println("parseRecipient");
 
-    	text = "\"John Doe\" <doej@generic.org>";
-    	actual = StringParser.parseRecipient(text);
-    	assertEquals("Quoted normal case", expected, actual);
-    	
-    	text = "doej@generic.org";
-    	expected = new String[] { null, "doej@generic.org" };
-    	actual = StringParser.parseRecipient(text);
-    	assertEquals("Address-only normal case", expected, actual);
-    	
-    	text = "";
-    	expected = new String[] { null, "" };
-    	actual = StringParser.parseRecipient(text);
-    	assertEquals("Empty normal case", expected, actual);
+        String text = "John Doe <doej@generic.org>";
+        String[] expected = new String[] { "John Doe", "doej@generic.org" };
+        String[] actual = StringParser.parseRecipient(text);
+        assertEquals("Unquoted normal case", expected, actual);
+
+        text = "\"John Doe\" <doej@generic.org>";
+        actual = StringParser.parseRecipient(text);
+        assertEquals("Quoted normal case", expected, actual);
+
+        text = "doej@generic.org";
+        expected = new String[] { null, "doej@generic.org" };
+        actual = StringParser.parseRecipient(text);
+        assertEquals("Address-only normal case", expected, actual);
+
+        text = "";
+        expected = new String[] { null, "" };
+        actual = StringParser.parseRecipient(text);
+        assertEquals("Empty normal case", expected, actual);
     }
-    
+
     public void testMergeRecipient() {
-    	System.out.println("mergeRecipient");
+        System.out.println("mergeRecipient");
 
-    	String expected = "\"John Doe\" <doej@generic.org>";
-    	String actual = StringParser.mergeRecipient("John Doe", "doej@generic.org");
-    	assertEquals("Name and address", expected, actual);
-    	
-    	expected = "doej@generic.org";
-    	actual = StringParser.mergeRecipient(null, "doej@generic.org");
-    	assertEquals("Address only 1", expected, actual);
+        String expected = "\"John Doe\" <doej@generic.org>";
+        String actual = StringParser.mergeRecipient("John Doe",
+                "doej@generic.org");
+        assertEquals("Name and address", expected, actual);
 
-    	expected = "doej@generic.org";
-    	actual = StringParser.mergeRecipient("", "doej@generic.org");
-    	assertEquals("Address only 2", expected, actual);
+        expected = "doej@generic.org";
+        actual = StringParser.mergeRecipient(null, "doej@generic.org");
+        assertEquals("Address only 1", expected, actual);
 
-    	expected = "";
-    	actual = StringParser.mergeRecipient("John Doe", null);
-    	assertEquals("Name only 1", expected, actual);
-    
-    	expected = "";
-    	actual = StringParser.mergeRecipient("John Doe", "");
-    	assertEquals("Name only 2", expected, actual);
+        expected = "doej@generic.org";
+        actual = StringParser.mergeRecipient("", "doej@generic.org");
+        assertEquals("Address only 2", expected, actual);
 
-    	expected = "";
-    	actual = StringParser.mergeRecipient("", "");
-    	assertEquals("Empty", expected, actual);
+        expected = "";
+        actual = StringParser.mergeRecipient("John Doe", null);
+        assertEquals("Name only 1", expected, actual);
+
+        expected = "";
+        actual = StringParser.mergeRecipient("John Doe", "");
+        assertEquals("Name only 2", expected, actual);
+
+        expected = "";
+        actual = StringParser.mergeRecipient("", "");
+        assertEquals("Empty", expected, actual);
     }
-    
+
     public Test suite() {
         TestSuite testSuite = new TestSuite("StringParser");
         testSuite.addTest(new StringParserTest("parseDateString",
@@ -799,6 +818,12 @@ public class StringParserTest extends TestCase {
                 new TestMethod() {
                 public void run(TestCase tc) {
                     ((StringParserTest) tc).testParseMailHeaders();
+                }
+            }));
+        testSuite.addTest(new StringParserTest("parseMailHeadersNoBlank",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((StringParserTest) tc).testParseMailHeadersNoBlank();
                 }
             }));
         testSuite.addTest(new StringParserTest("parseEncodedHeader",
