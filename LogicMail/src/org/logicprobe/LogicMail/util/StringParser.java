@@ -671,6 +671,21 @@ public class StringParser {
             return null;
         }
 
+        // Check for any characters outside of US-ASCII,
+        // and if any are found, recreate the string using
+        // UTF-8 encoding.
+        byte[] textBytes = text.getBytes();
+
+        for (int i = 0; i < textBytes.length; i++) {
+            if (textBytes[i] < 0) {
+                try {
+                    text = new String(textBytes, ENCODING_UTF8);
+                } catch (UnsupportedEncodingException e) { }
+
+                break;
+            }
+        }
+
         int size = text.length();
 
         // Shortcut to avoid processing strings too short
