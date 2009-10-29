@@ -57,6 +57,7 @@ public class StringParser {
     private static final long ONE_SECOND = 1000;
     private static final long ONE_MINUTE = ONE_SECOND * 60;
     private static final long ONE_HOUR = ONE_MINUTE * 60;
+    private static String ENCODING_UTF8 = "UTF-8";
 
     private StringParser() {
     }
@@ -680,7 +681,8 @@ public class StringParser {
             if (textBytes[i] < 0) {
                 try {
                     text = new String(textBytes, ENCODING_UTF8);
-                } catch (UnsupportedEncodingException e) { }
+                } catch (UnsupportedEncodingException e) {
+                }
 
                 break;
             }
