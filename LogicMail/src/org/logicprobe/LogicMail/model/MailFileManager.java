@@ -91,10 +91,17 @@ public class MailFileManager {
 	 * Refreshes the configuration based on any system configuration changes.
 	 */
 	void refreshConfiguration() {
-		String newCacheUrl = mailSettings.getGlobalConfig().getLocalDataLocation() + CACHE_PREFIX;
+		String localDataLocation = mailSettings.getGlobalConfig().getLocalDataLocation();
+		String newCacheUrl = localDataLocation + CACHE_PREFIX;
 		if(!newCacheUrl.equals(cacheUrl)) {
 			FileConnection fileConnection;
 			try {
+				fileConnection = (FileConnection)Connector.open(localDataLocation);
+				if(!fileConnection.exists()) {
+					fileConnection.mkdir();
+				}
+				fileConnection.close();
+				
 				fileConnection = (FileConnection)Connector.open(newCacheUrl);
 				if(!fileConnection.exists()) {
 					fileConnection.mkdir();
