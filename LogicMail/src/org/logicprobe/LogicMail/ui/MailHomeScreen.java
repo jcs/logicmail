@@ -61,6 +61,9 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.Node;
+import org.logicprobe.LogicMail.util.DataStoreFactory;
+import org.logicprobe.LogicMail.util.Serializable;
+import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
  * Main screen for the application, providing a unified
@@ -260,8 +263,9 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		clearMailTreeSubscriptions();
 		generateMailTree();
 		populateMailTree(mailTreeRootNode);
+		loadScreenMetadata();
 	}
-	
+
 	private void generateMailTree() {
 		mailTreeRootNode = new TreeNode(null, 0);
 		
@@ -425,6 +429,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#onClose()
 	 */
 	public boolean onClose() {
+		saveScreenMetadata();
 		// Roundabout kludge for now
 		((StandardScreen)screen).tryShutdownApplication();
 		return false;
@@ -671,5 +676,81 @@ public class MailHomeScreen extends AbstractScreenProvider {
 			accountNode = null;
 		}
 		return accountNode;
+	}
+	
+	private void loadScreenMetadata() {
+		DataStoreFactory.getMetadataStore().load();
+        SerializableHashtable folderMetadata;
+        folderMetadata =
+        	(SerializableHashtable)DataStoreFactory.getMetadataStore().getNamedObject(
+        			this.getClass().toString());
+
+        if(folderMetadata != null) {
+            int curNode = treeField.nextNode(0, 0, true);
+            Object cookie;
+            Object value;
+            Vector actions = new Vector();
+            
+            // Walk the folder tree and build a depth-first list of
+            // nodes we need to set the expansion state for
+            while(curNode > 0) {
+                if(treeField.getFirstChild(curNode) != -1) {
+                    cookie = treeField.getCookie(curNode);
+                    if(cookie instanceof TreeNode) {
+                    	String key = getTreeNodeKey((TreeNode)cookie);
+                        value = folderMetadata.get(key);
+                        if(value instanceof Boolean) {
+                            actions.addElement(new Object[] { new Integer(curNode), value } );
+                        }
+                    }
+                }
+                curNode = treeField.nextNode(curNode, 0, true);
+            }
+            
+            // Iterate backwards across the results from above, and set
+            // the appropriate node expansion states.  This approach is
+            // necessary so complex trees will be configured properly.
+            Object[] action;
+            for(int i = actions.size() - 1; i >= 0; i--) {
+                action = (Object[])actions.elementAt(i);
+                treeField.setExpanded(((Integer)action[0]).intValue(), ((Boolean)action[1]).booleanValue());
+            }
+        }
+        treeField.setCurrentNode(treeField.getFirstChild(0));
+		
+	}
+	
+	private void saveScreenMetadata() {
+        SerializableHashtable folderMetadata = new SerializableHashtable();
+        int curNode = treeField.nextNode(0, 0, true);
+        Object cookie;
+        while(curNode > 0) {
+            if(treeField.getFirstChild(curNode) != -1) {
+                cookie = treeField.getCookie(curNode);
+                if(cookie instanceof TreeNode) {
+                	String key = getTreeNodeKey((TreeNode)cookie);
+                    folderMetadata.put(
+                            key,
+                            new Boolean(treeField.getExpanded(curNode)));
+                }
+            }
+            curNode = treeField.nextNode(curNode, 0, true);
+        }
+        
+        DataStoreFactory.getMetadataStore().putNamedObject(
+        		this.getClass().toString(), folderMetadata);
+        DataStoreFactory.getMetadataStore().save();
+	}
+
+	private static String getTreeNodeKey(TreeNode treeNode) {
+		Node node = treeNode.node;
+		String key;
+		if(node instanceof Serializable) {
+			key = Long.toString(((Serializable)node).getUniqueId());
+		}
+		else {
+			key = node.toString();
+		}
+		return key;
 	}
 }
