@@ -334,35 +334,72 @@ public class PopClient implements IncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler) throws IOException, MailException {
-    	FolderMessage[] folderMessages = new FolderMessage[(lastIndex - firstIndex)+1];
+    	return getFolderMessages(firstIndex, lastIndex, false, progressHandler);
+    }
+    
+    private FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException {
+    	int[] indices = new int[(lastIndex - firstIndex)+1];
+    	for(int i=firstIndex; i<=lastIndex; i++) {
+    		indices[i] = i;
+    	}
+    	
+    	return getFolderMessagesImpl(indices, flagsOnly, progressHandler);
+    }
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.MailProgressHandler)
+	 */
+	public FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
+			throws IOException, MailException {
+		// Since POP servers typically lock the mailbox while a client is connected,
+		// and given the typical use case of this method, we will make the assumption
+		// that the message indices in the provided tokens exactly match the messages
+		// we want to retrieve headers for.
+		
+		int[] indices = new int[messageTokens.length];
+		for(int i=0; i<messageTokens.length; i++) {
+			indices[i] = ((PopMessageToken)messageTokens[i]).getMessageIndex();
+		}
+		
+		return getFolderMessagesImpl(indices, false, progressHandler);
+	}
+
+    private FolderMessage[] getFolderMessagesImpl(int[] indices, boolean flagsOnly, MailProgressHandler progressHandler)
+    		throws IOException, MailException {
+    	FolderMessage[] folderMessages = new FolderMessage[indices.length];
         int index = 0;
         String[] headerText;
         String uid;
         MessageEnvelope env;
         int preCount;
         int postCount = connection.getBytesReceived();
-        for(int i=firstIndex; i<=lastIndex; i++) {
+        for(int i=0; i<indices.length; i++) {
         	preCount = postCount;
-            headerText = popProtocol.executeTop(i, 0);
-            uid = popProtocol.executeUidl(i);
-            env = MailMessageParser.parseMessageEnvelope(headerText);
+            if(!flagsOnly) {
+            	headerText = popProtocol.executeTop(indices[i], 0);
+            	env = MailMessageParser.parseMessageEnvelope(headerText);
+        	}
+            else {
+            	env = null;
+            }
+            uid = popProtocol.executeUidl(indices[i]);
             folderMessages[index++] = new FolderMessage(
-            		new PopMessageToken(i, uid),
-            		env, i, uid.hashCode());
+            		new PopMessageToken(indices[i], uid),
+            		env, indices[i], uid.hashCode());
             postCount = connection.getBytesReceived();
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }
         return folderMessages;
     }
-
+    
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException {
+    public FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException {
     	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
 		int msgCount = activeMailbox.getMsgCount();
         int firstIndex = Math.max(1, msgCount - count);
-    	return getFolderMessages(firstIndex, activeMailbox.getMsgCount(), progressHandler);
+    	return getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, progressHandler);
     }
 
     /* (non-Javadoc)

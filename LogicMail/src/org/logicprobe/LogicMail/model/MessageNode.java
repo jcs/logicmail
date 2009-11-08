@@ -123,6 +123,8 @@ public class MessageNode implements Node {
 	private MessageToken messageToken;
 	/** Hash code used to verify uniqueness of message nodes */
 	private int hashCode = -1;
+	/** True if the message is up-to-date in the cache */
+	private boolean cached;
 	/** Bit-field set of message flags. */
 	private int flags;
 	/** Date that the message was sent. */
@@ -246,6 +248,40 @@ public class MessageNode implements Node {
 		return hashCode;
 	}
 	
+	/**
+	 * Checks if the message is up-to-date in the cache.
+	 * 
+	 * @return true, if the message is cached
+	 */
+	boolean isCached() {
+		return this.cached;
+	}
+	
+	/**
+	 * Checks if the message is capable of being cached.
+	 * 
+	 * @return true, if the message is associated with a mailbox from a non-local account
+	 */
+	boolean isCachable() {
+		if(parent != null
+				&& parent.getParentAccount() != null
+				&& parent.getParentAccount().getAccountConfig() != null) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Sets whether the message is up-to-date in the cache.
+	 * 
+	 * @param cached the new cached state
+	 */
+	void setCached(boolean cached) {
+		this.cached = cached;
+	}
+	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.model.Node#accept(org.logicprobe.LogicMail.model.NodeVisitor)
 	 */
@@ -286,6 +322,7 @@ public class MessageNode implements Node {
 	 * @param messageToken the message token.
 	 */
 	protected void setMessageToken(MessageToken messageToken) {
+		cached = false;
 		this.messageToken = messageToken;
 	}
 	
@@ -304,6 +341,7 @@ public class MessageNode implements Node {
 	 * @param flags the flags to set
 	 */
 	public void setFlags(int flags) {
+		cached = false;
 		this.flags = flags;
 	}
 
@@ -322,6 +360,7 @@ public class MessageNode implements Node {
 	 * @param date the date to set
 	 */
 	public void setDate(Date date) {
+		cached = false;
 		this.date = date;
 	}
 
@@ -340,6 +379,7 @@ public class MessageNode implements Node {
 	 * @param subject the subject to set
 	 */
 	public void setSubject(String subject) {
+		cached = false;
 		this.subject = subject;
 	}
 
@@ -358,6 +398,7 @@ public class MessageNode implements Node {
 	 * @param from the from address to set
 	 */
 	public void setFrom(Address[] from) {
+		cached = false;
 		this.from = from;
 	}
 
@@ -376,6 +417,7 @@ public class MessageNode implements Node {
 	 * @param sender the sender address to set
 	 */
 	public void setSender(Address[] sender) {
+		cached = false;
 		this.sender = sender;
 	}
 
@@ -394,6 +436,7 @@ public class MessageNode implements Node {
 	 * @param replyTo the Reply-To address to set
 	 */
 	public void setReplyTo(Address[] replyTo) {
+		cached = false;
 		this.replyTo = replyTo;
 	}
 
@@ -412,6 +455,7 @@ public class MessageNode implements Node {
 	 * @param the "To" recipients to set
 	 */
 	public void setTo(Address[] to) {
+		cached = false;
 		this.to = to;
 	}
 
@@ -430,6 +474,7 @@ public class MessageNode implements Node {
 	 * @param cc the "CC" recipients to set
 	 */
 	public void setCc(Address[] cc) {
+		cached = false;
 		this.cc = cc;
 	}
 
@@ -448,6 +493,7 @@ public class MessageNode implements Node {
 	 * @param bcc the "BCC" recipients to set
 	 */
 	public void setBcc(Address[] bcc) {
+		cached = false;
 		this.bcc = bcc;
 	}
 
@@ -466,6 +512,7 @@ public class MessageNode implements Node {
 	 * @param inReplyTo the "In-Reply-To" message ID string to set
 	 */
 	public void setInReplyTo(String inReplyTo) {
+		cached = false;
 		this.inReplyTo = inReplyTo;
 	}
 
@@ -484,6 +531,7 @@ public class MessageNode implements Node {
 	 * @param messageId the "Message-Id" message ID string to set
 	 */
 	public void setMessageId(String messageId) {
+		cached = false;
 		this.messageId = messageId;
 	}
 
@@ -495,6 +543,7 @@ public class MessageNode implements Node {
 	void setMessageStructure(MimeMessagePart messageStructure) {
 		boolean fireEvent;
 		synchronized(messageContent) {
+			cached = false;
 			this.messageStructure = messageStructure;
 			if(this.messageStructure != null) {
 				refreshInProgress = false;
@@ -518,6 +567,7 @@ public class MessageNode implements Node {
 	 */
 	void putMessageContent(MimeMessageContent mimeMessageContent) {
 		synchronized(mimeMessageContent) {
+			cached = false;
 			this.messageContent.put(mimeMessageContent.getMessagePart(), mimeMessageContent);
 		}
 		fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
@@ -534,6 +584,7 @@ public class MessageNode implements Node {
 	 */
 	void putMessageContent(MimeMessageContent[] messageContent) {
 		synchronized(messageContent) {
+			cached = false;
 			for(int i=0; i<messageContent.length; i++) {
 				this.messageContent.put(messageContent[i].getMessagePart(), messageContent[i]);
 			}
@@ -978,6 +1029,7 @@ public class MessageNode implements Node {
      * @return True if a refresh was triggered, false otherwise
      */
 	public boolean refreshMessage() {
+		// TODO: Add code to refresh message from cache first
 		boolean result = false;
 		if(!refreshInProgress) {
 			refreshInProgress = true;

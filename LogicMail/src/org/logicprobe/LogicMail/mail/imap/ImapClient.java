@@ -584,6 +584,10 @@ public class ImapClient implements IncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler) throws IOException, MailException {
+    	return getFolderMessages(firstIndex, lastIndex, false, progressHandler);
+    }
+    
+    private FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException {
     	// Sanity check
     	if(activeMailbox == null) {
     		throw new MailException("Mailbox not selected");
@@ -594,16 +598,46 @@ public class ImapClient implements IncomingMailClient {
             return new FolderMessage[0];
         }
         
-        ImapProtocol.FetchEnvelopeResponse[] response =
+        FolderMessage[] result;
+        if(flagsOnly) {
+            ImapProtocol.FetchFlagsResponse[] flagsResponse =
+                imapProtocol.executeFetchFlags(firstIndex, lastIndex, progressHandler);
+        	result = prepareFolderMessagesFlags(flagsResponse);
+        }
+        else {
+            ImapProtocol.FetchEnvelopeResponse[] envResponse =
                 imapProtocol.executeFetchEnvelope(firstIndex, lastIndex, progressHandler);
+        	result = prepareFolderMessagesEnvelope(envResponse);
+        }
         
-        return prepareFolderMessages(response);
+        return result;
     }
 
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.MailProgressHandler)
+	 */
+	public FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
+			throws IOException, MailException {
+		// TODO Auto-generated method stub
+    	// Sanity check
+    	if(activeMailbox == null) {
+    		throw new MailException("Mailbox not selected");
+    	}
+
+    	int[] uids = new int[messageTokens.length];
+    	for(int i=0; i<messageTokens.length; i++) {
+    		uids[i] = ((ImapMessageToken)messageTokens[i]).getImapMessageUid();
+    	}
+        ImapProtocol.FetchEnvelopeResponse[] envResponse =
+            imapProtocol.executeFetchEnvelopeUid(uids, progressHandler);
+        
+		return prepareFolderMessagesEnvelope(envResponse);
+	}
+
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException {
+    public FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException {
     	// Sanity check
     	if(activeMailbox == null) {
     		throw new MailException("Mailbox not selected");
@@ -614,14 +648,21 @@ public class ImapClient implements IncomingMailClient {
 	    	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
 			int msgCount = activeMailbox.getMsgCount();
 	        int firstIndex = Math.max(1, msgCount - count);
-	    	result = getFolderMessages(firstIndex, activeMailbox.getMsgCount(), progressHandler);
+	    	result = getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, progressHandler);
 	    	seenMailboxes.put(activeMailbox, new Object());
     	}
     	else {
     		int uidNext = ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext;
-    		ImapProtocol.FetchEnvelopeResponse[] response =
-    			imapProtocol.executeFetchEnvelopeUid(uidNext, progressHandler);
-    		result = prepareFolderMessages(response);
+    		if(flagsOnly) {
+	    		ImapProtocol.FetchFlagsResponse[] flagsResponse =
+	    			imapProtocol.executeFetchFlagsUid(uidNext, progressHandler);
+	    		result = prepareFolderMessagesFlags(flagsResponse);
+    		}
+    		else {
+	    		ImapProtocol.FetchEnvelopeResponse[] envResponse =
+	    			imapProtocol.executeFetchEnvelopeUid(uidNext, progressHandler);
+	    		result = prepareFolderMessagesEnvelope(envResponse);
+    		}
     		
     		if(result.length > 0) {
     			uidNext = result[result.length-1].getUid() + 1;
@@ -631,7 +672,7 @@ public class ImapClient implements IncomingMailClient {
     	return result;
     }
 
-    private FolderMessage[] prepareFolderMessages(ImapProtocol.FetchEnvelopeResponse[] response) {
+    private FolderMessage[] prepareFolderMessagesEnvelope(ImapProtocol.FetchEnvelopeResponse[] response) {
         FolderMessage[] folderMessages = new FolderMessage[response.length];
         for(int i=0;i<response.length;i++) {
             folderMessages[i] = new FolderMessage(
@@ -651,6 +692,25 @@ public class ImapClient implements IncomingMailClient {
     	return folderMessages;
     }
     
+    private FolderMessage[] prepareFolderMessagesFlags(ImapProtocol.FetchFlagsResponse[] response) {
+        FolderMessage[] folderMessages = new FolderMessage[response.length];
+        for(int i=0;i<response.length;i++) {
+            folderMessages[i] = new FolderMessage(
+            		new ImapMessageToken(activeMailbox.getPath(), response[i].uid),
+            		null,
+            		response[i].index,
+            		response[i].uid);
+            folderMessages[i].setSeen(response[i].flags.seen);
+            folderMessages[i].setAnswered(response[i].flags.answered);
+            folderMessages[i].setDeleted(response[i].flags.deleted);
+            folderMessages[i].setRecent(response[i].flags.recent);
+            folderMessages[i].setFlagged(response[i].flags.flagged);
+            folderMessages[i].setDraft(response[i].flags.draft);
+            folderMessages[i].setJunk(response[i].flags.junk);
+        }
+    	return folderMessages;
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
@@ -660,10 +720,10 @@ public class ImapClient implements IncomingMailClient {
     		throw new MailException("Invalid mailbox for message");
     	}
     	
-        ImapParser.MessageSection structure = getMessageStructure(imapMessageToken.getMessageUid());
+        ImapParser.MessageSection structure = getMessageStructure(imapMessageToken.getImapMessageUid());
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart =
-            getMessagePart(contentMap, imapMessageToken.getMessageUid(),
+            getMessagePart(contentMap, imapMessageToken.getImapMessageUid(),
                            structure, accountConfig.getMaxMessageSize(),
                            progressHandler);
         Message msg = new Message(rootPart);
@@ -692,7 +752,7 @@ public class ImapClient implements IncomingMailClient {
     	if(!(messageToken instanceof ImapMessageToken)) { return null; }
 
     	
-    	String data = getMessageBody(imapMessageToken.getMessageUid(), partAddress, progressHandler);
+    	String data = getMessageBody(imapMessageToken.getImapMessageUid(), partAddress, progressHandler);
     	MimeMessageContent content;
     	try {
 			content = MimeMessageContentFactory.createContent(mimeMessagePart, data);
@@ -834,7 +894,7 @@ public class ImapClient implements IncomingMailClient {
     	}
     	
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getMessageUid(), true, new String[] { "\\Deleted" });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { "\\Deleted" });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
 
@@ -849,7 +909,7 @@ public class ImapClient implements IncomingMailClient {
     	}
     	
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getMessageUid(), false, new String[] { "\\Deleted" });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), false, new String[] { "\\Deleted" });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
     
@@ -866,7 +926,7 @@ public class ImapClient implements IncomingMailClient {
     	}
     	
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getMessageUid(), true, new String[] { "\\Answered" });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { "\\Answered" });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
     
@@ -906,7 +966,7 @@ public class ImapClient implements IncomingMailClient {
     		throw new MailException("Invalid mailbox for message");
     	}
     	
-    	imapProtocol.executeCopy(imapMessageToken.getMessageUid(), destinationFolder.getPath());
+    	imapProtocol.executeCopy(imapMessageToken.getImapMessageUid(), destinationFolder.getPath());
     }
     
 	/* (non-Javadoc)

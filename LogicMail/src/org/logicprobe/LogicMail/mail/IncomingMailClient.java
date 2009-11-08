@@ -200,6 +200,20 @@ public interface IncomingMailClient extends MailClient {
         throws IOException, MailException;
     
     /**
+     * Get a list of the messages in the selected folder
+     * which match the provided tokens.
+     * 
+     * @param messageTokens Tokens of the messages
+     * @param progressHandler the progress handler
+     * @return List of message envelopes
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
+        throws IOException, MailException;
+    
+    /**
      * Get a list of new messages in the selected folder.
      * <p>
      * On the first invocation, it will return the most recent messages
@@ -210,13 +224,15 @@ public interface IncomingMailClient extends MailClient {
      * did on the first invocation.
      * </p>
      * 
+     * @param flagsOnly If true, only tokens and flags will be fetched
      * @param progressHandler the progress handler
+     * 
      * @return List of message envelopes
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException;
+    FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Get a particular message from the selected folder.

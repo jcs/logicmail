@@ -153,14 +153,32 @@ public abstract class AbstractMailStore {
     
     /**
      * Requests the message listing from a particular folder.
+     * All message tokens must refer to messages that exist within the provided
+     * folder item, or the results may be unexpected.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
-     * @param indices The set of indices for the messages to get headers for.
+     * @param messageTokens The set of tokens for the messages to get headers for.
      */
-    public abstract void requestFolderMessagesSet(FolderTreeItem folder, int[] indices);
+    public abstract void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens);
+    
+    /**
+     * Requests the recent message listing from a particular folder.
+     * 
+     * <p>
+     * Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
+     * If <tt>flagsOnly</tt> is set to <b>true</b>, then the envelope and
+     * structure fields of the returned <tt>FolderMessage</tt> objects
+     * will be set to <b>null</b>.
+     * </p>
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param flagsOnly If true, only tokens and flags will be fetched
+     */
+    public abstract void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly);
     
     /**
      * Requests the recent message listing from a particular folder.
@@ -170,7 +188,9 @@ public abstract class AbstractMailStore {
      * 
      * @param folder The folder to request a message listing for.
      */
-    public abstract void requestFolderMessagesRecent(FolderTreeItem folder);
+    public void requestFolderMessagesRecent(FolderTreeItem folder) {
+    	requestFolderMessagesRecent(folder, false);
+    }
     
     /**
      * Requests a particular message to be loaded.
@@ -403,13 +423,14 @@ public abstract class AbstractMailStore {
      * 
      * @param folder The folder which has available messages
      * @param messages The messages that are now available
+     * @param flagsOnly True if the message data only includes flags
      */
-    protected void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages) {
+    protected void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderMessagesEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderMessagesEvent(this, folder, messages);
+                e = new FolderMessagesEvent(this, folder, messages, flagsOnly);
             }
             ((FolderListener)listeners[i]).folderMessagesAvailable(e);
         }

@@ -36,9 +36,11 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.SimpleSortingVector;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.Message;
@@ -500,6 +502,18 @@ public class MailboxNode implements Node, Serializable {
 			messages.addElement(message);
 			messageMap.put(message, message);
 			messageTokenMap.put(message.getMessageToken(), message);
+			if(!message.isCached() && message.isCachable()) {
+				try {
+					MailFileManager.getInstance().writeMessage(message);
+					message.setCached(true);
+				} catch (IOException e) {
+					System.err.println("-->Unable to write message: " + e.getMessage());
+					e.printStackTrace();
+				} catch (Throwable t) {
+					System.err.println("-->Unable to write message: " + t.getMessage());
+					t.printStackTrace();
+				}
+			}
 			return true;
 		}
 		else {
@@ -688,7 +702,31 @@ public class MailboxNode implements Node, Serializable {
      * messages without replacing the existing ones. 
      */
     public void refreshMessages() {
-    	parentAccount.getMailStore().requestFolderMessagesRecent(this.folderTreeItem);
+    	// Fetch messages stored in the cache
+    	if(parentAccount.getAccountConfig() != null) {
+    		//TODO: Make this thread-safe and prevent redundant calls
+	    	Thread fetchThread = new Thread() {
+	    		public void run() {
+	    			try {
+	    				MessageNode[] messages =
+	    					MailFileManager.getInstance().readMessageNodes(MailboxNode.this);
+	    				MailboxNode.this.addMessages(messages);
+	    			} catch (IOException e) {
+	    				EventLogger.logEvent(AppInfo.GUID,
+			                ("Unable to read messages from cache\r\n"
+		                		+ e.getMessage()).getBytes(),
+			                EventLogger.ERROR);
+	    			}
+	    			
+	    	    	// Request flags and tokens for recent messages from the mail store
+	    	    	parentAccount.getMailStore().requestFolderMessagesRecent(folderTreeItem, true);
+	    		}
+	    	};
+	    	fetchThread.start();
+    	}
+    	else {
+    		parentAccount.getMailStore().requestFolderMessagesRecent(this.folderTreeItem);
+    	}
     }
     
 	/**

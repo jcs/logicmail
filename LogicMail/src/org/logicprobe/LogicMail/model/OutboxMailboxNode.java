@@ -222,6 +222,10 @@ public class OutboxMailboxNode extends MailboxNode {
 			return folderTreeItem.getPath().equals(folderPath);
 		}
 
+		public String getMessageUid() {
+			return Integer.toHexString(messageId).toLowerCase();
+		}
+		
 		public long getUniqueId() {
 			// Empty because this special token is not intended to be serialized
 			return 0;

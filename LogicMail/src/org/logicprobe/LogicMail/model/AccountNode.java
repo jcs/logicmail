@@ -571,18 +571,43 @@ public class AccountNode implements Node {
             }
 
             MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder().getPath());
-
-            // Determine what MessageNodes need to be created, and add them.
             FolderMessage[] folderMessages = e.getMessages();
-            Vector addedMessages = new Vector();
 
-            for (int i = 0; i < folderMessages.length; i++) {
-                addedMessages.addElement(new MessageNode(folderMessages[i]));
+            if(e.isFlagsOnly()) {
+            	// Only flags have been retrieved, so the existing messages need to
+            	// be checked and additional actions requested accordingly.
+            	//TODO: Implement flags-only logic
+            	Vector messagesToFetch = null;
+	            for (int i = 0; i < folderMessages.length; i++) {
+	            	MessageNode messageNode =
+	            		mailboxNode.getMessageByToken(folderMessages[i].getMessageToken());
+	            	if(messageNode != null) {
+	            		messageNode.setFlags(MessageNode.convertMessageFlags(folderMessages[i].getFlags()));
+	            	}
+	            	else {
+	            		if(messagesToFetch == null) { messagesToFetch = new Vector(); }
+	            		messagesToFetch.addElement(folderMessages[i].getMessageToken());
+	            		System.err.println("-->Need to fetch: " + folderMessages[i].getMessageToken());
+	            	}
+	            }
+	            if(messagesToFetch != null) {
+	            	MessageToken[] fetchArray = new MessageToken[messagesToFetch.size()];
+	            	messagesToFetch.copyInto(fetchArray);
+	            	mailStore.requestFolderMessagesSet(e.getFolder(), fetchArray);
+	            }
             }
-
-            MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
-            addedMessages.copyInto(addedMessagesArray);
-            mailboxNode.addMessages(addedMessagesArray);
+            else {
+	            // Determine what MessageNodes need to be created, and add them.
+	            Vector addedMessages = new Vector();
+	
+	            for (int i = 0; i < folderMessages.length; i++) {
+	                addedMessages.addElement(new MessageNode(folderMessages[i]));
+	            }
+	
+	            MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
+	            addedMessages.copyInto(addedMessagesArray);
+	            mailboxNode.addMessages(addedMessagesArray);
+            }
         }
     }
 

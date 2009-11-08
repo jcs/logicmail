@@ -89,7 +89,7 @@ public class LocalMessageToken implements MessageToken {
      * 
      * @return Unique ID.
      */
-    String getMessageUid() {
+    public String getMessageUid() {
     	return this.messageUid;
     }
     
@@ -143,5 +143,18 @@ public class LocalMessageToken implements MessageToken {
 			hashCode = hash;
 		}
 		return hashCode;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	public String toString() {
+		StringBuffer buf = new StringBuffer();
+		buf.append("LocalMessageToken [");
+		buf.append("uniqueId="); buf.append(uniqueId);
+		buf.append(", folderPath=\""); buf.append(folderPath); buf.append("\"");
+		buf.append(", messageUid=\""); buf.append(messageUid); buf.append("\"");
+		buf.append("]");
+		return buf.toString();
 	}
 }

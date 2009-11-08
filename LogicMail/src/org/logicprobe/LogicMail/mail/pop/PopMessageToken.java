@@ -108,7 +108,7 @@ public class PopMessageToken implements MessageToken {
      * 
      * @return POP unique ID
      */
-    String getMessageUid() {
+    public String getMessageUid() {
     	return this.messageUid;
     }
     
@@ -158,5 +158,18 @@ public class PopMessageToken implements MessageToken {
 			hashCode = hash;
 		}
 		return hashCode;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	public String toString() {
+		StringBuffer buf = new StringBuffer();
+		buf.append("PopMessageToken [");
+		buf.append("uniqueId="); buf.append(uniqueId);
+		buf.append(", messageIndex="); buf.append(messageIndex);
+		buf.append(", messageUid=\""); buf.append(messageUid); buf.append("\"");
+		buf.append("]");
+		return buf.toString();
 	}
 }

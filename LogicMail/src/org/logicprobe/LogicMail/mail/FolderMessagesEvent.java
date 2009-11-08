@@ -35,12 +35,18 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 
 public class FolderMessagesEvent extends FolderEvent {
 	private FolderMessage[] messages;
+	private boolean flagsOnly;
 	
-	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages) {
+	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
 		super(source, folder);
 		this.messages = messages;
+		this.flagsOnly = flagsOnly;
 	}
 
+	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages) {
+		this(source, folder, messages, false);
+	}
+	
 	/**
 	 * Gets the folder messages that have been made available
 	 * or updated to trigger this event.
@@ -49,5 +55,15 @@ public class FolderMessagesEvent extends FolderEvent {
 	 */
 	public FolderMessage[] getMessages() {
 		return messages;
+	}
+	
+	/**
+	 * Checks if the newly available folder messages contain only
+	 * flag information.
+	 * 
+	 * @return true, if updated messages are flags only
+	 */
+	public boolean isFlagsOnly() {
+		return flagsOnly;
 	}
 }

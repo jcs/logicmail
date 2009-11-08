@@ -46,11 +46,22 @@ import org.logicprobe.LogicMail.util.Serializable;
  */
 public interface MessageToken extends Serializable {
 	/**
+	 * Gets the message UID, which is a protocol-specific way of uniquely
+	 * identifying a message within its mailbox.  This is different from
+	 * the {@link Serializable#getUniqueId()}, as it is a <tt>String</tt>
+	 * identifier known to the mail protocol and does not have to be
+	 * unique beyond the mailbox.
+	 * 
+	 * @return the message UID
+	 */
+	String getMessageUid(); 
+	
+	/**
 	 * Returns whether this token represents a message contained within
 	 * the specified mail folder.
 	 * 
 	 * @param folderTreeItem Folder item to check
 	 * @return True if contained, false otherwise
 	 */
-	public abstract boolean containedWithin(FolderTreeItem folderTreeItem);
+	boolean containedWithin(FolderTreeItem folderTreeItem);
 }

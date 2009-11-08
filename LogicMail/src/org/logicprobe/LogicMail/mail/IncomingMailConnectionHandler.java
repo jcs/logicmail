@@ -34,8 +34,6 @@ package org.logicprobe.LogicMail.mail;
 import java.io.IOException;
 import java.util.Vector;
 
-import net.rim.device.api.system.UnsupportedOperationException;
-
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -104,11 +102,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		case REQUEST_FOLDER_MESSAGES_SET:
 			handleRequestFolderMessagesSet(
 					(FolderTreeItem)params[0],
-					(int[])params[1]);
+					(MessageToken[])params[1]);
 			break;
 		case REQUEST_FOLDER_MESSAGES_RECENT:
 			handleRequestFolderMessagesRecent(
-					(FolderTreeItem)params[0]);
+					(FolderTreeItem)params[0], ((Boolean)params[1]).booleanValue());
 			break;
 		case REQUEST_MESSAGE:
 			handleRequestMessage((MessageToken)params[0]);
@@ -237,28 +235,29 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
-	private void handleRequestFolderMessagesSet(FolderTreeItem folder, int[] indices) throws IOException, MailException {
-		throw new UnsupportedOperationException("Not yet implemented");
-//		checkActiveFolder(folder);
-//		
-//		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex);
-//		
-//		MailConnectionHandlerListener listener = getListener();
-//		if(messages != null && messages.length > 0 && listener != null) {
-//			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_SET, new Object[] { folder, messages });
-//		}
+	private void handleRequestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) throws IOException, MailException {
+		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
+		showStatus(message + "...");
+		checkActiveFolder(folder);
+		
+		FolderMessage[] messages = incomingClient.getFolderMessages(messageTokens, getProgressHandler(message));
+		
+		MailConnectionHandlerListener listener = getListener();
+		if(messages != null && messages.length > 0 && listener != null) {
+			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_SET, new Object[] { folder, messages });
+		}
 	}
 	
-	private void handleRequestFolderMessagesRecent(FolderTreeItem folder) throws IOException, MailException {
+	private void handleRequestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) throws IOException, MailException {
 		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
 		showStatus(message + "...");
 		checkActiveFolder(folder);
         
-		FolderMessage[] messages = incomingClient.getNewFolderMessages(getProgressHandler(message));
+		FolderMessage[] messages = incomingClient.getNewFolderMessages(flagsOnly, getProgressHandler(message));
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messages != null && messages.length > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_RECENT, new Object[] { folder, messages });
+			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_RECENT, new Object[] { folder, messages, new Boolean(flagsOnly) });
 		}
 	}
 	

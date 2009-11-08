@@ -38,6 +38,8 @@ import java.util.Hashtable;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
+import net.rim.device.api.system.UnsupportedOperationException;
+
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -137,14 +139,16 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) {
-        // TODO Auto-generated method stub
-    }
+    	throw new UnsupportedOperationException("Not yet implemented");
+	}
 
-    public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) {
-        // TODO Auto-generated method stub
-    }
+	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 
-    public void requestFolderMessagesRecent(FolderTreeItem folder) {
+    public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) {
+    	// The flagsOnly parameter has no effect on local mail stores,
+    	// and it is not likely to ever be called on them anyways.
         FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
         
         if(requestFolder != null) {
@@ -168,7 +172,7 @@ public class LocalMailStore extends AbstractMailStore {
         	}
         	
         	if(folderMessages != null) {
-        		fireFolderMessagesAvailable(requestFolder, folderMessages);
+        		fireFolderMessagesAvailable(requestFolder, folderMessages, false);
         	}
 		}
     }
@@ -223,15 +227,15 @@ public class LocalMailStore extends AbstractMailStore {
     }
     
     public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
-        // TODO Auto-generated method stub
+    	throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) {
-        // TODO Auto-generated method stub
+    	throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) {
-        // TODO Auto-generated method stub
+    	throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
@@ -263,7 +267,7 @@ public class LocalMailStore extends AbstractMailStore {
         	}
         	
         	if(folderMessage != null) {
-        		fireFolderMessagesAvailable(requestFolder, new FolderMessage[] { folderMessage });
+        		fireFolderMessagesAvailable(requestFolder, new FolderMessage[] { folderMessage }, false);
         	}
 		}
     }

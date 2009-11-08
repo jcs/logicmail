@@ -96,10 +96,22 @@ public class MessageNodeWriter {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 8 bytes
 	};
 	
+	/**
+	 * Instantiates a new message node writer.
+	 * 
+	 * @param output the output stream
+	 */
 	public MessageNodeWriter(DataOutputStream output) {
 		this.output = output;
 	}
 	
+	/**
+	 * Write a complete message node to the output stream.
+	 * 
+	 * @param messageNode the message node
+	 * 
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	public void write(MessageNode messageNode) throws IOException {
 		byte[] messageToken = generateMessageToken(messageNode);
 		byte[] messageHeaders = generateMessageHeaders(messageNode);

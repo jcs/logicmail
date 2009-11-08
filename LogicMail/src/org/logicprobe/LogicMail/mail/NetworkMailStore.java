@@ -127,14 +127,16 @@ public class NetworkMailStore extends AbstractMailStore {
 				new Object[] { folder, new Integer(firstIndex), new Integer(lastIndex) });
 	}
 
-	public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) {
+		connectionHandler.addRequest(
+				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
+				new Object[] { folder, messageTokens });
 	}
 	
-	public void requestFolderMessagesRecent(FolderTreeItem folder) {
+	public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) {
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-				new Object[] { folder });
+				new Object[] { folder, new Boolean(flagsOnly) });
 	}
 	
 	public void requestMessage(MessageToken messageToken) {
@@ -191,9 +193,12 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE:
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET:
+			results = (Object[])result;
+			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
+			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT:
 			results = (Object[])result;
-			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1]);
+			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], ((Boolean)results[2]).booleanValue());
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
 			results = (Object[])result;
@@ -217,7 +222,7 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
 			results = (Object[])result;
-			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1]);
+			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY:
 			break;

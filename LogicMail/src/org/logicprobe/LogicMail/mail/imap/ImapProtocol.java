@@ -441,13 +441,136 @@ public class ImapProtocol {
     }
 
     /**
+     * Execute the "FETCH (FLAGS UID)" command
+     * @param firstIndex Index of the first message
+     * @param lastIndex Index of the last message
+     * @param progressHandler the progress handler
+     * @return Array of FetchFlagsResponse objects
+     */
+    public FetchFlagsResponse[] executeFetchFlags(
+    		int firstIndex,
+            int lastIndex,
+            MailProgressHandler progressHandler) throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeFetchFlags(" + firstIndex + ", " +
+                lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
+        }
+        
+        String[] rawList = execute("FETCH",
+                Integer.toString(firstIndex) + ":" +
+                Integer.toString(lastIndex) + " (FLAGS UID)", progressHandler);
+        
+    	return prepareFetchFlagsResponse(rawList, progressHandler);
+    }
+
+    /**
+     * Execute the "UID FETCH (FLAGS UID)" command
+     * @param uidNext Unique ID of the next message
+     * @param progressHandler the progress handler
+     * @return Array of FetchFlagsResponse objects
+     */
+    public FetchFlagsResponse[] executeFetchFlagsUid(
+    		int uidNext,
+            MailProgressHandler progressHandler) throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeFetchFlagsUid(" + uidNext + ")").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+        
+        String[] rawList = execute("UID FETCH",
+                Integer.toString(uidNext) + ":*" + " (FLAGS UID)", progressHandler);
+        
+    	return prepareFetchFlagsResponse(rawList, progressHandler);
+    }
+    
+    private FetchFlagsResponse[] prepareFetchFlagsResponse(
+            String[] rawList, MailProgressHandler progressHandler) throws IOException, MailException {
+
+        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
+        // Preprocess the returned text to clean up mid-field line breaks
+        // This should all become unnecessary once execute()
+        // becomes more intelligent in how it handles replies
+        Vector rawList2 = prepareCleanFetchResponse(rawList);
+
+        Vector flagResponses = new Vector();
+        int size = rawList2.size();
+
+        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, size); }
+        for (int i = 0; i < size; i++) {
+            try {
+                String rawText = (String) rawList2.elementAt(i);
+
+                Vector parsedText = null;
+
+                try {
+                    parsedText = StringParser.nestedParenStringLexer(rawText.substring(
+                                rawText.indexOf('(')));
+                } catch (Exception exp) {
+                    parsedText = null;
+                }
+
+                FetchFlagsResponse flagRespItem = new FetchFlagsResponse();
+                flagRespItem.flags = null;
+
+                // Iterate through results, locating and parsing the
+                // FLAGS and ENVELOPE sections in an order-independent way.
+                int parsedSize = parsedText.size();
+
+                for (int j = 0; j < parsedSize; j++) {
+                    if (parsedText.elementAt(j) instanceof String) {
+                        if (((String)parsedText.elementAt(j)).equals("FLAGS")
+                        		&& (parsedSize > (j + 1))
+                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                            flagRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j + 1));
+                        }
+                        else if (((String)parsedText.elementAt(j)).equals("UID")
+                        		&& (parsedSize > (j + 1))
+                        		&& parsedText.elementAt(j + 1) instanceof String) {
+                            try {
+                                flagRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j + 1));
+                            } catch (NumberFormatException e) {
+                                flagRespItem.uid = -1;
+                            }
+                        }
+                    }
+                }
+
+                if (flagRespItem.flags == null) {
+                    flagRespItem.flags = new MessageFlags();
+                }
+
+                // Find the message index in the reply
+                int midx = Integer.parseInt(rawText.substring(rawText.indexOf(
+                                ' '), rawText.indexOf("FETCH") - 1).trim());
+
+                flagRespItem.index = midx;
+                flagResponses.addElement(flagRespItem);
+            } catch (Exception exp) {
+                System.err.println("Parse error: " + exp);
+            }
+            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, i, size); }
+        }
+
+        FetchFlagsResponse[] result = new FetchFlagsResponse[flagResponses.size()];
+        flagResponses.copyInto(result);
+        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, size, size); }
+
+        return result;
+    }
+    
+    /**
      * Execute the "FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
+     * @param progressHandler the progress handler
      * @return Array of FetchEnvelopeResponse objects
      */
-    public FetchEnvelopeResponse[] executeFetchEnvelope(int firstIndex,
-        int lastIndex, MailProgressHandler progressHandler) throws IOException, MailException {
+    public FetchEnvelopeResponse[] executeFetchEnvelope(
+    		int firstIndex,
+    		int lastIndex,
+    		MailProgressHandler progressHandler) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("ImapProtocol.executeFetchEnvelope(" + firstIndex + ", " +
@@ -464,6 +587,7 @@ public class ImapProtocol {
     /**
      * Execute the "UID FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param uidNext Unique ID of the next message
+     * @param progressHandler the progress handler
      * @return Array of FetchEnvelopeResponse objects
      */
     public FetchEnvelopeResponse[] executeFetchEnvelopeUid(int uidNext, MailProgressHandler progressHandler)
@@ -479,33 +603,44 @@ public class ImapProtocol {
 
         return prepareFetchEnvelopeResponse(rawList, progressHandler);
     }
+    
+    /**
+     * Execute the "UID FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
+     * @param uids Set of unique IDs for the messages to fetch
+     * @param progressHandler the progress handler
+     * @return Array of FetchEnvelopeResponse objects
+     */
+    public FetchEnvelopeResponse[] executeFetchEnvelopeUid(int[] uids, MailProgressHandler progressHandler)
+        throws IOException, MailException {
+    	if(uids.length == 0) { return new FetchEnvelopeResponse[0]; }
+    	StringBuffer buf = new StringBuffer();
+    	for(int i=0; i<uids.length - 1; i++) {
+    		buf.append(uids[i]);
+    		buf.append(',');
+    	}
+    	buf.append(uids[uids.length - 1]);
+    	String uidList = buf.toString();
+    	
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeFetchEnvelopeUid(" + uidList + ")").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
+        String[] rawList = execute("UID FETCH",
+        		uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
+
+        return prepareFetchEnvelopeResponse(rawList, progressHandler);
+    }
 
     private FetchEnvelopeResponse[] prepareFetchEnvelopeResponse(
         String[] rawList, MailProgressHandler progressHandler) throws IOException, MailException {
+
+        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
         // Preprocess the returned text to clean up mid-field line breaks
         // This should all become unnecessary once execute()
         // becomes more intelligent in how it handles replies
-        String line;
-        StringBuffer lineBuf = new StringBuffer();
-        Vector rawList2 = new Vector();
-
-        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
-        for (int i = 0; i < rawList.length; i++) {
-            line = rawList[i];
-
-            if ((line.length() > 0) && lineBuf.toString().startsWith("* ") &&
-                    line.startsWith("* ")) {
-                rawList2.addElement(lineBuf.toString());
-                lineBuf = new StringBuffer();
-            }
-
-            lineBuf.append(line);
-
-            if ((i == (rawList.length - 1)) &&
-                    lineBuf.toString().startsWith("* ")) {
-                rawList2.addElement(lineBuf.toString());
-            }
-        }
+        Vector rawList2 = prepareCleanFetchResponse(rawList);
 
         Vector envResponses = new Vector();
         int size = rawList2.size();
@@ -592,6 +727,29 @@ public class ImapProtocol {
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, size, size); }
 
         return result;
+    }
+    
+    private static Vector prepareCleanFetchResponse(String[] rawList) {
+        Vector cleanList = new Vector();
+        String line;
+        StringBuffer lineBuf = new StringBuffer();
+        for (int i = 0; i < rawList.length; i++) {
+            line = rawList[i];
+
+            if ((line.length() > 0) && lineBuf.toString().startsWith("* ") &&
+                    line.startsWith("* ")) {
+            	cleanList.addElement(lineBuf.toString());
+                lineBuf = new StringBuffer();
+            }
+
+            lineBuf.append(line);
+
+            if ((i == (rawList.length - 1)) &&
+                    lineBuf.toString().startsWith("* ")) {
+            	cleanList.addElement(lineBuf.toString());
+            }
+        }
+        return cleanList;
     }
 
     /**
@@ -1136,6 +1294,7 @@ public class ImapProtocol {
      * array of strings.
      * @param command IMAP command
      * @param arguments Arguments for the command
+     * @param progressHandler the progress handler
      * @return List of returned strings
      */
     protected String[] execute(String command, String arguments, MailProgressHandler progressHandler)
@@ -1350,12 +1509,18 @@ public class ImapProtocol {
     }
 
     /**
-     * Container for a FETCH (ENVELOPE) response
+     * Container for a FETCH (FLAGS) response
      */
-    public static class FetchEnvelopeResponse {
+    public static class FetchFlagsResponse {
         public int index;
         public int uid;
         public MessageFlags flags;
+    }
+    
+    /**
+     * Container for a FETCH (ENVELOPE) response
+     */
+    public static class FetchEnvelopeResponse extends FetchFlagsResponse {
         public MessageEnvelope envelope;
         public ImapParser.MessageSection structure;
     }

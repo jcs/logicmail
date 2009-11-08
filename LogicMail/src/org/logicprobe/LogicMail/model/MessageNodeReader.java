@@ -35,14 +35,25 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.Hashtable;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.SerializationUtils;
 
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.CRC32;
 
+/**
+ * Reads in <tt>MessageNode</tt> objects from an input stream.
+ * <p>
+ * Allows for separate reading of header information and content,
+ * to facilitate partial loading of cached messages.
+ * The specific data format is described in detail within
+ * {@link MessageNodeWriter}.
+ * </p>
+ */
 public class MessageNodeReader {
 	private DataInputStream input;
 	private int contentOffset = 0;
@@ -53,6 +64,11 @@ public class MessageNodeReader {
 		'L',  'M',  '-',  'M',  'S',  'G',  '\0', '\0'
 	};
 	
+	/**
+	 * Instantiates a new message node reader.
+	 * 
+	 * @param input the input
+	 */
 	public MessageNodeReader(DataInputStream input) {
 		this.input = input;
 	}
@@ -123,14 +139,33 @@ public class MessageNodeReader {
 		return true;
 	}
 	
+	/**
+	 * Checks if more content is available for reading.
+	 * 
+	 * @return true, if content is available
+	 */
 	public boolean isContentAvailable() {
 		if(!headerParsed) { throw new IllegalStateException(); }
 		return contentCount > 0;
 	}
 	
+	/**
+	 * Gets the next content section of the message.
+	 * 
+	 * @return the next content section
+	 * 
+	 * @throws IOException Signals that an I/O exception has occurred.
+	 */
 	public MimeMessageContent getNextContent() throws IOException {
 		if(!headerParsed || contentCount == 0) { throw new IllegalStateException(); }
-		System.err.println("-->getNextContent(): contentCount=" + contentCount + ", available=" + input.available());
+		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MessageNodeReader.getNextContent()\r\n"
+            		+ "contentCount=" + contentCount
+            		+ ", available=" + input.available()).getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+		
 		contentCount--;
 		
 		int length = input.readInt();
@@ -143,7 +178,9 @@ public class MessageNodeReader {
 		int storedChecksum = input.readInt();
 		
 		if(storedChecksum != checksum) {
-			System.err.println("-->Content checksum mismatch");
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MessageNodeReader.getNextContent()\r\nContent checksum mismatch").getBytes(),
+                EventLogger.ERROR);
 			return null;
 		}
 		
@@ -152,7 +189,9 @@ public class MessageNodeReader {
 			return (MimeMessageContent)contentObject;
 		}
 		else {
-			System.err.println("-->Content deserialization error");
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MessageNodeReader.getNextContent()\r\nContent deserialization error").getBytes(),
+                EventLogger.ERROR);
 			return null;
 		}
 	}
@@ -160,7 +199,9 @@ public class MessageNodeReader {
 	private boolean validateHeader(byte[] fileHeader) {
 		// Validate the header start text
 		if(!Arrays.equals(fileHeader, 0, headerStart, 0, headerStart.length)) {
-			System.err.println("-->Header start mismatch");
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MessageNodeReader.validateHeader()\r\nHeader start mismatch").getBytes(),
+                EventLogger.ERROR);
 			return false;
 		}
 		
@@ -170,7 +211,9 @@ public class MessageNodeReader {
 		Arrays.fill(headerCopy, (byte)0x00, 28, 4);
 		int checksum = CRC32.update(CRC32.INITIAL_VALUE, headerCopy);
 		if(headerChecksum != checksum) {
-			System.err.println("-->Header checksum mismatch");
+			EventLogger.logEvent(AppInfo.GUID,
+                ("MessageNodeReader.validateHeader()\r\nHeader checksum mismatch").getBytes(),
+                EventLogger.ERROR);
 			return false;
 		}
 		return true;

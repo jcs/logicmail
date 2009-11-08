@@ -91,8 +91,15 @@ public class ImapMessageToken implements MessageToken {
      * 
      * @return IMAP unique ID.
      */
-    int getMessageUid() {
+    int getImapMessageUid() {
     	return this.messageUid;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#getMessageUid()
+     */
+    public String getMessageUid() {
+    	return Integer.toHexString(messageUid).toLowerCase();
     }
     
 	/* (non-Javadoc)
@@ -145,5 +152,18 @@ public class ImapMessageToken implements MessageToken {
 			hashCode = hash;
 		}
 		return hashCode;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	public String toString() {
+		StringBuffer buf = new StringBuffer();
+		buf.append("ImapMessageToken [");
+		buf.append("uniqueId="); buf.append(uniqueId);
+		buf.append(", folderPath=\""); buf.append(folderPath); buf.append("\"");
+		buf.append(", messageUid="); buf.append(messageUid);
+		buf.append("]");
+		return buf.toString();
 	}
 }
