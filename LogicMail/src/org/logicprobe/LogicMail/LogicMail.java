@@ -39,13 +39,22 @@ import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.ApplicationManager;
+import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.RuntimeStore;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.BitmapField;
+import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.container.MainScreen;
 
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
+import org.logicprobe.LogicMail.ui.ThrobberField;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
@@ -63,7 +72,8 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application.
  */
 public class LogicMail extends UiApplication {
-	NavigationController navigationController;
+	private NavigationController navigationController;
+	private Screen loadingScreen;
 	
     /**
      * Instantiates a new instance of the application.
@@ -83,50 +93,89 @@ public class LogicMail extends UiApplication {
     		doAutoStart();
     	}
     	else {
-	        // Load the configuration
-	        MailSettings.getInstance().loadSettings();
-            // Set the language, if configured
-            String languageCode =
-                MailSettings.getInstance().getGlobalConfig().getLanguageCode();
-            if(languageCode != null && languageCode.length() > 0) {
-                try {
-                    Locale.setDefault(Locale.get(languageCode));
-                } catch (Exception e) { }
-            }
-        
-	        // Log application startup information
-	        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-	            StringBuffer buf = new StringBuffer();
-	            buf.append("Application startup\r\n");
-	            buf.append("Date: ");
-	            buf.append(Calendar.getInstance().getTime().toString());
-	            buf.append("\r\n");
-	            buf.append("Name: ");
-	            buf.append(AppInfo.getName());
-	            buf.append("\r\n");
-	            buf.append("Version: ");
-	            buf.append(AppInfo.getVersion());
-	            buf.append("\r\n");
-	            buf.append("Platform: ");
-	            buf.append(AppInfo.getPlatformVersion());
-	            buf.append("\r\n");
-	            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
-	        }
+	        logStartupAppInfo();
+	        
+	        createLoadingScreen();
+	        
+	        Thread loadingThread = new Thread() {
+	        	public void run() {
+	    	        // Load the configuration
+	    	        MailSettings.getInstance().loadSettings();
+	                // Set the language, if configured
+	                String languageCode =
+	                    MailSettings.getInstance().getGlobalConfig().getLanguageCode();
+	                if(languageCode != null && languageCode.length() > 0) {
+	                    try {
+	                        Locale.setDefault(Locale.get(languageCode));
+	                    } catch (Exception e) { }
+	                }
 
-	        // Initialize the data model explicitly
-	        MailManager.initialize();
+	    	        // Initialize the data model explicitly
+	    	        MailManager.initialize();
+	    	        
+	    	        // Initialize the notification handler
+	    	        NotificationHandler.getInstance().setEnabled(true);
+	    	        
+	    	        // Initialize the navigation controller
+	    	        navigationController = new NavigationController(LogicMail.this);
+	    	        
+	    	        invokeLater(new Runnable() {
+						public void run() {
+			    	        // Push the mail home screen and pop
+							// the loading screen
+			    	        navigationController.displayMailHome();
+			    	        popScreen(loadingScreen);
+			    	        loadingScreen = null;
+						}
+	    	        });
+	        	}
+	        };
 	        
-	        // Initialize the notification handler
-	        NotificationHandler.getInstance().setEnabled(true);
-	        
-	        // Initialize the navigation controller
-	        navigationController = new NavigationController(this);
-	        
-	        // Push the mail home screen
-	        navigationController.displayMailHome();
+	        pushScreen(loadingScreen);
+	        loadingThread.start();
     	}
     }
 
+	private void logStartupAppInfo() {
+		// Log application startup information
+		if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
+		    StringBuffer buf = new StringBuffer();
+		    buf.append("Application startup\r\n");
+		    buf.append("Date: ");
+		    buf.append(Calendar.getInstance().getTime().toString());
+		    buf.append("\r\n");
+		    buf.append("Name: ");
+		    buf.append(AppInfo.getName());
+		    buf.append("\r\n");
+		    buf.append("Version: ");
+		    buf.append(AppInfo.getVersion());
+		    buf.append("\r\n");
+		    buf.append("Platform: ");
+		    buf.append(AppInfo.getPlatformVersion());
+		    buf.append("\r\n");
+		    EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
+		}
+	}
+
+    private void createLoadingScreen() {
+		loadingScreen = new MainScreen();
+		int displayWidth = Display.getWidth();
+		Bitmap splashLogo = Bitmap.getBitmapResource("splash-logo.png");
+		Bitmap fieldSeparator = new Bitmap(displayWidth, 10);
+		int throbberSize = displayWidth / 4;
+		int fontHeight = Font.getDefault().getHeight();
+		int spacerSize = (Display.getHeight() / 2) - ((splashLogo.getHeight() + throbberSize + fontHeight) / 2) - 10;
+		if(spacerSize < 0) { spacerSize = 0; }
+		Bitmap topSpacer = new Bitmap(displayWidth, spacerSize);
+		
+		loadingScreen.add(new BitmapField(topSpacer));
+		loadingScreen.add(new BitmapField(splashLogo, Field.FIELD_HCENTER));
+		loadingScreen.add(new BitmapField(fieldSeparator));
+		loadingScreen.add(new ThrobberField(throbberSize, Field.FIELD_HCENTER));
+		loadingScreen.add(new BitmapField(fieldSeparator));
+        loadingScreen.add(new LabelField("Version " + AppInfo.getVersion(), Field.FIELD_HCENTER));
+    }
+    
     /**
      * Run the application.
      */
