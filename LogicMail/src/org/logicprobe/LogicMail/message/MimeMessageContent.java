@@ -120,4 +120,30 @@ public abstract class MimeMessageContent implements Serializable {
 		input.readFully(data, 0, len);
 		putRawData(data);
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (int) (uniqueId ^ (uniqueId >>> 32));
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MimeMessageContent other = (MimeMessageContent) obj;
+		if (uniqueId != other.uniqueId)
+			return false;
+		return true;
+	}
 }

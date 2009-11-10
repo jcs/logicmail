@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 
 /**
  * Front-end for reading and writing messages from local file storage.
@@ -208,6 +209,39 @@ public class MailFileManager {
 		return result;
 	}
 	
+	public MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
+		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
+		if(!fileConnection.exists()) { return null; }
+		
+		String mailboxUrl = fileConnection.getURL();
+		fileConnection.close();
+		String fileUrl =
+				mailboxUrl
+				+ messageToken.getMessageUid()
+				+ MSG_SUFFIX;
+		MessageNode messageNode = readMessageNode(fileUrl);
+		if(loadContent) {
+			MimeMessageContent[] content = readMessageContent(mailboxNode, messageToken);
+			messageNode.putMessageContent(content);
+		}
+		return messageNode;
+	}
+	
+	public MimeMessageContent[] readMessageContent(MailboxNode mailboxNode, MessageToken messageToken) throws IOException {
+		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
+		if(!fileConnection.exists()) { return null; }
+		
+		String mailboxUrl = fileConnection.getURL();
+		fileConnection.close();
+		String fileUrl =
+				mailboxUrl
+				+ messageToken.getMessageUid()
+				+ MSG_SUFFIX;
+		MimeMessageContent[] messageContent = readMessageContent(fileUrl, messageToken);
+		
+		return messageContent;
+	}
+	
 	private FileConnection getMailboxFileConnection(MailboxNode mailboxNode) throws IOException {
 		// Build the account and mailbox UID strings
 		String accountUid = Long.toString(
@@ -280,6 +314,36 @@ public class MailFileManager {
 				try { fileConnection.close(); } catch (Exception e) { }
 			}
 		}
+		return result;
+	}
+	
+	private MimeMessageContent[] readMessageContent(String fileUrl, MessageToken messageToken) {
+		FileConnection fileConnection = null;
+		Vector content = new Vector();
+		try {
+			fileConnection = (FileConnection)Connector.open(fileUrl);
+			DataInputStream input = fileConnection.openDataInputStream();
+			MessageNodeReader reader = new MessageNodeReader(input);
+			MessageToken tempToken = reader.read();
+			if(messageToken.equals(tempToken)) {
+				while(reader.isContentAvailable()) {
+					content.addElement(reader.getNextContent());
+				}
+			}
+			input.close();
+			fileConnection.close();
+		} catch (Exception e) {
+			EventLogger.logEvent(AppInfo.GUID,
+	                ("Unable to read content: " + fileUrl
+                		+ "\r\n" + e.getMessage()).getBytes(),
+	                EventLogger.ERROR);
+		} finally {
+			if(fileConnection != null) {
+				try { fileConnection.close(); } catch (Exception e) { }
+			}
+		}
+		MimeMessageContent[] result = new MimeMessageContent[content.size()];
+		content.copyInto(result);
 		return result;
 	}
 }

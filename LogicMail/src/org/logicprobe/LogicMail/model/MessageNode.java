@@ -30,11 +30,13 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.Comparator;
 
@@ -593,6 +595,29 @@ public class MessageNode implements Node {
 	}
 	
 	/**
+	 * Commits the current state of the message to the cache, if applicable.
+	 * 
+	 * @return True if written to cache, false otherwise
+	 */
+	boolean commitMessage() {
+		boolean result = false;
+		synchronized(messageContent) {
+			if(!isCached() && isCachable()) {
+				try {
+					MailFileManager.getInstance().writeMessage(this);
+					setCached(true);
+					result = true;
+				} catch (IOException e) {
+					System.err.println("-->Unable to write message: " + e.getMessage());
+				} catch (Throwable t) {
+					System.err.println("-->Unable to write message: " + t.getMessage());
+				}
+			}
+		}
+		return result;
+	}
+	
+	/**
 	 * Gets the message structure for this node.
 	 * The message structure will be null unless it has been explicitly loaded.
 	 * 
@@ -1056,16 +1081,76 @@ public class MessageNode implements Node {
 				if(partsToFetch.size() > 0) {
 					displayableParts = new MimeMessagePart[partsToFetch.size()];
 					partsToFetch.copyInto(displayableParts);
-					mailStore.requestMessageParts(messageToken, displayableParts);
+					(new Thread(new RefreshMessagePartsRunnable(displayableParts))).start();
 					result = true;
 				}
 			}
 			else {
-				mailStore.requestMessage(messageToken);
+				(new Thread(new RefreshMessageWholeRunnable())).start();
 				result = true;
 			}
 		}
 		return result;
+	}
+
+	private class RefreshMessageWholeRunnable implements Runnable {
+		public void run() {
+			boolean messageLoaded = false;
+			try {
+				MessageNode tempNode = MailFileManager.getInstance().readMessageNode(parent, messageToken, true);
+				if(tempNode != null) {
+					setMessageStructure(tempNode.getMessageStructure());
+					setMessageSource(tempNode.getMessageSource());
+					putMessageContent(tempNode.getAllMessageContent());
+					messageLoaded = true;
+				}
+			} catch (IOException e) {
+				EventLogger.logEvent(AppInfo.GUID,
+		                ("Unable to read message from cache\r\n"
+	                		+ e.getMessage()).getBytes(),
+		                EventLogger.ERROR);
+			}
+			
+			if(!messageLoaded) {
+				AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+				mailStore.requestMessage(messageToken);
+			}
+		}
+	};
+
+	private class RefreshMessagePartsRunnable implements Runnable {
+		private MimeMessagePart[] displayableParts;
+		RefreshMessagePartsRunnable(MimeMessagePart[] displayableParts) {
+			this.displayableParts = displayableParts;
+		}
+		public void run() {
+			Vector contentToLoad = new Vector(displayableParts.length);
+			for(int i=0; i<displayableParts.length; i++) {
+				contentToLoad.addElement(displayableParts[i]);
+			}
+			
+			try {
+				MimeMessageContent[] content = MailFileManager.getInstance().readMessageContent(parent, messageToken);
+				if(content != null) {
+					putMessageContent(content);
+					for(int i=0; i<content.length; i++) {
+						contentToLoad.removeElement(content[i].getMessagePart());
+					}
+				}
+			} catch (IOException e) {
+				EventLogger.logEvent(AppInfo.GUID,
+		                ("Unable to read message from cache\r\n"
+	                		+ e.getMessage()).getBytes(),
+		                EventLogger.ERROR);
+			}
+			
+			if(!contentToLoad.isEmpty()) {
+				MimeMessagePart[] partsToLoad = new MimeMessagePart[contentToLoad.size()];
+				contentToLoad.copyInto(partsToLoad);
+				AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+				mailStore.requestMessageParts(messageToken, partsToLoad);
+			}
+		}
 	}
 	
 	/**

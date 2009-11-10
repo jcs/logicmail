@@ -625,9 +625,11 @@ public class AccountNode implements Node {
                 messageNode.setMessageStructure(e.getMessageStructure());
                 messageNode.setMessageSource(e.getMessageSource());
                 messageNode.putMessageContent(e.getMessageContent());
+                messageNode.commitMessage();
                 break;
         	case MessageEvent.TYPE_CONTENT_LOADED:
                 messageNode.putMessageContent(e.getMessageContent());
+                messageNode.commitMessage();
                 break;
         	}
         }

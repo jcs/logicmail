@@ -502,18 +502,7 @@ public class MailboxNode implements Node, Serializable {
 			messages.addElement(message);
 			messageMap.put(message, message);
 			messageTokenMap.put(message.getMessageToken(), message);
-			if(!message.isCached() && message.isCachable()) {
-				try {
-					MailFileManager.getInstance().writeMessage(message);
-					message.setCached(true);
-				} catch (IOException e) {
-					System.err.println("-->Unable to write message: " + e.getMessage());
-					e.printStackTrace();
-				} catch (Throwable t) {
-					System.err.println("-->Unable to write message: " + t.getMessage());
-					t.printStackTrace();
-				}
-			}
+			message.commitMessage();
 			return true;
 		}
 		else {
