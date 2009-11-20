@@ -118,5 +118,6 @@ public class MailboxNodeTest extends TestCase {
 		public void deserialize(DataInput input) throws IOException { }
 		public void serialize(DataOutput output) throws IOException { }
 		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
+		public String getMessageUid() { return null; }
 	}
 }

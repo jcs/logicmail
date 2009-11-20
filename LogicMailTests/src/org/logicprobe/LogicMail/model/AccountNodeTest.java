@@ -257,8 +257,9 @@ public class AccountNodeTest extends TestCase {
 		public void shutdown(boolean wait) { }
 		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) { }
 		public void requestFolderMessagesRecent(FolderTreeItem folder) { }
-		public void requestFolderMessagesSet(FolderTreeItem folder, int[] indices) { }
 		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) { }
 		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) { }
+		public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) { }
+		public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) { }
     }
 }

@@ -219,6 +219,10 @@ public class MessageNodeWriterTest extends TestCase {
 		public long getUniqueId() {
 			return 42;
 		}
+
+		public String getMessageUid() {
+			return "42";
+		}
     }
     
     public Test suite() {

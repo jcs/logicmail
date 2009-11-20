@@ -348,7 +348,10 @@ public class NetworkMailStoreTest extends TestCase {
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
 		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
 				throws IOException, MailException { this.firstIndex = firstIndex; this.lastIndex = lastIndex; return this.folderMessages; }
-		public FolderMessage[] getNewFolderMessages(MailProgressHandler progressHandler) throws IOException, MailException { return null; }
+		public FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
+				throws IOException, MailException { return null; }
+		public FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler)
+				throws IOException,	MailException { return null; }
 		public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException { return this.folderTree; }
 		public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler)
 				throws IOException, MailException { this.messageToken = messageToken; return this.message; }
@@ -381,5 +384,6 @@ public class NetworkMailStoreTest extends TestCase {
 		public void deserialize(DataInput input) throws IOException { }
 		public void serialize(DataOutput output) throws IOException { }
 		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
+		public String getMessageUid() {	return null; }
 	}
 }
