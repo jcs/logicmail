@@ -44,7 +44,10 @@ public abstract class ScreenFactory {
 	 * API version to the lowest.
 	 */
 	private static String[] factoryClasses = {
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB47",
+		"org.logicprobe.LogicMail.ui.ScreenFactoryBB50T",
+		"org.logicprobe.LogicMail.ui.ScreenFactoryBB50",
+		"org.logicprobe.LogicMail.ui.ScreenFactoryBB47T",
+                "org.logicprobe.LogicMail.ui.ScreenFactoryBB47",
 		"org.logicprobe.LogicMail.ui.ScreenFactoryBB42"
 	};
 	

@@ -30,10 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import org.logicprobe.LogicMail.model.MailboxNode;
-import org.logicprobe.LogicMail.ui.MailHomeScreen.TreeNode;
-
-import net.rim.device.api.ui.Font;
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.TouchEvent;
 import net.rim.device.api.ui.component.TreeField;
@@ -47,6 +44,10 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
  */
 public class TouchScreenTreeField extends TreeField {
 	private TreeFieldCallback callback;
+	private static Bitmap chevronIcon = Bitmap.getBitmapResource("chevron_right_black_15x22.png");
+	private static Bitmap chevronIconHighlighted = Bitmap.getBitmapResource("chevron_right_white_15x22.png");
+	private static int chevronIconWidth = chevronIcon.getWidth();
+	private static int chevronIconHeight = chevronIcon.getHeight();
 	
 	public TouchScreenTreeField(TreeFieldCallback callback, long style) {
 		super(new TreeFieldCallbackProxy(), style);
@@ -66,11 +67,15 @@ public class TouchScreenTreeField extends TreeField {
 		int drawWidth = width;
 		if(isNodeSelectable(node)) {
 			int rowWidth = width + indent;
-			Font origFont = graphics.getFont();
-			graphics.setFont(origFont.derive(Font.BOLD));
-			int xPos = rowWidth - (graphics.getFont().getAdvance('>') * 2);
-			graphics.drawText(">", xPos, y, 0, rowWidth - xPos);
-			graphics.setFont(origFont);
+			int xPos = rowWidth - (chevronIconWidth * 2);
+			
+			if(getCurrentNode() == node) {
+				graphics.drawBitmap(xPos, y, chevronIconWidth, chevronIconHeight, chevronIconHighlighted, 0, 0);
+			}
+			else {
+				graphics.drawBitmap(xPos, y, chevronIconWidth, chevronIconHeight, chevronIcon, 0, 0);
+			}
+			
 			drawWidth -= (rowWidth - xPos);
 		}
 		callback.drawTreeItem(treeField, graphics, node, y, drawWidth, indent);
@@ -78,15 +83,8 @@ public class TouchScreenTreeField extends TreeField {
 
 	private boolean isNodeSelectable(int node) {
 		Object cookie = this.getCookie(node);
-		if(cookie instanceof TreeNode) {
-			TreeNode treeNode = (TreeNode)cookie;
-			if(treeNode.node instanceof MailboxNode) {
-				MailboxNode mailboxNode = (MailboxNode)treeNode.node;
-				return mailboxNode.isSelectable();
-			}
-			else {
-				return false;
-			}
+		if(cookie instanceof TreeFieldNode) {
+			return ((TreeFieldNode)cookie).isNodeSelectable();
 		}
 		else {
 			return false;

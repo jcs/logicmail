@@ -45,6 +45,7 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -88,7 +89,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      * Initializes the fields.
      */
     private void initFields() {
-        configTreeField = new TreeField(
+        configTreeField = FieldFactory.getInstance().getScreenTreeField(
             new TreeFieldCallback() {
                 public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
                     configTreeFieldDrawTreeItem(treeField, graphics, node, y, width, indent);
@@ -98,10 +99,10 @@ public class ConfigScreen extends AbstractConfigScreen {
         configTreeField.setDefaultExpanded(true);
         configTreeField.setIndentWidth(20);
         
-        globalId = configTreeField.addChildNode(0, resources.getString(LogicMailResource.CONFIG_GLOBAL_SETTINGS));
-        identitiesId = configTreeField.addSiblingNode(globalId, resources.getString(LogicMailResource.CONFIG_IDENTITIES));
-        accountsId = configTreeField.addSiblingNode(identitiesId, resources.getString(LogicMailResource.CONFIG_ACCOUNTS));
-        outgoingId = configTreeField.addSiblingNode(accountsId, resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS));
+        globalId = configTreeField.addChildNode(0, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_GLOBAL_SETTINGS)));
+        identitiesId = configTreeField.addSiblingNode(globalId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_IDENTITIES)));
+        accountsId = configTreeField.addSiblingNode(identitiesId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_ACCOUNTS)));
+        outgoingId = configTreeField.addSiblingNode(accountsId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS)));
 
         add(configTreeField);
     }
@@ -136,7 +137,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     public void configTreeFieldDrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
         Object cookie = treeField.getCookie(node);
-        graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
+        graphics.drawText(cookie.toString(), indent + 2, y, Graphics.ELLIPSIS, width);
     }
     
     private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 100, 10) {
@@ -204,7 +205,16 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     protected void makeMenu(Menu menu, int instance) {
         int id = configTreeField.getCurrentNode();
-        Object cookie = configTreeField.getCookie(id);
+        
+        Object cookie;
+        Object rawCookie = configTreeField.getCookie(id);
+        if(rawCookie instanceof ConfigTreeNode) {
+        	cookie = ((ConfigTreeNode)rawCookie).cookie;
+        }
+        else {
+        	cookie = null;
+        }
+        
         if(id != identitiesId && id != accountsId && id != outgoingId) {
             menu.add(selectItem);
             if(cookie instanceof ConnectionConfig) {
@@ -303,8 +313,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         else {
             int parentNode = configTreeField.getParent(curNode);
+            Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
             if(parentNode == identitiesId) {
-                IdentityConfig identityConfig = (IdentityConfig)configTreeField.getCookie(curNode);
+                IdentityConfig identityConfig = (IdentityConfig)cookie;
                 IdentityConfigScreen identityConfigScreen = new IdentityConfigScreen(identityConfig);
                 UiApplication.getUiApplication().pushModalScreen(identityConfigScreen);
                 if(identityConfigScreen.configSaved()) {
@@ -314,7 +325,7 @@ public class ConfigScreen extends AbstractConfigScreen {
                 result = true;
             }
             else if(parentNode == accountsId) {
-                AccountConfig acctConfig = (AccountConfig)configTreeField.getCookie(curNode);
+                AccountConfig acctConfig = (AccountConfig)cookie;
                 AccountConfigScreen accountConfigScreen = new AccountConfigScreen(acctConfig);
                 UiApplication.getUiApplication().pushModalScreen(accountConfigScreen);
                 if(accountConfigScreen.acctSaved()) {
@@ -324,7 +335,7 @@ public class ConfigScreen extends AbstractConfigScreen {
                 result = true;
             }
             else if(parentNode == outgoingId) {
-                OutgoingConfig outgoingConfig = (OutgoingConfig)configTreeField.getCookie(curNode);
+                OutgoingConfig outgoingConfig = (OutgoingConfig)cookie;
                 OutgoingConfigScreen outgoingConfigScreen = new OutgoingConfigScreen(outgoingConfig);
                 UiApplication.getUiApplication().pushModalScreen(outgoingConfigScreen);
                 if(outgoingConfigScreen.acctSaved()) {
@@ -346,13 +357,14 @@ public class ConfigScreen extends AbstractConfigScreen {
         int prevNode = configTreeField.getPreviousSibling(curNode);
         if(prevNode == -1) { return; }
 
-        Object cookie = configTreeField.getCookie(curNode);
+        Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
+        Object prevCookie = ((ConfigTreeNode)configTreeField.getCookie(prevNode)).cookie;
         
         boolean result = false;
         
         if(cookie instanceof IdentityConfig) {
         	IdentityConfig curConfig = (IdentityConfig)cookie;
-        	IdentityConfig prevConfig = (IdentityConfig)configTreeField.getCookie(prevNode);
+        	IdentityConfig prevConfig = (IdentityConfig)prevCookie;
         	
         	int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
         	mailSettings.removeAccountConfig(curConfigIndex);
@@ -363,7 +375,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         else if(cookie instanceof AccountConfig) {
         	AccountConfig curConfig = (AccountConfig)cookie;
-        	AccountConfig prevConfig = (AccountConfig)configTreeField.getCookie(prevNode);
+        	AccountConfig prevConfig = (AccountConfig)prevCookie;
         	
         	int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
         	mailSettings.removeAccountConfig(curConfigIndex);
@@ -374,7 +386,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         else if(cookie instanceof OutgoingConfig) {
         	OutgoingConfig curConfig = (OutgoingConfig)cookie;
-        	OutgoingConfig prevConfig = (OutgoingConfig)configTreeField.getCookie(prevNode);
+        	OutgoingConfig prevConfig = (OutgoingConfig)prevCookie;
         	
         	int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
         	mailSettings.removeAccountConfig(curConfigIndex);
@@ -397,13 +409,14 @@ public class ConfigScreen extends AbstractConfigScreen {
         int nextNode = configTreeField.getNextSibling(curNode);
         if(nextNode == -1) { return; }
 
-        Object cookie = configTreeField.getCookie(curNode);
+        Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
+        Object nextCookie = ((ConfigTreeNode)configTreeField.getCookie(nextNode)).cookie;
         
         boolean result = false;
 
         if(cookie instanceof IdentityConfig) {
         	IdentityConfig curConfig = (IdentityConfig)cookie;
-        	IdentityConfig nextConfig = (IdentityConfig)configTreeField.getCookie(nextNode);
+        	IdentityConfig nextConfig = (IdentityConfig)nextCookie;
         	
         	int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
         	mailSettings.removeAccountConfig(curConfigIndex);
@@ -414,7 +427,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         else if(cookie instanceof AccountConfig) {
         	AccountConfig curConfig = (AccountConfig)cookie;
-        	AccountConfig nextConfig = (AccountConfig)configTreeField.getCookie(nextNode);
+        	AccountConfig nextConfig = (AccountConfig)nextCookie;
         	
         	int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
         	mailSettings.removeAccountConfig(curConfigIndex);
@@ -425,7 +438,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         else if(cookie instanceof OutgoingConfig) {
         	OutgoingConfig curConfig = (OutgoingConfig)cookie;
-        	OutgoingConfig nextConfig = (OutgoingConfig)configTreeField.getCookie(nextNode);
+        	OutgoingConfig nextConfig = (OutgoingConfig)nextCookie;
         	
         	int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
         	mailSettings.removeAccountConfig(curConfigIndex);
@@ -449,7 +462,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     	Object curCookie;
     	int curNode = configTreeField.getCurrentNode();
     	if(curNode != -1) {
-    		curCookie = configTreeField.getCookie(curNode);
+    		curCookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
     	}
     	else {
     		curCookie = null;
@@ -475,28 +488,28 @@ public class ConfigScreen extends AbstractConfigScreen {
         IdentityConfig identityConfig;
         for(int i = numIdentities-1; i >= 0; i--) {
             identityConfig = mailSettings.getIdentityConfig(i);
-            configTreeField.addChildNode(identitiesId, identityConfig);
+            configTreeField.addChildNode(identitiesId, new ConfigTreeNode(identityConfig));
             identityIndexMap.put(identityConfig, new Integer(i));
         }
 
         AccountConfig acctConfig;
         for(int i = numAccounts-1; i >= 0; i--) {
             acctConfig = mailSettings.getAccountConfig(i);
-            configTreeField.addChildNode(accountsId, acctConfig);
+            configTreeField.addChildNode(accountsId, new ConfigTreeNode(acctConfig));
             accountIndexMap.put(acctConfig, new Integer(i));
         }
 
         OutgoingConfig outgoingConfig;
         for(int i = numOutgoing-1; i >= 0; i--) {
             outgoingConfig = mailSettings.getOutgoingConfig(i);
-            configTreeField.addChildNode(outgoingId, outgoingConfig);
+            configTreeField.addChildNode(outgoingId, new ConfigTreeNode(outgoingConfig));
             outgoingIndexMap.put(outgoingConfig, new Integer(i));
         }
         
         if(curCookie != null) {
         	int node = configTreeField.nextNode(0, 0, true);
         	while(node != -1) {
-        		if(configTreeField.getCookie(node) == curCookie) {
+        		if(((ConfigTreeNode)configTreeField.getCookie(node)).cookie == curCookie) {
         			configTreeField.setCurrentNode(node);
         			break;
         		}
@@ -548,7 +561,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     private void deleteSelectedIdentity() {
         IdentityConfig identityConfig =
-            (IdentityConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
+            (IdentityConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
         
         int index = ((Integer)identityIndexMap.get(identityConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
@@ -591,7 +604,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     private void deleteSelectedAccount() {
         AccountConfig acctConfig =
-            (AccountConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
+            (AccountConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
         
         int index = ((Integer)accountIndexMap.get(acctConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
@@ -625,7 +638,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     private void deleteSelectedOutgoingServer() {
         OutgoingConfig outgoingConfig =
-            (OutgoingConfig)configTreeField.getCookie(configTreeField.getCurrentNode());
+            (OutgoingConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
         
         int index = ((Integer)outgoingIndexMap.get(outgoingConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
@@ -638,4 +651,28 @@ public class ConfigScreen extends AbstractConfigScreen {
             buildAccountsList();
         }
     }
+    
+	private static class ConfigTreeNode implements TreeFieldNode {
+		public Object cookie;
+		
+		public ConfigTreeNode(Object cookie) {
+			this.cookie = cookie;
+		}
+
+		public String toString() {
+			return cookie.toString();
+		}
+		
+		public boolean isNodeSelectable() {
+			if((cookie instanceof GlobalConfig)
+			|| (cookie instanceof IdentityConfig)
+			|| (cookie instanceof AccountConfig)
+			|| (cookie instanceof OutgoingConfig)) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
 }

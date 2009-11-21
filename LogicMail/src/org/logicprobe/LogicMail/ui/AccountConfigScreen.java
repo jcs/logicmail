@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import java.util.Vector;
+
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Manager;
@@ -43,6 +44,7 @@ import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
+import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.text.TextFilter;
 
@@ -212,7 +214,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      */
     private Manager initFieldsBasic() {
     	Manager manager = new VerticalFieldManager();
-        serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName());
+        serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName(),
+        		256, TextField.NO_NEWLINE);
         serverSecurityField = new ObjectChoiceField(
         		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
         		new Object[] {
@@ -222,10 +225,13 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         			resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
         		acctConfig.getServerSecurity());
         serverSecurityField.setChangeListener(fieldChangeListener);
-        serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(acctConfig.getServerPort()));
+        serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(acctConfig.getServerPort()),
+        		5, TextField.NO_NEWLINE);
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', acctConfig.getServerUser());
-        serverPassField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', acctConfig.getServerPass());
+        serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', acctConfig.getServerUser(),
+        		256, TextField.NO_NEWLINE);
+        serverPassField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', acctConfig.getServerPass(),
+        		256, TextField.NO_NEWLINE);
         useMdsField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !acctConfig.getDeviceSide());
         identityField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + ' ', identityConfigs, 0);
         outgoingServerField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + ' ', outgoingConfigs, 0);

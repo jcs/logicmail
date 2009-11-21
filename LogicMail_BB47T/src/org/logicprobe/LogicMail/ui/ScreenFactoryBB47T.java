@@ -30,56 +30,18 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.Touchscreen;
-
-import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
-import org.logicprobe.LogicMail.model.MessageNode;
 
-public class ScreenFactoryBB47 extends ScreenFactory {
-	private boolean hasTouchscreen;
-	private ScreenFactory oldScreenFactory;
-	
-	public ScreenFactoryBB47() {
-		hasTouchscreen = Touchscreen.isSupported();
-		oldScreenFactory = new ScreenFactoryBB42();
+public class ScreenFactoryBB47T extends ScreenFactoryBB42 {
+	public ScreenFactoryBB47T() {
 	}
 	
 	public StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {
-		if(hasTouchscreen) {
-			return new StandardTouchScreen(navigationController, new MailHomeScreen(mailRootNode));
-		}
-		else {
-			return oldScreenFactory.getMailHomeScreen(navigationController, mailRootNode);
-		}
+		return new StandardTouchScreen(navigationController, new MailHomeScreen(mailRootNode));
 	}
 
 	public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-		return oldScreenFactory.getMailboxScreen(navigationController, mailboxNode);
-	}
-	
-	public StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode) {
-		return oldScreenFactory.getMessageScreen(navigationController, messageNode);
-	}
-
-	public StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode) {
-		return oldScreenFactory.getCompositionScreen(navigationController, accountNode);
-	}
-	
-	public StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode) {
-		return oldScreenFactory.getCompositionScreen(navigationController, accountNode, messageNode);
-	}
-	
-	public StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, String address) {
-		return oldScreenFactory.getCompositionScreen(navigationController, accountNode, address);
-	}
-	
-	public StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll) {
-		return oldScreenFactory.getCompositionReplyScreen(navigationController, accountNode, messageNode, replyAll);
-	}
-	
-	public StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode) {
-		return oldScreenFactory.getCompositionForwardScreen(navigationController, accountNode, messageNode);
+		return new StandardTouchScreen(navigationController, new MailboxScreen(mailboxNode));
 	}
 }

@@ -81,7 +81,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	private Hashtable accountTreeNodeMap;
 	private Hashtable mailboxTreeNodeMap;
 	private boolean firstVisible;
-	private TreeNode mailTreeRootNode;
+	private MailHomeTreeNode mailTreeRootNode;
 	private MailManagerListener mailManagerListener;
 	private AccountNodeListener accountNodeListener;
 	private MailboxNodeListener mailboxNodeListener;
@@ -195,27 +195,27 @@ public class MailHomeScreen extends AbstractScreenProvider {
 
 	private void initMenuItems() {
 	    selectFolderItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 8) {
-			public void runNode(TreeNode treeNode) {
+			public void runNode(MailHomeTreeNode treeNode) {
 				selectFolderItemHandler(treeNode);
 			}
 		};
 		refreshStatusItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_STATUS, 110, 10) {
-			public void runNode(TreeNode treeNode) {
+			public void runNode(MailHomeTreeNode treeNode) {
 				refreshStatusItemHandler(treeNode);
 			}
 		};
 		refreshFoldersItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_FOLDERS, 111, 10) {
-			public void runNode(TreeNode treeNode) {
+			public void runNode(MailHomeTreeNode treeNode) {
 				refreshFoldersItemHandler(treeNode);
 			}
 		};
 		compositionItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 200000, 9) {
-			public void runNode(TreeNode treeNode) {
+			public void runNode(MailHomeTreeNode treeNode) {
 				compositionItemHandler(treeNode);
 			}
 		};
 		disconnectItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 200000, 9) {
-			public void runNode(TreeNode treeNode) {
+			public void runNode(MailHomeTreeNode treeNode) {
 				disconnectItemHandler(treeNode);
 			}
 		};
@@ -229,11 +229,11 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		public final void run() {
 			int nodeId = treeField.getCurrentNode();
 			if(nodeId != -1) {
-				runNode((TreeNode)treeField.getCookie(nodeId));
+				runNode((MailHomeTreeNode)treeField.getCookie(nodeId));
 			}
 		}
 		
-		public abstract void runNode(TreeNode treeNode);
+		public abstract void runNode(MailHomeTreeNode treeNode);
 	}
 	
 	private void mailManager_MailConfigurationChanged(MailManagerEvent e) {
@@ -242,7 +242,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 
 	private void accountNodeListener_AccountStatusChanged(AccountNodeEvent e) {
 		if(e.getType() == AccountNodeEvent.TYPE_CONNECTION) {
-			TreeNode node = (TreeNode)accountTreeNodeMap.get(e.getSource());
+			MailHomeTreeNode node = (MailHomeTreeNode)accountTreeNodeMap.get(e.getSource());
 			if(node != null) {
 				refreshMailTreeNode(node);
 			}
@@ -253,7 +253,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 
 	private void mailboxNodeListener_MailboxStatusChanged(MailboxNodeEvent e) {
-		TreeNode mailboxTreeNode = (TreeNode)mailboxTreeNodeMap.get(e.getSource());
+		MailHomeTreeNode mailboxTreeNode = (MailHomeTreeNode)mailboxTreeNodeMap.get(e.getSource());
 		if(mailboxTreeNode != null) {
 			refreshMailTreeNode(mailboxTreeNode);
 		}
@@ -267,16 +267,16 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 
 	private void generateMailTree() {
-		mailTreeRootNode = new TreeNode(null, 0);
+		mailTreeRootNode = new MailHomeTreeNode(null, 0);
 		
 		AccountNode[] accounts = mailRootNode.getAccounts();
-		mailTreeRootNode.children = new TreeNode[accounts.length];
+		mailTreeRootNode.children = new MailHomeTreeNode[accounts.length];
 		for(int i=0; i<accounts.length; i++) {
-			TreeNode accountTreeNode = new TreeNode(accounts[i], TreeNode.TYPE_ACCOUNT);
+			MailHomeTreeNode accountTreeNode = new MailHomeTreeNode(accounts[i], MailHomeTreeNode.TYPE_ACCOUNT);
 			MailboxNode rootMailbox = accounts[i].getRootMailbox();
 			if(rootMailbox != null) {
 				MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
-				accountTreeNode.children = new TreeNode[mailboxNodes.length];
+				accountTreeNode.children = new MailHomeTreeNode[mailboxNodes.length];
 				for(int j=0; j < mailboxNodes.length; j++) {
 					accountTreeNode.children[j] = populateMailboxTreeNode(mailboxNodes[j]);
 				}
@@ -287,14 +287,14 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 
-	private TreeNode populateMailboxTreeNode(MailboxNode mailboxNode) {
-		TreeNode mailboxTreeNode = new TreeNode(mailboxNode, TreeNode.TYPE_MAILBOX);
+	private MailHomeTreeNode populateMailboxTreeNode(MailboxNode mailboxNode) {
+		MailHomeTreeNode mailboxTreeNode = new MailHomeTreeNode(mailboxNode, MailHomeTreeNode.TYPE_MAILBOX);
 
 		mailboxNode.addMailboxNodeListener(mailboxNodeListener);
 		mailboxTreeNodeMap.put(mailboxNode, mailboxTreeNode);
 		
 		MailboxNode[] mailboxes = mailboxNode.getMailboxes();
-		mailboxTreeNode.children = new TreeNode[mailboxes.length];
+		mailboxTreeNode.children = new MailHomeTreeNode[mailboxes.length];
 		for(int i=0; i < mailboxes.length; i++) {
 			mailboxTreeNode.children[i] = populateMailboxTreeNode(mailboxes[i]);
 		}
@@ -320,7 +320,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		// Unsubscribe from all existing mailbox nodes, remove them
 		// from the node-id map, and remove them from the tree.
 		Vector mailboxNodeList = new Vector();
-		TreeNode accountTreeNode = (TreeNode)accountTreeNodeMap.get(accountNode);
+		MailHomeTreeNode accountTreeNode = (MailHomeTreeNode)accountTreeNodeMap.get(accountNode);
 		getMailboxNodes(mailboxNodeList, accountTreeNode);
 		int size = mailboxNodeList.size();
 		for(int i=0; i<size; i++) {
@@ -336,7 +336,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		MailboxNode rootMailbox = accountNode.getRootMailbox();
 		if(rootMailbox != null) {
 			MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
-			accountTreeNode.children = new TreeNode[mailboxNodes.length];
+			accountTreeNode.children = new MailHomeTreeNode[mailboxNodes.length];
 			for(int i=0; i < mailboxNodes.length; i++) {
 				accountTreeNode.children[i] = populateMailboxTreeNode(mailboxNodes[i]);
 			}
@@ -344,14 +344,14 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		populateMailTree(mailTreeRootNode);
 	}
 	
-	private void selectFolderItemHandler(TreeNode treeNode) {
+	private void selectFolderItemHandler(MailHomeTreeNode treeNode) {
 		if(treeNode.node instanceof MailboxNode) {
 			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
 			navigationController.displayMailbox(mailboxNode);
 		}
 	}
 
-	private void refreshStatusItemHandler(TreeNode treeNode) {
+	private void refreshStatusItemHandler(MailHomeTreeNode treeNode) {
 		AccountNode accountNode = getAccountForTreeNode(treeNode);
 		
 		if(accountNode != null) {
@@ -359,7 +359,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 
-	private void refreshFoldersItemHandler(TreeNode treeNode) {
+	private void refreshFoldersItemHandler(MailHomeTreeNode treeNode) {
 		AccountNode accountNode = getAccountForTreeNode(treeNode);
 		
 		if(accountNode != null) {
@@ -367,7 +367,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 
-	private void disconnectItemHandler(TreeNode treeNode) {
+	private void disconnectItemHandler(MailHomeTreeNode treeNode) {
 		AccountNode accountNode = getAccountForTreeNode(treeNode);
 
 		if(accountNode != null) {
@@ -375,7 +375,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 
-	private void compositionItemHandler(TreeNode treeNode) {
+	private void compositionItemHandler(MailHomeTreeNode treeNode) {
 		AccountNode accountNode = getAccountForTreeNode(treeNode);
 
 		if(accountNode != null && accountNode.getAccountConfig() != null) {
@@ -383,7 +383,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 	
-	public void populateMailTree(TreeNode rootNode) {
+	public void populateMailTree(MailHomeTreeNode rootNode) {
 		synchronized(UiApplication.getEventLock()) {
 			// Clear any existing nodes
 			treeField.deleteAll();
@@ -391,7 +391,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	
 			// Freshly populate the tree
 			int firstNode = -1;
-			TreeNode[] nodes = rootNode.children;
+			MailHomeTreeNode[] nodes = rootNode.children;
 			if(nodes != null) {
 				for(int i = nodes.length - 1; i >= 0; --i) {
 					int id = treeField.addChildNode(0, nodes[i]);
@@ -406,7 +406,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 
-	private void populateMailTreeChildren(int parent, TreeNode node) {
+	private void populateMailTreeChildren(int parent, MailHomeTreeNode node) {
 		if(node.children != null) {
 			for(int i = node.children.length - 1; i >= 0; --i) {
 				int id = treeField.addChildNode(parent, node.children[i]);
@@ -416,7 +416,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 	
-	public void refreshMailTreeNode(TreeNode node) {
+	public void refreshMailTreeNode(MailHomeTreeNode node) {
 		Integer nodeInt = (Integer)nodeIdMap.get(node);
 		if(nodeInt != null) {
 			synchronized(UiApplication.getEventLock()) {
@@ -452,7 +452,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     public void makeMenu(Menu menu, int instance) {
-    	TreeNode treeNode = (TreeNode)treeField.getCookie(treeField.getCurrentNode());
+    	MailHomeTreeNode treeNode = (MailHomeTreeNode)treeField.getCookie(treeField.getCurrentNode());
 		if(treeNode.node instanceof MailboxNode) {
 			menu.add(selectFolderItem);
 			if(((MailboxNode)treeNode.node).getParentAccount().hasMailSender()) {
@@ -559,7 +559,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
         	}
         	
         	// Check whether we can enable composition
-        	TreeNode treeNode = (TreeNode)treeField.getCookie(curNode);
+        	MailHomeTreeNode treeNode = (MailHomeTreeNode)treeField.getCookie(curNode);
         	if(treeNode.node instanceof AccountNode) {
         		if(((AccountNode)treeNode.node).hasMailSender()) {
         			enableCompose = true;
@@ -589,7 +589,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 			TreeField treeField,
 			Graphics graphics,
 			int node, int y, int width, int indent) {
-		TreeNode treeNode = (TreeNode)treeField.getCookie(node);
+		MailHomeTreeNode treeNode = (MailHomeTreeNode)treeField.getCookie(node);
 		int rowHeight = treeField.getRowHeight();
 		int fontHeight = graphics.getFont().getHeight();
 		
@@ -606,10 +606,10 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		StringBuffer buf = new StringBuffer();
 		buf.append(treeNode.node.toString());
 		
-		if(treeNode.type == TreeNode.TYPE_ACCOUNT) {
+		if(treeNode.type == MailHomeTreeNode.TYPE_ACCOUNT) {
 			graphics.setFont(origFont.derive(Font.BOLD));
 		}
-		else if(treeNode.type == TreeNode.TYPE_MAILBOX) {
+		else if(treeNode.type == MailHomeTreeNode.TYPE_MAILBOX) {
 			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
 			
 			if(!mailboxNode.isSelectable()) {
@@ -631,17 +631,27 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 	
 	/** Tree node data class */
-	static class TreeNode {
+	private static class MailHomeTreeNode implements TreeFieldNode {
 		public static final int TYPE_ACCOUNT = 1;
 		public static final int TYPE_MAILBOX = 2;
 		
 		public Node node;
 		public int type;
-		public TreeNode[] children;
+		public MailHomeTreeNode[] children;
 		
-		public TreeNode(Node node, int type) {
+		public MailHomeTreeNode(Node node, int type) {
 			this.node = node;
 			this.type = type;
+		}
+		
+		public boolean isNodeSelectable() {
+			if(node instanceof MailboxNode) {
+				MailboxNode mailboxNode = (MailboxNode)node;
+				return mailboxNode.isSelectable();
+			}
+			else {
+				return false;
+			}
 		}
 	}
 	
@@ -652,7 +662,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	 * @param result Result vector to add to.
 	 * @param nodeId Starting node.
 	 */
-	private static void getMailboxNodes(Vector result, TreeNode treeNode) {
+	private static void getMailboxNodes(Vector result, MailHomeTreeNode treeNode) {
 		if(treeNode.node instanceof MailboxNode) {
 			result.addElement(treeNode.node);
 		}
@@ -663,7 +673,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 		}
 	}
 
-	private static AccountNode getAccountForTreeNode(TreeNode treeNode) {
+	private static AccountNode getAccountForTreeNode(MailHomeTreeNode treeNode) {
 		AccountNode accountNode;
 		if(treeNode.node instanceof AccountNode) {
 			accountNode = (AccountNode)treeNode.node;
@@ -696,8 +706,8 @@ public class MailHomeScreen extends AbstractScreenProvider {
             while(curNode > 0) {
                 if(treeField.getFirstChild(curNode) != -1) {
                     cookie = treeField.getCookie(curNode);
-                    if(cookie instanceof TreeNode) {
-                    	String key = getTreeNodeKey((TreeNode)cookie);
+                    if(cookie instanceof MailHomeTreeNode) {
+                    	String key = getTreeNodeKey((MailHomeTreeNode)cookie);
                         value = folderMetadata.get(key);
                         if(value instanceof Boolean) {
                             actions.addElement(new Object[] { new Integer(curNode), value } );
@@ -727,8 +737,8 @@ public class MailHomeScreen extends AbstractScreenProvider {
         while(curNode > 0) {
             if(treeField.getFirstChild(curNode) != -1) {
                 cookie = treeField.getCookie(curNode);
-                if(cookie instanceof TreeNode) {
-                	String key = getTreeNodeKey((TreeNode)cookie);
+                if(cookie instanceof MailHomeTreeNode) {
+                	String key = getTreeNodeKey((MailHomeTreeNode)cookie);
                     folderMetadata.put(
                             key,
                             new Boolean(treeField.getExpanded(curNode)));
@@ -742,7 +752,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
         DataStoreFactory.getMetadataStore().save();
 	}
 
-	private static String getTreeNodeKey(TreeNode treeNode) {
+	private static String getTreeNodeKey(MailHomeTreeNode treeNode) {
 		Node node = treeNode.node;
 		String key;
 		if(node instanceof Serializable) {

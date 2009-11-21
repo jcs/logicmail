@@ -63,6 +63,7 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
     
     private ObjectChoiceField languageChoiceField;
     private CheckboxField unicodeNormalizationCheckboxField;
+    
     private ObjectChoiceField messageDisplayChoiceField;
     private BasicEditField messageCountEditField;
     private ObjectChoiceField displayOrderChoiceField;
@@ -213,17 +214,23 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
 	    connectionDebuggingCheckboxField = new CheckboxField(
 	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
                 existingConfig.getConnDebug());
-	
-		add(languageChoiceField);
-		add(unicodeNormalizationCheckboxField);
+
+
+		add(new LabeledSeparatorField("Message display", Field.NON_FOCUSABLE | LabeledSeparatorField.BOTTOM_BORDER));
 		add(messageDisplayChoiceField);
 	    add(messageCountEditField);
 	    add(displayOrderChoiceField);
 	    add(hideDeletedMessagesCheckboxField);
+
+		add(new LabeledSeparatorField("Networking", Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
 	    add(wifiModeChoiceField);
-	    add(localDataLocationChoiceLabel);
 	    add(overrideHostnameCheckboxField);
 	    add(localHostnameEditField);
+	    
+	    add(new LabeledSeparatorField("Other", Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+	    add(localDataLocationChoiceLabel);
+		add(languageChoiceField);
+		add(unicodeNormalizationCheckboxField);
 	    add(connectionDebuggingCheckboxField);
     }
     

@@ -53,6 +53,7 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
@@ -62,6 +63,10 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  * adjusted accordingly.
  */
 public class MailboxScreen extends AbstractScreenProvider {
+	private static final int SHORTCUT_COMPOSE = 0;
+	private static final int SHORTCUT_UP = 3;
+	private static final int SHORTCUT_DOWN = 4;
+	
 	private MailboxNode mailboxNode;
     private Vector knownMessages;
     private Hashtable messageFieldMap;
@@ -70,6 +75,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     private VerticalFieldManager messageFieldManager;
     private Screen screen;
     private MessageActions messageActions;
+    private boolean composeEnabled;
 
     private MenuItem selectItem;
 	private MenuItem propertiesItem;
@@ -146,6 +152,9 @@ public class MailboxScreen extends AbstractScreenProvider {
         	((MessageNode)knownMessages.elementAt(i)).addMessageNodeListener(messageNodeListener);
         }
         
+        composeEnabled = mailboxNode.getParentAccount().hasMailSender();
+        ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_COMPOSE, composeEnabled);
+        
         // TODO: Support message list changes between display pushing
         // TODO: Support updating when messages are deleted
     }
@@ -161,6 +170,40 @@ public class MailboxScreen extends AbstractScreenProvider {
         }
     }
     
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#hasShortcuts()
+	 */
+	public boolean hasShortcuts() {
+		return true;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#getShortcuts()
+	 */
+	public ShortcutItem[] getShortcuts() {
+		// Note: This method is only called once, during initialization of the screen,
+		// and only on devices that have touchscreen support.  The strings for the
+		// shortcuts are contained within the main application library's resources.
+		// However, the icons are contained within the platform support library
+		// containing actual touchscreen API support.
+		return new ShortcutItem[] {
+			new ShortcutItem(
+					SHORTCUT_COMPOSE,
+					resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL),
+					"shortcut-compose.png", "shortcut-compose-d.png"),
+			null,
+			null,
+			new ShortcutItem(
+					SHORTCUT_UP,
+					resources.getString(LogicMailResource.MENUITEM_SCROLL_UP),
+					"shortcut-up.png", "shortcut-up-d.png"),
+			new ShortcutItem(
+					SHORTCUT_DOWN,
+					resources.getString(LogicMailResource.MENUITEM_SCROLL_DOWN),
+					"shortcut-down.png", "shortcut-down-d.png")
+		};
+	}
+	
 	/**
 	 * Initializes the fields.
 	 */
@@ -235,7 +278,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     		menu.add(selectItem);
     		menu.add(propertiesItem);
     	}
-        if(mailboxNode.getParentAccount().hasMailSender()) {
+        if(composeEnabled) {
             menu.add(compositionItem);
         }
         if(fieldWithFocus instanceof MailboxMessageField) {
@@ -439,5 +482,22 @@ public class MailboxScreen extends AbstractScreenProvider {
             	break;
         }
         return retval;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#shortcutAction(org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem)
+     */
+    public void shortcutAction(ShortcutItem item) {
+    	switch(item.getId()) {
+    	case SHORTCUT_COMPOSE:
+    		compositionItem.run();
+    		break;
+    	case SHORTCUT_UP:
+    		screen.scroll(Manager.UPWARD);
+    		break;
+    	case SHORTCUT_DOWN:
+    		screen.scroll(Manager.DOWNWARD);
+    		break;
+    	}
     }
 }

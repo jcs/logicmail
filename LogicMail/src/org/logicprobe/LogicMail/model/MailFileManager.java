@@ -129,6 +129,8 @@ public class MailFileManager {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public void writeMessage(MessageNode messageNode) throws IOException {
+		if(cacheUrl == null) { return; }
+		
 		// Create a file connection for the message
 		FileConnection fileConnection = getMailboxFileConnection(messageNode.getParent());
 		String url = fileConnection.getURL();
@@ -167,6 +169,8 @@ public class MailFileManager {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public MessageToken[] readMessageTokens(MailboxNode mailboxNode) throws IOException {
+		if(cacheUrl == null) { return new MessageToken[0]; }
+		
 		//TODO: Implement an indexing mechanism to avoid listing the whole directory
 		//TODO: Provide support for partial listing requests
 		
@@ -190,6 +194,8 @@ public class MailFileManager {
 	}
 	
 	public MessageNode[] readMessageNodes(MailboxNode mailboxNode) throws IOException {
+		if(cacheUrl == null) { return new MessageNode[0]; }
+
 		Vector messageNodeList = new Vector();
 		
 		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
@@ -210,6 +216,8 @@ public class MailFileManager {
 	}
 	
 	public MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
+		if(cacheUrl == null) { return null; }
+
 		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
 		if(!fileConnection.exists()) { return null; }
 		
@@ -228,6 +236,8 @@ public class MailFileManager {
 	}
 	
 	public MimeMessageContent[] readMessageContent(MailboxNode mailboxNode, MessageToken messageToken) throws IOException {
+		if(cacheUrl == null) { return null; }
+		
 		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
 		if(!fileConnection.exists()) { return null; }
 		
