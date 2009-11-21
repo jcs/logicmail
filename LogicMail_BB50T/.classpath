@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="res"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/net.rim.ejde.BlackBerryVMInstallType/BlackBerry JRE 5.0.0"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail_BB46"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail_BB47"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail_BB47T"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/LogicMail_BB50"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
