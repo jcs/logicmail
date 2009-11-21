@@ -22,7 +22,6 @@ import java.util.Vector;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
-import net.rim.device.api.ui.FontFamily;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
@@ -39,6 +38,7 @@ import net.rim.device.api.ui.container.MainScreen;
  * @author Derek Konigsberg
  */
 public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, TestListener {
+	private LabelField titleLabel;
     private LabelField statusLabel;
     private LabelField failureLabel;
     private LabelField errorLabel;
@@ -84,28 +84,36 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     private void initializeFields() {
-        try {
-            FontFamily theFam = FontFamily.forName("SYSTEM");
-            Font theFont = theFam.getFont(Font.PLAIN, 12);
-            Font.setDefaultFont(theFont);
-        } catch(Exception e) { }
-        add(new LabelField("J2MEUnit " + j2meunit.util.Version.id()));
+    	Font labelFont = Font.getDefault().derive(Font.PLAIN, 12);
+        Font treeFont = Font.getDefault().derive(Font.PLAIN, 14);
+		
+		titleLabel = new LabelField("J2MEUnit " + j2meunit.util.Version.id());
+		titleLabel.setFont(labelFont);
         statusLabel = new LabelField("Status: Idle");
-        add(statusLabel);
+        statusLabel.setFont(labelFont);
         failureLabel = new LabelField("Failures: 0");
-        add(failureLabel);
+        failureLabel.setFont(labelFont);
         errorLabel = new LabelField("Errors: 0");
-        add(errorLabel);
+        errorLabel.setFont(labelFont);
         timeLabel = new LabelField("Time: n/a");
-        add(timeLabel);
+        timeLabel.setFont(labelFont);
         progressGauge = new GaugeField(null, 0, 100, 0, GaugeField.NO_TEXT);
-        add(progressGauge);
-        add(new SeparatorField());
+        progressGauge.setFont(labelFont);
         
         testTreeField = new TreeField(this, Field.FOCUSABLE);
         testTreeField.setEmptyString("No tests", 0);
         testTreeField.setDefaultExpanded(true);
         testTreeField.setIndentWidth(20);
+        testTreeField.setFont(treeFont);
+        testTreeField.setRowHeight(treeFont.getHeight() + 2);
+        
+        add(titleLabel);
+        add(statusLabel);
+        add(failureLabel);
+        add(errorLabel);
+        add(timeLabel);
+        add(progressGauge);
+        add(new SeparatorField());
         add(testTreeField);
     }
     
@@ -398,6 +406,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         progressGauge.reset(null, 0, selectedTest.countTestCases(), 0);
         new Thread() {
             public void run() {
+            	Thread.yield();
                 try {
                     doRun(selectedTest);
                     updateResults();
