@@ -214,29 +214,25 @@ public class OutboxMailboxNode extends MailboxNode {
     		this.messageId = messageId;
     	}
     	
-    	public int getMessageId() {
-    		return messageId;
-    	}
-    	
-		public boolean containedWithin(FolderTreeItem folderTreeItem) {
-			return folderTreeItem.getPath().equals(folderPath);
-		}
-
-		public String getMessageUid() {
-			return Integer.toHexString(messageId).toLowerCase();
-		}
-		
-		public long getUniqueId() {
-			// Empty because this special token is not intended to be serialized
-			return 0;
-		}
-
-		public void serialize(DataOutput output) throws IOException {
-			// Empty because this special token is not intended to be serialized
-		}
-    	
-		public void deserialize(DataInput input) throws IOException {
-			// Empty because this special token is not intended to be serialized
-		}
+        public boolean containedWithin(FolderTreeItem folderTreeItem) {
+            return folderTreeItem.getPath().equals(folderPath);
+        }
+    
+        public String getMessageUid() {
+            return Integer.toHexString(messageId).toLowerCase();
+        }
+    		
+        public long getUniqueId() {
+            // Empty because this special token is not intended to be serialized
+            return 0;
+        }
+    
+        public void serialize(DataOutput output) throws IOException {
+            // Empty because this special token is not intended to be serialized
+        }
+        	
+        public void deserialize(DataInput input) throws IOException {
+            // Empty because this special token is not intended to be serialized
+        }
     }
 }

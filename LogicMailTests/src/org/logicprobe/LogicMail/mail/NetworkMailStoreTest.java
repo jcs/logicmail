@@ -323,13 +323,10 @@ public class NetworkMailStoreTest extends TestCase {
 		public boolean closeCalled = false;
 		public FolderTreeItem activeFolder;
 		public FolderTreeItem inboxFolder;
-		public int firstIndex;
-		public int lastIndex;
 		public FolderMessage[] folderMessages;
 		public FolderTreeItem folderTree;
 		public Message message;
 		public MessageToken messageToken;
-		public MessageFlags messageFlags;
 		public int refreshedMsgCount;
 		
 		public boolean isConnected() { return true; }
@@ -347,7 +344,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
 		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
-				throws IOException, MailException { this.firstIndex = firstIndex; this.lastIndex = lastIndex; return this.folderMessages; }
+				throws IOException, MailException { return this.folderMessages; }
 		public FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
 				throws IOException, MailException { return null; }
 		public FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler)

@@ -206,9 +206,6 @@ public class AccountNodeTest extends TestCase {
     private class TestMailStore extends AbstractMailStore {
     	public FolderTreeItem rootFolder = null;
     	public FolderTreeItem statusUpdatedRootFolder = null;
-    	public boolean folderTreeRequested = false;
-    	public boolean folderStatusRequested = false;
-    	public FolderTreeItem folderStatusRequestedItem = null;
     	
 		public boolean hasFlags() {
 			return false;
@@ -239,13 +236,10 @@ public class AccountNodeTest extends TestCase {
 		}
 
 		public void requestFolderTree() {
-			folderTreeRequested = true;
 			fireFolderTreeUpdated(rootFolder);
 		}
 		
 		public void requestFolderStatus(FolderTreeItem[] folders) {
-			folderStatusRequested = true;
-			folderStatusRequestedItem = folders[0];
 			fireFolderStatusChanged(statusUpdatedRootFolder);
 		}
 		

@@ -64,7 +64,7 @@ public abstract class MimeMessagePart implements Serializable {
      * @param visitor The visitor instance
      */
     public abstract void accept(MimeMessagePartVisitor visitor);
-    
+
     /**
      * Gets the tag used to embed protocol-specific address
      * information in the part.
@@ -72,9 +72,9 @@ public abstract class MimeMessagePart implements Serializable {
      * @return The tag
      */
     public String getTag() {
-    	return tag;
+        return tag;
     }
-    
+
     /**
      * Get the MIME type for this part
      * @return The "type" part of "type/subtype"
@@ -96,9 +96,9 @@ public abstract class MimeMessagePart implements Serializable {
      * @return Size if available, or -1 otherwise
      */
     public int getSize() {
-    	return size;
+        return size;
     }
-    
+
     /**
      * Set the parent of this part
      * @param parent The parent message part, or null if this is the root
@@ -106,7 +106,7 @@ public abstract class MimeMessagePart implements Serializable {
     protected void setParent(MimeMessagePart parent) {
         this.parent = parent;
     }
-    
+
     /**
      * Get the parent of this part
      * @return Parent, or null if this is the root
@@ -116,57 +116,57 @@ public abstract class MimeMessagePart implements Serializable {
     }
 
     /* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
-	 */
-	public long getUniqueId() {
-		return this.uniqueId;
-	}
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
+    public long getUniqueId() {
+        return this.uniqueId;
+    }
 
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
-	 */
-	public void serialize(DataOutput output) throws IOException {
-		output.writeLong(uniqueId);
-		output.writeUTF(tag);
-		output.writeUTF(mimeType);
-		output.writeUTF(mimeSubtype);
-		output.writeInt(size);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
-	 */
-	public void deserialize(DataInput input) throws IOException {
-		uniqueId = input.readLong();
-		tag = input.readUTF();
-		mimeType = input.readUTF();
-		mimeSubtype = input.readUTF();
-		size = input.readInt();
-	}
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
+     */
+    public void serialize(DataOutput output) throws IOException {
+        output.writeLong(uniqueId);
+        output.writeUTF(tag);
+        output.writeUTF(mimeType);
+        output.writeUTF(mimeSubtype);
+        output.writeInt(size);
+    }
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#hashCode()
-	 */
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (int) (uniqueId ^ (uniqueId >>> 32));
-		return result;
-	}
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
+     */
+    public void deserialize(DataInput input) throws IOException {
+        uniqueId = input.readLong();
+        tag = input.readUTF();
+        mimeType = input.readUTF();
+        mimeSubtype = input.readUTF();
+        size = input.readInt();
+    }
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		MimeMessagePart other = (MimeMessagePart) obj;
-		if (uniqueId != other.uniqueId)
-			return false;
-		return true;
-	}
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (uniqueId ^ (uniqueId >>> 32));
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        MimeMessagePart other = (MimeMessagePart) obj;
+        if (uniqueId != other.uniqueId)
+            return false;
+        return true;
+    }
 }

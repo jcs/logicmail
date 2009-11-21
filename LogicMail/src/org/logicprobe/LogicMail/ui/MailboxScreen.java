@@ -53,7 +53,6 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
-import org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
