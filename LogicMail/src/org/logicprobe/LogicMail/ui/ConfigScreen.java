@@ -69,7 +69,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     private Hashtable accountIndexMap;
     private Hashtable outgoingIndexMap;
     private boolean configurationChanged;
-    
+
     /**
      * Instantiates a new configuration screen.
      */
@@ -79,26 +79,26 @@ public class ConfigScreen extends AbstractConfigScreen {
         identityIndexMap = new Hashtable();
         accountIndexMap = new Hashtable();
         outgoingIndexMap = new Hashtable();
-        
+
         initFields();
-        
+
         buildAccountsList();
     }
-    
+
     /**
      * Initializes the fields.
      */
     private void initFields() {
         configTreeField = FieldFactory.getInstance().getScreenTreeField(
-            new TreeFieldCallback() {
-                public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
-                    configTreeFieldDrawTreeItem(treeField, graphics, node, y, width, indent);
-                }
-            },
-            Field.FOCUSABLE);
+                new TreeFieldCallback() {
+                    public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
+                        configTreeFieldDrawTreeItem(treeField, graphics, node, y, width, indent);
+                    }
+                },
+                Field.FOCUSABLE);
         configTreeField.setDefaultExpanded(true);
         configTreeField.setIndentWidth(20);
-        
+
         globalId = configTreeField.addChildNode(0, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_GLOBAL_SETTINGS)));
         identitiesId = configTreeField.addSiblingNode(globalId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_IDENTITIES)));
         accountsId = configTreeField.addSiblingNode(identitiesId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_ACCOUNTS)));
@@ -111,20 +111,20 @@ public class ConfigScreen extends AbstractConfigScreen {
      * @see net.rim.device.api.ui.Screen#onDisplay()
      */
     protected void onDisplay() {
-		configurationChanged = false;
-    	super.onDisplay();
-	}
-	
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Screen#onUndisplay()
-	 */
-	protected void onUndisplay() {
-		if(configurationChanged) {
-			configurationChanged = false;
-		}
-		super.onUndisplay();
-	}
-    
+        configurationChanged = false;
+        super.onDisplay();
+    }
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#onUndisplay()
+     */
+    protected void onUndisplay() {
+        if(configurationChanged) {
+            configurationChanged = false;
+        }
+        super.onUndisplay();
+    }
+
     /**
      * Draws tree items in the TreeField
      * 
@@ -139,7 +139,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         Object cookie = treeField.getCookie(node);
         graphics.drawText(cookie.toString(), indent + 2, y, Graphics.ELLIPSIS, width);
     }
-    
+
     private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 100, 10) {
         public void run() {
             openSelectedNode();
@@ -160,10 +160,10 @@ public class ConfigScreen extends AbstractConfigScreen {
 
     private MenuItem newAccountWizardItem = new MenuItem(resources, LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD, 110, 10) {
         public void run() {
-        	newAccountWizard();
+            newAccountWizard();
         }
     };
-    
+
     private MenuItem addIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_IDENTITY, 120, 10) {
         public void run() {
             addIdentity();
@@ -205,29 +205,29 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     protected void makeMenu(Menu menu, int instance) {
         int id = configTreeField.getCurrentNode();
-        
+
         Object cookie;
         Object rawCookie = configTreeField.getCookie(id);
         if(rawCookie instanceof ConfigTreeNode) {
-        	cookie = ((ConfigTreeNode)rawCookie).cookie;
+            cookie = ((ConfigTreeNode)rawCookie).cookie;
         }
         else {
-        	cookie = null;
+            cookie = null;
         }
-        
+
         if(id != identitiesId && id != accountsId && id != outgoingId) {
             menu.add(selectItem);
             if(cookie instanceof ConnectionConfig) {
-	            if(configTreeField.getPreviousSibling(id) != -1) {
-	            	menu.add(moveUpItem);
-	            }
-	            if(configTreeField.getNextSibling(id) != -1) {
-	            	menu.add(moveDownItem);
-	            }
+                if(configTreeField.getPreviousSibling(id) != -1) {
+                    menu.add(moveUpItem);
+                }
+                if(configTreeField.getNextSibling(id) != -1) {
+                    menu.add(moveDownItem);
+                }
             }
             menu.addSeparator();
         }
-        
+
         if(id == identitiesId) {
             menu.add(addIdentityItem);
         }
@@ -236,11 +236,11 @@ public class ConfigScreen extends AbstractConfigScreen {
             menu.add(deleteIdentityItem);
         }
         else if(id == accountsId) {
-        	menu.add(newAccountWizardItem);
+            menu.add(newAccountWizardItem);
             menu.add(addAccountItem);
         }
         else if(cookie instanceof AccountConfig) {
-        	menu.add(newAccountWizardItem);
+            menu.add(newAccountWizardItem);
             menu.add(addAccountItem);
             menu.add(deleteAccountItem);
         }
@@ -253,43 +253,43 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         super.makeMenu(menu, instance);
     }
-    
-	/* (non-Javadoc)
+
+    /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch(key) {
-            case Keypad.KEY_SPACE:
-                toggleSelectedNode();
-                retval = true;
-                break;
-            case Keypad.KEY_ENTER:
-                openSelectedNode();
-                retval = true;
-                break;
+        case Keypad.KEY_SPACE:
+            toggleSelectedNode();
+            retval = true;
+            break;
+        case Keypad.KEY_ENTER:
+            openSelectedNode();
+            retval = true;
+            break;
         }
         return retval;
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
     protected boolean navigationClick(int status, int time) {
-    	return openSelectedNode();
+        return openSelectedNode();
     }
-    
+
     /**
      * Toggle selected node's expansion state
      */
     private void toggleSelectedNode() {
         int curNode = configTreeField.getCurrentNode();
-        
+
         // Make sure a node is selected
         if(curNode == -1) {
             return;
         }
-        
+
         // Make sure the selected node has children
         if(configTreeField.getFirstChild(curNode) == -1) {
             return;
@@ -298,14 +298,14 @@ public class ConfigScreen extends AbstractConfigScreen {
         // Toggle the expansion state of the current node
         configTreeField.setExpanded(curNode, !configTreeField.getExpanded(curNode));
     }
-    
+
     /**
      * Open selected node.
      * 
      * @return true, if successful
      */
     private boolean openSelectedNode() {
-    	boolean result = false;
+        boolean result = false;
         int curNode = configTreeField.getCurrentNode();
         if(curNode == globalId) {
             UiApplication.getUiApplication().pushScreen(new GlobalConfigScreen());
@@ -346,12 +346,12 @@ public class ConfigScreen extends AbstractConfigScreen {
             }
         }
         if(result) {
-        	buildAccountsList();
+            buildAccountsList();
         }
         return result;
     }
 
-	private void moveSelectedNodeUp() {
+    private void moveSelectedNodeUp() {
         int curNode = configTreeField.getCurrentNode();
         if(curNode == -1) { return; }
         int prevNode = configTreeField.getPreviousSibling(curNode);
@@ -359,51 +359,51 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
         Object prevCookie = ((ConfigTreeNode)configTreeField.getCookie(prevNode)).cookie;
-        
-        boolean result = false;
-        
-        if(cookie instanceof IdentityConfig) {
-        	IdentityConfig curConfig = (IdentityConfig)cookie;
-        	IdentityConfig prevConfig = (IdentityConfig)prevCookie;
-        	
-        	int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
-        	mailSettings.removeAccountConfig(curConfigIndex);
 
-        	int prevConfigIndex = mailSettings.indexOfIdentityConfig(prevConfig);
-        	mailSettings.insertIdentityConfigAt(curConfig, prevConfigIndex);
-        	result = true;
+        boolean result = false;
+
+        if(cookie instanceof IdentityConfig) {
+            IdentityConfig curConfig = (IdentityConfig)cookie;
+            IdentityConfig prevConfig = (IdentityConfig)prevCookie;
+
+            int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
+            mailSettings.removeAccountConfig(curConfigIndex);
+
+            int prevConfigIndex = mailSettings.indexOfIdentityConfig(prevConfig);
+            mailSettings.insertIdentityConfigAt(curConfig, prevConfigIndex);
+            result = true;
         }
         else if(cookie instanceof AccountConfig) {
-        	AccountConfig curConfig = (AccountConfig)cookie;
-        	AccountConfig prevConfig = (AccountConfig)prevCookie;
-        	
-        	int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
-        	mailSettings.removeAccountConfig(curConfigIndex);
+            AccountConfig curConfig = (AccountConfig)cookie;
+            AccountConfig prevConfig = (AccountConfig)prevCookie;
 
-        	int prevConfigIndex = mailSettings.indexOfAccountConfig(prevConfig);
-        	mailSettings.insertAccountConfigAt(curConfig, prevConfigIndex);
-        	result = true;
+            int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
+            mailSettings.removeAccountConfig(curConfigIndex);
+
+            int prevConfigIndex = mailSettings.indexOfAccountConfig(prevConfig);
+            mailSettings.insertAccountConfigAt(curConfig, prevConfigIndex);
+            result = true;
         }
         else if(cookie instanceof OutgoingConfig) {
-        	OutgoingConfig curConfig = (OutgoingConfig)cookie;
-        	OutgoingConfig prevConfig = (OutgoingConfig)prevCookie;
-        	
-        	int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
-        	mailSettings.removeAccountConfig(curConfigIndex);
+            OutgoingConfig curConfig = (OutgoingConfig)cookie;
+            OutgoingConfig prevConfig = (OutgoingConfig)prevCookie;
 
-        	int prevConfigIndex = mailSettings.indexOfOutgoingConfig(prevConfig);
-        	mailSettings.insertOutgoingConfigAt(curConfig, prevConfigIndex);
-        	result = true;
+            int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
+            mailSettings.removeAccountConfig(curConfigIndex);
+
+            int prevConfigIndex = mailSettings.indexOfOutgoingConfig(prevConfig);
+            mailSettings.insertOutgoingConfigAt(curConfig, prevConfigIndex);
+            result = true;
         }
-        
+
         if(result) {
             mailSettings.saveSettings();
             configurationChanged = true;
-        	buildAccountsList();
+            buildAccountsList();
         }
-	}
+    }
 
-	private void moveSelectedNodeDown() {
+    private void moveSelectedNodeDown() {
         int curNode = configTreeField.getCurrentNode();
         if(curNode == -1) { return; }
         int nextNode = configTreeField.getNextSibling(curNode);
@@ -411,63 +411,63 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
         Object nextCookie = ((ConfigTreeNode)configTreeField.getCookie(nextNode)).cookie;
-        
+
         boolean result = false;
 
         if(cookie instanceof IdentityConfig) {
-        	IdentityConfig curConfig = (IdentityConfig)cookie;
-        	IdentityConfig nextConfig = (IdentityConfig)nextCookie;
-        	
-        	int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
-        	mailSettings.removeAccountConfig(curConfigIndex);
+            IdentityConfig curConfig = (IdentityConfig)cookie;
+            IdentityConfig nextConfig = (IdentityConfig)nextCookie;
 
-        	int nextConfigIndex = mailSettings.indexOfIdentityConfig(nextConfig);
-        	mailSettings.insertIdentityConfigAt(curConfig, nextConfigIndex + 1);
-        	result = true;
+            int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
+            mailSettings.removeAccountConfig(curConfigIndex);
+
+            int nextConfigIndex = mailSettings.indexOfIdentityConfig(nextConfig);
+            mailSettings.insertIdentityConfigAt(curConfig, nextConfigIndex + 1);
+            result = true;
         }
         else if(cookie instanceof AccountConfig) {
-        	AccountConfig curConfig = (AccountConfig)cookie;
-        	AccountConfig nextConfig = (AccountConfig)nextCookie;
-        	
-        	int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
-        	mailSettings.removeAccountConfig(curConfigIndex);
+            AccountConfig curConfig = (AccountConfig)cookie;
+            AccountConfig nextConfig = (AccountConfig)nextCookie;
 
-        	int nextConfigIndex = mailSettings.indexOfAccountConfig(nextConfig);
-        	mailSettings.insertAccountConfigAt(curConfig, nextConfigIndex + 1);
-        	result = true;
+            int curConfigIndex = mailSettings.indexOfAccountConfig(curConfig);
+            mailSettings.removeAccountConfig(curConfigIndex);
+
+            int nextConfigIndex = mailSettings.indexOfAccountConfig(nextConfig);
+            mailSettings.insertAccountConfigAt(curConfig, nextConfigIndex + 1);
+            result = true;
         }
         else if(cookie instanceof OutgoingConfig) {
-        	OutgoingConfig curConfig = (OutgoingConfig)cookie;
-        	OutgoingConfig nextConfig = (OutgoingConfig)nextCookie;
-        	
-        	int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
-        	mailSettings.removeAccountConfig(curConfigIndex);
+            OutgoingConfig curConfig = (OutgoingConfig)cookie;
+            OutgoingConfig nextConfig = (OutgoingConfig)nextCookie;
 
-        	int nextConfigIndex = mailSettings.indexOfOutgoingConfig(nextConfig);
-        	mailSettings.insertOutgoingConfigAt(curConfig, nextConfigIndex + 1);
-        	result = true;
+            int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
+            mailSettings.removeAccountConfig(curConfigIndex);
+
+            int nextConfigIndex = mailSettings.indexOfOutgoingConfig(nextConfig);
+            mailSettings.insertOutgoingConfigAt(curConfig, nextConfigIndex + 1);
+            result = true;
         }
-        
+
         if(result) {
             mailSettings.saveSettings();
             configurationChanged = true;
-        	buildAccountsList();
+            buildAccountsList();
         }
-	}
+    }
 
     /**
      * Builds the accounts list.
      */
     private void buildAccountsList() {
-    	Object curCookie;
-    	int curNode = configTreeField.getCurrentNode();
-    	if(curNode != -1) {
-    		curCookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
-    	}
-    	else {
-    		curCookie = null;
-    	}
-    	
+        Object curCookie;
+        int curNode = configTreeField.getCurrentNode();
+        if(curNode != -1) {
+            curCookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
+        }
+        else {
+            curCookie = null;
+        }
+
         int numIdentities = mailSettings.getNumIdentities();
         identityIndexMap.clear();
         int numAccounts = mailSettings.getNumAccounts();
@@ -484,7 +484,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         while((id = configTreeField.getFirstChild(outgoingId)) != -1) {
             configTreeField.deleteSubtree(id);
         }
-        
+
         IdentityConfig identityConfig;
         for(int i = numIdentities-1; i >= 0; i--) {
             identityConfig = mailSettings.getIdentityConfig(i);
@@ -505,42 +505,42 @@ public class ConfigScreen extends AbstractConfigScreen {
             configTreeField.addChildNode(outgoingId, new ConfigTreeNode(outgoingConfig));
             outgoingIndexMap.put(outgoingConfig, new Integer(i));
         }
-        
+
         if(curCookie != null) {
-        	int node = configTreeField.nextNode(0, 0, true);
-        	while(node != -1) {
-        		if(((ConfigTreeNode)configTreeField.getCookie(node)).cookie == curCookie) {
-        			configTreeField.setCurrentNode(node);
-        			break;
-        		}
-        		else {
-        			node = configTreeField.nextNode(node, 0, true);
-        		}
-        	}
+            int node = configTreeField.nextNode(0, 0, true);
+            while(node != -1) {
+                if(((ConfigTreeNode)configTreeField.getCookie(node)).cookie == curCookie) {
+                    configTreeField.setCurrentNode(node);
+                    break;
+                }
+                else {
+                    node = configTreeField.nextNode(node, 0, true);
+                }
+            }
         }
     }
-    
+
     /**
      * Starts the new account wizard.
      */
     private void newAccountWizard() {
-		AccountConfigWizard wizard = new AccountConfigWizard();
-		if(wizard.start()) {
-			AccountConfig newAccountConfig = wizard.getAccountConfig();
-			
-			// Find the newly created account, and trigger a folder refresh (if applicable)
-			AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-			for(int i=0; i<accounts.length; i++) {
-				if(accounts[i].getAccountConfig() == newAccountConfig) {
-					if(accounts[i].hasFolders()) {
-						accounts[i].refreshMailboxes();
-					}
-					break;
-				}
-			}
-		}
+        AccountConfigWizard wizard = new AccountConfigWizard();
+        if(wizard.start()) {
+            AccountConfig newAccountConfig = wizard.getAccountConfig();
+
+            // Find the newly created account, and trigger a folder refresh (if applicable)
+            AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+            for(int i=0; i<accounts.length; i++) {
+                if(accounts[i].getAccountConfig() == newAccountConfig) {
+                    if(accounts[i].hasFolders()) {
+                        accounts[i].refreshMailboxes();
+                    }
+                    break;
+                }
+            }
+        }
     }
-    
+
     /**
      * Adds a new identity.
      */
@@ -555,14 +555,14 @@ public class ConfigScreen extends AbstractConfigScreen {
             buildAccountsList();
         }
     }
-    
+
     /**
      * Delete the currently selected identity.
      */
     private void deleteSelectedIdentity() {
         IdentityConfig identityConfig =
             (IdentityConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
-        
+
         int index = ((Integer)identityIndexMap.get(identityConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
@@ -605,7 +605,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     private void deleteSelectedAccount() {
         AccountConfig acctConfig =
             (AccountConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
-        
+
         int index = ((Integer)accountIndexMap.get(acctConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
@@ -632,14 +632,14 @@ public class ConfigScreen extends AbstractConfigScreen {
             buildAccountsList();
         }
     }
-    
+
     /**
      * Delete the currently selected outgoing server.
      */
     private void deleteSelectedOutgoingServer() {
         OutgoingConfig outgoingConfig =
             (OutgoingConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
-        
+
         int index = ((Integer)outgoingIndexMap.get(outgoingConfig)).intValue();
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
@@ -651,28 +651,28 @@ public class ConfigScreen extends AbstractConfigScreen {
             buildAccountsList();
         }
     }
-    
-	private static class ConfigTreeNode implements TreeFieldNode {
-		public Object cookie;
-		
-		public ConfigTreeNode(Object cookie) {
-			this.cookie = cookie;
-		}
 
-		public String toString() {
-			return cookie.toString();
-		}
-		
-		public boolean isNodeSelectable() {
-			if((cookie instanceof GlobalConfig)
-			|| (cookie instanceof IdentityConfig)
-			|| (cookie instanceof AccountConfig)
-			|| (cookie instanceof OutgoingConfig)) {
-				return true;
-			}
-			else {
-				return false;
-			}
-		}
-	}
+    private static class ConfigTreeNode implements TreeFieldNode {
+        public Object cookie;
+
+        public ConfigTreeNode(Object cookie) {
+            this.cookie = cookie;
+        }
+
+        public String toString() {
+            return cookie.toString();
+        }
+
+        public boolean isNodeSelectable() {
+            if((cookie instanceof GlobalConfig)
+                    || (cookie instanceof IdentityConfig)
+                    || (cookie instanceof AccountConfig)
+                    || (cookie instanceof OutgoingConfig)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
 }

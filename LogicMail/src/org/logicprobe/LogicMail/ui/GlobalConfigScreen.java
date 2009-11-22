@@ -60,10 +60,10 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
     private int selectedFileSystemRootIndex;
 
     private static String LOCAL_FILE_BASE = "LogicMail/";
-    
+
     private ObjectChoiceField languageChoiceField;
     private CheckboxField unicodeNormalizationCheckboxField;
-    
+
     private ObjectChoiceField messageDisplayChoiceField;
     private BasicEditField messageCountEditField;
     private ObjectChoiceField displayOrderChoiceField;
@@ -76,7 +76,7 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
 
     public GlobalConfigScreen() {
         super("LogicMail - " +
-            resources.getString(LogicMailResource.CONFIG_GLOBAL_TITLE));
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TITLE));
 
         mailSettings = MailSettings.getInstance();
         existingConfig = mailSettings.getGlobalConfig();
@@ -114,16 +114,16 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
         selectedFileSystemRootIndex = 0;
         Enumeration e = FileSystemRegistry.listRoots();
         while(e.hasMoreElements()) {
-        	String root = (String)e.nextElement();
-        	if(selectedFileSystemRoot.endsWith(root + LOCAL_FILE_BASE)) {
-        		selectedFileSystemRootIndex = i;
-        	}
-        	resultsVector.addElement(root);
-        	i++;
+            String root = (String)e.nextElement();
+            if(selectedFileSystemRoot.endsWith(root + LOCAL_FILE_BASE)) {
+                selectedFileSystemRootIndex = i;
+            }
+            resultsVector.addElement(root);
+            i++;
         }
         fileSystemRoots = new String[resultsVector.size()];
         resultsVector.copyInto(fileSystemRoots);
-        
+
         initFields();
     }
 
@@ -139,101 +139,107 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
             }
         }
         languageChoiceField = new ObjectChoiceField(
-        		resources.getString(LogicMailResource.CONFIG_GLOBAL_LANGUAGE),
-        		languageChoices,
-        		languageIndex);
-        
-		unicodeNormalizationCheckboxField = new CheckboxField(
-				resources.getString(LogicMailResource.CONFIG_GLOBAL_UNICODE_NORMALIZATION),
-				existingConfig.getUnicodeNormalization());
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_LANGUAGE),
+                languageChoices,
+                languageIndex);
 
-		messageDisplayChoiceField = new ObjectChoiceField(
-				resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT),
-				new String[] {
-					resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT_PLAIN_TEXT),
-					"HTML" },
-				existingConfig.getMessageDisplayFormat());
-		
-	    messageCountEditField = new BasicEditField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
-	            Integer.toString(existingConfig.getRetMsgCount()));
-	    messageCountEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-	
-	    String[] orderTypes = {
-	            resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
-	            resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
-	        };
-	
-	    if (existingConfig.getDispOrder()) {
-	        displayOrderChoiceField = new ObjectChoiceField(
-	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
-	                orderTypes, 0);
-	    } else {
-	        displayOrderChoiceField = new ObjectChoiceField(
-	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
-	                orderTypes, 1);
-	    }
-	
-	    hideDeletedMessagesCheckboxField = new CheckboxField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
+        unicodeNormalizationCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_UNICODE_NORMALIZATION),
+                existingConfig.getUnicodeNormalization());
+
+        messageDisplayChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT),
+                new String[] {
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT_PLAIN_TEXT),
+                "HTML" },
+                existingConfig.getMessageDisplayFormat());
+
+        messageCountEditField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
+                Integer.toString(existingConfig.getRetMsgCount()));
+        messageCountEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+
+        String[] orderTypes = {
+                resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
+                resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
+        };
+
+        if (existingConfig.getDispOrder()) {
+            displayOrderChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+                    orderTypes, 0);
+        } else {
+            displayOrderChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+                    orderTypes, 1);
+        }
+
+        hideDeletedMessagesCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
                 existingConfig.getHideDeletedMsg());
-	
-	    String[] wifiModes = {
-	            resources.getString(LogicMailResource.MENUITEM_DISABLED),
-	            resources.getString(LogicMailResource.MENUITEM_PROMPT),
-	            resources.getString(LogicMailResource.MENUITEM_ALWAYS)
-	        };
-	    wifiModeChoiceField = new ObjectChoiceField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + ' ',
-	    		wifiModes,
-	    		existingConfig.getWifiMode());
 
-	    localDataLocationChoiceLabel = new ObjectChoiceField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_LOCATION) + ' ',
-	    		fileSystemRoots,
-	    		selectedFileSystemRootIndex);
-	
-	    boolean overrideHostname = localHostname.length() > 0;
-	    overrideHostnameCheckboxField = new CheckboxField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
-	            overrideHostname);
-	    overrideHostnameCheckboxField.setChangeListener(this);
-	
-	    if (overrideHostname) {
-	        localHostnameEditField = new BasicEditField(
-	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
-	                localHostname);
-	    } else {
-	        String hostname = System.getProperty("microedition.hostname");
-	        localHostnameEditField = new BasicEditField(
-	        		resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
-	                ((hostname != null) ? hostname : "localhost"));
-	        localHostnameEditField.setEditable(false);
-	    }
-	
-	    connectionDebuggingCheckboxField = new CheckboxField(
-	    		resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
+        String[] wifiModes = {
+                resources.getString(LogicMailResource.MENUITEM_DISABLED),
+                resources.getString(LogicMailResource.MENUITEM_PROMPT),
+                resources.getString(LogicMailResource.MENUITEM_ALWAYS)
+        };
+        wifiModeChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_WIFI_MODE) + ' ',
+                wifiModes,
+                existingConfig.getWifiMode());
+
+        localDataLocationChoiceLabel = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_LOCATION) + ' ',
+                fileSystemRoots,
+                selectedFileSystemRootIndex);
+
+        boolean overrideHostname = localHostname.length() > 0;
+        overrideHostnameCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
+                overrideHostname);
+        overrideHostnameCheckboxField.setChangeListener(this);
+
+        if (overrideHostname) {
+            localHostnameEditField = new BasicEditField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+                    localHostname);
+        } else {
+            String hostname = System.getProperty("microedition.hostname");
+            localHostnameEditField = new BasicEditField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+                    ((hostname != null) ? hostname : "localhost"));
+            localHostnameEditField.setEditable(false);
+        }
+
+        connectionDebuggingCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
                 existingConfig.getConnDebug());
 
 
-		add(new LabeledSeparatorField("Message display", Field.NON_FOCUSABLE | LabeledSeparatorField.BOTTOM_BORDER));
-		add(messageDisplayChoiceField);
-	    add(messageCountEditField);
-	    add(displayOrderChoiceField);
-	    add(hideDeletedMessagesCheckboxField);
+        add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_MESSAGE_DISPLAY),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.BOTTOM_BORDER));
+        add(messageDisplayChoiceField);
+        add(messageCountEditField);
+        add(displayOrderChoiceField);
+        add(hideDeletedMessagesCheckboxField);
 
-		add(new LabeledSeparatorField("Networking", Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
-	    add(wifiModeChoiceField);
-	    add(overrideHostnameCheckboxField);
-	    add(localHostnameEditField);
-	    
-	    add(new LabeledSeparatorField("Other", Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
-	    add(localDataLocationChoiceLabel);
-		add(languageChoiceField);
-		add(unicodeNormalizationCheckboxField);
-	    add(connectionDebuggingCheckboxField);
+        add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_NETWORKING),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        add(wifiModeChoiceField);
+        add(overrideHostnameCheckboxField);
+        add(localHostnameEditField);
+
+        add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_OTHER),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        add(localDataLocationChoiceLabel);
+        add(languageChoiceField);
+        add(unicodeNormalizationCheckboxField);
+        add(connectionDebuggingCheckboxField);
     }
-    
+
     public void fieldChanged(Field field, int context) {
         if (field == overrideHostnameCheckboxField) {
             if (overrideHostnameCheckboxField.getChecked()) {
@@ -242,7 +248,7 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
             } else {
                 String hostname = System.getProperty("microedition.hostname");
                 localHostnameEditField.setText((hostname != null) ? hostname
-                                                            : "localhost");
+                        : "localhost");
                 localHostnameEditField.setEditable(false);
             }
         }
@@ -262,11 +268,11 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
             Locale.setDefault(Locale.getDefault());
             config.setLanguageCode("");
         }
-        
+
         config.setUnicodeNormalization(unicodeNormalizationCheckboxField.getChecked());
-        
+
         config.setMessageDisplayFormat(messageDisplayChoiceField.getSelectedIndex());
-        
+
         try {
             config.setRetMsgCount(Integer.parseInt(messageCountEditField.getText()));
         } catch (Exception e) { }

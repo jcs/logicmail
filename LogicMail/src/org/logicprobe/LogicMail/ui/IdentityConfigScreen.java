@@ -32,10 +32,8 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.RichTextField;
@@ -56,8 +54,7 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
     private EmailAddressEditField emailAddressField;
     private EmailAddressEditField replyToAddressField;
     private AutoTextEditField msgSignatureField;
-    private ButtonField saveButton;
-    
+
     /**
      * Creates a new instance of IdentityConfigScreen
      */
@@ -76,40 +73,26 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
         msgSignatureField = new AutoTextEditField();
         msgSignatureField.setText(identityConfig.getMsgSignature());
 
-        saveButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
-        saveButton.setChangeListener(new FieldChangeListener() {
-            public void fieldChanged(Field field, int context) {
-                saveButton_FieldChanged(field, context);
-            }});
-
         add(identityNameField);
-        add(new SeparatorField());
         add(fullNameField);
         add(emailAddressField);
         add(replyToAddressField);
         add(new SeparatorField());
         add(new RichTextField(resources.getString(LogicMailResource.CONFIG_IDENTITY_SIGNATURE), Field.NON_FOCUSABLE));
         add(msgSignatureField);
-        add(new SeparatorField());
-        add(saveButton);
-    }
-
-    private void saveButton_FieldChanged(Field field, int context) {
-        field.setDirty(false);
-        onClose();
     }
 
     protected boolean onSavePrompt() {
         if(identityNameField.getText().length() > 0 &&
-           emailAddressField.getText().length() > 0) {
+                emailAddressField.getText().length() > 0) {
             return super.onSavePrompt();
         }
         else {
             int result = Dialog.ask(
-            		resources.getString(LogicMailResource.CONFIG_PROMPT_INCOMPLETE),
-            		new String[] {
-            			resources.getString(LogicMailResource.MENUITEM_DISCARD),
-            			resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
+                    resources.getString(LogicMailResource.CONFIG_PROMPT_INCOMPLETE),
+                    new String[] {
+                        resources.getString(LogicMailResource.MENUITEM_DISCARD),
+                        resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
             if(result == 0) {
                 return true;
             }
@@ -118,7 +101,7 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
             }
         }
     }
-    
+
     public void save() {
         identityConfig.setIdentityName(identityNameField.getText());
         identityConfig.setFullName(fullNameField.getText());
@@ -127,7 +110,7 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
         identityConfig.setMsgSignature(msgSignatureField.getText());
         configSaved = true;
     }
-    
+
     public boolean configSaved() {
         return configSaved;
     }
