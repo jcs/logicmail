@@ -4,13 +4,11 @@
 -->
 <project name="LogicMail" default="build" basedir=".">
   <!-- Properties -->
-  <property name="src.dir" location="src"/>
   <property name="dist.dir" location="dist"/>
   <property name="dist.ota.dir" location="distota"/>
   <property name="dist.alx.dir" location="distalx"/>
   <property name="docs.dir" location="docs"/>
   <property name="startup.src.dir" location="../LogicMailStartup/src"/>
-  <property name="bb470.src.dir" location="../LogicMail_BB47/src"/>
   <property file="project.properties"/>
   
   <!-- Task definitions -->
@@ -33,9 +31,9 @@
   	<attribute name="platformfileset"/>
     <sequential>
       <mkdir dir="${dist.dir}/@{platform}"/>
-      <copy file="${src.dir}/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
+      <copy file="res/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
       <rapc output="${module.name}"
-            srcdir="${src.dir}"
+            srcdir="src"
             destdir="${dist.dir}/@{platform}"
             jdehome="@{jdehome}"
             defines="@{preprocessor}">
@@ -52,8 +50,10 @@
                  startuptier="7"/>
         </jdp>
         <src>
-          <fileset dir="${src.dir}">
+          <fileset dir="src">
             <include name="**/*.java"/>
+          </fileset>
+          <fileset dir="res">
             <include name="**/*.rrc"/>
             <include name="**/*.rrh"/>
             <include name="**/*.png"/>
@@ -65,22 +65,63 @@
         </src>
       </rapc>
       <delete file="${dist.dir}/@{platform}/logicmail.png"/>
-      <sleep milliseconds="${task.sleep}"/>
     </sequential>
   </macrodef>
   
   <!-- Build the application -->
   <target name="build">
     <if><isset property="jde421.home"/><then>
-      <fileset id="bb421_fileset" dir="${src.dir}" />
+      <fileset id="bb421_fileset" dir="src" />
       <build-platform jdehome="${jde421.home}" platform="BB421" defines="BLACKBERRY_4_2_1" platformfileset="bb421_fileset"/>
     </then></if>
+    <if><isset property="jde460.home"/><then>
+      <fileset id="bb460_fileset" dir="..">
+        <include name="LogicMail_BB46/src/**/*.java" />
+        <include name="LogicMail_BB46/res/**/*.png" />
+      </fileset>
+      <build-platform jdehome="${jde460.home}" platform="BB460" defines="BLACKBERRY_4_6_0" platformfileset="bb460_fileset"/>
+    </then></if>
     <if><isset property="jde470.home"/><then>
-      <fileset id="bb470_fileset" dir="${bb470.src.dir}">
-        <include name="**/*.java"/>
-        <include name="**/*.png"/>
+      <fileset id="bb470_fileset" dir="..">
+        <include name="LogicMail_BB46/src/**/*.java" />
+        <include name="LogicMail_BB46/res/**/*.png" />
+        <include name="LogicMail_BB47/src/**/*.java" />
+        <include name="LogicMail_BB47/res/**/*.png" />
+      </fileset>
+      <fileset id="bb470t_fileset" dir="..">
+        <include name="LogicMail_BB46/src/**/*.java" />
+        <include name="LogicMail_BB46/res/**/*.png" />
+        <include name="LogicMail_BB47/src/**/*.java" />
+        <include name="LogicMail_BB47/res/**/*.png" />
+        <include name="LogicMail_BB47T/src/**/*.java" />
+        <include name="LogicMail_BB47T/res/**/*.png" />
       </fileset>
       <build-platform jdehome="${jde470.home}" platform="BB470" defines="BLACKBERRY_4_7_0" platformfileset="bb470_fileset"/>
+      <build-platform jdehome="${jde470.home}" platform="BB470T" defines="BLACKBERRY_4_7_0" platformfileset="bb470t_fileset"/>
+    </then></if>
+    <if><isset property="jde500.home"/><then>
+      <fileset id="bb500_fileset" dir="..">
+        <include name="LogicMail_BB46/src/**/*.java" />
+        <include name="LogicMail_BB46/res/**/*.png" />
+        <include name="LogicMail_BB47/src/**/*.java" />
+        <include name="LogicMail_BB47/res/**/*.png" />
+        <include name="LogicMail_BB50/src/**/*.java" />
+        <include name="LogicMail_BB50/res/**/*.png" />
+      </fileset>
+      <fileset id="bb500t_fileset" dir="..">
+        <include name="LogicMail_BB46/src/**/*.java" />
+        <include name="LogicMail_BB46/res/**/*.png" />
+        <include name="LogicMail_BB47/src/**/*.java" />
+        <include name="LogicMail_BB47/res/**/*.png" />
+        <include name="LogicMail_BB47T/src/**/*.java" />
+        <include name="LogicMail_BB47T/res/**/*.png" />
+        <include name="LogicMail_BB50/src/**/*.java" />
+        <include name="LogicMail_BB50/res/**/*.png" />
+        <include name="LogicMail_BB50T/src/**/*.java" />
+        <include name="LogicMail_BB50T/res/**/*.png" />
+      </fileset>
+      <build-platform jdehome="${jde500.home}" platform="BB500" defines="BLACKBERRY_5_0_0" platformfileset="bb500_fileset"/>
+      <build-platform jdehome="${jde500.home}" platform="BB500T" defines="BLACKBERRY_5_0_0" platformfileset="bb500t_fileset"/>
     </then></if>
   </target>
 
@@ -91,14 +132,32 @@
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB421/${module.name}.cod"/>
-      <sleep milliseconds="${task.sleep}"/>
+    </then></if>
+    <if><isset property="jde460.home"/><then>
+      <sigtool jdehome="${jde460.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB460/${module.name}.cod"/>
     </then></if>
     <if><isset property="jde470.home"/><then>
       <sigtool jdehome="${jde470.home}"
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB470/${module.name}.cod"/>
-      <sleep milliseconds="${task.sleep}"/>
+      <sigtool jdehome="${jde470.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB470T/${module.name}.cod"/>
+    </then></if>
+    <if><isset property="jde500.home"/><then>
+      <sigtool jdehome="${jde500.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB500/${module.name}.cod"/>
+      <sigtool jdehome="${jde500.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB500T/${module.name}.cod"/>
     </then></if>
   </target>
   
@@ -109,7 +168,7 @@
              version="true"
              use="true"
              windowtitle="${module.description}">
-      <fileset dir="${src.dir}">
+      <fileset dir="src">
         <include name="**/*.java"/>
       </fileset>
       <fileset dir="${startup.src.dir}">
@@ -141,15 +200,30 @@
         <codset dir="BB421" greaterthanequal="4.2.1" lessthan="4.7.0">
           <fileset dir="${dist.dir}/BB421" includes="*.cod" />
         </codset>
-        <codset dir="BB470" greaterthanequal="4.7.0">
+        <codset dir="BB460" greaterthanequal="4.6.0" lessthan="4.7.0">
+          <fileset dir="${dist.dir}/BB460" includes="*.cod" />
+        </codset>
+        <codset dir="BB470" greaterthanequal="4.7.0" lessthan="5.0.0">
           <fileset dir="${dist.dir}/BB470" includes="*.cod" />
         </codset>
+        <!-- Uncomment when bb-ant-tools supports more attributes
+        <codset dir="BB470T" greaterthanequal="4.7.0" lessthan="5.0.0" series="9500">
+          <fileset dir="${dist.dir}/BB470T" includes="*.cod" />
+        </codset>
+        -->
+        <codset dir="BB500" greaterthanequal="5.0.0">
+          <fileset dir="${dist.dir}/BB500" includes="*.cod" />
+        </codset>
+        <!-- Uncomment when bb-ant-tools supports more attributes
+        <codset dir="BB500T" greaterthanequal="5.0.0" series="9500">
+          <fileset dir="${dist.dir}/BB500T" includes="*.cod" />
+        </codset>
+        -->
       </application>
 	</alx>
     <copy todir="${dist.alx.dir}">
       <fileset dir=".." includes="README.txt, LICENSE.txt, ChangeLog.txt"/>
     </copy>
-    <sleep milliseconds="${task.sleep}"/>
   </target>
   
   <macrodef name="copy-ota-files">
@@ -163,7 +237,6 @@
       </jadtool>
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-URL(.*)\n" replace="" />
       <replaceregexp file="@{dest}/${module.name}.jad" match="MIDlet-Jar-Size(.*)\n" replace="" />
-      <sleep milliseconds="${task.sleep}"/>
     </sequential>
   </macrodef>
   
@@ -190,7 +263,6 @@
         ]]>
       </insert>
     </xmltask>
-  	<sleep milliseconds="${task.sleep}"/>
     <if><isset property="jde421.home"/><then>
       <copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
     </then></if>
