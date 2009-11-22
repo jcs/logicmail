@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,10 @@
  */
 package org.logicprobe.LogicMail;
 
-public class PlatformInfoBB47 extends PlatformInfo {
+import net.rim.device.api.ui.Touchscreen;
 
+public class PlatformInfoBB47 extends PlatformInfoBB46 {
+    public boolean hasTouchscreen() {
+        return Touchscreen.isSupported();
+    }
 }

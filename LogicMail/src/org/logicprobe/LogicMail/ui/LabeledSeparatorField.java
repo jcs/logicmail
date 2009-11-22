@@ -41,111 +41,111 @@ import net.rim.device.api.ui.Graphics;
  * Shows a centered text string against a gradient background.
  */
 public class LabeledSeparatorField extends Field {
-	private String text;
-	private boolean topBorder;
-	private boolean bottomBorder;
+    private String text;
+    private boolean topBorder;
+    private boolean bottomBorder;
 
-	public static long TOP_BORDER = 0x0000000000020L;
-	public static long BOTTOM_BORDER = 0x0000000000040L;
-	
-	/**
-	 * Instantiates a new mailbox separator field.
-	 * 
-	 * @param text The text to display.
-	 * @param style Combination of field style bits to specify display attributes.
-	 */
-	public LabeledSeparatorField(String text, long style) {
-		super(style);
-		this.text = text;
+    public static long TOP_BORDER = 0x0000000000020L;
+    public static long BOTTOM_BORDER = 0x0000000000040L;
+
+    /**
+     * Instantiates a new mailbox separator field.
+     * 
+     * @param text The text to display.
+     * @param style Combination of field style bits to specify display attributes.
+     */
+    public LabeledSeparatorField(String text, long style) {
+        super(style);
+        this.text = text;
         topBorder = ((style & TOP_BORDER) == TOP_BORDER);
         bottomBorder = ((style & BOTTOM_BORDER) == BOTTOM_BORDER);
-	}
+    }
 
-	/**
-	 * Instantiates a new mailbox separator field.
-	 * 
-	 * @param style Combination of field style bits to specify display attributes
-	 */
-	public LabeledSeparatorField(long style) {
-		this("", style);
-	}
+    /**
+     * Instantiates a new mailbox separator field.
+     * 
+     * @param style Combination of field style bits to specify display attributes
+     */
+    public LabeledSeparatorField(long style) {
+        this("", style);
+    }
 
-	/**
-	 * Sets the text to display;
-	 * 
-	 * @param text the new text to display
-	 */
-	public void setText(String text) {
-		this.text = text;
-		this.invalidate();
-	}
-	
-	/**
-	 * Gets the text being displayed
-	 * 
-	 * @return the text being displayed
-	 */
-	public String getText() {
-		return this.text;
-	}
-	
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Field#getPreferredHeight()
-	 */
-	public int getPreferredHeight() {
-		return Font.getDefault().getHeight();
-	};
-	
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Field#layout(int, int)
-	 */
-	protected void layout(int width, int height) {
-		setExtent(width, getPreferredHeight());
-	}
+    /**
+     * Sets the text to display;
+     * 
+     * @param text the new text to display
+     */
+    public void setText(String text) {
+        this.text = text;
+        this.invalidate();
+    }
 
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Field#onUnfocus()
-	 */
-	protected void onUnfocus() {
-		super.invalidate();
-		super.onUnfocus();
-	}
+    /**
+     * Gets the text being displayed
+     * 
+     * @return the text being displayed
+     */
+    public String getText() {
+        return this.text;
+    }
 
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
-	 */
-	protected void paint(Graphics graphics) {
-    	boolean isFocus = this.isFocus();
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Field#getPreferredHeight()
+     */
+    public int getPreferredHeight() {
+        return Font.getDefault().getHeight();
+    };
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Field#layout(int, int)
+     */
+    protected void layout(int width, int height) {
+        setExtent(width, getPreferredHeight());
+    }
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Field#onUnfocus()
+     */
+    protected void onUnfocus() {
+        super.invalidate();
+        super.onUnfocus();
+    }
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
+     */
+    protected void paint(Graphics graphics) {
+        boolean isFocus = this.isFocus();
         int width = this.getWidth();
         int height = this.getHeight();
         int originalColor = graphics.getColor();
         int textWidth = Font.getDefault().getAdvance(text);
-        
+
         int textX = width / 2 - textWidth / 2;
         if(textX <= 0) {
-        	textX = 0;
-        	textWidth = width;
+            textX = 0;
+            textWidth = width;
         }
-        
+
         // Draw the gradient background
         if(!isFocus) {
-	        for(int i=0; i<height; i++) {
-	            int color = 0xFF - i;
-	    		graphics.setColor((color * 0x10000) + (color * 0x100) + color);
-	        	graphics.drawLine(0, i, width, i);
-	        }
+            for(int i=0; i<height; i++) {
+                int color = 0xFF - i;
+                graphics.setColor((color * 0x10000) + (color * 0x100) + color);
+                graphics.drawLine(0, i, width, i);
+            }
         }
-        
+
         // Draw the separator lines
         graphics.setColor(Color.DARKGRAY);
         if(topBorder) {
-        	graphics.drawLine(0, 0, width, 0);
+            graphics.drawLine(0, 0, width, 0);
         }
         if(bottomBorder) {
-        	graphics.drawLine(0, height - 1, width, height - 1);
+            graphics.drawLine(0, height - 1, width, height - 1);
         }
         graphics.setColor(originalColor);
-        
+
         graphics.drawText(text, textX, 0, DrawStyle.ELLIPSIS, textWidth);
-	}
+    }
 }

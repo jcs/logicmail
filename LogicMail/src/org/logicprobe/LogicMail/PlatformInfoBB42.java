@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,31 @@
  */
 package org.logicprobe.LogicMail;
 
-public class PlatformInfoBB42 extends PlatformInfo {
+import net.rim.device.api.system.CodeModuleManager;
 
+public class PlatformInfoBB42 extends PlatformInfo {
+    protected String platformVersion;
+
+    public PlatformInfoBB42() {
+    }
+    
+    public String getPlatformVersion() {
+        if(platformVersion == null) {
+            // Get the platform version
+            int[] handles = CodeModuleManager.getModuleHandles();
+            int size = handles.length;
+            //Check for a particular RIM module (Here, the ribbon app)
+            for (int i = size-1; i>=0;--i) {
+                    if (CodeModuleManager.getModuleName(handles[i]).equals("net_rim_bb_ribbon_app")) {
+                            platformVersion =
+                                    CodeModuleManager.getModuleVersion(handles[i]);
+                    }
+            }
+        }
+        return platformVersion;
+    }
+    
+    public boolean hasTouchscreen() {
+        return false;
+    }
 }

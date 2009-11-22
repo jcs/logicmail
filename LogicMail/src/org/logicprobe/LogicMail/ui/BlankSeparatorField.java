@@ -28,33 +28,32 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.logicprobe.LogicMail;
+package org.logicprobe.LogicMail.ui;
 
-import org.logicprobe.LogicMail.util.PlatformUtils;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.component.SeparatorField;
 
-public abstract class PlatformInfo {
-    private static PlatformInfo instance;
+/**
+ * Horizontal separator field that is used to provide spacing
+ * between other fields.
+ */
+public class BlankSeparatorField extends SeparatorField {
+    private int size;
     
-    /**
-     * Array of concrete PlatformInfo classes, in order from the highest
-     * API version to the lowest.
-     */
-    private static String[] infoClasses = {
-            "org.logicprobe.LogicMail.PlatformInfoBB50T",
-            "org.logicprobe.LogicMail.PlatformInfoBB50",
-            "org.logicprobe.LogicMail.PlatformInfoBB47T",
-            "org.logicprobe.LogicMail.PlatformInfoBB47",
-            "org.logicprobe.LogicMail.PlatformInfoBB42"
-    };
-    
-    public static synchronized PlatformInfo getInstance() {
-        if(instance == null) {
-                instance = (PlatformInfo)PlatformUtils.getFactoryInstance(infoClasses);
-        }
-        return instance;
+    public BlankSeparatorField(int size) {
+        super();
+        this.size = size;
     }
     
-    public abstract String getPlatformVersion();
+    public int getPreferredHeight() {
+        return size;
+    }
+
+    protected void layout(int width, int height) {
+        setExtent(width, size);
+    }
     
-    public abstract boolean hasTouchscreen();
+    protected void paint(Graphics graphics) {
+        // Field should be empty
+    }
 }

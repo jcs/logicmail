@@ -41,26 +41,26 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.SeparatorField;
 
 public class AboutDialog extends Dialog {
-	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-	
-	public AboutDialog() {
-		super(
-			resources.getString(LogicMailResource.ABOUT_TITLE) + " " + AppInfo.getName(),
-			new Object[] { resources.getString(LogicMailResource.MENUITEM_CLOSE) },
-			new int[] { Dialog.OK },
-			Dialog.OK,
-			Bitmap.getBitmapResource("logicmail.png"));
-		setEscapeEnabled(true);
-		initFields();
-	}
-	
-	private void initFields() {
-		LabelField nameLabelField = new LabelField(AppInfo.getName() + " " + AppInfo.getVersion(), Field.FIELD_HCENTER);
-		LabelField urlLabelField = new LabelField("http://logicmail.sf.net/", Field.FIELD_HCENTER);
-		
-		add(new SeparatorField());
-		add(nameLabelField);
-		add(urlLabelField);
-		add(new LabelField());
-	}
+    private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+
+    public AboutDialog() {
+        super(
+                resources.getString(LogicMailResource.ABOUT_TITLE) + ' ' + AppInfo.getName(),
+                new Object[] { resources.getString(LogicMailResource.MENUITEM_CLOSE) },
+                new int[] { Dialog.OK },
+                Dialog.OK,
+                Bitmap.getBitmapResource("logicmail.png"));
+        setEscapeEnabled(true);
+        initFields();
+    }
+
+    private void initFields() {
+        LabelField nameLabelField = new LabelField(AppInfo.getName() + ' ' + AppInfo.getVersion(), Field.FIELD_HCENTER);
+        LabelField urlLabelField = new LabelField("http://logicmail.sf.net/", Field.FIELD_HCENTER);
+
+        add(new SeparatorField());
+        add(nameLabelField);
+        add(urlLabelField);
+        add(new LabelField());
+    }
 }

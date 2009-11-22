@@ -52,6 +52,7 @@ import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
 
 import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.ui.BlankSeparatorField;
 import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.ui.ThrobberField;
@@ -72,117 +73,128 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application.
  */
 public class LogicMail extends UiApplication {
-	private NavigationController navigationController;
-	private Screen loadingScreen;
-	
+    private NavigationController navigationController;
+    private Screen loadingScreen;
+
     /**
      * Instantiates a new instance of the application.
      * 
      * @param autoStart True if this is the autostart instance, false for normal startup
      */
     public LogicMail(String[] args) {
-    	boolean autoStart = false;
-    	for(int i=0; i<args.length; i++) {
-    		if(args[i].indexOf("autostartup") != -1) {
-    			autoStart = true;    			
-    		}
-    	}
-    	AppInfo.initialize(args);
-    	
-    	if(autoStart) {
-    		doAutoStart();
-    	}
-    	else {
-	        logStartupAppInfo();
-	        
-	        createLoadingScreen();
-	        
-	        Thread loadingThread = new Thread() {
-	        	public void run() {
-	    	        // Load the configuration
-	    	        MailSettings.getInstance().loadSettings();
-	                // Set the language, if configured
-	                String languageCode =
-	                    MailSettings.getInstance().getGlobalConfig().getLanguageCode();
-	                if(languageCode != null && languageCode.length() > 0) {
-	                    try {
-	                        Locale.setDefault(Locale.get(languageCode));
-	                    } catch (Exception e) { }
-	                }
+        boolean autoStart = false;
+        for(int i=0; i<args.length; i++) {
+            if(args[i].indexOf("autostartup") != -1) {
+                autoStart = true;    			
+            }
+        }
+        AppInfo.initialize(args);
 
-	    	        // Initialize the data model explicitly
-	    	        MailManager.initialize();
-	    	        
-	    	        // Initialize the notification handler
-	    	        NotificationHandler.getInstance().setEnabled(true);
-	    	        
-	    	        // Initialize the navigation controller
-	    	        navigationController = new NavigationController(LogicMail.this);
-	    	        
-	    	        invokeLater(new Runnable() {
-						public void run() {
-			    	        // Push the mail home screen and pop
-							// the loading screen
-			    	        navigationController.displayMailHome();
-			    	        popScreen(loadingScreen);
-			    	        loadingScreen = null;
-						}
-	    	        });
-	        	}
-	        };
-	        
-	        pushScreen(loadingScreen);
-	        loadingThread.start();
-    	}
+        if(autoStart) {
+            doAutoStart();
+        }
+        else {
+            logStartupAppInfo();
+
+            createLoadingScreen();
+
+            Thread loadingThread = new Thread() {
+                public void run() {
+                    // Load the configuration
+                    MailSettings.getInstance().loadSettings();
+                    // Set the language, if configured
+                    String languageCode =
+                        MailSettings.getInstance().getGlobalConfig().getLanguageCode();
+                    if(languageCode != null && languageCode.length() > 0) {
+                        try {
+                            Locale.setDefault(Locale.get(languageCode));
+                        } catch (Exception e) { }
+                    }
+
+                    // Initialize the data model explicitly
+                    MailManager.initialize();
+
+                    // Initialize the notification handler
+                    NotificationHandler.getInstance().setEnabled(true);
+
+                    // Initialize the navigation controller
+                    navigationController = new NavigationController(LogicMail.this);
+
+                    try {
+                        sleep(2000);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    
+                    invokeLater(new Runnable() {
+                        public void run() {
+                            // Push the mail home screen and pop
+                            // the loading screen
+                            navigationController.displayMailHome();
+                            popScreen(loadingScreen);
+                            loadingScreen = null;
+                        }
+                    });
+                }
+            };
+
+            pushScreen(loadingScreen);
+            loadingThread.start();
+        }
     }
 
-	private void logStartupAppInfo() {
-		// Log application startup information
-		if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-		    StringBuffer buf = new StringBuffer();
-		    buf.append("Application startup\r\n");
-		    buf.append("Date: ");
-		    buf.append(Calendar.getInstance().getTime().toString());
-		    buf.append("\r\n");
-		    buf.append("Name: ");
-		    buf.append(AppInfo.getName());
-		    buf.append("\r\n");
-		    buf.append("Version: ");
-		    buf.append(AppInfo.getVersion());
-		    buf.append("\r\n");
-		    buf.append("Platform: ");
-		    buf.append(AppInfo.getPlatformVersion());
-		    buf.append("\r\n");
-		    EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
-		}
-	}
+    private void logStartupAppInfo() {
+        // Log application startup information
+        if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("Application startup\r\n");
+            buf.append("Date: ");
+            buf.append(Calendar.getInstance().getTime().toString());
+            buf.append("\r\n");
+            buf.append("Name: ");
+            buf.append(AppInfo.getName());
+            buf.append("\r\n");
+            buf.append("Version: ");
+            buf.append(AppInfo.getVersion());
+            buf.append("\r\n");
+            buf.append("Platform: ");
+            buf.append(AppInfo.getPlatformVersion());
+            if(PlatformInfo.getInstance().hasTouchscreen()) {
+                buf.append(' ');
+                buf.append("(touch)");
+            }
+            buf.append("\r\n");
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.INFORMATION);
+        }
+    }
 
     private void createLoadingScreen() {
-		loadingScreen = new MainScreen();
-		int displayWidth = Display.getWidth();
-		Bitmap splashLogo = Bitmap.getBitmapResource("splash-logo.png");
-		Bitmap fieldSeparator = new Bitmap(displayWidth, 10);
-		int throbberSize = displayWidth / 4;
-		int fontHeight = Font.getDefault().getHeight();
-		int spacerSize = (Display.getHeight() / 2) - ((splashLogo.getHeight() + throbberSize + fontHeight) / 2) - 10;
-		if(spacerSize < 0) { spacerSize = 0; }
-		Bitmap topSpacer = new Bitmap(displayWidth, spacerSize);
-		
-		loadingScreen.add(new BitmapField(topSpacer));
-		loadingScreen.add(new BitmapField(splashLogo, Field.FIELD_HCENTER));
-		loadingScreen.add(new BitmapField(fieldSeparator));
-		loadingScreen.add(new ThrobberField(throbberSize, Field.FIELD_HCENTER));
-		loadingScreen.add(new BitmapField(fieldSeparator));
+        loadingScreen = new MainScreen();
+        int displayWidth = Display.getWidth();
+        int displayHeight = Display.getHeight();
+        int fieldSpacerSize = displayHeight / 24;
+        Bitmap splashLogo = Bitmap.getBitmapResource("splash-logo.png");
+        int throbberSize = displayWidth / 4;
+        int fontHeight = Font.getDefault().getHeight();
+        int spacerSize = (displayHeight / 2) - ((splashLogo.getHeight() + throbberSize + fontHeight) / 2) - fieldSpacerSize;
+        if(spacerSize < 0) { spacerSize = 0; }
+
+        loadingScreen.add(new BlankSeparatorField(spacerSize));
+        loadingScreen.add(new BitmapField(splashLogo, Field.FIELD_HCENTER));
+        loadingScreen.add(new BlankSeparatorField(fieldSpacerSize));
+        loadingScreen.add(new ThrobberField(throbberSize, Field.FIELD_HCENTER));
+        loadingScreen.add(new BlankSeparatorField(fieldSpacerSize));
         loadingScreen.add(new LabelField("Version " + AppInfo.getVersion(), Field.FIELD_HCENTER));
     }
-    
+
     /**
      * Run the application.
      */
     public void run() {
-    	enterEventDispatcher();
+        enterEventDispatcher();
     }
-    
+
     /**
      * Method to execute in autostart mode.
      */
@@ -214,23 +226,23 @@ public class LogicMail extends UiApplication {
                         int numAccounts = mailSettings.getNumAccounts();
                         Hashtable eventSourceMap = new Hashtable(numAccounts);
                         for(int i=0; i<numAccounts; i++) {
-                        	AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-                        	LogicMailEventSource eventSource =
-                        		new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
-                        	NotificationsManager.registerSource(
-                    			eventSource.getEventSourceId(),
-                    			eventSource,
-                    			NotificationsConstants.CASUAL);
-                        	eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
+                            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+                            LogicMailEventSource eventSource =
+                                new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+                            NotificationsManager.registerSource(
+                                    eventSource.getEventSourceId(),
+                                    eventSource,
+                                    NotificationsConstants.CASUAL);
+                            eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
                         }
-                        
+
                         // Save the registered event sources in the runtime store
                         RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
                         keepGoing = false;
                     }
-                 }
-                 //Exit the application.
-                 System.exit(0);
+                }
+                //Exit the application.
+                System.exit(0);
             }
         });
     }

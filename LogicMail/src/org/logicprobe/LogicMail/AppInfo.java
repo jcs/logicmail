@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail;
 
 import net.rim.device.api.system.ApplicationDescriptor;
 import net.rim.device.api.system.Bitmap;
-import net.rim.device.api.system.CodeModuleManager;
 
 /**
  * Class to provide information about the application
@@ -50,7 +49,7 @@ public final class AppInfo {
     private static Bitmap newMessagesRolloverIcon = Bitmap.getBitmapResource("logicmail-new-rollover.png");
     private static String appName;
     private static String appVersion;
-    private static String platformVersion;
+    private static PlatformInfo platformInfo;
     
     /**
      * Initializes the application information from the descriptor and the
@@ -86,16 +85,7 @@ public final class AppInfo {
         }
         appVersion = buf.toString();
 
-        // Get the platform version
-    	int[] handles = CodeModuleManager.getModuleHandles();
-    	int size = handles.length;
-    	//Check for a particular RIM module (Here, the ribbon app)
-    	for (int i = size-1; i>=0;--i) {
-	    	if (CodeModuleManager.getModuleName(handles[i]).equals("net_rim_bb_ribbon_app")) {
-	    		platformVersion =
-		    		CodeModuleManager.getModuleVersion(handles[i]);
-	    	}
-    	}
+        platformInfo = PlatformInfo.getInstance();
     }
     
     public static String getName() {
@@ -107,7 +97,7 @@ public final class AppInfo {
     }
     
     public static String getPlatformVersion() {
-    	return platformVersion;
+    	return platformInfo.getPlatformVersion();
     }
     
     public static Bitmap getIcon() {
