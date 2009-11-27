@@ -10,7 +10,8 @@ external sources.  These files are laid out as follow:
      lib/                |
          net_rim_api.jar | BlackBerry Java API
  xmltask.jar             | XMLTask
- bb-ant-tools.jar        | BlackBerry Ant Tools
+ bb-ant-tools.jar        | BlackBerry Ant Tools (trunk, r53, built with patch)
+ bb-ant-tools.patch      | Patch to BlackBerry Ant Tools
 
 Sources:
 --------

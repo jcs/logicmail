@@ -1,0 +1,125 @@
+Index: src/ca/slashdev/bb/tasks/AlxTask.java
+===================================================================
+--- src/ca/slashdev/bb/tasks/AlxTask.java	(revision 53)
++++ src/ca/slashdev/bb/tasks/AlxTask.java	(working copy)
+@@ -20,6 +20,7 @@
+ package ca.slashdev.bb.tasks;
+ 
+ import java.io.File;
++import java.io.FileWriter;
+ import java.util.Vector;
+ 
+ import javax.xml.parsers.DocumentBuilder;
+@@ -109,12 +110,13 @@
+          TransformerFactory tf = TransformerFactory.newInstance();
+          Transformer serializer = tf.newTransformer();
+          serializer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
++         serializer.setOutputProperty(OutputKeys.METHOD, "xml");
+          serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+          
+          // this is needed to make indenting work, works with XALAN only
+          serializer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "3");
+          
+-         StreamResult streamResult = new StreamResult(destFile);
++         StreamResult streamResult = new StreamResult(new FileWriter(destFile));
+          serializer.transform(domSource, streamResult);
+       } catch (Exception e) {
+          throw new BuildException(e);
+Index: src/ca/slashdev/bb/types/ApplicationType.java
+===================================================================
+--- src/ca/slashdev/bb/types/ApplicationType.java	(revision 53)
++++ src/ca/slashdev/bb/types/ApplicationType.java	(working copy)
+@@ -234,6 +234,22 @@
+         	 filesetNode.setAttribute("_blackberryVersion", codSetBBVer);
+          }
+          
++         if(codSet.getRadio() != null) {
++        	 filesetNode.setAttribute("radio", codSet.getRadio());
++         }
++         
++         if(codSet.getLangId() != null) {
++        	 filesetNode.setAttribute("langid", codSet.getLangId());
++         }
++         
++         if(codSet.getKeyboardType() != null) {
++        	 filesetNode.setAttribute("KeyboardType", codSet.getKeyboardType());
++         }
++         
++         if(codSet.getSeries() != null) {
++        	 filesetNode.setAttribute("series", codSet.getSeries());
++         }
++         
+          if (codSet.getDir() != null) {
+         	 filesetNode.appendChild(child = xmldoc.createElement("directory"));
+              child.setTextContent(codSet.getDir());
+@@ -242,9 +258,9 @@
+          StringBuffer files = new StringBuffer();
+          Iterator<Resource> i = codSet.getResources().iterator();
+          while (i.hasNext()) {
+-            files.append('\n').append(Utils.getFilePart(i.next()));
++            files.append(Utils.getFilePart(i.next()));
++            if(i.hasNext()) { files.append('\n'); }
+          }
+-         files.append('\n');
+          
+          Element filesNode = xmldoc.createElement("files");
+          filesNode.setTextContent(files.toString());
+Index: src/ca/slashdev/bb/types/CodSetType.java
+===================================================================
+--- src/ca/slashdev/bb/types/CodSetType.java	(revision 53)
++++ src/ca/slashdev/bb/types/CodSetType.java	(working copy)
+@@ -35,6 +35,10 @@
+    private String dir;
+    private VersionMatch greater;
+    private VersionMatch less;
++   private String radio;
++   private String langId;
++   private String keyboardType;
++   private String series;
+    
+    public void add(ResourceCollection res) {
+       resources.add(res);
+@@ -89,8 +93,41 @@
+       
+       return val.toString();
+    }
+-   
++
++   public void setRadio(String radio) {
++      this.radio = radio;
++   }
++
++   public String getRadio() {
++      return radio;
++   }
++
++   public void setLangId(String langId) {
++      this.langId = langId;
++   }
++
++   public String getLangId() {
++      return langId;
++   }
++
++   public void setKeyboardType(String keyboardType) {
++      this.keyboardType = keyboardType;
++   }
++
++   public String getKeyboardType() {
++      return keyboardType;
++   }
++
++   public void setSeries(String series) {
++      this.series = series;
++   }
++
++   public String getSeries() {
++      return series;
++   }
++
+    public Union getResources() {
+-      return resources;
++	      return resources;
+    }
++
+ }
