@@ -203,22 +203,18 @@
         <codset dir="BB460" greaterthanequal="4.6.0" lessthan="4.7.0">
           <fileset dir="${dist.dir}/BB460" includes="*.cod" />
         </codset>
-        <codset dir="BB470" greaterthanequal="4.7.0" lessthan="5.0.0">
+        <codset dir="BB470" greaterthanequal="4.7.0" lessthan="5.0.0" keyboardType="Qwerty|Reduced">
           <fileset dir="${dist.dir}/BB470" includes="*.cod" />
         </codset>
-        <!-- Uncomment when bb-ant-tools supports more attributes
-        <codset dir="BB470T" greaterthanequal="4.7.0" lessthan="5.0.0" series="9500">
+        <codset dir="BB470T" greaterthanequal="4.7.0" lessthan="5.0.0" keyboardType="Virtual">
           <fileset dir="${dist.dir}/BB470T" includes="*.cod" />
         </codset>
-        -->
-        <codset dir="BB500" greaterthanequal="5.0.0">
+        <codset dir="BB500" greaterthanequal="5.0.0" keyboardType="Qwerty|Reduced">
           <fileset dir="${dist.dir}/BB500" includes="*.cod" />
         </codset>
-        <!-- Uncomment when bb-ant-tools supports more attributes
-        <codset dir="BB500T" greaterthanequal="5.0.0" series="9500">
+        <codset dir="BB500T" greaterthanequal="5.0.0" keyboardType="Virtual">
           <fileset dir="${dist.dir}/BB500T" includes="*.cod" />
         </codset>
-        -->
       </application>
 	</alx>
     <copy todir="${dist.alx.dir}">
