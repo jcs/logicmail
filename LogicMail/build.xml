@@ -238,32 +238,55 @@
   
   <target name="dist-ota" depends="build">
     <mkdir dir="${dist.ota.dir}/${module.version}"/>
-    <xmltask dest="${dist.ota.dir}/download-entry.xml" outputter="simple:4">
+    <xmltask dest="${dist.ota.dir}/${module.version}/${module.name}-entry.xml" outputter="simple:4">
       <insert path="/">
         <![CDATA[
-          <downloads>
-            <entry>
-            </entry>
-          </downloads>
+          <application id="${module.name}">
+            <name>${module.title}</name>
+            <description>${module.description}</description>
+            <version>${module.version}</version>
+            <vendor>${module.vendor}</vendor>
+            <copyright>${module.copyright}</copyright>
+          </application>
         ]]> 
-       </insert>
-       <attr path="/downloads/entry" attr="name" value="${module.title} ${module.version}"/>
-       <insert if="jde421.home" path="/downloads/entry">
+      </insert>
+      
+      <insert if="jde421.home" path="/application">
          <![CDATA[
-           <file name="${module.version}/BB421/${module.name}.jad" target="4.2.1"/>
+           <jad blackberryVersion="[4.2.1,4.7.0)" file="BB421/${module.name}.jad"/>
          ]]>
       </insert>
-      <insert if="jde470.home" path="/downloads/entry">
-        <![CDATA[
-          <file name="${module.version}/BB470/${module.name}.jad" target="4.7.0"/>
-        ]]>
+      <insert if="jde460.home" path="/application">
+         <![CDATA[
+           <jad blackberryVersion="[4.6.0,4.7.0)" file="BB460/${module.name}.jad"/>
+         ]]>
+      </insert>
+      <insert if="jde470.home" path="/application">
+         <![CDATA[
+           <jad blackberryVersion="[4.7.0,5.0.0)" KeyboardType="Qwerty|Reduced" file="BB470/${module.name}.jad"/>
+           <jad blackberryVersion="[4.7.0,5.0.0)" KeyboardType="Virtual" file="BB470T/${module.name}.jad"/>
+         ]]>
+      </insert>
+      <insert if="jde500.home" path="/application">
+         <![CDATA[
+           <jad blackberryVersion="[5.0.0,)" KeyboardType="Qwerty|Reduced" file="BB500/${module.name}.jad"/>
+           <jad blackberryVersion="[5.0.0,)" KeyboardType="Virtual" file="BB500T/${module.name}.jad"/>
+         ]]>
       </insert>
     </xmltask>
     <if><isset property="jde421.home"/><then>
       <copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
     </then></if>
+    <if><isset property="jde460.home"/><then>
+      <copy-ota-files src="${dist.dir}/BB460" dest="${dist.ota.dir}/${module.version}/BB460"/>
+    </then></if>
     <if><isset property="jde470.home"/><then>
       <copy-ota-files src="${dist.dir}/BB470" dest="${dist.ota.dir}/${module.version}/BB470"/>
+      <copy-ota-files src="${dist.dir}/BB470T" dest="${dist.ota.dir}/${module.version}/BB470T"/>
+    </then></if>
+    <if><isset property="jde500.home"/><then>
+      <copy-ota-files src="${dist.dir}/BB500" dest="${dist.ota.dir}/${module.version}/BB500"/>
+      <copy-ota-files src="${dist.dir}/BB500T" dest="${dist.ota.dir}/${module.version}/BB500T"/>
     </then></if>
   </target>
   
