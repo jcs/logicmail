@@ -30,11 +30,21 @@
  */
 package org.logicprobe.LogicMail;
 
+import java.util.Enumeration;
+import java.util.Vector;
+
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
+import javax.microedition.io.file.FileSystemRegistry;
+
 import net.rim.device.api.system.CodeModuleManager;
 
 public class PlatformInfoBB42 extends PlatformInfo {
     protected String platformVersion;
+    protected String[] filesystemRoots;
 
+    private static String FILE_URL_PREFIX = "file:///";
+    
     public PlatformInfoBB42() {
     }
     
@@ -56,5 +66,31 @@ public class PlatformInfoBB42 extends PlatformInfo {
     
     public boolean hasTouchscreen() {
         return false;
+    }
+    
+    public String[] getFilesystemRoots() {
+        if(filesystemRoots == null) {
+            Vector validRoots = new Vector();
+            StringBuffer buf = new StringBuffer(FILE_URL_PREFIX);
+            int prefixLength = FILE_URL_PREFIX.length();
+            Enumeration e = FileSystemRegistry.listRoots();
+            while(e.hasMoreElements()) {
+                buf.append((String)e.nextElement());
+                String url = buf.toString();
+                buf.delete(prefixLength, buf.length());
+                
+                try {
+                    FileConnection conn = (FileConnection)Connector.open(url);
+                    if(conn.exists() && conn.isDirectory() && conn.canRead() && conn.canWrite()) {
+                        validRoots.addElement(url);
+                    }
+                    conn.close();
+                } catch (Exception ex) {
+                }
+            }
+            filesystemRoots = new String[validRoots.size()];
+            validRoots.copyInto(filesystemRoots);
+        }
+        return filesystemRoots;
     }
 }

@@ -32,29 +32,57 @@ package org.logicprobe.LogicMail;
 
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
+/**
+ * Provides information about the platform the application is running on,
+ * wrapping OS version specific API calls as necessary.
+ * Also used as a placeholder to make sure all the platform libraries
+ * are built correctly.
+ */
 public abstract class PlatformInfo {
     private static PlatformInfo instance;
-    
+
     /**
      * Array of concrete PlatformInfo classes, in order from the highest
      * API version to the lowest.
      */
     private static String[] infoClasses = {
-            "org.logicprobe.LogicMail.PlatformInfoBB50T",
-            "org.logicprobe.LogicMail.PlatformInfoBB50",
-            "org.logicprobe.LogicMail.PlatformInfoBB47T",
-            "org.logicprobe.LogicMail.PlatformInfoBB47",
-            "org.logicprobe.LogicMail.PlatformInfoBB42"
+        "org.logicprobe.LogicMail.PlatformInfoBB50T",
+        "org.logicprobe.LogicMail.PlatformInfoBB50",
+        "org.logicprobe.LogicMail.PlatformInfoBB47T",
+        "org.logicprobe.LogicMail.PlatformInfoBB47",
+        "org.logicprobe.LogicMail.PlatformInfoBB42"
     };
-    
+
+    /**
+     * Gets the single instance of PlatformInfo.
+     * 
+     * @return instance of PlatformInfo
+     */
     public static synchronized PlatformInfo getInstance() {
         if(instance == null) {
-                instance = (PlatformInfo)PlatformUtils.getFactoryInstance(infoClasses);
+            instance = (PlatformInfo)PlatformUtils.getFactoryInstance(infoClasses);
         }
         return instance;
     }
-    
+
+    /**
+     * Gets the BlackBerry platform version.
+     * 
+     * @return the platform version
+     */
     public abstract String getPlatformVersion();
-    
+
+    /**
+     * Checks for whether the platform has a touch screen.
+     * 
+     * @return true, if this is a touch screen device
+     */
     public abstract boolean hasTouchscreen();
+
+    /**
+     * Gets the filesystem roots that the application can write to.
+     * 
+     * @return the filesystem roots
+     */
+    public abstract String[] getFilesystemRoots();
 }

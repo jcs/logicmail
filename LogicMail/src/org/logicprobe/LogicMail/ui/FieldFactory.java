@@ -33,29 +33,42 @@ package org.logicprobe.LogicMail.ui;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
 public abstract class FieldFactory {
-	private static FieldFactory instance;
-	
-	/**
-	 * Array of concrete FieldFactory classes, in order from the highest
-	 * API version to the lowest.
-	 */
-	private static String[] factoryClasses = {
-		"org.logicprobe.LogicMail.ui.FieldFactoryBB50T",
-		"org.logicprobe.LogicMail.ui.FieldFactoryBB50",
-		"org.logicprobe.LogicMail.ui.FieldFactoryBB47T",
-                "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
-		"org.logicprobe.LogicMail.ui.FieldFactoryBB42"
-	};
-	
-	public static synchronized FieldFactory getInstance() {
-		if(instance == null) {
-			instance = (FieldFactory)PlatformUtils.getFactoryInstance(factoryClasses);
-		}
-		return instance;
-	}
+    private static FieldFactory instance;
 
-	public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
+    /**
+     * Array of concrete FieldFactory classes, in order from the highest
+     * API version to the lowest.
+     */
+    private static String[] factoryClasses = {
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB50",
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB42"
+    };
+    
+    /**
+     * Array of concrete FieldFactory classes, in order from the highest
+     * API version to the lowest, for touch screen devices.
+     */
+    private static String[] factoryClassesTouch = {
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB50T",
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB47T",
+    };
+
+    public static synchronized FieldFactory getInstance() {
+        if(instance == null) {
+            if(PlatformInfo.getInstance().hasTouchscreen()) {
+                instance = (FieldFactory)PlatformUtils.getFactoryInstance(factoryClassesTouch);
+            }
+            else {
+                instance = (FieldFactory)PlatformUtils.getFactoryInstance(factoryClasses);
+            }
+        }
+        return instance;
+    }
+
+    public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
 }

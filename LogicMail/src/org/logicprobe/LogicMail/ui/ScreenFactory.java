@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -37,40 +38,52 @@ import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
 public abstract class ScreenFactory {
-	private static ScreenFactory instance;
-	
-	/**
-	 * Array of concrete ScreenFactory classes, in order from the highest
-	 * API version to the lowest.
-	 */
-	private static String[] factoryClasses = {
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB50T",
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB50",
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB47T",
-                "org.logicprobe.LogicMail.ui.ScreenFactoryBB47",
-		"org.logicprobe.LogicMail.ui.ScreenFactoryBB42"
-	};
-	
-	public static synchronized ScreenFactory getInstance() {
-		if(instance == null) {
-			instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClasses);
-		}
-		return instance;
-	}
-	
-	public abstract StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode);
-	
-	public abstract StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode);
-	
-	public abstract StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode);
+    private static ScreenFactory instance;
 
-	public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode);
-	
-	public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
-	
-	public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, String address);
-	
-	public abstract StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll);
-	
-	public abstract StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
+    /**
+     * Array of concrete ScreenFactory classes, in order from the highest
+     * API version to the lowest.
+     */
+    private static String[] factoryClasses = {
+        "org.logicprobe.LogicMail.ui.ScreenFactoryBB50",
+        "org.logicprobe.LogicMail.ui.ScreenFactoryBB47",
+        "org.logicprobe.LogicMail.ui.ScreenFactoryBB42"
+    };
+
+    /**
+     * Array of concrete ScreenFactory classes, in order from the highest
+     * API version to the lowest, for touch screen devices.
+     */
+    private static String[] factoryClassesTouch = {
+        "org.logicprobe.LogicMail.ui.ScreenFactoryBB50T",
+        "org.logicprobe.LogicMail.ui.ScreenFactoryBB47T",
+    };
+    
+    public static synchronized ScreenFactory getInstance() {
+        if(instance == null) {
+            if(PlatformInfo.getInstance().hasTouchscreen()) {
+                instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClassesTouch);
+            }
+            else {
+                instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClasses);
+            }
+        }
+        return instance;
+    }
+
+    public abstract StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode);
+
+    public abstract StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode);
+
+    public abstract StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode);
+
+    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode);
+
+    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
+
+    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, String address);
+
+    public abstract StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll);
+
+    public abstract StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
 }
