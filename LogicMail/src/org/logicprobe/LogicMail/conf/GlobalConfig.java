@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.conf;
 
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -37,10 +38,9 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Enumeration;
 
-import javax.microedition.io.file.FileSystemRegistry;
-
+import javax.microedition.io.Connector;
+import javax.microedition.io.file.FileConnection;
 
 /**
  * Store the global configuration for LogicMail.
@@ -56,22 +56,22 @@ public class GlobalConfig implements Serializable {
 
     /** Always use WiFi */
     final public static int WIFI_ALWAYS = 2;
-    
+
     /** Prefer plain text display for messages */
     final public static int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
-    
+
     /** Prefer HTML display for messages */
     final public static int MESSAGE_DISPLAY_HTML = 1;
-    
+
     /** language code to use for the UI, or null for system default */
     private String languageCode;
-    
+
     /** true to enable Unicode normalization */
     private boolean unicodeNormalization;
 
     /** Preferred message display format */
     private int messageDisplayFormat;
-    
+
     /** Number of message headers to retrieve */
     private int retMsgCount;
 
@@ -80,7 +80,7 @@ public class GlobalConfig implements Serializable {
 
     /** Root URL for local file storage */
     private String localDataLocation;
-    
+
     /** Mode for WiFi support */
     private int wifiMode;
 
@@ -93,6 +93,8 @@ public class GlobalConfig implements Serializable {
     /** Local host name override */
     private String localHostname;
 
+    public static String FILE_URL_PREFIX = "file:///";
+    
     /**
      * Instantiates a new global configuration.
      */
@@ -126,16 +128,9 @@ public class GlobalConfig implements Serializable {
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
         this.hideDeletedMsg = true;
         this.localHostname = "";
-        
-        Enumeration e = FileSystemRegistry.listRoots();
-        if(e.hasMoreElements()) {
-        	this.localDataLocation = "file:///" + (String)e.nextElement() + "LogicMail/";
-        }
-        else {
-        	this.localDataLocation = "file:///LogicMail/";
-        }
+        this.localDataLocation = null;
     }
-    
+
     /**
      * Sets the language code.
      * 
@@ -144,7 +139,7 @@ public class GlobalConfig implements Serializable {
     public void setLanguageCode(String languageCode) {
         this.languageCode = languageCode;
     }
-    
+
     /**
      * Gets the language code.
      * 
@@ -153,7 +148,7 @@ public class GlobalConfig implements Serializable {
     public String getLanguageCode() {
         return languageCode;
     }
-    
+
     /**
      * Sets whether unicode normalization is enabled.
      * 
@@ -162,7 +157,7 @@ public class GlobalConfig implements Serializable {
     public void setUnicodeNormalization(boolean unicodeNormalization) {
         this.unicodeNormalization = unicodeNormalization;
     }
-    
+
     /**
      * Gets whether unicode normalization is enabled.
      * 
@@ -178,18 +173,18 @@ public class GlobalConfig implements Serializable {
      * @param messageDisplayFormat the new preferred message display format
      */
     public void setMessageDisplayFormat(int messageDisplayFormat) {
-    	this.messageDisplayFormat = messageDisplayFormat;
+        this.messageDisplayFormat = messageDisplayFormat;
     }
-    
+
     /**
      * Gets the preferred message display format.
      * 
      * @return the preferred message display format
      */
     public int getMessageDisplayFormat() {
-    	return messageDisplayFormat;
+        return messageDisplayFormat;
     }
-    
+
     /**
      * Set the number of message headers to retrieve.
      * 
@@ -232,16 +227,16 @@ public class GlobalConfig implements Serializable {
      * @param localDataLocation The local data URL
      */
     public void setLocalDataLocation(String localDataLocation) {
-    	this.localDataLocation = localDataLocation;
+        this.localDataLocation = validateLocalDataLocation(localDataLocation);
     }
-    
+
     /**
      * Set the root URL for local file storage.
      * 
      * @return The local data URL
      */
     public String getLocalDataLocation() {
-    	return localDataLocation;
+        return localDataLocation;
     }
 
     /**
@@ -323,7 +318,7 @@ public class GlobalConfig implements Serializable {
         output.writeLong(uniqueId);
 
         SerializableHashtable table = new SerializableHashtable();
-        
+
         table.put("global_languageCode", languageCode);
         table.put("global_unicodeNormalization", new Boolean(unicodeNormalization));
         table.put("global_messageDisplayFormat", new Integer(messageDisplayFormat));
@@ -354,17 +349,17 @@ public class GlobalConfig implements Serializable {
         if(value != null && value instanceof String) {
             languageCode = (String)value;
         }
-        
+
         value = table.get("global_unicodeNormalization");
         if(value != null && value instanceof Boolean) {
             unicodeNormalization = ((Boolean)value).booleanValue();
         }
-        
+
         value = table.get("global_messageDisplayFormat");
         if ((value != null) && value instanceof Integer) {
-        	messageDisplayFormat = ((Integer) value).intValue();
+            messageDisplayFormat = ((Integer) value).intValue();
         }
-        
+
         value = table.get("global_retMsgCount");
         if ((value != null) && value instanceof Integer) {
             retMsgCount = ((Integer) value).intValue();
@@ -377,9 +372,15 @@ public class GlobalConfig implements Serializable {
 
         value = table.get("global_localDataLocation");
         if ((value != null) && value instanceof String) {
-        	localDataLocation = (String) value;
+            setLocalDataLocation((String)value);
         }
-        
+        else {
+            String[] fsRoots = PlatformInfo.getInstance().getFilesystemRoots();
+            if(fsRoots.length > 0) {
+                setLocalDataLocation(fsRoots[0]);
+            }
+        }
+
         value = table.get("global_wifiMode");
         if ((value != null) && value instanceof Integer) {
             wifiMode = ((Integer) value).intValue();
@@ -409,5 +410,74 @@ public class GlobalConfig implements Serializable {
      */
     public long getUniqueId() {
         return uniqueId;
+    }
+    
+    /**
+     * Checks provided filesystem root to make sure it exists,
+     * creating any intermediate directories as necessary,
+     * and returns a fully qualified file URL.
+     * 
+     * @param fsRoot filesystem root to validate
+     * @return fully qualified and valid file URL,
+     * or null if one could not be created
+     */
+    private static String validateLocalDataLocation(String fsRoot) {
+        String url;
+        if(fsRoot != null) {
+            // Clean up the string, removing everything but the base
+            int p = fsRoot.indexOf('/', FILE_URL_PREFIX.length() - 1);
+            int q = fsRoot.indexOf('/', p + 1);
+            if(p != -1 && q != -1 && p < q) {
+                fsRoot = fsRoot.substring(p + 1, q + 1);
+            }
+            
+            // Add the prefix
+            url = FILE_URL_PREFIX + fsRoot;
+            
+            // Append the necessary elements, creating directories as necessary
+            if(url.indexOf("Card/") != -1) {
+                try {
+                    FileConnection conn = (FileConnection)Connector.open(url + "BlackBerry/");
+                    if(!conn.exists()) { conn.mkdir(); }
+                    url = conn.getURL(); conn.close();
+                    
+                    conn = (FileConnection)Connector.open(url + "logicmail/");
+                    if(!conn.exists()) { conn.mkdir(); }
+                    url = conn.getURL(); conn.close();
+                } catch (IOException e) {
+                    url = null;
+                }
+            }
+            else if(url.indexOf("store/") != -1) {
+                try {
+                    FileConnection conn = (FileConnection)Connector.open(url + "home/");
+                    if(!conn.exists()) { conn.mkdir(); }
+                    url = conn.getURL(); conn.close();
+                    
+                    conn = (FileConnection)Connector.open(url + "user/");
+                    if(!conn.exists()) { conn.mkdir(); }
+                    url = conn.getURL(); conn.close();
+                    
+                    conn = (FileConnection)Connector.open(url + "logicmail/");
+                    if(!conn.exists()) { conn.mkdir(); }
+                    url = conn.getURL(); conn.close();
+                } catch (IOException e) {
+                    url = null;
+                }
+            }
+            else {
+                try {
+                    FileConnection conn = (FileConnection)Connector.open(url + "logicmail/");
+                    if(!conn.exists()) { conn.mkdir(); }
+                    url = conn.getURL(); conn.close();
+                } catch (IOException e) {
+                    url = null;
+                }
+            }
+        }
+        else {
+            url = null;
+        }
+        return url;
     }
 }

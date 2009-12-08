@@ -30,11 +30,6 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import java.util.Enumeration;
-import java.util.Vector;
-
-import javax.microedition.io.file.FileSystemRegistry;
-
 import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
@@ -44,6 +39,7 @@ import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
@@ -57,9 +53,8 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
     private String[] languageChoices;
     private String[] languageCodes;
     private String[] fileSystemRoots;
+    private String[] fileSystemRootChoices;
     private int selectedFileSystemRootIndex;
-
-    private static String LOCAL_FILE_BASE = "LogicMail/";
 
     private ObjectChoiceField languageChoiceField;
     private CheckboxField unicodeNormalizationCheckboxField;
@@ -86,15 +81,15 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
                 "Dansk",        // Danish: da
                 "Deutsch",      // German: de
                 "English",      // English: en
-                "Espa\u00f1ol",      // Spanish: es
-                "Fran\u00e7ais",     // French: fr
+                "Espa\u00f1ol", // Spanish: es
+                "Fran\u00e7ais",// French: fr
                 "Italiano",     // Italian: it
                 "Nederlands",   // Dutch: nl
                 "Ti\u00ea\u0301ng Vi\u00ea\u0323t", // Vietnamese: vi
                 "\u4E2D\u6587", // Chinese: zh
         };
         languageCodes = new String[] {
-                "", // System default
+                "",   // System default
                 "da", // Danish
                 "de", // German
                 "en", // English
@@ -107,23 +102,42 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
         };
 
         // Populate fileSystemRoots with a list of all
-        // available storage devices
-        Vector resultsVector = new Vector();
+        // available and writable storage devices
         String selectedFileSystemRoot = existingConfig.getLocalDataLocation();
-        int i = 0;
         selectedFileSystemRootIndex = 0;
-        Enumeration e = FileSystemRegistry.listRoots();
-        while(e.hasMoreElements()) {
-            String root = (String)e.nextElement();
-            if(selectedFileSystemRoot.endsWith(root + LOCAL_FILE_BASE)) {
+        
+        fileSystemRoots = PlatformInfo.getInstance().getFilesystemRoots();
+        fileSystemRootChoices = new String[fileSystemRoots.length + 1];
+        for(int i=0; i<fileSystemRoots.length; i++) {
+            String root = fileSystemRoots[i];
+            if(selectedFileSystemRoot != null && selectedFileSystemRoot.indexOf(root) != -1) {
                 selectedFileSystemRootIndex = i;
             }
-            resultsVector.addElement(root);
-            i++;
+            if(root.indexOf("Card/") != -1) {
+                fileSystemRootChoices[i] =
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_MEDIA_CARD);
+            }
+            else if(root.indexOf("store/") != -1) {
+                fileSystemRootChoices[i] =
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_DEVICE_MEMORY);
+            }
+            else {
+                int p = root.indexOf('/', GlobalConfig.FILE_URL_PREFIX.length() - 1);
+                int q = root.indexOf('/', p + 1);
+                if(p != -1 && q != -1 && p < q) {
+                    fileSystemRootChoices[i] = root.substring(p + 1, q);
+                }
+                else {
+                    fileSystemRootChoices[i] = root;
+                }
+            }
         }
-        fileSystemRoots = new String[resultsVector.size()];
-        resultsVector.copyInto(fileSystemRoots);
-
+        fileSystemRootChoices[fileSystemRootChoices.length - 1] =
+            resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_DISABLED);
+        if(selectedFileSystemRoot == null) {
+            selectedFileSystemRootIndex = fileSystemRootChoices.length - 1;
+        }
+        
         initFields();
     }
 
@@ -190,7 +204,7 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
 
         localDataLocationChoiceLabel = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_LOCATION) + ' ',
-                fileSystemRoots,
+                fileSystemRootChoices,
                 selectedFileSystemRootIndex);
 
         boolean overrideHostname = localHostname.length() > 0;
@@ -287,7 +301,14 @@ public class GlobalConfigScreen extends AbstractConfigScreen implements FieldCha
 
         config.setWifiMode(wifiModeChoiceField.getSelectedIndex());
 
-        String url = "file:///" + fileSystemRoots[localDataLocationChoiceLabel.getSelectedIndex()] + LOCAL_FILE_BASE;
+        int fsRootIndex = localDataLocationChoiceLabel.getSelectedIndex();
+        String url;
+        if(fsRootIndex > fileSystemRoots.length) {
+            url = null;
+        }
+        else {
+            url = fileSystemRoots[fsRootIndex];
+        }
         config.setLocalDataLocation(url);
 
         if (overrideHostnameCheckboxField.getChecked()) {
