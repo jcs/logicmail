@@ -215,6 +215,23 @@ public class MailFileManager {
 		return result;
 	}
 	
+    public void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
+        if(cacheUrl == null) { callback.messageNodeUpdated(null); }
+
+        FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
+        String mailboxUrl = fileConnection.getURL();
+        Enumeration e = fileConnection.list(MSG_FILTER, false);
+        while(e.hasMoreElements()) {
+            String fileUrl = mailboxUrl + e.nextElement();
+            MessageNode messageNode = readMessageNode(fileUrl);
+            if(messageNode != null) {
+                callback.messageNodeUpdated(messageNode);
+            }
+        }
+        fileConnection.close();
+        callback.messageNodeUpdated(null);
+    }
+	
 	public MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
 		if(cacheUrl == null) { return null; }
 

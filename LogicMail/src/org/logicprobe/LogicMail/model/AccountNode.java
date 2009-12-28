@@ -80,6 +80,10 @@ public class AccountNode implements Node {
     private int status;
     private boolean shutdown = false;
     private DataStore accountDataStore;
+    
+    /** Map of folders to message to fetch for them. */
+    private Hashtable folderMessagesToFetch;
+    
     private MailSenderListener mailSenderListener = new MailSenderListener() {
             public void messageSent(MessageSentEvent e) {
                 mailSender_MessageSent(e);
@@ -105,6 +109,7 @@ public class AccountNode implements Node {
     AccountNode(AbstractMailStore mailStore, boolean usePersistedState) {
         this.rootMailbox = null;
         this.pathMailboxMap = new Hashtable();
+        this.folderMessagesToFetch = new Hashtable();
 
         this.mailStore = mailStore;
         this.usePersistedState = usePersistedState;
@@ -577,7 +582,6 @@ public class AccountNode implements Node {
             	// Only flags have been retrieved, so the existing messages need to
             	// be checked and additional actions requested accordingly.
             	//TODO: Implement flags-only logic
-            	Vector messagesToFetch = null;
 	            for (int i = 0; i < folderMessages.length; i++) {
 	            	MessageNode messageNode =
 	            		mailboxNode.getMessageByToken(folderMessages[i].getMessageToken());
@@ -590,14 +594,15 @@ public class AccountNode implements Node {
 	            		messageNode.getMessageToken().updateToken(folderMessages[i].getMessageToken());
 	            	}
 	            	else {
-	            		if(messagesToFetch == null) { messagesToFetch = new Vector(); }
-	            		messagesToFetch.addElement(folderMessages[i].getMessageToken());
+	            	    synchronized(folderMessagesToFetch) {
+	            	        Vector messagesToFetch = (Vector)folderMessagesToFetch.get(e.getFolder());
+	            	        if(messagesToFetch == null) {
+	            	            messagesToFetch = new Vector();
+	            	            folderMessagesToFetch.put(e.getFolder(), messagesToFetch);
+	            	        }
+	            	        messagesToFetch.addElement(folderMessages[i].getMessageToken());
+	            	    }
 	            	}
-	            }
-	            if(messagesToFetch != null) {
-	            	MessageToken[] fetchArray = new MessageToken[messagesToFetch.size()];
-	            	messagesToFetch.copyInto(fetchArray);
-	            	mailStore.requestFolderMessagesSet(e.getFolder(), fetchArray);
 	            }
             }
             else {
@@ -611,6 +616,16 @@ public class AccountNode implements Node {
 	            MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
 	            addedMessages.copyInto(addedMessagesArray);
 	            mailboxNode.addMessages(addedMessagesArray);
+            }
+        }
+        else {
+            synchronized(folderMessagesToFetch) {
+                Vector messagesToFetch = (Vector)folderMessagesToFetch.remove(e.getFolder());
+                if(messagesToFetch != null) {
+                    MessageToken[] fetchArray = new MessageToken[messagesToFetch.size()];
+                    messagesToFetch.copyInto(fetchArray);
+                    mailStore.requestFolderMessagesSet(e.getFolder(), fetchArray);
+                }
             }
         }
     }

@@ -656,7 +656,7 @@ public abstract class AbstractMailConnectionHandler {
 				}
 			}
 			else if(type == MailProgressHandler.TYPE_PROCESSING && max > 0){
-				if(count > 0) { count = count / max; }
+				if(count > 0) { count = (count * 100) / max; }
 				showStatus(messageStart + count + processingMessageEnd);
 			}
 		}

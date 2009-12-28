@@ -212,12 +212,15 @@ public class NetworkMailStoreTest extends TestCase {
     	    FolderMessagesEvent event = (FolderMessagesEvent)eventFolderMessagesAvailable.elementAt(i);
             assertNotNull(event);
             assertEquals("INBOX", event.getFolder().getName());
-            assertNotNull(event.getMessages());
             
-            // Collect folder messages within the event
             FolderMessage[] messages = event.getMessages();
-            for(int j=0; j<messages.length; j++) {
-                folderMessagesAvailable.addElement(messages[j]);
+            if(i < eventCount - 1) {
+                assertNotNull(messages);
+
+                // Collect folder messages within the event
+                for(int j=0; j<messages.length; j++) {
+                    folderMessagesAvailable.addElement(messages[j]);
+                }
             }
     	}
     	

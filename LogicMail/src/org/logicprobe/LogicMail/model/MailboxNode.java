@@ -71,6 +71,9 @@ public class MailboxNode implements Node, Serializable {
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
 	
+	private Object fetchLock = new Object();
+	private RefreshMessagesThread fetchThread;
+	
 	public final static int TYPE_NORMAL = 0;
 	public final static int TYPE_INBOX  = 1;
 	public final static int TYPE_OUTBOX = 2;
@@ -700,30 +703,45 @@ public class MailboxNode implements Node, Serializable {
      */
     public void refreshMessages() {
     	// Fetch messages stored in the cache
-    	if(parentAccount.getAccountConfig() != null) {
-    		//TODO: Make this thread-safe and prevent redundant calls
-	    	Thread fetchThread = new Thread() {
-	    		public void run() {
-	    			try {
-	    				MessageNode[] messages =
-	    					MailFileManager.getInstance().readMessageNodes(MailboxNode.this);
-	    				MailboxNode.this.addMessages(messages);
-	    			} catch (IOException e) {
-	    				EventLogger.logEvent(AppInfo.GUID,
-			                ("Unable to read messages from cache\r\n"
-		                		+ e.getMessage()).getBytes(),
-			                EventLogger.ERROR);
-	    			}
-	    			
-	    	    	// Request flags and tokens for recent messages from the mail store
-	    	    	parentAccount.getMailStore().requestFolderMessagesRecent(folderTreeItem, true);
-	    		}
-	    	};
-	    	fetchThread.start();
-    	}
-    	else {
-    		parentAccount.getMailStore().requestFolderMessagesRecent(this.folderTreeItem);
-    	}
+        synchronized(fetchLock) {
+            if(parentAccount.getAccountConfig() != null) {
+                if(fetchThread == null || !fetchThread.isAlive()) {
+                    fetchThread = new RefreshMessagesThread();
+                    fetchThread.run();
+                }
+            }
+            else {
+                parentAccount.getMailStore().requestFolderMessagesRecent(this.folderTreeItem);
+            }
+        }
+    }
+    
+    private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
+
+        public RefreshMessagesThread() {
+            
+        }
+        
+        public void run() {
+            try {
+                MailFileManager.getInstance().readMessageNodes(MailboxNode.this, this);
+            } catch (IOException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to read messages from cache\r\n"
+                                + e.getMessage()).getBytes(),
+                                EventLogger.ERROR);
+            }
+        }
+
+        public void messageNodeUpdated(MessageNode messageNode) {
+            if(messageNode != null) {
+                MailboxNode.this.addMessage(messageNode);
+            }
+            else {
+                // Request flags and tokens for recent messages from the mail store
+                parentAccount.getMailStore().requestFolderMessagesRecent(folderTreeItem, true);
+            }
+        }        
     }
     
 	/**

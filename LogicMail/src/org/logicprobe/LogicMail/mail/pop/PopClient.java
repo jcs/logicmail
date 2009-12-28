@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+import net.rim.device.api.util.Arrays;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -388,6 +390,15 @@ public class PopClient implements IncomingMailClient {
 		for(int i=0; i<messageTokens.length; i++) {
 			indices[i] = ((PopMessageToken)messageTokens[i]).getMessageIndex();
 		}
+		Arrays.sort(indices, 0, indices.length);
+		
+		if(!globalConfig.getDispOrder()) {
+		    int[] reverseIndices = new int[indices.length];
+		    for(int i=0; i<indices.length; i++) {
+		        reverseIndices[indices.length - i - 1] = indices[i];
+		    }
+		    indices = reverseIndices;
+		}
 		
 		getFolderMessagesImpl(indices, false, callback, progressHandler);
 	}
@@ -397,10 +408,7 @@ public class PopClient implements IncomingMailClient {
         String[] headerText;
         String uid;
         MessageEnvelope env;
-        int preCount;
-        int postCount = connection.getBytesReceived();
         for(int i=0; i<indices.length; i++) {
-            preCount = postCount;
             if(!flagsOnly) {
                 headerText = popProtocol.executeTop(indices[i], 0);
                 env = MailMessageParser.parseMessageEnvelope(headerText);
@@ -412,8 +420,7 @@ public class PopClient implements IncomingMailClient {
             FolderMessage folderMessage = new FolderMessage(
                     new PopMessageToken(indices[i], uid),
                     env, indices[i], uid.hashCode());
-            postCount = connection.getBytesReceived();
-            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
+            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, i + 1, indices.length); }
 
             callback.folderMessageUpdate(folderMessage);
         }

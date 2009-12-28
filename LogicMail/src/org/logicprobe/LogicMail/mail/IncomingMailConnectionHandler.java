@@ -270,12 +270,25 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 }
             }
 
-            if(resultMessages != null && listener != null) {
-                if(param == null) {
-                    listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages });
+            if(listener != null) {
+                if(resultMessages != null) {
+                    if(param == null) {
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages });
+                    }
+                    else {
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages, param });
+                    }
                 }
-                else {
-                    listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages, param });
+                
+                // If this is the last update of the sequence, make sure we notify
+                // the listener with a null array so it knows we are done.
+                if(folderMessage == null) {
+                    if(param == null) {
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, null });
+                    }
+                    else {
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, null, param });
+                    }
                 }
             }
         }

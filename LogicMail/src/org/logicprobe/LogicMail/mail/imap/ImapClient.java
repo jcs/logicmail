@@ -623,6 +623,7 @@ public class ImapClient implements IncomingMailClient {
             for(int i=0; i<result.length; i++) {
                 callback.folderMessageUpdate(result[i]);
             }
+            callback.folderMessageUpdate(null);
         }
         else {
             imapProtocol.executeFetchEnvelope(firstIndex, lastIndex, new ImapFetchEnvelopeCallback(callback), progressHandler);
@@ -643,6 +644,7 @@ public class ImapClient implements IncomingMailClient {
     	for(int i=0; i<messageTokens.length; i++) {
     		uids[i] = ((ImapMessageToken)messageTokens[i]).getImapMessageUid();
     	}
+    	
         imapProtocol.executeFetchEnvelopeUid(uids, new ImapFetchEnvelopeCallback(callback), progressHandler);
 	}
 
