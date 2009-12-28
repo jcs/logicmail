@@ -159,17 +159,31 @@ public class MessageNodeWriter {
 	private byte[] generateMessageHeaders(MessageNode messageNode) throws IOException {
 		SerializableHashtable table = new SerializableHashtable();
 		table.put(HEADER_KEY_FLAGS, new Integer(messageNode.getFlags()));
-		table.put(HEADER_KEY_DATE, messageNode.getDate());
-		table.put(HEADER_KEY_SUBJECT, messageNode.getSubject());
+		putInTable(table, HEADER_KEY_DATE, messageNode.getDate());
+		putInTable(table, HEADER_KEY_SUBJECT, messageNode.getSubject());
 		table.put(HEADER_KEY_FROM, createAddressArray(messageNode.getFrom()));
 		table.put(HEADER_KEY_SENDER, createAddressArray(messageNode.getSender()));
 		table.put(HEADER_KEY_REPLYTO, createAddressArray(messageNode.getReplyTo()));
 		table.put(HEADER_KEY_TO, createAddressArray(messageNode.getTo()));
 		table.put(HEADER_KEY_CC, createAddressArray(messageNode.getCc()));
 		table.put(HEADER_KEY_BCC, createAddressArray(messageNode.getBcc()));
-		table.put(HEADER_KEY_INREPLYTO, messageNode.getInReplyTo());
-		table.put(HEADER_KEY_MESSAGEID, messageNode.getMessageId());
+		putInTable(table, HEADER_KEY_INREPLYTO, messageNode.getInReplyTo());
+		putInTable(table, HEADER_KEY_MESSAGEID, messageNode.getMessageId());
 		return SerializationUtils.serializeClass(table);
+	}
+	
+	/**
+	 * Puts an item in the table, checking the value for null first.
+	 * This is a shortcut to simplify methods that populate a table.
+	 * 
+	 * @param table the table being populated
+	 * @param key the item key
+	 * @param value the item value
+	 */
+	private static void putInTable(SerializableHashtable table, Object key, Object value) {
+	    if(value != null) {
+	        table.put(key, value);
+	    }
 	}
 	
 	private static String[] createAddressArray(Address[] addresses) {

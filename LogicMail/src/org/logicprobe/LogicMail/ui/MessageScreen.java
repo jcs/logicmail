@@ -363,7 +363,7 @@ public class MessageScreen extends AbstractScreenProvider {
 
 		// Add a collapsed TreeField to show attachments, if any exist
     	MimeMessagePart[] attachmentParts = messageNode.getAttachmentParts();
-    	if(attachmentParts.length > 0) {
+    	if(attachmentParts != null && attachmentParts.length > 0) {
     		attachmentsTreeField = new TreeField(new TreeFieldCallback() {
     			public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
     				attachmentsTreeField_DrawTreeItem(treeField, graphics, node, y, width, indent);

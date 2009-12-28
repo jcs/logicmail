@@ -119,5 +119,7 @@ public class MailboxNodeTest extends TestCase {
 		public void serialize(DataOutput output) throws IOException { }
 		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
 		public String getMessageUid() { return null; }
+        public void updateToken(MessageToken messageToken) { }
+        public boolean isLoadable() { return true; }
 	}
 }

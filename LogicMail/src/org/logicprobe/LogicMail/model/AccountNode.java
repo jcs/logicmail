@@ -583,11 +583,15 @@ public class AccountNode implements Node {
 	            		mailboxNode.getMessageByToken(folderMessages[i].getMessageToken());
 	            	if(messageNode != null) {
 	            		messageNode.setFlags(MessageNode.convertMessageFlags(folderMessages[i].getFlags()));
+	            		
+	            		// Update the token based on the token that came along
+	            		// with the flags.  This will update any volatile state
+	            		// information, such as POP message indices
+	            		messageNode.getMessageToken().updateToken(folderMessages[i].getMessageToken());
 	            	}
 	            	else {
 	            		if(messagesToFetch == null) { messagesToFetch = new Vector(); }
 	            		messagesToFetch.addElement(folderMessages[i].getMessageToken());
-	            		System.err.println("-->Need to fetch: " + folderMessages[i].getMessageToken());
 	            	}
 	            }
 	            if(messagesToFetch != null) {

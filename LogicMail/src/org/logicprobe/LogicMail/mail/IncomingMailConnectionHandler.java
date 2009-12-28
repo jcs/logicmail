@@ -222,17 +222,79 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
+    private static class GetFolderMessageCallback implements FolderMessageCallback {
+        private int maxCount;
+        private int type;
+        private FolderTreeItem folder;
+        private MailConnectionHandlerListener listener;
+        private Object param;
+        private FolderMessage[] folderMessages;
+        private int count;
+        
+        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener) {
+            this(maxCount, type, folder, listener, null);
+        }
+        
+        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object param) {
+            this.maxCount = maxCount;
+            this.type = type;
+            this.folder = folder;
+            this.listener = listener;
+            this.param = param;
+            this.count = 0;
+            
+        }
+        
+        public void folderMessageUpdate(FolderMessage folderMessage) {
+            FolderMessage[] resultMessages = null;
+            synchronized(this) {
+                if(folderMessage != null) {
+                    if(count == 0) {
+                        folderMessages = new FolderMessage[maxCount];
+                    }
+                    folderMessages[count++] = folderMessage;
+                }
+
+                if(count == maxCount) {
+                    resultMessages = folderMessages;
+                    folderMessages = null;
+                    count = 0;
+                }
+                else if(folderMessage == null) {
+                    resultMessages = new FolderMessage[count];
+                    for(int i=0; i<count; i++) {
+                        resultMessages[i] = folderMessages[i];
+                    }
+                    folderMessages = null;
+                    count = 0;
+                }
+            }
+
+            if(resultMessages != null && listener != null) {
+                if(param == null) {
+                    listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages });
+                }
+                else {
+                    listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages, param });
+                }
+            }
+        }
+    };
+
+	
 	private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) throws IOException, MailException {
 		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
 		showStatus(message + "...");
 		checkActiveFolder(folder);
 		
-		FolderMessage[] messages = incomingClient.getFolderMessages(firstIndex, lastIndex, getProgressHandler(message));
-		
-		MailConnectionHandlerListener listener = getListener();
-		if(messages != null && messages.length > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_RANGE, new Object[] { folder, messages });
-		}
+		incomingClient.getFolderMessages(
+		        firstIndex, lastIndex,
+		        new GetFolderMessageCallback(
+		                getFolderMessageUpdateFrequency(),
+		                REQUEST_FOLDER_MESSAGES_RANGE,
+		                folder,
+		                getListener()),
+		        getProgressHandler(message));
 	}
 	
 	private void handleRequestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) throws IOException, MailException {
@@ -240,12 +302,14 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		showStatus(message + "...");
 		checkActiveFolder(folder);
 		
-		FolderMessage[] messages = incomingClient.getFolderMessages(messageTokens, getProgressHandler(message));
-		
-		MailConnectionHandlerListener listener = getListener();
-		if(messages != null && messages.length > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_SET, new Object[] { folder, messages });
-		}
+		incomingClient.getFolderMessages(
+		        messageTokens,
+		        new GetFolderMessageCallback(
+		                getFolderMessageUpdateFrequency(),
+		                REQUEST_FOLDER_MESSAGES_SET,
+		                folder,
+		                getListener()),
+		        getProgressHandler(message));
 	}
 	
 	private void handleRequestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) throws IOException, MailException {
@@ -253,12 +317,30 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		showStatus(message + "...");
 		checkActiveFolder(folder);
         
-		FolderMessage[] messages = incomingClient.getNewFolderMessages(flagsOnly, getProgressHandler(message));
-		
-		MailConnectionHandlerListener listener = getListener();
-		if(messages != null && messages.length > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_FOLDER_MESSAGES_RECENT, new Object[] { folder, messages, new Boolean(flagsOnly) });
-		}
+		incomingClient.getNewFolderMessages(
+		        flagsOnly,
+		        new GetFolderMessageCallback(
+		                getFolderMessageUpdateFrequency(),
+		                REQUEST_FOLDER_MESSAGES_RECENT,
+		                folder,
+		                getListener(),
+		                new Boolean(flagsOnly)),
+		        getProgressHandler(message));
+	}
+	
+	private int getFolderMessageUpdateFrequency() {
+	    // Replace this with a more general method:
+	    int frequency;
+	    if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
+	        frequency = 5;
+	    }
+	    else if(incomingClient instanceof org.logicprobe.LogicMail.mail.pop.PopClient) {
+	        frequency = 2;
+	    }
+	    else {
+	        frequency = 10;
+	    }
+	    return frequency;
 	}
 	
 	private void handleRequestMessage(MessageToken messageToken) throws IOException, MailException {

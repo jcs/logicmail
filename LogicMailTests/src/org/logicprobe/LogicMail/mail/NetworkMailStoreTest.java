@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.mail;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
@@ -62,7 +63,7 @@ public class NetworkMailStoreTest extends TestCase {
 	private FakeIncomingMailClient fakeIncomingMailClient;
 
 	private FolderEvent eventFolderTreeUpdated;
-	private FolderMessagesEvent eventFolderMessagesAvailable;
+	private Vector eventFolderMessagesAvailable = new Vector();
 	private FolderEvent eventFolderStatusChanged;
 	private MessageEvent eventMessageAvailable;
 	private MessageEvent eventMessageDeleted;
@@ -89,7 +90,7 @@ public class NetworkMailStoreTest extends TestCase {
     	
     	instance.addFolderListener(new FolderListener() {
 			public void folderMessagesAvailable(FolderMessagesEvent e) {
-				eventFolderMessagesAvailable = e;
+				eventFolderMessagesAvailable.addElement(e);
 			}
 			public void folderStatusChanged(FolderEvent e) {
 				eventFolderStatusChanged = e;
@@ -198,12 +199,36 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestFolderMessagesRange(folder, 42, 43);
     	instance.shutdown(true);
     	
-    	assertNotNull(eventFolderMessagesAvailable);
-    	assertEquals("INBOX", eventFolderMessagesAvailable.getFolder().getName());
-    	assertNotNull(eventFolderMessagesAvailable.getMessages());
-    	assertEquals(2, eventFolderMessagesAvailable.getMessages().length);
-    	assertEquals(52, eventFolderMessagesAvailable.getMessages()[0].getUid());
-    	assertEquals(53, eventFolderMessagesAvailable.getMessages()[1].getUid());
+    	// Cannot assume the number of events that will be fired,
+    	// but only the number of folder messages contained within
+    	// all of them put together.
+    	
+    	int eventCount = eventFolderMessagesAvailable.size();
+    	assertTrue(eventCount > 0);
+    	
+    	Vector folderMessagesAvailable = new Vector();
+    	for(int i=0; i<eventCount; i++) {
+    	    // Check general event properties
+    	    FolderMessagesEvent event = (FolderMessagesEvent)eventFolderMessagesAvailable.elementAt(i);
+            assertNotNull(event);
+            assertEquals("INBOX", event.getFolder().getName());
+            assertNotNull(event.getMessages());
+            
+            // Collect folder messages within the event
+            FolderMessage[] messages = event.getMessages();
+            for(int j=0; j<messages.length; j++) {
+                folderMessagesAvailable.addElement(messages[j]);
+            }
+    	}
+    	
+    	// Assert the folder messages
+    	assertEquals(2, folderMessagesAvailable.size());
+
+    	FolderMessage folderMessage1 = (FolderMessage)folderMessagesAvailable.elementAt(0);
+        assertEquals(52, folderMessage1.getUid());
+        
+        FolderMessage folderMessage2 = (FolderMessage)folderMessagesAvailable.elementAt(1);
+        assertEquals(53, folderMessage2.getUid());
     }
     
     public void testRequestMessage() {
@@ -343,12 +368,17 @@ public class NetworkMailStoreTest extends TestCase {
 		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
 		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
-		public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
-				throws IOException, MailException { return this.folderMessages; }
-		public FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
-				throws IOException, MailException { return null; }
-		public FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler)
-				throws IOException,	MailException { return null; }
+		public void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler)
+				throws IOException, MailException {
+		    for(int i=0; i<folderMessages.length; i++) {
+		        callback.folderMessageUpdate(folderMessages[i]);
+		    }
+		    callback.folderMessageUpdate(null);
+	    }
+		public void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
+				throws IOException, MailException { }
+		public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
+				throws IOException,	MailException { }
 		public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException { return this.folderTree; }
 		public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler)
 				throws IOException, MailException { this.messageToken = messageToken; return this.message; }
@@ -382,5 +412,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public void serialize(DataOutput output) throws IOException { }
 		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
 		public String getMessageUid() {	return null; }
+        public void updateToken(MessageToken messageToken) { }
+        public boolean isLoadable() { return true; }
 	}
 }

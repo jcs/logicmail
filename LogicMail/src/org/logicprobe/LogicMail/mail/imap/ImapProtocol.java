@@ -564,12 +564,13 @@ public class ImapProtocol {
      * Execute the "FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
+     * @param callback Callback for asynchronous notification of new envelopes
      * @param progressHandler the progress handler
-     * @return Array of FetchEnvelopeResponse objects
      */
-    public FetchEnvelopeResponse[] executeFetchEnvelope(
+    public void executeFetchEnvelope(
     		int firstIndex,
     		int lastIndex,
+    		FetchEnvelopeCallback callback,
     		MailProgressHandler progressHandler) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -581,16 +582,16 @@ public class ImapProtocol {
                 Integer.toString(firstIndex) + ":" +
                 Integer.toString(lastIndex) + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
 
-        return prepareFetchEnvelopeResponse(rawList, progressHandler);
+        prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
     }
 
     /**
      * Execute the "UID FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param uidNext Unique ID of the next message
+     * @param callback Callback for asynchronous notification of new envelopes
      * @param progressHandler the progress handler
-     * @return Array of FetchEnvelopeResponse objects
      */
-    public FetchEnvelopeResponse[] executeFetchEnvelopeUid(int uidNext, MailProgressHandler progressHandler)
+    public void executeFetchEnvelopeUid(int uidNext, FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -601,18 +602,18 @@ public class ImapProtocol {
         String[] rawList = execute("UID FETCH",
                 Integer.toString(uidNext) + ":*" + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
 
-        return prepareFetchEnvelopeResponse(rawList, progressHandler);
+        prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
     }
     
     /**
      * Execute the "UID FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param uids Set of unique IDs for the messages to fetch
+     * @param callback Callback for asynchronous notification of new envelopes
      * @param progressHandler the progress handler
-     * @return Array of FetchEnvelopeResponse objects
      */
-    public FetchEnvelopeResponse[] executeFetchEnvelopeUid(int[] uids, MailProgressHandler progressHandler)
+    public void executeFetchEnvelopeUid(int[] uids, FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException {
-    	if(uids.length == 0) { return new FetchEnvelopeResponse[0]; }
+    	if(uids.length == 0) { callback.responseAvailable(null); return; }
     	StringBuffer buf = new StringBuffer();
     	for(int i=0; i<uids.length - 1; i++) {
     		buf.append(uids[i]);
@@ -630,11 +631,11 @@ public class ImapProtocol {
         String[] rawList = execute("UID FETCH",
         		uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
 
-        return prepareFetchEnvelopeResponse(rawList, progressHandler);
+        prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
     }
 
-    private FetchEnvelopeResponse[] prepareFetchEnvelopeResponse(
-        String[] rawList, MailProgressHandler progressHandler) throws IOException, MailException {
+    private void prepareFetchEnvelopeResponse(
+        String[] rawList, FetchEnvelopeCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
 
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
         // Preprocess the returned text to clean up mid-field line breaks
@@ -642,11 +643,11 @@ public class ImapProtocol {
         // becomes more intelligent in how it handles replies
         Vector rawList2 = prepareCleanFetchResponse(rawList);
 
-        Vector envResponses = new Vector();
         int size = rawList2.size();
 
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, size); }
         for (int i = 0; i < size; i++) {
+            FetchEnvelopeResponse envRespItem = null;
             try {
                 String rawText = (String) rawList2.elementAt(i);
 
@@ -661,7 +662,7 @@ public class ImapProtocol {
                     parsedText = null;
                 }
 
-                FetchEnvelopeResponse envRespItem = new FetchEnvelopeResponse();
+                envRespItem = new FetchEnvelopeResponse();
                 envRespItem.flags = null;
 
                 // Iterate through results, locating and parsing the
@@ -715,18 +716,17 @@ public class ImapProtocol {
                 envRespItem.index = midx;
                 envRespItem.envelope = env;
                 envRespItem.structure = structure;
-                envResponses.addElement(envRespItem);
             } catch (Exception exp) {
                 System.err.println("Parse error: " + exp);
+                envRespItem = null;
+            }
+            if(envRespItem != null) {
+                callback.responseAvailable(envRespItem);
             }
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, i, size); }
         }
 
-        FetchEnvelopeResponse[] result = new FetchEnvelopeResponse[envResponses.size()];
-        envResponses.copyInto(result);
-        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, size, size); }
-
-        return result;
+        callback.responseAvailable(null);
     }
     
     private static Vector prepareCleanFetchResponse(String[] rawList) {
@@ -1525,6 +1525,13 @@ public class ImapProtocol {
         public ImapParser.MessageSection structure;
     }
 
+    /**
+     * Callback for fetching envelopes.
+     */
+    public static interface FetchEnvelopeCallback {
+        void responseAvailable(FetchEnvelopeResponse response);
+    }
+    
     /**
      * Container for a LIST response
      */

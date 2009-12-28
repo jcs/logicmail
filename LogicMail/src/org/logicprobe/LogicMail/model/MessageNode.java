@@ -1099,10 +1099,15 @@ public class MessageNode implements Node {
 			try {
 				MessageNode tempNode = MailFileManager.getInstance().readMessageNode(parent, messageToken, true);
 				if(tempNode != null) {
-					setMessageStructure(tempNode.getMessageStructure());
-					setMessageSource(tempNode.getMessageSource());
-					putMessageContent(tempNode.getAllMessageContent());
-					messageLoaded = true;
+				    MimeMessagePart messageStructure = tempNode.getMessageStructure();
+				    MimeMessageContent[] messageContent = tempNode.getAllMessageContent();
+				    
+				    if(messageStructure != null && messageContent != null && messageContent.length > 0) {
+    					setMessageStructure(messageStructure);
+    					setMessageSource(tempNode.getMessageSource());
+    					putMessageContent(messageContent);
+    					messageLoaded = true;
+				    }
 				}
 			} catch (IOException e) {
 				EventLogger.logEvent(AppInfo.GUID,

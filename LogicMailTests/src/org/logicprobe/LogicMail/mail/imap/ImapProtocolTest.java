@@ -44,7 +44,6 @@ import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
 
-
 /**
  * Unit test for ImapProtocol
  */
@@ -347,6 +346,22 @@ public class ImapProtocolTest extends TestCase {
             t.printStackTrace();
         }
     }
+    
+    private static class ShimCallback implements ImapProtocol.FetchEnvelopeCallback {
+        private Vector responses = new Vector();
+        
+        public void responseAvailable(ImapProtocol.FetchEnvelopeResponse response) {
+            if(response != null) {
+                responses.addElement(response);
+            }
+        }
+        
+        public ImapProtocol.FetchEnvelopeResponse[] getResponses() {
+            ImapProtocol.FetchEnvelopeResponse[] result = new ImapProtocol.FetchEnvelopeResponse[responses.size()];
+            responses.copyInto(result);
+            return result;
+        }
+    }
 
     public void testExecuteFetchEnvelope1() {
         try {
@@ -363,7 +378,10 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
+            ShimCallback shim = new ShimCallback();
+            instance.executeFetchEnvelope(1, 1, shim, null);
+            ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
+            
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -447,7 +465,10 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
+            ShimCallback shim = new ShimCallback();
+            instance.executeFetchEnvelope(1, 1, shim, null);
+            ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
+            
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -531,7 +552,10 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
+            ShimCallback shim = new ShimCallback();
+            instance.executeFetchEnvelope(1, 1, shim, null);
+            ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
+
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -618,7 +642,10 @@ public class ImapProtocolTest extends TestCase {
                     "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))"
                 });
 
-            ImapProtocol.FetchEnvelopeResponse[] result = instance.executeFetchEnvelope(1, 1, null);
+            ShimCallback shim = new ShimCallback();
+            instance.executeFetchEnvelope(1, 1, shim, null);
+            ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
+
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);

@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
 
@@ -190,13 +189,13 @@ public interface IncomingMailClient extends MailClient {
      * 
      * @param firstIndex Index of the first message
      * @param lastIndex Index of the last message
+     * @param callback The callback to provide notifications as individual folder messages are loaded
      * @param progressHandler the progress handler
-     * @return List of message envelopes
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler)
+    void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
@@ -204,13 +203,13 @@ public interface IncomingMailClient extends MailClient {
      * which match the provided tokens.
      * 
      * @param messageTokens Tokens of the messages
+     * @param callback The callback to provide notifications as individual folder messages are loaded
      * @param progressHandler the progress handler
-     * @return List of message envelopes
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
+    void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
@@ -225,14 +224,13 @@ public interface IncomingMailClient extends MailClient {
      * </p>
      * 
      * @param flagsOnly If true, only tokens and flags will be fetched
+     * @param callback The callback to provide notifications as individual folder messages are loaded
      * @param progressHandler the progress handler
-     * 
-     * @return List of message envelopes
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException;
+    void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Get a particular message from the selected folder.

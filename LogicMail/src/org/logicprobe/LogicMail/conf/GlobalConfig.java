@@ -79,7 +79,7 @@ public class GlobalConfig implements Serializable {
     private boolean dispOrder;
 
     /** Root URL for local file storage */
-    private String localDataLocation;
+    private String localDataLocation = "";
 
     /** Mode for WiFi support */
     private int wifiMode;
@@ -128,7 +128,7 @@ public class GlobalConfig implements Serializable {
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
         this.hideDeletedMsg = true;
         this.localHostname = "";
-        this.localDataLocation = null;
+        this.localDataLocation = "";
     }
 
     /**

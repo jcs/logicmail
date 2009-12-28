@@ -223,6 +223,9 @@ public class MessageNodeWriterTest extends TestCase {
 		public String getMessageUid() {
 			return "42";
 		}
+		
+        public void updateToken(MessageToken messageToken) { }
+        public boolean isLoadable() { return true; }
     }
     
     public Test suite() {

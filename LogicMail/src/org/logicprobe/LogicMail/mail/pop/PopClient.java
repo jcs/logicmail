@@ -42,6 +42,7 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.mail.FolderMessageCallback;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -63,6 +64,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * 
  */
 public class PopClient implements IncomingMailClient {
+    private GlobalConfig globalConfig;
     private PopConfig accountConfig;
     private Connection connection;
     private PopProtocol popProtocol;
@@ -85,6 +87,7 @@ public class PopClient implements IncomingMailClient {
     
     /** Creates a new instance of PopClient */
     public PopClient(GlobalConfig globalConfig, PopConfig accountConfig) {
+        this.globalConfig = globalConfig;
         this.accountConfig = accountConfig;
         connection = new Connection(
                 accountConfig.getServerName(),
@@ -331,25 +334,50 @@ public class PopClient implements IncomingMailClient {
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, MailProgressHandler progressHandler) throws IOException, MailException {
-    	return getFolderMessages(firstIndex, lastIndex, false, progressHandler);
+    public void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
+    	getFolderMessages(firstIndex, lastIndex, false, callback, progressHandler);
     }
     
-    private FolderMessage[] getFolderMessages(int firstIndex, int lastIndex, boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException {
-    	int[] indices = new int[(lastIndex - firstIndex)+1];
-    	for(int i=firstIndex; i<=lastIndex; i++) {
-    		indices[i] = i;
-    	}
-    	
-    	return getFolderMessagesImpl(indices, flagsOnly, progressHandler);
+    /**
+     * Gets the folder messages from the mail server for a range of indices.
+     * In order to provide a more natural ordering of the results, messages
+     * are requested in an ordering based on the {@link GlobalConfig#getDispOrder()}
+     * value.
+     * 
+     * @param firstIndex the first index of the range
+     * @param lastIndex the last index of the range
+     * @param flagsOnly whether to request only flags
+     * @param callback the callback for result notification
+     * @param progressHandler the progress handler
+     * 
+     * @throws IOException Signals that an I/O exception has occurred.
+     * @throws MailException the mail exception
+     */
+    private void getFolderMessages(int firstIndex, int lastIndex, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
+        int[] indices = new int[(lastIndex - firstIndex)+1];
+        
+        if(globalConfig.getDispOrder()) {
+        	int currentIndex = firstIndex;
+        	for(int i=0; i<indices.length; i++) {
+        		indices[i] = currentIndex++;
+        	}
+        }
+        else {
+            int currentIndex = lastIndex;
+            for(int i=0; i<indices.length; i++) {
+                indices[i] = currentIndex--;
+            }
+        }
+    
+    	getFolderMessagesImpl(indices, flagsOnly, callback, progressHandler);
     }
 
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.MailProgressHandler)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
 	 */
-	public FolderMessage[] getFolderMessages(MessageToken[] messageTokens, MailProgressHandler progressHandler)
+	public void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
 			throws IOException, MailException {
 		// Since POP servers typically lock the mailbox while a client is connected,
 		// and given the typical use case of this method, we will make the assumption
@@ -361,45 +389,45 @@ public class PopClient implements IncomingMailClient {
 			indices[i] = ((PopMessageToken)messageTokens[i]).getMessageIndex();
 		}
 		
-		return getFolderMessagesImpl(indices, false, progressHandler);
+		getFolderMessagesImpl(indices, false, callback, progressHandler);
 	}
 
-    private FolderMessage[] getFolderMessagesImpl(int[] indices, boolean flagsOnly, MailProgressHandler progressHandler)
+    private void getFolderMessagesImpl(int[] indices, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
     		throws IOException, MailException {
-    	FolderMessage[] folderMessages = new FolderMessage[indices.length];
-        int index = 0;
         String[] headerText;
         String uid;
         MessageEnvelope env;
         int preCount;
         int postCount = connection.getBytesReceived();
         for(int i=0; i<indices.length; i++) {
-        	preCount = postCount;
+            preCount = postCount;
             if(!flagsOnly) {
-            	headerText = popProtocol.executeTop(indices[i], 0);
-            	env = MailMessageParser.parseMessageEnvelope(headerText);
-        	}
+                headerText = popProtocol.executeTop(indices[i], 0);
+                env = MailMessageParser.parseMessageEnvelope(headerText);
+            }
             else {
-            	env = null;
+                env = null;
             }
             uid = popProtocol.executeUidl(indices[i]);
-            folderMessages[index++] = new FolderMessage(
-            		new PopMessageToken(indices[i], uid),
-            		env, indices[i], uid.hashCode());
+            FolderMessage folderMessage = new FolderMessage(
+                    new PopMessageToken(indices[i], uid),
+                    env, indices[i], uid.hashCode());
             postCount = connection.getBytesReceived();
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
+
+            callback.folderMessageUpdate(folderMessage);
         }
-        return folderMessages;
+        callback.folderMessageUpdate(null);
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public FolderMessage[] getNewFolderMessages(boolean flagsOnly, MailProgressHandler progressHandler) throws IOException, MailException {
+    public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
     	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
 		int msgCount = activeMailbox.getMsgCount();
         int firstIndex = Math.max(1, msgCount - count);
-    	return getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, progressHandler);
+    	getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);
     }
 
     /* (non-Javadoc)

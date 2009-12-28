@@ -54,7 +54,8 @@ public class PopMessageToken implements MessageToken {
     private int hashCode = -1;
     
     /** Index of the message within the mailbox */
-    private int messageIndex;
+    private int messageIndex = -1;
+    
     /** POP unique ID that identifies the message */
     private String messageUid;
     
@@ -124,6 +125,7 @@ public class PopMessageToken implements MessageToken {
 	 */
 	public void serialize(DataOutput output) throws IOException {
 		output.writeLong(uniqueId);
+		output.writeUTF(messageUid);
 	}
 	
 	/* (non-Javadoc)
@@ -131,33 +133,31 @@ public class PopMessageToken implements MessageToken {
 	 */
 	public void deserialize(DataInput input) throws IOException {
 		uniqueId = input.readLong();
+		messageUid = input.readUTF();
 	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
 	public boolean equals(Object obj) {
-		if(obj instanceof PopMessageToken) {
-			PopMessageToken rhs = (PopMessageToken)obj;
-			return (this.messageIndex == rhs.messageIndex &&
-					this.messageUid.equals(rhs.messageUid));
-		}
-		else {
-			return false;
-		}
+	    if(obj instanceof PopMessageToken) {
+	        PopMessageToken rhs = (PopMessageToken)obj;
+	        return this.messageUid.equals(rhs.messageUid);
+	    }
+	    else {
+	        return false;
+	    }
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
 	public int hashCode() {
-		if(hashCode == -1) {
-			int hash = 7;
-			hash = 31 * hash + messageIndex;
-			hash = 31 * hash + (messageUid == null ? 0 : messageUid.hashCode());
-			hashCode = hash;
-		}
-		return hashCode;
+	    if(hashCode == -1) {
+	        int result = 1;
+	        result = 31 * result + ((messageUid == null) ? 0 : messageUid.hashCode());
+	    }
+	    return hashCode;
 	}
 	
 	/* (non-Javadoc)
@@ -172,4 +172,15 @@ public class PopMessageToken implements MessageToken {
 		buf.append("]");
 		return buf.toString();
 	}
+
+    public void updateToken(MessageToken messageToken) {
+        if(messageToken.equals(this)) {
+            PopMessageToken rhs = (PopMessageToken)messageToken;
+            this.messageIndex = rhs.messageIndex;
+        }
+    }
+
+    public boolean isLoadable() {
+        return messageIndex != -1;
+    }
 }

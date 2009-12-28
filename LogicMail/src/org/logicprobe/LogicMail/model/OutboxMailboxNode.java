@@ -234,5 +234,13 @@ public class OutboxMailboxNode extends MailboxNode {
         public void deserialize(DataInput input) throws IOException {
             // Empty because this special token is not intended to be serialized
         }
+
+        public void updateToken(MessageToken messageToken) {
+            // Empty because this special token is not intended to be synchronized
+        }
+        
+        public boolean isLoadable() {
+            return true;
+        }
     }
 }

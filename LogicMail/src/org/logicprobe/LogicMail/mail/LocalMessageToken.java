@@ -157,4 +157,18 @@ public class LocalMessageToken implements MessageToken {
 		buf.append("]");
 		return buf.toString();
 	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.MessageToken#updateToken(org.logicprobe.LogicMail.mail.MessageToken)
+	 */
+	public void updateToken(MessageToken messageToken) {
+	    // Local tokens are complete and only have immutable data
+	}
+
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.MessageToken#isLoadable()
+	 */
+	public boolean isLoadable() {
+	    return true;
+	}
 }

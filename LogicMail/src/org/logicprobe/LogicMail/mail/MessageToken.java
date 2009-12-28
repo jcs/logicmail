@@ -64,4 +64,22 @@ public interface MessageToken extends Serializable {
 	 * @return True if contained, false otherwise
 	 */
 	boolean containedWithin(FolderTreeItem folderTreeItem);
+
+	/**
+	 * Update this message token with information from the provided
+	 * message token.  This is meant to update volatile token fields
+	 * that are not serialized or checked with {@link #equals(Object)}.
+	 * 
+	 * @param messageToken other token to update from
+	 */
+    void updateToken(MessageToken messageToken);
+    
+    /**
+     * Gets whether this token is sufficiently complete to load a message
+     * from a mail store.  Messages not loadable from a mail store should
+     * still be loadable from local cache.
+     * 
+     * @return True if loadable, false otherwise
+     */
+    boolean isLoadable();
 }
