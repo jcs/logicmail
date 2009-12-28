@@ -180,7 +180,6 @@ public class MailboxNode implements Node, Serializable {
 		return MailboxNode.comparator;
 	}
 	
-	
 	/**
 	 * Sets the account which this mailbox is contained within.
 	 * 
@@ -188,6 +187,15 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	void setParentAccount(AccountNode parentAccount) {
 		this.parentAccount = parentAccount;
+		
+		// If this is the inbox of a network account which does not support
+		// folders, then set the unique ID to match that of the account
+		// configuration.  This is necessary because this node's original ID
+		// will not be serialized, yet it still needs a way to be matched up
+		// with a local cache folder.
+		if(this.type == TYPE_INBOX && !this.parentAccount.hasFolders() && this.parentAccount.getAccountConfig() != null) {
+		    this.uniqueId = this.parentAccount.getAccountConfig().getUniqueId();
+		}
 	}
 	
 	/**
