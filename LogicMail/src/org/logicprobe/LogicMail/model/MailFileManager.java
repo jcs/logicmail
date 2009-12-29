@@ -40,6 +40,8 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.util.InvertedOrderComparator;
+import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -176,18 +178,14 @@ public class MailFileManager {
 		
 		Vector messageTokenList = new Vector();
 		
-		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
-		String mailboxUrl = fileConnection.getURL();
-		Enumeration e = fileConnection.list(MSG_FILTER, false);
-		while(e.hasMoreElements()) {
-			String fileUrl = mailboxUrl + e.nextElement();
-			MessageToken messageToken = readMessageToken(fileUrl);
-			if(messageToken != null) {
-				messageTokenList.addElement(messageToken);
-			}
-		}
-		fileConnection.close();
-		
+        String[] fileUrls = getMessageFiles(mailboxNode);
+        for(int i=0; i<fileUrls.length; i++) {
+            MessageToken messageToken = readMessageToken(fileUrls[i]);
+            if(messageToken != null) {
+                messageTokenList.addElement(messageToken);
+            }
+        }
+        
 		MessageToken[] result = new MessageToken[messageTokenList.size()];
 		messageTokenList.copyInto(result);
 		return result;
@@ -198,17 +196,13 @@ public class MailFileManager {
 
 		Vector messageNodeList = new Vector();
 		
-		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
-		String mailboxUrl = fileConnection.getURL();
-		Enumeration e = fileConnection.list(MSG_FILTER, false);
-		while(e.hasMoreElements()) {
-			String fileUrl = mailboxUrl + e.nextElement();
-			MessageNode messageNode = readMessageNode(fileUrl);
-			if(messageNode != null) {
-				messageNodeList.addElement(messageNode);
-			}
-		}
-		fileConnection.close();
+        String[] fileUrls = getMessageFiles(mailboxNode);
+        for(int i=0; i<fileUrls.length; i++) {
+            MessageNode messageNode = readMessageNode(fileUrls[i]);
+            if(messageNode != null) {
+                messageNodeList.addElement(messageNode);
+            }
+        }
 		
 		MessageNode[] result = new MessageNode[messageNodeList.size()];
 		messageNodeList.copyInto(result);
@@ -217,22 +211,44 @@ public class MailFileManager {
 	
     public void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
         if(cacheUrl == null) { callback.messageNodeUpdated(null); }
-
-        //TODO: Implement sort ordering in both directions for sane cache loading
-        FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
-        String mailboxUrl = fileConnection.getURL();
-        Enumeration e = fileConnection.list(MSG_FILTER, false);
-        while(e.hasMoreElements()) {
-            String fileUrl = mailboxUrl + e.nextElement();
-            MessageNode messageNode = readMessageNode(fileUrl);
+        
+        String[] fileUrls = getMessageFiles(mailboxNode);
+        for(int i=0; i<fileUrls.length; i++) {
+            MessageNode messageNode = readMessageNode(fileUrls[i]);
             if(messageNode != null) {
                 callback.messageNodeUpdated(messageNode);
             }
         }
-        fileConnection.close();
+        
         callback.messageNodeUpdated(null);
     }
 	
+    private String[] getMessageFiles(MailboxNode mailboxNode) throws IOException {
+        SimpleSortingVector fileVector = new SimpleSortingVector();
+        if(mailSettings.getGlobalConfig().getDispOrder()) {
+            fileVector.setSortComparator(new MailFileComparator());
+        }
+        else {
+            fileVector.setSortComparator(new InvertedOrderComparator(new MailFileComparator()));
+        }
+        fileVector.setSort(true);
+        
+        FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
+        String mailboxUrl = fileConnection.getURL();
+        Enumeration e = fileConnection.list(MSG_FILTER, false);
+        while(e.hasMoreElements()) {
+            fileVector.addElement(e.nextElement());
+        }
+        fileConnection.close();
+
+        int size = fileVector.size();
+        String[] result = new String[size];
+        for(int i=0; i<size; i++) {
+            result[i] = mailboxUrl + fileVector.elementAt(i);
+        }
+        return result;
+    }
+    
 	public MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
 		if(cacheUrl == null) { return null; }
 

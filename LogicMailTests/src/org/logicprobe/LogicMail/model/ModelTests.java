@@ -49,6 +49,7 @@ public class ModelTests extends TestCase {
         testSuite.addTest(new MailboxNodeTest().suite());
         testSuite.addTest(new MessageNodeTest().suite());
         testSuite.addTest(new MessageNodeWriterTest().suite());
+        testSuite.addTest(new MailFileComparatorTest().suite());
         return testSuite;
     }
 }
