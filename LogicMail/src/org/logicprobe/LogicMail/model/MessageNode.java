@@ -127,6 +127,8 @@ public class MessageNode implements Node {
 	private int hashCode = -1;
 	/** True if the message is up-to-date in the cache */
 	private boolean cached;
+	/** True if the message has cached content available for loading */
+	private boolean hasCachedContent;
 	/** Bit-field set of message flags. */
 	private int flags;
 	/** Date that the message was sent. */
@@ -655,6 +657,30 @@ public class MessageNode implements Node {
 		synchronized(messageContent) {
 			return (messageStructure != null) && (!messageContent.isEmpty());
 		}
+	}
+	
+	/**
+	 * Sets whether this message has cached content available.
+	 * This method should only be called by code which is creating
+	 * a message note instance from local cache data.
+	 * 
+	 * @param hasCachedContent True if cached content is available for loading
+	 */
+	public void setCachedContent(boolean hasCachedContent) {
+	    this.hasCachedContent = hasCachedContent;
+	}
+	
+	/**
+	 * Gets whether this message has cached content available.
+	 * This is intended to be used as a quick check to determine whether
+	 * message content can be loaded from local cache, without actually
+	 * having to load that content first.  It checks a variable that should
+	 * be set when message headers are loaded from cache.
+	 * 
+	 * @return True if cached content is available for loading
+	 */
+	public boolean hasCachedContent() {
+	    return hasCachedContent;
 	}
 	
 	/**

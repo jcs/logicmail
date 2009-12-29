@@ -230,6 +230,10 @@ public class MessageNodeReader {
 		
 		messageNode.setMessageStructure(messageStructure);
 		
+		if(contentCount > 0) {
+		    messageNode.setCachedContent(true);
+		}
+		
 		return messageNode;
 	}
 
