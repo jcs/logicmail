@@ -213,38 +213,30 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
 
     public synchronized void addError(Test test, Throwable throwable) {
-        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
-            public void run() {
-                errorLabel.setText("Errors: " + testResults.errorCount());
-            }
-        });
+        synchronized(UiApplication.getEventLock()) {
+            errorLabel.setText("Errors: " + testResults.errorCount());
+        }
     }
     
     public synchronized void addFailure(Test test, AssertionFailedError assertionFailedError) {
-        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
-            public void run() {
-                failureLabel.setText("Failures: " + testResults.failureCount());
-            }
-        });
+        synchronized(UiApplication.getEventLock()) {
+            failureLabel.setText("Failures: " + testResults.failureCount());
+        }
     }
     
     public void endTest(Test test) {
-        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
-            public void run() {
-                progressGauge.setValue(progressGauge.getValue() + 1);
-            }
-        });
+        synchronized(UiApplication.getEventLock()) {
+            progressGauge.setValue(progressGauge.getValue() + 1);
+        }
         updateTreeErrors();
         updateTestBranch(test);
         updateTestTree();
     }
     
     public void endTestStep(Test test) {
-        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
-            public void run() {
-                progressGauge.setValue(progressGauge.getValue() + 1);
-            }
-        });
+        synchronized(UiApplication.getEventLock()) {
+            progressGauge.setValue(progressGauge.getValue() + 1);
+        }
         updateTreeErrors();
         updateTestBranch(test);
         updateTestTree();
