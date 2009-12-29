@@ -86,10 +86,10 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
 
     private void initFields() {
         acctNameField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + " ", outgoingConfig.getAcctName());
+            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + ' ', outgoingConfig.getAcctName());
         
         serverNameField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + " ", outgoingConfig.getServerName());
+            new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', outgoingConfig.getServerName());
         
         serverSecurityField = new ObjectChoiceField(
         		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
@@ -105,24 +105,24 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
             }});
         
         serverPortField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + " ", Integer.toString(outgoingConfig.getServerPort()));
+            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(outgoingConfig.getServerPort()));
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
         
         String authTypes[] = {
         		resources.getString(LogicMailResource.MENUITEM_NONE),
         		"PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
         useAuthField =
-            new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + " ", authTypes, outgoingConfig.getUseAuth());
+            new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ', authTypes, outgoingConfig.getUseAuth());
         useAuthField.setChangeListener(new FieldChangeListener(){
             public void fieldChanged(Field field, int context) {
                 useAuthField_FieldChanged(field, context);
             }});
 
         serverUserField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + " ", outgoingConfig.getServerUser());
+            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', outgoingConfig.getServerUser());
         
         serverPassField =
-            new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + " ", outgoingConfig.getServerPass());
+            new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', outgoingConfig.getServerPass());
         
         useMdsField =
             new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !outgoingConfig.getDeviceSide());

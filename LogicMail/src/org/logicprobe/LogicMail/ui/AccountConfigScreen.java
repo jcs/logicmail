@@ -217,8 +217,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      */
     private Manager initFieldsBasic() {
         Manager manager = new VerticalFieldManager();
-        serverNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName(),
-                256, TextField.NO_NEWLINE);
+        serverNameField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName());
         serverSecurityField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
                 new Object[] {
