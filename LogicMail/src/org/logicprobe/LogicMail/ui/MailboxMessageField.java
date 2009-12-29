@@ -162,8 +162,8 @@ public class MailboxMessageField extends Field {
         if(!messageNode.hasCachedContent() && !messageNode.hasMessageContent()) {
             graphics.setColor(graphics.getBackgroundColor());
             graphics.drawFilledPath(
-                    new int[] { 7, 1 + messageIconW, 1 + messageIconW },
-                    new int[] { messageIconY + messageIconH, messageIconY - 6, messageIconY + messageIconH },
+                    new int[] { 1, 11, 1 },
+                    new int[] { 1, 1, messageIconY + messageIconH },
                     null,
                     null);
             graphics.setColor(originalColor);
