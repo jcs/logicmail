@@ -46,6 +46,7 @@ public abstract class FieldFactory {
     private static String[] factoryClasses = {
         "org.logicprobe.LogicMail.ui.FieldFactoryBB50",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB46",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB42"
     };
     
@@ -71,4 +72,8 @@ public abstract class FieldFactory {
     }
 
     public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
+    
+    public abstract BorderedFieldManager getBorderedFieldManager();
+    
+    public abstract BorderedFieldManager getBorderedFieldManager(long style);
 }

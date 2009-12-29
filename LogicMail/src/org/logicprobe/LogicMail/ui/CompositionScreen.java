@@ -243,7 +243,8 @@ public class CompositionScreen extends AbstractScreenProvider {
     }
     
     public void initFields(Screen screen) {
-    	recipientsFieldManager = new BorderedFieldManager(
+        FieldFactory fieldFactory = FieldFactory.getInstance();
+    	recipientsFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
         		| BorderedFieldManager.BOTTOM_BORDER_NONE);
@@ -252,7 +253,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         recipientsFieldManager.add(new EmailAddressBookEditField(
                 EmailAddressBookEditField.ADDRESS_CC, ""));
 
-        subjectFieldManager = new BorderedFieldManager(
+        subjectFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
         		| BorderedFieldManager.BOTTOM_BORDER_LINE);

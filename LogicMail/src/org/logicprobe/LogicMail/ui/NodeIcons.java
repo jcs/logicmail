@@ -67,6 +67,14 @@ public class NodeIcons {
     private Bitmap deletedMessageIcon;
     private Bitmap unknownMessageIcon;
     private Bitmap junkMessageIcon;
+    private Bitmap openedUnloadedMessageIcon;
+    private Bitmap unopenedUnloadedMessageIcon;
+    private Bitmap repliedUnloadedMessageIcon;
+    private Bitmap flaggedUnloadedMessageIcon;
+    private Bitmap draftUnloadedMessageIcon;
+    private Bitmap deletedUnloadedMessageIcon;
+    private Bitmap unknownUnloadedMessageIcon;
+    private Bitmap junkUnloadedMessageIcon;
 	
     public final static int ICON_FOLDER = 0;
     
@@ -96,6 +104,14 @@ public class NodeIcons {
 		deletedMessageIcon  = Bitmap.getBitmapResource("mail_deleted.png");
 		unknownMessageIcon  = Bitmap.getBitmapResource("mail_unknown.png");
 		junkMessageIcon     = Bitmap.getBitmapResource("mail_junk.png");
+        openedUnloadedMessageIcon   = Bitmap.getBitmapResource("mail_opened_unloaded.png");
+        unopenedUnloadedMessageIcon = Bitmap.getBitmapResource("mail_unopened_unloaded.png");
+        repliedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_replied_unloaded.png");
+        flaggedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_flagged_unloaded.png");
+        draftUnloadedMessageIcon    = Bitmap.getBitmapResource("mail_draft_unloaded.png");
+        deletedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_deleted_unloaded.png");
+        unknownUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_unknown_unloaded.png");
+        junkUnloadedMessageIcon     = Bitmap.getBitmapResource("mail_junk_unloaded.png");
 	}
 	
 	public static Bitmap getIcon(Node node) {
@@ -183,23 +199,24 @@ public class NodeIcons {
 		}
 
 		public void visit(MessageNode node) {
+		    boolean unloaded = !node.hasCachedContent() && !node.hasMessageContent();
 			int flags = node.getFlags();
 	        if((flags & MessageNode.Flag.DELETED) != 0)
-	            this.icon = deletedMessageIcon;
+	            this.icon = unloaded ? deletedUnloadedMessageIcon : deletedMessageIcon;
 	        else if((flags & MessageNode.Flag.JUNK) != 0)
-	        	this.icon = junkMessageIcon;
+	        	this.icon = unloaded ? junkUnloadedMessageIcon : junkMessageIcon;
 	        else if((flags & MessageNode.Flag.ANSWERED) != 0)
-	        	this.icon = repliedMessageIcon;
+	        	this.icon = unloaded ? repliedUnloadedMessageIcon: repliedMessageIcon;
 	        else if((flags & MessageNode.Flag.FLAGGED) != 0)
-	        	this.icon = flaggedMessageIcon;
+	        	this.icon = unloaded ? flaggedUnloadedMessageIcon : flaggedMessageIcon;
 	        else if((flags & MessageNode.Flag.DRAFT) != 0)
-	        	this.icon = draftMessageIcon;
+	        	this.icon = unloaded ? draftUnloadedMessageIcon: draftMessageIcon;
 	        else if((flags & MessageNode.Flag.RECENT) != 0)
-	        	this.icon = unopenedMessageIcon;
+	        	this.icon = unloaded ? unopenedUnloadedMessageIcon: unopenedMessageIcon;
 	        else if((flags & MessageNode.Flag.SEEN) != 0)
-	        	this.icon = openedMessageIcon;
+	        	this.icon = unloaded ? openedUnloadedMessageIcon : openedMessageIcon;
 	        else
-	        	this.icon = unknownMessageIcon;
+	        	this.icon = unloaded ? unknownUnloadedMessageIcon: unknownMessageIcon;
 		}
 		
 		public void clearIcon() {

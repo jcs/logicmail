@@ -94,6 +94,16 @@ public class BorderedFieldManager extends Manager {
         int foregroundColor = graphics.getColor();
         int backgroundColor = graphics.getBackgroundColor();
 
+        paintBorder(graphics, width, height, backgroundColor);
+
+        paintSeparator(graphics, width, height);
+        
+        // Resume normal painting of the contents
+        graphics.setColor(foregroundColor);
+        super.paint(graphics);
+    }
+
+    protected void paintBorder(Graphics graphics, int width, int height, int backgroundColor) {
         // Paint the fill for the field
         graphics.setColor(Color.LIGHTGREY);
         graphics.fillRect(0, 0, width, height);
@@ -105,14 +115,12 @@ public class BorderedFieldManager extends Manager {
         // Paint the inner border of the cutout section
         graphics.setColor(Color.DARKGRAY);
         graphics.drawRoundRect(borderWidth, borderWidth, width - (borderWidth * 2), height - (bottomBorderNone ? borderWidth : (borderWidth * 2)), 10, 10);
-
+    }
+    
+    protected void paintSeparator(Graphics graphics, int width, int height) {
         if(bottomBorderLine) {
-        	graphics.drawLine(0, height - 1, width - 1, height - 1);
+            graphics.drawLine(0, height - 1, width - 1, height - 1);
         }
-        
-        // Resume normal painting of the contents
-        graphics.setColor(foregroundColor);
-        super.paint(graphics);
     }
     
     /* (non-Javadoc)

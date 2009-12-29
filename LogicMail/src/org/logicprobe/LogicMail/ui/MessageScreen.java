@@ -122,11 +122,12 @@ public class MessageScreen extends AbstractScreenProvider {
     
     public void initFields(Screen screen) {
         // Create screen elements
-        addressFieldManager = new BorderedFieldManager(
+        FieldFactory fieldFactory = FieldFactory.getInstance();
+        addressFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
         		| BorderedFieldManager.BOTTOM_BORDER_NONE);
-        subjectFieldManager = new BorderedFieldManager(
+        subjectFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
         		| BorderedFieldManager.BOTTOM_BORDER_LINE);

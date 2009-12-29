@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *    notice, this list of conditions and the following disclaimer. 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other materials provided with the distribution. 
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -30,26 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.component.TreeField;
-import net.rim.device.api.ui.component.TreeFieldCallback;
-
-public class FieldFactoryBB42 extends FieldFactory {
-	
-	public FieldFactoryBB42() {
-	}
-
-	public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {
-		TreeField treeField = new TreeField(callback, style);
-		treeField.setDefaultExpanded(true);
-		treeField.setIndentWidth(20);
-		return treeField;
-	}
-
-    public BorderedFieldManager getBorderedFieldManager() {
-        return new BorderedFieldManager();
-    }
-
-    public BorderedFieldManager getBorderedFieldManager(long style) {
-        return new BorderedFieldManager(style);
+public class FieldFactoryBB46 extends FieldFactoryBB42 {
+    public FieldFactoryBB46() {
     }
 }

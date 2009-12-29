@@ -34,7 +34,7 @@ import net.rim.device.api.ui.Touchscreen;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 
-public class FieldFactoryBB47T extends FieldFactory {
+public class FieldFactoryBB47T extends FieldFactoryBB46 {
 	private boolean hasTouchscreen;
 	private FieldFactory oldFieldFactory;
 	
