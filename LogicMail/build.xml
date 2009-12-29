@@ -39,7 +39,7 @@
             defines="@{preprocessor}">
         <jdp title="${module.title}"
              vendor="${module.vendor}"
-             version="${module.version}"
+             version="${module.version}.${module.build}"
              type="cldc"
              midletclass="org.logicprobe.LogicMail.LogicMail"
              icon="logicmail.png"
@@ -190,7 +190,7 @@
           name="${module.title}"
           description="${module.description}"
           vendor="${module.vendor}"
-          version="${module.version}"
+          version="${module.version}.${module.build}"
       	  copyright="${module.copyright}">
       	<!--
           Since there is no easy way to conditionally define these elements,
@@ -244,7 +244,7 @@
           <application id="${module.name}">
             <name>${module.title}</name>
             <description>${module.description}</description>
-            <version>${module.version}</version>
+            <version>${module.version}.${module.build}</version>
             <vendor>${module.vendor}</vendor>
             <copyright>${module.copyright}</copyright>
           </application>

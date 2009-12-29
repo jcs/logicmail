@@ -57,34 +57,11 @@ public final class AppInfo {
      * @param args Arguments
      */
     public static synchronized void initialize(String args[]) {
-    	String build = null;
-    	for(int i=0; i<args.length; i++) {
-    		if(args[i].indexOf("-build:") != -1) {
-    			int p = args[i].indexOf("-build:");
-    			int q = args[i].indexOf(' ');
-    			if(q == -1) {
-    				build = args[i].substring(p + 7);
-    			}
-    			else {
-    				build = args[i].substring(p + 7, q);
-    			}
-    		}
-    	}
-    	
         ApplicationDescriptor appDesc =
             ApplicationDescriptor.currentApplicationDescriptor();
 
         appName = appDesc.getName();
-
-        StringBuffer buf = new StringBuffer();
-        buf.append(appDesc.getVersion());
-        if(build != null) {
-        	buf.append(" (");
-        	buf.append(build);
-        	buf.append(')');
-        }
-        appVersion = buf.toString();
-
+        appVersion = appDesc.getVersion();
         platformInfo = PlatformInfo.getInstance();
     }
     
