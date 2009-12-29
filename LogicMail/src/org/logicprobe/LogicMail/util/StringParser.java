@@ -58,7 +58,8 @@ public class StringParser {
     private static final long ONE_MINUTE = ONE_SECOND * 60;
     private static final long ONE_HOUR = ONE_MINUTE * 60;
     private static String ENCODING_UTF8 = "UTF-8";
-
+    private static String strCRLF = "\r\n";
+    
     private StringParser() {
     }
 
@@ -622,7 +623,7 @@ public class StringParser {
 
         for (int i = 0; i < rawLines.length; i++) {
             if (rawLines[i].startsWith(" ") || rawLines[i].startsWith("\t")) {
-                line = line + "\r\n" + rawLines[i];
+                line = line + strCRLF + rawLines[i];
             } else {
                 if (line.length() != 0) {
                     int p = line.indexOf(':');
@@ -934,7 +935,8 @@ public class StringParser {
         StringBuffer buf = new StringBuffer();
 
         for (int i = 0; i < rawLines.length; i++)
-            buf.append(rawLines[i] + "\r\n");
+            buf.append(rawLines[i]);
+        buf.append(strCRLF);
 
         return new ByteArrayInputStream(buf.toString().getBytes());
     }
