@@ -213,7 +213,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
 
     public synchronized void addError(Test test, Throwable throwable) {
-        UiApplication.getUiApplication().invokeLater(new Runnable() {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 errorLabel.setText("Errors: " + testResults.errorCount());
             }
@@ -221,7 +221,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     public synchronized void addFailure(Test test, AssertionFailedError assertionFailedError) {
-        UiApplication.getUiApplication().invokeLater(new Runnable() {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 failureLabel.setText("Failures: " + testResults.failureCount());
             }
@@ -229,7 +229,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     public void endTest(Test test) {
-        UiApplication.getUiApplication().invokeLater(new Runnable() {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 progressGauge.setValue(progressGauge.getValue() + 1);
             }
@@ -240,7 +240,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     public void endTestStep(Test test) {
-        UiApplication.getUiApplication().invokeLater(new Runnable() {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 progressGauge.setValue(progressGauge.getValue() + 1);
             }
@@ -298,7 +298,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     
     private synchronized void updateTestTree() {
         // Repaint the tree
-        UiApplication.getUiApplication().invokeLater(new Runnable() {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 testTreeField.setDirty(true);
                 invalidate();
@@ -419,7 +419,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     }
     
     private synchronized void updateResults() {
-        UiApplication.getUiApplication().invokeLater(new Runnable() {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 statusLabel.setText("Status: Idle");
                 if(elapsedTime >= 0) {
