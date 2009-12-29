@@ -1167,7 +1167,7 @@ public class MessageNode implements Node {
 			
 			try {
 				MimeMessageContent[] content = MailFileManager.getInstance().readMessageContent(parent, messageToken);
-				if(content != null) {
+				if(content != null && content.length > 0) {
 					putMessageContent(content);
 					for(int i=0; i<content.length; i++) {
 						contentToLoad.removeElement(content[i].getMessagePart());
