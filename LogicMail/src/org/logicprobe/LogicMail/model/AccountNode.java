@@ -549,6 +549,7 @@ public class AccountNode implements Node {
             FolderTreeItem mailboxFolder = mailboxNode.getFolderTreeItem();
             mailboxFolder.setMsgCount(currentFolder.getMsgCount());
             mailboxFolder.setUnseenCount(currentFolder.getUnseenCount());
+            mailboxNode.updateUnseenFolderTreeItem();
             mailboxNode.fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS,
                 null);
         }
@@ -639,6 +640,11 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
+            // Set the SEEN bit
+            int flags = messageNode.getFlags();
+            flags |= MessageNode.Flag.SEEN;
+            messageNode.setFlags(flags);
+
         	switch(e.getType()) {
         	case MessageEvent.TYPE_FULLY_LOADED:
                 messageNode.setMessageStructure(e.getMessageStructure());

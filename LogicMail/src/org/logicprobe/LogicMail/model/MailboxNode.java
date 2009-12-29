@@ -70,6 +70,7 @@ public class MailboxNode implements Node, Serializable {
 	private int type;
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
+	private int unseenMessageCount;
 	
 	private Object fetchLock = new Object();
 	private RefreshMessagesThread fetchThread;
@@ -471,6 +472,7 @@ public class MailboxNode implements Node, Serializable {
 		}
 		if(messageAdded) {
 			fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, new MessageNode[] { message });
+			updateUnseenMessages(true);
 		}
 	}
 	
@@ -495,6 +497,7 @@ public class MailboxNode implements Node, Serializable {
 			MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
 			addedMessages.copyInto(addedMessagesArray);
 			fireMailboxStatusChanged(MailboxNodeEvent.TYPE_NEW_MESSAGES, addedMessagesArray);
+			updateUnseenMessages(true);
 		}
 	}
 	
@@ -535,6 +538,7 @@ public class MailboxNode implements Node, Serializable {
 				messageTokenMap.remove(message.getMessageToken());
 			}
 		}
+        updateUnseenMessages(false);
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 	}
 
@@ -553,6 +557,7 @@ public class MailboxNode implements Node, Serializable {
 			messageMap.clear();
 			messageTokenMap.clear();
 		}
+        updateUnseenMessages(false);
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
 	}
 	
@@ -684,12 +689,47 @@ public class MailboxNode implements Node, Serializable {
     }
 
     /**
+     * Update the unseen message count from the local messages collection.
+     * 
+     * @param fireEvent true to fire a status event if the count has changed
+     */
+    void updateUnseenMessages(boolean fireEvent) {
+        boolean updated = false;
+        synchronized(messages) {
+            int newCount = 0;
+            int size = messages.size();
+            for(int i=0; i<size; i++) {
+                int flags = ((MessageNode)messages.elementAt(i)).getFlags();
+                if((flags & MessageNode.Flag.SEEN) == 0) {
+                    newCount++;
+                }
+            }
+            if(newCount != unseenMessageCount) {
+                unseenMessageCount = newCount;
+                updated = true;
+            }
+        }
+        if(updated && fireEvent) {
+            fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
+        }
+    }
+    
+    /**
+     * Update the unseen message count from the folder tree item.
+     */
+    void updateUnseenFolderTreeItem() {
+        synchronized(messages) {
+            unseenMessageCount = this.folderTreeItem.getUnseenCount();
+        }
+    }
+    
+    /**
      * Gets the unseen message count for this folder.
      * 
      * @return Unseen message count.
      */
     public int getUnseenMessageCount() {
-        return this.folderTreeItem.getUnseenCount();
+        return unseenMessageCount;
     }
 	
     /**

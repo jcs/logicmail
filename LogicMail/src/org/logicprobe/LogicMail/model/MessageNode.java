@@ -346,7 +346,12 @@ public class MessageNode implements Node {
 	 */
 	public void setFlags(int flags) {
 		cached = false;
-		this.flags = flags;
+		if(this.flags != flags) {
+		    this.flags = flags;
+		    if(this.getParent() != null) {
+		        this.getParent().updateUnseenMessages(true);
+		    }
+		}
 	}
 
 	/**
