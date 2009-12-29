@@ -707,7 +707,7 @@ public class MailboxNode implements Node, Serializable {
             if(parentAccount.getAccountConfig() != null) {
                 if(fetchThread == null || !fetchThread.isAlive()) {
                     fetchThread = new RefreshMessagesThread();
-                    fetchThread.run();
+                    fetchThread.start();
                 }
             }
             else {
@@ -723,6 +723,7 @@ public class MailboxNode implements Node, Serializable {
         }
         
         public void run() {
+            yield();
             try {
                 MailFileManager.getInstance().readMessageNodes(MailboxNode.this, this);
             } catch (IOException e) {

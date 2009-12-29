@@ -212,7 +212,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 	 * @see net.rim.device.api.browser.field.RenderingApplication#invokeRunnable(java.lang.Runnable)
 	 */
 	public void invokeRunnable(Runnable runnable) {
-		(new Thread(runnable)).run();
+		(new Thread(runnable)).start();
 	}
 	
 	/**

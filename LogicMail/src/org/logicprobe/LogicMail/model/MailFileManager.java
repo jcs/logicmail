@@ -218,6 +218,7 @@ public class MailFileManager {
     public void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
         if(cacheUrl == null) { callback.messageNodeUpdated(null); }
 
+        //TODO: Implement sort ordering in both directions for sane cache loading
         FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
         String mailboxUrl = fileConnection.getURL();
         Enumeration e = fileConnection.list(MSG_FILTER, false);
