@@ -231,6 +231,10 @@ public class AccountNodeTest extends TestCase {
 			return false;
 		}
 
+        public boolean hasExpunge() {
+            return false;
+        }
+
 		public boolean isLocal() {
 			return false;
 		}
@@ -255,5 +259,6 @@ public class AccountNodeTest extends TestCase {
 		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) { }
 		public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) { }
 		public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) { }
+        public void requestFolderExpunge(FolderTreeItem folder) { }
     }
 }

@@ -405,6 +405,8 @@ public class NetworkMailStoreTest extends TestCase {
 		public void idleModeBegin() throws IOException, MailException { }
 		public void idleModeEnd() throws IOException, MailException { }
 		public boolean idleModePoll() throws IOException, MailException { return false; }
+        public void expungeActiveFolder() throws IOException, MailException { }
+        public boolean hasExpunge() { return false; }
 	};
 	
 	private class FakeMessageToken implements MessageToken {
