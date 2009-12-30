@@ -324,21 +324,8 @@ public class MaildirFolder {
 			throw new IOException("Maildir not open");
 		}
 		
-		// Get the filename unique id prefix, and shortcut out if not found
-		String uniqueId = localMessageToken.getMessageUid();
-		if(uniqueId == null) {
-			return null;
-		}
-		
-		// Find the file matching the unique id, and shortcut out if not found
-		String matchingFile;
-		Enumeration e = fileConnection.list(uniqueId + '*', false);
-		if(e.hasMoreElements()) {
-			matchingFile = (String)e.nextElement();
-		}
-		else {
-			return null;
-		}
+		String matchingFile = getFileForToken(localMessageToken);
+		if(matchingFile == null) { return null; }
 
 		// Open the file, and read its contents
 		String messageSource = null;
@@ -381,7 +368,7 @@ public class MaildirFolder {
 		
 		return buf.toString();
 	}
-
+	
 	/**
 	 * Appends a message to the maildir.
 	 * 
@@ -406,12 +393,7 @@ public class MaildirFolder {
 		buf.append(DeviceInfo.getDeviceId());
 		String uniqueId = buf.toString();
 		
-		buf.append("_2,");
-		if(initialFlags.isAnswered()) { buf.append('R'); }
-		if(initialFlags.isDeleted()) { buf.append('T'); }
-		if(initialFlags.isDraft()) { buf.append('D'); }
-		if(initialFlags.isFlagged()) { buf.append('F'); }
-		if(initialFlags.isSeen()) { buf.append('S'); }
+		appendFlagsToBuffer(buf, initialFlags);
 
 		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
 			EventLogger.logEvent(AppInfo.GUID,
@@ -464,4 +446,77 @@ public class MaildirFolder {
 		}
 		return result;
 	}
+
+	/**
+	 * Sets the flags of an existing message.
+	 * 
+	 * @param localMessageToken The token for the message to set flags for
+	 * @param messageFlags The flags to set
+	 * @return True if message flags were updated, false otherwise
+	 */
+    public boolean setMessageFlags(LocalMessageToken localMessageToken, MessageFlags messageFlags) throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("setMessageFlags(): " + localMessageToken.getMessageUid()).getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+        if(fileConnection == null) {
+            throw new IOException("Maildir not open");
+        }
+        
+        // Get the current filename
+        String messageFilename = getFileForToken(localMessageToken);
+        if(messageFilename == null) { return false; }
+        
+        // Create the new filename, and verify that it is different
+        StringBuffer buf = new StringBuffer();
+        buf.append(localMessageToken.getMessageUid());
+        appendFlagsToBuffer(buf, messageFlags);
+        String updatedFilename = buf.toString();
+        if(messageFilename.equals(updatedFilename)) { return false; }
+
+        FileConnection mailFileConnection =
+            (FileConnection)Connector.open(fileConnection.getURL() + '/' + messageFilename);
+        if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+            mailFileConnection.rename(updatedFilename);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Get the filename matching a message token.
+     * 
+     * @param localMessageToken Token to find the file for
+     * @return Filename if found, or null if not found
+     */
+    private String getFileForToken(LocalMessageToken localMessageToken) throws IOException {
+        // Get the filename unique id prefix, and shortcut out if not found
+        String uniqueId = localMessageToken.getMessageUid();
+        if(uniqueId == null) {
+            return null;
+        }
+        
+        // Find the file matching the unique id, and shortcut out if not found
+        String matchingFile;
+        Enumeration e = fileConnection.list(uniqueId + '*', false);
+        if(e.hasMoreElements()) {
+            matchingFile = (String)e.nextElement();
+        }
+        else {
+            return null;
+        }
+        return matchingFile;
+    }
+
+    private static void appendFlagsToBuffer(StringBuffer buf, MessageFlags messageFlags) {
+        buf.append("_2,");
+        if(messageFlags.isAnswered()) { buf.append('R'); }
+        if(messageFlags.isDeleted()) { buf.append('T'); }
+        if(messageFlags.isDraft()) { buf.append('D'); }
+        if(messageFlags.isFlagged()) { buf.append('F'); }
+        if(messageFlags.isSeen()) { buf.append('S'); }
+    }
 }

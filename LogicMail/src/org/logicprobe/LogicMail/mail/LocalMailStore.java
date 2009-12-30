@@ -111,7 +111,7 @@ public class LocalMailStore extends AbstractMailStore {
     }
     
     public boolean hasUndelete() {
-        return false;
+        return true;
     }
 
     public void requestFolderTree() {
@@ -181,10 +181,9 @@ public class LocalMailStore extends AbstractMailStore {
     
     public void requestMessage(MessageToken messageToken) {
     	LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-    	
         FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
         
-        if(requestFolder != null && requestFolder != null) {
+        if(requestFolder != null) {
         	threadQueue.invokeLater(new RequestMessageRunnable(requestFolder, localMessageToken));
         }
     }
@@ -229,17 +228,67 @@ public class LocalMailStore extends AbstractMailStore {
     }
     
     public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
-    	throw new UnsupportedOperationException("Not yet implemented");
+        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+        
+        if(requestFolder != null && !messageFlags.isDeleted()) {
+            MessageFlags newFlags = copyMessageFlags(messageFlags);
+            newFlags.setDeleted(true);
+            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, newFlags));
+        }
     }
 
     public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) {
-    	throw new UnsupportedOperationException("Not yet implemented");
+        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+        
+        if(requestFolder != null && messageFlags.isDeleted()) {
+            MessageFlags newFlags = copyMessageFlags(messageFlags);
+            newFlags.setDeleted(false);
+            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, newFlags));
+        }
     }
 
     public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) {
-    	throw new UnsupportedOperationException("Not yet implemented");
+        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+        
+        if(requestFolder != null && !messageFlags.isAnswered()) {
+            MessageFlags newFlags = copyMessageFlags(messageFlags);
+            newFlags.setAnswered(true);
+            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, newFlags));
+        }
     }
 
+    private class UpdateMessageFlagsRunnable extends MaildirRunnable {
+        private LocalMessageToken localMessageToken;
+        private MessageFlags messageFlags;
+        
+        public UpdateMessageFlagsRunnable(
+                FolderTreeItem requestFolder,
+                LocalMessageToken localMessageToken,
+                MessageFlags messageFlags) {
+            super(requestFolder);
+            this.localMessageToken = localMessageToken;
+            this.messageFlags = messageFlags;
+        }
+
+        public void run() {
+            boolean flagsUpdated = false;
+            try {
+                maildirFolder.open();
+                flagsUpdated = maildirFolder.setMessageFlags(localMessageToken, messageFlags);
+                maildirFolder.close();
+            } catch (IOException e) {
+                System.err.println("Unable to read folder: " + e.toString());
+            }
+            
+            if(flagsUpdated) {
+                fireMessageFlagsChanged(localMessageToken, messageFlags);
+            }
+        }
+    }
+    
     public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
         FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
         
@@ -331,5 +380,16 @@ public class LocalMailStore extends AbstractMailStore {
         		folderMaildirMap.put(requestFolder, maildirFolder);
         	}
     	}
+    }
+    
+    private static MessageFlags copyMessageFlags(MessageFlags sourceFlags) {
+        return new MessageFlags(
+                sourceFlags.isSeen(),
+                sourceFlags.isAnswered(),
+                sourceFlags.isFlagged(),
+                sourceFlags.isDeleted(),
+                sourceFlags.isDraft(),
+                sourceFlags.isRecent(),
+                sourceFlags.isJunk());
     }
 }
