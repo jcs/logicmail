@@ -199,7 +199,7 @@ public class NodeIcons {
 		}
 
 		public void visit(MessageNode node) {
-		    boolean unloaded = !node.hasCachedContent() && !node.hasMessageContent();
+		    boolean unloaded = !node.hasCachedContent() && !node.hasMessageContent() && node.isCachable();
 			int flags = node.getFlags();
 	        if((flags & MessageNode.Flag.DELETED) != 0)
 	            this.icon = unloaded ? deletedUnloadedMessageIcon : deletedMessageIcon;

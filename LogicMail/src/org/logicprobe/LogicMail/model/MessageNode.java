@@ -266,7 +266,7 @@ public class MessageNode implements Node {
 	 * 
 	 * @return true, if the message is associated with a mailbox from a non-local account
 	 */
-	boolean isCachable() {
+	public boolean isCachable() {
 		if(parent != null
 				&& parent.getParentAccount() != null
 				&& parent.getParentAccount().getAccountConfig() != null) {
@@ -1127,26 +1127,27 @@ public class MessageNode implements Node {
 	private class RefreshMessageWholeRunnable implements Runnable {
 		public void run() {
 			boolean messageLoaded = false;
-			try {
-				MessageNode tempNode = MailFileManager.getInstance().readMessageNode(parent, messageToken, true);
-				if(tempNode != null) {
-				    MimeMessagePart messageStructure = tempNode.getMessageStructure();
-				    MimeMessageContent[] messageContent = tempNode.getAllMessageContent();
-				    
-				    if(messageStructure != null && messageContent != null && messageContent.length > 0) {
-    					setMessageStructure(messageStructure);
-    					setMessageSource(tempNode.getMessageSource());
-    					putMessageContent(messageContent);
-    					messageLoaded = true;
-				    }
-				}
-			} catch (IOException e) {
-				EventLogger.logEvent(AppInfo.GUID,
-		                ("Unable to read message from cache\r\n"
-	                		+ e.getMessage()).getBytes(),
-		                EventLogger.ERROR);
+			if(parent.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
+    			try {
+    				MessageNode tempNode = MailFileManager.getInstance().readMessageNode(parent, messageToken, true);
+    				if(tempNode != null) {
+    				    MimeMessagePart messageStructure = tempNode.getMessageStructure();
+    				    MimeMessageContent[] messageContent = tempNode.getAllMessageContent();
+    				    
+    				    if(messageStructure != null && messageContent != null && messageContent.length > 0) {
+        					setMessageStructure(messageStructure);
+        					setMessageSource(tempNode.getMessageSource());
+        					putMessageContent(messageContent);
+        					messageLoaded = true;
+    				    }
+    				}
+    			} catch (IOException e) {
+    				EventLogger.logEvent(AppInfo.GUID,
+    		                ("Unable to read message from cache\r\n"
+    	                		+ e.getMessage()).getBytes(),
+    		                EventLogger.ERROR);
+    			}
 			}
-			
 			if(!messageLoaded) {
 				AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
 				mailStore.requestMessage(messageToken);
@@ -1165,19 +1166,21 @@ public class MessageNode implements Node {
 				contentToLoad.addElement(displayableParts[i]);
 			}
 			
-			try {
-				MimeMessageContent[] content = MailFileManager.getInstance().readMessageContent(parent, messageToken);
-				if(content != null && content.length > 0) {
-					putMessageContent(content);
-					for(int i=0; i<content.length; i++) {
-						contentToLoad.removeElement(content[i].getMessagePart());
-					}
-				}
-			} catch (IOException e) {
-				EventLogger.logEvent(AppInfo.GUID,
-		                ("Unable to read message from cache\r\n"
-	                		+ e.getMessage()).getBytes(),
-		                EventLogger.ERROR);
+			if(parent.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
+    			try {
+    				MimeMessageContent[] content = MailFileManager.getInstance().readMessageContent(parent, messageToken);
+    				if(content != null && content.length > 0) {
+    					putMessageContent(content);
+    					for(int i=0; i<content.length; i++) {
+    						contentToLoad.removeElement(content[i].getMessagePart());
+    					}
+    				}
+    			} catch (IOException e) {
+    				EventLogger.logEvent(AppInfo.GUID,
+    		                ("Unable to read message from cache\r\n"
+    	                		+ e.getMessage()).getBytes(),
+    		                EventLogger.ERROR);
+    			}
 			}
 			
 			if(!contentToLoad.isEmpty()) {

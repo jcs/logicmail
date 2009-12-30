@@ -40,6 +40,7 @@ import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.system.UnsupportedOperationException;
 
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
@@ -56,13 +57,14 @@ import org.logicprobe.LogicMail.util.ThreadQueue;
  * currently have any user configuration.
  */
 public class LocalMailStore extends AbstractMailStore {
+    private GlobalConfig globalConfig;
     private FolderTreeItem rootFolder;
     private ThreadQueue threadQueue;
     private Hashtable folderMaildirMap;
     
     public LocalMailStore() {
         super();
-
+        globalConfig = MailSettings.getInstance().getGlobalConfig();
         threadQueue = new ThreadQueue();
         folderMaildirMap = new Hashtable();
         
@@ -311,7 +313,7 @@ public class LocalMailStore extends AbstractMailStore {
         		maildirFolder = (MaildirFolder)folderMaildirMap.get(requestFolder);
         	}
         	else {
-        		String folderUrl = MailSettings.getInstance().getGlobalConfig().getLocalDataLocation();
+        		String folderUrl = globalConfig.getLocalDataLocation() + "local/";
         		try {
 	        		FileConnection fileConnection = (FileConnection)Connector.open(folderUrl);
 	        		if(!fileConnection.exists()) {
