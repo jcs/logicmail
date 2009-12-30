@@ -967,7 +967,7 @@ public class ImapClient implements IncomingMailClient {
         	messageFlags.setAnswered(updatedFlags.answered);
         	messageFlags.setDeleted(updatedFlags.deleted);
             messageFlags.setDraft(updatedFlags.draft);
-            messageFlags.setFlagged(updatedFlags.draft);
+            messageFlags.setFlagged(updatedFlags.flagged);
             messageFlags.setRecent(updatedFlags.recent);
             messageFlags.setSeen(updatedFlags.seen);
         }
