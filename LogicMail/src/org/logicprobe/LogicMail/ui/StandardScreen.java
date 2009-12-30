@@ -100,9 +100,23 @@ public class StandardScreen extends MainScreen {
      */
     public void setStatus(Field status) {
     	originalStatusField = status;
-    	super.setStatus(status);
+    	superSetStatusImpl(status);
     }
 
+    /**
+     * Wrapper for internal calls to {@link MainScreen#setStatus(Field)}
+     * that makes sure <code>IllegalStateException</code>s don't appear
+     * if the field had previously been added.
+     * 
+     * @param status the new status field
+     */
+    private void superSetStatusImpl(Field status) {
+        if(status != null && status.getManager() != null) {
+            status.getManager().delete(status);
+        }
+        super.setStatus(status);
+    }
+    
     /**
      * Update status text, showing or hiding the status bar as necessary.
      * 
@@ -111,10 +125,10 @@ public class StandardScreen extends MainScreen {
     public void updateStatus(String statusText) {
     	statusBarField.setStatusText(statusText);
     	if(statusBarField.hasStatus()) {
-    		super.setStatus(statusBarField);
+    		superSetStatusImpl(statusBarField);
     	}
     	else {
-    		super.setStatus(originalStatusField);
+    		superSetStatusImpl(originalStatusField);
     	}
     }
     
@@ -133,7 +147,7 @@ public class StandardScreen extends MainScreen {
      */
     protected void onUndisplay() {
     	screenProvider.onUndisplay();
-    	super.setStatus(originalStatusField);
+    	superSetStatusImpl(originalStatusField);
 		statusBarField.setStatusText(null);
     	NotificationHandler.getInstance().cancelNotification();
     	super.onUndisplay();
@@ -152,7 +166,7 @@ public class StandardScreen extends MainScreen {
      */
     protected void onObscured() {
     	super.onObscured();
-    	super.setStatus(originalStatusField);
+    	superSetStatusImpl(originalStatusField);
    		statusBarField.setStatusText(null);
     }
     
