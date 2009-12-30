@@ -366,6 +366,16 @@ public class ImapProtocol {
         return response;
     }
 
+    public void executeExpunge() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeExpunge()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
+        execute("EXPUNGE", null, null);
+    }
+    
     public StatusResponse[] executeStatus(String[] mboxpaths, MailProgressHandler progressHandler)
         throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {

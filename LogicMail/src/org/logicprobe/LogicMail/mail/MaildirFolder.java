@@ -479,10 +479,55 @@ public class MaildirFolder {
             (FileConnection)Connector.open(fileConnection.getURL() + '/' + messageFilename);
         if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
             mailFileConnection.rename(updatedFilename);
+            mailFileConnection.close();
             return true;
         }
         else {
+            mailFileConnection.close();
             return false;
+        }
+    }
+
+    /**
+     * Remove all deleted messages from this folder.
+     */
+    public void expunge() throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("expunge()").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
+        // Build a list of deleted files in the current directory
+        Vector deletedFiles = new Vector();
+        Enumeration e = fileConnection.list();
+        while(e.hasMoreElements()) {
+            String messageFilename = (String)e.nextElement();
+            int p = messageFilename.indexOf('_');
+            if(p != -1 && messageFilename.indexOf('T', p) != -1) {
+                deletedFiles.addElement(messageFilename);
+            }
+        }
+        
+        // Iterate through the list and actually delete from storage
+        String baseUrl = fileConnection.getURL() + '/';
+        e = deletedFiles.elements();
+        while(e.hasMoreElements()) {
+            String messageFilename = (String)e.nextElement();
+            try {
+                FileConnection mailFileConnection =
+                    (FileConnection)Connector.open(baseUrl + messageFilename);
+                if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+                    mailFileConnection.delete();
+                }
+                mailFileConnection.close();
+            } catch (IOException exp) {
+                if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Error deleting message: " + exp.toString()).getBytes(),
+                            EventLogger.DEBUG_INFO);
+                }
+            }
         }
     }
 

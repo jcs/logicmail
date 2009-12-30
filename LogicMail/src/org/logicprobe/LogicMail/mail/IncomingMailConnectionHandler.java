@@ -48,10 +48,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 	// The various mail store requests, mirroring the
 	// "requestXXXX()" methods from AbstractMailStore
 	public static final int REQUEST_FOLDER_TREE             = 10;
-	public static final int REQUEST_FOLDER_STATUS           = 11;
-	public static final int REQUEST_FOLDER_MESSAGES_RANGE   = 12;
-	public static final int REQUEST_FOLDER_MESSAGES_SET     = 13;
-	public static final int REQUEST_FOLDER_MESSAGES_RECENT  = 14;
+    public static final int REQUEST_FOLDER_EXPUNGE          = 11;
+	public static final int REQUEST_FOLDER_STATUS           = 12;
+	public static final int REQUEST_FOLDER_MESSAGES_RANGE   = 13;
+	public static final int REQUEST_FOLDER_MESSAGES_SET     = 14;
+	public static final int REQUEST_FOLDER_MESSAGES_RECENT  = 15;
 	public static final int REQUEST_MESSAGE                 = 20;
 	public static final int REQUEST_MESSAGE_PARTS           = 21;
 	public static final int REQUEST_MESSAGE_DELETE          = 22;
@@ -90,6 +91,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		case REQUEST_FOLDER_TREE:
 			handleRequestFolderTree();
 			break;
+		case REQUEST_FOLDER_EXPUNGE:
+		    handleRequestFolderExpunge((FolderTreeItem)params[0]);
+		    break;
 		case REQUEST_FOLDER_STATUS:
 			handleRequestFolderStatus((FolderTreeItem[])params[0]);
 			break;
@@ -131,7 +135,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 
-	/**
+    /**
 	 * Handles the start of the IDLE state.
 	 */
 	protected void handleBeginIdle() throws IOException, MailException {
@@ -210,7 +214,19 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 			listener.mailConnectionRequestComplete(REQUEST_FOLDER_TREE, root);
 		}
 	}
-	
+
+    private void handleRequestFolderExpunge(FolderTreeItem folder) throws IOException, MailException {
+        String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_EXPUNGE);
+        showStatus(message);
+        checkActiveFolder(folder);
+        incomingClient.expungeActiveFolder();
+        
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, folder);
+        }
+    }
+    
 	private void handleRequestFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
 		String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);
 		showStatus(message);
@@ -242,7 +258,6 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             this.listener = listener;
             this.param = param;
             this.count = 0;
-            
         }
         
         public void folderMessageUpdate(FolderMessage folderMessage) {

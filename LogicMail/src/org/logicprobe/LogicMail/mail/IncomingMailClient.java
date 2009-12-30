@@ -91,6 +91,13 @@ public interface IncomingMailClient extends MailClient {
     boolean hasUndelete();
     
     /**
+     * Return whether the underlying protocol supports expunging of deleted messages.
+     *
+     * @return True if expunge supported, false otherwise
+     */
+    boolean hasExpunge();
+    
+    /**
      * Return whether the underlying protocol supports an idle connection mode.
      * 
      * @return True if an idle mode is supported, false otherwise
@@ -182,6 +189,16 @@ public interface IncomingMailClient extends MailClient {
      * @throws MailException on protocol errors
      */
     void setActiveFolder(MessageToken messageToken)
+        throws IOException, MailException;
+    
+    /**
+     * Expunges deleted messages from the currently active mail folder.
+     * This should do nothing if the underlying protocol does not support expunge.
+     *
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    void expungeActiveFolder()
         throws IOException, MailException;
     
     /**

@@ -119,6 +119,13 @@ public abstract class AbstractMailStore {
     public abstract boolean hasUndelete();
 
     /**
+     * Returns whether the mail store supports expunging of deleted messages.
+     * 
+     * @return True if expunge supported, false otherwise
+     */
+    public abstract boolean hasExpunge();
+    
+    /**
      * Requests the regeneration of the mail folder tree.
      * 
      * <p>Successful completion is indicated by a call to
@@ -128,6 +135,16 @@ public abstract class AbstractMailStore {
      * be called sparingly on non-local mail stores.
      */
     public abstract void requestFolderTree();
+    
+    /**
+     * Requests that a folder be expunged of deleted messages.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderStatusChanged(FolderEvent)}.
+     * 
+     * @param folder The folder to expunge
+     */
+    public abstract void requestFolderExpunge(FolderTreeItem folder);
     
     /**
      * Requests the current message counts of a group of folders.

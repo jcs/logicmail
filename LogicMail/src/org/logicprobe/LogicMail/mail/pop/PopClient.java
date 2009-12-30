@@ -265,6 +265,13 @@ public class PopClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasExpunge()
+     */
+    public boolean hasExpunge() {
+        return false;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAppend()
      */
     public boolean hasAppend() {
@@ -333,6 +340,13 @@ public class PopClient implements IncomingMailClient {
     public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#expungeActiveFolder()
+     */
+    public void expungeActiveFolder() throws IOException, MailException {
+        // Expunge is not supported, so we do nothing here.
     }
     
     /* (non-Javadoc)

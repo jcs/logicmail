@@ -109,6 +109,10 @@ public class NetworkMailStore extends AbstractMailStore {
 		return client.hasUndelete();
 	}
 
+	public boolean hasExpunge() {
+	    return client.hasExpunge();
+	}
+	
 	public boolean isConnected() {
 		return client.isConnected();
 	}
@@ -117,6 +121,10 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_TREE, new Object[] { });
 	}
 
+	public void requestFolderExpunge(FolderTreeItem folder) {
+	    connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE, new Object[] { folder });
+	}
+	
 	public void requestFolderStatus(FolderTreeItem[] folders) {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS, new Object[] { folders });
 	}
@@ -185,6 +193,9 @@ public class NetworkMailStore extends AbstractMailStore {
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
 			fireFolderTreeUpdated((FolderTreeItem)result);
 			break;
+		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
+		    fireFolderStatusChanged((FolderTreeItem)result);
+		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
 			FolderTreeItem[] folders = (FolderTreeItem[])result;
 			for(int i=0; i<folders.length; i++) {

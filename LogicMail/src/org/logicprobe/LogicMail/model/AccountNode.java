@@ -345,6 +345,15 @@ public class AccountNode implements Node {
     }
 
     /**
+     * Gets whether this account supports expunging deleted messages.
+     *
+     * @return True if supported, false otherwise.
+     */
+    public boolean hasExpunge() {
+        return this.mailStore.hasExpunge();
+    }
+
+    /**
      * Called to trigger a refresh of the mailboxes under
      * this account.  Completion is signaled by an
      * AccountStatusChanged event.

@@ -689,6 +689,36 @@ public class MailboxNode implements Node, Serializable {
     }
 
     /**
+     * Check if this mailbox has messages marked as deleted.
+     * This is the recommended way to check for deleted messages,
+     * since the UI may not always track such messages.
+     * 
+     * @return True if deleted messages exist
+     */
+    public boolean hasDeletedMessages() {
+        boolean hasDeleted = false;
+        synchronized(messages) {
+            int size = messages.size();
+            for(int i=0; i<size; i++) {
+                int flags = ((MessageNode)messages.elementAt(i)).getFlags();
+                if((flags & MessageNode.Flag.DELETED) != 0) {
+                    hasDeleted = true;
+                    break;
+                }
+            }
+        }
+        return hasDeleted;
+    }
+
+    /**
+     * Tells the underlying mail store to expunge any deleted messages
+     * from the mailbox, if possible.
+     */
+    public void expungeDeletedMessages() {
+        parentAccount.getMailStore().requestFolderExpunge(this.folderTreeItem);
+    }
+
+    /**
      * Update the unseen message count from the local messages collection.
      * 
      * @param fireEvent true to fire a status event if the count has changed

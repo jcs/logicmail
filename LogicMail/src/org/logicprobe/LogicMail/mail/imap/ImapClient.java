@@ -330,6 +330,13 @@ public class ImapClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasExpunge()
+     */
+    public boolean hasExpunge() {
+        return true;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAppend()
      */
     public boolean hasAppend() {
@@ -580,6 +587,13 @@ public class ImapClient implements IncomingMailClient {
         this.activeMailbox = mailbox;
         activeMailbox.setMsgCount(response.exists);
         knownMailboxes.put(activeMailbox, response);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#expungeActiveFolder()
+     */
+    public void expungeActiveFolder() throws IOException, MailException {
+        imapProtocol.executeExpunge();
     }
     
     /* (non-Javadoc)

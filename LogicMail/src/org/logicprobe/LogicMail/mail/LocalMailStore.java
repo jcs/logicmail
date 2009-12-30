@@ -114,10 +114,44 @@ public class LocalMailStore extends AbstractMailStore {
         return true;
     }
 
+    public boolean hasExpunge() {
+        return true;
+    }
+    
     public void requestFolderTree() {
         fireFolderTreeUpdated(rootFolder);
     }
 
+    public void requestFolderExpunge(FolderTreeItem folder) {
+        // TODO: Implement local expunge
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
+        
+        if(requestFolder != null) {
+            threadQueue.invokeLater(new ExpungeFolderRunnable(requestFolder));
+        }
+    }
+    
+    private class ExpungeFolderRunnable extends MaildirRunnable {
+        public ExpungeFolderRunnable(FolderTreeItem requestFolder) {
+            super(requestFolder);
+        }
+        
+        public void run() {
+            FolderMessage[] folderMessages = null;
+            try {
+                maildirFolder.open();
+                maildirFolder.expunge();
+                maildirFolder.close();
+            } catch (IOException e) {
+                System.err.println("Unable to expunge folder: " + e.toString());
+            }
+            
+            if(folderMessages != null) {
+                fireFolderStatusChanged(requestFolder);
+            }
+        }
+    }
+    
     public void requestFolderStatus(FolderTreeItem[] folders) {
         // Make every entry in the provided array match the local folder
         // objects just in case they do not.  Then, fire change events

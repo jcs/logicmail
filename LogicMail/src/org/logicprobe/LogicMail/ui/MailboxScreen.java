@@ -40,6 +40,7 @@ import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
@@ -293,6 +294,28 @@ public class MailboxScreen extends AbstractScreenProvider {
         }
     }
 
+    
+    public boolean onClose() {
+        // Check for deleted messages in the mailbox
+        if(mailboxNode.getParentAccount().hasExpunge()
+                && mailboxNode.hasDeletedMessages()) {
+            // Prompt for expunge if possible and supported
+            int choice = Dialog.ask(
+                    Dialog.D_YES_NO,
+                    resources.getString(LogicMailResource.MAILBOX_EXPUNGE_PROMPT),
+                    Dialog.YES);
+            
+            // Request expunge if desired
+            if(choice == Dialog.YES) {
+                mailboxNode.expungeDeletedMessages();
+            }
+        }
+        
+        // Close the screen
+        screen.close();
+        return true;
+    }
+    
     /**
      * Handles mailbox status change events.
      * 
