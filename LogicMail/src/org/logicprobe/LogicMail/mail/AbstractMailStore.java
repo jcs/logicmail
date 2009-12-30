@@ -140,7 +140,7 @@ public abstract class AbstractMailStore {
      * Requests that a folder be expunged of deleted messages.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderStatusChanged(FolderEvent)}.
+     * {@link FolderListener#folderExpunged(FolderEvent)}.
      * 
      * @param folder The folder to expunge
      */
@@ -419,7 +419,7 @@ public abstract class AbstractMailStore {
     
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
-     * the the status of a folder has changed.
+     * the status of a folder has changed.
      * 
      * @param root The root node of the updated folder tree
      */
@@ -450,6 +450,23 @@ public abstract class AbstractMailStore {
                 e = new FolderMessagesEvent(this, folder, messages, flagsOnly);
             }
             ((FolderListener)listeners[i]).folderMessagesAvailable(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>FolderListener</tt>s that
+     * the folder has been expunged.
+     * 
+     * @param root The root node of the updated folder tree
+     */
+    protected void fireFolderExpunged(FolderTreeItem root) {
+        Object[] listeners = listenerList.getListeners(FolderListener.class);
+        FolderEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderEvent(this, root);
+            }
+            ((FolderListener)listeners[i]).folderExpunged(e);
         }
     }
 

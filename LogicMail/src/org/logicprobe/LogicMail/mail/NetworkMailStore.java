@@ -194,7 +194,7 @@ public class NetworkMailStore extends AbstractMailStore {
 			fireFolderTreeUpdated((FolderTreeItem)result);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
-		    fireFolderStatusChanged((FolderTreeItem)result);
+		    fireFolderExpunged((FolderTreeItem)result);
 		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
 			FolderTreeItem[] folders = (FolderTreeItem[])result;

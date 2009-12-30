@@ -322,7 +322,8 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @param e Event data.
      */
     private void mailboxNode_MailboxStatusChanged(MailboxNodeEvent e) {
-    	if(e.getType() == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
+        int type = e.getType();
+    	if(type == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
     		MessageNode[] messageNodes = e.getAffectedMessages();
     		for(int i=0; i<messageNodes.length; i++) {
     			knownMessages.addElement(messageNodes[i]);
@@ -336,6 +337,16 @@ public class MailboxScreen extends AbstractScreenProvider {
     				messageNodes[i].addMessageNodeListener(messageNodeListener);
     			}
     		}
+    	}
+    	else if(type == MailboxNodeEvent.TYPE_DELETED_MESSAGES) {
+            MessageNode[] messageNodes = e.getAffectedMessages();
+            for(int i=0; i<messageNodes.length; i++) {
+                if(screen != null && screen.isDisplayed()) {
+                    messageNodes[i].removeMessageNodeListener(messageNodeListener);
+                }
+                removeDisplayableMessage(messageNodes[i])              ;  
+                knownMessages.removeElement(messageNodes[i]);
+            }
     	}
 	}
     
@@ -406,6 +417,19 @@ public class MailboxScreen extends AbstractScreenProvider {
 		}
     }
 
+    /**
+     * Remove a message from the list and associated data structures,
+     * if that message exists in the list.
+     * 
+     * @param messageNode Message to insert.
+     */
+    private void removeDisplayableMessage(MessageNode messageNode) {
+        MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.remove(messageNode);
+        if(mailboxMessageField == null) { return; }
+
+        messageFieldManager.delete(mailboxMessageField);
+    }
+    
     /**
      * Gets the last displayed message.
      * 

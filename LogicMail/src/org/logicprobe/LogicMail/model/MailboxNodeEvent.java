@@ -52,6 +52,13 @@ public class MailboxNodeEvent extends EventObject {
 	 */
 	public final static int TYPE_NEW_MESSAGES = 1;
 	
+    /**
+     * Messages have been deleted.
+     * The <tt>getAffectedMessages()</tt> method will return
+     * a list of deleted messages.
+     */
+    public final static int TYPE_DELETED_MESSAGES = 2;
+	
 	/** Creates a new instance of MailboxNodeEvent */
 	public MailboxNodeEvent(Object source, int type, MessageNode[] affectedMessages) {
 		super(source);

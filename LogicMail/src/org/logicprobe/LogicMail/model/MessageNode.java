@@ -129,6 +129,8 @@ public class MessageNode implements Node {
 	private boolean cached;
 	/** True if the message has cached content available for loading */
 	private boolean hasCachedContent;
+	/** True if the message has been verified to exist on a mail server */
+	private boolean existsOnServer;
 	/** Bit-field set of message flags. */
 	private int flags;
 	/** Date that the message was sent. */
@@ -286,6 +288,24 @@ public class MessageNode implements Node {
 		this.cached = cached;
 	}
 	
+	/**
+	 * Sets whether this message has been verified to exist on a server.
+	 * 
+	 * @param existsOnServer true if the message has been verified to exist on a server
+	 */
+	void setExistsOnServer(boolean existsOnServer) {
+	    this.existsOnServer = existsOnServer;
+	}
+	
+	/**
+	 * Gets whether this message has been verified to exist on a server.
+	 * 
+	 * @return true if the message has been verified to exist on a server or is on a local account
+	 */
+	public boolean existsOnServer() {
+	    return existsOnServer;
+	}
+	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.model.Node#accept(org.logicprobe.LogicMail.model.NodeVisitor)
 	 */
@@ -300,6 +320,7 @@ public class MessageNode implements Node {
 	 */
 	void setParent(MailboxNode parent) {
 		this.parent = parent;
+		if(!isCachable()) { existsOnServer = true; }
 	}
 	
 	/**

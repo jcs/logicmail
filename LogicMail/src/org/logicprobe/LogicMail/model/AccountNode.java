@@ -135,6 +135,10 @@ public class AccountNode implements Node {
                 public void folderMessagesAvailable(FolderMessagesEvent e) {
                     mailStore_FolderMessagesAvailable(e);
                 }
+
+                public void folderExpunged(FolderEvent e) {
+                    mailStore_FolderExpunged(e);
+                }
             });
 
         this.mailStore.addMessageListener(new MessageListener() {
@@ -602,6 +606,7 @@ public class AccountNode implements Node {
 	            		// with the flags.  This will update any volatile state
 	            		// information, such as POP message indices
 	            		messageNode.getMessageToken().updateToken(folderMessages[i].getMessageToken());
+	            		messageNode.setExistsOnServer(true);
 	            	}
 	            	else {
 	            	    synchronized(folderMessagesToFetch) {
@@ -620,7 +625,9 @@ public class AccountNode implements Node {
 	            Vector addedMessages = new Vector();
 	
 	            for (int i = 0; i < folderMessages.length; i++) {
-	                addedMessages.addElement(new MessageNode(folderMessages[i]));
+	                MessageNode messageNode = new MessageNode(folderMessages[i]);
+	                messageNode.setExistsOnServer(true);
+	                addedMessages.addElement(messageNode);
 	            }
 	
 	            MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
@@ -630,7 +637,14 @@ public class AccountNode implements Node {
         }
         else {
             synchronized(folderMessagesToFetch) {
-                Vector messagesToFetch = (Vector)folderMessagesToFetch.remove(e.getFolder());
+                FolderTreeItem fetchFolder = e.getFolder();
+                
+                // Clean out all messages that couldn't be verified against the server
+                MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(fetchFolder.getPath());
+                mailboxNode.removeMessagesNotOnServer();
+                
+                // Queue a fetch for messages that do exist
+                Vector messagesToFetch = (Vector)folderMessagesToFetch.remove(fetchFolder);
                 if(messagesToFetch != null) {
                     MessageToken[] fetchArray = new MessageToken[messagesToFetch.size()];
                     messagesToFetch.copyInto(fetchArray);
@@ -638,6 +652,17 @@ public class AccountNode implements Node {
                 }
             }
         }
+    }
+
+    /**
+     * Handles a folder being expunged.
+     *
+     * @param e Event data.
+     */
+    private void mailStore_FolderExpunged(FolderEvent e) {
+        FolderTreeItem fetchFolder = e.getFolder();
+        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(fetchFolder.getPath());
+        mailboxNode.handleExpungeNotification();
     }
 
     /**

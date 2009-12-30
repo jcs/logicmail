@@ -50,4 +50,11 @@ public interface FolderListener extends EventListener {
 	 * @param e Folder event data
 	 */
 	public void folderMessagesAvailable(FolderMessagesEvent e);
+	
+    /**
+     * Invoked when a folder has been expunged.
+     * 
+     * @param e Folder event data
+     */
+    public void folderExpunged(FolderEvent e);
 }

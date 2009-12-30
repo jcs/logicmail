@@ -154,12 +154,18 @@ public class MailboxMessageField extends Field {
         
         // Draw the message icon
         Bitmap messageIcon = NodeIcons.getIcon(messageNode);
+        int iconY = (lineHeight / 2) - (messageIcon.getHeight() / 2);
         graphics.drawBitmap(
                 1,
-                (lineHeight / 2) - (messageIcon.getHeight() / 2),
+                iconY,
                 messageIcon.getWidth(),
                 messageIcon.getHeight(),
                 messageIcon, 0, 0);
+        if(!messageNode.existsOnServer()) {
+            graphics.setColor(Color.DARKGRAY);
+            graphics.drawRect(1, iconY, messageIcon.getWidth(), messageIcon.getHeight());
+            graphics.setColor(originalColor);
+        }
         
         if(attachmentIcon != null) {
             graphics.drawBitmap(1, lineHeight, 20, lineHeight*2, attachmentIcon, 0, 0);

@@ -147,7 +147,7 @@ public class LocalMailStore extends AbstractMailStore {
             }
             
             if(folderMessages != null) {
-                fireFolderStatusChanged(requestFolder);
+                fireFolderExpunged(requestFolder);
             }
         }
     }

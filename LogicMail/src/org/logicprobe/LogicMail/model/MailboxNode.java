@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.model;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -71,6 +72,7 @@ public class MailboxNode implements Node, Serializable {
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
 	private int unseenMessageCount;
+    private Vector pendingExpungeMessages = new Vector();
 	
 	private Object fetchLock = new Object();
 	private RefreshMessagesThread fetchThread;
@@ -539,9 +541,82 @@ public class MailboxNode implements Node, Serializable {
 			}
 		}
         updateUnseenMessages(false);
-		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
+		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
 	}
 
+
+    /**
+     * Removes all messages not marked as existing on the server.
+     */
+    void removeMessagesNotOnServer() {
+        synchronized(messages) {
+            Vector messagesToRemove = new Vector();
+            
+            // Populate a list of the messages to remove
+            int size = messages.size();
+            for(int i=0; i<size; i++) {
+                MessageNode messageNode = (MessageNode)messages.elementAt(i);
+                if(!messageNode.existsOnServer()) {
+                    messagesToRemove.addElement(messageNode);
+                }
+            }
+            
+            size = messagesToRemove.size();
+            if(size == 0) { return; }
+            
+            MessageNode[] removedMessageNodes = new MessageNode[size];
+            MessageToken[] tokensToRemove = new MessageToken[size];
+            for(int i=0; i<size; i++) {
+                MessageNode messageNode = (MessageNode)messagesToRemove.elementAt(i);
+                messages.removeElement(messageNode);
+                messageNode.setParent(null);
+                messageMap.remove(messageNode);
+                messageTokenMap.remove(messageNode.getMessageToken());
+                tokensToRemove[i] = messageNode.getMessageToken();
+                removedMessageNodes[i] = messageNode;
+            }
+            
+            (new RemoveFromCacheThread(tokensToRemove)).start();
+            updateUnseenMessages(false);
+            fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessageNodes);
+        }
+    }
+	
+    private class RemoveFromCacheThread extends Thread {
+        private MessageToken[] messageTokens;
+        
+        public RemoveFromCacheThread(MessageToken[] messageTokens) {
+            this.messageTokens = messageTokens;
+        }
+        
+        public void run() {
+            yield();
+            try {
+                MailFileManager.getInstance().removeMessageNodes(MailboxNode.this, messageTokens);
+            } catch (IOException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to remove messages from the cache\r\n"
+                                + e.getMessage()).getBytes(),
+                                EventLogger.ERROR);
+            }
+        }
+    }
+
+    /**
+     * Called when the mail store notifies of a completed expunge operation on
+     * this folder, so anything we expected to be expunged can be cleaned out.
+     */
+    void handleExpungeNotification() {
+        synchronized(messages) {
+            Enumeration e = pendingExpungeMessages.elements();
+            while(e.hasMoreElements()) {
+                ((MessageNode)e.nextElement()).setExistsOnServer(false);
+            }
+            pendingExpungeMessages.removeAllElements();
+            removeMessagesNotOnServer();
+        }
+    }
+	
 	/**
 	 * Removes all messages from this mailbox.
 	 */
@@ -709,12 +784,22 @@ public class MailboxNode implements Node, Serializable {
         }
         return hasDeleted;
     }
-
+    
     /**
      * Tells the underlying mail store to expunge any deleted messages
      * from the mailbox, if possible.
      */
     public void expungeDeletedMessages() {
+        synchronized(messages) {
+            int size = messages.size();
+            for(int i=0; i<size; i++) {
+                MessageNode messageNode = (MessageNode)messages.elementAt(i);
+                int flags = messageNode.getFlags();
+                if((flags & MessageNode.Flag.DELETED) != 0) {
+                    pendingExpungeMessages.addElement(messageNode);
+                }
+            }
+        }
         parentAccount.getMailStore().requestFolderExpunge(this.folderTreeItem);
     }
 

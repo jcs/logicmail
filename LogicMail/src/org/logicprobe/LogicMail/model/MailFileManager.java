@@ -93,7 +93,7 @@ public class MailFileManager {
 	/**
 	 * Refreshes the configuration based on any system configuration changes.
 	 */
-	void refreshConfiguration() {
+	synchronized void refreshConfiguration() {
 		String localDataLocation = mailSettings.getGlobalConfig().getLocalDataLocation();
 		String newCacheUrl = localDataLocation + CACHE_PREFIX;
 		if(!newCacheUrl.equals(cacheUrl)) {
@@ -130,7 +130,7 @@ public class MailFileManager {
 	 * 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public void writeMessage(MessageNode messageNode) throws IOException {
+	public synchronized void writeMessage(MessageNode messageNode) throws IOException {
 		if(cacheUrl == null) { return; }
 		
 		// Create a file connection for the message
@@ -170,7 +170,7 @@ public class MailFileManager {
 	 * 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public MessageToken[] readMessageTokens(MailboxNode mailboxNode) throws IOException {
+	public synchronized MessageToken[] readMessageTokens(MailboxNode mailboxNode) throws IOException {
 		if(cacheUrl == null) { return new MessageToken[0]; }
 		
 		//TODO: Implement an indexing mechanism to avoid listing the whole directory
@@ -191,7 +191,7 @@ public class MailFileManager {
 		return result;
 	}
 	
-	public MessageNode[] readMessageNodes(MailboxNode mailboxNode) throws IOException {
+	public synchronized MessageNode[] readMessageNodes(MailboxNode mailboxNode) throws IOException {
 		if(cacheUrl == null) { return new MessageNode[0]; }
 
 		Vector messageNodeList = new Vector();
@@ -209,7 +209,7 @@ public class MailFileManager {
 		return result;
 	}
 	
-    public void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
+    public synchronized void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
         if(cacheUrl == null) { callback.messageNodeUpdated(null); }
         
         String[] fileUrls = getMessageFiles(mailboxNode);
@@ -249,7 +249,7 @@ public class MailFileManager {
         return result;
     }
     
-	public MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
+	public synchronized MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
 		if(cacheUrl == null) { return null; }
 
 		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
@@ -269,7 +269,7 @@ public class MailFileManager {
 		return messageNode;
 	}
 	
-	public MimeMessageContent[] readMessageContent(MailboxNode mailboxNode, MessageToken messageToken) throws IOException {
+	public synchronized MimeMessageContent[] readMessageContent(MailboxNode mailboxNode, MessageToken messageToken) throws IOException {
 		if(cacheUrl == null) { return null; }
 		
 		FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
@@ -389,5 +389,30 @@ public class MailFileManager {
 		MimeMessageContent[] result = new MimeMessageContent[content.size()];
 		content.copyInto(result);
 		return result;
+	}
+	
+	public synchronized void removeMessageNodes(MailboxNode mailboxNode, MessageToken[] messageTokens) throws IOException {
+        if(cacheUrl == null) { return; }
+
+        FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
+        String mailboxUrl = fileConnection.getURL();
+        fileConnection.close();
+        
+        for(int i=0; i<messageTokens.length; i++) {
+            try {
+                FileConnection mailFileConnection =
+                    (FileConnection)Connector.open(mailboxUrl + messageTokens[i].getMessageUid() + MSG_SUFFIX);
+                if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+                    mailFileConnection.delete();
+                }
+                mailFileConnection.close();
+            } catch (IOException exp) {
+                if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Error deleting message from cache: " + exp.toString()).getBytes(),
+                            EventLogger.DEBUG_INFO);
+                }
+            }
+        }
 	}
 }
