@@ -934,9 +934,10 @@ public class StringParser {
     public static InputStream createInputStream(String[] rawLines) {
         StringBuffer buf = new StringBuffer();
 
-        for (int i = 0; i < rawLines.length; i++)
+        for (int i = 0; i < rawLines.length; i++) {
             buf.append(rawLines[i]);
-        buf.append(strCRLF);
+            buf.append(strCRLF);
+        }
 
         return new ByteArrayInputStream(buf.toString().getBytes());
     }
