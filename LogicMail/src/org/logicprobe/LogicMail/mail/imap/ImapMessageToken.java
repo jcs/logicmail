@@ -82,7 +82,7 @@ public class ImapMessageToken implements MessageToken {
      * 
      * @return Complete folder path.
      */
-    String getFolderPath() {
+    public String getFolderPath() {
     	return this.folderPath;
     }
 

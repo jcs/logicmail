@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 
 /**
@@ -40,13 +41,24 @@ import org.logicprobe.LogicMail.message.FolderMessage;
  * to serialize unsent messages.
  */
 public class OutgoingMessageNode extends MessageNode {
-	private int messageId;
 	private AccountNode sendingAccount;
 	private AbstractMailSender mailSender;
-	private MessageNode replyToMessageNode;
+	private AccountNode replyToAccount;
+	private MessageToken replyToToken;
 
 	/**
 	 * Creates a new instance of OutgoingMessageNode.
+	 * This constructor is only intended for use in {@link MessageNodeReader}.
+	 * 
+	 * @param messageToken Token for the message
+	 */
+	OutgoingMessageNode(MessageToken messageToken) {
+	    super(messageToken);
+	}
+	
+	/**
+	 * Creates a new instance of OutgoingMessageNode.
+	 * 
 	 * @param The FolderMessage being represented.
      * @param sendingAccount The account the message is being sent from.
      * @param mailSender The mail sender to be used for sending the message.
@@ -60,11 +72,15 @@ public class OutgoingMessageNode extends MessageNode {
     	super(folderMessage);
     	this.sendingAccount = sendingAccount;
     	this.mailSender = mailSender;
-    	this.replyToMessageNode = replyToMessageNode;
+    	if(replyToMessageNode != null) {
+        	this.replyToAccount = replyToMessageNode.getParent().getParentAccount();
+        	this.replyToToken = replyToMessageNode.getMessageToken();
+    	}
     }
 
 	/**
 	 * Creates a new instance of OutgoingMessageNode.
+	 * 
 	 * @param The FolderMessage being represented.
      * @param sendingAccount The account the message is being sent from.
      * @param mailSender The mail sender to be used for sending the message.
@@ -76,27 +92,82 @@ public class OutgoingMessageNode extends MessageNode {
     	this(folderMessage, sendingAccount, mailSender, null);
     }
 
-    public int getId() {
-    	return messageId;
-    }
-
-    public void setId(int messageId) {
-    	this.messageId = messageId;
+    public boolean refreshMessage() {
+        // Refresh is a non-applicable operation for outgoing messages,
+        // since they should be completely loaded when the outbox
+        // is loaded.
+        return false;
     }
     
+    /**
+     * Set the account that this message was sent from.
+     * 
+     * @param sendingAccount sending account
+     */
+    void setSendingAccount(AccountNode sendingAccount) {
+        this.sendingAccount = sendingAccount;
+    }
+    
+    /**
+     * Get the account that this message was sent from.
+     * 
+     * @return sending account
+     */
     public AccountNode getSendingAccount() {
 		return sendingAccount;
 	}
 
+    /**
+     * Set the mail sender that should be used to send this message.
+     * 
+     * @param mailSender mail sender
+     */
 	public void setMailSender(AbstractMailSender mailSender) {
 		this.mailSender = mailSender;
 	}
 
+	/**
+	 * Get the mail sender that should be used to send this message.
+	 * 
+	 * @return mail sender
+	 */
 	public AbstractMailSender getMailSender() {
 		return mailSender;
 	}
 
-	public MessageNode getReplyToMessageNode() {
-		return replyToMessageNode;
+	/**
+	 * Sets the Reply-To message account.
+	 * 
+	 * @param replyToAccount the new Reply-To message account
+	 */
+	void setReplyToAccount(AccountNode replyToAccount) {
+	    this.replyToAccount = replyToAccount;
+	}
+	
+	/**
+	 * Sets the Reply-To message token.
+	 * 
+	 * @param replyToToken the new Reply-To message token
+	 */
+	void setReplyToToken(MessageToken replyToToken) {
+	    this.replyToToken = replyToToken;
+	}
+	
+	/**
+	 * Gets the Reply-To message account.
+	 * 
+	 * @return the Reply-To message account
+	 */
+	public AccountNode getReplyToAccount() {
+	    return replyToAccount;
+	}
+	
+	/**
+	 * Gets the Reply-To message token.
+	 * 
+	 * @return the Reply-To message token
+	 */
+	public MessageToken getReplyToToken() {
+	    return replyToToken;
 	}
 }

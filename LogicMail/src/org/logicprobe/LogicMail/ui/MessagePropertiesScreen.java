@@ -32,11 +32,16 @@ package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.mail.NetworkMailSender;
+import org.logicprobe.LogicMail.mail.imap.ImapMessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContentFactory;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.StringParser;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
@@ -69,7 +74,10 @@ public class MessagePropertiesScreen extends MainScreen {
 	private ObjectChoiceField sectionChoiceField;
 	private VerticalFieldManager generalPageManager;
 	private VerticalFieldManager structurePageManager;
+    private VerticalFieldManager outgoingPageManager;
 	private TreeField structureTreeField;
+	
+	private static String INDENT = "    ";
 	
 	/**
 	 * Instantiates a new message properties screen.
@@ -86,39 +94,65 @@ public class MessagePropertiesScreen extends MainScreen {
 	}
 
 	private void initFields() {
-		sectionChoiceField = new ObjectChoiceField(
-				resources.getString(LogicMailResource.MESSAGEPROPERTIES_TITLE) + ':',
-				new Object[] {
-					resources.getString(LogicMailResource.MESSAGEPROPERTIES_GENERAL),
-					resources.getString(LogicMailResource.MESSAGEPROPERTIES_STRUCTURE)
-				});
-		sectionChoiceField.setSelectedIndex(0);
-		sectionChoiceField.setChangeListener(new FieldChangeListener() {
-			public void fieldChanged(Field field, int context) {
-				sectionChoiceField_FieldChanged(field, context);
-			}
-		});
-		
-		initGeneralFields();
-		initStructureFields();
-		
-		setTitle(sectionChoiceField);
-		add(generalPageManager);
+	    Object[] choices;
+	    if(messageNode instanceof OutgoingMessageNode) {
+	        choices = new Object[] {
+	                resources.getString(LogicMailResource.MESSAGEPROPERTIES_GENERAL),
+	                resources.getString(LogicMailResource.MESSAGEPROPERTIES_STRUCTURE),
+	                resources.getString(LogicMailResource.MESSAGEPROPERTIES_OUTGOING)
+	        };
+	    }
+	    else {
+	        choices = new Object[] {
+	                resources.getString(LogicMailResource.MESSAGEPROPERTIES_GENERAL),
+	                resources.getString(LogicMailResource.MESSAGEPROPERTIES_STRUCTURE)
+	        };
+	    }
+	    sectionChoiceField = new ObjectChoiceField(
+	            resources.getString(LogicMailResource.MESSAGEPROPERTIES_TITLE) + ':',
+	            choices);
+	    sectionChoiceField.setSelectedIndex(0);
+	    sectionChoiceField.setChangeListener(new FieldChangeListener() {
+	        public void fieldChanged(Field field, int context) {
+	            sectionChoiceField_FieldChanged(field, context);
+	        }
+	    });
+
+	    initGeneralFields();
+	    initStructureFields();
+	    if(messageNode instanceof OutgoingMessageNode) {
+	        initOutgoingFields();
+	    }
+
+	    setTitle(sectionChoiceField);
+	    add(generalPageManager);
 	}
-	
-	private void initGeneralFields() {
+
+    private void initGeneralFields() {
 		generalPageManager = new VerticalFieldManager();
-		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ' + normalize(messageNode.getSubject()), Field.FOCUSABLE));
+		generalPageManager.add(new LabelField(
+		        resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' '
+		        + normalize(messageNode.getSubject()), Field.FOCUSABLE));
 		generalPageManager.add(new SeparatorField());
-		generalPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + ' ' + messageNode.getDate(), Field.FOCUSABLE));
+		generalPageManager.add(new LabelField(
+		        resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE) + ' '
+		        + messageNode.getDate(), Field.FOCUSABLE));
 		generalPageManager.add(new SeparatorField());
-		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM), messageNode.getFrom());
+		initFieldAddress(generalPageManager,
+		        resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM),
+		        messageNode.getFrom());
 		generalPageManager.add(new SeparatorField());
-		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO), messageNode.getReplyTo());
+		initFieldAddress(generalPageManager,
+		        resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO),
+		        messageNode.getReplyTo());
 		generalPageManager.add(new SeparatorField());
-		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO), messageNode.getTo());
+		initFieldAddress(generalPageManager,
+		        resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO),
+		        messageNode.getTo());
 		generalPageManager.add(new SeparatorField());
-		initFieldAddress(generalPageManager, resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC), messageNode.getCc());
+		initFieldAddress(generalPageManager,
+		        resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC),
+		        messageNode.getCc());
 	}
 
 	private void initFieldAddress(Manager manager, String prefix, Address[] addresses) {
@@ -162,6 +196,48 @@ public class MessagePropertiesScreen extends MainScreen {
 		}
 	}
 
+    private void initOutgoingFields() {
+        OutgoingMessageNode outgoingNode = (OutgoingMessageNode)messageNode;
+        outgoingPageManager = new VerticalFieldManager();
+        String sendingAccount = (outgoingNode.getSendingAccount() != null) ? outgoingNode.getSendingAccount().toString() : "";
+        outgoingPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SENDING_ACCOUNT)));
+        outgoingPageManager.add(new LabelField(INDENT + sendingAccount));
+
+        String mailSender;
+        if(outgoingNode.getMailSender() != null
+                && outgoingNode.getMailSender() instanceof NetworkMailSender
+                && ((NetworkMailSender)outgoingNode.getMailSender()).getOutgoingConfig() != null) {
+            mailSender = ((NetworkMailSender)outgoingNode.getMailSender()).getOutgoingConfig().toString();
+        }
+        else {
+            mailSender = "";
+        }
+        outgoingPageManager.add(new LabelField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_MAIL_SENDER)));
+        outgoingPageManager.add(new LabelField(INDENT + mailSender));
+                
+        if(outgoingNode.getReplyToAccount() != null && outgoingNode.getReplyToToken() != null) {
+            outgoingPageManager.add(new SeparatorField());
+            outgoingPageManager.add(new LabelField(
+                    resources.getString(LogicMailResource.MESSAGEPROPERTIES_REPLYTO)));
+            
+            String replyToAccount = createMailboxString(outgoingNode.getReplyToAccount(), outgoingNode.getReplyToToken());
+            outgoingPageManager.add(new LabelField(replyToAccount));
+        }
+    }
+    
+    private String createMailboxString(AccountNode accountNode, MessageToken messageToken) {
+        StringBuffer buf = new StringBuffer();
+        buf.append(accountNode.toString());
+        buf.append(": ");
+        if(messageToken instanceof ImapMessageToken) {
+            buf.append(((ImapMessageToken)messageToken).getFolderPath());
+        }
+        else {
+            buf.append(messageToken.getMessageUid());
+        }
+        return buf.toString();
+    }
+    
     private MenuItem closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
         public void run() {
             onClose();
@@ -192,7 +268,13 @@ public class MessagePropertiesScreen extends MainScreen {
         	this.deleteAll();
     		this.add(structurePageManager);
     		break;
-    	}
+    	case 2:
+            this.deleteAll();
+            if(outgoingPageManager != null) {
+                this.add(outgoingPageManager);
+            }
+            break;
+        }
     }
 
     private void structureTreeField_DrawTreeItem(

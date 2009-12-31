@@ -74,8 +74,8 @@ public class MailboxNode implements Node, Serializable {
 	private int unseenMessageCount;
     private Vector pendingExpungeMessages = new Vector();
 	
-	private Object fetchLock = new Object();
-	private RefreshMessagesThread fetchThread;
+	protected Object fetchLock = new Object();
+	protected Thread fetchThread;
 	
 	public final static int TYPE_NORMAL = 0;
 	public final static int TYPE_INBOX  = 1;

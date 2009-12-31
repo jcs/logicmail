@@ -49,6 +49,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Front-end for reading and writing messages from local file storage.
@@ -61,7 +62,9 @@ public class MailFileManager {
 	private static String CACHE_PREFIX = "cache/";
 	private static String MSG_SUFFIX = ".msg";
 	private static String MSG_FILTER = "*.msg";
-
+	private static String LOCAL_ACCOUNT_UID = "local";
+    private static String LOCAL_OUTBOX_UID = "Outbox";
+	
 	/**
 	 * Instantiates a new mail file manager.
 	 */
@@ -192,6 +195,10 @@ public class MailFileManager {
 	}
 	
 	public synchronized MessageNode[] readMessageNodes(MailboxNode mailboxNode) throws IOException {
+	    return readMessageNodes(mailboxNode, false);
+	}
+	
+	public synchronized MessageNode[] readMessageNodes(MailboxNode mailboxNode, boolean loadContent) throws IOException {
 		if(cacheUrl == null) { return new MessageNode[0]; }
 
 		Vector messageNodeList = new Vector();
@@ -200,6 +207,10 @@ public class MailFileManager {
         for(int i=0; i<fileUrls.length; i++) {
             MessageNode messageNode = readMessageNode(fileUrls[i]);
             if(messageNode != null) {
+                if(loadContent) {
+                    MimeMessageContent[] content = readMessageContent(mailboxNode, messageNode.getMessageToken());
+                    messageNode.putMessageContent(content);
+                }
                 messageNodeList.addElement(messageNode);
             }
         }
@@ -209,13 +220,21 @@ public class MailFileManager {
 		return result;
 	}
 	
-    public synchronized void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
+	public synchronized void readMessageNodes(MailboxNode mailboxNode, MessageNodeCallback callback) throws IOException {
+	    readMessageNodes(mailboxNode, false, callback);
+	}
+	
+    public synchronized void readMessageNodes(MailboxNode mailboxNode, boolean loadContent, MessageNodeCallback callback) throws IOException {
         if(cacheUrl == null) { callback.messageNodeUpdated(null); }
         
         String[] fileUrls = getMessageFiles(mailboxNode);
         for(int i=0; i<fileUrls.length; i++) {
             MessageNode messageNode = readMessageNode(fileUrls[i]);
             if(messageNode != null) {
+                if(loadContent) {
+                    MimeMessageContent[] content = readMessageContent(mailboxNode, messageNode.getMessageToken());
+                    messageNode.putMessageContent(content);
+                }
                 callback.messageNodeUpdated(messageNode);
             }
         }
@@ -288,10 +307,19 @@ public class MailFileManager {
 	
 	private FileConnection getMailboxFileConnection(MailboxNode mailboxNode) throws IOException {
 		// Build the account and mailbox UID strings
-		String accountUid = Long.toString(
-				mailboxNode.getParentAccount().getAccountConfig().getUniqueId(), 16).toLowerCase();
-		String mailboxUid = Long.toString(
-				mailboxNode.getUniqueId(), 16).toLowerCase();
+	    String accountUid;
+	    String mailboxUid;
+	    if(mailboxNode instanceof OutboxMailboxNode) {
+	        accountUid = LOCAL_ACCOUNT_UID;
+	        mailboxUid = LOCAL_OUTBOX_UID;
+	    }
+	    else {
+    		accountUid = StringParser.toHexString(
+    				mailboxNode.getParentAccount().getAccountConfig().getUniqueId()).toLowerCase();
+    		mailboxUid = StringParser.toHexString(
+    				mailboxNode.getUniqueId()).toLowerCase();
+	    }
+	    
 		StringBuffer buf = new StringBuffer(cacheUrl);
 		
 		// Open the account directory, creating if necessary
@@ -415,4 +443,27 @@ public class MailFileManager {
             }
         }
 	}
+
+    public synchronized void removeMessageNode(MailboxNode mailboxNode, MessageToken messageToken) throws IOException {
+        if(cacheUrl == null) { return; }
+
+        FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
+        String mailboxUrl = fileConnection.getURL();
+        fileConnection.close();
+        
+        try {
+            FileConnection mailFileConnection =
+                (FileConnection)Connector.open(mailboxUrl + messageToken.getMessageUid() + MSG_SUFFIX);
+            if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+                mailFileConnection.delete();
+            }
+            mailFileConnection.close();
+        } catch (IOException exp) {
+            if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Error deleting message from cache: " + exp.toString()).getBytes(),
+                        EventLogger.DEBUG_INFO);
+            }
+        }
+    }
 }

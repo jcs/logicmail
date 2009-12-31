@@ -37,6 +37,7 @@ import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.CRC32;
 
 import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.mail.NetworkMailSender;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
@@ -155,6 +156,17 @@ public class MessageNodeWriter {
 	private static String HEADER_KEY_BCC = "bcc";
 	private static String HEADER_KEY_INREPLYTO = "inReplyTo";
 	private static String HEADER_KEY_MESSAGEID = "messageId";
+
+	/** Indicates that this message should be deserialized as an outgoing message. */
+	private static String HEADER_KEY_OUTGOING = "OUTGOING";
+	/** UID of the outgoing account configuration. */
+	private static String HEADER_KEY_OUTGOING_SENDING_ACCOUNT = "OUTGOING_SENDING_ACCOUNT";
+	/** UID of the outgoing mail sender configuration. */
+    private static String HEADER_KEY_OUTGOING_MAIL_SENDER = "OUTGOING_MAIL_SENDER";
+    /** UID of the outgoing reply-to message's account configuration. */
+    private static String HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT = "OUTGOING_REPLYTO_ACCOUNT";
+    /** Token of the outgoing reply-to message. */
+    private static String HEADER_KEY_OUTGOING_REPLYTO_TOKEN = "OUTGOING_REPLYTO_TOKEN";
 	
 	private byte[] generateMessageHeaders(MessageNode messageNode) throws IOException {
 		SerializableHashtable table = new SerializableHashtable();
@@ -169,6 +181,38 @@ public class MessageNodeWriter {
 		table.put(HEADER_KEY_BCC, createAddressArray(messageNode.getBcc()));
 		putInTable(table, HEADER_KEY_INREPLYTO, messageNode.getInReplyTo());
 		putInTable(table, HEADER_KEY_MESSAGEID, messageNode.getMessageId());
+		
+		if(messageNode instanceof OutgoingMessageNode) {
+		    OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
+		    
+		    // Put the outgoing flag
+		    table.put(HEADER_KEY_OUTGOING, Boolean.TRUE);
+		    
+		    if(outgoingMessage.getSendingAccount() != null && outgoingMessage.getSendingAccount().getAccountConfig() != null) {
+		        table.put(HEADER_KEY_OUTGOING_SENDING_ACCOUNT,
+		                new Long(outgoingMessage.getSendingAccount().getAccountConfig().getUniqueId()));
+		    }
+		    if(outgoingMessage.getMailSender() != null && outgoingMessage.getMailSender() instanceof NetworkMailSender) {
+		        NetworkMailSender mailSender = (NetworkMailSender)outgoingMessage.getMailSender();
+		        if(mailSender.getOutgoingConfig() != null) {
+		            table.put(HEADER_KEY_OUTGOING_MAIL_SENDER, new Long(mailSender.getOutgoingConfig().getUniqueId()));
+		        }
+		        
+		    }
+		    
+		    if(outgoingMessage.getReplyToAccount() != null) {
+	            AccountNode replyToAccount = outgoingMessage.getReplyToAccount();
+	            if(replyToAccount.getAccountConfig() != null) {
+	                table.put(HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT, new Long(replyToAccount.getAccountConfig().getUniqueId()));
+	            }
+		    }
+		    
+		    if(outgoingMessage.getReplyToToken() != null) {
+		        byte[] tokenBytes = SerializationUtils.serializeClass(outgoingMessage.getReplyToToken());
+		        table.put(HEADER_KEY_OUTGOING_REPLYTO_TOKEN, tokenBytes);
+		    }
+		}
+		
 		return SerializationUtils.serializeClass(table);
 	}
 	

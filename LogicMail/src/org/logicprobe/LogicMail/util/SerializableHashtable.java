@@ -49,6 +49,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     final private static int TYPE_NULL    = 0;
     final private static int TYPE_BOOLEAN = 1;
     final private static int TYPE_BYTE    = 2;
+    final private static int TYPE_BYTE_ARRAY   = 102;
     final private static int TYPE_CHAR    = 3;
     final private static int TYPE_STRING  = 4;
     final private static int TYPE_STRING_ARRAY = 104;
@@ -95,6 +96,12 @@ public class SerializableHashtable extends Hashtable implements Serializable {
         else if(item instanceof Byte) {
             output.writeInt(TYPE_BYTE);
             output.writeByte(((Byte)item).byteValue());
+        }
+        else if(item instanceof byte[]) {
+            output.writeInt(TYPE_BYTE_ARRAY);
+            byte[] byteArray = (byte[])item;
+            output.writeInt(byteArray.length);
+            output.write(byteArray);
         }
         else if(item instanceof Character) {
             output.writeInt(TYPE_CHAR);
@@ -144,17 +151,23 @@ public class SerializableHashtable extends Hashtable implements Serializable {
 
     private static Object readObject(DataInput input) throws IOException {
         int type = input.readInt();
+        int len;
         switch(type) {
             case TYPE_BOOLEAN:
                 return new Boolean(input.readBoolean());
             case TYPE_BYTE:
                 return new Byte(input.readByte());
+            case TYPE_BYTE_ARRAY:
+                len = input.readInt();
+                byte[] byteArray = new byte[len];
+                input.readFully(byteArray);
+                return byteArray;
             case TYPE_CHAR:
                 return new Character(input.readChar());
             case TYPE_STRING:
                 return input.readUTF();
             case TYPE_STRING_ARRAY:
-            	int len = input.readInt();
+            	len = input.readInt();
             	String[] stringArray = new String[len];
             	for(int i=0; i<len; i++) {
             		stringArray[i] = input.readUTF();

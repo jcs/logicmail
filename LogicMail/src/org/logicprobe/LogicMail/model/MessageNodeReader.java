@@ -36,6 +36,10 @@ import java.util.Date;
 import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
+import org.logicprobe.LogicMail.mail.AbstractMailSender;
+import org.logicprobe.LogicMail.mail.MailFactory;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -223,10 +227,20 @@ public class MessageNodeReader {
 			MessageToken messageToken,
 			Hashtable messageHeaders,
 			MimeMessagePart messageStructure) {
-
-		MessageNode messageNode = new MessageNode(messageToken);
+	    
+	    MessageNode messageNode;
+	    if(messageHeaders.containsKey(HEADER_KEY_OUTGOING)) {
+	        messageNode = new OutgoingMessageNode(messageToken);
+	    }
+	    else {
+	        messageNode = new MessageNode(messageToken);
+	    }
 		
 		populateMessageHeaders(messageNode, messageHeaders);
+		
+		if(messageNode instanceof OutgoingMessageNode) {
+		    populateOutgoingMessageHeaders((OutgoingMessageNode)messageNode, messageHeaders);
+		}
 		
 		messageNode.setMessageStructure(messageStructure);
 		
@@ -237,7 +251,7 @@ public class MessageNodeReader {
 		return messageNode;
 	}
 
-	private static String HEADER_KEY_FLAGS = "flags";
+    private static String HEADER_KEY_FLAGS = "flags";
 	private static String HEADER_KEY_DATE = "date";
 	private static String HEADER_KEY_SUBJECT = "subject";
 	private static String HEADER_KEY_FROM = "from";
@@ -248,6 +262,11 @@ public class MessageNodeReader {
 	private static String HEADER_KEY_BCC = "bcc";
 	private static String HEADER_KEY_INREPLYTO = "inReplyTo";
 	private static String HEADER_KEY_MESSAGEID = "messageId";
+	private static String HEADER_KEY_OUTGOING = "OUTGOING";
+    private static String HEADER_KEY_OUTGOING_SENDING_ACCOUNT = "OUTGOING_SENDING_ACCOUNT";
+    private static String HEADER_KEY_OUTGOING_MAIL_SENDER = "OUTGOING_MAIL_SENDER";
+    private static String HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT = "OUTGOING_REPLYTO_ACCOUNT";
+    private static String HEADER_KEY_OUTGOING_REPLYTO_TOKEN = "OUTGOING_REPLYTO_TOKEN";
 
 	private void populateMessageHeaders(MessageNode messageNode, Hashtable messageHeaders) {
 		Object item;
@@ -284,6 +303,64 @@ public class MessageNodeReader {
 		item = messageHeaders.get(HEADER_KEY_MESSAGEID);
 		if(item instanceof String) { messageNode.setMessageId((String)item); }
 	}
+
+    private void populateOutgoingMessageHeaders(OutgoingMessageNode messageNode, Hashtable messageHeaders) {
+        long sendingAccountId = -1;
+        long mailSenderId = -1;
+        long replyToAccountId = -1;
+        AccountNode replyToAccount = null;
+        MessageToken replyToToken = null;
+        
+        // Read the items stored in the headers
+        Object item;
+        item = messageHeaders.get(HEADER_KEY_OUTGOING_SENDING_ACCOUNT);
+        if(item instanceof Long) { sendingAccountId = ((Long)item).longValue(); }
+        
+        item = messageHeaders.get(HEADER_KEY_OUTGOING_MAIL_SENDER);
+        if(item instanceof Long) { mailSenderId = ((Long)item).longValue(); }
+        
+        item = messageHeaders.get(HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT);
+        if(item instanceof Long) { replyToAccountId = ((Long)item).longValue(); }
+
+        item = messageHeaders.get(HEADER_KEY_OUTGOING_REPLYTO_TOKEN);
+        if(item instanceof byte[]) { replyToToken = (MessageToken)SerializationUtils.deserializeClass((byte[])item); }
+        
+        // Resolve the accounts
+        if(sendingAccountId != -1 || replyToAccountId != -1) {
+            AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+            for(int i=0; i<accounts.length; i++) {
+                if(accounts[i].getAccountConfig() != null) {
+                    long accountId = accounts[i].getAccountConfig().getUniqueId();
+
+                    if(accountId == sendingAccountId) {
+                        messageNode.setSendingAccount(accounts[i]);
+                    }
+                    
+                    if(accountId == replyToAccountId) {
+                        replyToAccount = accounts[i];
+                    }
+                }
+            }
+        }
+        
+        // Resolve the mail sender
+        if(mailSenderId != -1) {
+            OutgoingConfig outgoingConfig = MailSettings.getInstance().getOutgoingConfigByUniqueId(mailSenderId);
+            if(outgoingConfig != null) {
+                // This will return the existing instance if possible, or create a new one if necessary.
+                // Since this method should only be invoked after the application is fully initialized,
+                // an existing mail sender should always be returned.
+                AbstractMailSender mailSender = MailFactory.createMailSender(outgoingConfig);
+                messageNode.setMailSender(mailSender);
+            }
+        }
+        
+        // Resolve the Reply-To message
+        if(replyToAccount != null && replyToToken != null) {
+            messageNode.setReplyToAccount(replyToAccount);
+            messageNode.setReplyToToken(replyToToken);
+        }
+    }
 	
 	private static Address[] createAddressArray(String[] addresses) {
 		Address[] addressArray = new Address[addresses.length];

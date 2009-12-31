@@ -30,11 +30,12 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import net.rim.device.api.system.EventLogger;
+
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
@@ -42,6 +43,7 @@ import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.mail.OutgoingMessageToken;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -49,7 +51,12 @@ import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.StringParser;
 
 public class OutboxMailboxNode extends MailboxNode {
-	private int lastMessageId = 0;
+    /** Track the refresh so it only happens once */
+    private boolean hasRefreshed;
+    
+    /** Set of loaded messages, to prevent redundant saving. */
+    private Hashtable savedMessageSet = new Hashtable();
+    
 	private Hashtable mailSenderTable = new Hashtable();
 	private Hashtable outboundMessageMap = new Hashtable();
 	
@@ -96,14 +103,27 @@ public class OutboxMailboxNode extends MailboxNode {
     protected void fireMailboxStatusChanged(int type, MessageNode[] affectedMessages) {
     	super.fireMailboxStatusChanged(type, affectedMessages);
     	if(type == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
-    		for(int i=0; i<affectedMessages.length; i++) {
-    			if(affectedMessages[i] instanceof OutgoingMessageNode) {
-    				handleNewMessage((OutgoingMessageNode)affectedMessages[i]);
-    			}
-    		}
+    	    (new HandleNewMessagesThread(affectedMessages)).start();
     	}
     }
 
+    private class HandleNewMessagesThread extends Thread {
+        private MessageNode[] newMessages;
+        
+        public HandleNewMessagesThread(MessageNode[] newMessages) {
+            this.newMessages = newMessages;
+        }
+        
+        public void run() {
+            yield();
+            for(int i=0; i<newMessages.length; i++) {
+                if(newMessages[i] instanceof OutgoingMessageNode) {
+                    handleNewMessage((OutgoingMessageNode)newMessages[i]);
+                }
+            }
+        }
+    }
+    
     /**
      * For an outgoing message, this method runs before it is added
      * to the mailbox.  It fixes the ID and makes sure we have a
@@ -112,7 +132,6 @@ public class OutboxMailboxNode extends MailboxNode {
      * @param message The outgoing message.
      */
     private void addOutgoingMessageImpl(OutgoingMessageNode message) {
-    	message.setId(lastMessageId++);
 		AbstractMailSender mailSender = message.getMailSender();
 		if(!mailSenderTable.containsKey(mailSender)) {
 			mailSender.addMailSenderListener(mailSenderListener);
@@ -124,9 +143,45 @@ public class OutboxMailboxNode extends MailboxNode {
 		}
 		
 		// Create and set a dummy message token
-		OutboxMessageToken messageToken =
-			new OutboxMessageToken(getFolderTreeItem(), message.getId());
+		OutgoingMessageToken messageToken =
+			new OutgoingMessageToken(getFolderTreeItem(), System.currentTimeMillis());
 		message.setMessageToken(messageToken);
+    }
+    
+    public void refreshMessages() {
+        // Fetch messages stored in the cache
+        synchronized(fetchLock) {
+            if(!hasRefreshed && fetchThread == null || !fetchThread.isAlive()) {
+                hasRefreshed = true;
+                fetchThread = new RefreshMessagesThread();
+                fetchThread.start();
+            }
+        }
+    }
+    
+    private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
+
+        public RefreshMessagesThread() {
+        }
+
+        public void run() {
+            yield();
+            try {
+                MailFileManager.getInstance().readMessageNodes(OutboxMailboxNode.this, true, this);
+            } catch (IOException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to read outgoing messages\r\n"
+                                + e.getMessage()).getBytes(),
+                                EventLogger.ERROR);
+            }
+        }
+
+        public void messageNodeUpdated(MessageNode messageNode) {
+            if(messageNode != null) {
+                savedMessageSet.put(messageNode, messageNode);
+                OutboxMailboxNode.this.addMessage(messageNode);
+            }
+        }
     }
 
     /**
@@ -138,6 +193,19 @@ public class OutboxMailboxNode extends MailboxNode {
 	 * @param outgoingMessageNode the outgoing message node
 	 */
 	private void handleNewMessage(OutgoingMessageNode outgoingMessageNode) {
+	    // Serialize the message node and store it to a file with a key-able name
+	    if(!savedMessageSet.containsKey(outgoingMessageNode)) {
+    	    try {
+                MailFileManager.getInstance().writeMessage(outgoingMessageNode);
+                outgoingMessageNode.setCached(true);
+                savedMessageSet.put(outgoingMessageNode, outgoingMessageNode);
+            } catch (IOException exp) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to store outgoing message: " + exp.toString()).getBytes(),
+                        EventLogger.ERROR);
+            }
+	    }
+	    
 		// Build the envelope object
 		MessageEnvelope envelope = new MessageEnvelope();
 		envelope.date = outgoingMessageNode.getDate();
@@ -171,6 +239,15 @@ public class OutboxMailboxNode extends MailboxNode {
     		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
     		outboundMessageMap.remove(e.getMessage());
     		
+    		// Remove the local file for this message
+            try {
+                MailFileManager.getInstance().removeMessageNode(this, outgoingMessageNode.getMessageToken());
+            } catch (IOException exp) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to delete sent message: " + exp.toString()).getBytes(),
+                        EventLogger.ERROR);
+            }
+    		
     		// Store to the Sent folder
     		AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
     		
@@ -183,64 +260,19 @@ public class OutboxMailboxNode extends MailboxNode {
     		}
 
     		// Update replied-to message flags
-    		MessageNode replyToMessageNode = outgoingMessageNode.getReplyToMessageNode();
-    		if(replyToMessageNode != null) {
-    			AbstractMailStore sendingMailStore = outgoingMessageNode.getSendingAccount().getMailStore();
+    		AccountNode replyToMessageAccount = outgoingMessageNode.getReplyToAccount();
+    		MessageToken replyToMessageToken = outgoingMessageNode.getReplyToToken();
+    		if(replyToMessageAccount != null && replyToMessageToken != null) {
+    			AbstractMailStore sendingMailStore = replyToMessageAccount.getMailStore();
     			if(sendingMailStore.hasFlags()) {
     				sendingMailStore.requestMessageAnswered(
-    						replyToMessageNode.getMessageToken(),
-    						MessageNode.createMessageFlags(replyToMessageNode.getFlags()));
+    				        replyToMessageToken,
+    						new MessageFlags());
     			}
     		}
     		
     		// Remove from this folder
     		removeMessage(outgoingMessageNode);
     	}
-    }
-    
-    /**
-     * Special message token for outbox messages.
-     * This is necessary because Outbox messages do not
-     * normally exist within any real mail store unless
-     * they fail to transmit.
-     *
-     */
-    private static class OutboxMessageToken implements MessageToken {
-		private String folderPath;
-		private int messageId;
-		
-    	public OutboxMessageToken(FolderTreeItem folderTreeItem, int messageId) {
-    		this.folderPath = folderTreeItem.getPath();
-    		this.messageId = messageId;
-    	}
-    	
-        public boolean containedWithin(FolderTreeItem folderTreeItem) {
-            return folderTreeItem.getPath().equals(folderPath);
-        }
-    
-        public String getMessageUid() {
-            return Integer.toHexString(messageId).toLowerCase();
-        }
-    		
-        public long getUniqueId() {
-            // Empty because this special token is not intended to be serialized
-            return 0;
-        }
-    
-        public void serialize(DataOutput output) throws IOException {
-            // Empty because this special token is not intended to be serialized
-        }
-        	
-        public void deserialize(DataInput input) throws IOException {
-            // Empty because this special token is not intended to be serialized
-        }
-
-        public void updateToken(MessageToken messageToken) {
-            // Empty because this special token is not intended to be synchronized
-        }
-        
-        public boolean isLoadable() {
-            return true;
-        }
     }
 }

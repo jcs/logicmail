@@ -1234,4 +1234,36 @@ public class StringParser {
 
         return buf.toString();
     }
+    
+    /**
+     * Creates a string representation of the long argument as an unsigned integer in base 16. 
+     * 
+     * @param number a long number
+     * @return the string representation of the unsigned integer value represented by the argument in hexadecimal (base 16).
+     */
+    public static String toHexString(long number) {
+        long v = number & 0xFFFFFFFFFFFFFFFFL;
+
+        byte[] result = new byte[16];
+        Arrays.fill(result, (byte)0);
+
+        for (int i = 0; i < result.length; i += 2) {
+            byte b = (byte) ((v & 0xFF00000000000000L) >> 56);
+
+            byte b2 = (byte) (b & 0x0F);
+            byte b1 = (byte) ((b >> 4) & 0x0F);
+
+            if (b1 > 9) b1 += 39;
+            b1 += 48;
+
+            if (b2 > 9) b2 += 39;
+            b2 += 48;
+
+            result[i] = (byte) (b1 & 0xFF);
+            result[i + 1] = (byte) (b2 & 0xFF);
+
+            v <<= 8;
+        }
+        return new String(result);
+    }
 }
