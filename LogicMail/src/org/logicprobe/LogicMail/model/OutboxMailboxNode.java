@@ -142,10 +142,12 @@ public class OutboxMailboxNode extends MailboxNode {
 			mailSenderTable.put(mailSender, new Integer(count++));
 		}
 		
-		// Create and set a dummy message token
-		OutgoingMessageToken messageToken =
-			new OutgoingMessageToken(getFolderTreeItem(), System.currentTimeMillis());
-		message.setMessageToken(messageToken);
+		// Create and set a message token, if necessary
+		if(message.getMessageToken() == null) {
+    		OutgoingMessageToken messageToken =
+    			new OutgoingMessageToken(getFolderTreeItem(), System.currentTimeMillis());
+    		message.setMessageToken(messageToken);
+		}
     }
     
     public void refreshMessages() {

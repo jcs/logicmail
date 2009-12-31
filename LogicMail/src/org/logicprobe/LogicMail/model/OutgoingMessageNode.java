@@ -30,6 +30,11 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.io.IOException;
+
+import net.rim.device.api.system.EventLogger;
+
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -97,6 +102,24 @@ public class OutgoingMessageNode extends MessageNode {
         // since they should be completely loaded when the outbox
         // is loaded.
         return false;
+    }
+    
+    public void deleteMessage() {
+        if(this.getParent() instanceof OutboxMailboxNode) {
+            (new Thread() { public void run() {
+                MailboxNode parentMailbox = OutgoingMessageNode.this.getParent();
+                try {
+                    MailFileManager.getInstance().removeMessageNode(
+                            parentMailbox,
+                            OutgoingMessageNode.this.getMessageToken());
+                } catch (IOException exp) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Unable to delete message: " + exp.toString()).getBytes(),
+                            EventLogger.ERROR);
+                }
+                parentMailbox.removeMessage(OutgoingMessageNode.this);
+            }}).start();
+        }
     }
     
     /**
