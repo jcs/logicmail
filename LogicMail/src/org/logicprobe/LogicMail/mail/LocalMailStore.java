@@ -123,7 +123,6 @@ public class LocalMailStore extends AbstractMailStore {
     }
 
     public void requestFolderExpunge(FolderTreeItem folder) {
-        // TODO: Implement local expunge
         FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
         
         if(requestFolder != null) {
@@ -137,16 +136,17 @@ public class LocalMailStore extends AbstractMailStore {
         }
         
         public void run() {
-            FolderMessage[] folderMessages = null;
+            boolean expunged = false;
             try {
                 maildirFolder.open();
                 maildirFolder.expunge();
                 maildirFolder.close();
+                expunged = true;
             } catch (IOException e) {
                 System.err.println("Unable to expunge folder: " + e.toString());
             }
             
-            if(folderMessages != null) {
+            if(expunged) {
                 fireFolderExpunged(requestFolder);
             }
         }

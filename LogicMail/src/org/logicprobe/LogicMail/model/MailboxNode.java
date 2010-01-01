@@ -576,7 +576,9 @@ public class MailboxNode implements Node, Serializable {
                 removedMessageNodes[i] = messageNode;
             }
             
-            (new RemoveFromCacheThread(tokensToRemove)).start();
+            if(this.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
+                (new RemoveFromCacheThread(tokensToRemove)).start();
+            }
             updateUnseenMessages(false);
             fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessageNodes);
         }

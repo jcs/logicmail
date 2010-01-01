@@ -95,15 +95,16 @@ public class MailManager {
 			}
 		}
 
-		// Find the outbox node, and save a reference to it for easy access
 		MailboxNode[] localMailboxes = mailRootNode.getLocalAccount().getRootMailbox().getMailboxes();
 		for(int i=0; i<localMailboxes.length; i++) {
+	        // Find the outbox node, and save a reference to it for easy access
 			if(localMailboxes[i] instanceof OutboxMailboxNode) {
 				outboxMailboxNode = (OutboxMailboxNode)localMailboxes[i];
-				break;
 			}
+			
+			// Refresh messages for local mailboxes
+			localMailboxes[i].refreshMessages();
 		}
-		outboxMailboxNode.refreshMessages();
 	}
 	
 	private void refreshMailboxTypes() {
