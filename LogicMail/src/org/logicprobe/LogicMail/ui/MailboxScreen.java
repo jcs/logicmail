@@ -224,7 +224,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 		};
         screen.add(messageFieldManager);
         this.screen = screen;
-    	this.messageActions = new MessageActions(navigationController);
+    	this.messageActions = navigationController.getMessageActions();
         initMenuItems();
 	}    
 	

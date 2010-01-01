@@ -63,7 +63,6 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.Node;
 import org.logicprobe.LogicMail.model.OutboxMailboxNode;
-import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
@@ -393,16 +392,12 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
     
 	private void sendUnsentItemHandler(MailHomeTreeNode treeNode) {
+	    MessageActions messageActions = navigationController.getMessageActions();
         if(treeNode.node instanceof OutboxMailboxNode) {
             OutboxMailboxNode outboxNode = (OutboxMailboxNode)treeNode.node;
             MessageNode[] messages = outboxNode.getMessages();
             for(int i=0; i<messages.length; i++) {
-                if(messages[i] instanceof OutgoingMessageNode) {
-                    OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messages[i];
-                    if(outgoingMessage.isSendAttempted()) {
-                        outgoingMessage.sendMessage();
-                    }
-                }
+                messageActions.sendMessage(messages[i]);
             }
         }
     }

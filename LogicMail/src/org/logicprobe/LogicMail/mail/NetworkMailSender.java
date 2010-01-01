@@ -75,6 +75,13 @@ public class NetworkMailSender extends AbstractMailSender {
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	public String toString() {
+	    return this.outgoingConfig.toString();
+	}
+	
 	public void requestSendMessage(MessageEnvelope envelope, Message message) {
 		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { envelope, message });
 	}

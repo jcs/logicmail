@@ -136,7 +136,7 @@ public class MessageScreen extends AbstractScreenProvider {
         if(isSentFolder) {
         	Address[] to = messageNode.getTo();
         	if(to != null && to.length > 0) {
-            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + " " + normalize(to[0].toString())));
+            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + ' ' + normalize(to[0].toString())));
                 if(to.length > 1) {
                     for(int i=1;i<to.length;i++) {
                         if(to[i] != null) {
@@ -149,7 +149,7 @@ public class MessageScreen extends AbstractScreenProvider {
         else {
         	Address[] from = messageNode.getFrom();
             if(from != null && from.length > 0) {
-            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + " " + normalize(from[0].toString())));
+            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + ' ' + normalize(from[0].toString())));
                 if(from.length > 1) {
                     for(int i=1;i<from.length;i++) {
                         if(from[i] != null) {
@@ -161,14 +161,14 @@ public class MessageScreen extends AbstractScreenProvider {
         }
         String subject = messageNode.getSubject();
         if(subject != null) {
-            subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + " " + normalize(subject)));
+            subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ' + normalize(subject)));
         }
 
         screen.add(addressFieldManager);
         screen.add(subjectFieldManager);
         screen.add(messageFieldManager);
         this.screen = screen;
-        this.messageActions = new MessageActions(navigationController);
+        this.messageActions = navigationController.getMessageActions();
         initMenuItems();
     }
     

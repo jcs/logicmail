@@ -157,16 +157,6 @@ public class OutboxMailboxNode extends MailboxNode {
      * @param message The outgoing message.
      */
     private void addOutgoingMessageImpl(OutgoingMessageNode message) {
-		AbstractMailSender mailSender = message.getMailSender();
-		if(!mailSenderTable.containsKey(mailSender)) {
-			mailSender.addMailSenderListener(mailSenderListener);
-			mailSenderTable.put(mailSender, new Integer(1));
-		}
-		else {
-			int count = ((Integer)mailSenderTable.get(mailSender)).intValue();
-			mailSenderTable.put(mailSender, new Integer(count++));
-		}
-		
 		// Create and set a message token, if necessary
 		if(message.getMessageToken() == null) {
     		OutgoingMessageToken messageToken =
@@ -287,6 +277,10 @@ public class OutboxMailboxNode extends MailboxNode {
     }
 
     private void requestSendMessage(OutgoingMessageNode outgoingMessageNode) {
+        AbstractMailSender mailSender = outgoingMessageNode.getMailSender();
+        if(mailSender == null) { return; }
+        
+        addMailSenderListener(mailSender);
         outgoingMessageNode.setSending(true);
         
         // Build the envelope object
@@ -314,7 +308,7 @@ public class OutboxMailboxNode extends MailboxNode {
 		// Update the outbound map and request the message to be sent
 		outboundMessageMap.put(message, outgoingMessageNode);
 		outboundMessageNodeMap.put(outgoingMessageNode, message);
-		outgoingMessageNode.getMailSender().requestSendMessage(envelope, message);
+		mailSender.requestSendMessage(envelope, message);
     }
 	
 	private void mailSender_MessageSent(MessageSentEvent e) {
@@ -322,6 +316,7 @@ public class OutboxMailboxNode extends MailboxNode {
 	    Message message = e.getMessage();
     	if(outboundMessageMap.get(message) instanceof OutgoingMessageNode) {
     		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(message);
+    		removeMailSenderListener(outgoingMessageNode.getMailSender());
     		outboundMessageMap.remove(message);
     		outboundMessageNodeMap.remove(outgoingMessageNode);
             outgoingMessageNode.setSending(false);
@@ -336,16 +331,18 @@ public class OutboxMailboxNode extends MailboxNode {
             }
     		
     		// Store to the Sent folder
-    		AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
-    		
-    		// Append to the Sent message folder, if available
-    		MailboxNode sentMailbox = sendingAccountConfig.getSentMailbox();
-    		if(sentMailbox != null && sentMailbox.hasAppend()) {
-    			MessageFlags initialFlags = new MessageFlags();
-    			initialFlags.setSeen(true);
-    			sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
-    		}
-
+            if(outgoingMessageNode.getSendingAccount() != null) {
+        		AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
+        		
+        		// Append to the Sent message folder, if available
+        		MailboxNode sentMailbox = sendingAccountConfig.getSentMailbox();
+        		if(sentMailbox != null && sentMailbox.hasAppend()) {
+        			MessageFlags initialFlags = new MessageFlags();
+        			initialFlags.setSeen(true);
+        			sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
+        		}
+            }
+            
     		// Update replied-to message flags
     		AccountNode replyToMessageAccount = outgoingMessageNode.getReplyToAccount();
     		MessageToken replyToMessageToken = outgoingMessageNode.getReplyToToken();
@@ -369,10 +366,37 @@ public class OutboxMailboxNode extends MailboxNode {
         if(outboundMessageMap.get(message) instanceof OutgoingMessageNode) {
             OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(message);
             
+            removeMailSenderListener(outgoingMessageNode.getMailSender());
+            
             // Remove from the maps that track outbound messages
             outboundMessageMap.remove(message);
             outboundMessageNodeMap.remove(outgoingMessageNode);
             outgoingMessageNode.setSending(false);
+        }
+    }
+
+    private void addMailSenderListener(AbstractMailSender mailSender) {
+        if(!mailSenderTable.containsKey(mailSender)) {
+            mailSender.addMailSenderListener(mailSenderListener);
+            mailSenderTable.put(mailSender, new Integer(1));
+        }
+        else {
+            int count = ((Integer)mailSenderTable.get(mailSender)).intValue();
+            mailSenderTable.put(mailSender, new Integer(count++));
+        }
+    }
+    
+    private void removeMailSenderListener(AbstractMailSender mailSender) {
+        if(mailSenderTable.containsKey(mailSender)) {
+            int count = ((Integer)mailSenderTable.get(mailSender)).intValue();
+            count--;
+            if(count > 0) {
+                mailSenderTable.put(mailSender, new Integer(count));
+            }
+            else {
+                mailSender.removeMailSenderListener(mailSenderListener);
+                mailSenderTable.remove(mailSender);
+            }
         }
     }
 }

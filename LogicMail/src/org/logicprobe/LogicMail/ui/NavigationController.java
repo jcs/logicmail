@@ -65,10 +65,13 @@ public final class NavigationController {
 	private StandardScreen mailHomeScreen;
 	private String currentStatus;
 	
+	private MessageActions messageActions;
+	
 	public NavigationController(UiApplication uiApplication) {
 		this.uiApplication = uiApplication;
 		this.screenFactory = ScreenFactory.getInstance();
 		this.mailRootNode = MailManager.getInstance().getMailRootNode();
+		this.messageActions = new MessageActions(this);
 		
 		MailConnectionManager.getInstance().addMailConnectionListener(new MailConnectionListener() {
 			public void mailConnectionStateChanged(MailConnectionStateEvent e) { }
@@ -157,6 +160,15 @@ public final class NavigationController {
 				accountNode,
 				messageNode);
 		uiApplication.pushScreen(screen);
+	}
+	
+	/**
+	 * Gets the delegate for handling actions on message nodes.
+	 * 
+	 * @return the message actions delegate instance
+	 */
+	public MessageActions getMessageActions() {
+	    return this.messageActions;
 	}
 	
 	/**

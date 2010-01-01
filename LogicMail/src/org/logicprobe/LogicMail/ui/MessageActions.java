@@ -38,6 +38,10 @@ import net.rim.device.api.ui.component.Dialog;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.OutgoingConfig;
+import org.logicprobe.LogicMail.mail.AbstractMailSender;
+import org.logicprobe.LogicMail.mail.MailFactory;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -82,17 +86,19 @@ public class MessageActions {
      */
     private void openDraftMessage(MessageNode messageNode) {
     	// Build a list of all the accounts that have this mailbox
-    	// configured as their drafts folder.
+    	// configured as their drafts folder, and have a mail sender
     	Vector matchingAccounts = new Vector();
     	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
 
     	for(int i=0; i<accounts.length; i++) {
-    		AccountConfig accountConfig = accounts[i].getAccountConfig();
-    		if(accountConfig != null) {
-    			if(accountConfig.getDraftMailbox() == messageNode.getParent()) {
-    				matchingAccounts.addElement(accounts[i]);
-    			}
-    		}
+    	    if(accounts[i].hasMailSender()) {
+        		AccountConfig accountConfig = accounts[i].getAccountConfig();
+        		if(accountConfig != null) {
+        			if(accountConfig.getDraftMailbox() == messageNode.getParent()) {
+        				matchingAccounts.addElement(accounts[i]);
+        			}
+        		}
+    	    }
     	}
 
     	// If no matching accounts were found, then add all
@@ -100,7 +106,7 @@ public class MessageActions {
     	// user to select from.
     	if(matchingAccounts.size() == 0) {
         	for(int i=0; i<accounts.length; i++) {
-        		if(accounts[i].getAccountConfig() != null) {
+        		if(accounts[i].hasMailSender() && accounts[i].getAccountConfig() != null) {
     				matchingAccounts.addElement(accounts[i]);
         		}
         	}
@@ -127,6 +133,7 @@ public class MessageActions {
     		account = (AccountNode)matchingAccounts.elementAt(0);
     	}
     	else {
+    	    Dialog.alert(resources.getString(LogicMailResource.MESSAGE_NO_ACCOUNTS_HAVE_SENDERS));
     		return;
     	}
 
@@ -260,7 +267,54 @@ public class MessageActions {
     public void sendMessage(MessageNode messageNode) {
         if(messageNode instanceof OutgoingMessageNode) {
             OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
-            outgoingMessage.sendMessage();
+            if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {
+                if(validateMessageSender(outgoingMessage)) {
+                    outgoingMessage.sendMessage();
+                }
+            }
         }
+    }
+
+    /**
+     * Validate that the message has a sender configured for it, and
+     * prompt the user appropriately if it does not.
+     * 
+     * @param outgoingMessage the outgoing message
+     * @return true if the message is now sendable, false to cancel
+     */
+    private boolean validateMessageSender(OutgoingMessageNode outgoingMessage) {
+        if(outgoingMessage.getMailSender() != null) {
+            return true;
+        }
+        else {
+            AbstractMailSender[] senders = getMailSenders();
+            if(senders.length == 0) {
+                Dialog.alert(resources.getString(LogicMailResource.MESSAGE_NO_OUTGOING_SERVERS));
+                return false;
+            }
+            else {
+                int choice = Dialog.ask(
+                        resources.getString(LogicMailResource.MESSAGE_SELECT_OUTGOING_SERVER),
+                        senders, 0);
+                if(choice < 0 || choice >= senders.length) {
+                    return false;
+                }
+                else {
+                    outgoingMessage.setMailSender(senders[choice]);
+                    return true;
+                }
+            }
+        }
+    }
+    
+    private AbstractMailSender[] getMailSenders() {
+        MailSettings mailSettings = MailSettings.getInstance();
+        int num = mailSettings.getNumOutgoing();
+        AbstractMailSender[] result = new AbstractMailSender[num];
+        for(int i=0; i<num; i++) {
+            OutgoingConfig outgoingConfig = mailSettings.getOutgoingConfig(i);
+            result[i] = MailFactory.createMailSender(outgoingConfig);
+        }
+        return result;
     }
 }
