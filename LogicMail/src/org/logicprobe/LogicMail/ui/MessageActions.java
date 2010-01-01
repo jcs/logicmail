@@ -42,6 +42,7 @@ import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 
 /**
  * Delegate class to handle actions on message nodes.
@@ -248,6 +249,18 @@ public class MessageActions {
         		//This should only be executed after the append was successful
         		//messageNode.deleteMessage();
         	}
+        }
+    }
+    
+    /**
+     * Send an outgoing message.
+     * 
+     * @param messageNode the message node
+     */
+    public void sendMessage(MessageNode messageNode) {
+        if(messageNode instanceof OutgoingMessageNode) {
+            OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
+            outgoingMessage.sendMessage();
         }
     }
 }

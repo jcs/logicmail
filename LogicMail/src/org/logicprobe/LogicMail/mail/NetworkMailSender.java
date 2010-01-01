@@ -86,6 +86,10 @@ public class NetworkMailSender extends AbstractMailSender {
 			results = (Object[])result;
 			fireMessageSent((MessageEnvelope)results[0], (Message)results[1], (String)results[2]);
 			break;
-		}
+		case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE_FAILED:
+            results = (Object[])result;
+            fireMessageSendFailed((MessageEnvelope)results[0], (Message)results[1]);
+            break;
+        }
 	}
 }

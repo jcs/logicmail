@@ -120,4 +120,22 @@ public abstract class AbstractMailSender {
             ((MailSenderListener)listeners[i]).messageSent(e);
         }
     }
+    
+    /**
+     * Notifies all registered <tt>MailSenderListener</tt>s that
+     * there was an error when trying to send a message.
+     * 
+     * @param envelope The envelope of the message that could not be sent.
+     * @param message The message that could not be sent.
+     */
+    protected void fireMessageSendFailed(MessageEnvelope envelope, Message message) {
+        Object[] listeners = listenerList.getListeners(MailSenderListener.class);
+        MessageSentEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new MessageSentEvent(this, envelope, message, null);
+            }
+            ((MailSenderListener)listeners[i]).messageSendFailed(e);
+        }
+    }
 }

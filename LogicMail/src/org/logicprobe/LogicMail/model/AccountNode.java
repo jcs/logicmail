@@ -37,11 +37,9 @@ import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
-import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -84,12 +82,6 @@ public class AccountNode implements Node {
     /** Map of folders to message to fetch for them. */
     private Hashtable folderMessagesToFetch;
     
-    private MailSenderListener mailSenderListener = new MailSenderListener() {
-            public void messageSent(MessageSentEvent e) {
-                mailSender_MessageSent(e);
-            }
-        };
-
     /**
      * Construct a new node for a network account.
      *
@@ -199,16 +191,12 @@ public class AccountNode implements Node {
      */
     void setMailSender(AbstractMailSender mailSender) {
         if ((this.mailSender != null) && (mailSender == null)) {
-            this.mailSender.removeMailSenderListener(mailSenderListener);
             this.mailSender = null;
         } else if ((this.mailSender != null) &&
                 (this.mailSender != mailSender)) {
-            this.mailSender.removeMailSenderListener(mailSenderListener);
             this.mailSender = mailSender;
-            this.mailSender.addMailSenderListener(mailSenderListener);
         } else if ((this.mailSender == null) && (mailSender != null)) {
             this.mailSender = mailSender;
-            this.mailSender.addMailSenderListener(mailSenderListener);
         }
     }
 
@@ -759,27 +747,6 @@ public class AccountNode implements Node {
         } else {
             return null;
         }
-    }
-
-    
-    /**
-     * Handles a message being sent.
-     *
-     * @param e Event data.
-     */
-    private void mailSender_MessageSent(MessageSentEvent e) {
-//            if ((sentMailbox != null) && mailStore.hasAppend() && sentMailbox.hasAppend()) {
-//                MessageFlags initialFlags = new MessageFlags();
-//                initialFlags.setSeen(true);
-//                sentMailbox.appendRawMessage(e.getMessageSource(), initialFlags);
-//            }
-//
-//            // Update flags if necessary
-//            if ((repliedMessageNode != null) && mailStore.hasFlags()) {
-//                mailStore.requestMessageAnswered(repliedMessageNode.getParent().getFolderTreeItem(),
-//                    repliedMessageNode.getFolderMessage());
-//            }
-//        }
     }
 
     /**

@@ -56,6 +56,7 @@ public abstract class AbstractMailConnectionHandler {
 	private int retryCount;
 	private boolean invalidLogin;
 	private boolean shutdownInProgress;
+	private Object[] requestInProgress;
 	
 	// The various states of a mail connection
 	public static final int STATE_CLOSED   = 0;
@@ -216,7 +217,7 @@ public abstract class AbstractMailConnectionHandler {
 		// Unable to open, so transition to closing and clear the queue
         setConnectionState(STATE_CLOSING);
         synchronized(requestQueue) {
-        	requestQueue.clear();
+            clearRequestQueue(null);
         }
 	}
     
@@ -260,7 +261,9 @@ public abstract class AbstractMailConnectionHandler {
 			Object[] params = (Object[])request[1];
 			
 			// Delegate to subclasses to handle the specific request
+			requestInProgress = request;
 			handleRequest(type, params);
+			requestInProgress = null;
 			
 			synchronized(requestQueue) {
 				element = requestQueue.element();
@@ -285,6 +288,20 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
 	 */
 	protected abstract void handleRequest(int type, Object[] params) throws IOException, MailException;
+	
+	/**
+	 * Handles a specific request being removed from the queue due to errors.
+	 * <p>
+	 * Subclasses should use this as a hook to notify any listeners of the
+	 * request failing.
+	 * </p>
+	 * 
+	 * @param exception Exception that was thrown to fail the request,
+	 * or null if it failed due to a queue flush
+	 */
+	protected void handleRequestFailed(int type, Object[] params, Throwable exception) {
+	    // Empty default implementation
+	}
 	
     /**
      * Handles the IDLE connection state which occurs after all
@@ -498,7 +515,7 @@ public abstract class AbstractMailConnectionHandler {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
 				setConnectionState(STATE_CLOSING);
-				requestQueue.clear();
+				clearRequestQueue(e);
 			}
 		}
 		else {
@@ -506,6 +523,15 @@ public abstract class AbstractMailConnectionHandler {
 			setConnectionState(STATE_OPENING);
 		}
 		showError(e.getMessage());
+
+        // Notify failure of the current request-in-progress, if applicable
+        if(requestInProgress != null) {
+            handleRequestFailed(
+                    ((Integer)requestInProgress[0]).intValue(),
+                    (Object[])requestInProgress[1],
+                    e);
+            requestInProgress = null;
+        }
 	}
 	
 	/**
@@ -523,10 +549,19 @@ public abstract class AbstractMailConnectionHandler {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
 				setConnectionState(STATE_CLOSING);
-				requestQueue.clear();
+				clearRequestQueue(e);
 			}
 		}
 		showError(e.getMessage());
+
+        // Notify failure of the current request-in-progress, if applicable
+        if(requestInProgress != null) {
+            handleRequestFailed(
+                    ((Integer)requestInProgress[0]).intValue(),
+                    (Object[])requestInProgress[1],
+                    e);
+            requestInProgress = null;
+        }
 	}
 	
 	/**
@@ -544,9 +579,38 @@ public abstract class AbstractMailConnectionHandler {
 		// Switch to the CLOSING state and clear the request queue.
 		synchronized (requestQueue) {
 			setConnectionState(STATE_CLOSING);
-			requestQueue.clear();
+			clearRequestQueue(t);
 		}
 		showError(t.getMessage());
+
+		// Notify failure of the current request-in-progress, if applicable
+		if(requestInProgress != null) {
+            handleRequestFailed(
+                    ((Integer)requestInProgress[0]).intValue(),
+                    (Object[])requestInProgress[1],
+                    t);
+            requestInProgress = null;
+		}
+	}
+	
+	/**
+	 * Clear the request queue, sending any necessary failure notifications.
+	 * 
+	 * @param t exception that lead to the queue flush, if applicable
+	 */
+	private void clearRequestQueue(Throwable t) {
+	    synchronized (requestQueue) {
+	        Object element = requestQueue.element();
+	        while(element != null) {
+	            Object[] request = (Object[])element;
+	            requestQueue.remove();
+                handleRequestFailed(
+                        ((Integer)request[0]).intValue(),
+                        (Object[])request[1],
+                        null);
+	            element = requestQueue.element();
+	        }
+	    }
 	}
 	
 	/**

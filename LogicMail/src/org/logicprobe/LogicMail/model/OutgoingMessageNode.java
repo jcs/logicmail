@@ -50,6 +50,8 @@ public class OutgoingMessageNode extends MessageNode {
 	private AbstractMailSender mailSender;
 	private AccountNode replyToAccount;
 	private MessageToken replyToToken;
+	private boolean sendAttempted;
+	private boolean sending;
 
 	/**
 	 * Creates a new instance of OutgoingMessageNode.
@@ -168,15 +170,6 @@ public class OutgoingMessageNode extends MessageNode {
 	}
 	
 	/**
-	 * Sets the Reply-To message token.
-	 * 
-	 * @param replyToToken the new Reply-To message token
-	 */
-	void setReplyToToken(MessageToken replyToToken) {
-	    this.replyToToken = replyToToken;
-	}
-	
-	/**
 	 * Gets the Reply-To message account.
 	 * 
 	 * @return the Reply-To message account
@@ -185,6 +178,15 @@ public class OutgoingMessageNode extends MessageNode {
 	    return replyToAccount;
 	}
 	
+    /**
+     * Sets the Reply-To message token.
+     * 
+     * @param replyToToken the new Reply-To message token
+     */
+    void setReplyToToken(MessageToken replyToToken) {
+        this.replyToToken = replyToToken;
+    }
+    
 	/**
 	 * Gets the Reply-To message token.
 	 * 
@@ -193,4 +195,62 @@ public class OutgoingMessageNode extends MessageNode {
 	public MessageToken getReplyToToken() {
 	    return replyToToken;
 	}
+	
+	/**
+	 * Set whether the sending of this message has been attempted.
+	 * 
+	 * @param sendAttempted true if the sending of this message has been attempted
+	 */
+	void setSendAttempted(boolean sendAttempted) {
+	    this.sendAttempted = sendAttempted;
+	}
+	
+	/**
+	 * Checks if the sending of this message has been attempted.
+	 * <p>
+	 * This flag should be set in all cases except for when the message is
+	 * first created by the composition screen.  It should be used to track
+	 * whether to automatically attempt sending the message, or to only send
+	 * in response to deliberate user action.
+	 * </p>
+	 * 
+	 * @return true, if is send was attempted
+	 */
+	public boolean isSendAttempted() {
+        return sendAttempted;
+    }
+
+	/**
+	 * Sets whether this message is currently in the process of being sent.
+	 * 
+	 * @param sending true, if sending is in progress
+	 */
+	void setSending(boolean sending) {
+	    this.sending = sending;
+	}
+	
+	/**
+	 * Checks if this message is currently in the process of being sent.
+	 * 
+	 * @return true, if sending is in progress
+	 */
+    public boolean isSending() {
+        return sending;
+    }
+    
+	/**
+	 * Send the message.
+	 * <p>
+	 * Message sending normally happens automatically when a message is added
+	 * to the outbox.  This method is intended to only be called for deliberate
+	 * send attempts as triggered by the user.
+	 * </p>
+	 */
+    public void sendMessage() {
+        MailboxNode parentMailbox = this.getParent();
+        if(parentMailbox instanceof OutboxMailboxNode) {
+            OutboxMailboxNode outbox = (OutboxMailboxNode)parentMailbox;
+            outbox.sendMessage(this);
+        }
+    }
 }

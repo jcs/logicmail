@@ -60,7 +60,10 @@ import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
+import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.Node;
+import org.logicprobe.LogicMail.model.OutboxMailboxNode;
+import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
@@ -92,6 +95,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	private MenuItem refreshStatusItem;
 	private MenuItem refreshFoldersItem;
 	private MenuItem compositionItem;
+    private MenuItem sendUnsentItem;
 	private MenuItem disconnectItem;
 	
 	private Hashtable nodeIdMap;
@@ -214,14 +218,19 @@ public class MailHomeScreen extends AbstractScreenProvider {
 				compositionItemHandler(treeNode);
 			}
 		};
+        sendUnsentItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SEND_UNSENT_MESSAGES, 200000, 9) {
+            public void runNode(MailHomeTreeNode treeNode) {
+                sendUnsentItemHandler(treeNode);
+            }
+        };
 		disconnectItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 200000, 9) {
 			public void runNode(MailHomeTreeNode treeNode) {
 				disconnectItemHandler(treeNode);
 			}
 		};
 	}
-	
-	private abstract class TreeNodeMenuItem extends MenuItem {
+
+    private abstract class TreeNodeMenuItem extends MenuItem {
 		public TreeNodeMenuItem(ResourceBundle bundle, int id, int ordinal, int priority) {
 			super(bundle, id, ordinal, priority);
 		}
@@ -382,6 +391,21 @@ public class MailHomeScreen extends AbstractScreenProvider {
 			navigationController.displayComposition(accountNode);
 		}
 	}
+    
+	private void sendUnsentItemHandler(MailHomeTreeNode treeNode) {
+        if(treeNode.node instanceof OutboxMailboxNode) {
+            OutboxMailboxNode outboxNode = (OutboxMailboxNode)treeNode.node;
+            MessageNode[] messages = outboxNode.getMessages();
+            for(int i=0; i<messages.length; i++) {
+                if(messages[i] instanceof OutgoingMessageNode) {
+                    OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messages[i];
+                    if(outgoingMessage.isSendAttempted()) {
+                        outgoingMessage.sendMessage();
+                    }
+                }
+            }
+        }
+    }
 	
 	public void populateMailTree(MailHomeTreeNode rootNode) {
 		synchronized(UiApplication.getEventLock()) {
@@ -457,6 +481,10 @@ public class MailHomeScreen extends AbstractScreenProvider {
 			menu.add(selectFolderItem);
 			if(((MailboxNode)treeNode.node).getParentAccount().hasMailSender()) {
 				menu.add(compositionItem);
+			}
+			if(treeNode.node instanceof OutboxMailboxNode
+			        && ((OutboxMailboxNode)treeNode.node).hasUnsentMessages()) {
+			    menu.add(sendUnsentItem);
 			}
 		}
 		else if(treeNode.node instanceof AccountNode) {

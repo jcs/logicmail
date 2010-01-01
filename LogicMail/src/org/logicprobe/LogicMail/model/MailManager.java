@@ -103,6 +103,7 @@ public class MailManager {
 				break;
 			}
 		}
+		outboxMailboxNode.refreshMessages();
 	}
 	
 	private void refreshMailboxTypes() {

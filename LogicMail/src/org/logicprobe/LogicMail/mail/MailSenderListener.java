@@ -42,5 +42,12 @@ public interface MailSenderListener extends EventListener {
 	 * 
 	 * @param e Event data
 	 */
-	public void messageSent(MessageSentEvent e);
+	void messageSent(MessageSentEvent e);
+	
+	/**
+	 * Invoked when there is an error in sending a message.
+	 * 
+	 * @param e Event data
+	 */
+	void messageSendFailed(MessageSentEvent e);
 }

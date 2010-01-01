@@ -59,10 +59,15 @@ public class OutboxMailboxNode extends MailboxNode {
     
 	private Hashtable mailSenderTable = new Hashtable();
 	private Hashtable outboundMessageMap = new Hashtable();
+	private Hashtable outboundMessageNodeMap = new Hashtable();
 	
     private MailSenderListener mailSenderListener = new MailSenderListener() {
         public void messageSent(MessageSentEvent e) {
             mailSender_MessageSent(e);
+        }
+
+        public void messageSendFailed(MessageSentEvent e) {
+            mailSender_MessageSendFailed(e);
         }
     };
     
@@ -88,16 +93,33 @@ public class OutboxMailboxNode extends MailboxNode {
     
 	/**
      * Gets the unseen message count for this folder.
+     * <p>
      * For the outbox, this is a special case.  Instead of returning
      * the number of unseen messages, we return the total number of
      * messages.  This is because the outbox is transitory in nature,
      * and any messages contained within it are ones the user should
      * know about.
+     * </p>
      * 
      * @return Unseen message count.
      */
     public int getUnseenMessageCount() {
     	return this.getMessageCount();
+    }
+
+    /**
+     * Checks whether this mailbox has unsent messages.
+     * <p>
+     * This method works by comparing the number of messages queued in
+     * mail senders to the number of messages in the mailbox itself.
+     * Therefore, it will return false if all messages are in the process
+     * of being sent.
+     * </p>
+     * 
+     * @return true if unsent messages exist
+     */
+    public boolean hasUnsentMessages() {
+        return outboundMessageNodeMap.size() < getMessageCount();
     }
     
     protected void fireMailboxStatusChanged(int type, MessageNode[] affectedMessages) {
@@ -118,7 +140,10 @@ public class OutboxMailboxNode extends MailboxNode {
             yield();
             for(int i=0; i<newMessages.length; i++) {
                 if(newMessages[i] instanceof OutgoingMessageNode) {
-                    handleNewMessage((OutgoingMessageNode)newMessages[i]);
+                    OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)newMessages[i];
+                    if(!outgoingMessage.isSendAttempted()) {
+                        handleNewMessage((OutgoingMessageNode)newMessages[i]);
+                    }
                 }
             }
         }
@@ -179,13 +204,46 @@ public class OutboxMailboxNode extends MailboxNode {
         }
 
         public void messageNodeUpdated(MessageNode messageNode) {
-            if(messageNode != null) {
+            if(messageNode instanceof OutgoingMessageNode) {
+                OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
+                // Loaded messages were always send-attempted at least once
+                outgoingMessage.setSendAttempted(true);
                 savedMessageSet.put(messageNode, messageNode);
                 OutboxMailboxNode.this.addMessage(messageNode);
             }
         }
     }
 
+    public boolean hasAppend() {
+        // Feature not supported because the outbox has no backing mail store
+        return false;
+    }
+    
+    public void appendMessage(MessageEnvelope envelope, Message message, MessageFlags messageFlags) {
+        // Feature not supported because the outbox has no backing mail store
+    }
+    
+    public void appendMessage(MessageNode message) {
+        // Feature not supported because the outbox has no backing mail store
+    }
+    
+    public void appendRawMessage(String rawMessage, MessageFlags initialFlags) {
+        // Feature not supported because the outbox has no backing mail store
+    }
+    
+    public boolean hasCopy() {
+        // Feature not supported because the outbox has no backing mail store
+        return false;
+    }
+    
+    public void copyMessageInto(MessageNode messageNode) {
+        // Feature not supported because the outbox has no backing mail store
+    }
+    
+    public void expungeDeletedMessages() {
+        // Feature not supported because the outbox has no backing mail store
+    }
+    
     /**
 	 * For an outgoing message, this method runs after everyone else
 	 * has been notified of the message being added to the mailbox.
@@ -195,6 +253,8 @@ public class OutboxMailboxNode extends MailboxNode {
 	 * @param outgoingMessageNode the outgoing message node
 	 */
 	private void handleNewMessage(OutgoingMessageNode outgoingMessageNode) {
+	    outgoingMessageNode.setSendAttempted(true);
+	    
 	    // Serialize the message node and store it to a file with a key-able name
 	    if(!savedMessageSet.containsKey(outgoingMessageNode)) {
     	    try {
@@ -208,7 +268,28 @@ public class OutboxMailboxNode extends MailboxNode {
             }
 	    }
 	    
-		// Build the envelope object
+		requestSendMessage(outgoingMessageNode);
+	}
+
+	/**
+	 * Send a message contained within this mailbox.
+	 * <p>
+     * Message sending normally happens automatically when a message is added
+     * to the outbox.  This method is intended to only be called for deliberate
+     * send attempts as triggered by the user.
+	 * </p>
+	 * @param outgoingMessageNode the message to send
+	 */
+    void sendMessage(OutgoingMessageNode outgoingMessageNode) {
+        if(this.containsMessage(outgoingMessageNode) && !outboundMessageNodeMap.containsKey(outgoingMessageNode)) {
+            requestSendMessage(outgoingMessageNode);
+        }
+    }
+
+    private void requestSendMessage(OutgoingMessageNode outgoingMessageNode) {
+        outgoingMessageNode.setSending(true);
+        
+        // Build the envelope object
 		MessageEnvelope envelope = new MessageEnvelope();
 		envelope.date = outgoingMessageNode.getDate();
 		envelope.subject = outgoingMessageNode.getSubject();
@@ -232,14 +313,18 @@ public class OutboxMailboxNode extends MailboxNode {
 		
 		// Update the outbound map and request the message to be sent
 		outboundMessageMap.put(message, outgoingMessageNode);
+		outboundMessageNodeMap.put(outgoingMessageNode, message);
 		outgoingMessageNode.getMailSender().requestSendMessage(envelope, message);
-	}
+    }
 	
 	private void mailSender_MessageSent(MessageSentEvent e) {
     	// Find out whether we know about this message
-    	if(outboundMessageMap.get(e.getMessage()) instanceof OutgoingMessageNode) {
-    		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(e.getMessage());
-    		outboundMessageMap.remove(e.getMessage());
+	    Message message = e.getMessage();
+    	if(outboundMessageMap.get(message) instanceof OutgoingMessageNode) {
+    		OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(message);
+    		outboundMessageMap.remove(message);
+    		outboundMessageNodeMap.remove(outgoingMessageNode);
+            outgoingMessageNode.setSending(false);
     		
     		// Remove the local file for this message
             try {
@@ -276,5 +361,18 @@ public class OutboxMailboxNode extends MailboxNode {
     		// Remove from this folder
     		removeMessage(outgoingMessageNode);
     	}
+    }
+	
+    private void mailSender_MessageSendFailed(MessageSentEvent e) {
+        // Find out whether we know about this message
+        Message message = e.getMessage();
+        if(outboundMessageMap.get(message) instanceof OutgoingMessageNode) {
+            OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(message);
+            
+            // Remove from the maps that track outbound messages
+            outboundMessageMap.remove(message);
+            outboundMessageNodeMap.remove(outgoingMessageNode);
+            outgoingMessageNode.setSending(false);
+        }
     }
 }

@@ -54,6 +54,7 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
@@ -82,6 +83,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 	private MenuItem compositionItem;
 	private MenuItem deleteItem;
 	private MenuItem undeleteItem;
+	private MenuItem sendItem;
     
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
@@ -252,6 +254,11 @@ public class MailboxScreen extends AbstractScreenProvider {
 	        	messageActions.undeleteMessage(messageNode);
 	        }
 	    };
+        sendItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_SEND, 140, 10) {
+            public void runNode(MessageNode messageNode) {
+                messageActions.sendMessage(messageNode);
+            }
+        };
 	}
 
 	private abstract class MailboxMessageMenuItem extends MenuItem {
@@ -290,6 +297,12 @@ public class MailboxScreen extends AbstractScreenProvider {
             }
             else {
                 menu.add(deleteItem);
+            }
+            if(messageNode instanceof OutgoingMessageNode) {
+                OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
+                if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {
+                    menu.add(sendItem);
+                }
             }
         }
     }
