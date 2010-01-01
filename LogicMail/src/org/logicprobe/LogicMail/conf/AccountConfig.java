@@ -199,10 +199,12 @@ public abstract class AccountConfig extends ConnectionConfig {
         	
         	AccountNode[] accounts = rootNode.getAccounts();
         	for(int i=0; i<accounts.length; i++) {
-        		sentMailbox = findMailboxNode(accounts[i].getRootMailbox(), sentMailboxId);
-        		if(sentMailbox != null) {
-        			break;
-        		}
+        	    if(accounts[i].getRootMailbox() != null) {
+        	        sentMailbox = findMailboxNode(accounts[i].getRootMailbox(), sentMailboxId);
+        	        if(sentMailbox != null) {
+        	            break;
+        	        }
+        	    }
         	}
         }
         return sentMailbox;
@@ -236,10 +238,12 @@ public abstract class AccountConfig extends ConnectionConfig {
         	
         	AccountNode[] accounts = rootNode.getAccounts();
         	for(int i=0; i<accounts.length; i++) {
-        		draftMailbox = findMailboxNode(accounts[i].getRootMailbox(), draftMailboxId);
-        		if(draftMailbox != null) {
-        			break;
-        		}
+        	    if(accounts[i].getRootMailbox() != null) {
+        	        draftMailbox = findMailboxNode(accounts[i].getRootMailbox(), draftMailboxId);
+        	        if(draftMailbox != null) {
+        	            break;
+        	        }
+        	    }
         	}
         }
         return draftMailbox;
