@@ -128,7 +128,7 @@ public class GlobalConfig implements Serializable {
         this.wifiMode = GlobalConfig.WIFI_DISABLED;
         this.hideDeletedMsg = true;
         this.localHostname = "";
-        this.localDataLocation = "";
+        this.localDataLocation = null;
     }
 
     /**
@@ -236,6 +236,12 @@ public class GlobalConfig implements Serializable {
      * @return The local data URL
      */
     public String getLocalDataLocation() {
+        if(localDataLocation == null) {
+            String[] fsRoots = PlatformInfo.getInstance().getFilesystemRoots();
+            if(fsRoots.length > 0) {
+                setLocalDataLocation(fsRoots[0]);
+            }
+        }
         return localDataLocation;
     }
 
