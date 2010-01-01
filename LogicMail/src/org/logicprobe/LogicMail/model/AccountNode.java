@@ -159,7 +159,7 @@ public class AccountNode implements Node {
             this.rootMailbox.setParentAccount(this);
 
             MailboxNode inboxNode = new MailboxNode(new FolderTreeItem(
-                        "INBOX", "INBOX", ""), false, MailboxNode.TYPE_INBOX);
+                        "INBOX", "INBOX", "", true), false, MailboxNode.TYPE_INBOX);
             inboxNode.setParentAccount(this);
             this.rootMailbox.addMailbox(inboxNode);
             pathMailboxMap.put("INBOX", inboxNode);

@@ -73,6 +73,26 @@ public class FolderTreeItem implements Serializable {
     }
     
     /**
+     * Create a root folder tree item.
+     * @param name The name of the folder
+     * @param path The full path to this folder
+     * @param delim The path delimiter
+     * @param selectable True if the folder is selectable
+     */
+    public FolderTreeItem(String name, String path, String delim, boolean selectable) {
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+        this.parent = null;
+        this.name = name;
+        this.path = path;
+        this.delim = delim;
+        this.selectable = selectable;
+        this.appendable = false;
+        this.msgCount = -1;
+        this.unseenCount = -1;
+        this.children = null;
+    }
+    
+    /**
      * Create a folder tree item.
      * @param parent The parent of this item
      * @param name The name of the folder

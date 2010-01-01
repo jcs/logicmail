@@ -353,10 +353,12 @@ public class MailHomeScreen extends AbstractScreenProvider {
 	}
 	
 	private void selectFolderItemHandler(MailHomeTreeNode treeNode) {
-		if(treeNode.node instanceof MailboxNode) {
-			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
-			navigationController.displayMailbox(mailboxNode);
-		}
+	    if(treeNode.isNodeSelectable()) {
+    		if(treeNode.node instanceof MailboxNode) {
+    			MailboxNode mailboxNode = (MailboxNode)treeNode.node;
+    			navigationController.displayMailbox(mailboxNode);
+    		}
+	    }
 	}
 
 	private void refreshStatusItemHandler(MailHomeTreeNode treeNode) {
@@ -638,16 +640,17 @@ public class MailHomeScreen extends AbstractScreenProvider {
 			if(!mailboxNode.isSelectable()) {
                 graphics.setFont(origFont.derive(Font.ITALIC));
 			}
-			
-			int unseenCount = mailboxNode.getUnseenMessageCount();
-			if(unseenCount > 0) {
-                buf.append(" (");
-                buf.append(unseenCount);
-                buf.append(")");
-                graphics.setFont(origFont.derive(Font.BOLD));
-			}
 			else {
-                graphics.setFont(origFont.derive(Font.PLAIN));
+    			int unseenCount = mailboxNode.getUnseenMessageCount();
+    			if(unseenCount > 0) {
+                    buf.append(" (");
+                    buf.append(unseenCount);
+                    buf.append(")");
+                    graphics.setFont(origFont.derive(Font.BOLD));
+    			}
+    			else {
+                    graphics.setFont(origFont.derive(Font.PLAIN));
+    			}
 			}
 		}
 		graphics.drawText(buf.toString(), indent + rowHeight, y, Graphics.ELLIPSIS, width);
