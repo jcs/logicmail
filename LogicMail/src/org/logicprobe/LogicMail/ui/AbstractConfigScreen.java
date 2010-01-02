@@ -44,7 +44,11 @@ import net.rim.device.api.ui.component.LabelField;
 public abstract class AbstractConfigScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 
-	/** Creates a new instance of BaseCfgScreen */
+    /**
+     * Instantiates a new abstract configuration screen.
+     * 
+     * @param title the title
+     */
     public AbstractConfigScreen(String title) {
         LabelField titleField =
                 new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);

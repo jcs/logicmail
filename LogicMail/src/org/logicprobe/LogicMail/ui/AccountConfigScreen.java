@@ -35,6 +35,7 @@ import java.util.Vector;
 
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
@@ -42,8 +43,6 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
-import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.text.TextFilter;
@@ -65,11 +64,13 @@ import org.logicprobe.LogicMail.model.MailboxNode;
  */
 public class AccountConfigScreen extends AbstractConfigScreen {
     // Top-level fields
-    private BasicEditField acctNameField;
+    private BorderedFieldManager headerFieldManager;
+    private BasicEditField accountNameField;
     private ObjectChoiceField pageField;
-    private VerticalFieldManager contentFieldManager;
+    private BorderedFieldManager contentFieldManager;
 
     // Basic settings fields
+    private LabelField incomingServerLabelField;
     private BasicEditField serverNameField;
     private ObjectChoiceField serverSecurityField;
     private BasicEditField serverPortField;
@@ -93,9 +94,9 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BasicEditField popMaxLinesEditField;
 
     private Manager[] pageFieldManagers;
-    private boolean acctSaved;
+    private boolean accountSaved;
     private boolean createDefaultIdentity;
-    private AccountConfig acctConfig;
+    private AccountConfig accountConfig;
     private IdentityConfig[] identityConfigs;
     private OutgoingConfig[] outgoingConfigs;
     private MailboxNode selectedSentFolder;
@@ -116,11 +117,11 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * 
      * @param acctConfig The account configuration instance.
      */
-    public AccountConfigScreen(AccountConfig acctConfig) {
-        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
+    public AccountConfigScreen(AccountConfig accountConfig) {
+        super(getTitle(accountConfig));
 
-        this.acctConfig = acctConfig;
-        this.acctSaved = false;
+        this.accountConfig = accountConfig;
+        this.accountSaved = false;
 
         MailSettings mailSettings = MailSettings.getInstance();
 
@@ -154,38 +155,42 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 
             initFields();
 
-            IdentityConfig selectedIdentityConfig = acctConfig.getIdentityConfig();
+            IdentityConfig selectedIdentityConfig = this.accountConfig.getIdentityConfig();
             if(selectedIdentityConfig != null) {
                 identityField.setSelectedIndex(selectedIdentityConfig);
             }
 
-            OutgoingConfig selectedOutgoingConfig = acctConfig.getOutgoingConfig();
+            OutgoingConfig selectedOutgoingConfig = this.accountConfig.getOutgoingConfig();
             if(selectedOutgoingConfig != null) {
                 outgoingServerField.setSelectedIndex(selectedOutgoingConfig);
             }
     }
 
+    private static String getTitle(AccountConfig accountConfig) {
+        StringBuffer buf = new StringBuffer();
+        buf.append(resources.getString(LogicMailResource.APPNAME));
+        buf.append(" - ");
+        buf.append(resources.getString(LogicMailResource.CONFIG_ACCOUNT_TITLE));
+        if(accountConfig instanceof ImapConfig) {
+            buf.append(" (IMAP)");
+        }
+        else if(accountConfig instanceof PopConfig) {
+            buf.append(" (POP)");
+        }
+        return buf.toString();
+    }
+    
     /**
      * Initializes the UI fields.
      */
     private void initFields() {
-        String accountType;
-        if(acctConfig instanceof ImapConfig) {
-            accountType = "IMAP ";
-        }
-        else if(acctConfig instanceof PopConfig) {
-            accountType = "POP ";
-        }
-        else {
-            accountType = "";
-        }
+        Font boldFont = getFont().derive(Font.BOLD);
         
-        acctNameField = new BasicEditField(
-                accountType
-                + resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME)
-                + ' ',
-                acctConfig.getAcctName());
-
+        accountNameField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + ' ',
+                accountConfig.getAcctName());
+        accountNameField.setFont(boldFont);
+        
         pageField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE),
                 new String[] {
@@ -202,22 +207,29 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         pageFieldManagers[2] = initFieldsAdvanced();
 
         // Container for the active settings page
-        contentFieldManager = new VerticalFieldManager();
+        contentFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
         contentFieldManager.add(pageFieldManagers[0]);
 
-        add(acctNameField);
-        add(pageField);
-        add(new SeparatorField());
+        headerFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NONE);
+        headerFieldManager.add(accountNameField);
+        headerFieldManager.add(pageField);
+        add(headerFieldManager);
         add(contentFieldManager);
-        add(new LabelField());
     }
 
     /**
      * Initializes the UI fields for the basic settings page.
      */
     private Manager initFieldsBasic() {
+        Font boldFont = getFont().derive(Font.BOLD);
+        
         Manager manager = new VerticalFieldManager();
-        serverNameField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', acctConfig.getServerName());
+        incomingServerLabelField = new LabelField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER),
+                Field.NON_FOCUSABLE);
+        incomingServerLabelField.setFont(boldFont);
+        
+        serverNameField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', accountConfig.getServerName());
         serverSecurityField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
                 new Object[] {
@@ -225,20 +237,32 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
-                    acctConfig.getServerSecurity());
+                    accountConfig.getServerSecurity());
         serverSecurityField.setChangeListener(fieldChangeListener);
-        serverPortField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(acctConfig.getServerPort()),
+        serverPortField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ',
+                Integer.toString(accountConfig.getServerPort()),
                 5, TextField.NO_NEWLINE);
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-        serverUserField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', acctConfig.getServerUser(),
+        serverUserField = new BasicEditField(resources.getString(
+                LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ',
+                accountConfig.getServerUser(),
                 256, TextField.NO_NEWLINE);
-        serverPassField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', acctConfig.getServerPass(),
+        serverPassField = new PasswordEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ',
+                accountConfig.getServerPass(),
                 256, TextField.NO_NEWLINE);
-        useMdsField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !acctConfig.getDeviceSide());
-        identityField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + ' ', identityConfigs, 0);
-        outgoingServerField = new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + ' ', outgoingConfigs, 0);
+        useMdsField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY),
+                !accountConfig.getDeviceSide());
+        identityField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + ' ',
+                identityConfigs, 0);
+        outgoingServerField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + ' ',
+                outgoingConfigs, 0);
 
-        manager.add(new RichTextField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER), Field.NON_FOCUSABLE));
+        manager.add(incomingServerLabelField);
         manager.add(serverNameField);
         manager.add(serverSecurityField);
         manager.add(serverPortField);
@@ -257,8 +281,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      */
     private Manager initFieldsFolder() {
         Manager manager = new VerticalFieldManager();
-        selectedSentFolder = acctConfig.getSentMailbox();
-        selectedDraftFolder = acctConfig.getDraftMailbox();
+        selectedSentFolder = accountConfig.getSentMailbox();
+        selectedDraftFolder = accountConfig.getDraftMailbox();
 
         sentFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SENT_MESSAGE_FOLDER) + ' ');
         sentFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedSentFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
@@ -277,8 +301,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      */
     private Manager initFieldsAdvanced() {
         Manager manager = new VerticalFieldManager();
-        if(acctConfig instanceof ImapConfig) {
-            ImapConfig imapConfig = (ImapConfig)acctConfig;
+        if(accountConfig instanceof ImapConfig) {
+            ImapConfig imapConfig = (ImapConfig)accountConfig;
 
             imapFolderPrefixField = new BasicEditField(
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_FOLDER_PREFIX) + ' ',
@@ -298,8 +322,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             manager.add(imapMaxMessageSizeEditField);
             manager.add(imapMaxFolderDepthEditField);
         }
-        else if(acctConfig instanceof PopConfig) {
-            PopConfig popConfig = (PopConfig)acctConfig;
+        else if(accountConfig instanceof PopConfig) {
+            PopConfig popConfig = (PopConfig)accountConfig;
 
             popMaxLinesEditField = new BasicEditField(
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_POP_DOWNLOAD_LIMIT) + ' ',
@@ -313,7 +337,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 
     public void AcctCfgScreen_fieldChanged(Field field, int context) {
         if(field == serverSecurityField) {
-            if(acctConfig instanceof PopConfig) {
+            if(accountConfig instanceof PopConfig) {
                 if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
                     serverPortField.setText("995");
                 }
@@ -321,7 +345,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                     serverPortField.setText("110");
                 }
             }
-            else if(acctConfig instanceof ImapConfig) {
+            else if(accountConfig instanceof ImapConfig) {
                 if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
                     serverPortField.setText("993");
                 }
@@ -379,7 +403,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         Vector accountNodeVector = new Vector();
         for(int i=0; i<accountNodes.length; i++) {
             if(accountNodes[i].getStatus() == AccountNode.STATUS_LOCAL ||
-                    accountNodes[i].getAccountConfig() == acctConfig) {
+                    accountNodes[i].getAccountConfig() == accountConfig) {
                 accountNodeVector.addElement(accountNodes[i]);
             }
         }
@@ -434,7 +458,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * @see net.rim.device.api.ui.Screen#isDirty()
      */
     public boolean isDirty() {
-        if(acctNameField.isDirty()) { return true; }
+        if(accountNameField.isDirty()) { return true; }
 
         for(int i=0; i<pageFieldManagers.length; i++) {
             if(pageFieldManagers[i].isDirty()) {
@@ -449,7 +473,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * @see net.rim.device.api.ui.container.MainScreen#onSavePrompt()
      */
     protected boolean onSavePrompt() {
-        if(acctNameField.getText().length() > 0 &&
+        if(accountNameField.getText().length() > 0 &&
                 serverNameField.getText().length() > 0 &&
                 serverPortField.getText().length() > 0) {
             return super.onSavePrompt();
@@ -473,13 +497,13 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * @see net.rim.device.api.ui.Screen#save()
      */
     public void save() {
-        this.acctConfig.setAcctName(acctNameField.getText());
-        this.acctConfig.setServerName(serverNameField.getText());
-        this.acctConfig.setServerSecurity(serverSecurityField.getSelectedIndex());
-        this.acctConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
-        this.acctConfig.setServerUser(serverUserField.getText());
-        this.acctConfig.setServerPass(serverPassField.getText());
-        this.acctConfig.setDeviceSide(!useMdsField.getChecked());
+        this.accountConfig.setAcctName(accountNameField.getText());
+        this.accountConfig.setServerName(serverNameField.getText());
+        this.accountConfig.setServerSecurity(serverSecurityField.getSelectedIndex());
+        this.accountConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
+        this.accountConfig.setServerUser(serverUserField.getText());
+        this.accountConfig.setServerPass(serverPassField.getText());
+        this.accountConfig.setDeviceSide(!useMdsField.getChecked());
 
         IdentityConfig selectedIdentityConfig = (IdentityConfig)identityField.getChoice(identityField.getSelectedIndex());
         if(createDefaultIdentity) {
@@ -491,21 +515,21 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             MailSettings.getInstance().addIdentityConfig(selectedIdentityConfig);
             createDefaultIdentity = false;
         }
-        this.acctConfig.setIdentityConfig(selectedIdentityConfig);
+        this.accountConfig.setIdentityConfig(selectedIdentityConfig);
 
         OutgoingConfig selectedOutgoingConfig = (OutgoingConfig)outgoingServerField.getChoice(outgoingServerField.getSelectedIndex());
         if(selectedOutgoingConfig.getUniqueId() == -1) {
-            this.acctConfig.setOutgoingConfig(null);
+            this.accountConfig.setOutgoingConfig(null);
         }
         else {
-            this.acctConfig.setOutgoingConfig(selectedOutgoingConfig);
+            this.accountConfig.setOutgoingConfig(selectedOutgoingConfig);
         }
 
-        this.acctConfig.setSentMailbox(selectedSentFolder);
-        this.acctConfig.setDraftMailbox(selectedDraftFolder);
+        this.accountConfig.setSentMailbox(selectedSentFolder);
+        this.accountConfig.setDraftMailbox(selectedDraftFolder);
 
-        if(acctConfig instanceof ImapConfig) {
-            ImapConfig imapConfig = (ImapConfig)acctConfig;
+        if(accountConfig instanceof ImapConfig) {
+            ImapConfig imapConfig = (ImapConfig)accountConfig;
 
             String folderPrefix = imapFolderPrefixField.getText().trim();
             if(folderPrefix.length() == 0) {
@@ -525,18 +549,18 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                         imapMaxFolderDepthEditField.getText()));
             } catch (Exception e) { }
         }
-        else if(acctConfig instanceof PopConfig) {
-            PopConfig popConfig = (PopConfig)acctConfig;
+        else if(accountConfig instanceof PopConfig) {
+            PopConfig popConfig = (PopConfig)accountConfig;
 
             try {
                 popConfig.setMaxMessageLines(Integer.parseInt(popMaxLinesEditField.getText()));
             } catch (Exception e) { }
         }
 
-        acctSaved = true;
+        accountSaved = true;
     }
 
     public boolean acctSaved() {
-        return acctSaved;
+        return accountSaved;
     }
 }

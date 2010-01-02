@@ -32,12 +32,12 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
-import net.rim.device.api.ui.component.RichTextField;
-import net.rim.device.api.ui.component.SeparatorField;
+import net.rim.device.api.ui.component.LabelField;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
@@ -49,37 +49,63 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
     private IdentityConfig identityConfig;
     private boolean configSaved;
 
+    private BorderedFieldManager headerFieldManager;
+    private BorderedFieldManager contentFieldManager;
+    
     private BasicEditField identityNameField;
     private BasicEditField fullNameField;
     private EmailAddressEditField emailAddressField;
     private EmailAddressEditField replyToAddressField;
+    private LabelField signatureLabelField;
     private AutoTextEditField msgSignatureField;
 
     /**
      * Creates a new instance of IdentityConfigScreen
      */
     public IdentityConfigScreen(IdentityConfig identityConfig) {
-        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_IDENTITY_TITLE));
+        super(resources.getString(LogicMailResource.APPNAME) + " - " + resources.getString(LogicMailResource.CONFIG_IDENTITY_TITLE));
         this.identityConfig = identityConfig;
         this.configSaved = false;
         initFields();
     }
 
     private void initFields() {
-        identityNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_IDENTITY) + " ", identityConfig.getIdentityName());
-        fullNameField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_FULL_NAME) + " ", identityConfig.getFullName());
-        emailAddressField = new EmailAddressEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_EMAIL_ADDRESS) + " ", identityConfig.getEmailAddress());
-        replyToAddressField = new EmailAddressEditField(resources.getString(LogicMailResource.CONFIG_IDENTITY_REPLYTO_ADDRESS) + " ", identityConfig.getReplyToAddress());
+        Font boldFont = getFont().derive(Font.BOLD);
+        
+        identityNameField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_IDENTITY_IDENTITY) + ' ',
+                identityConfig.getIdentityName());
+        identityNameField.setFont(boldFont);
+        
+        fullNameField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_IDENTITY_FULL_NAME) + ' ',
+                identityConfig.getFullName());
+        emailAddressField = new EmailAddressEditField(
+                resources.getString(LogicMailResource.CONFIG_IDENTITY_EMAIL_ADDRESS) + ' ',
+                identityConfig.getEmailAddress());
+        replyToAddressField = new EmailAddressEditField(
+                resources.getString(LogicMailResource.CONFIG_IDENTITY_REPLYTO_ADDRESS) + ' ',
+                identityConfig.getReplyToAddress());
+        
+        signatureLabelField = new LabelField(resources.getString(LogicMailResource.CONFIG_IDENTITY_SIGNATURE), Field.NON_FOCUSABLE);
+        signatureLabelField.setFont(boldFont);
+        
         msgSignatureField = new AutoTextEditField();
-        msgSignatureField.setText(identityConfig.getMsgSignature());
+        msgSignatureField.setText(
+                identityConfig.getMsgSignature());
 
-        add(identityNameField);
-        add(fullNameField);
-        add(emailAddressField);
-        add(replyToAddressField);
-        add(new SeparatorField());
-        add(new RichTextField(resources.getString(LogicMailResource.CONFIG_IDENTITY_SIGNATURE), Field.NON_FOCUSABLE));
-        add(msgSignatureField);
+        headerFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NONE);
+        headerFieldManager.add(identityNameField);
+        headerFieldManager.add(fullNameField);
+        headerFieldManager.add(emailAddressField);
+        headerFieldManager.add(replyToAddressField);
+        
+        contentFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
+        contentFieldManager.add(signatureLabelField);
+        contentFieldManager.add(msgSignatureField);
+        
+        add(headerFieldManager);
+        add(contentFieldManager);
     }
 
     protected boolean onSavePrompt() {

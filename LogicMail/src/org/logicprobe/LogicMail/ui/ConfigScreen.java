@@ -74,7 +74,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      * Instantiates a new configuration screen.
      */
     public ConfigScreen() {
-        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_TITLE));
+        super(resources.getString(LogicMailResource.APPNAME) + " - " + resources.getString(LogicMailResource.CONFIG_TITLE));
         mailSettings = MailSettings.getInstance();
         identityIndexMap = new Hashtable();
         accountIndexMap = new Hashtable();

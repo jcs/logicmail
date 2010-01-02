@@ -86,7 +86,7 @@ public class StandardScreen extends MainScreen {
     private void initialize() {
         // Create screen elements
         if(screenProvider.getTitle() != null) {
-	        this.headerField = new HeaderField("LogicMail - " + screenProvider.getTitle());
+	        this.headerField = new HeaderField(resources.getString(LogicMailResource.APPNAME) + " - " + screenProvider.getTitle());
 	        setTitle(headerField);
         }
         

@@ -63,6 +63,7 @@ public class BorderedFieldManager extends Manager {
 	
 	private boolean bottomBorderNone;
 	private boolean bottomBorderLine;
+	private boolean useAllHeight;
 	
 	/**
 	 * Instantiates a new bordered field manager.
@@ -72,6 +73,7 @@ public class BorderedFieldManager extends Manager {
     	long style = this.getStyle();
         bottomBorderNone = ((style & BOTTOM_BORDER_NONE) == BOTTOM_BORDER_NONE);
         bottomBorderLine = ((style & BOTTOM_BORDER_LINE) == BOTTOM_BORDER_LINE);
+        useAllHeight = ((style & USE_ALL_HEIGHT) == USE_ALL_HEIGHT);
     }
 
     /**
@@ -83,6 +85,7 @@ public class BorderedFieldManager extends Manager {
         super(style);
         bottomBorderNone = ((style & BOTTOM_BORDER_NONE) == BOTTOM_BORDER_NONE);
         bottomBorderLine = ((style & BOTTOM_BORDER_LINE) == BOTTOM_BORDER_LINE);
+        useAllHeight = ((style & USE_ALL_HEIGHT) == USE_ALL_HEIGHT);
     }
 
     /* (non-Javadoc)
@@ -136,7 +139,23 @@ public class BorderedFieldManager extends Manager {
             this.layoutChild(field, maxWidth - (borderWidth * 2) - 6, getPreferredHeightOfChild(field));
             y += field.getHeight();
         }
-        setExtent(maxWidth, getPreferredHeight());
+        int height = getPreferredHeight();
+        if(useAllHeight && getManager() != null) {
+            Manager manager = getManager();
+            int fieldCount = manager.getFieldCount();
+            int otherFieldsHeight = 0;
+            for(int i=0; i<fieldCount; i++) {
+                Field field = manager.getField(i);
+                if(field != this) {
+                    otherFieldsHeight += field.getExtent().height;
+                }
+            }
+            int displayHeight = Display.getHeight() - manager.getTop();
+            if((height + otherFieldsHeight) < displayHeight) {
+                height = displayHeight - otherFieldsHeight;
+            }
+        }
+        setExtent(maxWidth, height);
     }
     
     /* (non-Javadoc)

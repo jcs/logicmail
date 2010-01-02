@@ -33,14 +33,12 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
-import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -51,6 +49,9 @@ import org.logicprobe.LogicMail.conf.OutgoingConfig;
  * Outgoing account configuration screen
  */
 public class OutgoingConfigScreen extends AbstractConfigScreen {
+    private BorderedFieldManager headerFieldManager;
+    private BorderedFieldManager contentFieldManager;
+    
     private BasicEditField acctNameField;
     private BasicEditField serverNameField;
     private ObjectChoiceField serverSecurityField;
@@ -59,8 +60,6 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
     private CheckboxField useMdsField;
-    private ButtonField saveButton;
-    private LabelField statusLabel;
     
     private boolean acctSaved;
     private OutgoingConfig outgoingConfig;
@@ -69,7 +68,7 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
      * Creates a new instance of OutgoingConfigScreen
      */
     public OutgoingConfigScreen(OutgoingConfig outgoingConfig) {
-        super("LogicMail - " + resources.getString(LogicMailResource.CONFIG_OUTGOING_TITLE));
+        super(resources.getString(LogicMailResource.APPNAME) + " - " + resources.getString(LogicMailResource.CONFIG_OUTGOING_TITLE));
         
         this.outgoingConfig = outgoingConfig;
         acctSaved = false;
@@ -85,11 +84,16 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
     }
 
     private void initFields() {
-        acctNameField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + ' ', outgoingConfig.getAcctName());
+        Font boldFont = getFont().derive(Font.BOLD);
         
-        serverNameField =
-            new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', outgoingConfig.getServerName());
+        acctNameField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + ' ',
+                outgoingConfig.getAcctName());
+        acctNameField.setFont(boldFont);
+        
+        serverNameField = new HostnameEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ',
+                outgoingConfig.getServerName());
         
         serverSecurityField = new ObjectChoiceField(
         		resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
@@ -104,50 +108,49 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
             	serverSecurityField_FieldChanged(field, context);
             }});
         
-        serverPortField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(outgoingConfig.getServerPort()));
+        serverPortField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ',
+                Integer.toString(outgoingConfig.getServerPort()));
         serverPortField.setFilter(TextFilter.get(TextFilter.NUMERIC));
         
         String authTypes[] = {
         		resources.getString(LogicMailResource.MENUITEM_NONE),
         		"PLAIN", "LOGIN", "CRAM-MD5"/*, "DIGEST-MD5"*/ };
-        useAuthField =
-            new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ', authTypes, outgoingConfig.getUseAuth());
+        useAuthField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ',
+                authTypes,
+                outgoingConfig.getUseAuth());
         useAuthField.setChangeListener(new FieldChangeListener(){
             public void fieldChanged(Field field, int context) {
                 useAuthField_FieldChanged(field, context);
             }});
 
-        serverUserField =
-            new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', outgoingConfig.getServerUser());
+        serverUserField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ',
+                outgoingConfig.getServerUser());
         
-        serverPassField =
-            new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', outgoingConfig.getServerPass());
+        serverPassField = new PasswordEditField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ',
+                outgoingConfig.getServerPass());
         
-        useMdsField =
-            new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), !outgoingConfig.getDeviceSide());
+        useMdsField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY),
+                !outgoingConfig.getDeviceSide());
         
-        saveButton =
-            new ButtonField(resources.getString(LogicMailResource.MENUITEM_SAVE), Field.FIELD_HCENTER);
-        saveButton.setChangeListener(new FieldChangeListener() {
-            public void fieldChanged(Field field, int context) {
-                saveButton_FieldChanged(field, context);
-            }});
+        headerFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NONE);
+        headerFieldManager.add(acctNameField);
         
-        statusLabel = new LabelField();
-
-        add(acctNameField);
-        add(new SeparatorField());
-        add(serverNameField);
-        add(serverSecurityField);
-        add(serverPortField);
-        add(useAuthField);
-        add(serverUserField);
-        add(serverPassField);
-        add(useMdsField);
-        add(new LabelField(null, Field.NON_FOCUSABLE));
-        add(saveButton);
-        setStatus(statusLabel);
+        contentFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
+        contentFieldManager.add(serverNameField);
+        contentFieldManager.add(serverSecurityField);
+        contentFieldManager.add(serverPortField);
+        contentFieldManager.add(useAuthField);
+        contentFieldManager.add(serverUserField);
+        contentFieldManager.add(serverPassField);
+        contentFieldManager.add(useMdsField);
+        
+        add(headerFieldManager);
+        add(contentFieldManager);
     }
     
     private void serverSecurityField_FieldChanged(Field field, int context) {
@@ -174,11 +177,6 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         }
     }
 
-    private void saveButton_FieldChanged(Field field, int context) {
-        field.setDirty(false);
-        onClose();
-    }
-    
     protected boolean onSavePrompt() {
         if(acctNameField.getText().length() > 0 &&
            serverNameField.getText().length() > 0 &&
