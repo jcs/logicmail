@@ -32,6 +32,8 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Calendar;
 
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
@@ -40,7 +42,6 @@ import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
-import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.Arrays;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -85,7 +86,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     private Screen screen;
     private BorderedFieldManager recipientsFieldManager;
 	private BorderedFieldManager subjectFieldManager;
-	private VerticalFieldManager messageFieldManager;
+	private BorderedFieldManager messageFieldManager;
     private AutoTextEditField subjectEditField;
     private AutoTextEditField messageEditField;
 
@@ -256,11 +257,12 @@ public class CompositionScreen extends AbstractScreenProvider {
         subjectFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
-        		| BorderedFieldManager.BOTTOM_BORDER_LINE);
+        		| BorderedFieldManager.BOTTOM_BORDER_NONE);
         subjectEditField = new AutoTextEditField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ', "");
+        subjectEditField.setFont(subjectEditField.getFont().derive(Font.BOLD));
         subjectFieldManager.add(subjectEditField);
         
-        messageFieldManager = new VerticalFieldManager();
+        messageFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
         messageEditField = new AutoTextEditField();
 		messageEditField.setEditable(false);
         messageFieldManager.add(messageEditField);
