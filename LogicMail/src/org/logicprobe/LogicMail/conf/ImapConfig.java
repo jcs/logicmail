@@ -43,14 +43,15 @@ public class ImapConfig extends AccountConfig {
     private String folderPrefix;
     private int maxMessageSize;
     private int maxFolderDepth;
-    
+    private boolean onlySubscribedFolders;
+
     /**
      * Instantiates a new connection configuration with defaults.
      */
     public ImapConfig() {
         super();
     }
-    
+
     /**
      * Instantiates a new connection configuration from serialized data.
      * 
@@ -59,7 +60,7 @@ public class ImapConfig extends AccountConfig {
     public ImapConfig(DataInput input) {
         super(input);
     }
-    
+
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.conf.AccountConfig#setDefaults()
      */
@@ -68,8 +69,9 @@ public class ImapConfig extends AccountConfig {
         setServerPort(143);
         this.maxMessageSize = 32768;
         this.maxFolderDepth = 4;
-        folderPrefix = null;
-    }    
+        this.folderPrefix = null;
+        this.onlySubscribedFolders = true;
+    }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.conf.AccountConfig#toString()
@@ -103,36 +105,54 @@ public class ImapConfig extends AccountConfig {
      * @return The maximum message size
      */
     public int getMaxMessageSize() {
-    	return this.maxMessageSize;
+        return this.maxMessageSize;
     }
-    
+
     /**
      * Sets the maximum message size.
      * 
      * @param maxMessageSize The new maximum message size
      */
     public void setMaxMessageSize(int maxMessageSize) {
-    	this.maxMessageSize = maxMessageSize;
+        this.maxMessageSize = maxMessageSize;
     }
-    
+
     /**
      * Gets the maximum folder depth.
      * 
      * @return The maximum folder depth
      */
     public int getMaxFolderDepth() {
-    	return maxFolderDepth;
+        return maxFolderDepth;
     }
-    
+
     /**
      * Sets the maximum folder depth.
      * 
      * @param maxFolderDepth The new maximum folder depth
      */
     public void setMaxFolderDepth(int maxFolderDepth) {
-    	this.maxFolderDepth = maxFolderDepth;
+        this.maxFolderDepth = maxFolderDepth;
     }
-    
+
+    /**
+     * Gets whether to only load subscribed folders.
+     * 
+     * @return whether to load only subscribed folders
+     */
+    public boolean getOnlySubscribedFolders() {
+        return onlySubscribedFolders;
+    }
+
+    /**
+     * Sets whether to only load subscribed folders.
+     * 
+     * @param onlySubscribedFolders true, if only subscribed folders should be loaded
+     */
+    public void setOnlySubscribedFolders(boolean onlySubscribedFolders) {
+        this.onlySubscribedFolders = onlySubscribedFolders;
+    }
+
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.conf.AccountConfig#writeConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
      */
@@ -146,8 +166,9 @@ public class ImapConfig extends AccountConfig {
         }
         table.put("account_imap_maxMessageSize", new Integer(maxMessageSize));
         table.put("account_imap_maxFolderDepth", new Integer(maxFolderDepth));
+        table.put("account_imap_onlySubscribedFolders", new Boolean(onlySubscribedFolders));
     }
-    
+
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.conf.AccountConfig#readConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
      */
@@ -164,12 +185,16 @@ public class ImapConfig extends AccountConfig {
         }
         value = table.get("account_imap_maxMessageSize");
         if ((value != null) && value instanceof Integer) {
-        	maxMessageSize = ((Integer) value).intValue();
+            maxMessageSize = ((Integer) value).intValue();
         }
 
         value = table.get("account_imap_maxFolderDepth");
         if ((value != null) && value instanceof Integer) {
-        	maxFolderDepth = ((Integer) value).intValue();
+            maxFolderDepth = ((Integer) value).intValue();
+        }
+        value = table.get("account_imap_onlySubscribedFolders");
+        if(value != null && value instanceof Boolean) {
+            onlySubscribedFolders = ((Boolean)value).booleanValue();
         }
     }
 }

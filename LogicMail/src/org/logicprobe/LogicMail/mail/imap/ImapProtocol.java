@@ -70,15 +70,15 @@ public class ImapProtocol {
      * The underlying connection mode must be switched after the
      * successful execution of this command.
      */
-	public void executeStartTLS() throws IOException, MailException {
+    public void executeStartTLS() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeStartTLS()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeStartTLS()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
-		execute("STARTTLS", null, null);
-	}
-	
+        execute("STARTTLS", null, null);
+    }
+
     /**
      * Execute the "LOGIN" command
      * @param username The username to login with
@@ -86,18 +86,18 @@ public class ImapProtocol {
      * @return True on success, false on authentication failures
      */
     public boolean executeLogin(String username, String password)
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeLogin(\"" + username + "\", \"" +
-                password + "\")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeLogin(\"" + username + "\", \"" +
+                            password + "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         // Authenticate with the server
         try {
             execute("LOGIN",
-                "\"" + StringParser.addEscapedChars(username) + "\" \"" +
-                StringParser.addEscapedChars(password) + "\"", null);
+                    "\"" + StringParser.addEscapedChars(username) + "\" \"" +
+                    StringParser.addEscapedChars(password) + "\"", null);
         } catch (MailException exp) {
             // Invalid users are caught by execute()
             // and a MailException is thrown
@@ -113,8 +113,8 @@ public class ImapProtocol {
     public void executeLogout() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeLogout()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeLogout()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         execute("LOGOUT", null, null);
@@ -126,8 +126,8 @@ public class ImapProtocol {
     public void executeClose() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeClose()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeClose()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         execute("CLOSE", null, null);
@@ -141,8 +141,8 @@ public class ImapProtocol {
     public Hashtable executeCapability() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeCapability()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeCapability()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         String[] replyText = execute("CAPABILITY", null, null);
@@ -168,11 +168,11 @@ public class ImapProtocol {
      * @return A fully populated Namespace object
      */
     public NamespaceResponse executeNamespace()
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeNamespace()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeNamespace()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         String[] replyText = execute("NAMESPACE", null, null);
@@ -210,12 +210,12 @@ public class ImapProtocol {
                     if (temp.size() >= 2) {
                         if (temp.elementAt(0) instanceof String) {
                             response.personal[i].prefix = StringParser.removeEscapedChars((String) temp.elementAt(
-                                        0));
+                                    0));
                         }
 
                         if (temp.elementAt(1) instanceof String) {
                             response.personal[i].delimiter = StringParser.removeEscapedChars((String) temp.elementAt(
-                                        1));
+                                    1));
                         }
                     }
                 }
@@ -236,12 +236,12 @@ public class ImapProtocol {
                     if (temp.size() >= 2) {
                         if (temp.elementAt(0) instanceof String) {
                             response.other[i].prefix = StringParser.removeEscapedChars((String) temp.elementAt(
-                                        0));
+                                    0));
                         }
 
                         if (temp.elementAt(1) instanceof String) {
                             response.other[i].delimiter = StringParser.removeEscapedChars((String) temp.elementAt(
-                                        1));
+                                    1));
                         }
                     }
                 }
@@ -262,12 +262,12 @@ public class ImapProtocol {
                     if (temp.size() >= 2) {
                         if (temp.elementAt(0) instanceof String) {
                             response.shared[i].prefix = StringParser.removeEscapedChars((String) temp.elementAt(
-                                        0));
+                                    0));
                         }
 
                         if (temp.elementAt(1) instanceof String) {
                             response.shared[i].delimiter = StringParser.removeEscapedChars((String) temp.elementAt(
-                                        1));
+                                    1));
                         }
                     }
                 }
@@ -283,11 +283,11 @@ public class ImapProtocol {
      * @return Parsed response object
      */
     public SelectResponse executeSelect(String mboxpath)
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeSelect(\"" + mboxpath + "\")").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeSelect(\"" + mboxpath + "\")").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         String[] replyText = execute("SELECT",
@@ -307,7 +307,7 @@ public class ImapProtocol {
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
                         response.exists = Integer.parseInt(rowText.substring(p +
-                                    1, q));
+                                1, q));
                     } catch (NumberFormatException e) {
                         response.exists = 0;
                     }
@@ -319,7 +319,7 @@ public class ImapProtocol {
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
                         response.recent = Integer.parseInt(rowText.substring(p +
-                                    1, q));
+                                1, q));
                     } catch (NumberFormatException e) {
                         response.recent = 0;
                     }
@@ -331,7 +331,7 @@ public class ImapProtocol {
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
                         response.unseen = Integer.parseInt(rowText.substring(p +
-                                    1, q));
+                                1, q));
                     } catch (NumberFormatException e) {
                         response.unseen = 0;
                     }
@@ -343,7 +343,7 @@ public class ImapProtocol {
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
                         response.uidValidity = Integer.parseInt(rowText.substring(p +
-                                    1, q));
+                                1, q));
                     } catch (NumberFormatException e) {
                         response.uidValidity = 0;
                     }
@@ -355,7 +355,7 @@ public class ImapProtocol {
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
                         response.uidNext = Integer.parseInt(rowText.substring(p +
-                                    1, q));
+                                1, q));
                     } catch (NumberFormatException e) {
                         response.uidNext = 0;
                     }
@@ -369,15 +369,15 @@ public class ImapProtocol {
     public void executeExpunge() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeExpunge()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeExpunge()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         execute("EXPUNGE", null, null);
     }
-    
+
     public StatusResponse[] executeStatus(String[] mboxpaths, MailProgressHandler progressHandler)
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             StringBuffer buf = new StringBuffer();
             buf.append("ImapProtocol.executeStatus({\r\n");
@@ -392,7 +392,7 @@ public class ImapProtocol {
 
             buf.append("})");
             EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(),
-                EventLogger.DEBUG_INFO);
+                    EventLogger.DEBUG_INFO);
         }
 
         StatusResponse[] response = new StatusResponse[mboxpaths.length];
@@ -402,7 +402,7 @@ public class ImapProtocol {
 
         for (i = 0; i < mboxpaths.length; i++) {
             arguments[i] = "\"" + StringParser.addEscapedChars(mboxpaths[i]) +
-                "\" (MESSAGES UNSEEN)";
+            "\" (MESSAGES UNSEEN)";
         }
 
         String[] result = executeBatch("STATUS", arguments, progressHandler);
@@ -426,7 +426,7 @@ public class ImapProtocol {
             }
 
             String[] fields = StringParser.parseTokenString(result[i].substring(p +
-                        1, q), " ");
+                    1, q), " ");
 
             if (fields.length != 4) {
                 continue;
@@ -458,20 +458,20 @@ public class ImapProtocol {
      * @return Array of FetchFlagsResponse objects
      */
     public FetchFlagsResponse[] executeFetchFlags(
-    		int firstIndex,
+            int firstIndex,
             int lastIndex,
             MailProgressHandler progressHandler) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchFlags(" + firstIndex + ", " +
-                lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchFlags(" + firstIndex + ", " +
+                            lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
         }
-        
+
         String[] rawList = execute("FETCH",
                 Integer.toString(firstIndex) + ":" +
                 Integer.toString(lastIndex) + " (FLAGS UID)", progressHandler);
-        
-    	return prepareFetchFlagsResponse(rawList, progressHandler);
+
+        return prepareFetchFlagsResponse(rawList, progressHandler);
     }
 
     /**
@@ -481,20 +481,20 @@ public class ImapProtocol {
      * @return Array of FetchFlagsResponse objects
      */
     public FetchFlagsResponse[] executeFetchFlagsUid(
-    		int uidNext,
+            int uidNext,
             MailProgressHandler progressHandler) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchFlagsUid(" + uidNext + ")").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchFlagsUid(" + uidNext + ")").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
-        
+
         String[] rawList = execute("UID FETCH",
                 Integer.toString(uidNext) + ":*" + " (FLAGS UID)", progressHandler);
-        
-    	return prepareFetchFlagsResponse(rawList, progressHandler);
+
+        return prepareFetchFlagsResponse(rawList, progressHandler);
     }
-    
+
     private FetchFlagsResponse[] prepareFetchFlagsResponse(
             String[] rawList, MailProgressHandler progressHandler) throws IOException, MailException {
 
@@ -516,7 +516,7 @@ public class ImapProtocol {
 
                 try {
                     parsedText = StringParser.nestedParenStringLexer(rawText.substring(
-                                rawText.indexOf('(')));
+                            rawText.indexOf('(')));
                 } catch (Exception exp) {
                     parsedText = null;
                 }
@@ -531,13 +531,13 @@ public class ImapProtocol {
                 for (int j = 0; j < parsedSize; j++) {
                     if (parsedText.elementAt(j) instanceof String) {
                         if (((String)parsedText.elementAt(j)).equals("FLAGS")
-                        		&& (parsedSize > (j + 1))
-                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                                && (parsedSize > (j + 1))
+                                && parsedText.elementAt(j + 1) instanceof Vector) {
                             flagRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j + 1));
                         }
                         else if (((String)parsedText.elementAt(j)).equals("UID")
-                        		&& (parsedSize > (j + 1))
-                        		&& parsedText.elementAt(j + 1) instanceof String) {
+                                && (parsedSize > (j + 1))
+                                && parsedText.elementAt(j + 1) instanceof String) {
                             try {
                                 flagRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j + 1));
                             } catch (NumberFormatException e) {
@@ -553,7 +553,7 @@ public class ImapProtocol {
 
                 // Find the message index in the reply
                 int midx = Integer.parseInt(rawText.substring(rawText.indexOf(
-                                ' '), rawText.indexOf("FETCH") - 1).trim());
+                ' '), rawText.indexOf("FETCH") - 1).trim());
 
                 flagRespItem.index = midx;
                 flagResponses.addElement(flagRespItem);
@@ -569,7 +569,7 @@ public class ImapProtocol {
 
         return result;
     }
-    
+
     /**
      * Execute the "FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param firstIndex Index of the first message
@@ -578,14 +578,14 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      */
     public void executeFetchEnvelope(
-    		int firstIndex,
-    		int lastIndex,
-    		FetchEnvelopeCallback callback,
-    		MailProgressHandler progressHandler) throws IOException, MailException {
+            int firstIndex,
+            int lastIndex,
+            FetchEnvelopeCallback callback,
+            MailProgressHandler progressHandler) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchEnvelope(" + firstIndex + ", " +
-                lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchEnvelope(" + firstIndex + ", " +
+                            lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         String[] rawList = execute("FETCH",
@@ -602,11 +602,11 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      */
     public void executeFetchEnvelopeUid(int uidNext, FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchEnvelopeUid(" + uidNext + ")").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchEnvelopeUid(" + uidNext + ")").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         String[] rawList = execute("UID FETCH",
@@ -614,7 +614,7 @@ public class ImapProtocol {
 
         prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
     }
-    
+
     /**
      * Execute the "UID FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
      * @param uids Set of unique IDs for the messages to fetch
@@ -622,30 +622,30 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      */
     public void executeFetchEnvelopeUid(int[] uids, FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
-        throws IOException, MailException {
-    	if(uids.length == 0) { callback.responseAvailable(null); return; }
-    	StringBuffer buf = new StringBuffer();
-    	for(int i=0; i<uids.length - 1; i++) {
-    		buf.append(uids[i]);
-    		buf.append(',');
-    	}
-    	buf.append(uids[uids.length - 1]);
-    	String uidList = buf.toString();
-    	
+    throws IOException, MailException {
+        if(uids.length == 0) { callback.responseAvailable(null); return; }
+        StringBuffer buf = new StringBuffer();
+        for(int i=0; i<uids.length - 1; i++) {
+            buf.append(uids[i]);
+            buf.append(',');
+        }
+        buf.append(uids[uids.length - 1]);
+        String uidList = buf.toString();
+
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchEnvelopeUid(" + uidList + ")").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchEnvelopeUid(" + uidList + ")").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         String[] rawList = execute("UID FETCH",
-        		uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
+                uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
 
         prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
     }
 
     private void prepareFetchEnvelopeResponse(
-        String[] rawList, FetchEnvelopeCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
+            String[] rawList, FetchEnvelopeCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
 
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
         // Preprocess the returned text to clean up mid-field line breaks
@@ -667,9 +667,9 @@ public class ImapProtocol {
 
                 try {
                     parsedText = StringParser.nestedParenStringLexer(rawText.substring(
-                                rawText.indexOf('(')));
+                            rawText.indexOf('(')));
                 } catch (Exception exp) {
-                    parsedText = null;
+                    continue;
                 }
 
                 envRespItem = new FetchEnvelopeResponse();
@@ -682,13 +682,13 @@ public class ImapProtocol {
                 for (int j = 0; j < parsedSize; j++) {
                     if (parsedText.elementAt(j) instanceof String) {
                         if (((String)parsedText.elementAt(j)).equals("FLAGS")
-                        		&& (parsedSize > (j + 1))
-                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                                && (parsedSize > (j + 1))
+                                && parsedText.elementAt(j + 1) instanceof Vector) {
                             envRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j + 1));
                         }
                         else if (((String)parsedText.elementAt(j)).equals("UID")
-                        		&& (parsedSize > (j + 1))
-                        		&& parsedText.elementAt(j + 1) instanceof String) {
+                                && (parsedSize > (j + 1))
+                                && parsedText.elementAt(j + 1) instanceof String) {
                             try {
                                 envRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j + 1));
                             } catch (NumberFormatException e) {
@@ -696,15 +696,15 @@ public class ImapProtocol {
                             }
                         }
                         else if (((String)parsedText.elementAt(j)).equals("ENVELOPE")
-                        		&& (parsedSize > (j + 1))
-                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
+                                && (parsedSize > (j + 1))
+                                && parsedText.elementAt(j + 1) instanceof Vector) {
                             env = ImapParser.parseMessageEnvelope((Vector) parsedText.elementAt(j + 1));
                         }
                         else if (((String)parsedText.elementAt(j)).equals("BODYSTRUCTURE")
-                        		&& (parsedSize > (j + 1))
-                        		&& parsedText.elementAt(j + 1) instanceof Vector) {
-                        	structure = ImapParser.parseMessageStructureParameter(
-                        			(Vector)parsedText.elementAt(j + 1));
+                                && (parsedSize > (j + 1))
+                                && parsedText.elementAt(j + 1) instanceof Vector) {
+                            structure = ImapParser.parseMessageStructureParameter(
+                                    (Vector)parsedText.elementAt(j + 1));
                         }
                     }
                 }
@@ -721,7 +721,7 @@ public class ImapProtocol {
 
                 // Find the message index in the reply
                 int midx = Integer.parseInt(rawText.substring(rawText.indexOf(
-                                ' '), rawText.indexOf("FETCH") - 1).trim());
+                ' '), rawText.indexOf("FETCH") - 1).trim());
 
                 envRespItem.index = midx;
                 envRespItem.envelope = env;
@@ -738,7 +738,7 @@ public class ImapProtocol {
 
         callback.responseAvailable(null);
     }
-    
+
     private static Vector prepareCleanFetchResponse(String[] rawList) {
         Vector cleanList = new Vector();
         String line;
@@ -748,7 +748,7 @@ public class ImapProtocol {
 
             if ((line.length() > 0) && lineBuf.toString().startsWith("* ") &&
                     line.startsWith("* ")) {
-            	cleanList.addElement(lineBuf.toString());
+                cleanList.addElement(lineBuf.toString());
                 lineBuf = new StringBuffer();
             }
 
@@ -756,7 +756,7 @@ public class ImapProtocol {
 
             if ((i == (rawList.length - 1)) &&
                     lineBuf.toString().startsWith("* ")) {
-            	cleanList.addElement(lineBuf.toString());
+                cleanList.addElement(lineBuf.toString());
             }
         }
         return cleanList;
@@ -768,11 +768,11 @@ public class ImapProtocol {
      * @return Body structure tree
      */
     public ImapParser.MessageSection executeFetchBodystructure(int uid)
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchBodyStructure(" + uid + ")").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchBodyStructure(" + uid + ")").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         String[] rawList = execute("UID FETCH", uid + " (BODYSTRUCTURE)", null);
@@ -823,17 +823,17 @@ public class ImapProtocol {
      * @return Body text as a string
      */
     public String executeFetchBody(int uid, String address, MailProgressHandler progressHandler)
-        throws IOException, MailException {
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeFetchBody(" + uid + ", \"" + address +
-                "\")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeFetchBody(" + uid + ", \"" + address +
+                    "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         String[] rawList = execute(
-        		"UID FETCH",
-        		uid + " (BODY[" + address + "])",
-        		progressHandler);
+                "UID FETCH",
+                uid + " (BODY[" + address + "])",
+                progressHandler);
 
         if (rawList.length <= 1) {
             return "";
@@ -856,7 +856,7 @@ public class ImapProtocol {
 
         if (messageLength != -1) {
             for (int i = 1; i < rawList.length; i++) {
-            	int rawListLength = rawList[i].length();
+                int rawListLength = rawList[i].length();
                 if ((rawListLength + 2) <= messageLength) {
                     msgBuf.append(rawList[i]);
                     messageLength -= rawListLength;
@@ -895,7 +895,7 @@ public class ImapProtocol {
      * @return Updated standard message flags, or null if there was a parse error.
      */
     public MessageFlags executeStore(int uid, boolean addOrRemove,
-        String[] flags) throws IOException, MailException {
+            String[] flags) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             StringBuffer buf = new StringBuffer();
 
@@ -910,9 +910,9 @@ public class ImapProtocol {
             }
 
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeStore(" + uid + ", " +
-                (addOrRemove ? "add" : "remove") + ", {" + buf.toString() +
-                "})").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeStore(" + uid + ", " +
+                            (addOrRemove ? "add" : "remove") + ", {" + buf.toString() +
+                    "})").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         StringBuffer buf = new StringBuffer();
@@ -957,7 +957,7 @@ public class ImapProtocol {
             }
 
             String[] tokens = StringParser.parseTokenString(rawList[0].substring(p +
-                        7, q), " ");
+                    7, q), " ");
             Vector tokenVec = new Vector(tokens.length);
 
             for (int i = 0; i < tokens.length; i++) {
@@ -967,8 +967,8 @@ public class ImapProtocol {
             return ImapParser.parseMessageFlags(tokenVec);
         } catch (Exception e) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("Unable to parse STORE response: " + e.toString()).getBytes(),
-                EventLogger.ERROR);
+                    ("Unable to parse STORE response: " + e.toString()).getBytes(),
+                    EventLogger.ERROR);
 
             return null;
         }
@@ -981,19 +981,19 @@ public class ImapProtocol {
      * @param flags Flags to store the message with.
      */
     public void executeAppend(String mboxName, String rawMessage,
-        MessageFlags flags) throws IOException, MailException {
+            MessageFlags flags) throws IOException, MailException {
         String flagsString = ImapParser.createMessageFlagsString(flags);
 
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeAppend(rawMessage, \"" + flagsString +
-                "\")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeAppend(rawMessage, \"" + flagsString +
+                    "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         executeContinue("APPEND",
-            "\"" + StringParser.addEscapedChars(mboxName) + "\" (" +
-            flagsString + ") {" + rawMessage.length() + "}", rawMessage,
-            "Unable to append message to " + mboxName);
+                "\"" + StringParser.addEscapedChars(mboxName) + "\" (" +
+                flagsString + ") {" + rawMessage.length() + "}", rawMessage,
+                "Unable to append message to " + mboxName);
     }
 
     /**
@@ -1003,17 +1003,17 @@ public class ImapProtocol {
      * @param uid The IMAP unique ID of the message to copy. 
      * @param mboxPath The path of the destination mailbox
      */
-	public void executeCopy(int uid, String mboxPath) throws IOException, MailException {
+    public void executeCopy(int uid, String mboxPath) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeCopy(\"" + uid + "\", \"" + mboxPath +
-                "\")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeCopy(\"" + uid + "\", \"" + mboxPath +
+                    "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
-        
+
         execute("UID COPY",
-        		uid + " \"" + StringParser.addEscapedChars(mboxPath) + "\"",
-        		null);
-	}
+                uid + " \"" + StringParser.addEscapedChars(mboxPath) + "\"",
+                null);
+    }
 
     /**
      * Execute the "LIST" command, and return a fully parsed response.
@@ -1024,15 +1024,39 @@ public class ImapProtocol {
      * @return Vector of ListResponse objects
      */
     public Vector executeList(String refName, String mboxName, MailProgressHandler progressHandler)
-        throws IOException, MailException {
+    throws IOException, MailException {
+        //
+        // The default behavior should be to use executeListSubscribed.
+        // I've left this in place so that if a future version wants to
+        // offer a screen for Subscribe/Unsubscribe to folders, the
+        // framework will already be in place.
+        //
+        return executeListImpl("LIST", refName, mboxName, progressHandler);
+    }
+
+    /**
+     * Execute the "LSUB" command, and return a fully parsed response.
+     * 
+     * @param refName Reference name
+     * @param mboxName Mailbox name or wildcards (i.e. "%")
+     * @param progressHandler the progress handler
+     * @return Vector of ListResponse objects
+     */
+    public Vector executeLsub(String refName, String mboxName, MailProgressHandler progressHandler)
+    throws IOException, MailException {
+        return executeListImpl("LSUB", refName, mboxName, progressHandler);
+    }
+
+    private Vector executeListImpl(String ListVerb, String refName, String mboxName, MailProgressHandler progressHandler)
+    throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeList(\"" + refName + "\", \"" + mboxName +
-                "\")").getBytes(), EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeList(\"" + refName + "\", \"" + mboxName +
+                    "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         String[] results;
-        results = execute("LIST",
+        results = execute(ListVerb,
                 "\"" + StringParser.addEscapedChars(refName) + "\" \"" +
                 StringParser.addEscapedChars(mboxName) + "\"", progressHandler);
 
@@ -1049,7 +1073,7 @@ public class ImapProtocol {
         int line = 0;
 
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
-        
+
         while (line < results.length) {
             p = results[line].indexOf('{');
             q = results[line].indexOf('}');
@@ -1058,7 +1082,7 @@ public class ImapProtocol {
                     (p < q) && (q == (results[line].length() - 1))) {
                 int len = Integer.parseInt(results[line].substring(p + 1, q));
                 resultsVec.addElement(results[line].substring(0, p) +
-                    results[line + 1].substring(0, len));
+                        results[line + 1].substring(0, len));
                 line += 2;
             } else {
                 resultsVec.addElement(results[line]);
@@ -1085,16 +1109,18 @@ public class ImapProtocol {
                 argStr = temp.substring(q + 2);
             }
 
+            // List response is invalid if both parts are not available
+            if(flagStr == null || argStr == null) { continue; }
+            
             response = new ListResponse();
             response.delim = "";
             response.name = "";
 
-            // Look for flags
+            // Look for flags if present.
             response.canSelect = !(flagStr.indexOf("\\Noselect") != -1);
             response.hasChildren = (flagStr.indexOf("\\HasChildren") != -1);
             response.noInferiors = (flagStr.indexOf("\\Noinferiors") != -1);
             response.marked = (flagStr.indexOf("\\Marked") != -1);
-
             try {
                 p = 0;
                 q = 0;
@@ -1172,8 +1198,8 @@ public class ImapProtocol {
     public boolean executeNoop() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeNoop()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeNoop()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
         String[] replyText = execute("NOOP", null, null);
 
@@ -1183,24 +1209,24 @@ public class ImapProtocol {
                     EventLogger.WARNING);
             return false;
         }
-        
+
         for(int i=0; i<replyText.length; i++) {
-        	if(replyText[i].startsWith("*") && replyText[i].toLowerCase().endsWith("recent")) {
-        		return true;
-        	}
+            if(replyText[i].startsWith("*") && replyText[i].toLowerCase().endsWith("recent")) {
+                return true;
+            }
         }
-        
-    	return false;
+
+        return false;
     }
-    
+
     /**
      * Execute the "IDLE" command.
      */
     public void executeIdle() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeIdle()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeIdle()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         idleCommandTag = executeNoReply("IDLE", null);
@@ -1212,8 +1238,8 @@ public class ImapProtocol {
     public void executeIdleDone() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeIdleDone()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("ImapProtocol.executeIdleDone()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         executeUntagged("DONE", null, idleCommandTag);
@@ -1246,7 +1272,7 @@ public class ImapProtocol {
      * @return List of returned strings
      */
     protected String[] executeBatch(String command, String[] arguments, MailProgressHandler progressHandler)
-        throws IOException, MailException {
+    throws IOException, MailException {
         String[] result = new String[arguments.length];
         int count = 0;
 
@@ -1260,7 +1286,7 @@ public class ImapProtocol {
             commandBuf.append(' ');
             commandBuf.append(command);
             commandBuf.append(((arguments[i] == null) ? "" : (" " +
-                arguments[i])));
+                    arguments[i])));
             commandBuf.append("\r\n");
         }
 
@@ -1308,18 +1334,18 @@ public class ImapProtocol {
      * @return List of returned strings
      */
     protected String[] execute(String command, String arguments, MailProgressHandler progressHandler)
-        throws IOException, MailException {
+    throws IOException, MailException {
         String[] result = new String[0];
 
         String tag = "A" + commandCount++ + " ";
         connection.sendCommand(tag + command +
-            ((arguments == null) ? "" : (" " + arguments)));
+                ((arguments == null) ? "" : (" " + arguments)));
 
         int preCount = connection.getBytesReceived();
         String temp = connection.receive();
         int postCount = connection.getBytesReceived();
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
-        
+
         while (!temp.startsWith(tag)) {
             Arrays.add(result, temp);
             preCount = postCount;
@@ -1348,12 +1374,12 @@ public class ImapProtocol {
      * @return List of returned strings
      */
     protected String[] executeContinue(String command, String arguments,
-        String text, String errorMsg) throws IOException, MailException {
+            String text, String errorMsg) throws IOException, MailException {
         String[] result = new String[0];
 
         String tag = "A" + commandCount++ + " ";
         connection.sendCommand(tag + command +
-            ((arguments == null) ? "" : (" " + arguments)));
+                ((arguments == null) ? "" : (" " + arguments)));
 
         String temp = connection.receive();
 
@@ -1404,10 +1430,10 @@ public class ImapProtocol {
      * @return Tag used to send the command
      */
     protected String executeNoReply(String command, String arguments)
-        throws IOException, MailException {
+    throws IOException, MailException {
         String tag = "A" + commandCount++ + " ";
         connection.sendCommand(tag + command +
-            ((arguments == null) ? "" : (" " + arguments)));
+                ((arguments == null) ? "" : (" " + arguments)));
 
         return tag;
     }
@@ -1421,11 +1447,11 @@ public class ImapProtocol {
      * @return List of returned strings
      */
     protected String[] executeUntagged(String command, String arguments, String endTag)
-    	throws IOException, MailException {
+    throws IOException, MailException {
         String[] result = new String[0];
 
         connection.sendCommand(command +
-            ((arguments == null) ? "" : (" " + arguments)));
+                ((arguments == null) ? "" : (" " + arguments)));
 
         String temp = connection.receive();
 
@@ -1526,7 +1552,7 @@ public class ImapProtocol {
         public int uid;
         public MessageFlags flags;
     }
-    
+
     /**
      * Container for a FETCH (ENVELOPE) response
      */
@@ -1541,7 +1567,7 @@ public class ImapProtocol {
     public static interface FetchEnvelopeCallback {
         void responseAvailable(FetchEnvelopeResponse response);
     }
-    
+
     /**
      * Container for a LIST response
      */

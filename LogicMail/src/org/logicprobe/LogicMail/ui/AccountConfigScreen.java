@@ -90,6 +90,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BasicEditField imapFolderPrefixField;
     private BasicEditField imapMaxMessageSizeEditField;
     private BasicEditField imapMaxFolderDepthEditField;
+    private CheckboxField imapShowOnlySubscribedField;
     // Advanced settings fields (POP)
     private BasicEditField popMaxLinesEditField;
 
@@ -179,18 +180,18 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         }
         return buf.toString();
     }
-    
+
     /**
      * Initializes the UI fields.
      */
     private void initFields() {
         Font boldFont = getFont().derive(Font.BOLD);
-        
+
         accountNameField = new BasicEditField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_NAME) + ' ',
                 accountConfig.getAcctName());
         accountNameField.setFont(boldFont);
-        
+
         pageField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE),
                 new String[] {
@@ -222,13 +223,13 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      */
     private Manager initFieldsBasic() {
         Font boldFont = getFont().derive(Font.BOLD);
-        
+
         Manager manager = new VerticalFieldManager();
         incomingServerLabelField = new LabelField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER),
                 Field.NON_FOCUSABLE);
         incomingServerLabelField.setFont(boldFont);
-        
+
         serverNameField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', accountConfig.getServerName());
         serverSecurityField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
@@ -318,9 +319,14 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                     Integer.toString(imapConfig.getMaxFolderDepth()));
             imapMaxFolderDepthEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
 
+            imapShowOnlySubscribedField = new CheckboxField(
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_ONLY_SUBSCRIBED_FOLDERS),
+                    imapConfig.getOnlySubscribedFolders());
+
             manager.add(imapFolderPrefixField);
             manager.add(imapMaxMessageSizeEditField);
             manager.add(imapMaxFolderDepthEditField);
+            manager.add(imapShowOnlySubscribedField);
         }
         else if(accountConfig instanceof PopConfig) {
             PopConfig popConfig = (PopConfig)accountConfig;
@@ -548,6 +554,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 imapConfig.setMaxFolderDepth(Integer.parseInt(
                         imapMaxFolderDepthEditField.getText()));
             } catch (Exception e) { }
+            
+            imapConfig.setOnlySubscribedFolders(imapShowOnlySubscribedField.getChecked());
         }
         else if(accountConfig instanceof PopConfig) {
             PopConfig popConfig = (PopConfig)accountConfig;
