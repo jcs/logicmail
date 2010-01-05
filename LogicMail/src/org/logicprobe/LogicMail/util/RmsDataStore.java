@@ -50,7 +50,7 @@ public class RmsDataStore implements DataStore {
     private SerializableHashtable nameMap;
     /** UID to Object mappings */
     private Hashtable objectMap;
-    
+
     /**
      * Creates a new instance of RmsDataStore.
      * 
@@ -74,7 +74,7 @@ public class RmsDataStore implements DataStore {
             return null;
         }
     }
-    
+
     public String[] getNamedObjects() {
         String[] result = new String[nameMap.size()];
         Enumeration e = nameMap.keys();
@@ -116,16 +116,16 @@ public class RmsDataStore implements DataStore {
         } catch (RecordStoreException exp) {
             // do nothing
         }
-        
+
         try {
             RecordStore store = RecordStore.openRecordStore(storeName, true);
             byte[] byteArray;
-            
+
             // Serialize the name map, and store
             // it at the first index.
             byteArray = SerializationUtils.serializeClass(nameMap);
             store.addRecord(byteArray, 0, byteArray.length);
-            
+
             // Store all the objects in the object map
             Enumeration e = objectMap.elements();
             while (e.hasMoreElements()) {
@@ -142,9 +142,9 @@ public class RmsDataStore implements DataStore {
         Object deserializedObject;
         try {
             RecordStore store = RecordStore.openRecordStore(storeName, false);
-            
+
             int records = store.getNumRecords();
-            
+
             if(records >= 1) {
                 // Deserialize the name map
                 deserializedObject = SerializationUtils.deserializeClass(store.getRecord(1));
@@ -154,19 +154,21 @@ public class RmsDataStore implements DataStore {
                 else {
                     return;
                 }
-            
+
                 // Populate the vector
                 objectMap.clear();
                 if(records > 1) {
                     for(int i=2;i<=records;i++) {
                         deserializedObject = SerializationUtils.deserializeClass(store.getRecord(i));
-                        if(deserializedObject instanceof Serializable) {
-                            objectMap.put(new Long(((Serializable)deserializedObject).getUniqueId()), deserializedObject);
+                        if(deserializedObject != null) {
+                            objectMap.put(
+                                    new Long(((Serializable)deserializedObject).getUniqueId()),
+                                    deserializedObject);
                         }
                     }
                 }
             }
-            
+
             store.closeRecordStore();
         } catch (RecordStoreException exp) {
             // do nothing

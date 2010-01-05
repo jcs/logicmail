@@ -52,20 +52,20 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 public class PopMessageToken implements MessageToken {
     private long uniqueId;
     private int hashCode = -1;
-    
+
     /** Index of the message within the mailbox */
     private int messageIndex = -1;
-    
+
     /** POP unique ID that identifies the message */
     private String messageUid;
-    
+
     /**
      * Instantiates a new POP message token.
      */
     public PopMessageToken() {
-    	this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
-	}
-	
+        this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+    }
+
     /**
      * Instantiates a new POP message token.
      * 
@@ -73,26 +73,26 @@ public class PopMessageToken implements MessageToken {
      * @param messageUid the POP unique ID that identifies the message
      */
     PopMessageToken(int messageIndex, String messageUid) {
-    	this();
-    	this.messageIndex = messageIndex;
-    	this.messageUid = messageUid;
+        this();
+        this.messageIndex = messageIndex;
+        this.messageUid = messageUid;
     }
-    
+
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MessageToken#containedWithin(org.logicprobe.LogicMail.mail.FolderTreeItem)
      */
     public boolean containedWithin(FolderTreeItem folderTreeItem) {
-    	// POP does not have folders, so we always return true
-		return true;
-	}
-    
+        // POP does not have folders, so we always return true
+        return true;
+    }
+
     /**
      * Gets the index of the message within the mailbox.
      * 
      * @return the message index
      */
     int getMessageIndex() {
-    	return this.messageIndex;
+        return this.messageIndex;
     }
 
     /**
@@ -101,77 +101,76 @@ public class PopMessageToken implements MessageToken {
      * @param messageIndex the new message index
      */
     void setMessageIndex(int messageIndex) {
-    	this.messageIndex = messageIndex;
+        this.messageIndex = messageIndex;
     }
-    
+
     /**
      * Gets the POP unique ID that identifies the message.
      * 
      * @return POP unique ID
      */
     public String getMessageUid() {
-    	return this.messageUid;
+        return this.messageUid;
     }
-    
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
-	 */
-	public long getUniqueId() {
-		return this.uniqueId;
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
-	 */
-	public void serialize(DataOutput output) throws IOException {
-		output.writeLong(uniqueId);
-		output.writeUTF(messageUid);
-	}
-	
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
-	 */
-	public void deserialize(DataInput input) throws IOException {
-		uniqueId = input.readLong();
-		messageUid = input.readUTF();
-	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
-	public boolean equals(Object obj) {
-	    if(obj instanceof PopMessageToken) {
-	        PopMessageToken rhs = (PopMessageToken)obj;
-	        return this.messageUid.equals(rhs.messageUid);
-	    }
-	    else {
-	        return false;
-	    }
-	}
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
+     */
+    public long getUniqueId() {
+        return this.uniqueId;
+    }
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#hashCode()
-	 */
-	public int hashCode() {
-	    if(hashCode == -1) {
-	        int result = 1;
-	        result = 31 * result + ((messageUid == null) ? 0 : messageUid.hashCode());
-	    }
-	    return hashCode;
-	}
-	
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
-	public String toString() {
-		StringBuffer buf = new StringBuffer();
-		buf.append("PopMessageToken [");
-		buf.append("uniqueId="); buf.append(uniqueId);
-		buf.append(", messageIndex="); buf.append(messageIndex);
-		buf.append(", messageUid=\""); buf.append(messageUid); buf.append("\"");
-		buf.append("]");
-		return buf.toString();
-	}
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
+     */
+    public void serialize(DataOutput output) throws IOException {
+        output.writeLong(uniqueId);
+        output.writeUTF(messageUid);
+    }
+
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
+     */
+    public void deserialize(DataInput input) throws IOException {
+        uniqueId = input.readLong();
+        messageUid = input.readUTF();
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if(obj instanceof PopMessageToken) {
+            PopMessageToken rhs = (PopMessageToken)obj;
+            return this.messageUid.equals(rhs.messageUid);
+        }
+        else {
+            return false;
+        }
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        if(hashCode == -1) {
+            hashCode = 31 + ((messageUid == null) ? 0 : messageUid.hashCode());
+        }
+        return hashCode;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    public String toString() {
+        StringBuffer buf = new StringBuffer();
+        buf.append("PopMessageToken [");
+        buf.append("uniqueId="); buf.append(uniqueId);
+        buf.append(", messageIndex="); buf.append(messageIndex);
+        buf.append(", messageUid=\""); buf.append(messageUid); buf.append("\"");
+        buf.append("]");
+        return buf.toString();
+    }
 
     public void updateToken(MessageToken messageToken) {
         if(messageToken.equals(this)) {

@@ -65,409 +65,408 @@ import org.logicprobe.LogicMail.util.MailMessageParser;
  * parsed just to generate a mailbox listing.
  */
 public class MaildirFolder {
-	private String folderPath;
-	private String folderUrl;
-	private boolean initialized;
-	private FileConnection fileConnection;
-	private Hashtable messageEnvelopeMap;
-	private boolean messageEnvelopeMapDirty = true;
-	private int nextIndex = 0;
-	private static String EOF_MARKER = "----";
-	
-	/**
-	 * Creates a new instance of the <tt>MaildirFolder</tt> class.
-	 * 
-	 * @param folderPath Reference path to the folder, used for message tokens
-	 * @param folderUrl File URL to the root folder of the maildir.
-	 */
-	public MaildirFolder(String folderPath, String folderUrl) {
-		this.folderPath = folderPath;
-		this.folderUrl = folderUrl;
-		messageEnvelopeMap = new Hashtable();
-	}
-	
-	/**
-	 * Open the maildir for reading.
-	 * This method make sure the underlying folder exists, and attempts
-	 * to read the index file if available.
-	 * 
-	 * @throws IOException Thrown on I/O errors
-	 */
-	public void open() throws IOException {
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.open()\r\nOpening: " + folderUrl).getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-		fileConnection = (FileConnection)Connector.open(folderUrl + '/');
-		if(!fileConnection.exists()) {
-			fileConnection.mkdir();
-		}
-		fileConnection.close();
-		
-		fileConnection = (FileConnection)Connector.open(folderUrl + "/cur/");
-		if(!fileConnection.exists()) {
-			fileConnection.mkdir();
-		}
+    private String folderPath;
+    private String folderUrl;
+    private boolean initialized;
+    private FileConnection fileConnection;
+    private Hashtable messageEnvelopeMap;
+    private boolean messageEnvelopeMapDirty = true;
+    private int nextIndex = 0;
+    private static String EOF_MARKER = "----";
 
-		if(!initialized) {
-			// Read in the message envelope map
-			FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
-			if(indexFileConnection.exists()) {
-				DataInputStream inputStream = indexFileConnection.openDataInputStream();
-				try {
-					while(true) {
-						String uniqueId = inputStream.readUTF();
-						if(uniqueId.equals(EOF_MARKER)) {
-							break;
-						}
-						MessageEnvelope envelope = new MessageEnvelope();
-						envelope.deserialize(inputStream);
-						messageEnvelopeMap.put(uniqueId, envelope);
-					}
-					messageEnvelopeMapDirty = false;
-				} catch (IOException exp) {
-					// Non-fatally force the map dirty on exceptions, since this can
-					// only happen if the index file is truncated, and may not mean
-					// that any other problems exist.
-					messageEnvelopeMapDirty = true;
-				}
-			}
-			initialized = true;
-		}
+    /**
+     * Creates a new instance of the <tt>MaildirFolder</tt> class.
+     * 
+     * @param folderPath Reference path to the folder, used for message tokens
+     * @param folderUrl File URL to the root folder of the maildir.
+     */
+    public MaildirFolder(String folderPath, String folderUrl) {
+        this.folderPath = folderPath;
+        this.folderUrl = folderUrl;
+        messageEnvelopeMap = new Hashtable();
+    }
 
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.open()\r\nOpened with " + messageEnvelopeMap.size() + " messages in index file").getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-	}
-
-	/**
-	 * Closes the maildir, writing out the index file.
-	 * 
-	 * @throws IOException Thrown on I/O errors
-	 */
-	public void close() throws IOException {
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.close()").getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-		
-		if(fileConnection != null) {
-			fileConnection.close();
-			fileConnection = null;
-		}
-
-		// Write out the message envelope map
-		if(messageEnvelopeMapDirty) {
-			FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
-			if(indexFileConnection.exists()) {
-				indexFileConnection.truncate(0);
-			}
-			else {
-				indexFileConnection.create();
-			}
-			DataOutputStream outputStream = indexFileConnection.openDataOutputStream();
-			Enumeration e = messageEnvelopeMap.keys();
-			while(e.hasMoreElements()) {
-				String uniqueId = (String)e.nextElement();
-				outputStream.writeUTF(uniqueId);
-	
-				MessageEnvelope envelope = (MessageEnvelope)messageEnvelopeMap.get(uniqueId);
-				envelope.serialize(outputStream);
-			}
-			// Write the end-of-file marker so we can avoid the need for headers
-			outputStream.writeUTF(EOF_MARKER);
-			outputStream.close();
-			indexFileConnection.close();
-			messageEnvelopeMapDirty = false;
-		}
-	}
-	
-	/**
-	 * Gets all the <tt>FolderMessage</tt>s contained within this maildir.
-	 * Message headers come from the index file if available, otherwise
-	 * they are parsed from the message files.
-	 * Message flags are always parsed from the message filenames.
-	 * 
-	 * @return Array of <tt>FolderMessage</tt>s.
-	 * 
-	 * @throws IOException Thrown on I/O errors
-	 */
-	public FolderMessage[] getFolderMessages() throws IOException {
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.getFolderMessages()").getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-
-		if(fileConnection == null) {
-			throw new IOException("Maildir not open");
-		}
-		Vector fileList = new Vector();
-		Enumeration e = fileConnection.list();
-		while(e.hasMoreElements()) {
-			String file = (String)e.nextElement();
-			// Quick and dirty check for maildir-like files
-			// Actual maildir files use a colon to separate the unique id
-			// from the flags, but that character is not supported here.
-			// The framework seems to convert the colon to an underscore,
-			// so we check for that instead.
-			if(file.indexOf('_') != -1) {
-				fileList.addElement(file);
-			}
-		}
-		Vector folderMessageList = new Vector();
-		int size = fileList.size();
-		nextIndex = 0;
-		for(int i=0; i<size; i++) {
-			String fileName = (String)fileList.elementAt(i);
-			FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + fileName);
-				
-			if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
-				try {
-					int p = fileName.indexOf("_2,");
-					if(p != -1) {
-						String uniqueId = fileName.substring(0, p);
-						
-						MessageEnvelope envelope;
-						if(messageEnvelopeMap.containsKey(uniqueId)) {
-							envelope = (MessageEnvelope)messageEnvelopeMap.get(uniqueId);
-						}
-						else {
-							InputStream inputStream = mailFileConnection.openInputStream();
-							envelope = getMessageEnvelope(inputStream);
-							inputStream.close();
-							messageEnvelopeMap.put(uniqueId, envelope);
-							messageEnvelopeMapDirty = true;
-						}
-						FolderMessage folderMessage = new FolderMessage(
-								new LocalMessageToken(folderPath, uniqueId),
-								envelope, nextIndex++, uniqueId.hashCode());
-						
-						// Check for flags
-						p += 3;
-						folderMessage.setAnswered(fileName.indexOf('R', p) != -1);
-						folderMessage.setDeleted(fileName.indexOf('T', p) != -1);
-						folderMessage.setDraft(fileName.indexOf('D', p) != -1);
-						folderMessage.setFlagged(fileName.indexOf('F', p) != -1);
-						folderMessage.setSeen(fileName.indexOf('S', p) != -1);
-						
-						folderMessageList.addElement(folderMessage);
-					}
-				} catch (Exception exp) {
-					// Prevent message-reading errors from being fatal
-					EventLogger.logEvent(AppInfo.GUID,
-							("Unable to read envelope for "
-							+ mailFileConnection.getURL()).getBytes(),
-							EventLogger.ERROR);
-				}
-			}
-			
-			mailFileConnection.close();
-		}
-		FolderMessage[] result = new FolderMessage[folderMessageList.size()];
-		folderMessageList.copyInto(result);
-		return result;
-	}
-
-	/**
-	 * Reads the raw mail file from the provided InputStream, and parses
-	 * out the message envelope.
-	 * 
-	 * @param inputStream The input stream to read from.
-	 * @return The message envelope.
-	 * @throws IOException Thrown on I/O errors.
-	 */
-	private MessageEnvelope getMessageEnvelope(InputStream inputStream) throws IOException {
-		InputStreamReader reader = new InputStreamReader(inputStream);
-		Vector headerLines = new Vector();
-		StringBuffer buf = new StringBuffer();
-		int ch;
-		while((ch = reader.read()) != -1) {
-			if(ch == 0x0A) {
-				if(buf.length() > 0) {
-					headerLines.addElement(buf.toString());
-					buf.delete(0, buf.length());
-				}
-				else {
-					break;
-				}
-			}
-			else if(ch != 0x0D) {
-				buf.append((char)ch);
-			}
-		}
-
-		String[] headerLinesArray = new String[headerLines.size()];
-		headerLines.copyInto(headerLinesArray);
-		MessageEnvelope envelope = MailMessageParser.parseMessageEnvelope(headerLinesArray);
-		return envelope;
-	}
-
-	/**
-	 * Gets the message source from the maildir.
-	 * 
-	 * @param localMessageToken The token for the message to get.
-	 * @return The message source
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	public String getMessageSource(LocalMessageToken localMessageToken) throws IOException {
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.getMessageSource(): " + localMessageToken.getMessageUid()).getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-		if(fileConnection == null) {
-			throw new IOException("Maildir not open");
-		}
-		
-		String matchingFile = getFileForToken(localMessageToken);
-		if(matchingFile == null) { return null; }
-
-		// Open the file, and read its contents
-		String messageSource = null;
-		try {
-			FileConnection mailFileConnection =
-				(FileConnection)Connector.open(fileConnection.getURL() + '/' + matchingFile);
-			if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
-				InputStream inputStream = mailFileConnection.openInputStream();
-				messageSource = getMessageSourceFromStream(inputStream);
-				inputStream.close();
-			}
-		} catch (Exception exp) {
-			if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-				EventLogger.logEvent(AppInfo.GUID,
-	                ("Error getting message source: " + exp.toString()).getBytes(),
-	                EventLogger.DEBUG_INFO);
-	        }
-		}
-		
-		return messageSource;
-	}
-
-	/**
-	 * Gets the message source from an input stream.
-	 * 
-	 * @param inputStream the input stream
-	 * @return the message source from stream
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	private String getMessageSourceFromStream(InputStream inputStream) throws IOException {
-		// Completely read the stream
-		InputStreamReader reader = new InputStreamReader(inputStream);
-		StringBuffer buf = new StringBuffer();
-		char[] rawBuf = new char[1024];
-		int n;
-		while((n = reader.read(rawBuf, 0, 1024)) != -1) {
-			buf.append(rawBuf, 0, n);
-		}
-		rawBuf = null;
-		
-		return buf.toString();
-	}
-	
-	/**
-	 * Appends a message to the maildir.
-	 * 
-	 * @param rawMessage The raw message
-	 * @param initialFlags The initial flags
-	 * @return The folder message
-	 */
-	public FolderMessage appendMessage(String rawMessage, MessageFlags initialFlags) {
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.appendMessage()").getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-
-		StringBuffer buf = new StringBuffer();
-
-		// Build the filename
-		buf.append(System.currentTimeMillis());
-		buf.append('.');
-		buf.append(ApplicationManager.getApplicationManager().getProcessId(ApplicationDescriptor.currentApplicationDescriptor()));
-		buf.append('.');
-		buf.append(DeviceInfo.getDeviceId());
-		String uniqueId = buf.toString();
-		
-		appendFlagsToBuffer(buf, initialFlags);
-
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MaildirFolder.appendMessage()\r\nfilename: "+buf.toString()).getBytes(),
-                EventLogger.DEBUG_INFO);
-        }
-
-		MessageEnvelope envelope = null;
-		try {
-			// Create a file connection for the new message
-			FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + buf.toString());
-			mailFileConnection.create();
-			
-			// Write out the message
-			DataOutputStream outputStream = mailFileConnection.openDataOutputStream();
-			OutputStreamWriter writer = new OutputStreamWriter(outputStream);
-			writer.write(rawMessage);
-			outputStream.close();
-
-			// Make sure the message was written, by trying to read the headers back from it
-			InputStream inputStream = mailFileConnection.openInputStream();
-			envelope = getMessageEnvelope(inputStream);
-			inputStream.close();
-			mailFileConnection.close();
-			
-			messageEnvelopeMap.put(uniqueId, envelope);
-			messageEnvelopeMapDirty = true;
-		} catch (IOException exp) {
-			if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-				EventLogger.logEvent(AppInfo.GUID,
-	                ("Error writing message: " + exp.toString()).getBytes(),
-	                EventLogger.DEBUG_INFO);
-	        }
-		}
-		
-		FolderMessage result;
-		
-		if(envelope != null) {
-			result = new FolderMessage(
-					new LocalMessageToken(folderPath, uniqueId),
-					envelope, nextIndex++, uniqueId.hashCode());
-			result.setAnswered(initialFlags.isAnswered());
-			result.setDeleted(initialFlags.isDeleted());
-			result.setDraft(initialFlags.isDraft());
-			result.setFlagged(initialFlags.isFlagged());
-			result.setSeen(initialFlags.isSeen());
-		}
-		else {
-			result = null;
-		}
-		return result;
-	}
-
-	/**
-	 * Sets the flags of an existing message.
-	 * 
-	 * @param localMessageToken The token for the message to set flags for
-	 * @param messageFlags The flags to set
-	 * @return True if message flags were updated, false otherwise
-	 */
-    public boolean setMessageFlags(LocalMessageToken localMessageToken, MessageFlags messageFlags) throws IOException {
+    /**
+     * Open the maildir for reading.
+     * This method make sure the underlying folder exists, and attempts
+     * to read the index file if available.
+     * 
+     * @throws IOException Thrown on I/O errors
+     */
+    public void open() throws IOException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("setMessageFlags(): " + localMessageToken.getMessageUid()).getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("MaildirFolder.open()\r\nOpening: " + folderUrl).getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+        fileConnection = (FileConnection)Connector.open(folderUrl + '/');
+        if(!fileConnection.exists()) {
+            fileConnection.mkdir();
+        }
+        fileConnection.close();
+
+        fileConnection = (FileConnection)Connector.open(folderUrl + "/cur/");
+        if(!fileConnection.exists()) {
+            fileConnection.mkdir();
+        }
+
+        if(!initialized) {
+            // Read in the message envelope map
+            FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
+            if(indexFileConnection.exists()) {
+                DataInputStream inputStream = indexFileConnection.openDataInputStream();
+                try {
+                    while(true) {
+                        String uniqueId = inputStream.readUTF();
+                        if(uniqueId.equals(EOF_MARKER)) {
+                            break;
+                        }
+                        MessageEnvelope envelope = new MessageEnvelope();
+                        envelope.deserialize(inputStream);
+                        messageEnvelopeMap.put(uniqueId, envelope);
+                    }
+                    messageEnvelopeMapDirty = false;
+                } catch (IOException exp) {
+                    // Non-fatally force the map dirty on exceptions, since this can
+                    // only happen if the index file is truncated, and may not mean
+                    // that any other problems exist.
+                    messageEnvelopeMapDirty = true;
+                }
+            }
+            initialized = true;
+        }
+
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MaildirFolder.open()\r\nOpened with " + messageEnvelopeMap.size() + " messages in index file").getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+    }
+
+    /**
+     * Closes the maildir, writing out the index file.
+     * 
+     * @throws IOException Thrown on I/O errors
+     */
+    public void close() throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MaildirFolder.close()").getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+
+        if(fileConnection != null) {
+            fileConnection.close();
+            fileConnection = null;
+        }
+
+        // Write out the message envelope map
+        if(messageEnvelopeMapDirty) {
+            FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
+            if(indexFileConnection.exists()) {
+                indexFileConnection.truncate(0);
+            }
+            else {
+                indexFileConnection.create();
+            }
+            DataOutputStream outputStream = indexFileConnection.openDataOutputStream();
+            Enumeration e = messageEnvelopeMap.keys();
+            while(e.hasMoreElements()) {
+                String uniqueId = (String)e.nextElement();
+                outputStream.writeUTF(uniqueId);
+
+                MessageEnvelope envelope = (MessageEnvelope)messageEnvelopeMap.get(uniqueId);
+                envelope.serialize(outputStream);
+            }
+            // Write the end-of-file marker so we can avoid the need for headers
+            outputStream.writeUTF(EOF_MARKER);
+            outputStream.close();
+            indexFileConnection.close();
+            messageEnvelopeMapDirty = false;
+        }
+    }
+
+    /**
+     * Gets all the <tt>FolderMessage</tt>s contained within this maildir.
+     * Message headers come from the index file if available, otherwise
+     * they are parsed from the message files.
+     * Message flags are always parsed from the message filenames.
+     * 
+     * @return Array of <tt>FolderMessage</tt>s.
+     * 
+     * @throws IOException Thrown on I/O errors
+     */
+    public FolderMessage[] getFolderMessages() throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MaildirFolder.getFolderMessages()").getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+
+        if(fileConnection == null) {
+            throw new IOException("Maildir not open");
+        }
+        Vector fileList = new Vector();
+        Enumeration e = fileConnection.list();
+        while(e.hasMoreElements()) {
+            String file = (String)e.nextElement();
+            // Quick and dirty check for maildir-like files
+            // Actual maildir files use a colon to separate the unique id
+            // from the flags, but that character is not supported here.
+            // The framework seems to convert the colon to an underscore,
+            // so we check for that instead.
+            if(file.indexOf('_') != -1) {
+                fileList.addElement(file);
+            }
+        }
+        Vector folderMessageList = new Vector();
+        int size = fileList.size();
+        nextIndex = 0;
+        for(int i=0; i<size; i++) {
+            String fileName = (String)fileList.elementAt(i);
+            FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + fileName);
+
+            if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+                try {
+                    int p = fileName.indexOf("_2,");
+                    if(p != -1) {
+                        String uniqueId = fileName.substring(0, p);
+
+                        MessageEnvelope envelope;
+                        if(messageEnvelopeMap.containsKey(uniqueId)) {
+                            envelope = (MessageEnvelope)messageEnvelopeMap.get(uniqueId);
+                        }
+                        else {
+                            InputStream inputStream = mailFileConnection.openInputStream();
+                            envelope = getMessageEnvelope(inputStream);
+                            inputStream.close();
+                            messageEnvelopeMap.put(uniqueId, envelope);
+                            messageEnvelopeMapDirty = true;
+                        }
+                        FolderMessage folderMessage = new FolderMessage(
+                                new LocalMessageToken(folderPath, uniqueId),
+                                envelope, nextIndex++, uniqueId.hashCode());
+
+                        // Check for flags
+                        p += 3;
+                        folderMessage.setAnswered(fileName.indexOf('R', p) != -1);
+                        folderMessage.setDeleted(fileName.indexOf('T', p) != -1);
+                        folderMessage.setDraft(fileName.indexOf('D', p) != -1);
+                        folderMessage.setFlagged(fileName.indexOf('F', p) != -1);
+                        folderMessage.setSeen(fileName.indexOf('S', p) != -1);
+
+                        folderMessageList.addElement(folderMessage);
+                    }
+                } catch (Exception exp) {
+                    // Prevent message-reading errors from being fatal
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Unable to read envelope for "
+                                    + mailFileConnection.getURL()).getBytes(),
+                                    EventLogger.ERROR);
+                }
+            }
+
+            mailFileConnection.close();
+        }
+        FolderMessage[] result = new FolderMessage[folderMessageList.size()];
+        folderMessageList.copyInto(result);
+        return result;
+    }
+
+    /**
+     * Reads the raw mail file from the provided InputStream, and parses
+     * out the message envelope.
+     * 
+     * @param inputStream The input stream to read from.
+     * @return The message envelope.
+     * @throws IOException Thrown on I/O errors.
+     */
+    private MessageEnvelope getMessageEnvelope(InputStream inputStream) throws IOException {
+        InputStreamReader reader = new InputStreamReader(inputStream);
+        Vector headerLines = new Vector();
+        StringBuffer buf = new StringBuffer();
+        int ch;
+        while((ch = reader.read()) != -1) {
+            if(ch == 0x0A) {
+                if(buf.length() > 0) {
+                    headerLines.addElement(buf.toString());
+                    buf.delete(0, buf.length());
+                }
+                else {
+                    break;
+                }
+            }
+            else if(ch != 0x0D) {
+                buf.append((char)ch);
+            }
+        }
+
+        String[] headerLinesArray = new String[headerLines.size()];
+        headerLines.copyInto(headerLinesArray);
+        MessageEnvelope envelope = MailMessageParser.parseMessageEnvelope(headerLinesArray);
+        return envelope;
+    }
+
+    /**
+     * Gets the message source from the maildir.
+     * 
+     * @param localMessageToken The token for the message to get.
+     * @return The message source
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    public String getMessageSource(LocalMessageToken localMessageToken) throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MaildirFolder.getMessageSource(): " + localMessageToken.getMessageUid()).getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
         if(fileConnection == null) {
             throw new IOException("Maildir not open");
         }
-        
+
+        String matchingFile = getFileForToken(localMessageToken);
+        if(matchingFile == null) { return null; }
+
+        // Open the file, and read its contents
+        String messageSource = null;
+        try {
+            FileConnection mailFileConnection =
+                (FileConnection)Connector.open(fileConnection.getURL() + '/' + matchingFile);
+            if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+                InputStream inputStream = mailFileConnection.openInputStream();
+                messageSource = getMessageSourceFromStream(inputStream);
+                inputStream.close();
+            }
+        } catch (Exception exp) {
+            if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Error getting message source: " + exp.toString()).getBytes(),
+                        EventLogger.DEBUG_INFO);
+            }
+        }
+
+        return messageSource;
+    }
+
+    /**
+     * Gets the message source from an input stream.
+     * 
+     * @param inputStream the input stream
+     * @return the message source from stream
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    private String getMessageSourceFromStream(InputStream inputStream) throws IOException {
+        // Completely read the stream
+        InputStreamReader reader = new InputStreamReader(inputStream);
+        StringBuffer buf = new StringBuffer(1024);
+        char[] rawBuf = new char[1024];
+        int n;
+        while((n = reader.read(rawBuf, 0, 1024)) != -1) {
+            buf.append(rawBuf, 0, n);
+        }
+
+        return buf.toString();
+    }
+
+    /**
+     * Appends a message to the maildir.
+     * 
+     * @param rawMessage The raw message
+     * @param initialFlags The initial flags
+     * @return The folder message
+     */
+    public FolderMessage appendMessage(String rawMessage, MessageFlags initialFlags) {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MaildirFolder.appendMessage()").getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+
+        StringBuffer buf = new StringBuffer();
+
+        // Build the filename
+        buf.append(System.currentTimeMillis());
+        buf.append('.');
+        buf.append(ApplicationManager.getApplicationManager().getProcessId(ApplicationDescriptor.currentApplicationDescriptor()));
+        buf.append('.');
+        buf.append(DeviceInfo.getDeviceId());
+        String uniqueId = buf.toString();
+
+        appendFlagsToBuffer(buf, initialFlags);
+
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MaildirFolder.appendMessage()\r\nfilename: "+buf.toString()).getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+
+        MessageEnvelope envelope = null;
+        try {
+            // Create a file connection for the new message
+            FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + buf.toString());
+            mailFileConnection.create();
+
+            // Write out the message
+            DataOutputStream outputStream = mailFileConnection.openDataOutputStream();
+            OutputStreamWriter writer = new OutputStreamWriter(outputStream);
+            writer.write(rawMessage);
+            outputStream.close();
+
+            // Make sure the message was written, by trying to read the headers back from it
+            InputStream inputStream = mailFileConnection.openInputStream();
+            envelope = getMessageEnvelope(inputStream);
+            inputStream.close();
+            mailFileConnection.close();
+
+            messageEnvelopeMap.put(uniqueId, envelope);
+            messageEnvelopeMapDirty = true;
+        } catch (IOException exp) {
+            if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Error writing message: " + exp.toString()).getBytes(),
+                        EventLogger.DEBUG_INFO);
+            }
+        }
+
+        FolderMessage result;
+
+        if(envelope != null) {
+            result = new FolderMessage(
+                    new LocalMessageToken(folderPath, uniqueId),
+                    envelope, nextIndex++, uniqueId.hashCode());
+            result.setAnswered(initialFlags.isAnswered());
+            result.setDeleted(initialFlags.isDeleted());
+            result.setDraft(initialFlags.isDraft());
+            result.setFlagged(initialFlags.isFlagged());
+            result.setSeen(initialFlags.isSeen());
+        }
+        else {
+            result = null;
+        }
+        return result;
+    }
+
+    /**
+     * Sets the flags of an existing message.
+     * 
+     * @param localMessageToken The token for the message to set flags for
+     * @param messageFlags The flags to set
+     * @return True if message flags were updated, false otherwise
+     */
+    public boolean setMessageFlags(LocalMessageToken localMessageToken, MessageFlags messageFlags) throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("setMessageFlags(): " + localMessageToken.getMessageUid()).getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+        if(fileConnection == null) {
+            throw new IOException("Maildir not open");
+        }
+
         // Get the current filename
         String messageFilename = getFileForToken(localMessageToken);
         if(messageFilename == null) { return false; }
-        
+
         // Create the new filename, and verify that it is different
         StringBuffer buf = new StringBuffer();
         buf.append(localMessageToken.getMessageUid());
@@ -494,8 +493,8 @@ public class MaildirFolder {
     public void expunge() throws IOException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("expunge()").getBytes(),
-                EventLogger.DEBUG_INFO);
+                    ("expunge()").getBytes(),
+                    EventLogger.DEBUG_INFO);
         }
 
         // Build a list of deleted files in the current directory
@@ -508,7 +507,7 @@ public class MaildirFolder {
                 deletedFiles.addElement(messageFilename);
             }
         }
-        
+
         // Iterate through the list and actually delete from storage
         String baseUrl = fileConnection.getURL() + '/';
         e = deletedFiles.elements();
@@ -543,7 +542,7 @@ public class MaildirFolder {
         if(uniqueId == null) {
             return null;
         }
-        
+
         // Find the file matching the unique id, and shortcut out if not found
         String matchingFile;
         Enumeration e = fileConnection.list(uniqueId + '*', false);

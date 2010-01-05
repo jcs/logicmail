@@ -59,250 +59,251 @@ import net.rim.device.api.util.CRC32;
  * </p>
  */
 public class MessageNodeReader {
-	private DataInputStream input;
-	private int contentOffset = 0;
-	private int contentCount = 0;
-	private boolean headerParsed;
-	
-	private final static byte[] headerStart = {
-		'L',  'M',  '-',  'M',  'S',  'G',  '\0', '\0'
-	};
-	
-	/**
-	 * Instantiates a new message node reader.
-	 * 
-	 * @param input the input
-	 */
-	public MessageNodeReader(DataInputStream input) {
-		this.input = input;
-	}
-	
-	/**
-	 * Read the message file header, and return the MessageToken object.
-	 * <p>
-	 * This puts the stream in a position for reading content, if available,
-	 * without actually creating another MessageNode instance.  The token
-	 * should be used to validate that the file matches the existing node
-	 * of interest.
-	 * </p>
-	 * 
-	 * @return the message token
-	 * 
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	public MessageToken read() throws IOException {
-		if(headerParsed) { throw new IllegalStateException(); }
-		if(!readFileHeader()) { return null; }
-		int offset = 32;
-		
-		int classLength = input.readInt();
-		offset += 4;
-		byte[] classBytes = new byte[classLength];
-		input.read(classBytes);
-		offset += classLength;
-		MessageToken messageToken = (MessageToken)SerializationUtils.deserializeClass(classBytes);
-		if(messageToken != null) {
-			input.skipBytes(contentOffset - offset);
-			headerParsed = true;
-		}
-		
-		return messageToken;
-	}
-	
-	/**
-	 * Read the message file header, and create a new MessageNode
-	 * with all the data except for the message content.
-	 * <p>
-	 * This puts the stream in a position for reading content, if available.
-	 * </p>
-	 * 
-	 * @return the message node
-	 * 
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	public MessageNode readMessageNode() throws IOException {
-		if(headerParsed) { throw new IllegalStateException(); }
-		if(!readFileHeader()) { return null; }
+    private DataInputStream input;
+    private int contentOffset = 0;
+    private int contentCount = 0;
+    private boolean headerParsed;
 
-		MessageToken messageToken = (MessageToken)SerializationUtils.deserializeClass(input);
-		Hashtable messageHeaders = (Hashtable)SerializationUtils.deserializeClass(input);
-		MimeMessagePart messageStructure = (MimeMessagePart)SerializationUtils.deserializeClass(input);
-		
-		MessageNode messageNode = buildMessageNode(messageToken, messageHeaders, messageStructure);
-		if(messageNode != null) { headerParsed = true; }
-		return messageNode;
-	}
+    private final static byte[] headerStart = {
+        'L',  'M',  '-',  'M',  'S',  'G',  '\0', '\0'
+    };
 
-	private boolean readFileHeader() throws IOException {
-		byte[] fileHeader = new byte[32];
-		input.read(fileHeader, 0, 32);
-		if(!validateHeader(fileHeader)) { return false; }
-		
-		contentOffset = byteArrayToInt(fileHeader, 20);
-		contentCount = byteArrayToInt(fileHeader, 24);
-		return true;
-	}
-	
-	/**
-	 * Checks if more content is available for reading.
-	 * 
-	 * @return true, if content is available
-	 */
-	public boolean isContentAvailable() {
-		if(!headerParsed) { throw new IllegalStateException(); }
-		return contentCount > 0;
-	}
-	
-	/**
-	 * Gets the next content section of the message.
-	 * 
-	 * @return the next content section
-	 * 
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	public MimeMessageContent getNextContent() throws IOException {
-		if(!headerParsed || contentCount == 0) { throw new IllegalStateException(); }
-		if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MessageNodeReader.getNextContent()\r\n"
-            		+ "contentCount=" + contentCount
-            		+ ", available=" + input.available()).getBytes(),
-                EventLogger.DEBUG_INFO);
+    /**
+     * Instantiates a new message node reader.
+     * 
+     * @param input the input
+     */
+    public MessageNodeReader(DataInputStream input) {
+        this.input = input;
+    }
+
+    /**
+     * Read the message file header, and return the MessageToken object.
+     * <p>
+     * This puts the stream in a position for reading content, if available,
+     * without actually creating another MessageNode instance.  The token
+     * should be used to validate that the file matches the existing node
+     * of interest.
+     * </p>
+     * 
+     * @return the message token
+     * 
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    public MessageToken read() throws IOException {
+        if(headerParsed) { throw new IllegalStateException(); }
+        if(!readFileHeader()) { return null; }
+        int offset = 32;
+
+        int classLength = input.readInt();
+        offset += 4;
+        byte[] classBytes = new byte[classLength];
+        MessageToken messageToken = null;
+        if (input.read(classBytes) == classLength) {
+            offset += classLength;
+            messageToken = (MessageToken)SerializationUtils.deserializeClass(classBytes);
+            if(messageToken != null) {
+                input.skipBytes(contentOffset - offset);
+                headerParsed = true;
+            }
         }
-		
-		contentCount--;
-		
-		int length = input.readInt();
-		int checksum = CRC32.update(CRC32.INITIAL_VALUE, length);
-		byte[] contentBytes = new byte[length];
-		
-		input.read(contentBytes, 0, length);
-		checksum = CRC32.update(checksum, contentBytes);
-		
-		int storedChecksum = input.readInt();
-		
-		if(storedChecksum != checksum) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MessageNodeReader.getNextContent()\r\nContent checksum mismatch").getBytes(),
-                EventLogger.ERROR);
-			return null;
-		}
-		
-		Object contentObject = SerializationUtils.deserializeClass(contentBytes);
-		if(contentObject instanceof MimeMessageContent) {
-			return (MimeMessageContent)contentObject;
-		}
-		else {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MessageNodeReader.getNextContent()\r\nContent deserialization error").getBytes(),
-                EventLogger.ERROR);
-			return null;
-		}
-	}
-	
-	private boolean validateHeader(byte[] fileHeader) {
-		// Validate the header start text
-		if(!Arrays.equals(fileHeader, 0, headerStart, 0, headerStart.length)) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MessageNodeReader.validateHeader()\r\nHeader start mismatch").getBytes(),
-                EventLogger.ERROR);
-			return false;
-		}
-		
-		// Validate the header checksum
-		int headerChecksum = byteArrayToInt(fileHeader, 28);
-		byte[] headerCopy = Arrays.copy(fileHeader);
-		Arrays.fill(headerCopy, (byte)0x00, 28, 4);
-		int checksum = CRC32.update(CRC32.INITIAL_VALUE, headerCopy);
-		if(headerChecksum != checksum) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("MessageNodeReader.validateHeader()\r\nHeader checksum mismatch").getBytes(),
-                EventLogger.ERROR);
-			return false;
-		}
-		return true;
-	}
+        return messageToken;
+    }
 
-	private MessageNode buildMessageNode(
-			MessageToken messageToken,
-			Hashtable messageHeaders,
-			MimeMessagePart messageStructure) {
-	    
-	    MessageNode messageNode;
-	    if(messageHeaders.containsKey(HEADER_KEY_OUTGOING)) {
-	        messageNode = new OutgoingMessageNode(messageToken);
-	    }
-	    else {
-	        messageNode = new MessageNode(messageToken);
-	    }
-		
-		populateMessageHeaders(messageNode, messageHeaders);
-		
-		if(messageNode instanceof OutgoingMessageNode) {
-		    populateOutgoingMessageHeaders((OutgoingMessageNode)messageNode, messageHeaders);
-		}
-		
-		messageNode.setMessageStructure(messageStructure);
-		
-		if(contentCount > 0) {
-		    messageNode.setCachedContent(true);
-		}
-		
-		return messageNode;
-	}
+    /**
+     * Read the message file header, and create a new MessageNode
+     * with all the data except for the message content.
+     * <p>
+     * This puts the stream in a position for reading content, if available.
+     * </p>
+     * 
+     * @return the message node
+     * 
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    public MessageNode readMessageNode() throws IOException {
+        if(headerParsed) { throw new IllegalStateException(); }
+        if(!readFileHeader()) { return null; }
+
+        MessageToken messageToken = (MessageToken)SerializationUtils.deserializeClass(input);
+        Hashtable messageHeaders = (Hashtable)SerializationUtils.deserializeClass(input);
+        MimeMessagePart messageStructure = (MimeMessagePart)SerializationUtils.deserializeClass(input);
+
+        MessageNode messageNode = buildMessageNode(messageToken, messageHeaders, messageStructure);
+        if(messageNode != null) { headerParsed = true; }
+        return messageNode;
+    }
+
+    private boolean readFileHeader() throws IOException {
+        byte[] fileHeader = new byte[32];
+        input.read(fileHeader, 0, 32);
+        if(!validateHeader(fileHeader)) { return false; }
+
+        contentOffset = byteArrayToInt(fileHeader, 20);
+        contentCount = byteArrayToInt(fileHeader, 24);
+        return true;
+    }
+
+    /**
+     * Checks if more content is available for reading.
+     * 
+     * @return true, if content is available
+     */
+    public boolean isContentAvailable() {
+        if(!headerParsed) { throw new IllegalStateException(); }
+        return contentCount > 0;
+    }
+
+    /**
+     * Gets the next content section of the message.
+     * 
+     * @return the next content section
+     * 
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    public MimeMessageContent getNextContent() throws IOException {
+        if(!headerParsed || contentCount == 0) { throw new IllegalStateException(); }
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MessageNodeReader.getNextContent()\r\n"
+                            + "contentCount=" + contentCount
+                            + ", available=" + input.available()).getBytes(),
+                            EventLogger.DEBUG_INFO);
+        }
+
+        contentCount--;
+
+        int length = input.readInt();
+        int checksum = CRC32.update(CRC32.INITIAL_VALUE, length);
+        byte[] contentBytes = new byte[length];
+
+        input.read(contentBytes, 0, length);
+        checksum = CRC32.update(checksum, contentBytes);
+
+        int storedChecksum = input.readInt();
+
+        if(storedChecksum != checksum) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MessageNodeReader.getNextContent()\r\nContent checksum mismatch").getBytes(),
+                    EventLogger.ERROR);
+            return null;
+        }
+
+        Object contentObject = SerializationUtils.deserializeClass(contentBytes);
+        if(contentObject instanceof MimeMessageContent) {
+            return (MimeMessageContent)contentObject;
+        }
+        else {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MessageNodeReader.getNextContent()\r\nContent deserialization error").getBytes(),
+                    EventLogger.ERROR);
+            return null;
+        }
+    }
+
+    private boolean validateHeader(byte[] fileHeader) {
+        // Validate the header start text
+        if(!Arrays.equals(fileHeader, 0, headerStart, 0, headerStart.length)) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MessageNodeReader.validateHeader()\r\nHeader start mismatch").getBytes(),
+                    EventLogger.ERROR);
+            return false;
+        }
+
+        // Validate the header checksum
+        int headerChecksum = byteArrayToInt(fileHeader, 28);
+        byte[] headerCopy = Arrays.copy(fileHeader);
+        Arrays.fill(headerCopy, (byte)0x00, 28, 4);
+        int checksum = CRC32.update(CRC32.INITIAL_VALUE, headerCopy);
+        if(headerChecksum != checksum) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("MessageNodeReader.validateHeader()\r\nHeader checksum mismatch").getBytes(),
+                    EventLogger.ERROR);
+            return false;
+        }
+        return true;
+    }
+
+    private MessageNode buildMessageNode(
+            MessageToken messageToken,
+            Hashtable messageHeaders,
+            MimeMessagePart messageStructure) {
+
+        MessageNode messageNode;
+        if(messageHeaders.containsKey(HEADER_KEY_OUTGOING)) {
+            messageNode = new OutgoingMessageNode(messageToken);
+        }
+        else {
+            messageNode = new MessageNode(messageToken);
+        }
+
+        populateMessageHeaders(messageNode, messageHeaders);
+
+        if(messageNode instanceof OutgoingMessageNode) {
+            populateOutgoingMessageHeaders((OutgoingMessageNode)messageNode, messageHeaders);
+        }
+
+        messageNode.setMessageStructure(messageStructure);
+
+        if(contentCount > 0) {
+            messageNode.setCachedContent(true);
+        }
+
+        return messageNode;
+    }
 
     private static String HEADER_KEY_FLAGS = "flags";
-	private static String HEADER_KEY_DATE = "date";
-	private static String HEADER_KEY_SUBJECT = "subject";
-	private static String HEADER_KEY_FROM = "from";
-	private static String HEADER_KEY_SENDER = "sender";
-	private static String HEADER_KEY_REPLYTO = "replyTo";
-	private static String HEADER_KEY_TO = "to";
-	private static String HEADER_KEY_CC = "cc";
-	private static String HEADER_KEY_BCC = "bcc";
-	private static String HEADER_KEY_INREPLYTO = "inReplyTo";
-	private static String HEADER_KEY_MESSAGEID = "messageId";
-	private static String HEADER_KEY_OUTGOING = "OUTGOING";
+    private static String HEADER_KEY_DATE = "date";
+    private static String HEADER_KEY_SUBJECT = "subject";
+    private static String HEADER_KEY_FROM = "from";
+    private static String HEADER_KEY_SENDER = "sender";
+    private static String HEADER_KEY_REPLYTO = "replyTo";
+    private static String HEADER_KEY_TO = "to";
+    private static String HEADER_KEY_CC = "cc";
+    private static String HEADER_KEY_BCC = "bcc";
+    private static String HEADER_KEY_INREPLYTO = "inReplyTo";
+    private static String HEADER_KEY_MESSAGEID = "messageId";
+    private static String HEADER_KEY_OUTGOING = "OUTGOING";
     private static String HEADER_KEY_OUTGOING_SENDING_ACCOUNT = "OUTGOING_SENDING_ACCOUNT";
     private static String HEADER_KEY_OUTGOING_MAIL_SENDER = "OUTGOING_MAIL_SENDER";
     private static String HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT = "OUTGOING_REPLYTO_ACCOUNT";
     private static String HEADER_KEY_OUTGOING_REPLYTO_TOKEN = "OUTGOING_REPLYTO_TOKEN";
 
-	private void populateMessageHeaders(MessageNode messageNode, Hashtable messageHeaders) {
-		Object item;
-		item = messageHeaders.get(HEADER_KEY_FLAGS);
-		if(item instanceof Integer) { messageNode.setFlags(((Integer)item).intValue()); }
-		
-		item = messageHeaders.get(HEADER_KEY_DATE);
-		if(item instanceof Date) { messageNode.setDate((Date)item); }
+    private void populateMessageHeaders(MessageNode messageNode, Hashtable messageHeaders) {
+        Object item;
+        item = messageHeaders.get(HEADER_KEY_FLAGS);
+        if(item instanceof Integer) { messageNode.setFlags(((Integer)item).intValue()); }
 
-		item = messageHeaders.get(HEADER_KEY_SUBJECT);
-		if(item instanceof String) { messageNode.setSubject((String)item); }
+        item = messageHeaders.get(HEADER_KEY_DATE);
+        if(item instanceof Date) { messageNode.setDate((Date)item); }
 
-		item = messageHeaders.get(HEADER_KEY_FROM);
-		if(item instanceof String[]) { messageNode.setFrom(createAddressArray((String[])item)); }
-		
-		item = messageHeaders.get(HEADER_KEY_SENDER);
-		if(item instanceof String[]) { messageNode.setSender(createAddressArray((String[])item)); }
-		
-		item = messageHeaders.get(HEADER_KEY_REPLYTO);
-		if(item instanceof String[]) { messageNode.setReplyTo(createAddressArray((String[])item)); }
-		
-		item = messageHeaders.get(HEADER_KEY_TO);
-		if(item instanceof String[]) { messageNode.setTo(createAddressArray((String[])item)); }
-		
-		item = messageHeaders.get(HEADER_KEY_CC);
-		if(item instanceof String[]) { messageNode.setCc(createAddressArray((String[])item)); }
-		
-		item = messageHeaders.get(HEADER_KEY_BCC);
-		if(item instanceof String[]) { messageNode.setBcc(createAddressArray((String[])item)); }
+        item = messageHeaders.get(HEADER_KEY_SUBJECT);
+        if(item instanceof String) { messageNode.setSubject((String)item); }
 
-		item = messageHeaders.get(HEADER_KEY_INREPLYTO);
-		if(item instanceof String) { messageNode.setInReplyTo((String)item); }
-		
-		item = messageHeaders.get(HEADER_KEY_MESSAGEID);
-		if(item instanceof String) { messageNode.setMessageId((String)item); }
-	}
+        item = messageHeaders.get(HEADER_KEY_FROM);
+        if(item instanceof String[]) { messageNode.setFrom(createAddressArray((String[])item)); }
+
+        item = messageHeaders.get(HEADER_KEY_SENDER);
+        if(item instanceof String[]) { messageNode.setSender(createAddressArray((String[])item)); }
+
+        item = messageHeaders.get(HEADER_KEY_REPLYTO);
+        if(item instanceof String[]) { messageNode.setReplyTo(createAddressArray((String[])item)); }
+
+        item = messageHeaders.get(HEADER_KEY_TO);
+        if(item instanceof String[]) { messageNode.setTo(createAddressArray((String[])item)); }
+
+        item = messageHeaders.get(HEADER_KEY_CC);
+        if(item instanceof String[]) { messageNode.setCc(createAddressArray((String[])item)); }
+
+        item = messageHeaders.get(HEADER_KEY_BCC);
+        if(item instanceof String[]) { messageNode.setBcc(createAddressArray((String[])item)); }
+
+        item = messageHeaders.get(HEADER_KEY_INREPLYTO);
+        if(item instanceof String) { messageNode.setInReplyTo((String)item); }
+
+        item = messageHeaders.get(HEADER_KEY_MESSAGEID);
+        if(item instanceof String) { messageNode.setMessageId((String)item); }
+    }
 
     private void populateOutgoingMessageHeaders(OutgoingMessageNode messageNode, Hashtable messageHeaders) {
         long sendingAccountId = -1;
@@ -310,21 +311,21 @@ public class MessageNodeReader {
         long replyToAccountId = -1;
         AccountNode replyToAccount = null;
         MessageToken replyToToken = null;
-        
+
         // Read the items stored in the headers
         Object item;
         item = messageHeaders.get(HEADER_KEY_OUTGOING_SENDING_ACCOUNT);
         if(item instanceof Long) { sendingAccountId = ((Long)item).longValue(); }
-        
+
         item = messageHeaders.get(HEADER_KEY_OUTGOING_MAIL_SENDER);
         if(item instanceof Long) { mailSenderId = ((Long)item).longValue(); }
-        
+
         item = messageHeaders.get(HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT);
         if(item instanceof Long) { replyToAccountId = ((Long)item).longValue(); }
 
         item = messageHeaders.get(HEADER_KEY_OUTGOING_REPLYTO_TOKEN);
         if(item instanceof byte[]) { replyToToken = (MessageToken)SerializationUtils.deserializeClass((byte[])item); }
-        
+
         // Resolve the accounts
         if(sendingAccountId != -1 || replyToAccountId != -1) {
             AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
@@ -335,14 +336,14 @@ public class MessageNodeReader {
                     if(accountId == sendingAccountId) {
                         messageNode.setSendingAccount(accounts[i]);
                     }
-                    
+
                     if(accountId == replyToAccountId) {
                         replyToAccount = accounts[i];
                     }
                 }
             }
         }
-        
+
         // Resolve the mail sender
         if(mailSenderId != -1) {
             OutgoingConfig outgoingConfig = MailSettings.getInstance().getOutgoingConfigByUniqueId(mailSenderId);
@@ -354,26 +355,26 @@ public class MessageNodeReader {
                 messageNode.setMailSender(mailSender);
             }
         }
-        
+
         // Resolve the Reply-To message
         if(replyToAccount != null && replyToToken != null) {
             messageNode.setReplyToAccount(replyToAccount);
             messageNode.setReplyToToken(replyToToken);
         }
     }
-	
-	private static Address[] createAddressArray(String[] addresses) {
-		Address[] addressArray = new Address[addresses.length];
-		for(int i=0; i<addresses.length; i++) {
-			addressArray[i] = new Address(addresses[i]);
-		}
-		return addressArray;
-	}
-	
-	private static final int byteArrayToInt(byte[] b, int off) {
-		return (b[off] << 24)
-          + ((b[off+1] & 0xFF) << 16)
-          + ((b[off+2] & 0xFF) << 8)
-          + (b[off+3] & 0xFF);
-	}
+
+    private static Address[] createAddressArray(String[] addresses) {
+        Address[] addressArray = new Address[addresses.length];
+        for(int i=0; i<addresses.length; i++) {
+            addressArray[i] = new Address(addresses[i]);
+        }
+        return addressArray;
+    }
+
+    private static final int byteArrayToInt(byte[] b, int off) {
+        return (b[off] << 24)
+        + ((b[off+1] & 0xFF) << 16)
+        + ((b[off+2] & 0xFF) << 8)
+        + (b[off+3] & 0xFF);
+    }
 }
