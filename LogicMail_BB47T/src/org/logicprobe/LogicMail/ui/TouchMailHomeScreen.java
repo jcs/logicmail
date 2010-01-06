@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *    notice, this list of conditions and the following disclaimer. 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other materials provided with the distribution. 
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -30,18 +30,18 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.system.Bitmap;
+
 import org.logicprobe.LogicMail.model.MailRootNode;
-import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.Node;
 
-public class ScreenFactoryBB47T extends ScreenFactoryBB42 {
-	public ScreenFactoryBB47T() {
-	}
-	
-	public StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {
-		return new StandardTouchScreen(navigationController, new TouchMailHomeScreen(mailRootNode));
-	}
+public class TouchMailHomeScreen extends MailHomeScreen {
 
-	public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-		return new StandardTouchScreen(navigationController, new MailboxScreen(mailboxNode));
-	}
+    public TouchMailHomeScreen(MailRootNode mailRootNode) {
+        super(mailRootNode);
+    }
+
+    protected Bitmap getNodeIcon(Node node) {
+        return TouchNodeIcons.getBigIcon(node);
+    }
 }
