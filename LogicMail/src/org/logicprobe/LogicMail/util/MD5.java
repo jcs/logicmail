@@ -134,28 +134,28 @@ public class MD5 {
          * 128-bit state
          */
         int state[];
-        
+
         /**
          * 64-bit character count
          */
         long count;
-        
+
         /**
          * 64-byte buffer (512 bits) for storing to-be-hashed characters
          */
         byte buffer[];
-        
+
         public MD5State() {
             buffer = new byte[64];
             count = 0;
             state = new int[4];
-            
+
             state[0] = 0x67452301;
             state[1] = 0xefcdab89;
             state[2] = 0x98badcfe;
             state[3] = 0x10325476;
         }
-        
+
         /** Create this State as a copy of another state */
         public MD5State(MD5State from) {
             this();
@@ -167,16 +167,16 @@ public class MD5 {
             this.count = from.count;
         }
     };
-    
+
     private MD5State state;
     private MD5State finals;
-    
+
     private static final byte padding[]	=
-        {(byte)0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0 };
-    
+    {(byte)0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0 };
+
     /*
      * len += shift; for (int i = 0; shift < len; i++, shift += 4) { out[i] =
      * ((int) (buffer[shift] & 0xff)) | (((int) (buffer[shift + 1] & 0xff)) <<
@@ -184,7 +184,7 @@ public class MD5 {
      * buffer[shift + 3]) << 24); }
      */
 
-    
+
     private final void decode( final byte buffer[], final int shift, final int[] out) {
         out[0] = (buffer[shift] & 0xff) | ((buffer[shift + 1] & 0xff) << 8)
         | ((buffer[shift + 2] & 0xff) << 16)
@@ -248,12 +248,12 @@ public class MD5 {
         | ((buffer[shift + 62] & 0xff) << 16)
         | (buffer[shift + 63] << 24);
     }
-    
+
     private final void transform(MD5State state, byte buffer[], int shift, int[] decode_buf) {
         int a = state.state[0], b = state.state[1], c = state.state[2], d = state.state[3], x[] = decode_buf;
-        
+
         decode(buffer, shift, decode_buf);
-        
+
         /* Round 1 */
         a += ((b & c) | (~b & d)) + x[0] + 0xd76aa478; /* 1 */
         a = ((a << 7) | (a >>> 25)) + b;
@@ -263,7 +263,7 @@ public class MD5 {
         c = ((c << 17) | (c >>> 15)) + d;
         b += ((c & d) | (~c & a)) + x[3] + 0xc1bdceee; /* 4 */
         b = ((b << 22) | (b >>> 10)) + c;
-        
+
         a += ((b & c) | (~b & d)) + x[4] + 0xf57c0faf; /* 5 */
         a = ((a << 7) | (a >>> 25)) + b;
         d += ((a & b) | (~a & c)) + x[5] + 0x4787c62a; /* 6 */
@@ -272,7 +272,7 @@ public class MD5 {
         c = ((c << 17) | (c >>> 15)) + d;
         b += ((c & d) | (~c & a)) + x[7] + 0xfd469501; /* 8 */
         b = ((b << 22) | (b >>> 10)) + c;
-        
+
         a += ((b & c) | (~b & d)) + x[8] + 0x698098d8; /* 9 */
         a = ((a << 7) | (a >>> 25)) + b;
         d += ((a & b) | (~a & c)) + x[9] + 0x8b44f7af; /* 10 */
@@ -281,7 +281,7 @@ public class MD5 {
         c = ((c << 17) | (c >>> 15)) + d;
         b += ((c & d) | (~c & a)) + x[11] + 0x895cd7be; /* 12 */
         b = ((b << 22) | (b >>> 10)) + c;
-        
+
         a += ((b & c) | (~b & d)) + x[12] + 0x6b901122; /* 13 */
         a = ((a << 7) | (a >>> 25)) + b;
         d += ((a & b) | (~a & c)) + x[13] + 0xfd987193; /* 14 */
@@ -290,7 +290,7 @@ public class MD5 {
         c = ((c << 17) | (c >>> 15)) + d;
         b += ((c & d) | (~c & a)) + x[15] + 0x49b40821; /* 16 */
         b = ((b << 22) | (b >>> 10)) + c;
-        
+
         /* Round 2 */
         a += ((b & d) | (c & ~d)) + x[1] + 0xf61e2562; /* 17 */
         a = ((a << 5) | (a >>> 27)) + b;
@@ -300,7 +300,7 @@ public class MD5 {
         c = ((c << 14) | (c >>> 18)) + d;
         b += ((c & a) | (d & ~a)) + x[0] + 0xe9b6c7aa; /* 20 */
         b = ((b << 20) | (b >>> 12)) + c;
-        
+
         a += ((b & d) | (c & ~d)) + x[5] + 0xd62f105d; /* 21 */
         a = ((a << 5) | (a >>> 27)) + b;
         d += ((a & c) | (b & ~c)) + x[10] + 0x02441453; /* 22 */
@@ -309,7 +309,7 @@ public class MD5 {
         c = ((c << 14) | (c >>> 18)) + d;
         b += ((c & a) | (d & ~a)) + x[4] + 0xe7d3fbc8; /* 24 */
         b = ((b << 20) | (b >>> 12)) + c;
-        
+
         a += ((b & d) | (c & ~d)) + x[9] + 0x21e1cde6; /* 25 */
         a = ((a << 5) | (a >>> 27)) + b;
         d += ((a & c) | (b & ~c)) + x[14] + 0xc33707d6; /* 26 */
@@ -318,7 +318,7 @@ public class MD5 {
         c = ((c << 14) | (c >>> 18)) + d;
         b += ((c & a) | (d & ~a)) + x[8] + 0x455a14ed; /* 28 */
         b = ((b << 20) | (b >>> 12)) + c;
-        
+
         a += ((b & d) | (c & ~d)) + x[13] + 0xa9e3e905; /* 29 */
         a = ((a << 5) | (a >>> 27)) + b;
         d += ((a & c) | (b & ~c)) + x[2] + 0xfcefa3f8; /* 30 */
@@ -327,7 +327,7 @@ public class MD5 {
         c = ((c << 14) | (c >>> 18)) + d;
         b += ((c & a) | (d & ~a)) + x[12] + 0x8d2a4c8a; /* 32 */
         b = ((b << 20) | (b >>> 12)) + c;
-        
+
         /* Round 3 */
         a += (b ^ c ^ d) + x[5] + 0xfffa3942; /* 33 */
         a = ((a << 4) | (a >>> 28)) + b;
@@ -337,7 +337,7 @@ public class MD5 {
         c = ((c << 16) | (c >>> 16)) + d;
         b += (c ^ d ^ a) + x[14] + 0xfde5380c; /* 36 */
         b = ((b << 23) | (b >>> 9)) + c;
-        
+
         a += (b ^ c ^ d) + x[1] + 0xa4beea44; /* 37 */
         a = ((a << 4) | (a >>> 28)) + b;
         d += (a ^ b ^ c) + x[4] + 0x4bdecfa9; /* 38 */
@@ -346,7 +346,7 @@ public class MD5 {
         c = ((c << 16) | (c >>> 16)) + d;
         b += (c ^ d ^ a) + x[10] + 0xbebfbc70; /* 40 */
         b = ((b << 23) | (b >>> 9)) + c;
-        
+
         a += (b ^ c ^ d) + x[13] + 0x289b7ec6; /* 41 */
         a = ((a << 4) | (a >>> 28)) + b;
         d += (a ^ b ^ c) + x[0] + 0xeaa127fa; /* 42 */
@@ -355,7 +355,7 @@ public class MD5 {
         c = ((c << 16) | (c >>> 16)) + d;
         b += (c ^ d ^ a) + x[6] + 0x04881d05; /* 44 */
         b = ((b << 23) | (b >>> 9)) + c;
-        
+
         a += (b ^ c ^ d) + x[9] + 0xd9d4d039; /* 33 */
         a = ((a << 4) | (a >>> 28)) + b;
         d += (a ^ b ^ c) + x[12] + 0xe6db99e5; /* 34 */
@@ -364,7 +364,7 @@ public class MD5 {
         c = ((c << 16) | (c >>> 16)) + d;
         b += (c ^ d ^ a) + x[2] + 0xc4ac5665; /* 36 */
         b = ((b << 23) | (b >>> 9)) + c;
-        
+
         /* Round 4 */
         a += (c ^ (b | ~d)) + x[0] + 0xf4292244; /* 49 */
         a = ((a << 6) | (a >>> 26)) + b;
@@ -374,7 +374,7 @@ public class MD5 {
         c = ((c << 15) | (c >>> 17)) + d;
         b += (d ^ (c | ~a)) + x[5] + 0xfc93a039; /* 52 */
         b = ((b << 21) | (b >>> 11)) + c;
-        
+
         a += (c ^ (b | ~d)) + x[12] + 0x655b59c3; /* 53 */
         a = ((a << 6) | (a >>> 26)) + b;
         d += (b ^ (a | ~c)) + x[3] + 0x8f0ccc92; /* 54 */
@@ -383,7 +383,7 @@ public class MD5 {
         c = ((c << 15) | (c >>> 17)) + d;
         b += (d ^ (c | ~a)) + x[1] + 0x85845dd1; /* 56 */
         b = ((b << 21) | (b >>> 11)) + c;
-        
+
         a += (c ^ (b | ~d)) + x[8] + 0x6fa87e4f; /* 57 */
         a = ((a << 6) | (a >>> 26)) + b;
         d += (b ^ (a | ~c)) + x[15] + 0xfe2ce6e0; /* 58 */
@@ -392,7 +392,7 @@ public class MD5 {
         c = ((c << 15) | (c >>> 17)) + d;
         b += (d ^ (c | ~a)) + x[13] + 0x4e0811a1; /* 60 */
         b = ((b << 21) | (b >>> 11)) + c;
-        
+
         a += (c ^ (b | ~d)) + x[4] + 0xf7537e82; /* 61 */
         a = ((a << 6) | (a >>> 26)) + b;
         d += (b ^ (a | ~c)) + x[11] + 0xbd3af235; /* 62 */
@@ -401,13 +401,13 @@ public class MD5 {
         c = ((c << 15) | (c >>> 17)) + d;
         b += (d ^ (c | ~a)) + x[9] + 0xeb86d391; /* 64 */
         b = ((b << 21) | (b >>> 11)) + c;
-        
+
         state.state[0] += a;
         state.state[1] += b;
         state.state[2] += c;
         state.state[3] += d;
     }
-    
+
     /**
      * Updates hash with the bytebuffer given (using at maximum length bytes
      * from that buffer)
@@ -429,14 +429,14 @@ public class MD5 {
         if ((length - offset) > buffer.length) {
             length = buffer.length - offset;
         }
-        
+
         /* compute number of bytes mod 64 */
-        
+
         index = (int) (stat.count & 0x3f);
         stat.count += length;
-        
+
         partlen = 64 - index;
-        
+
         if (length >= partlen) {
             // update state (using only Java) to reflect input
             int[] decode_buf = new int[16];
@@ -461,7 +461,7 @@ public class MD5 {
             }
         }
     }
-    
+
     private static final byte[] encode( final int input[], final int len) {
         int i, j;
         byte out[];
@@ -474,17 +474,17 @@ public class MD5 {
         }
         return out;
     }
-    
+
     public MD5() {
         state = new MD5State();
         finals = null;
     }
-    
+
     public void reset() {
         state = new MD5State();
         finals = null;
     }
-    
+
     /**
      * Updates hash with given array of bytes
      *
@@ -497,7 +497,7 @@ public class MD5 {
         }
         update( state, buffer,0, buffer.length );
     }
-    
+
     /**
      * Returns array of bytes (16 bytes) representing hash as of the current
      * state of this object. Note: getting a hash does not invalidate the hash
@@ -505,7 +505,7 @@ public class MD5 {
      *
      * @return Array of 16 bytes, the hash of all updated bytes
      */
-    public synchronized final byte[] getDigest() {
+    public final byte[] getDigest() {
         byte bits[];
         int index, padlen;
         MD5State fin;
@@ -520,7 +520,7 @@ public class MD5 {
             /* Update() sets finals to null */
             finals = fin;
         }
-        
+
         return encode(finals.state, 16);
     }
 }

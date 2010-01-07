@@ -104,7 +104,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private MailboxNode selectedDraftFolder;
     private FieldChangeListener fieldChangeListener;
 
-    private class NullOutgoingConfig extends OutgoingConfig {
+    private static class NullOutgoingConfig extends OutgoingConfig {
         public String toString() {
             return resources.getString(LogicMailResource.CONFIG_ACCOUNT_NONE);
         }
@@ -554,7 +554,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 imapConfig.setMaxFolderDepth(Integer.parseInt(
                         imapMaxFolderDepthEditField.getText()));
             } catch (Exception e) { }
-            
+
             imapConfig.setOnlySubscribedFolders(imapShowOnlySubscribedField.getChecked());
         }
         else if(accountConfig instanceof PopConfig) {

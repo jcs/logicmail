@@ -44,6 +44,8 @@ import java.util.Vector;
  * handle data corruption that could result in a bad size value.
  */
 public class SerializableVector extends Vector implements Serializable {
+    private int hashcode = -1;
+
     final private static int TYPE_NULL    = 0;
     final private static int TYPE_BOOLEAN = 1;
     final private static int TYPE_BYTE    = 2;
@@ -56,9 +58,9 @@ public class SerializableVector extends Vector implements Serializable {
     final private static int TYPE_SHORT   = 9;
 
     final private static int MAX_ITEMS = 1000;
-    
+
     private long uniqueId;
-    
+
     /**
      * Creates a new instance of SerializableVector.
      * This class only supports vectors containing objects which
@@ -129,28 +131,28 @@ public class SerializableVector extends Vector implements Serializable {
     private static Object readObject(DataInput input) throws IOException {
         int type = input.readInt();
         switch(type) {
-            case TYPE_BOOLEAN:
-                return new Boolean(input.readBoolean());
-            case TYPE_BYTE:
-                return new Byte(input.readByte());
-            case TYPE_CHAR:
-                return new Character(input.readChar());
-            case TYPE_STRING:
-                return input.readUTF();
-            case TYPE_DOUBLE:
-                return new Double(input.readDouble());
-            case TYPE_FLOAT:
-                return new Float(input.readFloat());
-            case TYPE_INT:
-                return new Integer(input.readInt());
-            case TYPE_LONG:
-                return new Long(input.readLong());
-            case TYPE_SHORT:
-                return new Short(input.readShort());
-            case TYPE_NULL:
-                return null;
-            default:
-                return null;
+        case TYPE_BOOLEAN:
+            return new Boolean(input.readBoolean());
+        case TYPE_BYTE:
+            return new Byte(input.readByte());
+        case TYPE_CHAR:
+            return new Character(input.readChar());
+        case TYPE_STRING:
+            return input.readUTF();
+        case TYPE_DOUBLE:
+            return new Double(input.readDouble());
+        case TYPE_FLOAT:
+            return new Float(input.readFloat());
+        case TYPE_INT:
+            return new Integer(input.readInt());
+        case TYPE_LONG:
+            return new Long(input.readLong());
+        case TYPE_SHORT:
+            return new Short(input.readShort());
+        case TYPE_NULL:
+            return null;
+        default:
+            return null;
         }
     }
 
@@ -170,7 +172,7 @@ public class SerializableVector extends Vector implements Serializable {
         if(size > MAX_ITEMS) {
             throw new IOException();
         }
-        
+
         for(int i=0; i<size; i++) {
             this.addElement(readObject(input));
         }
@@ -178,5 +180,35 @@ public class SerializableVector extends Vector implements Serializable {
 
     public long getUniqueId() {
         return uniqueId;
-    }    
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        if(hashcode == -1) {
+            hashcode = 31 * 1 + (int) (uniqueId ^ (uniqueId >>> 32));
+        }
+        return hashcode;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        SerializableVector other = (SerializableVector) obj;
+        if (uniqueId != other.uniqueId) {
+            return false;
+        }
+        return true;
+    }
 }

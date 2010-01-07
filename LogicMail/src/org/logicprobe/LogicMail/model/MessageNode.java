@@ -1039,7 +1039,7 @@ public class MessageNode implements Node {
         }
     }
 
-    private class FindFirstTextPartVisitor extends AbstractMimeMessagePartVisitor {
+    private static class FindFirstTextPartVisitor extends AbstractMimeMessagePartVisitor {
         private TextPart firstTextPart;
 
         public TextPart getFirstTextPart() { return firstTextPart; }

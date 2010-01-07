@@ -46,6 +46,8 @@ import java.util.Hashtable;
  * handle data corruption that could result in a bad size value.
  */
 public class SerializableHashtable extends Hashtable implements Serializable {
+    private int hashcode = -1;
+
     final private static int TYPE_NULL    = 0;
     final private static int TYPE_BOOLEAN = 1;
     final private static int TYPE_BYTE    = 2;
@@ -61,9 +63,9 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     final private static int TYPE_DATE    = 10;
 
     final private static int MAX_ITEMS = 1000;
-    
+
     private long uniqueId;
-    
+
     /**
      * Creates a new instance of SerializableHashtable.
      * This class only supports hash tables containing objects which
@@ -87,7 +89,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
         super(initialCapacity);
         uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
     }
-    
+
     private static void writeObject(DataOutput output, Object item) throws IOException {
         if(item instanceof Boolean) {
             output.writeInt(TYPE_BOOLEAN);
@@ -116,7 +118,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             String[] stringArray = (String[])item;
             output.writeInt(stringArray.length);
             for(int i = 0; i < stringArray.length; i++) {
-            	output.writeUTF(stringArray[i]);
+                output.writeUTF(stringArray[i]);
             }
         }
         else if(item instanceof Double) {
@@ -140,8 +142,8 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             output.writeShort(((Short)item).shortValue());
         }
         else if(item instanceof Date) {
-        	output.writeInt(TYPE_DATE);
-        	output.writeLong(((Date)item).getTime());
+            output.writeInt(TYPE_DATE);
+            output.writeLong(((Date)item).getTime());
         }
         else {
             output.writeInt(TYPE_NULL);
@@ -153,45 +155,45 @@ public class SerializableHashtable extends Hashtable implements Serializable {
         int type = input.readInt();
         int len;
         switch(type) {
-            case TYPE_BOOLEAN:
-                return new Boolean(input.readBoolean());
-            case TYPE_BYTE:
-                return new Byte(input.readByte());
-            case TYPE_BYTE_ARRAY:
-                len = input.readInt();
-                byte[] byteArray = new byte[len];
-                input.readFully(byteArray);
-                return byteArray;
-            case TYPE_CHAR:
-                return new Character(input.readChar());
-            case TYPE_STRING:
-                return input.readUTF();
-            case TYPE_STRING_ARRAY:
-            	len = input.readInt();
-            	String[] stringArray = new String[len];
-            	for(int i=0; i<len; i++) {
-            		stringArray[i] = input.readUTF();
-            	}
-            	return stringArray;
-            case TYPE_DOUBLE:
-                return new Double(input.readDouble());
-            case TYPE_FLOAT:
-                return new Float(input.readFloat());
-            case TYPE_INT:
-                return new Integer(input.readInt());
-            case TYPE_LONG:
-                return new Long(input.readLong());
-            case TYPE_SHORT:
-                return new Short(input.readShort());
-            case TYPE_DATE:
-            	return new Date(input.readLong());
-            case TYPE_NULL:
-                return null;
-            default:
-                return null;
+        case TYPE_BOOLEAN:
+            return new Boolean(input.readBoolean());
+        case TYPE_BYTE:
+            return new Byte(input.readByte());
+        case TYPE_BYTE_ARRAY:
+            len = input.readInt();
+            byte[] byteArray = new byte[len];
+            input.readFully(byteArray);
+            return byteArray;
+        case TYPE_CHAR:
+            return new Character(input.readChar());
+        case TYPE_STRING:
+            return input.readUTF();
+        case TYPE_STRING_ARRAY:
+            len = input.readInt();
+            String[] stringArray = new String[len];
+            for(int i=0; i<len; i++) {
+                stringArray[i] = input.readUTF();
+            }
+            return stringArray;
+        case TYPE_DOUBLE:
+            return new Double(input.readDouble());
+        case TYPE_FLOAT:
+            return new Float(input.readFloat());
+        case TYPE_INT:
+            return new Integer(input.readInt());
+        case TYPE_LONG:
+            return new Long(input.readLong());
+        case TYPE_SHORT:
+            return new Short(input.readShort());
+        case TYPE_DATE:
+            return new Date(input.readLong());
+        case TYPE_NULL:
+            return null;
+        default:
+            return null;
         }
     }
-    
+
     public void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
         output.writeInt(this.size());
@@ -224,5 +226,35 @@ public class SerializableHashtable extends Hashtable implements Serializable {
 
     public long getUniqueId() {
         return uniqueId;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        if(hashcode == -1) {
+            hashcode = 31 * 1 + (int) (uniqueId ^ (uniqueId >>> 32));
+        }
+        return hashcode;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        SerializableHashtable other = (SerializableHashtable) obj;
+        if (uniqueId != other.uniqueId) {
+            return false;
+        }
+        return true;
     }
 }

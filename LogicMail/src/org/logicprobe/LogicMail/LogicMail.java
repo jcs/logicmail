@@ -72,7 +72,7 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 /**
  * Main class for the application.
  */
-public class LogicMail extends UiApplication {
+public final class LogicMail extends UiApplication {
     private NavigationController navigationController;
     private Screen loadingScreen;
 

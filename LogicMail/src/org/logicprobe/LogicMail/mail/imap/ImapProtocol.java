@@ -519,6 +519,7 @@ public class ImapProtocol {
                             rawText.indexOf('(')));
                 } catch (Exception exp) {
                     parsedText = null;
+                    continue;
                 }
 
                 FetchFlagsResponse flagRespItem = new FetchFlagsResponse();
