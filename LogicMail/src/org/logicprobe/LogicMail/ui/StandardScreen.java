@@ -50,19 +50,20 @@ import net.rim.device.api.ui.container.MainScreen;
  * implementation.
  */
 public class StandardScreen extends MainScreen {
-	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-	protected static StatusBarField statusBarField = new StatusBarField();
-	private NavigationController navigationController;
-	private HeaderField headerField;
-	private Field originalStatusField;
-    
+    protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    protected static StatusBarField statusBarField = new StatusBarField();
+    private NavigationController navigationController;
+    private HeaderField headerField;
+    private Field originalStatusField;
+    private Field currentStatusField;
+
     private MenuItem configItem;
     private MenuItem aboutItem;
     private MenuItem closeItem;
     private MenuItem exitItem;
-	
-	protected ScreenProvider screenProvider;
-	
+
+    protected ScreenProvider screenProvider;
+
     /**
      * Instantiates a new standard screen.
      * 
@@ -72,9 +73,9 @@ public class StandardScreen extends MainScreen {
     public StandardScreen(NavigationController navigationController, ScreenProvider screenProvider) {
         super();
         if(navigationController == null || screenProvider == null) {
-        	throw new IllegalArgumentException();
+            throw new IllegalArgumentException();
         }
-        
+
         this.navigationController = navigationController;
         this.screenProvider = screenProvider;
         initialize();
@@ -86,157 +87,161 @@ public class StandardScreen extends MainScreen {
     private void initialize() {
         // Create screen elements
         if(screenProvider.getTitle() != null) {
-	        this.headerField = new HeaderField(resources.getString(LogicMailResource.APPNAME) + " - " + screenProvider.getTitle());
-	        setTitle(headerField);
+            this.headerField = new HeaderField(resources.getString(LogicMailResource.APPNAME) + " - " + screenProvider.getTitle());
+            setTitle(headerField);
         }
-        
+
         initMenuItems();
         screenProvider.setNavigationController(navigationController);
         screenProvider.initFields(this);
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.container.MainScreen#setStatus(net.rim.device.api.ui.Field)
      */
     public void setStatus(Field status) {
-    	originalStatusField = status;
-    	superSetStatusImpl(status);
+        originalStatusField = status;
+        superSetStatusImpl(status);
     }
 
     /**
      * Wrapper for internal calls to {@link MainScreen#setStatus(Field)}
-     * that makes sure <code>IllegalStateException</code>s don't appear
-     * if the field had previously been added.
+     * that makes sure <code>IllegalStateException</code>s do not appear
+     * if the field had previously been added, and that the field does
+     * not get added if it is already the active status field.
      * 
      * @param status the new status field
      */
     private void superSetStatusImpl(Field status) {
-        if(status != null && status.getManager() != null) {
-            status.getManager().delete(status);
+        if(currentStatusField != status) {
+            currentStatusField = status;
+            if(status != null && status.getManager() != null) {
+                status.getManager().delete(status);
+            }
+            super.setStatus(status);
         }
-        super.setStatus(status);
     }
-    
+
     /**
      * Update status text, showing or hiding the status bar as necessary.
      * 
      * @param statusText the status text
      */
     public void updateStatus(String statusText) {
-    	statusBarField.setStatusText(statusText);
-    	if(statusBarField.hasStatus()) {
-    		superSetStatusImpl(statusBarField);
-    	}
-    	else {
-    		superSetStatusImpl(originalStatusField);
-    	}
+        statusBarField.setStatusText(statusText);
+        if(statusBarField.hasStatus()) {
+            superSetStatusImpl(statusBarField);
+        }
+        else {
+            superSetStatusImpl(originalStatusField);
+        }
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#onDisplay()
      */
     protected void onDisplay() {
-    	super.onDisplay();
-    	updateStatus(navigationController.getCurrentStatus());
-    	NotificationHandler.getInstance().cancelNotification();
-    	screenProvider.onDisplay();
+        super.onDisplay();
+        updateStatus(navigationController.getCurrentStatus());
+        NotificationHandler.getInstance().cancelNotification();
+        screenProvider.onDisplay();
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#onUndisplay()
      */
     protected void onUndisplay() {
-    	screenProvider.onUndisplay();
-    	superSetStatusImpl(originalStatusField);
-		statusBarField.setStatusText(null);
-    	NotificationHandler.getInstance().cancelNotification();
-    	super.onUndisplay();
+        screenProvider.onUndisplay();
+        superSetStatusImpl(originalStatusField);
+        statusBarField.setStatusText(null);
+        NotificationHandler.getInstance().cancelNotification();
+        super.onUndisplay();
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#onExposed()
      */
     protected void onExposed() {
-    	super.onExposed();
-    	updateStatus(navigationController.getCurrentStatus());
+        super.onExposed();
+        updateStatus(navigationController.getCurrentStatus());
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#onObscured()
      */
     protected void onObscured() {
-    	super.onObscured();
-    	superSetStatusImpl(originalStatusField);
-   		statusBarField.setStatusText(null);
+        super.onObscured();
+        superSetStatusImpl(originalStatusField);
+        statusBarField.setStatusText(null);
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#onClose()
      */
     public boolean onClose() {
-    	boolean result = screenProvider.onClose();
-    	if(result) {
-    		if(this.isDisplayed()) {
-    			close();
-    		}
-    	}
-    	return result;
+        boolean result = screenProvider.onClose();
+        if(result) {
+            if(this.isDisplayed()) {
+                close();
+            }
+        }
+        return result;
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Field#onVisibilityChange(boolean)
      */
     protected void onVisibilityChange(boolean visible) {
-    	screenProvider.onVisibilityChange(visible);
+        screenProvider.onVisibilityChange(visible);
     }
-    
+
     private void initMenuItems() {
-	    configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 10020, 10) {
-	        public void run() {
-	            showConfigScreen();
-	        }
-	    };
-	    aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 10050, 10) {
-	        public void run() {
-	            // Show the about dialog
-	        	AboutDialog dialog = new AboutDialog();
-	        	dialog.doModal();
-	        }
-	    };
-	    closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
-	        public void run() {
-	        	// TODO: Deal with closing/hiding while still running
-	        	
-	            StandardScreen.super.onClose();
-	        }
-	    };
-	    exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 200001, 10) {
-	        public void run() {
-	        	tryShutdownApplication();
-	        }
-	    };
+        configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 10020, 10) {
+            public void run() {
+                showConfigScreen();
+            }
+        };
+        aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 10050, 10) {
+            public void run() {
+                // Show the about dialog
+                AboutDialog dialog = new AboutDialog();
+                dialog.doModal();
+            }
+        };
+        closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
+            public void run() {
+                // TODO: Deal with closing/hiding while still running
+
+                StandardScreen.super.onClose();
+            }
+        };
+        exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 200001, 10) {
+            public void run() {
+                tryShutdownApplication();
+            }
+        };
     }
-    
+
     public void tryShutdownApplication() {
-    	// Get all accounts
-    	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-    	
-    	// Find out of we still have an open connection
-    	boolean openConnection = false;
-    	for(int i=0; i<accounts.length; i++) {
-    		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
-    			openConnection = true;
-    			break;
-    		}
-    	}
-    	
+        // Get all accounts
+        AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+
+        // Find out of we still have an open connection
+        boolean openConnection = false;
+        for(int i=0; i<accounts.length; i++) {
+            if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+                openConnection = true;
+                break;
+            }
+        }
+
         if(openConnection) {
             if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.BASE_CLOSEANDEXIT)) == Dialog.YES) {
-            	for(int i=0; i<accounts.length; i++) {
-            		if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
-            			accounts[i].requestDisconnect(true);
-            		}
-            	}
+                for(int i=0; i<accounts.length; i++) {
+                    if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+                        accounts[i].requestDisconnect(true);
+                    }
+                }
                 headerField.removeListeners();
                 NotificationHandler.getInstance().shutdown();
                 System.exit(0);
@@ -248,7 +253,7 @@ public class StandardScreen extends MainScreen {
             System.exit(0);
         }
     }
-    
+
     /**
      * Shows the configuration screen.
      * Subclasses should override this method if they need to
@@ -258,12 +263,12 @@ public class StandardScreen extends MainScreen {
     protected void showConfigScreen() {
         UiApplication.getUiApplication().pushModalScreen(new ConfigScreen());
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.container.MainScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     protected void makeMenu(Menu menu, int instance) {
-    	screenProvider.makeMenu(menu, instance);
+        screenProvider.makeMenu(menu, instance);
         menu.addSeparator();
         menu.add(configItem);
         menu.add(aboutItem);
@@ -282,24 +287,24 @@ public class StandardScreen extends MainScreen {
      * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
     protected boolean navigationClick(int status, int time) {
-    	boolean result = screenProvider.navigationClick(status, time);
-    	if(!result) {
-    		result = super.navigationClick(status, time);
-    	}
-    	return result;
+        boolean result = screenProvider.navigationClick(status, time);
+        if(!result) {
+            result = super.navigationClick(status, time);
+        }
+        return result;
     }
 
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     protected boolean keyChar(char c, int status, int time) {
-    	boolean result = screenProvider.keyChar(c, status, time);
-    	if(!result) {
-    		result = super.keyChar(c, status, time);
-    	}
-    	return result;
+        boolean result = screenProvider.keyChar(c, status, time);
+        if(!result) {
+            result = super.keyChar(c, status, time);
+        }
+        return result;
     }
-    
+
     /**
      * Gets the enabled state of a shortcut button.
      * Provided for subclasses that support shortcut buttons.
@@ -308,10 +313,10 @@ public class StandardScreen extends MainScreen {
      * @return the enabled state
      */
     public boolean isShortcutEnabled(int id) {
-    	// Shortcuts not supported by the base screen class
-    	return false;
+        // Shortcuts not supported by the base screen class
+        return false;
     }
-    
+
     /**
      * Sets the enabled state of a shortcut button.
      * Provided for subclasses that support shortcut buttons.
@@ -320,6 +325,6 @@ public class StandardScreen extends MainScreen {
      * @param enabled the enabled state
      */
     public void setShortcutEnabled(int id, boolean enabled) {
-    	// Shortcuts not supported by the base screen class
+        // Shortcuts not supported by the base screen class
     }
 }
