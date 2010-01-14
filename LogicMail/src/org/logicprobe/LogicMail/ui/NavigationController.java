@@ -37,7 +37,6 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Status;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.mail.MailConnectionListener;
 import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
@@ -99,20 +98,7 @@ public final class NavigationController {
 			public void run() {
 				// Start the new account configuration wizard
 				AccountConfigWizard wizard = new AccountConfigWizard();
-				if(wizard.start()) {
-					AccountConfig newAccountConfig = wizard.getAccountConfig();
-					
-					// Find the newly created account, and trigger a folder refresh (if applicable)
-					AccountNode[] accounts = mailRootNode.getAccounts();
-					for(int i=0; i<accounts.length; i++) {
-						if(accounts[i].getAccountConfig() == newAccountConfig) {
-							if(accounts[i].hasFolders()) {
-								accounts[i].refreshMailboxes();
-							}
-							break;
-						}
-					}
-				}
+				wizard.start();
 			}
 		});
 	}

@@ -48,213 +48,238 @@ import net.rim.device.api.ui.container.HorizontalFieldManager;
  * fields for input and instruction.
  */
 public abstract class WizardScreen extends MainScreen {
-	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-	private LabelField titleLabel;
-	private HorizontalFieldManager statusFieldManager;
-	private ButtonField cancelButton;
-	private ButtonField prevButton;
-	private ButtonField nextButton;
+    protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    private WizardController controller;
+    private LabelField titleLabel;
+    private HorizontalFieldManager statusFieldManager;
+    private ButtonField cancelButton;
+    private ButtonField prevButton;
+    private ButtonField nextButton;
 
-	public final static int PAGE_NORMAL = 0;
-	public final static int PAGE_FIRST  = 1;
-	public final static int PAGE_LAST   = 2;
+    public final static int PAGE_NORMAL = 0;
+    public final static int PAGE_FIRST  = 1;
+    public final static int PAGE_LAST   = 2;
 
-	public final static int RESULT_CANCEL = 0;
-	public final static int RESULT_PREV   = 1;
-	public final static int RESULT_NEXT   = 2;
-	
-	private final static int MENU_CONTEXT = 0x10000;
-	
-	private String title;
-	private int pageType;
-	private int pageResult;
-	private boolean isInputValid;
-	private boolean isEnabled = true;
-	
-	public WizardScreen(String title, int pageType) {
-		this.title = title;
-		this.pageType = pageType;
-		this.pageResult = RESULT_CANCEL;
-		initBaseFields();
-		initFields();
-		nextButton.setEditable(isInputValid);
-	}
-	
-	private void initBaseFields() {
+    public final static int RESULT_CANCEL = 0;
+    public final static int RESULT_PREV   = 1;
+    public final static int RESULT_NEXT   = 2;
+
+    private final static int MENU_CONTEXT = 0x10000;
+
+    private String title;
+    private int pageType;
+    private int pageResult;
+    private boolean isInputValid;
+    private boolean isEnabled = true;
+
+    public WizardScreen(String title, int pageType) {
+        this.title = title;
+        this.pageType = pageType;
+        this.pageResult = RESULT_CANCEL;
+        initBaseFields();
+        initFields();
+        nextButton.setEditable(isInputValid);
+    }
+
+    private void initBaseFields() {
         titleLabel = new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleLabel);
-		
+
         cancelButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_CANCEL));
         cancelButton.setChangeListener(new FieldChangeListener() {
-			public void fieldChanged(Field field, int context) {
-				cancelButton_fieldChanged(field, context);
-			}
+            public void fieldChanged(Field field, int context) {
+                cancelButton_fieldChanged(field, context);
+            }
         });
         prevButton = new ButtonField("< " + resources.getString(LogicMailResource.WIZARD_PREV));
         prevButton.setChangeListener(new FieldChangeListener() {
-			public void fieldChanged(Field field, int context) {
-				prevButton_fieldChanged(field, context);
-			}
+            public void fieldChanged(Field field, int context) {
+                prevButton_fieldChanged(field, context);
+            }
         });
         nextButton = new ButtonField(resources.getString(LogicMailResource.WIZARD_NEXT) + " >");
         nextButton.setChangeListener(new FieldChangeListener() {
-			public void fieldChanged(Field field, int context) {
-				nextButton_fieldChanged(field, context);
-			}
+            public void fieldChanged(Field field, int context) {
+                nextButton_fieldChanged(field, context);
+            }
         });
-        
+
         statusFieldManager = new HorizontalFieldManager() {
-    	    protected void onFocus(int direction) {
-    	    	if(direction == 1) {
-    	    		// Force focus to the last button on field entry
-    	    		if(isInputValid) {
-    	    			getField(getFieldCount() - 1).setFocus();
-    	    		}
-    	    		else {
-    	    			getField(getFieldCount() - 2).setFocus();
-    	    		}
-    	    	}
-    	    	else {
-    	    		super.onFocus(direction);
-    	    	}
-    	    }
-    	};
-    	
+            protected void onFocus(int direction) {
+                if(direction == 1) {
+                    // Force focus to the last button on field entry
+                    if(isInputValid) {
+                        getField(getFieldCount() - 1).setFocus();
+                    }
+                    else {
+                        getField(getFieldCount() - 2).setFocus();
+                    }
+                }
+                else {
+                    super.onFocus(direction);
+                }
+            }
+        };
+
         statusFieldManager.add(cancelButton);
         if(pageType == PAGE_NORMAL) {
-        	statusFieldManager.add(prevButton);
-        	statusFieldManager.add(nextButton);
+            statusFieldManager.add(prevButton);
+            statusFieldManager.add(nextButton);
         }
         else if(pageType == PAGE_FIRST) {
-        	statusFieldManager.add(nextButton);
+            statusFieldManager.add(nextButton);
         }
         else if(pageType == PAGE_LAST) {
-        	statusFieldManager.add(prevButton);
-        	nextButton.setLabel(resources.getString(LogicMailResource.WIZARD_FINISH));
-        	statusFieldManager.add(nextButton);
+            statusFieldManager.add(prevButton);
+            nextButton.setLabel(resources.getString(LogicMailResource.WIZARD_FINISH));
+            statusFieldManager.add(nextButton);
         }
-        
+
         setStatus(statusFieldManager);
-	}
+    }
 
-	/**
-	 * Creates the page-specific input fields.
-	 */
-	protected abstract void initFields();
-	
-	/**
-	 * Sets whether this screen contains input valid data,
-	 * and should provide a next button.
-	 * 
-	 * @param isInputValid True if input data is valid
-	 */
-	protected void setInputValid(boolean isInputValid) {
-		this.isInputValid = isInputValid;
-		nextButton.setEditable(isInputValid);
-	}
-	
-	/**
-	 * Gets whether this screen contains valid input data.
-	 * 
-	 * @return True if input data is valid
-	 */
-	protected boolean isInputValid() {
-		return this.isInputValid;
-	}
-	
-	/**
-	 * Sets whether this screen is marked as enabled.
-	 * 
-	 * @param isEnabled True for enabled, false for disabled.
-	 */
-	public void setEnabled(boolean isEnabled) {
-		this.isEnabled = isEnabled;
-	}
-	
-	/**
-	 * Gets whether this screen is marked as enabled.
-	 * 
-	 * @return True for enabled, false for disabled.
-	 */
-	public boolean isEnabled() {
-		return this.isEnabled;
-	}
+    /**
+     * Creates the page-specific input fields.
+     */
+    protected abstract void initFields();
 
-	/* (non-Javadoc)
-	 * @see net.rim.device.api.ui.Screen#onMenu(int)
-	 */
-	public boolean onMenu(int instance) {
-		boolean result;
-		// Prevent the context menu from being shown if focus
-		// is on the field containing navigation buttons.
-		if (getFieldWithFocus() == statusFieldManager
-				&& instance == MENU_CONTEXT) {
-			result = false;
-		}
-		else {
-			result = super.onMenu(instance);
-		}
-		return result;
-	}
-	
-	protected boolean keyChar(char c, int status, int time) {
-		return super.keyChar(c, status, time);
-	}
+    /**
+     * Sets the reference to the wizard controller.
+     * This method should only be called by the controller
+     * itself when the screen is added or removed.
+     * 
+     * @param controller reference to the wizard controller
+     */
+    final void setWizardController(WizardController controller) {
+        this.controller = controller;
+    }
+    
+    /**
+     * Sets whether this screen contains input valid data,
+     * and should provide a next button.
+     * 
+     * @param isInputValid True if input data is valid
+     */
+    protected void setInputValid(boolean isInputValid) {
+        this.isInputValid = isInputValid;
+        nextButton.setEditable(isInputValid);
+    }
 
-	private void cancelButton_fieldChanged(Field field, int context) {
-		pageResult = RESULT_CANCEL;
-		onClose();
-	}
-	
-	private void prevButton_fieldChanged(Field field, int context) {
-		pageResult = RESULT_PREV;
-		onClose();
-	}
+    /**
+     * Gets whether this screen contains valid input data.
+     * 
+     * @return True if input data is valid
+     */
+    protected boolean isInputValid() {
+        return this.isInputValid;
+    }
 
-	private void nextButton_fieldChanged(Field field, int context) {
-		pageResult = RESULT_NEXT;	
-		onClose();
-	}
+    /**
+     * Sets whether this screen is marked as enabled.
+     * 
+     * @param isEnabled True for enabled, false for disabled.
+     */
+    public void setEnabled(boolean isEnabled) {
+        this.isEnabled = isEnabled;
+    }
 
-	/**
-	 * Called by the controller just before pushing the screen on
-	 * the display stack, so the screen can do anything necessary
-	 * to populate its contents from shared data.
-	 */
-	public void onPageEnter() { }
-	
-	/**
-	 * Called just before a page transition, so the screen can
-	 * store any local data.
-	 */
-	protected void onPageFlip() { }
-	
-	public boolean onClose() {
-		if(pageResult == RESULT_CANCEL) {
+    /**
+     * Gets whether this screen is marked as enabled.
+     * 
+     * @return True for enabled, false for disabled.
+     */
+    public boolean isEnabled() {
+        return this.isEnabled;
+    }
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#onMenu(int)
+     */
+    public boolean onMenu(int instance) {
+        boolean result;
+        // Prevent the context menu from being shown if focus
+        // is on the field containing navigation buttons.
+        if (getFieldWithFocus() == statusFieldManager
+                && instance == MENU_CONTEXT) {
+            result = false;
+        }
+        else {
+            result = super.onMenu(instance);
+        }
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
+     */
+    protected boolean keyChar(char c, int status, int time) {
+        return super.keyChar(c, status, time);
+    }
+
+    private void cancelButton_fieldChanged(Field field, int context) {
+        pageResult = RESULT_CANCEL;
+        onClose();
+    }
+
+    private void prevButton_fieldChanged(Field field, int context) {
+        pageResult = RESULT_PREV;
+        onClose();
+    }
+
+    private void nextButton_fieldChanged(Field field, int context) {
+        pageResult = RESULT_NEXT;	
+        onClose();
+    }
+
+    /**
+     * Called by the controller just before pushing the screen on
+     * the display stack, so the screen can do anything necessary
+     * to populate its contents from shared data.
+     */
+    public void onPageEnter() { }
+
+    /**
+     * Called just before a page transition, so the screen can
+     * store any local data.
+     */
+    protected void onPageFlip() { }
+
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#onClose()
+     */
+    public boolean onClose() {
+        if(pageResult == RESULT_CANCEL) {
             int result =
-            	Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.WIZARD_CONFIRM_CANCEL));
+                Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.WIZARD_CONFIRM_CANCEL));
             if(result == Dialog.YES) {
-            	close();
+                close();
                 return true;
             }
             else {
                 return false;
             }
-		}
-		else {
-			onPageFlip();
-			close();
-			return true;
-		}
-	}
+        }
+        else {
+            onPageFlip();
+            close();
+            return true;
+        }
+    }
+    
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#close()
+     */
+    public final void close() {
+        controller.closeWizardScreen();
+    }
+    
+    public int getPageResult() {
+        return pageResult;
+    }
 
-	public int getPageResult() {
-		return pageResult;
-	}
-	
-	/**
-	 * Called by the controller on all pages in sequence, so that results
-	 * of the wizard can be gathered and processed.
-	 */
-	public void gatherResults() { }
+    /**
+     * Called by the controller on all pages in sequence, so that results
+     * of the wizard can be gathered and processed.
+     */
+    public void gatherResults() { }
 }

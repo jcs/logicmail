@@ -51,8 +51,6 @@ import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
-import org.logicprobe.LogicMail.model.AccountNode;
-import org.logicprobe.LogicMail.model.MailManager;
 
 /**
  * This screen is the main entry point to all the
@@ -525,20 +523,7 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     private void newAccountWizard() {
         AccountConfigWizard wizard = new AccountConfigWizard();
-        if(wizard.start()) {
-            AccountConfig newAccountConfig = wizard.getAccountConfig();
-
-            // Find the newly created account, and trigger a folder refresh (if applicable)
-            AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-            for(int i=0; i<accounts.length; i++) {
-                if(accounts[i].getAccountConfig() == newAccountConfig) {
-                    if(accounts[i].hasFolders()) {
-                        accounts[i].refreshMailboxes();
-                    }
-                    break;
-                }
-            }
-        }
+        wizard.start();
     }
 
     /**
