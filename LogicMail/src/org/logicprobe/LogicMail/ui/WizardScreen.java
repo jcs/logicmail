@@ -35,6 +35,7 @@ import org.logicprobe.LogicMail.LogicMailResource;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
@@ -213,6 +214,9 @@ public abstract class WizardScreen extends MainScreen {
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     protected boolean keyChar(char c, int status, int time) {
+        if(c == Keypad.KEY_ESCAPE) {
+            pageResult = RESULT_CANCEL;
+        }
         return super.keyChar(c, status, time);
     }
 

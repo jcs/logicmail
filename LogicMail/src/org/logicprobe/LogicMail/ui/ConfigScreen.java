@@ -49,6 +49,8 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
 
@@ -66,7 +68,6 @@ public class ConfigScreen extends AbstractConfigScreen {
     private Hashtable identityIndexMap;
     private Hashtable accountIndexMap;
     private Hashtable outgoingIndexMap;
-    private boolean configurationChanged;
 
     /**
      * Instantiates a new configuration screen.
@@ -81,6 +82,12 @@ public class ConfigScreen extends AbstractConfigScreen {
         initFields();
 
         buildAccountsList();
+        
+        MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
+            public void mailSettingsSaved(MailSettingsEvent e) {
+                buildAccountsList();
+            }
+        });
     }
 
     /**
@@ -103,24 +110,6 @@ public class ConfigScreen extends AbstractConfigScreen {
         outgoingId = configTreeField.addSiblingNode(accountsId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS)));
 
         add(configTreeField);
-    }
-
-    /* (non-Javadoc)
-     * @see net.rim.device.api.ui.Screen#onDisplay()
-     */
-    protected void onDisplay() {
-        configurationChanged = false;
-        super.onDisplay();
-    }
-
-    /* (non-Javadoc)
-     * @see net.rim.device.api.ui.Screen#onUndisplay()
-     */
-    protected void onUndisplay() {
-        if(configurationChanged) {
-            configurationChanged = false;
-        }
-        super.onUndisplay();
     }
 
     /**
@@ -318,7 +307,6 @@ public class ConfigScreen extends AbstractConfigScreen {
                 UiApplication.getUiApplication().pushModalScreen(identityConfigScreen);
                 if(identityConfigScreen.configSaved()) {
                     mailSettings.saveSettings();
-                    configurationChanged = true;
                 }
                 result = true;
             }
@@ -328,7 +316,6 @@ public class ConfigScreen extends AbstractConfigScreen {
                 UiApplication.getUiApplication().pushModalScreen(accountConfigScreen);
                 if(accountConfigScreen.acctSaved()) {
                     mailSettings.saveSettings();
-                    configurationChanged = true;
                 }
                 result = true;
             }
@@ -338,13 +325,9 @@ public class ConfigScreen extends AbstractConfigScreen {
                 UiApplication.getUiApplication().pushModalScreen(outgoingConfigScreen);
                 if(outgoingConfigScreen.acctSaved()) {
                     mailSettings.saveSettings();
-                    configurationChanged = true;
                 }
                 result = true;
             }
-        }
-        if(result) {
-            buildAccountsList();
         }
         return result;
     }
@@ -396,8 +379,6 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         if(result) {
             mailSettings.saveSettings();
-            configurationChanged = true;
-            buildAccountsList();
         }
     }
 
@@ -448,8 +429,6 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         if(result) {
             mailSettings.saveSettings();
-            configurationChanged = true;
-            buildAccountsList();
         }
     }
 
@@ -536,8 +515,6 @@ public class ConfigScreen extends AbstractConfigScreen {
         if(identityConfigScreen.configSaved()) {
             mailSettings.addIdentityConfig(identityConfig);
             mailSettings.saveSettings();
-            configurationChanged = true;
-            buildAccountsList();
         }
     }
 
@@ -552,11 +529,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeIdentityConfig(index);
-            mailSettings.saveSettings();
-            configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             identityIndexMap.remove(identityConfig);
-            buildAccountsList();
+            mailSettings.saveSettings();
         }
     }
 
@@ -578,8 +553,6 @@ public class ConfigScreen extends AbstractConfigScreen {
             if(accountConfigScreen.acctSaved()) {
                 mailSettings.addAccountConfig(acctConfig);
                 mailSettings.saveSettings();
-                configurationChanged = true;
-                buildAccountsList();
             }
         }
     }
@@ -595,11 +568,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeAccountConfig(index);
-            mailSettings.saveSettings();
-            configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             accountIndexMap.remove(acctConfig);
-            buildAccountsList();
+            mailSettings.saveSettings();
         }
     }
 
@@ -613,8 +584,6 @@ public class ConfigScreen extends AbstractConfigScreen {
         if(outgoingConfigScreen.acctSaved()) {
             mailSettings.addOutgoingConfig(outgoingConfig);
             mailSettings.saveSettings();
-            configurationChanged = true;
-            buildAccountsList();
         }
     }
 
@@ -629,11 +598,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeOutgoingConfig(index);
-            mailSettings.saveSettings();
-            configurationChanged = true;
             configTreeField.deleteSubtree(configTreeField.getCurrentNode());
             outgoingIndexMap.remove(outgoingConfig);
-            buildAccountsList();
+            mailSettings.saveSettings();
         }
     }
 

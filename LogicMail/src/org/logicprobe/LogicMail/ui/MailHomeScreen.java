@@ -100,6 +100,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
     private Hashtable nodeIdMap;
 
     public MailHomeScreen(MailRootNode mailRootNode) {
+        this.firstVisible = true;
         this.mailRootNode = mailRootNode;
         this.nodeIdMap = new Hashtable();
         this.mailManager = MailManager.getInstance();
@@ -149,23 +150,23 @@ public class MailHomeScreen extends AbstractScreenProvider {
         // However, the icons are contained within the platform support library
         // containing actual touchscreen API support.
         return new ShortcutItem[] {
-                new ShortcutItem(
-                        SHORTCUT_COMPOSE,
-                        resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL),
-                        "shortcut-compose.png", "shortcut-compose-d.png"),
-                        new ShortcutItem(
-                                SHORTCUT_FOLDER,
-                                resources.getString(LogicMailResource.MENUITEM_TOGGLE_FOLDER),
-                                "shortcut-folder.png", "shortcut-folder-d.png"),
-                                null,
-                                new ShortcutItem(
-                                        SHORTCUT_UP,
-                                        resources.getString(LogicMailResource.MENUITEM_SCROLL_UP),
-                                        "shortcut-up.png", "shortcut-up-d.png"),
-                                        new ShortcutItem(
-                                                SHORTCUT_DOWN,
-                                                resources.getString(LogicMailResource.MENUITEM_SCROLL_DOWN),
-                                                "shortcut-down.png", "shortcut-down-d.png")
+            new ShortcutItem(
+                    SHORTCUT_COMPOSE,
+                    resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL),
+                    "shortcut-compose.png", "shortcut-compose-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_FOLDER,
+                    resources.getString(LogicMailResource.MENUITEM_TOGGLE_FOLDER),
+                    "shortcut-folder.png", "shortcut-folder-d.png"),
+                    null,
+            new ShortcutItem(
+                    SHORTCUT_UP,
+                    resources.getString(LogicMailResource.MENUITEM_SCROLL_UP),
+                    "shortcut-up.png", "shortcut-up-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_DOWN,
+                    resources.getString(LogicMailResource.MENUITEM_SCROLL_DOWN),
+                    "shortcut-down.png", "shortcut-down-d.png")
         };
     }
 
