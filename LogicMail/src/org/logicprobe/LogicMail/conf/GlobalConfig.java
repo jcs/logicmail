@@ -384,11 +384,11 @@ public class GlobalConfig implements Serializable {
                 setLocalDataLocation(fsRoots[0]);
             }
         }
-        value = table.get("account_transportType");
+        value = table.get("global_transportType");
         if(value instanceof Integer) {
             transportType = ((Integer)value).intValue();
         }
-        value = table.get("account_enableWiFi");
+        value = table.get("global_enableWiFi");
         if(value instanceof Boolean) {
             enableWiFi = ((Boolean)value).booleanValue();
         }

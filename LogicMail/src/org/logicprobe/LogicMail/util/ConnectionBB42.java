@@ -51,8 +51,6 @@ public class ConnectionBB42 extends Connection {
     /** Flags indicating the coverage status of each transport */
     protected boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
 
-    private int transportSelection = TRANSPORT_AUTO;
-    
     /**
      * Initializes a new connection object.
      * 
@@ -74,16 +72,16 @@ public class ConnectionBB42 extends Connection {
         String urlBase = buf.toString();
         
         StreamConnection connection = null;
-        if((transportSelection & TRANSPORT_WIFI) != 0 && srWiFi != null && coverageWiFi) {
+        if((transports & TRANSPORT_WIFI) != 0 && srWiFi != null && coverageWiFi) {
             connection = attemptWiFi(urlBase);
         }
-        if(connection == null && (transportSelection & TRANSPORT_DIRECT_TCP) != 0 && coverageTCP) {
+        if(connection == null && (transports & TRANSPORT_DIRECT_TCP) != 0 && coverageTCP) {
             connection = attemptDirectTCP(urlBase);
         }
-        if(connection == null && (transportSelection & TRANSPORT_MDS) != 0 && srMDS != null && coverageMDS) {
+        if(connection == null && (transports & TRANSPORT_MDS) != 0 && srMDS != null && coverageMDS) {
             connection = attemptMDS(urlBase);
         }
-        if(connection == null && (transportSelection & TRANSPORT_WAP2) != 0 && srWAP2 != null && coverageWAP2) {
+        if(connection == null && (transports & TRANSPORT_WAP2) != 0 && srWAP2 != null && coverageWAP2) {
             connection = attemptWAP2(urlBase);
         }
         
