@@ -49,7 +49,7 @@ public class ConnectionBB42 extends Connection {
     /** Stores transport ServiceBooks if found. Otherwise, null */
     private ServiceRecord srMDS, srWAP2, srWiFi;
     /** Flags indicating the coverage status of each transport */
-    private boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
+    protected boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
 
     private int transportSelection = TRANSPORT_AUTO;
     
@@ -118,7 +118,16 @@ public class ConnectionBB42 extends Connection {
                     srWAP2 = myRecord;
                 }
             }   
-        }       
+        }
+        
+        initializeCoverage();
+    }
+
+    /**
+     * Coverage check APIs change on different OS versions, so this method
+     * exists to allow subclasses to override as necessary.
+     */
+    protected void initializeCoverage() {
         if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_CARRIER)){
             coverageTCP=true;
             coverageWAP2=true;
@@ -129,8 +138,8 @@ public class ConnectionBB42 extends Connection {
         if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_CARRIER, RadioInfo.WAF_WLAN, false)) {
             coverageWiFi = true;
         }
-    }   
-
+    }
+    
     private StreamConnection attemptWiFi(String urlBase) {
         String connectStr = urlBase + ";interface=wifi";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {

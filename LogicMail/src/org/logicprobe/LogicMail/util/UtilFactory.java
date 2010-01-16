@@ -48,6 +48,7 @@ public abstract class UtilFactory {
     private static String[] factoryClasses = {
         "org.logicprobe.LogicMail.util.UtilFactoryBB50",
         "org.logicprobe.LogicMail.util.UtilFactoryBB47",
+        "org.logicprobe.LogicMail.util.UtilFactoryBB46",
         "org.logicprobe.LogicMail.util.UtilFactoryBB42"
     };
 
