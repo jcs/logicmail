@@ -72,7 +72,7 @@ public class ConnectionBB42 extends Connection {
         String urlBase = buf.toString();
         
         StreamConnection connection = null;
-        if(((transports & TRANSPORT_WIFI) != 0) && srWiFi != null && coverageWiFi) {
+        if(((transports & TRANSPORT_WIFI) != 0) && coverageWiFi) {
             connection = attemptWiFi(urlBase);
         }
         if(connection == null && ((transports & TRANSPORT_DIRECT_TCP) != 0) && coverageTCP) {
@@ -147,11 +147,11 @@ public class ConnectionBB42 extends Connection {
         // since its value and the newer constant are both 1, we will just
         // use the value directly.
         int COVERAGE_CARRIER = 1;
-        if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER)){
+        if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER)) {
             coverageTCP=true;
             coverageWAP2=true;
         }
-        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_MDS)){           
+        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_MDS)) {           
             coverageMDS=true;
         }   
         if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER, RadioInfo.WAF_WLAN, false)) {
