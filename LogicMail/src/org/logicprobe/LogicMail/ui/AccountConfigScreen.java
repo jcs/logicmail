@@ -76,7 +76,6 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BasicEditField serverPortField;
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
-    private CheckboxField useMdsField;
     private ObjectChoiceField identityField;
     private ObjectChoiceField outgoingServerField;
 
@@ -85,6 +84,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private LabelField sentFolderChoiceButtonLabel;
     private LabelField draftFolderChoiceLabel;
     private LabelField draftFolderChoiceButtonLabel;
+
+    // Advanced settings fields (both)
+    private ObjectChoiceField networkTransportChoiceField;
+    private CheckboxField enableWiFiCheckboxField;
 
     // Advanced settings fields (IMAP)
     private BasicEditField imapFolderPrefixField;
@@ -154,17 +157,17 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 AcctCfgScreen_fieldChanged(field, context);
             }};
 
-            initFields();
+        initFields();
 
-            IdentityConfig selectedIdentityConfig = this.accountConfig.getIdentityConfig();
-            if(selectedIdentityConfig != null) {
-                identityField.setSelectedIndex(selectedIdentityConfig);
-            }
+        IdentityConfig selectedIdentityConfig = this.accountConfig.getIdentityConfig();
+        if(selectedIdentityConfig != null) {
+            identityField.setSelectedIndex(selectedIdentityConfig);
+        }
 
-            OutgoingConfig selectedOutgoingConfig = this.accountConfig.getOutgoingConfig();
-            if(selectedOutgoingConfig != null) {
-                outgoingServerField.setSelectedIndex(selectedOutgoingConfig);
-            }
+        OutgoingConfig selectedOutgoingConfig = this.accountConfig.getOutgoingConfig();
+        if(selectedOutgoingConfig != null) {
+            outgoingServerField.setSelectedIndex(selectedOutgoingConfig);
+        }
     }
 
     private static String getTitle(AccountConfig accountConfig) {
@@ -253,9 +256,6 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ',
                 accountConfig.getServerPass(),
                 256, TextField.NO_NEWLINE);
-        useMdsField = new CheckboxField(
-                resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY),
-                !accountConfig.getDeviceSide());
         identityField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + ' ',
                 identityConfigs, 0);
@@ -269,11 +269,11 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(serverPortField);
         manager.add(serverUserField);
         manager.add(serverPassField);
-        manager.add(useMdsField);
         manager.add(new LabelField());
         manager.add(identityField);
         manager.add(outgoingServerField);
-
+        manager.add(new LabelField());
+        
         return manager;
     }
 
@@ -302,6 +302,31 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      */
     private Manager initFieldsAdvanced() {
         Manager manager = new VerticalFieldManager();
+        
+        String[] transportChoices = {
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_TRANSPORT_USE_GLOBAL),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_AUTO),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_DIRECT_TCP),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_MDS),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2)
+        };
+        networkTransportChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_NETWORK_TRANSPORT),
+                transportChoices,
+                getTransportChoice(accountConfig.getTransportType()));
+        networkTransportChoiceField.setChangeListener(fieldChangeListener);
+        
+        enableWiFiCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_ENABLE_WIFI),
+                accountConfig.getEnableWiFi());
+        if(networkTransportChoiceField.getSelectedIndex() == 0) {
+            enableWiFiCheckboxField.setChecked(false);
+            enableWiFiCheckboxField.setEditable(false);
+        }
+        
+        manager.add(networkTransportChoiceField);
+        manager.add(enableWiFiCheckboxField);
+        
         if(accountConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)accountConfig;
 
@@ -365,6 +390,16 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             if(contentFieldManager.getField(0) != pageFieldManagers[index]) {
                 contentFieldManager.deleteAll();
                 contentFieldManager.add(pageFieldManagers[index]);
+            }
+        }
+        else if(field == networkTransportChoiceField) {
+            if(networkTransportChoiceField.getSelectedIndex() == 0) {
+                enableWiFiCheckboxField.setChecked(false);
+                enableWiFiCheckboxField.setEditable(false);
+            }
+            else {
+                enableWiFiCheckboxField.setChecked(true);
+                enableWiFiCheckboxField.setEditable(true);
             }
         }
     }
@@ -456,6 +491,56 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         return buf.toString();
     }
 
+    private static int getTransportChoice(int transportSetting) {
+        int result;
+        switch(transportSetting) {
+        case ConnectionConfig.TRANSPORT_GLOBAL:
+            result = 0;
+            break;
+        case ConnectionConfig.TRANSPORT_AUTO:
+            result = 1;
+            break;
+        case ConnectionConfig.TRANSPORT_DIRECT_TCP:
+            result = 2;
+            break;
+        case ConnectionConfig.TRANSPORT_MDS:
+            result = 3;
+            break;
+        case ConnectionConfig.TRANSPORT_WAP2:
+            result = 4;
+            break;
+        default:
+            result = 0;
+            break;
+        }
+        return result;
+    }
+    
+    private static int getTransportSetting(int transportChoice) {
+        int result;
+        switch(transportChoice) {
+        case 0:
+            result = ConnectionConfig.TRANSPORT_GLOBAL;
+            break;
+        case 1:
+            result = ConnectionConfig.TRANSPORT_AUTO;
+            break;
+        case 2:
+            result = ConnectionConfig.TRANSPORT_DIRECT_TCP;
+            break;
+        case 3:
+            result = ConnectionConfig.TRANSPORT_MDS;
+            break;
+        case 4:
+            result = ConnectionConfig.TRANSPORT_WAP2;
+            break;
+        default:
+            result = ConnectionConfig.TRANSPORT_GLOBAL;
+            break;
+        }
+        return result;
+    }
+    
     /**
      * Determines if this screen is dirty.
      * Custom implementation provided to exempt the page selection field
@@ -509,7 +594,6 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         this.accountConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
         this.accountConfig.setServerUser(serverUserField.getText());
         this.accountConfig.setServerPass(serverPassField.getText());
-        this.accountConfig.setDeviceSide(!useMdsField.getChecked());
 
         IdentityConfig selectedIdentityConfig = (IdentityConfig)identityField.getChoice(identityField.getSelectedIndex());
         if(createDefaultIdentity) {
@@ -534,6 +618,9 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         this.accountConfig.setSentMailbox(selectedSentFolder);
         this.accountConfig.setDraftMailbox(selectedDraftFolder);
 
+        this.accountConfig.setTransportType(getTransportSetting(networkTransportChoiceField.getSelectedIndex()));
+        this.accountConfig.setEnableWiFi(enableWiFiCheckboxField.getChecked());
+        
         if(accountConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)accountConfig;
 

@@ -42,6 +42,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.UtilFactory;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 
 import java.io.IOException;
@@ -78,11 +79,7 @@ public class SmtpClient implements OutgoingMailClient {
     public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
     	this.globalConfig = globalConfig;
         this.outgoingConfig = outgoingConfig;
-        connection = new Connection(
-        		outgoingConfig.getServerName(),
-                outgoingConfig.getServerPort(),
-                outgoingConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                outgoingConfig.getDeviceSide());
+        connection = UtilFactory.getInstance().createConnection(outgoingConfig);
         smtpProtocol = new SmtpProtocol(connection);
 
         if (outgoingConfig.getUseAuth() > 0) {
@@ -106,11 +103,7 @@ public class SmtpClient implements OutgoingMailClient {
 
             if (!isConnected()) {
                 // Rebuild the connection to include new settings
-                connection = new Connection(
-                		outgoingConfig.getServerName(),
-                        outgoingConfig.getServerPort(),
-                        outgoingConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                        outgoingConfig.getDeviceSide());
+                connection = UtilFactory.getInstance().createConnection(outgoingConfig);
                 smtpProtocol = new SmtpProtocol(connection);
             } else {
                 // Set a flag to make sure we rebuild the Connection object
@@ -178,11 +171,7 @@ public class SmtpClient implements OutgoingMailClient {
 
         if (configChanged) {
             // Rebuild the connection to include new settings
-            connection = new Connection(
-            		outgoingConfig.getServerName(),
-                    outgoingConfig.getServerPort(),
-                    outgoingConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                    outgoingConfig.getDeviceSide());
+            connection = UtilFactory.getInstance().createConnection(outgoingConfig);
             smtpProtocol = new SmtpProtocol(connection);
             configChanged = false;
         }

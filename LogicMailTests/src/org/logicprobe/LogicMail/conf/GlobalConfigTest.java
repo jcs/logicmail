@@ -92,7 +92,8 @@ public class GlobalConfigTest extends TestCase {
 
         assertEquals(30, instance.getRetMsgCount());
         assertTrue(!instance.getDispOrder());
-        assertEquals(0, instance.getWifiMode());
+        assertEquals(ConnectionConfig.TRANSPORT_AUTO, instance.getTransportType());
+        assertTrue(instance.getEnableWiFi());
         assertTrue(instance.getHideDeletedMsg());
     }
 
@@ -102,7 +103,8 @@ public class GlobalConfigTest extends TestCase {
             GlobalConfig instance = new GlobalConfig();
             instance.setRetMsgCount(20);
             instance.setDispOrder(true);
-            instance.setWifiMode(1);
+            instance.setTransportType(ConnectionConfig.TRANSPORT_DIRECT_TCP);
+            instance.setEnableWiFi(false);
             instance.setHideDeletedMsg(false);
             
             // Serialize
@@ -117,7 +119,8 @@ public class GlobalConfigTest extends TestCase {
             // Verify results
             assertEquals(20, instance.getRetMsgCount());
             assertTrue(instance.getDispOrder());
-            assertEquals(1, instance.getWifiMode());
+            assertEquals(ConnectionConfig.TRANSPORT_DIRECT_TCP, instance.getTransportType());
+            assertTrue(!instance.getEnableWiFi());
             assertTrue(!instance.getHideDeletedMsg());
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());

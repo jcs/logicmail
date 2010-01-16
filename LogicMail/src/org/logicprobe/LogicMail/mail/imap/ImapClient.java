@@ -61,6 +61,7 @@ import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.UtilFactory;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 
@@ -124,11 +125,7 @@ public class ImapClient implements IncomingMailClient {
 
     public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
         this.accountConfig = accountConfig;
-        connection = new Connection(
-                accountConfig.getServerName(),
-                accountConfig.getServerPort(),
-                accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                accountConfig.getDeviceSide());
+        connection = UtilFactory.getInstance().createConnection(accountConfig);
         imapProtocol = new ImapProtocol(connection);
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
@@ -151,11 +148,7 @@ public class ImapClient implements IncomingMailClient {
 
             if(!isConnected()) {
                 // Rebuild the connection to include new settings
-                connection = new Connection(
-                        accountConfig.getServerName(),
-                        accountConfig.getServerPort(),
-                        accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                        accountConfig.getDeviceSide());
+                connection = UtilFactory.getInstance().createConnection(accountConfig);
                 imapProtocol = new ImapProtocol(connection);
             }
             else {
@@ -256,11 +249,7 @@ public class ImapClient implements IncomingMailClient {
 
         if(configChanged) {
             // Rebuild the connection to include new settings
-            connection = new Connection(
-                    accountConfig.getServerName(),
-                    accountConfig.getServerPort(),
-                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                    accountConfig.getDeviceSide());
+            connection = UtilFactory.getInstance().createConnection(accountConfig);
             imapProtocol = new ImapProtocol(connection);
             configChanged = false;
         }

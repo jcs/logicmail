@@ -57,6 +57,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.UtilFactory;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -91,11 +92,7 @@ public class PopClient implements IncomingMailClient {
     public PopClient(GlobalConfig globalConfig, PopConfig accountConfig) {
         this.globalConfig = globalConfig;
         this.accountConfig = accountConfig;
-        connection = new Connection(
-                accountConfig.getServerName(),
-                accountConfig.getServerPort(),
-                accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                accountConfig.getDeviceSide());
+        connection = UtilFactory.getInstance().createConnection(accountConfig);
         popProtocol = new PopProtocol(connection);
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
@@ -122,11 +119,7 @@ public class PopClient implements IncomingMailClient {
 	        
 	        if(!isConnected()) {
 	        	// Rebuild the connection to include new settings
-	            connection = new Connection(
-	                    accountConfig.getServerName(),
-	                    accountConfig.getServerPort(),
-	                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-	                    accountConfig.getDeviceSide());
+	            connection = UtilFactory.getInstance().createConnection(accountConfig);
 	            popProtocol = new PopProtocol(connection);
 	        }
 	        else {
@@ -205,11 +198,7 @@ public class PopClient implements IncomingMailClient {
         
         if(configChanged) {
         	// Rebuild the connection to include new settings
-            connection = new Connection(
-                    accountConfig.getServerName(),
-                    accountConfig.getServerPort(),
-                    accountConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL,
-                    accountConfig.getDeviceSide());
+            connection = UtilFactory.getInstance().createConnection(accountConfig);
             popProtocol = new PopProtocol(connection);
             configChanged = false;
         }

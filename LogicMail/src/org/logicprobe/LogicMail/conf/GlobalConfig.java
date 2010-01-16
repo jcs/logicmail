@@ -48,53 +48,36 @@ import javax.microedition.io.file.FileConnection;
 public class GlobalConfig implements Serializable {
     private long uniqueId;
 
-    /** WiFi support is disabled, best for non-WiFi devices */
-    final public static int WIFI_DISABLED = 0;
-
-    /** Prompt for WiFi use whenever establishing a connection */
-    final public static int WIFI_PROMPT = 1;
-
-    /** Always use WiFi */
-    final public static int WIFI_ALWAYS = 2;
-
     /** Prefer plain text display for messages */
-    final public static int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
-
+    public static final int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
     /** Prefer HTML display for messages */
-    final public static int MESSAGE_DISPLAY_HTML = 1;
+    public static final int MESSAGE_DISPLAY_HTML = 1;
 
     /** language code to use for the UI, or null for system default */
     private String languageCode;
-
     /** true to enable Unicode normalization */
     private boolean unicodeNormalization;
-
     /** Preferred message display format */
     private int messageDisplayFormat;
-
     /** Number of message headers to retrieve */
     private int retMsgCount;
-
     /** True for ascending, false for descending */
     private boolean dispOrder;
-
     /** Root URL for local file storage */
     private String localDataLocation = "";
-
-    /** Mode for WiFi support */
-    private int wifiMode;
-
+    /** Preferred network transport type */
+    private int transportType;
+    /** Whether WiFi should be used if available */
+    private boolean enableWiFi;
     /** Connection debugging */
     private boolean connDebug;
-
     /** Hide deleted messages */
     private boolean hideDeletedMsg;
-
     /** Local host name override */
     private String localHostname;
 
     public static String FILE_URL_PREFIX = "file:///";
-    
+
     /**
      * Instantiates a new global configuration.
      */
@@ -125,7 +108,8 @@ public class GlobalConfig implements Serializable {
         this.messageDisplayFormat = GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT;
         this.retMsgCount = 30;
         this.dispOrder = false;
-        this.wifiMode = GlobalConfig.WIFI_DISABLED;
+        this.transportType = ConnectionConfig.TRANSPORT_AUTO;
+        this.enableWiFi = true;
         this.hideDeletedMsg = true;
         this.localHostname = "";
         this.localDataLocation = "";
@@ -244,23 +228,41 @@ public class GlobalConfig implements Serializable {
         }
         return localDataLocation;
     }
-
+    
     /**
-     * Gets the WiFi connection mode.
+     * Gets the preferred network transport type.
      * 
-     * @return The WiFi connection mode
+     * @return the preferred network transport type
      */
-    public int getWifiMode() {
-        return wifiMode;
+    public int getTransportType() {
+        return transportType;
     }
-
+    
     /**
-     * Sets the WiFi connection mode.
+     * Sets the preferred network transport type.
      * 
-     * @param wifiMode The WiFi connection mode
+     * @param transportType the new preferred network transport type
      */
-    public void setWifiMode(int wifiMode) {
-        this.wifiMode = wifiMode;
+    public void setTransportType(int transportType) {
+        this.transportType = transportType;
+    }
+    
+    /**
+     * Gets whether to use WiFi if available.
+     * 
+     * @return whether to use WiFi if available
+     */
+    public boolean getEnableWiFi() {
+        return enableWiFi;
+    }
+    
+    /**
+     * Sets whether to use WiFi if available.
+     * 
+     * @param enableWiFi whether to use WiFi if available
+     */
+    public void setEnableWiFi(boolean enableWiFi) {
+        this.enableWiFi = enableWiFi;
     }
 
     /**
@@ -331,7 +333,8 @@ public class GlobalConfig implements Serializable {
         table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_localDataLocation", localDataLocation);
-        table.put("global_wifiMode", new Integer(wifiMode));
+        table.put("global_transportType", new Integer(transportType));
+        table.put("global_enableWiFi", new Boolean(enableWiFi));
         table.put("global_connDebug", new Boolean(connDebug));
         table.put("global_hideDeletedMsg", new Boolean(hideDeletedMsg));
         table.put("global_localHostname", localHostname);
@@ -352,32 +355,27 @@ public class GlobalConfig implements Serializable {
         Object value;
 
         value = table.get("global_languageCode");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             languageCode = (String)value;
         }
-
         value = table.get("global_unicodeNormalization");
-        if(value != null && value instanceof Boolean) {
+        if(value instanceof Boolean) {
             unicodeNormalization = ((Boolean)value).booleanValue();
         }
-
         value = table.get("global_messageDisplayFormat");
-        if ((value != null) && value instanceof Integer) {
+        if (value instanceof Integer) {
             messageDisplayFormat = ((Integer) value).intValue();
         }
-
         value = table.get("global_retMsgCount");
-        if ((value != null) && value instanceof Integer) {
+        if (value instanceof Integer) {
             retMsgCount = ((Integer) value).intValue();
         }
-
         value = table.get("global_dispOrder");
-        if ((value != null) && value instanceof Boolean) {
+        if (value instanceof Boolean) {
             dispOrder = ((Boolean) value).booleanValue();
         }
-
         value = table.get("global_localDataLocation");
-        if ((value != null) && value instanceof String) {
+        if (value instanceof String) {
             setLocalDataLocation((String)value);
         }
         else {
@@ -386,27 +384,24 @@ public class GlobalConfig implements Serializable {
                 setLocalDataLocation(fsRoots[0]);
             }
         }
-
-        value = table.get("global_wifiMode");
-        if ((value != null) && value instanceof Integer) {
-            wifiMode = ((Integer) value).intValue();
-            if ((wifiMode < 0) || (wifiMode > 2)) {
-                wifiMode = GlobalConfig.WIFI_DISABLED;
-            }
+        value = table.get("account_transportType");
+        if(value instanceof Integer) {
+            transportType = ((Integer)value).intValue();
         }
-
+        value = table.get("account_enableWiFi");
+        if(value instanceof Boolean) {
+            enableWiFi = ((Boolean)value).booleanValue();
+        }
         value = table.get("global_connDebug");
-        if ((value != null) && value instanceof Boolean) {
+        if (value instanceof Boolean) {
             connDebug = ((Boolean) value).booleanValue();
         }
-
         value = table.get("global_hideDeletedMsg");
-        if ((value != null) && value instanceof Boolean) {
+        if (value instanceof Boolean) {
             hideDeletedMsg = ((Boolean) value).booleanValue();
         }
-
         value = table.get("global_localHostname");
-        if ((value != null) && value instanceof String) {
+        if (value instanceof String) {
             localHostname = (String) value;
         }
     }
@@ -417,7 +412,7 @@ public class GlobalConfig implements Serializable {
     public long getUniqueId() {
         return uniqueId;
     }
-    
+
     /**
      * Checks provided filesystem root to make sure it exists,
      * creating any intermediate directories as necessary,
@@ -436,17 +431,17 @@ public class GlobalConfig implements Serializable {
             if(p != -1 && q != -1 && p < q) {
                 fsRoot = fsRoot.substring(p + 1, q + 1);
             }
-            
+
             // Add the prefix
             url = FILE_URL_PREFIX + fsRoot;
-            
+
             // Append the necessary elements, creating directories as necessary
             if(url.indexOf("Card/") != -1) {
                 try {
                     FileConnection conn = (FileConnection)Connector.open(url + "BlackBerry/");
                     if(!conn.exists()) { conn.mkdir(); }
                     url = conn.getURL(); conn.close();
-                    
+
                     conn = (FileConnection)Connector.open(url + "logicmail/");
                     if(!conn.exists()) { conn.mkdir(); }
                     url = conn.getURL(); conn.close();
@@ -459,11 +454,11 @@ public class GlobalConfig implements Serializable {
                     FileConnection conn = (FileConnection)Connector.open(url + "home/");
                     if(!conn.exists()) { conn.mkdir(); }
                     url = conn.getURL(); conn.close();
-                    
+
                     conn = (FileConnection)Connector.open(url + "user/");
                     if(!conn.exists()) { conn.mkdir(); }
                     url = conn.getURL(); conn.close();
-                    
+
                     conn = (FileConnection)Connector.open(url + "logicmail/");
                     if(!conn.exists()) { conn.mkdir(); }
                     url = conn.getURL(); conn.close();

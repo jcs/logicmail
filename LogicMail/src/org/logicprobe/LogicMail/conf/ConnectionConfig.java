@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.conf;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -49,7 +50,19 @@ public abstract class ConnectionConfig implements Serializable {
     private String serverName;
     private int serverSecurity;
     private int serverPort;
-    private boolean deviceSide;
+    private int transportType;
+    private boolean enableWiFi;
+
+    /** Use the transport specified in the global configuration */
+    public static final int TRANSPORT_GLOBAL = 0;
+    /** Use the Direct TCP transport */
+    public static final int TRANSPORT_DIRECT_TCP = 10;
+    /** Use the MDS transport */
+    public static final int TRANSPORT_MDS = 20;
+    /** Use the WAP 2.0 transport */
+    public static final int TRANSPORT_WAP2 = 30;
+    /** Automatically select the transport type */
+    public static final int TRANSPORT_AUTO = 9999;
 
     /** Connection is not encrypted */
     public static final int SECURITY_NONE = 0;
@@ -91,7 +104,8 @@ public abstract class ConnectionConfig implements Serializable {
         serverName = "";
         serverSecurity = SECURITY_NONE;
         serverPort = 110;
-        deviceSide = false;
+        transportType = TRANSPORT_GLOBAL;
+        enableWiFi = false;
     }
 
     /**
@@ -167,27 +181,45 @@ public abstract class ConnectionConfig implements Serializable {
     }
 
     /**
-     * Gets whether the connection is device side.
+     * Gets the preferred network transport type.
      * 
-     * @return The device side mode
+     * @return the preferred network transport type
      */
-    public boolean getDeviceSide() {
-        return deviceSide;
+    public int getTransportType() {
+        return transportType;
     }
     
     /**
-     * Sets whether the connection is device side.
+     * Sets the preferred network transport type.
      * 
-     * @param deviceSide The new device side mode
+     * @param transportType the new preferred network transport type
      */
-    public void setDeviceSide(boolean deviceSide) {
-        this.deviceSide = deviceSide;
+    public void setTransportType(int transportType) {
+        this.transportType = transportType;
     }
-
+    
+    /**
+     * Gets whether to use WiFi if available.
+     * 
+     * @return whether to use WiFi if available
+     */
+    public boolean getEnableWiFi() {
+        return enableWiFi;
+    }
+    
+    /**
+     * Sets whether to use WiFi if available.
+     * 
+     * @param enableWiFi whether to use WiFi if available
+     */
+    public void setEnableWiFi(boolean enableWiFi) {
+        this.enableWiFi = enableWiFi;
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
      */
-    final public void serialize(DataOutput output) throws IOException {
+    public final void serialize(DataOutput output) throws IOException {
         output.writeLong(uniqueId);
         SerializableHashtable table = new SerializableHashtable();
         writeConfigItems(table);
@@ -197,7 +229,7 @@ public abstract class ConnectionConfig implements Serializable {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
      */
-    final public void deserialize(DataInput input) throws IOException {
+    public final void deserialize(DataInput input) throws IOException {
         setDefaults();
         uniqueId = input.readLong();
         SerializableHashtable table = new SerializableHashtable();
@@ -217,7 +249,8 @@ public abstract class ConnectionConfig implements Serializable {
         table.put("account_serverName", serverName);
         table.put("account_serverSecurity", new Integer(serverSecurity));
         table.put("account_serverPort", new Integer(serverPort));
-        table.put("account_deviceSide", new Boolean(deviceSide));
+        table.put("account_transportType", new Integer(transportType));
+        table.put("account_enableWiFi", new Boolean(enableWiFi));
     }
     
     /**
@@ -246,9 +279,13 @@ public abstract class ConnectionConfig implements Serializable {
         if(value instanceof Integer) {
             serverPort = ((Integer)value).intValue();
         }
-        value = table.get("account_deviceSide");
+        value = table.get("account_transportType");
+        if(value instanceof Integer) {
+            transportType = ((Integer)value).intValue();
+        }
+        value = table.get("account_enableWiFi");
         if(value instanceof Boolean) {
-            deviceSide = ((Boolean)value).booleanValue();
+            enableWiFi = ((Boolean)value).booleanValue();
         }
     }
 

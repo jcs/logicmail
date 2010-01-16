@@ -16,7 +16,6 @@ import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.PasswordEditField;
-import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.RichTextField;
@@ -75,32 +74,32 @@ public class AccountConfigWizard extends WizardController {
                     newAccountWizardScreen_fieldChanged(field, context);
                 }};
 
-                identityChoiceField = new ObjectChoiceField(
-                        resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_SELECT_IDENTITY),
-                        identityChoices, 0);
-                identityChoiceField.setChangeListener(fieldChangeListener);
+            identityChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_SELECT_IDENTITY),
+                    identityChoices, 0);
+            identityChoiceField.setChangeListener(fieldChangeListener);
 
-                identityNameEditField = new EditField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_IDENTITY) + ' ', "");
-                identityNameEditField.setChangeListener(fieldChangeListener);
+            identityNameEditField = new EditField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_IDENTITY) + ' ', "");
+            identityNameEditField.setChangeListener(fieldChangeListener);
 
-                nameEditField = new EditField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_YOUR_NAME) + ' ', "");
-                nameEditField.setChangeListener(fieldChangeListener);
+            nameEditField = new EditField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_YOUR_NAME) + ' ', "");
+            nameEditField.setChangeListener(fieldChangeListener);
 
-                emailAddressEditField = new EmailAddressEditField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_EMAIL_ADDRESS) + ' ', "");
-                emailAddressEditField.setChangeListener(fieldChangeListener);
+            emailAddressEditField = new EmailAddressEditField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_EMAIL_ADDRESS) + ' ', "");
+            emailAddressEditField.setChangeListener(fieldChangeListener);
 
-                commentsField = new RichTextField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_COMMENTS));
-                commentsField.setFont(this.getFont().derive(Font.ITALIC));
+            commentsField = new RichTextField(resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_COMMENTS));
+            commentsField.setFont(this.getFont().derive(Font.ITALIC));
 
-                add(identityChoiceField);
-                add(identityNameEditField);
-                add(nameEditField);
-                add(emailAddressEditField);
-                add(new LabelField());
-                add(commentsField);
+            add(identityChoiceField);
+            add(identityNameEditField);
+            add(nameEditField);
+            add(emailAddressEditField);
+            add(new LabelField());
+            add(commentsField);
 
-                populateIdentityItems();
-                validateData();
+            populateIdentityItems();
+            validateData();
         }
 
         private void newAccountWizardScreen_fieldChanged(Field field, int context) {
@@ -234,7 +233,6 @@ public class AccountConfigWizard extends WizardController {
         private HostnameEditField nameEditField;
         private ObjectChoiceField securityChoiceField;
         private BasicEditField portEditField;
-        private CheckboxField useMdsCheckboxField;
 
         protected void initFields() {
             fieldChangeListener = new FieldChangeListener() {
@@ -242,32 +240,29 @@ public class AccountConfigWizard extends WizardController {
                     mailServerWizardScreen_fieldChanged(field, context);
                 }};
 
-                descriptionLabelField = new LabelField(resources.getString(LogicMailResource.WIZARD_SCREEN_MAIL_SERVER_QUESTION));
+            descriptionLabelField = new LabelField(resources.getString(LogicMailResource.WIZARD_SCREEN_MAIL_SERVER_QUESTION));
 
-                nameEditField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', "");
-                nameEditField.setChangeListener(fieldChangeListener);
+            nameEditField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', "");
+            nameEditField.setChangeListener(fieldChangeListener);
 
-                securityChoiceField = new ObjectChoiceField(
-                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
-                        new Object[] {
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
-                            ConnectionConfig.SECURITY_NONE);
-                securityChoiceField.setChangeListener(fieldChangeListener);
+            securityChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
+                    new Object[] {
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
+                        ConnectionConfig.SECURITY_NONE);
+            securityChoiceField.setChangeListener(fieldChangeListener);
 
-                portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(143));
-                portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-                portEditField.setChangeListener(fieldChangeListener);
+            portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(143));
+            portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+            portEditField.setChangeListener(fieldChangeListener);
 
-                useMdsCheckboxField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), true);
-
-                add(descriptionLabelField);
-                add(nameEditField);
-                add(securityChoiceField);
-                add(portEditField);
-                add(useMdsCheckboxField);
+            add(descriptionLabelField);
+            add(nameEditField);
+            add(securityChoiceField);
+            add(portEditField);
         }
 
         private void mailServerWizardScreen_fieldChanged(Field field, int context) {
@@ -301,7 +296,7 @@ public class AccountConfigWizard extends WizardController {
             accountConfig.setServerName(nameEditField.getText());
             accountConfig.setServerSecurity(securityChoiceField.getSelectedIndex());
             accountConfig.setServerPort(Integer.parseInt(portEditField.getText()));
-            accountConfig.setDeviceSide(!useMdsCheckboxField.getChecked());
+            accountConfig.setTransportType(ConnectionConfig.TRANSPORT_GLOBAL);
         }
     };
     private WizardScreen authenticationWizardScreen = new WizardScreen(
@@ -341,7 +336,6 @@ public class AccountConfigWizard extends WizardController {
         private HostnameEditField nameEditField;
         private ObjectChoiceField securityChoiceField;
         private BasicEditField portEditField;
-        private CheckboxField useMdsCheckboxField;
 
         protected void initFields() {
             // Populate the list of existing identities
@@ -358,38 +352,35 @@ public class AccountConfigWizard extends WizardController {
                     outgoingServerWizardScreen_fieldChanged(field, context);
                 }};
 
-                outgoingChoiceField = new ObjectChoiceField(
-                        resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_QUESTION),
-                        outgoingChoices, 0);
-                outgoingChoiceField.setChangeListener(fieldChangeListener);
+            outgoingChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_QUESTION),
+                    outgoingChoices, 0);
+            outgoingChoiceField.setChangeListener(fieldChangeListener);
 
-                nameEditField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', "");
-                nameEditField.setChangeListener(fieldChangeListener);
+            nameEditField = new HostnameEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_SERVER) + ' ', "");
+            nameEditField.setChangeListener(fieldChangeListener);
 
-                securityChoiceField = new ObjectChoiceField(
-                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
-                        new Object[] {
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
-                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
-                            ConnectionConfig.SECURITY_NONE);
-                securityChoiceField.setChangeListener(fieldChangeListener);
+            securityChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY),
+                    new Object[] {
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_NEVER),
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS_IF_AVAILABLE),
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_TLS),
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SECURITY_SSL)},
+                        ConnectionConfig.SECURITY_NONE);
+            securityChoiceField.setChangeListener(fieldChangeListener);
 
-                portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(25));
-                portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-                portEditField.setChangeListener(fieldChangeListener);
+            portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(25));
+            portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+            portEditField.setChangeListener(fieldChangeListener);
 
-                useMdsCheckboxField = new CheckboxField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY), true);
+            add(outgoingChoiceField);
+            add(nameEditField);
+            add(securityChoiceField);
+            add(portEditField);
 
-                add(outgoingChoiceField);
-                add(nameEditField);
-                add(securityChoiceField);
-                add(portEditField);
-                add(useMdsCheckboxField);
-
-                populateOutgoingItems();
-                validateData();
+            populateOutgoingItems();
+            validateData();
         }
 
         private void outgoingServerWizardScreen_fieldChanged(Field field, int context) {
@@ -423,23 +414,19 @@ public class AccountConfigWizard extends WizardController {
                 nameEditField.setText(outgoingConfig.getServerName());
                 securityChoiceField.setSelectedIndex(outgoingConfig.getServerSecurity());
                 portEditField.setText(Integer.toString(outgoingConfig.getServerPort()));
-                useMdsCheckboxField.setChecked(!outgoingConfig.getDeviceSide());
 
                 nameEditField.setEditable(false);
                 securityChoiceField.setEditable(false);
                 portEditField.setEditable(false);
-                useMdsCheckboxField.setEditable(false);
             }
             else {
                 nameEditField.setText("");
                 securityChoiceField.setSelectedIndex(ConnectionConfig.SECURITY_NONE);
                 portEditField.setText("25");
-                useMdsCheckboxField.setChecked(true);
 
                 nameEditField.setEditable(true);
                 securityChoiceField.setEditable(true);
                 portEditField.setEditable(true);
-                useMdsCheckboxField.setEditable(true);
             }
         }
         protected void onPageFlip() {
@@ -464,7 +451,7 @@ public class AccountConfigWizard extends WizardController {
                 outgoingConfig.setServerName(nameEditField.getText());
                 outgoingConfig.setServerSecurity(securityChoiceField.getSelectedIndex());
                 outgoingConfig.setServerPort(Integer.parseInt(portEditField.getText()));
-                outgoingConfig.setDeviceSide(!useMdsCheckboxField.getChecked());
+                outgoingConfig.setTransportType(ConnectionConfig.TRANSPORT_GLOBAL);
                 outgoingCreated = true;
             }
         }
@@ -487,26 +474,26 @@ public class AccountConfigWizard extends WizardController {
                     outgoingAuthenticationWizardScreen_fieldChanged(field, context);
                 }};
 
-                descriptionLabelField = new LabelField(resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_AUTHENTICATION_QUESTION));
+            descriptionLabelField = new LabelField(resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_AUTHENTICATION_QUESTION));
 
-                String authTypes[] = {
-                        resources.getString(LogicMailResource.MENUITEM_NONE),
-                        "PLAIN", "LOGIN", "CRAM-MD5" };
-                authChoiceField =
-                    new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ', authTypes, 0);
-                authChoiceField.setChangeListener(fieldChangeListener);
+            String authTypes[] = {
+                    resources.getString(LogicMailResource.MENUITEM_NONE),
+                    "PLAIN", "LOGIN", "CRAM-MD5" };
+            authChoiceField =
+                new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ', authTypes, 0);
+            authChoiceField.setChangeListener(fieldChangeListener);
 
-                userEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', "");
+            userEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', "");
 
-                passEditField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', "");
+            passEditField = new PasswordEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ', "");
 
-                commentsSpacerLabel = new LabelField();
-                commentsField = new RichTextField(resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_AUTHENTICATION_COMMENTS));
-                commentsField.setFont(this.getFont().derive(Font.ITALIC));
+            commentsSpacerLabel = new LabelField();
+            commentsField = new RichTextField(resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_AUTHENTICATION_COMMENTS));
+            commentsField.setFont(this.getFont().derive(Font.ITALIC));
 
-                add(descriptionLabelField);
-                add(authChoiceField);
-                setInputValid(true);
+            add(descriptionLabelField);
+            add(authChoiceField);
+            setInputValid(true);
         }
 
         private void outgoingAuthenticationWizardScreen_fieldChanged(Field field, int context) {

@@ -95,7 +95,8 @@ public class AccountConfigTest extends TestCase {
         assertEquals("", instance.getServerUser());
         assertEquals("", instance.getServerPass());
         assertEquals(143, instance.getServerPort());
-        assertTrue(!instance.getDeviceSide());
+        assertEquals(ConnectionConfig.TRANSPORT_GLOBAL, instance.getTransportType());
+        assertTrue(!instance.getEnableWiFi());
     }
 
     public void testSerialization() {
@@ -108,7 +109,8 @@ public class AccountConfigTest extends TestCase {
             instance.setServerUser("jdoe");
             instance.setServerPass("12345");
             instance.setServerPort(995);
-            instance.setDeviceSide(true);
+            instance.setTransportType(ConnectionConfig.TRANSPORT_DIRECT_TCP);
+            instance.setEnableWiFi(true);
             
             // Serialize
             TestOutputStream testOutput = new TestOutputStream();
@@ -126,7 +128,8 @@ public class AccountConfigTest extends TestCase {
             assertEquals("jdoe", instance.getServerUser());
             assertEquals("12345", instance.getServerPass());
             assertEquals(995, instance.getServerPort());
-            assertTrue(instance.getDeviceSide());
+            assertEquals(ConnectionConfig.TRANSPORT_DIRECT_TCP, instance.getTransportType());
+            assertTrue(instance.getEnableWiFi());
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
             t.printStackTrace();

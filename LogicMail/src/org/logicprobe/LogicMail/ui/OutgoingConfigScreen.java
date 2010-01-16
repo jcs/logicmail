@@ -37,6 +37,7 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.text.TextFilter;
@@ -59,7 +60,8 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
     private ObjectChoiceField useAuthField;
     private BasicEditField serverUserField;
     private PasswordEditField serverPassField;
-    private CheckboxField useMdsField;
+    private ObjectChoiceField networkTransportChoiceField;
+    private CheckboxField enableWiFiCheckboxField;
     
     private boolean acctSaved;
     private OutgoingConfig outgoingConfig;
@@ -133,9 +135,29 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ',
                 outgoingConfig.getServerPass());
         
-        useMdsField = new CheckboxField(
-                resources.getString(LogicMailResource.CONFIG_ACCOUNT_USEMDSPROXY),
-                !outgoingConfig.getDeviceSide());
+        String[] transportChoices = {
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_TRANSPORT_USE_GLOBAL),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_AUTO),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_DIRECT_TCP),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_MDS),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2)
+        };
+        networkTransportChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_NETWORK_TRANSPORT),
+                transportChoices,
+                getTransportChoice(outgoingConfig.getTransportType()));
+        networkTransportChoiceField.setChangeListener(new FieldChangeListener() {
+            public void fieldChanged(Field field, int context) {
+                networkTransportChoiceField_FieldChanged(field, context);
+            }
+        });
+        enableWiFiCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_ENABLE_WIFI),
+                outgoingConfig.getEnableWiFi());
+        if(networkTransportChoiceField.getSelectedIndex() == 0) {
+            enableWiFiCheckboxField.setChecked(false);
+            enableWiFiCheckboxField.setEditable(false);
+        }
         
         headerFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NONE);
         headerFieldManager.add(acctNameField);
@@ -147,12 +169,14 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         contentFieldManager.add(useAuthField);
         contentFieldManager.add(serverUserField);
         contentFieldManager.add(serverPassField);
-        contentFieldManager.add(useMdsField);
+        contentFieldManager.add(new LabelField());
+        contentFieldManager.add(networkTransportChoiceField);
+        contentFieldManager.add(enableWiFiCheckboxField);
         
         add(headerFieldManager);
         add(contentFieldManager);
     }
-    
+
     private void serverSecurityField_FieldChanged(Field field, int context) {
         if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
             serverPortField.setText("465");
@@ -175,6 +199,67 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
             serverUserField.setText("");
             serverPassField.setText("");
         }
+    }
+    
+    private void networkTransportChoiceField_FieldChanged(Field field, int context) {
+        if(networkTransportChoiceField.getSelectedIndex() == 0) {
+            enableWiFiCheckboxField.setChecked(false);
+            enableWiFiCheckboxField.setEditable(false);
+        }
+        else {
+            enableWiFiCheckboxField.setChecked(true);
+            enableWiFiCheckboxField.setEditable(true);
+        }
+    }
+
+    private static int getTransportChoice(int transportSetting) {
+        int result;
+        switch(transportSetting) {
+        case ConnectionConfig.TRANSPORT_GLOBAL:
+            result = 0;
+            break;
+        case ConnectionConfig.TRANSPORT_AUTO:
+            result = 1;
+            break;
+        case ConnectionConfig.TRANSPORT_DIRECT_TCP:
+            result = 2;
+            break;
+        case ConnectionConfig.TRANSPORT_MDS:
+            result = 3;
+            break;
+        case ConnectionConfig.TRANSPORT_WAP2:
+            result = 4;
+            break;
+        default:
+            result = 0;
+            break;
+        }
+        return result;
+    }
+    
+    private static int getTransportSetting(int transportChoice) {
+        int result;
+        switch(transportChoice) {
+        case 0:
+            result = ConnectionConfig.TRANSPORT_GLOBAL;
+            break;
+        case 1:
+            result = ConnectionConfig.TRANSPORT_AUTO;
+            break;
+        case 2:
+            result = ConnectionConfig.TRANSPORT_DIRECT_TCP;
+            break;
+        case 3:
+            result = ConnectionConfig.TRANSPORT_MDS;
+            break;
+        case 4:
+            result = ConnectionConfig.TRANSPORT_WAP2;
+            break;
+        default:
+            result = ConnectionConfig.TRANSPORT_GLOBAL;
+            break;
+        }
+        return result;
     }
 
     protected boolean onSavePrompt() {
@@ -205,7 +290,8 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         this.outgoingConfig.setServerPort(Integer.parseInt(serverPortField.getText()));
         this.outgoingConfig.setServerUser(serverUserField.getText());
         this.outgoingConfig.setServerPass(serverPassField.getText());
-        this.outgoingConfig.setDeviceSide(!useMdsField.getChecked());
+        this.outgoingConfig.setTransportType(getTransportSetting(networkTransportChoiceField.getSelectedIndex()));
+        this.outgoingConfig.setEnableWiFi(enableWiFiCheckboxField.getChecked());
         this.outgoingConfig.setUseAuth(useAuthField.getSelectedIndex());
         if(useAuthField.getSelectedIndex() > 0) {
             this.outgoingConfig.setServerUser(serverUserField.getText());
