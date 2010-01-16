@@ -128,14 +128,19 @@ public class ConnectionBB42 extends Connection {
      * exists to allow subclasses to override as necessary.
      */
     protected void initializeCoverage() {
-        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_CARRIER)){
+        // CoverageInfo.COVERAGE_CARRIER does not exist on newer API versions,
+        // which would have prevented this method from compiling.  However,
+        // since its value and the newer constant are both 1, we will just
+        // use the value directly.
+        int COVERAGE_CARRIER = 1;
+        if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER)){
             coverageTCP=true;
             coverageWAP2=true;
         }
         if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_MDS)){           
             coverageMDS=true;
         }   
-        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_CARRIER, RadioInfo.WAF_WLAN, false)) {
+        if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER, RadioInfo.WAF_WLAN, false)) {
             coverageWiFi = true;
         }
     }
