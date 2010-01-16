@@ -72,16 +72,16 @@ public class ConnectionBB42 extends Connection {
         String urlBase = buf.toString();
         
         StreamConnection connection = null;
-        if((transports & TRANSPORT_WIFI) != 0 && srWiFi != null && coverageWiFi) {
+        if(((transports & TRANSPORT_WIFI) != 0) && srWiFi != null && coverageWiFi) {
             connection = attemptWiFi(urlBase);
         }
-        if(connection == null && (transports & TRANSPORT_DIRECT_TCP) != 0 && coverageTCP) {
+        if(connection == null && ((transports & TRANSPORT_DIRECT_TCP) != 0) && coverageTCP) {
             connection = attemptDirectTCP(urlBase);
         }
-        if(connection == null && (transports & TRANSPORT_MDS) != 0 && srMDS != null && coverageMDS) {
+        if(connection == null && ((transports & TRANSPORT_MDS) != 0) && srMDS != null && coverageMDS) {
             connection = attemptMDS(urlBase);
         }
-        if(connection == null && (transports & TRANSPORT_WAP2) != 0 && srWAP2 != null && coverageWAP2) {
+        if(connection == null && ((transports & TRANSPORT_WAP2) != 0) && srWAP2 != null && coverageWAP2) {
             connection = attemptWAP2(urlBase);
         }
         
@@ -115,10 +115,26 @@ public class ConnectionBB42 extends Connection {
                 if (cid.indexOf("wptcp") != -1 && uid.indexOf("wap2") != -1) {
                     srWAP2 = myRecord;
                 }
-            }   
+            }
         }
         
         initializeCoverage();
+        
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("Availability: ");
+            buf.append("MDS="); buf.append(srMDS != null);
+            buf.append(", WAP2="); buf.append(srWAP2 != null);
+            buf.append(", WiFi="); buf.append(srWiFi != null);
+            buf.append("\r\n");
+            buf.append("Coverage: ");
+            buf.append("TCP="); buf.append(coverageTCP);
+            buf.append(", MDS="); buf.append(coverageMDS);
+            buf.append(", WAP2="); buf.append(coverageWAP2);
+            buf.append(", WiFi="); buf.append(coverageWiFi);
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
     }
 
     /**
