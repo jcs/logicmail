@@ -118,7 +118,7 @@ public abstract class Connection {
      */
     private static final byte[] CRLF = new byte[] { 13, 10 };
 
-    private static UtilFactory connectionFactory;
+    private UtilFactory utilFactory;
     protected String serverName;
     protected int serverPort;
     protected boolean useSSL;
@@ -150,6 +150,7 @@ public abstract class Connection {
      */
     protected Connection(ConnectionConfig connectionConfig) {
         this.globalConfig = MailSettings.getInstance().getGlobalConfig();
+        this.utilFactory = UtilFactory.getInstance();
         
         this.serverName = connectionConfig.getServerName();
         this.serverPort = connectionConfig.getServerPort();
@@ -194,15 +195,6 @@ public abstract class Connection {
         this.output = null;
         this.socket = null;
     }
-
-    /**
-     * Sets the connection factory reference.
-     * 
-     * @param connectionFactory connection factory reference
-     */
-    static void setConnectionFactory(UtilFactory connectionFactory) {
-        Connection.connectionFactory = connectionFactory;
-    }
     
     /**
      * Opens a connection.
@@ -212,7 +204,7 @@ public abstract class Connection {
             close();
         }
         
-        connectionFactory.addOpenConnection(this);
+        utilFactory.addOpenConnection(this);
 
         socket = openStreamConnection();
         if(socket == null) {
@@ -276,7 +268,7 @@ public abstract class Connection {
             socket = null;
         }
 
-        connectionFactory.removeOpenConnection(this);
+        utilFactory.removeOpenConnection(this);
 
         EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
                 EventLogger.INFORMATION);

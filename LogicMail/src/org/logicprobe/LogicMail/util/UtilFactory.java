@@ -67,7 +67,6 @@ public abstract class UtilFactory {
     }
 
     protected UtilFactory() {
-        Connection.setConnectionFactory(this);
     }
 
     void addOpenConnection(Connection connection) {
