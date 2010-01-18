@@ -95,34 +95,39 @@ public class CompositionScreen extends AbstractScreenProvider {
     private IdentityConfig identityConfig;
     private MessageNode replyToMessageNode;
     
-    private MenuItem sendMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SEND), 200000, 10) {
-            public void run() {
-                sendMessage();
-            }
-        };
+    private MenuItem sendMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SEND), 300100, 10) {
+        public void run() {
+            sendMessage();
+        }
+    };
+    private MenuItem saveDraftMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_SAVE_DRAFT), 300200, 20) {
+        public void run() {
+            saveAsDraft();
+            screen.close();
+        }
+    };
+    private MenuItem addToMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_TO), 400100, 1010) {
+        public void run() {
+            insertRecipientField(EmailAddressBookEditField.ADDRESS_TO);
+        }
+    };
 
-    private MenuItem addToMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_TO), 200110, 10) {
-            public void run() {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_TO);
-            }
-        };
+    private MenuItem addCcMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_CC), 400200, 1020) {
+        public void run() {
+            insertRecipientField(EmailAddressBookEditField.ADDRESS_CC);
+        }
+    };
 
-    private MenuItem addCcMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_CC), 200120, 10) {
-            public void run() {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_CC);
-            }
-        };
-
-    private MenuItem addBccMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_BCC), 200130, 10) {
-            public void run() {
-                insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC);
-            }
-        };
+    private MenuItem addBccMenuItem = new MenuItem(resources.getString(LogicMailResource.MENUITEM_ADD_BCC), 400300, 1030) {
+        public void run() {
+            insertRecipientField(EmailAddressBookEditField.ADDRESS_BCC);
+        }
+    };
 
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
-		public void messageStatusChanged(MessageNodeEvent e) {
-			messageNodeListener_MessageStatusChanged(e);
-		}
+        public void messageStatusChanged(MessageNodeEvent e) {
+            messageNodeListener_MessageStatusChanged(e);
+        }
     };
 
     /**
@@ -320,8 +325,7 @@ public class CompositionScreen extends AbstractScreenProvider {
                 (messageEditField.getText().length() > 0))) {
 
         	boolean shouldClose = false;
-        	MailboxNode draftMailbox = accountConfig.getDraftMailbox();
-        	if(draftMailbox != null) {
+        	if(accountConfig.getDraftMailbox() != null) {
         		int choice = Dialog.ask(
         				resources.getString(LogicMailResource.COMPOSITION_PROMPT_SAVE_OR_DISCARD),
         				new Object[] {
@@ -330,20 +334,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         						resources.getString(LogicMailResource.MENUITEM_CANCEL) }, 0);
         		if(choice == 0) {
         			// Save as draft, then close
-        			MessageEnvelope envelope = generateEnvelope();
-        			Message message = generateMessage();
-        			
-        			envelope.date = Calendar.getInstance().getTime();
-        			MessageFlags messageFlags = new MessageFlags(
-        					false,
-        					false,
-        					false,
-        					false,
-        					true,
-        					true,
-        					false);
-        			draftMailbox.appendMessage(envelope, message, messageFlags);
-        	    	// TODO: Save reply-to information with the draft message
+        			saveAsDraft();
         			shouldClose = true;
         		}
         		else if(choice == 1) {
@@ -372,17 +363,39 @@ public class CompositionScreen extends AbstractScreenProvider {
         }
     }
 
+    private void saveAsDraft() {
+        MailboxNode draftMailbox = accountConfig.getDraftMailbox();
+        MessageEnvelope envelope = generateEnvelope();
+        Message message = generateMessage();
+        
+        envelope.date = Calendar.getInstance().getTime();
+        MessageFlags messageFlags = new MessageFlags(
+        		false,
+        		false,
+        		false,
+        		false,
+        		true,
+        		true,
+        		false);
+        draftMailbox.appendMessage(envelope, message, messageFlags);
+        // TODO: Save reply-to information with the draft message
+    }
+
     public void makeMenu(Menu menu, int instance) {
-        if (((EmailAddressBookEditField) recipientsFieldManager.getField(0)).getText()
-                 .length() > 0) {
+        if (((EmailAddressBookEditField) recipientsFieldManager.getField(0))
+                .getText().length() > 0) {
             menu.add(sendMenuItem);
-            menu.addSeparator();
+        }
+        MailboxNode draftMailbox = accountConfig.getDraftMailbox();
+        if(draftMailbox != null
+                && ((subjectEditField.getText().length() > 0)
+                || (messageEditField.getText().length() > 0))) {
+            menu.add(saveDraftMenuItem);
         }
 
         menu.add(addToMenuItem);
         menu.add(addCcMenuItem);
         menu.add(addBccMenuItem);
-        menu.addSeparator();
     }
 
     private MessageEnvelope generateEnvelope() {

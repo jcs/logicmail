@@ -198,32 +198,32 @@ public class MailHomeScreen extends AbstractScreenProvider {
     }
 
     private void initMenuItems() {
-        selectFolderItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 8) {
+        selectFolderItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 300100, 1) {
             public void runNode(MailHomeTreeNode treeNode) {
                 selectFolderItemHandler(treeNode);
             }
         };
-        refreshStatusItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_STATUS, 110, 10) {
-            public void runNode(MailHomeTreeNode treeNode) {
-                refreshStatusItemHandler(treeNode);
-            }
-        };
-        refreshFoldersItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_FOLDERS, 111, 10) {
-            public void runNode(MailHomeTreeNode treeNode) {
-                refreshFoldersItemHandler(treeNode);
-            }
-        };
-        compositionItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 200000, 9) {
-            public void runNode(MailHomeTreeNode treeNode) {
-                compositionItemHandler(treeNode);
-            }
-        };
-        sendUnsentItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SEND_UNSENT_MESSAGES, 200000, 9) {
+        sendUnsentItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SEND_UNSENT_MESSAGES, 300200, 1020) {
             public void runNode(MailHomeTreeNode treeNode) {
                 sendUnsentItemHandler(treeNode);
             }
         };
-        disconnectItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 200000, 9) {
+        refreshStatusItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_STATUS, 300300, 2000) {
+            public void runNode(MailHomeTreeNode treeNode) {
+                refreshStatusItemHandler(treeNode);
+            }
+        };
+        refreshFoldersItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_FOLDERS, 300400, 2000) {
+            public void runNode(MailHomeTreeNode treeNode) {
+                refreshFoldersItemHandler(treeNode);
+            }
+        };
+        compositionItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
+            public void runNode(MailHomeTreeNode treeNode) {
+                compositionItemHandler(treeNode);
+            }
+        };
+        disconnectItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 700100, 8000) {
             public void runNode(MailHomeTreeNode treeNode) {
                 disconnectItemHandler(treeNode);
             }
@@ -494,9 +494,11 @@ public class MailHomeScreen extends AbstractScreenProvider {
                 menu.add(refreshFoldersItem);
             }
             if(accountNode.hasMailSender()) {
-                menu.add(compositionItem);			}
+                menu.add(compositionItem);
+            }
             if(accountNode.getStatus() == AccountNode.STATUS_ONLINE) {
-                menu.add(disconnectItem);			}
+                menu.add(disconnectItem);
+            }
         }
     }
 

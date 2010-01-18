@@ -33,8 +33,10 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Vector;
 
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.Menu;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -55,10 +57,172 @@ public class MessageActions {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private NavigationController navigationController;
 	
+    private MenuItem selectItem;
+    private MenuItem propertiesItem;
+    private MenuItem replyItem;
+    private MenuItem replyAllItem;
+    private MenuItem forwardItem;
+    private MenuItem copyToItem;
+    private MenuItem moveToItem;
+    private MenuItem deleteItem;
+    private MenuItem undeleteItem;
+    private MenuItem sendOutgoingItem;
+	
+    /** Current message node from the last call to makeMenu() */
+    private MessageNode activeMessageNode;
+    
+	/**
+	 * Instantiates a new message actions handler delegate.
+	 * 
+	 * @param navigationController the navigation controller
+	 */
 	public MessageActions(NavigationController navigationController) {
 		this.navigationController = navigationController;
+		initMenuItems();
 	}
 	
+	/**
+	 * Initialize the common menu items provided by this class.
+	 */
+    private void initMenuItems() {
+        selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 300100, 1010) {
+            public void run() {
+                openMessage(activeMessageNode);
+            }
+        };
+        sendOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_SEND, 300110, 1020) {
+            public void run() {
+                sendMessage(activeMessageNode);
+            }
+        };
+        propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 300120, 1030) {
+            public void run() {
+                openMessageProperties(activeMessageNode);
+            }
+        };
+        replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 300130, 2000) {
+            public void run() {
+                replyMessage(activeMessageNode);
+            }
+        };
+        replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 300140, 2000) {
+            public void run() {
+                replyAllMessage(activeMessageNode);
+            }
+        };
+        forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 300150, 2000) {
+            public void run() {
+                forwardMessage(activeMessageNode);
+            }
+        };
+        copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 300160, 2000) {
+            public void run() {
+                copyToMailbox(activeMessageNode);
+            }
+        };
+        moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 300170, 2000) {
+            public void run() {
+                moveToMailbox(activeMessageNode);
+            }
+        };
+        
+        deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 300180, 2000) {
+            public void run() {
+                deleteMessage(activeMessageNode);
+            }
+        };
+        undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 300190, 2000) {
+            public void run() {
+                undeleteMessage(activeMessageNode);
+            }
+        };
+    }
+	
+    /**
+     * Populate the provided menu with items appropriate for the
+     * provided message node.
+     * <p>
+     * This method sets a class field for the active message node,
+     * so it is not thread-safe.  It normal usage, it should only
+     * be called for one screen at a time, so it should not cause
+     * any issues.
+     * </p>
+     * 
+     * @param menu Menu to which items should be added.
+     * @param instance The instance of the desired menu. If your screen
+     * supports only one menu, this may be ignored. By default, it is 0.
+     * @param messageNode The message node for which menu items should be offered.
+     * @param isOpen True if the message node is currently open, false if it is
+     * displayed along with other message nodes.
+     */
+    public void makeMenu(Menu menu, int instance, MessageNode messageNode, boolean isOpen) {
+        if(messageNode == null) { return; }
+        
+        // Get all the message properties necessary to determine whether or
+        // not to add the various menu items.
+        MailboxNode mailboxNode = messageNode.getParent();
+        AccountNode accountNode;
+        if(mailboxNode != null) {
+            accountNode = mailboxNode.getParentAccount();
+        }
+        else { accountNode = null; }
+        boolean unloaded =
+            !messageNode.hasCachedContent()
+            && !messageNode.hasMessageContent()
+            && messageNode.isCachable();
+        
+        if(!isOpen) {
+            menu.add(selectItem);
+        }
+        
+        menu.add(propertiesItem);
+        
+        if(!unloaded) {
+            if(accountNode.hasMailSender()) {
+                menu.add(replyItem);
+                if(accountNode.hasIdentity()) {
+                    menu.add(replyAllItem);
+                }
+                menu.add(forwardItem);
+            }
+        }
+        
+        // Copy-To is supported if the message has been loaded, or if the
+        // underlying mail store supports protocol-level copy.  Since we
+        // are only determining whether to offer the menu item here, we just
+        // check for protocol-level copy support on the source mailbox.
+        // When the actual action is invoked, the destination list will
+        // be appropriately filtered to only allow valid destination
+        // mailboxes for the current state of the message node.
+        if(!unloaded || mailboxNode.hasCopy()) {
+            menu.add(copyToItem);
+        }
+        
+        // Move-To is currently only supported if the underlying mail store
+        // supports protocol-level copy, since it is the only safe way to
+        // ensure no message data is lost.
+        if(mailboxNode.hasCopy()) {
+            menu.add(moveToItem);
+        }
+        
+        if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0) {
+            if(mailboxNode != null && mailboxNode.getParentAccount().hasUndelete()) {
+                menu.add(undeleteItem);
+            }
+        }
+        else {
+            menu.add(deleteItem);
+        }
+        if(messageNode instanceof OutgoingMessageNode) {
+            OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
+            if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {
+                menu.add(sendOutgoingItem);
+            }
+        }
+        
+        this.activeMessageNode = messageNode;
+    }
+    
     /**
      * Open the message.
      * <p>

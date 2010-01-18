@@ -196,26 +196,26 @@ public class StandardScreen extends MainScreen {
     }
 
     private void initMenuItems() {
-        configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 10020, 10) {
+        configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 800000, 9000) {
             public void run() {
                 showConfigScreen();
             }
         };
-        aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 10050, 10) {
+        aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 800100, 9000) {
             public void run() {
                 // Show the about dialog
                 AboutDialog dialog = new AboutDialog();
                 dialog.doModal();
             }
         };
-        closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {
+        closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 60000000, 9000) {
             public void run() {
                 // TODO: Deal with closing/hiding while still running
 
                 StandardScreen.super.onClose();
             }
         };
-        exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 200001, 10) {
+        exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 60000100, 9000) {
             public void run() {
                 tryShutdownApplication();
             }
@@ -269,7 +269,6 @@ public class StandardScreen extends MainScreen {
      */
     protected void makeMenu(Menu menu, int instance) {
         screenProvider.makeMenu(menu, instance);
-        menu.addSeparator();
         menu.add(configItem);
         menu.add(aboutItem);
         menu.add(closeItem);

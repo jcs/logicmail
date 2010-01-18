@@ -210,6 +210,15 @@ public class AccountNode implements Node {
     }
 
     /**
+     * Returns whether this account has an identity associated with it.
+     * 
+     * @return True if an identity is configured, false otherwise.
+     */
+    public boolean hasIdentity() {
+        return this.accountConfig.getIdentityConfig() != null;
+    }
+    
+    /**
      * Sets the root node which is the parent of this account.
      *
      * @param parent The root node.

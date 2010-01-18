@@ -90,12 +90,6 @@ public class MessageScreen extends AbstractScreenProvider {
     private MessageActions messageActions;
     
     private MenuItem saveAttachmentItem;
-    private MenuItem propertiesItem;
-    private MenuItem replyItem;
-    private MenuItem replyAllItem;
-    private MenuItem forwardItem;
-    private MenuItem copyToItem;
-    private MenuItem moveToItem;
     private MenuItem compositionItem;
 	
 	private AccountConfig accountConfig;
@@ -207,7 +201,7 @@ public class MessageScreen extends AbstractScreenProvider {
     }
     
     private void initMenuItems() {
-	    saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 100, 10) {
+	    saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 300050, 1005) {
 	        public void run() {
 	    		int node = attachmentsTreeField.getCurrentNode();
 	    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof ContentPart) {
@@ -215,37 +209,7 @@ public class MessageScreen extends AbstractScreenProvider {
 	    		}
 	        }
 	    };
-	    propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
-	        public void run() {
-	        	messageActions.openMessageProperties(messageNode);
-	        }
-	    };
-	    replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 110, 10) {
-	        public void run() {
-	        	messageActions.replyMessage(messageNode);
-	        }
-	    };
-	    replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 115, 10) {
-	        public void run() {
-	        	messageActions.replyAllMessage(messageNode);
-	        }
-	    };
-	    forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 120, 10) {
-	        public void run() {
-	        	messageActions.forwardMessage(messageNode);
-	        }
-	    };
-	    copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 125, 10) {
-	        public void run() {
-	        	messageActions.copyToMailbox(messageNode);
-	        }
-	    };
-	    moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 130, 10) {
-	        public void run() {
-	        	messageActions.moveToMailbox(messageNode);
-	        }
-	    };
-	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 150, 10) {
+	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
 	            navigationController.displayComposition(messageNode.getParent().getParentAccount());
 	        }
@@ -263,18 +227,12 @@ public class MessageScreen extends AbstractScreenProvider {
     			menu.add(saveAttachmentItem);
     		}
     	}
-        menu.add(propertiesItem);
-        menu.addSeparator();
+    	
+    	messageActions.makeMenu(menu, instance, messageNode, true);
+    	
         if(accountConfig != null && accountConfig.getOutgoingConfig() != null) {
-            menu.add(replyItem);
-            if(accountConfig.getIdentityConfig() != null) {
-                menu.add(replyAllItem);
-            }
-            menu.add(forwardItem);
             menu.add(compositionItem);
         }
-        menu.add(copyToItem);
-        menu.add(moveToItem);
     }
 
     /* (non-Javadoc)

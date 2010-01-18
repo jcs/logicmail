@@ -34,7 +34,6 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
@@ -54,7 +53,6 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
-import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
@@ -78,12 +76,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     private MessageActions messageActions;
     private boolean composeEnabled;
 
-    private MenuItem selectItem;
-	private MenuItem propertiesItem;
 	private MenuItem compositionItem;
-	private MenuItem deleteItem;
-	private MenuItem undeleteItem;
-	private MenuItem sendItem;
     
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
@@ -229,51 +222,11 @@ public class MailboxScreen extends AbstractScreenProvider {
 	}    
 	
 	private void initMenuItems() {
-	    selectItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 100, 10) {
-	        public void runNode(MessageNode messageNode) {
-	        	messageActions.openMessage(messageNode);
-	        }
-	    };
-	    propertiesItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 105, 10) {
-	        public void runNode(MessageNode messageNode) {
-	            messageActions.openMessageProperties(messageNode);
-	        }
-	    };
-	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 120, 10) {
+	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
 	        	navigationController.displayComposition(mailboxNode.getParentAccount());
 	        }
 	    };
-	    deleteItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_DELETE, 130, 10) {
-	        public void runNode(MessageNode messageNode) {
-	        	messageActions.deleteMessage(messageNode);
-	        }
-	    };
-	    undeleteItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 135, 10) {
-	        public void runNode(MessageNode messageNode) {
-	        	messageActions.undeleteMessage(messageNode);
-	        }
-	    };
-        sendItem = new MailboxMessageMenuItem(resources, LogicMailResource.MENUITEM_SEND, 140, 10) {
-            public void runNode(MessageNode messageNode) {
-                messageActions.sendMessage(messageNode);
-            }
-        };
-	}
-
-	private abstract class MailboxMessageMenuItem extends MenuItem {
-		public MailboxMessageMenuItem(ResourceBundle bundle, int id, int ordinal, int priority) {
-			super(bundle, id, ordinal, priority);
-		}
-
-		public final void run() {
-			MessageNode messageNode = getSelectedMessage();
-			if(messageNode != null) {
-				runNode(messageNode);
-			}
-		}
-		
-		public abstract void runNode(MessageNode messageNode);
 	}
 
     /* (non-Javadoc)
@@ -282,31 +235,13 @@ public class MailboxScreen extends AbstractScreenProvider {
     public void makeMenu(Menu menu, int instance) {
     	Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
     	if(fieldWithFocus instanceof MailboxMessageField) {
-    		menu.add(selectItem);
-    		menu.add(propertiesItem);
+    	    MessageNode messageNode = ((MailboxMessageField)fieldWithFocus).getMessageNode();
+    	    messageActions.makeMenu(menu, instance, messageNode, false);
     	}
         if(composeEnabled) {
             menu.add(compositionItem);
         }
-        if(fieldWithFocus instanceof MailboxMessageField) {
-        	MessageNode messageNode = ((MailboxMessageField)fieldWithFocus).getMessageNode();
-            if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0) {
-                if(mailboxNode.getParentAccount().hasUndelete()) {
-                    menu.add(undeleteItem);
-                }
-            }
-            else {
-                menu.add(deleteItem);
-            }
-            if(messageNode instanceof OutgoingMessageNode) {
-                OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
-                if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {
-                    menu.add(sendItem);
-                }
-            }
-        }
     }
-
     
     public boolean onClose() {
         // Check for deleted messages in the mailbox
