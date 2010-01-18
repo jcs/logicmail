@@ -402,6 +402,42 @@ public abstract class AbstractMailStore {
     
     /**
      * Notifies all registered <tt>MailStoreListener</tt>s that
+     * a mail store request as completed. 
+     * 
+     * @param type The type of the event, which should be a constant defined on <code>RequestEvent</code>.
+     */
+    protected void fireMailStoreRequestComplete(int type) {
+        Object[] listeners = listenerList.getListeners(MailStoreListener.class);
+        RequestEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new RequestEvent(this, type, null, null);
+            }
+            ((MailStoreListener)listeners[i]).mailStoreRequestComplete(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>MailStoreListener</tt>s that
+     * a mail store request has failed.
+     * 
+     * @param root The type of the event, which should be a constant defined on <code>RequestEvent</code>.
+     * @param params The parameters passed along with the request.
+     * @param exception The exception that caused the request to fail, if applicable.
+     */
+    protected void fireMailStoreRequestFailed(int type, Object[] params, Throwable exception) {
+        Object[] listeners = listenerList.getListeners(MailStoreListener.class);
+        RequestEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new RequestEvent(this, type, params, exception);
+            }
+            ((MailStoreListener)listeners[i]).mailStoreRequestFailed(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>MailStoreListener</tt>s that
      * the folder tree has been updated. 
      * 
      * @param root The root node of the updated folder tree

@@ -300,7 +300,9 @@ public abstract class AbstractMailConnectionHandler {
 	 * or null if it failed due to a queue flush
 	 */
 	protected void handleRequestFailed(int type, Object[] params, Throwable exception) {
-	    // Empty default implementation
+        if(this.listener != null) {
+            listener.mailConnectionRequestFailed(type, params, exception);
+        }
 	}
 	
     /**

@@ -62,6 +62,8 @@ public class NetworkMailStoreTest extends TestCase {
 	private AccountConfig fakeAccountConfig;
 	private FakeIncomingMailClient fakeIncomingMailClient;
 
+	private RequestEvent eventMailStoreRequestCompleted;
+    private RequestEvent eventMailStoreRequestFailed;
 	private FolderEvent eventFolderTreeUpdated;
 	private Vector eventFolderMessagesAvailable = new Vector();
 	private FolderEvent eventFolderStatusChanged;
@@ -83,6 +85,12 @@ public class NetworkMailStoreTest extends TestCase {
     	instance = new NetworkMailStore(fakeAccountConfig);
 
     	instance.addMailStoreListener(new MailStoreListener() {
+            public void mailStoreRequestComplete(RequestEvent e) {
+                eventMailStoreRequestCompleted = e;
+            }
+            public void mailStoreRequestFailed(RequestEvent e) {
+                eventMailStoreRequestFailed = e;
+            }
 			public void folderTreeUpdated(FolderEvent e) {
 				eventFolderTreeUpdated = e;
 			}
@@ -176,6 +184,10 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestFolderTree();
     	instance.shutdown(true);
     	
+        assertNotNull(eventMailStoreRequestCompleted);
+        assertEquals(RequestEvent.TYPE_FOLDER_TREE, eventMailStoreRequestCompleted.getType());
+        assertNull(eventMailStoreRequestFailed);
+        
     	assertNotNull(eventFolderTreeUpdated);
     	assertEquals(fakeIncomingMailClient.folderTree, eventFolderTreeUpdated.getFolder());
     }
@@ -187,6 +199,10 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestFolderStatus(new FolderTreeItem[] { folder });
     	instance.shutdown(true);
     	
+        assertNotNull(eventMailStoreRequestCompleted);
+        assertEquals(RequestEvent.TYPE_FOLDER_STATUS, eventMailStoreRequestCompleted.getType());
+        assertNull(eventMailStoreRequestFailed);
+        
     	assertNotNull(eventFolderStatusChanged);
     	assertEquals("INBOX", eventFolderStatusChanged.getFolder().getName());
     	assertEquals(42, eventFolderStatusChanged.getFolder().getMsgCount());
@@ -201,6 +217,10 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestFolderMessagesRange(folder, 42, 43);
     	instance.shutdown(true);
     	
+        assertNotNull(eventMailStoreRequestCompleted);
+        assertEquals(RequestEvent.TYPE_FOLDER_MESSAGES_RANGE, eventMailStoreRequestCompleted.getType());
+        assertNull(eventMailStoreRequestFailed);
+        
     	// Cannot assume the number of events that will be fired,
     	// but only the number of folder messages contained within
     	// all of them put together.
@@ -245,6 +265,10 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestMessage(messageToken);
     	instance.shutdown(true);
     	
+        assertNotNull(eventMailStoreRequestCompleted);
+        assertEquals(RequestEvent.TYPE_MESSAGE, eventMailStoreRequestCompleted.getType());
+        assertNull(eventMailStoreRequestFailed);
+    	
     	assertNotNull(eventMessageAvailable);
     	assertEquals(MessageEvent.TYPE_FULLY_LOADED, eventMessageAvailable.getType());
     	assertNotNull(eventMessageAvailable.getMessageStructure());
@@ -266,6 +290,10 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestMessageDelete(messageToken, messageFlags);
     	instance.shutdown(true);
     	
+        assertNotNull(eventMailStoreRequestCompleted);
+        assertEquals(RequestEvent.TYPE_MESSAGE_DELETE, eventMailStoreRequestCompleted.getType());
+        assertNull(eventMailStoreRequestFailed);
+        
     	assertNotNull(eventMessageDeleted);
     	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageDeleted.getType());
     	assertNotNull(eventMessageDeleted.getMessageToken());
@@ -284,6 +312,10 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestMessageUndelete(messageToken, messageFlags);
     	instance.shutdown(true);
     	
+        assertNotNull(eventMailStoreRequestCompleted);
+        assertEquals(RequestEvent.TYPE_MESSAGE_UNDELETE, eventMailStoreRequestCompleted.getType());
+        assertNull(eventMailStoreRequestFailed);
+        
     	assertNotNull(eventMessageUndeleted);
     	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageUndeleted.getType());
     	assertNotNull(eventMessageUndeleted.getMessageToken());

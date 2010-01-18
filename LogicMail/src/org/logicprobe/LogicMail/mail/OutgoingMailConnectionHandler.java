@@ -19,7 +19,6 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	// The various mail sender requests, mirroring the
 	// "requestXXXX()" methods from AbstractMailSender
 	public static final int REQUEST_SEND_MESSAGE = 10;
-    public static final int REQUEST_SEND_MESSAGE_FAILED = 20;
 	
 	public OutgoingMailConnectionHandler(OutgoingMailClient client) {
 		super(client);
@@ -58,15 +57,6 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 					(MessageEnvelope)params[0], (Message)params[1]);
 			break;
 		}
-	}
-
-	protected void handleRequestFailed(int type, Object[] params, Throwable exception) {
-        switch(type) {
-        case REQUEST_SEND_MESSAGE:
-            handleRequestSendMessageFailed(
-                    (MessageEnvelope)params[0], (Message)params[1], exception);
-            break;
-        }
 	}
 
     /**
@@ -112,11 +102,4 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { envelope, message, messageSource });
 		}
 	}
-    
-    private void handleRequestSendMessageFailed(MessageEnvelope envelope, Message message, Throwable exception) {
-        MailConnectionHandlerListener listener = getListener();
-        if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE_FAILED, new Object[] { envelope, message });
-        }
-    }
 }

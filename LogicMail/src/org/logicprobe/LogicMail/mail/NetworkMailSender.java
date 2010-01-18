@@ -49,11 +49,15 @@ public class NetworkMailSender extends AbstractMailSender {
 			public void mailConnectionRequestComplete(int type, Object result) {
 				connectionHandler_mailConnectionRequestComplete(type, result);
 			}
+
+            public void mailConnectionRequestFailed(int type, Object[] params, Throwable exception) {
+                connectionHandler_mailConnectionRequestFailed(type, params, exception);
+            }
 		});
 		this.connectionHandler.start();
 	}
-	
-	/**
+
+    /**
 	 * Gets the outgoing account configuration associated with this network mail sender.
 	 * 
 	 * @return Outgoing account configuration.
@@ -93,10 +97,14 @@ public class NetworkMailSender extends AbstractMailSender {
 			results = (Object[])result;
 			fireMessageSent((MessageEnvelope)results[0], (Message)results[1], (String)results[2]);
 			break;
-		case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE_FAILED:
-            results = (Object[])result;
-            fireMessageSendFailed((MessageEnvelope)results[0], (Message)results[1]);
-            break;
         }
 	}
+	
+	private void connectionHandler_mailConnectionRequestFailed(int type, Object[] params, Throwable exception) {
+        switch(type) {
+        case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
+            fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1]);
+            break;
+        }
+    }
 }

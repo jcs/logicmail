@@ -43,4 +43,13 @@ public interface MailConnectionHandlerListener {
 	 * @param result The data returned from the request.
 	 */
 	public void mailConnectionRequestComplete(int type, Object result);
+	
+    /**
+     * Indicates that a request has failed.
+     * 
+     * @param type The type of the request.
+     * @param params The parameters passed along with the request.
+     * @param exception The exception that caused the request to fail, if applicable.
+     */
+    public void mailConnectionRequestFailed(int type, Object[] params, Throwable exception);
 }

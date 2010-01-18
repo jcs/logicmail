@@ -53,6 +53,9 @@ public class NetworkMailStore extends AbstractMailStore {
 			public void mailConnectionRequestComplete(int type, Object result) {
 				connectionHandler_mailConnectionRequestComplete(type, result);
 			}
+            public void mailConnectionRequestFailed(int type, Object[] params, Throwable exception) {
+                connectionHandler_mailConnectionRequestFailed(type, params, exception);
+            }
 		});
 		this.connectionHandler.start();
 	}
@@ -191,52 +194,112 @@ public class NetworkMailStore extends AbstractMailStore {
 		Object[] results;
 		switch(type) {
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_FOLDER_TREE);
 			fireFolderTreeUpdated((FolderTreeItem)result);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_FOLDER_EXPUNGE);
 		    fireFolderExpunged((FolderTreeItem)result);
 		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_FOLDER_STATUS);
 			FolderTreeItem[] folders = (FolderTreeItem[])result;
 			for(int i=0; i<folders.length; i++) {
 				fireFolderStatusChanged(folders[i]);
 			}
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_FOLDER_MESSAGES_RANGE);
+            results = (Object[])result;
+            fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
+		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_FOLDER_MESSAGES_SET);
 			results = (Object[])result;
 			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_FOLDER_MESSAGES_RECENT);
 			results = (Object[])result;
 			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], ((Boolean)results[2]).booleanValue());
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE);
 			results = (Object[])result;
 			fireMessageAvailable((MessageToken)results[0], (MimeMessagePart)results[1], (MimeMessageContent[])results[2], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE_PARTS);
 			results = (Object[])result;
 			fireMessageContentAvailable((MessageToken)results[0], (MimeMessageContent[])results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE_DELETE);
 			results = (Object[])result;
 			fireMessageDeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE_UNDELETE);
 			results = (Object[])result;
 			fireMessageUndeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE_ANSWERED);
 			results = (Object[])result;
 			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE_APPEND);
 			results = (Object[])result;
 			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY:
+		    fireMailStoreRequestComplete(RequestEvent.TYPE_MESSAGE_COPY);
 			break;
 		}
+	}
+	
+	private void connectionHandler_mailConnectionRequestFailed(int type, Object[] params, Throwable exception) {
+        switch(type) {
+        case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_FOLDER_TREE, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_FOLDER_EXPUNGE, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_FOLDER_STATUS, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_FOLDER_MESSAGES_RANGE, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_FOLDER_MESSAGES_SET, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_FOLDER_MESSAGES_RECENT, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE_PARTS, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE_DELETE, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE_UNDELETE, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE_ANSWERED, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE_APPEND, params, exception);
+            break;
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY:
+            fireMailStoreRequestFailed(RequestEvent.TYPE_MESSAGE_COPY, params, exception);
+            break;
+        }
 	}
 }

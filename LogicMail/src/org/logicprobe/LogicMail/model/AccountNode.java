@@ -42,6 +42,7 @@ import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
+import org.logicprobe.LogicMail.mail.RequestEvent;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -114,52 +115,56 @@ public class AccountNode implements Node {
         }
 
         this.mailStore.addMailStoreListener(new MailStoreListener() {
-                public void folderTreeUpdated(FolderEvent e) {
-                    mailStore_FolderTreeUpdated(e);
-                }
-            });
+            public void mailStoreRequestComplete(RequestEvent e) {
+            }
+            public void mailStoreRequestFailed(RequestEvent e) {
+            }
+            public void folderTreeUpdated(FolderEvent e) {
+                mailStore_FolderTreeUpdated(e);
+            }
+        });
 
         this.mailStore.addFolderListener(new FolderListener() {
-                public void folderStatusChanged(FolderEvent e) {
-                    mailStore_FolderStatusChanged(e);
-                }
+            public void folderStatusChanged(FolderEvent e) {
+                mailStore_FolderStatusChanged(e);
+            }
 
-                public void folderMessagesAvailable(FolderMessagesEvent e) {
-                    mailStore_FolderMessagesAvailable(e);
-                }
+            public void folderMessagesAvailable(FolderMessagesEvent e) {
+                mailStore_FolderMessagesAvailable(e);
+            }
 
-                public void folderExpunged(FolderEvent e) {
-                    mailStore_FolderExpunged(e);
-                }
-            });
+            public void folderExpunged(FolderEvent e) {
+                mailStore_FolderExpunged(e);
+            }
+        });
 
         this.mailStore.addMessageListener(new MessageListener() {
-                public void messageAvailable(MessageEvent e) {
-                    mailStore_messageAvailable(e);
-                }
+            public void messageAvailable(MessageEvent e) {
+                mailStore_messageAvailable(e);
+            }
 
-                public void messageFlagsChanged(MessageEvent e) {
-                    mailStore_messageFlagsChanged(e);
-                }
+            public void messageFlagsChanged(MessageEvent e) {
+                mailStore_messageFlagsChanged(e);
+            }
 
-                public void messageDeleted(MessageEvent e) {
-                    mailStore_messageDeleted(e);
-                }
+            public void messageDeleted(MessageEvent e) {
+                mailStore_messageDeleted(e);
+            }
 
-                public void messageUndeleted(MessageEvent e) {
-                    mailStore_messageUndeleted(e);
-                }
-            });
+            public void messageUndeleted(MessageEvent e) {
+                mailStore_messageUndeleted(e);
+            }
+        });
 
         if (!mailStore.hasFolders()) {
             // Create the fake INBOX node for non-folder-capable mail stores
             this.rootMailbox = new MailboxNode(new FolderTreeItem("", "", ""),
-            		false,
+                    false,
                     -1);
             this.rootMailbox.setParentAccount(this);
 
             MailboxNode inboxNode = new MailboxNode(new FolderTreeItem(
-                        "INBOX", "INBOX", "", true), false, MailboxNode.TYPE_INBOX);
+                    "INBOX", "INBOX", "", true), false, MailboxNode.TYPE_INBOX);
             inboxNode.setParentAccount(this);
             this.rootMailbox.addMailbox(inboxNode);
             pathMailboxMap.put("INBOX", inboxNode);
