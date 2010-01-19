@@ -46,12 +46,12 @@ public class NetworkMailSender extends AbstractMailSender {
 		this.outgoingConfig = outgoingConfig;
 		this.connectionHandler = new OutgoingMailConnectionHandler(client);
 		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-			public void mailConnectionRequestComplete(int type, Object result) {
-				connectionHandler_mailConnectionRequestComplete(type, result);
+			public void mailConnectionRequestComplete(int type, Object tag, Object result) {
+				connectionHandler_mailConnectionRequestComplete(type, tag, result);
 			}
 
-            public void mailConnectionRequestFailed(int type, Object[] params, Throwable exception) {
-                connectionHandler_mailConnectionRequestFailed(type, params, exception);
+            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
+                connectionHandler_mailConnectionRequestFailed(type, tag, exception);
             }
 		});
 		this.connectionHandler.start();
@@ -87,10 +87,10 @@ public class NetworkMailSender extends AbstractMailSender {
 	}
 	
 	public void requestSendMessage(MessageEnvelope envelope, Message message) {
-		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { envelope, message });
+		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { envelope, message }, new Object[] { envelope, message });
 	}
 	
-	private void connectionHandler_mailConnectionRequestComplete(int type, Object result) {
+	private void connectionHandler_mailConnectionRequestComplete(int type, Object tag, Object result) {
 		Object[] results;
 		switch(type) {
 		case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
@@ -100,9 +100,10 @@ public class NetworkMailSender extends AbstractMailSender {
         }
 	}
 	
-	private void connectionHandler_mailConnectionRequestFailed(int type, Object[] params, Throwable exception) {
+	private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
         switch(type) {
         case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
+            Object[] params = (Object[])tag;
             fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1]);
             break;
         }

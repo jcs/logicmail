@@ -83,55 +83,58 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      * 
      * @param type Type identifier for the request.
      * @param params Parameters for the request.
+     * @param tag Tag reference to pass along with the request.
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    protected void handleRequest(int type, Object[] params) throws IOException, MailException {
+    protected void handleRequest(int type, Object[] params, Object tag) throws IOException, MailException {
         switch(type) {
         case REQUEST_FOLDER_TREE:
-            handleRequestFolderTree();
+            handleRequestFolderTree(tag);
             break;
         case REQUEST_FOLDER_EXPUNGE:
-            handleRequestFolderExpunge((FolderTreeItem)params[0]);
+            handleRequestFolderExpunge((FolderTreeItem)params[0], tag);
             break;
         case REQUEST_FOLDER_STATUS:
-            handleRequestFolderStatus((FolderTreeItem[])params[0]);
+            handleRequestFolderStatus((FolderTreeItem[])params[0], tag);
             break;
         case REQUEST_FOLDER_MESSAGES_RANGE:
             handleRequestFolderMessagesRange(
                     (FolderTreeItem)params[0],
                     ((Integer)params[1]).intValue(),
-                    ((Integer)params[2]).intValue());
+                    ((Integer)params[2]).intValue(),
+                    tag);
             break;
         case REQUEST_FOLDER_MESSAGES_SET:
             handleRequestFolderMessagesSet(
                     (FolderTreeItem)params[0],
-                    (MessageToken[])params[1]);
+                    (MessageToken[])params[1],
+                    tag);
             break;
         case REQUEST_FOLDER_MESSAGES_RECENT:
             handleRequestFolderMessagesRecent(
-                    (FolderTreeItem)params[0], ((Boolean)params[1]).booleanValue());
+                    (FolderTreeItem)params[0], ((Boolean)params[1]).booleanValue(), tag);
             break;
         case REQUEST_MESSAGE:
-            handleRequestMessage((MessageToken)params[0]);
+            handleRequestMessage((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_PARTS:
-            handleRequestMessageParts((MessageToken)params[0], (MimeMessagePart[])params[1]);
+            handleRequestMessageParts((MessageToken)params[0], (MimeMessagePart[])params[1], tag);
             break;
         case REQUEST_MESSAGE_DELETE:
-            handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1]);
+            handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1], tag);
             break;
         case REQUEST_MESSAGE_UNDELETE:
-            handleRequestMessageUndelete((MessageToken)params[0], (MessageFlags)params[1]);
+            handleRequestMessageUndelete((MessageToken)params[0], (MessageFlags)params[1], tag);
             break;
         case REQUEST_MESSAGE_ANSWERED:
-            handleRequestMessageAnswered((MessageToken)params[0], (MessageFlags)params[1]);
+            handleRequestMessageAnswered((MessageToken)params[0], (MessageFlags)params[1], tag);
             break;
         case REQUEST_MESSAGE_APPEND:
-            handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2]);
+            handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2], tag);
             break;
         case REQUEST_MESSAGE_COPY:
-            handleRequestMessageCopy((MessageToken)params[0], (FolderTreeItem)params[1]);
+            handleRequestMessageCopy((MessageToken)params[0], (FolderTreeItem)params[1], tag);
         }
     }
 
@@ -149,7 +152,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 if(incomingClient.idleModePoll()) {
                     addRequest(
                             IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder() });
+                            new Object[] { incomingClient.getActiveFolder() },
+                            null);
                     endIdle = true;
                 }
                 else if(getShutdownInProgress()) {
@@ -176,7 +180,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 if(incomingClient.noop()) {
                     addRequest(
                             IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder() });
+                            new Object[] { incomingClient.getActiveFolder() },
+                            null);
                 }
                 else {
                     // If we had a non-INBOX folder selected, then an idle timeout
@@ -204,18 +209,18 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
 
-    private void handleRequestFolderTree() throws IOException, MailException {
+    private void handleRequestFolderTree(Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE);
         showStatus(message);
         FolderTreeItem root = incomingClient.getFolderTree(getProgressHandler(message));
 
         MailConnectionHandlerListener listener = getListener();
         if(root != null && listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_FOLDER_TREE, root);
+            listener.mailConnectionRequestComplete(REQUEST_FOLDER_TREE, root, tag);
         }
     }
 
-    private void handleRequestFolderExpunge(FolderTreeItem folder) throws IOException, MailException {
+    private void handleRequestFolderExpunge(FolderTreeItem folder, Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_EXPUNGE);
         showStatus(message);
         checkActiveFolder(folder);
@@ -223,18 +228,18 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, folder);
+            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, folder, tag);
         }
     }
 
-    private void handleRequestFolderStatus(FolderTreeItem[] folders) throws IOException, MailException {
+    private void handleRequestFolderStatus(FolderTreeItem[] folders, Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);
         showStatus(message);
         incomingClient.refreshFolderStatus(folders, getProgressHandler(message));
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_FOLDER_STATUS, folders);
+            listener.mailConnectionRequestComplete(REQUEST_FOLDER_STATUS, folders, tag);
         }
     }
 
@@ -243,20 +248,22 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         private int type;
         private FolderTreeItem folder;
         private MailConnectionHandlerListener listener;
+        private Object tag;
         private Object param;
         private FolderMessage[] folderMessages;
         private int count;
 
-        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener) {
-            this(maxCount, type, folder, listener, null);
+        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object tag) {
+            this(maxCount, type, folder, listener, null, tag);
         }
 
-        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object param) {
+        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object param, Object tag) {
             this.maxCount = maxCount;
             this.type = type;
             this.folder = folder;
             this.listener = listener;
             this.param = param;
+            this.tag = tag;
             this.count = 0;
         }
 
@@ -288,10 +295,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             if(listener != null) {
                 if(resultMessages != null) {
                     if(param == null) {
-                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages });
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages }, tag);
                     }
                     else {
-                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages, param });
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages, param }, tag);
                     }
                 }
 
@@ -299,17 +306,17 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 // the listener with a null array so it knows we are done.
                 if(folderMessage == null) {
                     if(param == null) {
-                        listener.mailConnectionRequestComplete(type, new Object[] { folder, null });
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, null }, tag);
                     }
                     else {
-                        listener.mailConnectionRequestComplete(type, new Object[] { folder, null, param });
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, null, param }, tag);
                     }
                 }
             }
         }
     };
 
-    private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) throws IOException, MailException {
+    private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
         showStatus(message + "...");
         checkActiveFolder(folder);
@@ -320,11 +327,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_RANGE,
                         folder,
-                        getListener()),
+                        getListener(), tag),
                         getProgressHandler(message));
     }
     
-    private void handleRequestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) throws IOException, MailException {
+    private void handleRequestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
         showStatus(message + "...");
         checkActiveFolder(folder);
@@ -335,11 +342,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_SET,
                         folder,
-                        getListener()),
+                        getListener(), tag),
                         getProgressHandler(message));
     }
     
-    private void handleRequestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) throws IOException, MailException {
+    private void handleRequestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
         showStatus(message + "...");
         checkActiveFolder(folder);
@@ -351,7 +358,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         REQUEST_FOLDER_MESSAGES_RECENT,
                         folder,
                         getListener(),
-                        new Boolean(flagsOnly)),
+                        new Boolean(flagsOnly), tag),
                         getProgressHandler(message));
     }
 
@@ -370,7 +377,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         return frequency;
     }
     
-    private void handleRequestMessage(MessageToken messageToken) throws IOException, MailException {
+    private void handleRequestMessage(MessageToken messageToken, Object tag) throws IOException, MailException {
         String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
         showStatus(statusMessage);
         checkActiveFolder(messageToken);
@@ -379,11 +386,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(message != null && listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { messageToken, message.getStructure(), message.getAllContent() });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { messageToken, message.getStructure(), message.getAllContent() }, tag);
         }
     }
     
-    private void handleRequestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) throws IOException, MailException {
+    private void handleRequestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, Object tag) throws IOException, MailException {
         String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
         showStatus(statusMessage);
         checkActiveFolder(messageToken);
@@ -409,11 +416,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(messageContent != null && listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageContent });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageContent }, tag);
         }
     }
 
-    private void handleRequestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    private void handleRequestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_DELETE));
         checkActiveFolder(messageToken);
 
@@ -421,11 +428,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags }, tag);
         }
     }
     
-    private void handleRequestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    private void handleRequestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UNDELETE));
         checkActiveFolder(messageToken);
 
@@ -433,11 +440,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken, messageFlags });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken, messageFlags }, tag);
         }
     }
     
-    private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_ANSWERED));
         // Replace this with a more general method:
         if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
@@ -447,11 +454,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags }, tag);
         }
     }
     
-    private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
+    private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_APPEND));
         // Clean up this interface:
         if(incomingClient.hasAppend()) {
@@ -461,11 +468,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
             // Using a null FolderMessage since no information is returned on the appended message:
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_APPEND, new Object[] { folder, null });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_APPEND, new Object[] { folder, null }, tag);
         }
     }
     
-    private void handleRequestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) throws IOException, MailException {
+    private void handleRequestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_COPY));
         if(incomingClient.hasCopy()) {
             checkActiveFolder(messageToken);
@@ -475,7 +482,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
             // Using a null FolderMessage since no information is returned on the appended message:
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder });
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder }, tag);
         }
     }
 

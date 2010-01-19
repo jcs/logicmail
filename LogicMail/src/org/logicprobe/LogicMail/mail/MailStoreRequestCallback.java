@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,29 +28,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.mail;
 
 /**
- * Interface between MailConnectionHandler implementations and
- * MailStore implementations.
+ * Callback interface for mail store requests.
  */
-public interface MailConnectionHandlerListener {
-	/**
-	 * Indicates that a request has been completed.
-	 * 
-	 * @param type The type of the request.
-	 * @param result The data returned from the request.
-     * @param tag Tag reference to pass along with the request
-	 */
-	public void mailConnectionRequestComplete(int type, Object result, Object tag);
-	
+public interface MailStoreRequestCallback {
     /**
-     * Indicates that a request has failed.
-     * 
-     * @param type The type of the request.
-     * @param tag Tag reference to pass along with the request
-     * @param exception The exception that caused the request to fail, if applicable.
+     * Invoked when the mail store request is completed.
      */
-    public void mailConnectionRequestFailed(int type, Object tag, Throwable exception);
+    void mailStoreRequestComplete();
+    
+    /**
+     * Invoked when the mail store request fails.
+     * 
+     * @param exception the exception that caused the request to fail, if applicable
+     */
+    void mailStoreRequestFailed(Throwable exception);
 }

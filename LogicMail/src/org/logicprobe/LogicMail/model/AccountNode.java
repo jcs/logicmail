@@ -42,7 +42,6 @@ import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
-import org.logicprobe.LogicMail.mail.RequestEvent;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -53,7 +52,6 @@ import org.logicprobe.LogicMail.util.EventListenerList;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-
 
 /**
  * Account node for the mail data model.
@@ -115,10 +113,6 @@ public class AccountNode implements Node {
         }
 
         this.mailStore.addMailStoreListener(new MailStoreListener() {
-            public void mailStoreRequestComplete(RequestEvent e) {
-            }
-            public void mailStoreRequestFailed(RequestEvent e) {
-            }
             public void folderTreeUpdated(FolderEvent e) {
                 mailStore_FolderTreeUpdated(e);
             }

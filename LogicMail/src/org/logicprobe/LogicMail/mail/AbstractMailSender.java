@@ -73,7 +73,7 @@ public abstract class AbstractMailSender {
      * @param message The message to send.
      */
 	public abstract void requestSendMessage(MessageEnvelope envelope, Message message);
-	
+
     /**
      * Adds a <tt>MailSenderListener</tt> to the mail sender.
      * 

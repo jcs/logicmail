@@ -62,8 +62,6 @@ public class NetworkMailStoreTest extends TestCase {
 	private AccountConfig fakeAccountConfig;
 	private FakeIncomingMailClient fakeIncomingMailClient;
 
-	private RequestEvent eventMailStoreRequestCompleted;
-    private RequestEvent eventMailStoreRequestFailed;
 	private FolderEvent eventFolderTreeUpdated;
 	private Vector eventFolderMessagesAvailable = new Vector();
 	private FolderEvent eventFolderStatusChanged;
@@ -85,12 +83,6 @@ public class NetworkMailStoreTest extends TestCase {
     	instance = new NetworkMailStore(fakeAccountConfig);
 
     	instance.addMailStoreListener(new MailStoreListener() {
-            public void mailStoreRequestComplete(RequestEvent e) {
-                eventMailStoreRequestCompleted = e;
-            }
-            public void mailStoreRequestFailed(RequestEvent e) {
-                eventMailStoreRequestFailed = e;
-            }
 			public void folderTreeUpdated(FolderEvent e) {
 				eventFolderTreeUpdated = e;
 			}
@@ -181,12 +173,13 @@ public class NetworkMailStoreTest extends TestCase {
     
     public void testRequestFolderTree() {
     	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
-    	instance.requestFolderTree();
+    	TestCallback callback = new TestCallback();
+    	instance.requestFolderTree(callback);
     	instance.shutdown(true);
-    	
-        assertNotNull(eventMailStoreRequestCompleted);
-        assertEquals(RequestEvent.TYPE_FOLDER_TREE, eventMailStoreRequestCompleted.getType());
-        assertNull(eventMailStoreRequestFailed);
+
+    	assertTrue(callback.completed);
+    	assertTrue(!callback.failed);
+    	assertNull(callback.exception);
         
     	assertNotNull(eventFolderTreeUpdated);
     	assertEquals(fakeIncomingMailClient.folderTree, eventFolderTreeUpdated.getFolder());
@@ -196,12 +189,13 @@ public class NetworkMailStoreTest extends TestCase {
     	fakeIncomingMailClient.refreshedMsgCount = 42;
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	folder.setMsgCount(0);
-    	instance.requestFolderStatus(new FolderTreeItem[] { folder });
+    	TestCallback callback = new TestCallback();
+    	instance.requestFolderStatus(new FolderTreeItem[] { folder }, callback);
     	instance.shutdown(true);
     	
-        assertNotNull(eventMailStoreRequestCompleted);
-        assertEquals(RequestEvent.TYPE_FOLDER_STATUS, eventMailStoreRequestCompleted.getType());
-        assertNull(eventMailStoreRequestFailed);
+        assertTrue(callback.completed);
+        assertTrue(!callback.failed);
+        assertNull(callback.exception);
         
     	assertNotNull(eventFolderStatusChanged);
     	assertEquals("INBOX", eventFolderStatusChanged.getFolder().getName());
@@ -214,12 +208,13 @@ public class NetworkMailStoreTest extends TestCase {
     		new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 43, 53),
     	};
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	instance.requestFolderMessagesRange(folder, 42, 43);
+    	TestCallback callback = new TestCallback();
+    	instance.requestFolderMessagesRange(folder, 42, 43, callback);
     	instance.shutdown(true);
     	
-        assertNotNull(eventMailStoreRequestCompleted);
-        assertEquals(RequestEvent.TYPE_FOLDER_MESSAGES_RANGE, eventMailStoreRequestCompleted.getType());
-        assertNull(eventMailStoreRequestFailed);
+        assertTrue(callback.completed);
+        assertTrue(!callback.failed);
+        assertNull(callback.exception);
         
     	// Cannot assume the number of events that will be fired,
     	// but only the number of folder messages contained within
@@ -262,12 +257,13 @@ public class NetworkMailStoreTest extends TestCase {
     	fakeIncomingMailClient.message = new Message(part);
     	fakeIncomingMailClient.message.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
-    	instance.requestMessage(messageToken);
+    	TestCallback callback = new TestCallback();
+    	instance.requestMessage(messageToken, callback);
     	instance.shutdown(true);
     	
-        assertNotNull(eventMailStoreRequestCompleted);
-        assertEquals(RequestEvent.TYPE_MESSAGE, eventMailStoreRequestCompleted.getType());
-        assertNull(eventMailStoreRequestFailed);
+        assertTrue(callback.completed);
+        assertTrue(!callback.failed);
+        assertNull(callback.exception);
     	
     	assertNotNull(eventMessageAvailable);
     	assertEquals(MessageEvent.TYPE_FULLY_LOADED, eventMessageAvailable.getType());
@@ -287,12 +283,13 @@ public class NetworkMailStoreTest extends TestCase {
     	FakeMessageToken messageToken = new FakeMessageToken(1);
     	MessageFlags messageFlags = new MessageFlags();
     	messageFlags.setDeleted(false);
-    	instance.requestMessageDelete(messageToken, messageFlags);
+    	TestCallback callback = new TestCallback();
+    	instance.requestMessageDelete(messageToken, messageFlags, callback);
     	instance.shutdown(true);
     	
-        assertNotNull(eventMailStoreRequestCompleted);
-        assertEquals(RequestEvent.TYPE_MESSAGE_DELETE, eventMailStoreRequestCompleted.getType());
-        assertNull(eventMailStoreRequestFailed);
+        assertTrue(callback.completed);
+        assertTrue(!callback.failed);
+        assertNull(callback.exception);
         
     	assertNotNull(eventMessageDeleted);
     	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageDeleted.getType());
@@ -309,12 +306,13 @@ public class NetworkMailStoreTest extends TestCase {
     	FakeMessageToken messageToken = new FakeMessageToken(1);
     	MessageFlags messageFlags = new MessageFlags();
     	messageFlags.setDeleted(true);
-    	instance.requestMessageUndelete(messageToken, messageFlags);
+    	TestCallback callback = new TestCallback();
+    	instance.requestMessageUndelete(messageToken, messageFlags, callback);
     	instance.shutdown(true);
     	
-        assertNotNull(eventMailStoreRequestCompleted);
-        assertEquals(RequestEvent.TYPE_MESSAGE_UNDELETE, eventMailStoreRequestCompleted.getType());
-        assertNull(eventMailStoreRequestFailed);
+        assertTrue(callback.completed);
+        assertTrue(!callback.failed);
+        assertNull(callback.exception);
         
     	assertNotNull(eventMessageUndeleted);
     	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageUndeleted.getType());
@@ -453,5 +451,20 @@ public class NetworkMailStoreTest extends TestCase {
 		public String getMessageUid() {	return null; }
         public void updateToken(MessageToken messageToken) { }
         public boolean isLoadable() { return true; }
+	}
+	
+	private class TestCallback implements MailStoreRequestCallback {
+	    public boolean completed;
+	    public boolean failed;
+	    public Throwable exception;
+	    
+        public void mailStoreRequestComplete() {
+            this.completed = true;
+        }
+
+        public void mailStoreRequestFailed(Throwable exception) {
+            this.failed = true;
+            this.exception = exception;
+        }
 	}
 }

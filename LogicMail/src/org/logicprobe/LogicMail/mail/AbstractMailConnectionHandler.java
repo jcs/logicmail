@@ -162,11 +162,12 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param type Type of request
 	 * @param params Parameters passed to the corresponding
 	 *               AbstractMailStore.requestXXXX() method. 
+     * @param tag Tag reference to pass along with the request
 	 */
-	public void addRequest(int type, Object[] params) {
+	public void addRequest(int type, Object[] params, Object tag) {
 		synchronized(requestQueue) {
 			if(!shutdownInProgress) {
-				requestQueue.add(new Object[] {new Integer(type), params});
+				requestQueue.add(new Object[] {new Integer(type), params, tag});
 				requestQueue.notifyAll();
 			}
 		}
@@ -259,10 +260,11 @@ public abstract class AbstractMailConnectionHandler {
 			Object[] request = (Object[])element;
 			int type = ((Integer)request[0]).intValue();
 			Object[] params = (Object[])request[1];
+            Object tag = request[2];
 			
 			// Delegate to subclasses to handle the specific request
 			requestInProgress = request;
-			handleRequest(type, params);
+			handleRequest(type, params, tag);
 			requestInProgress = null;
 			
 			synchronized(requestQueue) {
@@ -284,10 +286,11 @@ public abstract class AbstractMailConnectionHandler {
 	 * 
 	 * @param type Type identifier for the request.
 	 * @param params Parameters for the request.
+     * @param tag Tag reference to pass along with the request
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
 	 */
-	protected abstract void handleRequest(int type, Object[] params) throws IOException, MailException;
+	protected abstract void handleRequest(int type, Object[] params, Object tag) throws IOException, MailException;
 	
 	/**
 	 * Handles a specific request being removed from the queue due to errors.
@@ -296,10 +299,13 @@ public abstract class AbstractMailConnectionHandler {
 	 * request failing.
 	 * </p>
 	 * 
+     * @param type Type identifier for the request.
+     * @param params Parameters for the request.
+     * @param tag Tag reference to pass along with the request
 	 * @param exception Exception that was thrown to fail the request,
 	 * or null if it failed due to a queue flush
 	 */
-	protected void handleRequestFailed(int type, Object[] params, Throwable exception) {
+	protected void handleRequestFailed(int type, Object[] params, Object tag, Throwable exception) {
         if(this.listener != null) {
             listener.mailConnectionRequestFailed(type, params, exception);
         }
@@ -531,6 +537,7 @@ public abstract class AbstractMailConnectionHandler {
             handleRequestFailed(
                     ((Integer)requestInProgress[0]).intValue(),
                     (Object[])requestInProgress[1],
+                    requestInProgress[2],
                     e);
             requestInProgress = null;
         }
@@ -561,6 +568,7 @@ public abstract class AbstractMailConnectionHandler {
             handleRequestFailed(
                     ((Integer)requestInProgress[0]).intValue(),
                     (Object[])requestInProgress[1],
+                    requestInProgress[2],
                     e);
             requestInProgress = null;
         }
@@ -590,6 +598,7 @@ public abstract class AbstractMailConnectionHandler {
             handleRequestFailed(
                     ((Integer)requestInProgress[0]).intValue(),
                     (Object[])requestInProgress[1],
+                    requestInProgress[2],
                     t);
             requestInProgress = null;
 		}
@@ -609,6 +618,7 @@ public abstract class AbstractMailConnectionHandler {
                 handleRequestFailed(
                         ((Integer)request[0]).intValue(),
                         (Object[])request[1],
+                        request[2],
                         null);
 	            element = requestQueue.element();
 	        }

@@ -43,10 +43,11 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 	 * 
 	 * @param type Type identifier for the request.
 	 * @param params Parameters for the request.
+	 * @param tag Tag reference to pass along with the request
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
 	 */
-	protected void handleRequest(int type, Object[] params) throws IOException, MailException {
+	protected void handleRequest(int type, Object[] params, Object tag) throws IOException, MailException {
 		if(connectionTimerTask != null) {
 			connectionTimerTask.cancel();
 			connectionTimerTask = null;
@@ -54,7 +55,7 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 		switch(type) {
 		case REQUEST_SEND_MESSAGE:
 			handleRequestSendMessage(
-					(MessageEnvelope)params[0], (Message)params[1]);
+					(MessageEnvelope)params[0], (Message)params[1], tag);
 			break;
 		}
 	}
@@ -93,13 +94,13 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 	}
 	
-	private void handleRequestSendMessage(MessageEnvelope envelope, Message message) throws IOException, MailException {
+	private void handleRequestSendMessage(MessageEnvelope envelope, Message message, Object tag) throws IOException, MailException {
 		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_SEND_MESSAGE));
 		String messageSource = outgoingClient.sendMessage(envelope, message);
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messageSource != null && messageSource.length() > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { envelope, message, messageSource });
+			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { envelope, message, messageSource }, tag);
 		}
 	}
 }

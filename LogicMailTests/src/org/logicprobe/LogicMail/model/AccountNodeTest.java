@@ -34,6 +34,7 @@ import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -239,26 +240,26 @@ public class AccountNodeTest extends TestCase {
 			return false;
 		}
 
-		public void requestFolderTree() {
+		public void requestFolderTree(MailStoreRequestCallback callback) {
 			fireFolderTreeUpdated(rootFolder);
 		}
 		
-		public void requestFolderStatus(FolderTreeItem[] folders) {
+		public void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback) {
 			fireFolderStatusChanged(statusUpdatedRootFolder);
 		}
 		
-		public void requestMessage(MessageToken messageToken) { }
-		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) { }
-		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) { }
-		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) { }
-		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) { }
+		public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) { }
+		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) { }
+		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
+		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
+		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
 		public void shutdown(boolean wait) { }
-		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) { }
-		public void requestFolderMessagesRecent(FolderTreeItem folder) { }
-		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) { }
-		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) { }
-		public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) { }
-		public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) { }
-        public void requestFolderExpunge(FolderTreeItem folder) { }
+		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, MailStoreRequestCallback callback) { }
+		public void requestFolderMessagesRecent(FolderTreeItem folder, MailStoreRequestCallback callback) { }
+		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) { }
+		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, MailStoreRequestCallback callback) { }
+		public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) { }
+		public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback) { }
+        public void requestFolderExpunge(FolderTreeItem folder, MailStoreRequestCallback callback) { }
     }
 }

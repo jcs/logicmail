@@ -37,20 +37,6 @@ import org.logicprobe.LogicMail.util.EventListener;
  * Listener for MailStore events.
  */
 public interface MailStoreListener extends EventListener {
-    /**
-     * Invoked when a mail store request is completed.
-     * 
-     * @param e the event data
-     */
-    void mailStoreRequestComplete(RequestEvent e);
-    
-    /**
-     * Invoked when a mail store request fails.
-     * 
-     * @param e the event data
-     */
-    void mailStoreRequestFailed(RequestEvent e);
-    
 	/**
 	 * Invoked when the folder tree is updated.
 	 * 
