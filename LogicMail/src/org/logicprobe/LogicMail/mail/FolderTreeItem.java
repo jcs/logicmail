@@ -244,4 +244,31 @@ public class FolderTreeItem implements Serializable {
     public void setUnseenCount(int unseenCount) {
         this.unseenCount = unseenCount;
     }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        return 31 * 1 + (int) (uniqueId ^ (uniqueId >>> 32));
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        FolderTreeItem other = (FolderTreeItem) obj;
+        if (uniqueId != other.uniqueId) {
+            return false;
+        }
+        return true;
+    }
 }

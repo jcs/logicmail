@@ -74,7 +74,13 @@ public class MailboxNode implements Node, Serializable {
 	private boolean hasAppend;
 	private int unseenMessageCount;
     private Vector pendingExpungeMessages = new Vector();
-	
+    
+    /**
+     * Flag to ensure that a flags-only fetch only happens on the first
+     * refresh of a network store backed mailbox.
+     */
+	private boolean fetchFlagsOnly = true;
+    
 	protected Object fetchLock = new Object();
 	protected Thread fetchThread;
 	
@@ -935,7 +941,6 @@ public class MailboxNode implements Node, Serializable {
     }
     
     private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
-
         public RefreshMessagesThread() {
             
         }
@@ -958,7 +963,17 @@ public class MailboxNode implements Node, Serializable {
             }
             else {
                 // Request flags and tokens for recent messages from the mail store
-                parentAccount.getMailStore().requestFolderMessagesRecent(folderTreeItem, true);
+                parentAccount.getMailStore().requestFolderMessagesRecent(
+                        folderTreeItem,
+                        fetchFlagsOnly,
+                        new MailStoreRequestCallback() {
+                            public void mailStoreRequestComplete() {
+                                synchronized(fetchLock) {
+                                    fetchFlagsOnly = false;
+                                }
+                            }
+                            public void mailStoreRequestFailed(Throwable exception) { }
+                        });
             }
         }        
     }
