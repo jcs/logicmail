@@ -199,8 +199,10 @@ public class MessageActions {
         }
         
         // Move-To is currently only supported if the underlying mail store
-        // supports protocol-level copy, since it is the only safe way to
-        // ensure no message data is lost.
+        // supports protocol-level copy, and then only between folders on that
+        // mail store.  These limitations have been chosen because it is the
+        // simplest way to be absolutely sure that a user cannot mess up their
+        // data with a message move.
         if(mailboxNode.hasCopy()) {
             menu.add(moveToItem);
         }
@@ -377,6 +379,8 @@ public class MessageActions {
      */
     public void copyToMailbox(MessageNode messageNode) {
         if(messageNode.hasMessageContent()) {
+            // Normal case where the message has been loaded within the
+            // data model and all copy options should be made available.
         	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
         	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
         			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_COPY_TO),
@@ -389,12 +393,33 @@ public class MessageActions {
         	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
         		if(selectedMailbox.hasCopy()
         				&& selectedMailbox.getParentAccount() == messageNode.getParent().getParentAccount()) {
+        		    // The source and destination are on the same mail store,
+        		    // and that mail store supports protocol-level copy.
         			selectedMailbox.copyMessageInto(messageNode);
         		}
         		else {
+        		    // Protocol-level copy is not possible, so just append
+        		    // to the destination mailbox.
         			selectedMailbox.appendMessage(messageNode);
         		}
         	}
+        }
+        else if(messageNode.getParent().hasCopy()) {
+            // Alternate case where the message has not been loaded, but is
+            // on a mail store that supports protocol-level copy.  In this
+            // situation, only other mailboxes on the same mail store are
+            // to be considered valid destinations.
+            MailboxSelectionDialog dialog = new MailboxSelectionDialog(
+                    resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_COPY_TO),
+                    new AccountNode[] { messageNode.getParent().getParentAccount() });
+            dialog.setSelectedMailboxNode(messageNode.getParent());
+            dialog.addUnselectableNode(messageNode.getParent());
+            dialog.doModal();
+            
+            MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
+            if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
+                selectedMailbox.copyMessageInto(messageNode);
+            }
         }
     }
     
@@ -404,22 +429,18 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void moveToMailbox(MessageNode messageNode) {
-        if(messageNode.hasMessageContent()) {
-        	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
+        if(messageNode.getParent().hasCopy()) {
         	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
         			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_MOVE_TO),
-        			accountNodes);
+        			new AccountNode[] { messageNode.getParent().getParentAccount() });
         	dialog.setSelectedMailboxNode(messageNode.getParent());
         	dialog.addUnselectableNode(messageNode.getParent());
         	dialog.doModal();
         	
         	MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
-        	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
-        		selectedMailbox.appendMessage(messageNode);
-        		//TODO: Move To Folder should delete after append
-        		//This should only be executed after the append was successful
-        		//messageNode.deleteMessage();
-        	}
+            if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
+                selectedMailbox.moveMessageInto(messageNode);
+            }
         }
     }
     

@@ -43,6 +43,7 @@ import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -410,8 +411,11 @@ public class MailboxNode implements Node, Serializable {
 	/**
 	 * Copies a message into this mailbox from another mailbox within the same account.
 	 * This method will request the underlying mail store to copy the message
-	 * on the server side.  If the mail store does not support this operation, then
-	 * this method will have no effect.
+	 * on the server side.
+     * <p>
+     * If the mail store does not support this operation, then this method will
+     * have no effect.
+     * </p>
 	 * 
 	 * @param messageNode Message to copy into this mailbox
 	 */
@@ -425,6 +429,63 @@ public class MailboxNode implements Node, Serializable {
 		parentAccount.getMailStore().requestMessageCopy(messageNode.getMessageToken(), this.folderTreeItem);
 	}
 
+    /**
+     * Moves a message into this mailbox from another mailbox within the same account.
+     * This method will request the underlying mail store to copy the message
+     * on the server side.  If and only if the copy is successful, the source message
+     * will be marked as deleted.
+     * <p>
+     * If the mail store does not support this operation, then this method will
+     * have no effect.
+     * </p>
+     * 
+     * @param messageNode Message to copy into this mailbox
+     */
+	public void moveMessageInto(MessageNode messageNode) {
+	    // Sanity check
+	    if(!(this.hasAppend
+	            && this.hasCopy()
+	            && messageNode.getParent().getParentAccount() == this.parentAccount)) {
+	        return;
+	    }
+	    parentAccount.getMailStore().requestMessageCopy(
+	            messageNode.getMessageToken(),
+	            this.folderTreeItem,
+	            new MoveMessageIntoCallback(messageNode));
+	}
+	
+	/**
+	 * Callback to handle the result of the copy operation dispatched
+	 * from <code>moveMessageInto(messageNode)</code>.  If that operation
+	 * succeeds, then a request is dispatched to mark the original message
+	 * as deleted.  If it fails, then nothing happens.
+	 */
+	private class MoveMessageIntoCallback implements MailStoreRequestCallback {
+	    private MessageNode messageNode;
+	    
+	    /**
+    	 * Instantiates a new callback for handling the result
+    	 * of the copy operation involved in a message move.
+    	 * 
+    	 * @param messageNode the source message node
+    	 */
+    	public MoveMessageIntoCallback(MessageNode messageNode) {
+	        this.messageNode = messageNode;
+	    }
+	    
+        public void mailStoreRequestComplete() {
+            // If the move request succeeded, then dispatch a request
+            // to have the original message marked as deleted.
+            parentAccount.getMailStore().requestMessageDelete(
+                    messageNode.getMessageToken(),
+                    MessageNode.createMessageFlags(messageNode.getFlags()));
+        }
+
+        public void mailStoreRequestFailed(Throwable exception) {
+            // Do nothing if the request failed
+        }
+	}
+	
 	/**
 	 * Adds a mailbox to this mailbox.
 	 * 
