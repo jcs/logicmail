@@ -48,6 +48,8 @@ import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.MessageNodeEvent;
+import org.logicprobe.LogicMail.model.MessageNodeListener;
 import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 
 /**
@@ -378,7 +380,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void copyToMailbox(MessageNode messageNode) {
-        if(messageNode.hasMessageContent()) {
+        if(messageNode.hasMessageContent() || messageNode.hasCachedContent()) {
             // Normal case where the message has been loaded within the
             // data model and all copy options should be made available.
         	AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
@@ -397,10 +399,19 @@ public class MessageActions {
         		    // and that mail store supports protocol-level copy.
         			selectedMailbox.copyMessageInto(messageNode);
         		}
-        		else {
+        		else if(messageNode.hasMessageContent()) {
         		    // Protocol-level copy is not possible, so just append
         		    // to the destination mailbox.
         			selectedMailbox.appendMessage(messageNode);
+        		}
+        		else if(messageNode.hasCachedContent()) {
+        		    // Message is available in the cache, but not yet loaded.
+        		    // We need to first load from the cache, then proceed with
+        		    // an append on the destination mailbox.
+        		    
+        		    // Add a listener to the message node and then trigger a refresh.
+        		    messageNode.addMessageNodeListener(new CopyToMessageNodeListener(selectedMailbox));
+        		    messageNode.refreshMessage();
         		}
         	}
         }
@@ -419,6 +430,27 @@ public class MessageActions {
             MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
             if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
                 selectedMailbox.copyMessageInto(messageNode);
+            }
+        }
+    }
+    
+    /**
+     * Handles the result of a message refresh as triggered by a copy
+     * operation when the message needs to be loaded from cache.
+     */
+    private class CopyToMessageNodeListener implements MessageNodeListener {
+        private MailboxNode selectedMailbox;
+        public CopyToMessageNodeListener(MailboxNode selectedMailbox) {
+            this.selectedMailbox = selectedMailbox;
+        }
+
+        public void messageStatusChanged(MessageNodeEvent e) {
+            if(e.getType() == MessageNodeEvent.TYPE_CONTENT_LOADED) {
+                // Remove this listener from the message node, and request
+                // that it be appended to the selected destination mailbox.
+                MessageNode messageNode = (MessageNode)e.getSource();
+                messageNode.removeMessageNodeListener(this);
+                selectedMailbox.appendMessage(messageNode);
             }
         }
     }

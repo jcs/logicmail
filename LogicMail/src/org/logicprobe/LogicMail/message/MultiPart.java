@@ -82,10 +82,6 @@ public class MultiPart extends MimeMessagePart {
     
     public void accept(MimeMessagePartVisitor visitor) {
         visitor.visitMultiPart(this);
-        if(parts != null) {
-            for(int i=0;i<parts.length;i++)
-                parts[i].accept(visitor);
-        }
     }
 
     public void addPart(MimeMessagePart part) {
