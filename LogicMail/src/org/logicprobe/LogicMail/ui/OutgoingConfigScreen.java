@@ -37,9 +37,9 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
-import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
+import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -169,7 +169,7 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         contentFieldManager.add(useAuthField);
         contentFieldManager.add(serverUserField);
         contentFieldManager.add(serverPassField);
-        contentFieldManager.add(new LabelField());
+        contentFieldManager.add(new SeparatorField());
         contentFieldManager.add(networkTransportChoiceField);
         contentFieldManager.add(enableWiFiCheckboxField);
         

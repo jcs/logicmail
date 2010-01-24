@@ -42,24 +42,26 @@ import net.rim.device.api.ui.Manager;
  */
 public class BorderedFieldManager extends Manager {
 	/** The border width. */
-	private static int borderWidth = 4;
+	private static final int borderWidth = 4;
+	
+	private static final int borderMargin = borderWidth * 2;
 	
 	/**
 	 * Show a normal border on the bottom.
 	 */
-	public static long BOTTOM_BORDER_NORMAL = 0x0000000000000L;
+	public static final long BOTTOM_BORDER_NORMAL = 0x0000000000000L;
 	
 	/**
 	 * Do not show a border on the bottom.
 	 * Used to eliminate excessive border space on
 	 * vertically stacked instances.
 	 */
-	public static long BOTTOM_BORDER_NONE = 0x0000000000020L;
+	public static final long BOTTOM_BORDER_NONE = 0x0000000000020L;
 	
 	/**
 	 * Show a line on the bottom of the border.
 	 */
-	public static long BOTTOM_BORDER_LINE = 0x0000000000040L;
+	public static final long BOTTOM_BORDER_LINE = 0x0000000000040L;
 	
 	private boolean bottomBorderNone;
 	private boolean bottomBorderLine;
@@ -113,11 +115,11 @@ public class BorderedFieldManager extends Manager {
 
         // Paint the rounded rectangular cutout section for the contents
         graphics.setColor(backgroundColor);
-        graphics.fillRoundRect(borderWidth, borderWidth, width - (borderWidth * 2), height - (bottomBorderNone ? borderWidth : (borderWidth * 2)), 10, 10);
+        graphics.fillRoundRect(borderWidth, borderWidth, width - borderMargin, height - (bottomBorderNone ? borderWidth : borderMargin), 10, 10);
 
         // Paint the inner border of the cutout section
         graphics.setColor(Color.DARKGRAY);
-        graphics.drawRoundRect(borderWidth, borderWidth, width - (borderWidth * 2), height - (bottomBorderNone ? borderWidth : (borderWidth * 2)), 10, 10);
+        graphics.drawRoundRect(borderWidth, borderWidth, width - borderMargin, height - (bottomBorderNone ? borderWidth : borderMargin), 10, 10);
     }
     
     protected void paintSeparator(Graphics graphics, int width, int height) {
@@ -135,8 +137,8 @@ public class BorderedFieldManager extends Manager {
         for(int i=0; i<count; i++) {
     		y += 2;
             Field field = this.getField(i);
-            this.setPositionChild(field, 8, y);
-            this.layoutChild(field, maxWidth - (borderWidth * 2) - 6, getPreferredHeightOfChild(field));
+            this.setPositionChild(field, borderMargin, y);
+            this.layoutChild(field, maxWidth - (borderMargin * 2), getPreferredHeightOfChild(field));
             y += field.getHeight();
         }
         int height = getPreferredHeight();
@@ -169,7 +171,7 @@ public class BorderedFieldManager extends Manager {
      * @see net.rim.device.api.ui.Field#getPreferredHeight()
      */
     public int getPreferredHeight() {
-        int sum = (bottomBorderNone ? borderWidth : (borderWidth * 2));
+        int sum = (bottomBorderNone ? borderWidth : borderMargin);
         int count = this.getFieldCount();
         for(int i=0; i<count; i++) {
     		sum += 2;

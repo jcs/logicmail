@@ -43,6 +43,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
+import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.text.TextFilter;
@@ -269,7 +270,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(serverPortField);
         manager.add(serverUserField);
         manager.add(serverPassField);
-        manager.add(new LabelField());
+        manager.add(new SeparatorField());
         manager.add(identityField);
         manager.add(outgoingServerField);
         manager.add(new LabelField());
@@ -326,6 +327,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         
         manager.add(networkTransportChoiceField);
         manager.add(enableWiFiCheckboxField);
+        
+        manager.add(new SeparatorField());
         
         if(accountConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)accountConfig;
