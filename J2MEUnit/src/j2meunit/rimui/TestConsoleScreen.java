@@ -1,10 +1,32 @@
-/*
- * TestConsoleScreen.java
+/*-
+ * Copyright (c) 2010, Derek Konigsberg
+ * All rights reserved.
  *
- * Created on February 2, 2007, 10:11 PM
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
  *
- * To change this template, choose Tools | Template Manager
- * and open the template in the editor.
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution. 
+ * 3. Neither the name of the project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package j2meunit.rimui;
@@ -19,6 +41,8 @@ import j2meunit.framework.TestSuite;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.Characters;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
@@ -34,11 +58,12 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.MainScreen;
 
 /**
- *
+ * J2MEUnit Test Console Screen for the BlackBerry UI.
+ * 
  * @author Derek Konigsberg
  */
-public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, TestListener {
-	private LabelField titleLabel;
+public class TestConsoleScreen extends MainScreen implements TestListener {
+    private LabelField titleLabel;
     private LabelField statusLabel;
     private LabelField failureLabel;
     private LabelField errorLabel;
@@ -51,16 +76,23 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     private TestResult testResults;
     private Test selectedTest;
     private long elapsedTime;
-    
+
+    private Bitmap testInitialBitmap = Bitmap.getBitmapResource("test_initial.png");
+    private Bitmap testPassedBitmap = Bitmap.getBitmapResource("test_passed.png");
+    private Bitmap testFailedBitmap = Bitmap.getBitmapResource("test_failed.png");
+
     private static class TestTreeItem {
         public TestTreeItem(Test test) {
             this.test = test;
-            if(test instanceof TestCase)
+            if(test instanceof TestCase) {
                 name = ((TestCase)test).getName();
-            else if(test instanceof TestSuite)
+            }
+            else if(test instanceof TestSuite) {
                 name = ((TestSuite)test).toString();
-            else
+            }
+            else {
                 name = "Test";
+            }
             this.hasRun = false;
             this.hasPassed = true;
             this.id = 0;
@@ -71,7 +103,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         public boolean hasPassed;
         public int id;
     }
-    
+
     /**
      * Creates a new instance of TestConsoleScreen
      */
@@ -82,13 +114,13 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         elapsedTime = -1;
         populateTestTree(mainTestSuite, 0);
     }
-    
+
     private void initializeFields() {
-    	Font labelFont = Font.getDefault().derive(Font.PLAIN, 12);
+        Font labelFont = Font.getDefault().derive(Font.PLAIN, 12);
         Font treeFont = Font.getDefault().derive(Font.PLAIN, 14);
-		
-		titleLabel = new LabelField("J2MEUnit " + j2meunit.util.Version.id());
-		titleLabel.setFont(labelFont);
+
+        titleLabel = new LabelField("J2MEUnit " + j2meunit.util.Version.id());
+        titleLabel.setFont(labelFont);
         statusLabel = new LabelField("Status: Idle");
         statusLabel.setFont(labelFont);
         failureLabel = new LabelField("Failures: 0");
@@ -99,14 +131,18 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         timeLabel.setFont(labelFont);
         progressGauge = new GaugeField(null, 0, 100, 0, GaugeField.NO_TEXT);
         progressGauge.setFont(labelFont);
-        
-        testTreeField = new TreeField(this, Field.FOCUSABLE);
+
+        testTreeField = new TreeField(new TreeFieldCallback() {
+            public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
+                testTreeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
+            }
+        }, Field.FOCUSABLE);
         testTreeField.setEmptyString("No tests", 0);
         testTreeField.setDefaultExpanded(true);
         testTreeField.setIndentWidth(20);
         testTreeField.setFont(treeFont);
         testTreeField.setRowHeight(treeFont.getHeight() + 2);
-        
+
         add(titleLabel);
         add(statusLabel);
         add(failureLabel);
@@ -116,14 +152,14 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         add(new SeparatorField());
         add(testTreeField);
     }
-    
+
     private void populateTestTree(TestSuite suite, int parentId) {
         // Get the tests
         Vector tests = new Vector();
         for(Enumeration e = suite.tests(); e.hasMoreElements(); ) {
             tests.addElement(e.nextElement());
         }
-        
+
         // Iterate backwards so the tree is populated in the correct order
         int size = tests.size();
         for(int i = size - 1; i >= 0; i--) {
@@ -137,60 +173,67 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
             }
         }
     }
-    
+
     /** Standard Escape-key handler */
     public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch (key) {
-            case Characters.ESCAPE:
-                System.exit(1);
-                break;
-            default:
-                retval = super.keyChar(key, status, time);
+        case Characters.ESCAPE:
+            System.exit(1);
+            break;
+        default:
+            retval = super.keyChar(key, status, time);
         }
         return retval;
     }
-    
-    public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
+
+    private void testTreeField_DrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
         Object cookie = testTreeField.getCookie(node);
-        
+
         if(cookie instanceof TestTreeItem) {
             TestTreeItem item = (TestTreeItem)cookie;
             int height = testTreeField.getRowHeight();
+
+            Bitmap iconBitmap = getItemIcon(item);
             
-            int oldColor = graphics.getColor();
-            
-            if(item.hasRun) {
-                if(item.hasPassed)
-                    graphics.setColor(0x0000FF00); // green
-                else
-                    graphics.setColor(0x00FF0000); // red
-            } else
-                graphics.setColor(0x00C0C0C0); // grey
-            
-            graphics.fillArc(indent, y+1, height-2, height-2, 0, 360);
-            graphics.setColor(oldColor);
-            
-            graphics.drawText(item.name, indent + height, y, Graphics.ELLIPSIS, width);
+            graphics.drawBitmap(indent, y, 16, 16, iconBitmap, 0, 0);
+
+            graphics.drawText(item.name, indent + height + 2, y, Graphics.ELLIPSIS, width - height - 2);
         }
     }
-    
-    private MenuItem resultsItem = new MenuItem("View results", 100000, 10) {
+
+    private Bitmap getItemIcon(TestTreeItem item) {
+        Bitmap iconBitmap;
+        if(item.hasRun) {
+            if(item.hasPassed) {
+                iconBitmap = testPassedBitmap;
+            }
+            else {
+                iconBitmap = testFailedBitmap;
+            }
+        }
+        else {
+            iconBitmap = testInitialBitmap;
+        }
+        return iconBitmap;
+    }
+
+    private MenuItem resultsItem = new MenuItem("View results", 300100, 1010) {
         public void run() {
             showTestResults();
         }
     };
-    private MenuItem runAllItem = new MenuItem("Run all", 100010, 10) {
+    private MenuItem runAllItem = new MenuItem("Run all", 400110, 1020) {
         public void run() {
             runAllTests();
         }
     };
-    private MenuItem runSelectedItem = new MenuItem("Run selected", 100020, 10) {
+    private MenuItem runSelectedItem = new MenuItem("Run selected", 400120, 1030) {
         public void run() {
             runSelectedTests();
         }
     };
-    private MenuItem exitItem = new MenuItem("Exit", 200001, 10) {
+    private MenuItem exitItem = new MenuItem("Exit", 60000100, 9000) {
         public void run() {
             System.exit(0);
         }
@@ -201,14 +244,11 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         if(node > 0) {
             TestTreeItem item = (TestTreeItem)testTreeField.getCookie(node);
             if(item.hasRun && item.test instanceof TestCase) {
-                menu.addSeparator();
                 menu.add(resultsItem);
             }
         }
-        menu.addSeparator();
         menu.add(runAllItem);
         menu.add(runSelectedItem);
-        menu.addSeparator();
         menu.add(exitItem);
     }
 
@@ -217,13 +257,13 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
             errorLabel.setText("Errors: " + testResults.errorCount());
         }
     }
-    
+
     public synchronized void addFailure(Test test, AssertionFailedError assertionFailedError) {
         synchronized(UiApplication.getEventLock()) {
             failureLabel.setText("Failures: " + testResults.failureCount());
         }
     }
-    
+
     public void endTest(Test test) {
         synchronized(UiApplication.getEventLock()) {
             progressGauge.setValue(progressGauge.getValue() + 1);
@@ -232,7 +272,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         updateTestBranch(test);
         updateTestTree();
     }
-    
+
     public void endTestStep(Test test) {
         synchronized(UiApplication.getEventLock()) {
             progressGauge.setValue(progressGauge.getValue() + 1);
@@ -241,7 +281,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         updateTestBranch(test);
         updateTestTree();
     }
-    
+
     public synchronized void startTest(Test test) {
         TestTreeItem item = (TestTreeItem)testTreeItems.get(test.toString());
         item.hasRun = true;
@@ -265,12 +305,12 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         item = (TestTreeItem)testTreeField.getCookie(parentId);
         item.hasRun = hasAllRun;
         item.hasPassed = hasAllPassed;
-        
+
         if(testTreeField.getParent(item.id) >= 0) {
             updateTestBranch(item.test);
         }
     }
-    
+
     private void updateTreeErrors() {
         // Update the test data structures
         TestTreeItem item;
@@ -287,7 +327,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
             item.hasPassed = false;
         }
     }
-    
+
     private synchronized void updateTestTree() {
         // Repaint the tree
         UiApplication.getUiApplication().invokeAndWait(new Runnable() {
@@ -305,11 +345,11 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         TestTreeItem item = (TestTreeItem)testTreeField.getCookie(node);
         if(!(item.test instanceof TestCase)) return;
         TestCase testCase = (TestCase)item.test;
-        
+
         Enumeration e;
         TestFailure testFailure = null;
         TestFailure testError = null;
-        
+
         for(e = testResults.failures(); e.hasMoreElements(); ) {
             TestFailure failure = (TestFailure)e.nextElement();
             if(failure.failedTest() == testCase) {
@@ -317,7 +357,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
                 break;
             }
         }
-        
+
         for(e = testResults.errors(); e.hasMoreElements(); ) {
             TestFailure error = (TestFailure)e.nextElement();
             if(error.failedTest() == testCase) {
@@ -325,11 +365,11 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
                 break;
             }
         }
-        
+
         UiApplication.getUiApplication().pushModalScreen(
                 new TestResultsScreen(testCase, testFailure, testError));
     }
-    
+
     /**
      * Builds a test suite from all test case classes in a string array.
      *
@@ -341,7 +381,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         if (testCaseClasses.length < 1) {
             return testSuite;
         }
-        
+
         for (int i = 0; i < testCaseClasses.length; i++) {
             try {
                 String className = testCaseClasses[i];
@@ -350,14 +390,14 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
                 testSuite.addTest(testCase.suite());
             } catch (Throwable t) {
                 System.out.println("Access to TestCase " + testCaseClasses[i] +
-                    " failed: " + t.getMessage() + " - " +
-                    t.getClass().getName());
+                        " failed: " + t.getMessage() + " - " +
+                        t.getClass().getName());
             }
         }
-        
+
         return testSuite;
     }
-    
+
     /**
      * Run all tests in the given test suite.
      *
@@ -366,7 +406,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
     protected void doRun(Test suite) {
         testResults = new TestResult();
         testResults.addListener(this);
-        
+
         long startTime = System.currentTimeMillis();
 
         // Mark the suite's tree item
@@ -376,7 +416,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
 
         // Run the suite
         suite.run(testResults);
-        
+
         long endTime = System.currentTimeMillis();
         elapsedTime = endTime - startTime;
     }
@@ -385,7 +425,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         selectedTest = mainTestSuite;
         runTests();
     }
-    
+
     private void runSelectedTests() {
         int nodeId = testTreeField.getCurrentNode();
         if(nodeId == -1) return;
@@ -398,7 +438,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
         progressGauge.reset(null, 0, selectedTest.countTestCases(), 0);
         new Thread() {
             public void run() {
-            	Thread.yield();
+                Thread.yield();
                 try {
                     doRun(selectedTest);
                     updateResults();
@@ -409,7 +449,7 @@ public class TestConsoleScreen extends MainScreen implements TreeFieldCallback, 
             }
         }.start();
     }
-    
+
     private synchronized void updateResults() {
         UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
