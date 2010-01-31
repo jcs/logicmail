@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.ui.Screen;
+
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -38,6 +40,14 @@ import org.logicprobe.LogicMail.model.MessageNode;
 public class ScreenFactoryBB42 extends ScreenFactory {
 
 	public ScreenFactoryBB42() {
+	}
+	
+	public void attachScreenTransition(Screen screen, int transitionType) {
+	    // Screen transitions are not supported on this platform version
+	}
+	
+	public void clearScreenTransition(Screen screen) {
+        // Screen transitions are not supported on this platform version
 	}
 	
 	public StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {

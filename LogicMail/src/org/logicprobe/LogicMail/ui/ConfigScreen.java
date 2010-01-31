@@ -31,18 +31,28 @@
 
 package org.logicprobe.LogicMail.ui;
 
-import java.util.Hashtable;
+import net.rim.device.api.i18n.Locale;
+import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.BasicEditField;
+import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.Menu;
-import net.rim.device.api.ui.component.TreeField;
-import net.rim.device.api.ui.component.TreeFieldCallback;
+import net.rim.device.api.ui.component.ObjectChoiceField;
+import net.rim.device.api.ui.component.ObjectListField;
+import net.rim.device.api.ui.component.TextField;
+import net.rim.device.api.ui.container.VerticalFieldManager;
+import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -60,15 +70,44 @@ import org.logicprobe.LogicMail.conf.PopConfig;
  */
 public class ConfigScreen extends AbstractConfigScreen {
     private MailSettings mailSettings;
-    private int globalId;
-    private int identitiesId;
-    private int accountsId;
-    private int outgoingId;
-    private Hashtable identityIndexMap;
-    private Hashtable accountIndexMap;
-    private Hashtable outgoingIndexMap;
+    private GlobalConfig existingGlobalConfig;
+    private String localHostname;
+    private String[] languageChoices;
+    private String[] languageCodes;
+    private String[] fileSystemRoots;
+    private String[] fileSystemRootChoices;
+    private int selectedFileSystemRootIndex;
+    
+    int separatorHeight;
+    
+    // Account management
+    private VerticalFieldManager identityFieldManager;
+    private ObjectListField identityListField;
+    private VerticalFieldManager accountFieldManager;
+    private ObjectListField accountListField;
+    private VerticalFieldManager outgoingFieldManager;
+    private ObjectListField outgoingListField;
+    
+    // Message Display
+    private VerticalFieldManager messageDisplayFieldManager;
+    private ObjectChoiceField messageDisplayChoiceField;
+    private BasicEditField messageCountEditField;
+    private ObjectChoiceField displayOrderChoiceField;
+    private CheckboxField hideDeletedMessagesCheckboxField;
+    
+    // Networking
+    private VerticalFieldManager networkingFieldManager;
+    private ObjectChoiceField networkTransportChoiceField;
+    private CheckboxField enableWiFiCheckboxField;
+    private CheckboxField overrideHostnameCheckboxField;
+    private BasicEditField localHostnameEditField;
 
-    private TreeField configTreeField;
+    // Other
+    private VerticalFieldManager otherFieldManager;
+    private ObjectChoiceField localDataLocationChoiceLabel;
+    private CheckboxField connectionDebuggingCheckboxField;
+    private CheckboxField unicodeNormalizationCheckboxField;
+    private ObjectChoiceField languageChoiceField;
 
     private MenuItem selectItem;
     private MenuItem moveUpItem;
@@ -86,11 +125,17 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     public ConfigScreen() {
         super(resources.getString(LogicMailResource.APPNAME) + " - " + resources.getString(LogicMailResource.CONFIG_TITLE));
+        
         mailSettings = MailSettings.getInstance();
-        identityIndexMap = new Hashtable();
-        accountIndexMap = new Hashtable();
-        outgoingIndexMap = new Hashtable();
+        existingGlobalConfig = mailSettings.getGlobalConfig();
+        
+        localHostname = existingGlobalConfig.getLocalHostname();
+        
+        initLanguageChoices();
+        initFileSystemChoices();
 
+        separatorHeight = getFont().getHeight() / 2;
+        
         initFields();
         initMenuItems();
 
@@ -103,28 +148,282 @@ public class ConfigScreen extends AbstractConfigScreen {
         });
     }
 
+    private void initFileSystemChoices() {
+        // Populate fileSystemRoots with a list of all
+        // available and writable storage devices
+        String selectedFileSystemRoot = existingGlobalConfig.getLocalDataLocation();
+        selectedFileSystemRootIndex = 0;
+        
+        fileSystemRoots = PlatformInfo.getInstance().getFilesystemRoots();
+        fileSystemRootChoices = new String[fileSystemRoots.length + 1];
+        for(int i=0; i<fileSystemRoots.length; i++) {
+            String root = fileSystemRoots[i];
+            if(selectedFileSystemRoot != null && selectedFileSystemRoot.indexOf(root) != -1) {
+                selectedFileSystemRootIndex = i;
+            }
+            if(root.indexOf("Card/") != -1) {
+                fileSystemRootChoices[i] =
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_MEDIA_CARD);
+            }
+            else if(root.indexOf("store/") != -1) {
+                fileSystemRootChoices[i] =
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_DEVICE_MEMORY);
+            }
+            else {
+                int p = root.indexOf('/', GlobalConfig.FILE_URL_PREFIX.length() - 1);
+                int q = root.indexOf('/', p + 1);
+                if(p != -1 && q != -1 && p < q) {
+                    fileSystemRootChoices[i] = root.substring(p + 1, q);
+                }
+                else {
+                    fileSystemRootChoices[i] = root;
+                }
+            }
+        }
+        fileSystemRootChoices[fileSystemRootChoices.length - 1] =
+            resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_DISABLED);
+        if(selectedFileSystemRoot == null) {
+            selectedFileSystemRootIndex = fileSystemRootChoices.length - 1;
+        }
+    }
+
+    private void initLanguageChoices() {
+        languageChoices = new String[] {
+                "BlackBerry",   // System default
+                "Dansk",        // Danish: da
+                "Deutsch",      // German: de
+                "English",      // English: en
+                "Espa\u00f1ol", // Spanish: es
+                "Fran\u00e7ais",// French: fr
+                "Italiano",     // Italian: it
+                "Nederlands",   // Dutch: nl
+                "Ti\u00ea\u0301ng Vi\u00ea\u0323t", // Vietnamese: vi
+                "\u4E2D\u6587", // Chinese: zh
+        };
+        languageCodes = new String[] {
+                "",   // System default
+                "da", // Danish
+                "de", // German
+                "en", // English
+                "es", // Spanish
+                "fr", // French
+                "it", // Italian
+                "nl", // Dutch
+                "vi", // Vietnamese
+                "zh", // Chinese
+        };
+    }
+
     /**
      * Initializes the fields.
      */
     private void initFields() {
-        configTreeField = FieldFactory.getInstance().getScreenTreeField(
-                new TreeFieldCallback() {
-                    public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
-                        configTreeFieldDrawTreeItem(treeField, graphics, node, y, width, indent);
-                    }
-                },
-                Field.FOCUSABLE);
-        configTreeField.setDefaultExpanded(true);
-        configTreeField.setIndentWidth(20);
-
-        globalId = configTreeField.addChildNode(0, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_GLOBAL_SETTINGS)));
-        identitiesId = configTreeField.addSiblingNode(globalId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_IDENTITIES)));
-        accountsId = configTreeField.addSiblingNode(identitiesId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_ACCOUNTS)));
-        outgoingId = configTreeField.addSiblingNode(accountsId, new ConfigTreeNode(resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS)));
-
-        add(configTreeField);
+        initAccountFields();
+        initMessageDisplayFields();
+        initNetworkingFields();
+        initOtherFields();
     }
 
+    private void initAccountFields() {
+        identityFieldManager = new VerticalFieldManager();
+        identityFieldManager.add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_IDENTITIES),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        identityListField = new AccountListField();
+        identityListField.setEmptyString(resources.getFamily(), LogicMailResource.MENUITEM_ADD_IDENTITY, DrawStyle.HCENTER);
+        identityFieldManager.add(identityListField);
+        identityFieldManager.add(new BlankSeparatorField(separatorHeight));
+        add(identityFieldManager);
+        
+        accountFieldManager = new VerticalFieldManager();
+        accountFieldManager.add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNTS),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        accountListField = new AccountListField();
+        accountListField.setEmptyString(resources.getFamily(), LogicMailResource.MENUITEM_ADD_ACCOUNT, DrawStyle.HCENTER);
+        accountFieldManager.add(accountListField);
+        accountFieldManager.add(new BlankSeparatorField(separatorHeight));
+        add(accountFieldManager);
+        
+        outgoingFieldManager = new VerticalFieldManager();
+        outgoingFieldManager.add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        outgoingListField = new AccountListField();
+        outgoingListField.setEmptyString(resources.getFamily(), LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, DrawStyle.HCENTER);
+        outgoingFieldManager.add(outgoingListField);
+        outgoingFieldManager.add(new BlankSeparatorField(separatorHeight));
+        add(outgoingFieldManager);
+    }
+    
+    private static class AccountListField extends ObjectListField {
+        private static Bitmap chevronIcon = Bitmap.getBitmapResource("chevron_right_black_10x16.png");
+        private static Bitmap chevronIconHighlighted = Bitmap.getBitmapResource("chevron_right_white_10x16.png");
+        
+        private boolean isFocus;
+        
+        protected void onFocus(int direction) {
+            isFocus = true;
+            super.onFocus(direction);
+            invalidate();
+        }
+        
+        protected void onUnfocus() {
+            isFocus = false;
+            super.onUnfocus();
+            invalidate();
+        }
+        
+        public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
+            int yPos = (getRowHeight() / 2) - 8;
+            if(isFocus && index == getSelectedIndex()) {
+                graphics.drawBitmap(width - 15, yPos, 10, 16, chevronIconHighlighted, 0, 0);
+            }
+            else {
+                graphics.drawBitmap(width - 15, yPos, 10, 16, chevronIcon, 0, 0);
+            }
+            super.drawListRow(listField, graphics, index, y, width - 25);
+        }
+    }
+    
+    private void initMessageDisplayFields() {
+        messageDisplayFieldManager = new VerticalFieldManager();
+        
+        messageDisplayChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT),
+                new String[] {
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_FORMAT_PLAIN_TEXT),
+                "HTML" },
+                existingGlobalConfig.getMessageDisplayFormat());
+
+        messageCountEditField = new BasicEditField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
+                Integer.toString(existingGlobalConfig.getRetMsgCount()), 16, TextField.NO_NEWLINE);
+        messageCountEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
+
+        String[] orderTypes = {
+                resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
+                resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
+        };
+
+        if (existingGlobalConfig.getDispOrder()) {
+            displayOrderChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+                    orderTypes, 0);
+        } else {
+            displayOrderChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_ORDER) + ' ',
+                    orderTypes, 1);
+        }
+
+        hideDeletedMessagesCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
+                existingGlobalConfig.getHideDeletedMsg());
+        
+        messageDisplayFieldManager.add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_MESSAGE_DISPLAY),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        messageDisplayFieldManager.add(messageDisplayChoiceField);
+        messageDisplayFieldManager.add(messageCountEditField);
+        messageDisplayFieldManager.add(displayOrderChoiceField);
+        messageDisplayFieldManager.add(hideDeletedMessagesCheckboxField);
+        messageDisplayFieldManager.add(new BlankSeparatorField(separatorHeight));
+        add(messageDisplayFieldManager);
+    }
+    
+    private void initNetworkingFields() {
+        networkingFieldManager = new VerticalFieldManager();
+        
+        String[] transportChoices = {
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_AUTO),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_DIRECT_TCP),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_MDS),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2)
+        };
+        networkTransportChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_NETWORK_TRANSPORT),
+                transportChoices,
+                getTransportChoice(existingGlobalConfig.getTransportType()));
+        
+        enableWiFiCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_ENABLE_WIFI),
+                existingGlobalConfig.getEnableWiFi());
+
+        boolean overrideHostname = localHostname.length() > 0;
+        overrideHostnameCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
+                overrideHostname);
+        overrideHostnameCheckboxField.setChangeListener(new FieldChangeListener() {
+            public void fieldChanged(Field field, int context) {
+                overrideHostnameCheckboxFieldChanged(field, context);
+            }
+        });
+
+        if (overrideHostname) {
+            localHostnameEditField = new BasicEditField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+                    localHostname, 256, TextField.NO_NEWLINE);
+        } else {
+            String hostname = System.getProperty("microedition.hostname");
+            localHostnameEditField = new HostnameEditField(
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
+                    ((hostname != null) ? hostname : "localhost"));
+            localHostnameEditField.setEditable(false);
+        }
+        
+        networkingFieldManager.add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_NETWORKING),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        networkingFieldManager.add(networkTransportChoiceField);
+        networkingFieldManager.add(enableWiFiCheckboxField);
+        networkingFieldManager.add(overrideHostnameCheckboxField);
+        networkingFieldManager.add(localHostnameEditField);
+        networkingFieldManager.add(new BlankSeparatorField(separatorHeight));
+        add(networkingFieldManager);
+    }
+    
+    private void initOtherFields() {
+        otherFieldManager = new VerticalFieldManager();
+        
+        localDataLocationChoiceLabel = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_LOCATION) + ' ',
+                fileSystemRootChoices,
+                selectedFileSystemRootIndex);
+        
+        String languageCode = existingGlobalConfig.getLanguageCode();
+        int languageIndex = 0;
+        if(languageCode != null && languageCode.length() != 0) {
+            for(int i=0; i<languageCodes.length; i++) {
+                if(languageCodes[i].equals(languageCode)) {
+                    languageIndex = i;
+                    break;
+                }
+            }
+        }
+        languageChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_LANGUAGE),
+                languageChoices,
+                languageIndex);
+
+        unicodeNormalizationCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_UNICODE_NORMALIZATION),
+                existingGlobalConfig.getUnicodeNormalization());
+
+        connectionDebuggingCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
+                existingGlobalConfig.getConnDebug());
+        
+        otherFieldManager.add(new LabeledSeparatorField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_OTHER),
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        otherFieldManager.add(localDataLocationChoiceLabel);
+        otherFieldManager.add(languageChoiceField);
+        otherFieldManager.add(unicodeNormalizationCheckboxField);
+        otherFieldManager.add(connectionDebuggingCheckboxField);
+        otherFieldManager.add(new BlankSeparatorField(separatorHeight));
+        add(otherFieldManager);
+    }
+    
     private void initMenuItems() {
         selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 300100, 1) {
             public void run() {
@@ -136,9 +435,24 @@ public class ConfigScreen extends AbstractConfigScreen {
                 moveSelectedNodeUp();
             }
         };
-        moveDownItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_DOWN, 300300, 1020) {
+        moveDownItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_DOWN, 300250, 1020) {
             public void run() {
                 moveSelectedNodeDown();
+            }
+        };
+        deleteIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_IDENTITY, 300310, 4000) {
+            public void run() {
+                deleteSelectedIdentity();
+            }
+        };
+        deleteAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_ACCOUNT, 300320, 4000) {
+            public void run() {
+                deleteSelectedAccount();
+            }
+        };
+        deleteOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER, 300330, 4000) {
+            public void run() {
+                deleteSelectedOutgoingServer();
             }
         };
         newAccountWizardItem = new MenuItem(resources, LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD, 400100, 4000) {
@@ -146,103 +460,133 @@ public class ConfigScreen extends AbstractConfigScreen {
                 newAccountWizard();
             }
         };
-        addIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_IDENTITY, 400200, 4000) {
+        addIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_IDENTITY, 400210, 4000) {
             public void run() {
                 addIdentity();
             }
         };
-        deleteIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_IDENTITY, 400250, 4000) {
-            public void run() {
-                deleteSelectedIdentity();
-            }
-        };
-        addAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_ACCOUNT, 400300, 4000) {
+        addAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_ACCOUNT, 400220, 4000) {
             public void run() {
                 addAccount();
             }
         };
-        deleteAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_ACCOUNT, 400350, 4000) {
-            public void run() {
-                deleteSelectedAccount();
-            }
-        };
-        addOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, 400400, 4000) {
+        addOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, 400230, 4000) {
             public void run() {
                 addOutgoingServer();
             }
         };
-        deleteOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER, 400450, 4000) {
-            public void run() {
-                deleteSelectedOutgoingServer();
-            }
-        };
+    }
+    
+    private static int getTransportChoice(int transportSetting) {
+        int result;
+        switch(transportSetting) {
+        case ConnectionConfig.TRANSPORT_AUTO:
+            result = 0;
+            break;
+        case ConnectionConfig.TRANSPORT_DIRECT_TCP:
+            result = 1;
+            break;
+        case ConnectionConfig.TRANSPORT_MDS:
+            result = 2;
+            break;
+        case ConnectionConfig.TRANSPORT_WAP2:
+            result = 3;
+            break;
+        default:
+            result = 0;
+            break;
+        }
+        return result;
+    }
+    
+    private static int getTransportSetting(int transportChoice) {
+        int result;
+        switch(transportChoice) {
+        case 0:
+            result = ConnectionConfig.TRANSPORT_AUTO;
+            break;
+        case 1:
+            result = ConnectionConfig.TRANSPORT_DIRECT_TCP;
+            break;
+        case 2:
+            result = ConnectionConfig.TRANSPORT_MDS;
+            break;
+        case 3:
+            result = ConnectionConfig.TRANSPORT_WAP2;
+            break;
+        default:
+            result = ConnectionConfig.TRANSPORT_AUTO;
+            break;
+        }
+        return result;
+    }
+    
+    public void overrideHostnameCheckboxFieldChanged(Field field, int context) {
+        if (overrideHostnameCheckboxField.getChecked()) {
+            localHostnameEditField.setText(localHostname);
+            localHostnameEditField.setEditable(true);
+        } else {
+            String hostname = System.getProperty("microedition.hostname");
+            localHostnameEditField.setText((hostname != null) ? hostname
+                    : "localhost");
+            localHostnameEditField.setEditable(false);
+        }
     }
 
-    /**
-     * Draws tree items in the TreeField
-     * 
-     * @param treeField the tree field
-     * @param graphics the graphics
-     * @param node the node
-     * @param y the y
-     * @param width the width
-     * @param indent the indent
-     */
-    public void configTreeFieldDrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
-        Object cookie = treeField.getCookie(node);
-        graphics.drawText(cookie.toString(), indent + 2, y, Graphics.ELLIPSIS, width);
+    private ObjectListField getSelectedListField() {
+        if(identityFieldManager.isFocus()) {
+            return identityListField;
+        }
+        else if(accountFieldManager.isFocus()) {
+            return accountListField;
+        }
+        else if(outgoingFieldManager.isFocus()) {
+            return outgoingListField;
+        }
+        else {
+            return null;
+        }
     }
 
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.container.MainScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     protected void makeMenu(Menu menu, int instance) {
-        int id = configTreeField.getCurrentNode();
-
-        Object cookie;
-        Object rawCookie = configTreeField.getCookie(id);
-        if(rawCookie instanceof ConfigTreeNode) {
-            cookie = ((ConfigTreeNode)rawCookie).cookie;
-        }
-        else {
-            cookie = null;
-        }
-
-        if(id != identitiesId && id != accountsId && id != outgoingId) {
-            menu.add(selectItem);
-            if(cookie instanceof ConnectionConfig) {
-                if(configTreeField.getPreviousSibling(id) != -1) {
+        ObjectListField selectedListField = getSelectedListField();
+        
+        if(selectedListField != null) {
+            int index = selectedListField.getSelectedIndex();
+            if(index != -1) {
+                menu.add(selectItem);
+                if(index < selectedListField.getSize() - 1) {
+                    menu.add(moveDownItem);
+                }
+                else if(index > 0) {
                     menu.add(moveUpItem);
                 }
-                if(configTreeField.getNextSibling(id) != -1) {
-                    menu.add(moveDownItem);
+            }
+            
+            if(selectedListField == identityListField) {
+                menu.add(addIdentityItem);
+                if(identityListField.getSize() > 0) {
+                    menu.add(deleteIdentityItem);
+                }
+            }
+            else if(selectedListField == accountListField) {
+                menu.add(newAccountWizardItem);
+                menu.add(addAccountItem);
+                if(accountListField.getSize() > 0) {
+                    menu.add(deleteAccountItem);
+                }
+            }
+            else if(selectedListField == outgoingListField) {
+                menu.add(addOutgoingItem);
+                if(outgoingListField.getSize() > 0) {
+                    menu.add(deleteOutgoingItem);
                 }
             }
         }
-
-        if(id == identitiesId) {
-            menu.add(addIdentityItem);
-        }
-        else if(cookie instanceof IdentityConfig) {
-            menu.add(addIdentityItem);
-            menu.add(deleteIdentityItem);
-        }
-        else if(id == accountsId) {
-            menu.add(newAccountWizardItem);
-            menu.add(addAccountItem);
-        }
-        else if(cookie instanceof AccountConfig) {
-            menu.add(newAccountWizardItem);
-            menu.add(addAccountItem);
-            menu.add(deleteAccountItem);
-        }
-        else if(id == outgoingId) {
-            menu.add(addOutgoingItem);
-        }
-        else if(cookie instanceof OutgoingConfig) {
-            menu.add(addOutgoingItem);
-            menu.add(deleteOutgoingItem);
-        }
+        
         super.makeMenu(menu, instance);
     }
 
@@ -252,10 +596,6 @@ public class ConfigScreen extends AbstractConfigScreen {
     public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch(key) {
-        case Keypad.KEY_SPACE:
-            toggleSelectedNode();
-            retval = true;
-            break;
         case Keypad.KEY_ENTER:
             openSelectedNode();
             retval = true;
@@ -270,27 +610,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     protected boolean navigationClick(int status, int time) {
         return openSelectedNode();
     }
-
-    /**
-     * Toggle selected node's expansion state
-     */
-    private void toggleSelectedNode() {
-        int curNode = configTreeField.getCurrentNode();
-
-        // Make sure a node is selected
-        if(curNode == -1) {
-            return;
-        }
-
-        // Make sure the selected node has children
-        if(configTreeField.getFirstChild(curNode) == -1) {
-            return;
-        }
-
-        // Toggle the expansion state of the current node
-        configTreeField.setExpanded(curNode, !configTreeField.getExpanded(curNode));
-    }
-
+    
     /**
      * Open selected node.
      * 
@@ -298,53 +618,72 @@ public class ConfigScreen extends AbstractConfigScreen {
      */
     private boolean openSelectedNode() {
         boolean result = false;
-        int curNode = configTreeField.getCurrentNode();
-        if(curNode == globalId) {
-            UiApplication.getUiApplication().pushScreen(new GlobalConfigScreen());
-            result = true;
-        }
-        else {
-            int parentNode = configTreeField.getParent(curNode);
-            Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
-            if(parentNode == identitiesId) {
-                IdentityConfig identityConfig = (IdentityConfig)cookie;
+
+        ObjectListField selectedListField = getSelectedListField();
+
+        if(selectedListField == identityListField) {
+            int index = identityListField.getSelectedIndex();
+            if(index != -1) {
+                IdentityConfig identityConfig = (IdentityConfig)identityListField.get(identityListField, index);
                 IdentityConfigScreen identityConfigScreen = new IdentityConfigScreen(identityConfig);
+                ScreenFactory.getInstance().attachScreenTransition(identityConfigScreen, ScreenFactory.TRANSITION_SLIDE);
                 UiApplication.getUiApplication().pushModalScreen(identityConfigScreen);
                 if(identityConfigScreen.configSaved()) {
                     mailSettings.saveSettings();
                 }
-                result = true;
             }
-            else if(parentNode == accountsId) {
-                AccountConfig acctConfig = (AccountConfig)cookie;
-                AccountConfigScreen accountConfigScreen = new AccountConfigScreen(acctConfig);
+            else {
+                addIdentity();
+            }
+            result = true;
+        }
+        else if(selectedListField == accountListField) {
+            int index = accountListField.getSelectedIndex();
+            if(index != -1) {
+                AccountConfig accountConfig = (AccountConfig)accountListField.get(accountListField, index);
+                AccountConfigScreen accountConfigScreen = new AccountConfigScreen(accountConfig);
+                ScreenFactory.getInstance().attachScreenTransition(accountConfigScreen, ScreenFactory.TRANSITION_SLIDE);
                 UiApplication.getUiApplication().pushModalScreen(accountConfigScreen);
                 if(accountConfigScreen.acctSaved()) {
                     mailSettings.saveSettings();
                 }
-                result = true;
             }
-            else if(parentNode == outgoingId) {
-                OutgoingConfig outgoingConfig = (OutgoingConfig)cookie;
+            else {
+                addAccount();
+            }
+            result = true;
+        }
+        else if(selectedListField == outgoingListField) {
+            int index = outgoingListField.getSelectedIndex();
+            if(index != -1) {
+                OutgoingConfig outgoingConfig = (OutgoingConfig)outgoingListField.get(outgoingListField, index);
                 OutgoingConfigScreen outgoingConfigScreen = new OutgoingConfigScreen(outgoingConfig);
+                ScreenFactory.getInstance().attachScreenTransition(outgoingConfigScreen, ScreenFactory.TRANSITION_SLIDE);
                 UiApplication.getUiApplication().pushModalScreen(outgoingConfigScreen);
                 if(outgoingConfigScreen.acctSaved()) {
                     mailSettings.saveSettings();
                 }
-                result = true;
             }
+            else {
+                addOutgoingServer();
+            }
+            result = true;
         }
         return result;
     }
 
     private void moveSelectedNodeUp() {
-        int curNode = configTreeField.getCurrentNode();
-        if(curNode == -1) { return; }
-        int prevNode = configTreeField.getPreviousSibling(curNode);
-        if(prevNode == -1) { return; }
-
-        Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
-        Object prevCookie = ((ConfigTreeNode)configTreeField.getCookie(prevNode)).cookie;
+        Object cookie = null;
+        Object prevCookie = null;
+        ObjectListField selectedListField = getSelectedListField();
+        if(selectedListField != null) {
+            int index = selectedListField.getSelectedIndex();
+            if(index > 0) {
+                prevCookie = selectedListField.get(selectedListField, index - 1);
+                cookie = selectedListField.get(selectedListField, index);
+            }
+        }
+        if(cookie == null || prevCookie == null) { return; }
 
         boolean result = false;
 
@@ -353,7 +692,7 @@ public class ConfigScreen extends AbstractConfigScreen {
             IdentityConfig prevConfig = (IdentityConfig)prevCookie;
 
             int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
-            mailSettings.removeAccountConfig(curConfigIndex);
+            mailSettings.removeIdentityConfig(curConfigIndex);
 
             int prevConfigIndex = mailSettings.indexOfIdentityConfig(prevConfig);
             mailSettings.insertIdentityConfigAt(curConfig, prevConfigIndex);
@@ -375,7 +714,7 @@ public class ConfigScreen extends AbstractConfigScreen {
             OutgoingConfig prevConfig = (OutgoingConfig)prevCookie;
 
             int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
-            mailSettings.removeAccountConfig(curConfigIndex);
+            mailSettings.removeOutgoingConfig(curConfigIndex);
 
             int prevConfigIndex = mailSettings.indexOfOutgoingConfig(prevConfig);
             mailSettings.insertOutgoingConfigAt(curConfig, prevConfigIndex);
@@ -388,13 +727,17 @@ public class ConfigScreen extends AbstractConfigScreen {
     }
 
     private void moveSelectedNodeDown() {
-        int curNode = configTreeField.getCurrentNode();
-        if(curNode == -1) { return; }
-        int nextNode = configTreeField.getNextSibling(curNode);
-        if(nextNode == -1) { return; }
-
-        Object cookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
-        Object nextCookie = ((ConfigTreeNode)configTreeField.getCookie(nextNode)).cookie;
+        Object cookie = null;
+        Object nextCookie = null;
+        ObjectListField selectedListField = getSelectedListField();
+        if(selectedListField != null) {
+            int index = selectedListField.getSelectedIndex();
+            if(index < selectedListField.getSize() - 1) {
+                cookie = selectedListField.get(selectedListField, index);
+                nextCookie = selectedListField.get(selectedListField, index + 1);
+            }
+        }
+        if(cookie == null || nextCookie == null) { return; }
 
         boolean result = false;
 
@@ -403,7 +746,7 @@ public class ConfigScreen extends AbstractConfigScreen {
             IdentityConfig nextConfig = (IdentityConfig)nextCookie;
 
             int curConfigIndex = mailSettings.indexOfIdentityConfig(curConfig);
-            mailSettings.removeAccountConfig(curConfigIndex);
+            mailSettings.removeIdentityConfig(curConfigIndex);
 
             int nextConfigIndex = mailSettings.indexOfIdentityConfig(nextConfig);
             mailSettings.insertIdentityConfigAt(curConfig, nextConfigIndex + 1);
@@ -425,7 +768,7 @@ public class ConfigScreen extends AbstractConfigScreen {
             OutgoingConfig nextConfig = (OutgoingConfig)nextCookie;
 
             int curConfigIndex = mailSettings.indexOfOutgoingConfig(curConfig);
-            mailSettings.removeAccountConfig(curConfigIndex);
+            mailSettings.removeOutgoingConfig(curConfigIndex);
 
             int nextConfigIndex = mailSettings.indexOfOutgoingConfig(nextConfig);
             mailSettings.insertOutgoingConfigAt(curConfig, nextConfigIndex + 1);
@@ -441,64 +784,40 @@ public class ConfigScreen extends AbstractConfigScreen {
      * Builds the accounts list.
      */
     private void buildAccountsList() {
-        Object curCookie;
-        int curNode = configTreeField.getCurrentNode();
-        if(curNode != -1) {
-            curCookie = ((ConfigTreeNode)configTreeField.getCookie(curNode)).cookie;
-        }
-        else {
-            curCookie = null;
-        }
-
+        // Identities
         int numIdentities = mailSettings.getNumIdentities();
-        identityIndexMap.clear();
-        int numAccounts = mailSettings.getNumAccounts();
-        accountIndexMap.clear();
-        int numOutgoing = mailSettings.getNumOutgoing();
-        outgoingIndexMap.clear();
-        int id;
-        while((id = configTreeField.getFirstChild(identitiesId)) != -1) {
-            configTreeField.deleteSubtree(id);
+        while(identityListField.getSize() != 0) {
+            identityListField.delete(0);
         }
-        while((id = configTreeField.getFirstChild(accountsId)) != -1) {
-            configTreeField.deleteSubtree(id);
-        }
-        while((id = configTreeField.getFirstChild(outgoingId)) != -1) {
-            configTreeField.deleteSubtree(id);
-        }
-
+        
         IdentityConfig identityConfig;
-        for(int i = numIdentities-1; i >= 0; i--) {
+        for(int i = 0; i < numIdentities; i++) {
             identityConfig = mailSettings.getIdentityConfig(i);
-            configTreeField.addChildNode(identitiesId, new ConfigTreeNode(identityConfig));
-            identityIndexMap.put(identityConfig, new Integer(i));
+            identityListField.insert(i, identityConfig);
         }
-
+        
+        // Accounts
+        int numAccounts = mailSettings.getNumAccounts();
+        while(accountListField.getSize() != 0) {
+            accountListField.delete(0);
+        }
+        
         AccountConfig acctConfig;
-        for(int i = numAccounts-1; i >= 0; i--) {
+        for(int i = 0; i < numAccounts; i++) {
             acctConfig = mailSettings.getAccountConfig(i);
-            configTreeField.addChildNode(accountsId, new ConfigTreeNode(acctConfig));
-            accountIndexMap.put(acctConfig, new Integer(i));
+            accountListField.insert(i, acctConfig);
+        }
+        
+        // Outgoing servers
+        int numOutgoing = mailSettings.getNumOutgoing();
+        while(outgoingListField.getSize() != 0) {
+            outgoingListField.delete(0);
         }
 
         OutgoingConfig outgoingConfig;
-        for(int i = numOutgoing-1; i >= 0; i--) {
+        for(int i = 0; i < numOutgoing; i++) {
             outgoingConfig = mailSettings.getOutgoingConfig(i);
-            configTreeField.addChildNode(outgoingId, new ConfigTreeNode(outgoingConfig));
-            outgoingIndexMap.put(outgoingConfig, new Integer(i));
-        }
-
-        if(curCookie != null) {
-            int node = configTreeField.nextNode(0, 0, true);
-            while(node != -1) {
-                if(((ConfigTreeNode)configTreeField.getCookie(node)).cookie == curCookie) {
-                    configTreeField.setCurrentNode(node);
-                    break;
-                }
-                else {
-                    node = configTreeField.nextNode(node, 0, true);
-                }
-            }
+            outgoingListField.insert(i, outgoingConfig);
         }
     }
 
@@ -527,15 +846,14 @@ public class ConfigScreen extends AbstractConfigScreen {
      * Delete the currently selected identity.
      */
     private void deleteSelectedIdentity() {
-        IdentityConfig identityConfig =
-            (IdentityConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
-
-        int index = ((Integer)identityIndexMap.get(identityConfig)).intValue();
+        // Assume that all the focus checking has been done prior to
+        // this method being called.
+        int index = identityListField.getSelectedIndex();
+        
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeIdentityConfig(index);
-            configTreeField.deleteSubtree(configTreeField.getCurrentNode());
-            identityIndexMap.remove(identityConfig);
+            identityListField.delete(index);
             mailSettings.saveSettings();
         }
     }
@@ -566,15 +884,14 @@ public class ConfigScreen extends AbstractConfigScreen {
      * Delete the currently selected account.
      */
     private void deleteSelectedAccount() {
-        AccountConfig acctConfig =
-            (AccountConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
-
-        int index = ((Integer)accountIndexMap.get(acctConfig)).intValue();
+        // Assume that all the focus checking has been done prior to
+        // this method being called.
+        int index = accountListField.getSelectedIndex();
+        
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeAccountConfig(index);
-            configTreeField.deleteSubtree(configTreeField.getCurrentNode());
-            accountIndexMap.remove(acctConfig);
+            accountListField.delete(index);
             mailSettings.saveSettings();
         }
     }
@@ -596,40 +913,70 @@ public class ConfigScreen extends AbstractConfigScreen {
      * Delete the currently selected outgoing server.
      */
     private void deleteSelectedOutgoingServer() {
-        OutgoingConfig outgoingConfig =
-            (OutgoingConfig)((ConfigTreeNode)configTreeField.getCookie(configTreeField.getCurrentNode())).cookie;
-
-        int index = ((Integer)outgoingIndexMap.get(outgoingConfig)).intValue();
+        // Assume that all the focus checking has been done prior to
+        // this method being called.
+        int index = outgoingListField.getSelectedIndex();
+        
         int response = Dialog.ask(Dialog.D_DELETE);
         if(response == Dialog.DELETE) {
             mailSettings.removeOutgoingConfig(index);
-            configTreeField.deleteSubtree(configTreeField.getCurrentNode());
-            outgoingIndexMap.remove(outgoingConfig);
+            outgoingListField.delete(index);
             mailSettings.saveSettings();
         }
     }
 
-    private static class ConfigTreeNode implements TreeFieldNode {
-        public Object cookie;
+    public void save() {
+        GlobalConfig config = mailSettings.getGlobalConfig();
 
-        public ConfigTreeNode(Object cookie) {
-            this.cookie = cookie;
+        String languageCode = languageCodes[languageChoiceField.getSelectedIndex()];
+        if(languageCode != null && languageCode.length() != 0) {
+            try {
+                Locale.setDefault(Locale.get(languageCode));
+                config.setLanguageCode(languageCode);
+            } catch (Exception e) { }
+        }
+        else {
+            Locale.setDefault(Locale.getDefault());
+            config.setLanguageCode("");
         }
 
-        public String toString() {
-            return cookie.toString();
+        config.setUnicodeNormalization(unicodeNormalizationCheckboxField.getChecked());
+
+        config.setMessageDisplayFormat(messageDisplayChoiceField.getSelectedIndex());
+
+        try {
+            config.setRetMsgCount(Integer.parseInt(messageCountEditField.getText()));
+        } catch (Exception e) { }
+
+        if (displayOrderChoiceField.getSelectedIndex() == 0) {
+            config.setDispOrder(true);
+        } else {
+            config.setDispOrder(false);
         }
 
-        public boolean isNodeSelectable() {
-            if((cookie instanceof GlobalConfig)
-                    || (cookie instanceof IdentityConfig)
-                    || (cookie instanceof AccountConfig)
-                    || (cookie instanceof OutgoingConfig)) {
-                return true;
-            }
-            else {
-                return false;
-            }
+        config.setHideDeletedMsg(hideDeletedMessagesCheckboxField.getChecked());
+
+        config.setTransportType(getTransportSetting(networkTransportChoiceField.getSelectedIndex()));
+        
+        config.setEnableWiFi(enableWiFiCheckboxField.getChecked());
+
+        int fsRootIndex = localDataLocationChoiceLabel.getSelectedIndex();
+        String url;
+        if(fsRootIndex > fileSystemRoots.length) {
+            url = null;
         }
+        else {
+            url = fileSystemRoots[fsRootIndex];
+        }
+        config.setLocalDataLocation(url);
+
+        if (overrideHostnameCheckboxField.getChecked()) {
+            config.setLocalHostname(localHostnameEditField.getText().trim());
+        } else {
+            config.setLocalHostname("");
+        }
+
+        config.setConnDebug(connectionDebuggingCheckboxField.getChecked());
+        mailSettings.saveSettings();
     }
 }

@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.ui.Screen;
+
 import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
@@ -71,6 +73,21 @@ public abstract class ScreenFactory {
         return instance;
     }
 
+    /** Constant for a fade transition. */
+    public static final int TRANSITION_FADE = 1;
+    /** Constant for a slide transition. */
+    public static final int TRANSITION_SLIDE = 2;
+    /** Constant for a wipe transition. */
+    public static final int TRANSITION_WIPE = 3;
+    /** Constant for a zoom transition. */
+    public static final int TRANSITION_ZOOM = 4;
+    /** Constant for no transition. */
+    public static final int TRANSITION_NONE = 5;
+    
+    public abstract void attachScreenTransition(Screen screen, int transitionType);
+    
+    public abstract void clearScreenTransition(Screen screen);
+    
     public abstract StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode);
 
     public abstract StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode);
