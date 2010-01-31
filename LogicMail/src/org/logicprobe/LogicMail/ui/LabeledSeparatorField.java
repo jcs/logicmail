@@ -45,8 +45,8 @@ public class LabeledSeparatorField extends Field {
     private boolean topBorder;
     private boolean bottomBorder;
 
-    public static long TOP_BORDER = 0x0000000000020L;
-    public static long BOTTOM_BORDER = 0x0000000000040L;
+    public static final long TOP_BORDER = 0x0000000000020L;
+    public static final long BOTTOM_BORDER = 0x0000000000040L;
 
     /**
      * Instantiates a new mailbox separator field.

@@ -60,7 +60,6 @@ import org.logicprobe.LogicMail.conf.PopConfig;
  */
 public class ConfigScreen extends AbstractConfigScreen {
     private MailSettings mailSettings;
-    private TreeField configTreeField;
     private int globalId;
     private int identitiesId;
     private int accountsId;
@@ -68,6 +67,19 @@ public class ConfigScreen extends AbstractConfigScreen {
     private Hashtable identityIndexMap;
     private Hashtable accountIndexMap;
     private Hashtable outgoingIndexMap;
+
+    private TreeField configTreeField;
+
+    private MenuItem selectItem;
+    private MenuItem moveUpItem;
+    private MenuItem moveDownItem;
+    private MenuItem newAccountWizardItem;
+    private MenuItem addIdentityItem;
+    private MenuItem deleteIdentityItem;
+    private MenuItem addAccountItem;
+    private MenuItem deleteAccountItem;
+    private MenuItem addOutgoingItem;
+    private MenuItem deleteOutgoingItem;
 
     /**
      * Instantiates a new configuration screen.
@@ -80,9 +92,10 @@ public class ConfigScreen extends AbstractConfigScreen {
         outgoingIndexMap = new Hashtable();
 
         initFields();
+        initMenuItems();
 
         buildAccountsList();
-        
+
         MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
             public void mailSettingsSaved(MailSettingsEvent e) {
                 buildAccountsList();
@@ -112,6 +125,59 @@ public class ConfigScreen extends AbstractConfigScreen {
         add(configTreeField);
     }
 
+    private void initMenuItems() {
+        selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 300100, 1) {
+            public void run() {
+                openSelectedNode();
+            }
+        };
+        moveUpItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_UP, 300200, 1020) {
+            public void run() {
+                moveSelectedNodeUp();
+            }
+        };
+        moveDownItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_DOWN, 300300, 1020) {
+            public void run() {
+                moveSelectedNodeDown();
+            }
+        };
+        newAccountWizardItem = new MenuItem(resources, LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD, 400100, 4000) {
+            public void run() {
+                newAccountWizard();
+            }
+        };
+        addIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_IDENTITY, 400200, 4000) {
+            public void run() {
+                addIdentity();
+            }
+        };
+        deleteIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_IDENTITY, 400250, 4000) {
+            public void run() {
+                deleteSelectedIdentity();
+            }
+        };
+        addAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_ACCOUNT, 400300, 4000) {
+            public void run() {
+                addAccount();
+            }
+        };
+        deleteAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_ACCOUNT, 400350, 4000) {
+            public void run() {
+                deleteSelectedAccount();
+            }
+        };
+        addOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, 400400, 4000) {
+            public void run() {
+                addOutgoingServer();
+            }
+        };
+        deleteOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER, 400450, 4000) {
+            public void run() {
+                deleteSelectedOutgoingServer();
+            }
+        };
+    }
+
     /**
      * Draws tree items in the TreeField
      * 
@@ -126,66 +192,6 @@ public class ConfigScreen extends AbstractConfigScreen {
         Object cookie = treeField.getCookie(node);
         graphics.drawText(cookie.toString(), indent + 2, y, Graphics.ELLIPSIS, width);
     }
-
-    private MenuItem selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 100, 10) {
-        public void run() {
-            openSelectedNode();
-        }
-    };
-
-    private MenuItem moveUpItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_UP, 100, 10) {
-        public void run() {
-            moveSelectedNodeUp();
-        }
-    };
-
-    private MenuItem moveDownItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_DOWN, 100, 10) {
-        public void run() {
-            moveSelectedNodeDown();
-        }
-    };
-
-    private MenuItem newAccountWizardItem = new MenuItem(resources, LogicMailResource.MENUITEM_NEW_ACCOUNT_WIZARD, 110, 10) {
-        public void run() {
-            newAccountWizard();
-        }
-    };
-
-    private MenuItem addIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_IDENTITY, 120, 10) {
-        public void run() {
-            addIdentity();
-        }
-    };
-
-    private MenuItem deleteIdentityItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_IDENTITY, 130, 10) {
-        public void run() {
-            deleteSelectedIdentity();
-        }
-    };
-
-    private MenuItem addAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_ACCOUNT, 120, 10) {
-        public void run() {
-            addAccount();
-        }
-    };
-
-    private MenuItem deleteAccountItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_ACCOUNT, 130, 10) {
-        public void run() {
-            deleteSelectedAccount();
-        }
-    };
-
-    private MenuItem addOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, 120, 10) {
-        public void run() {
-            addOutgoingServer();
-        }
-    };
-
-    private MenuItem deleteOutgoingItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE_OUTGOING_SERVER, 130, 10) {
-        public void run() {
-            deleteSelectedOutgoingServer();
-        }
-    };
 
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.container.MainScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
@@ -212,7 +218,6 @@ public class ConfigScreen extends AbstractConfigScreen {
                     menu.add(moveDownItem);
                 }
             }
-            menu.addSeparator();
         }
 
         if(id == identitiesId) {
