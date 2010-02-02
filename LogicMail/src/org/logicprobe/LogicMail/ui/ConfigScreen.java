@@ -274,8 +274,13 @@ public class ConfigScreen extends AbstractConfigScreen {
             invalidate();
         }
         
+        protected int moveFocus(int amount, int status, int time) {
+            invalidate();
+            return super.moveFocus(amount, status, time);
+        }
+        
         public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
-            int yPos = (getRowHeight() / 2) - 8;
+            int yPos = y + (getRowHeight() / 2) - 8;
             if(isFocus && index == getSelectedIndex()) {
                 graphics.drawBitmap(width - 15, yPos, 10, 16, chevronIconHighlighted, 0, 0);
             }
