@@ -89,7 +89,10 @@ public class PopConfig extends AccountConfig {
      * @param maxMessageLines The new maximum message lines
      */
     public void setMaxMessageLines(int maxMessageLines) {
-        this.maxMessageLines = maxMessageLines;
+        if(this.maxMessageLines != maxMessageLines) {
+            this.maxMessageLines = maxMessageLines;
+            changeType |= CHANGE_TYPE_LIMITS;
+        }
     }
 
     /* (non-Javadoc)
@@ -107,7 +110,7 @@ public class PopConfig extends AccountConfig {
         super.readConfigItems(table);
         Object value;
         value = table.get("account_pop_maxMessageLines");
-        if ((value != null) && value instanceof Integer) {
+        if (value instanceof Integer) {
         	maxMessageLines = ((Integer) value).intValue();
         }
     }    

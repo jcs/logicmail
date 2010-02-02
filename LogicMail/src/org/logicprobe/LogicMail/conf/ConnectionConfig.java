@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  */
 public abstract class ConnectionConfig implements Serializable {
     private long uniqueId;
+    protected int changeType;
     private String acctName;
     private String serverName;
     private int serverSecurity;
@@ -53,6 +54,11 @@ public abstract class ConnectionConfig implements Serializable {
     private int transportType;
     private boolean enableWiFi;
 
+    /** Configuration name change. */
+    public static final int CHANGE_TYPE_NAME = 0x01;
+    /** Server and network settings. */
+    public static final int CHANGE_TYPE_CONNECTION = 0x02;
+    
     /** Use the transport specified in the global configuration */
     public static final int TRANSPORT_GLOBAL = 0;
     /** Use the Direct TCP transport */
@@ -106,6 +112,7 @@ public abstract class ConnectionConfig implements Serializable {
         serverPort = 110;
         transportType = TRANSPORT_GLOBAL;
         enableWiFi = false;
+        changeType = 0;
     }
 
     /**
@@ -123,7 +130,10 @@ public abstract class ConnectionConfig implements Serializable {
      * @param acctName The new account name
      */
     public void setAcctName(String acctName) {
-        this.acctName = acctName;
+        if(!this.acctName.equals(acctName)) {
+            this.acctName = acctName;
+            changeType |= CHANGE_TYPE_NAME;
+        }
     }
     
     /**
@@ -141,7 +151,10 @@ public abstract class ConnectionConfig implements Serializable {
      * @param serverName The new server name
      */
     public void setServerName(String serverName) {
-        this.serverName = serverName;
+        if(!this.serverName.equals(serverName)) {
+            this.serverName = serverName;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
 
     /**
@@ -159,7 +172,10 @@ public abstract class ConnectionConfig implements Serializable {
      * @param serverSecurity the new server connection security mode
      */
     public void setServerSecurity(int serverSecurity) {
-    	this.serverSecurity = serverSecurity;
+        if(this.serverSecurity != serverSecurity) {
+            this.serverSecurity = serverSecurity;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
     
     /**
@@ -177,7 +193,10 @@ public abstract class ConnectionConfig implements Serializable {
      * @param serverPort The new server port
      */
     public void setServerPort(int serverPort) {
-        this.serverPort = serverPort;
+        if(this.serverPort != serverPort) {
+            this.serverPort = serverPort;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
 
     /**
@@ -195,7 +214,10 @@ public abstract class ConnectionConfig implements Serializable {
      * @param transportType the new preferred network transport type
      */
     public void setTransportType(int transportType) {
-        this.transportType = transportType;
+        if(this.transportType != transportType) {
+            this.transportType = transportType;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
     
     /**
@@ -213,7 +235,10 @@ public abstract class ConnectionConfig implements Serializable {
      * @param enableWiFi whether to use WiFi if available
      */
     public void setEnableWiFi(boolean enableWiFi) {
-        this.enableWiFi = enableWiFi;
+        if(this.enableWiFi != enableWiFi) {
+            this.enableWiFi = enableWiFi;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
     
     /* (non-Javadoc)
@@ -224,6 +249,7 @@ public abstract class ConnectionConfig implements Serializable {
         SerializableHashtable table = new SerializableHashtable();
         writeConfigItems(table);
         table.serialize(output);
+        changeType = 0;
     }
 
     /* (non-Javadoc)
@@ -235,6 +261,7 @@ public abstract class ConnectionConfig implements Serializable {
         SerializableHashtable table = new SerializableHashtable();
         table.deserialize(input);
         readConfigItems(table);
+        changeType = 0;
     }
     
     /**
@@ -294,5 +321,14 @@ public abstract class ConnectionConfig implements Serializable {
      */
     public long getUniqueId() {
         return uniqueId;
+    }
+
+    /**
+     * Checks if this object has changed since it was last saved.
+     * 
+     * @return the change type, if applicable
+     */
+    public int getChangeType() {
+        return changeType;
     }
 }

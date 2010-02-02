@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,59 @@
 
 package org.logicprobe.LogicMail.conf;
 
+import net.rim.device.api.util.LongIntHashtable;
+
 import org.logicprobe.LogicMail.util.EventObject;
+import org.logicprobe.LogicMail.util.Serializable;
 
 /**
  * Object for MailSettings events.
  */
 public class MailSettingsEvent extends EventObject {
-	public MailSettingsEvent(Object source) {
-		super(source);
-	}
+    private int globalChangeType;
+    private int listChangeType;
+    private LongIntHashtable configChangeMap;
+
+    /** Identity list changed. */
+    public static final int LIST_CHANGED_IDENTITY = 0x01;
+    /** Account list changed. */
+    public static final int LIST_CHANGED_ACCOUNT = 0x02;
+    /** Outgoing server list changed. */
+    public static final int LIST_CHANGED_OUTGOING = 0x04;
+    
+    public MailSettingsEvent(Object source) {
+        super(source);
+    }
+    
+    void setGlobalChange(int changeType) {
+        this.globalChangeType = changeType;
+    }
+    
+    public int getGlobalChange() {
+        return globalChangeType;
+    }
+    
+    void setListChange(int changeType) {
+        this.listChangeType = changeType;
+    }
+    
+    public int getListChange() {
+        return listChangeType;
+    }
+    
+    void setConfigChange(Serializable configObject, int changeType) {
+        if(configChangeMap == null) {
+            configChangeMap = new LongIntHashtable();
+        }
+        configChangeMap.put(configObject.getUniqueId(), changeType);
+    }
+    
+    public int getConfigChange(Serializable configObject) {
+        if(configChangeMap == null) {
+            return 0;
+        }
+        else {
+            return configChangeMap.get(configObject.getUniqueId());
+        }
+    }
 }

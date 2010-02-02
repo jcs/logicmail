@@ -96,7 +96,10 @@ public class ImapConfig extends AccountConfig {
      * @param folderPrefix The new folder prefix
      */
     public void setFolderPrefix(String folderPrefix) {
-        this.folderPrefix = folderPrefix;
+        if(!this.folderPrefix.equals(folderPrefix)) {
+            this.folderPrefix = folderPrefix;
+            changeType |= CHANGE_TYPE_ADVANCED;
+        }
     }
 
     /**
@@ -114,7 +117,10 @@ public class ImapConfig extends AccountConfig {
      * @param maxMessageSize The new maximum message size
      */
     public void setMaxMessageSize(int maxMessageSize) {
-        this.maxMessageSize = maxMessageSize;
+        if(this.maxMessageSize != maxMessageSize) {
+            this.maxMessageSize = maxMessageSize;
+            changeType |= CHANGE_TYPE_LIMITS;
+        }
     }
 
     /**
@@ -132,7 +138,10 @@ public class ImapConfig extends AccountConfig {
      * @param maxFolderDepth The new maximum folder depth
      */
     public void setMaxFolderDepth(int maxFolderDepth) {
-        this.maxFolderDepth = maxFolderDepth;
+        if(this.maxFolderDepth != maxFolderDepth) {
+            this.maxFolderDepth = maxFolderDepth;
+            changeType |= CHANGE_TYPE_LIMITS;
+        }
     }
 
     /**
@@ -150,7 +159,10 @@ public class ImapConfig extends AccountConfig {
      * @param onlySubscribedFolders true, if only subscribed folders should be loaded
      */
     public void setOnlySubscribedFolders(boolean onlySubscribedFolders) {
-        this.onlySubscribedFolders = onlySubscribedFolders;
+        if(this.onlySubscribedFolders != onlySubscribedFolders) {
+            this.onlySubscribedFolders = onlySubscribedFolders;
+            changeType |= CHANGE_TYPE_ADVANCED;
+        }
     }
 
     /* (non-Javadoc)
@@ -177,23 +189,23 @@ public class ImapConfig extends AccountConfig {
         Object value;
 
         value = table.get("account_imap_folderPrefix");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             folderPrefix = (String)value;
             if(folderPrefix.length() == 0) {
                 folderPrefix = null;
             }
         }
         value = table.get("account_imap_maxMessageSize");
-        if ((value != null) && value instanceof Integer) {
+        if (value instanceof Integer) {
             maxMessageSize = ((Integer) value).intValue();
         }
 
         value = table.get("account_imap_maxFolderDepth");
-        if ((value != null) && value instanceof Integer) {
+        if (value instanceof Integer) {
             maxFolderDepth = ((Integer) value).intValue();
         }
         value = table.get("account_imap_onlySubscribedFolders");
-        if(value != null && value instanceof Boolean) {
+        if(value instanceof Boolean) {
             onlySubscribedFolders = ((Boolean)value).booleanValue();
         }
     }

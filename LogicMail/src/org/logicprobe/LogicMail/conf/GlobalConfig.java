@@ -47,6 +47,12 @@ import javax.microedition.io.file.FileConnection;
  */
 public class GlobalConfig implements Serializable {
     private long uniqueId;
+    private int changeType;
+    
+    /** Global network settings. */
+    public static final int CHANGE_TYPE_NETWORK = 0x01;
+    /** Global other settings. */
+    public static final int CHANGE_TYPE_OTHER = 0x02;
 
     /** Prefer plain text display for messages */
     public static final int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
@@ -113,6 +119,7 @@ public class GlobalConfig implements Serializable {
         this.hideDeletedMsg = true;
         this.localHostname = "";
         this.localDataLocation = "";
+        changeType = 0;
     }
 
     /**
@@ -121,7 +128,10 @@ public class GlobalConfig implements Serializable {
      * @param languageCode the new language code, or an empty string for the system default.
      */
     public void setLanguageCode(String languageCode) {
-        this.languageCode = languageCode;
+        if(!this.languageCode.equals(languageCode)) {
+            this.languageCode = languageCode;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -139,7 +149,10 @@ public class GlobalConfig implements Serializable {
      * @param unicodeNormalization True if unicode normalization is enabled
      */
     public void setUnicodeNormalization(boolean unicodeNormalization) {
-        this.unicodeNormalization = unicodeNormalization;
+        if(this.unicodeNormalization != unicodeNormalization) {
+            this.unicodeNormalization = unicodeNormalization;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -157,7 +170,10 @@ public class GlobalConfig implements Serializable {
      * @param messageDisplayFormat the new preferred message display format
      */
     public void setMessageDisplayFormat(int messageDisplayFormat) {
-        this.messageDisplayFormat = messageDisplayFormat;
+        if(this.messageDisplayFormat != messageDisplayFormat) {
+            this.messageDisplayFormat = messageDisplayFormat;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -175,7 +191,10 @@ public class GlobalConfig implements Serializable {
      * @param retMsgCount The number of message headers to retrieve
      */
     public void setRetMsgCount(int retMsgCount) {
-        this.retMsgCount = retMsgCount;
+        if(this.retMsgCount != retMsgCount) {
+            this.retMsgCount = retMsgCount;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -193,7 +212,10 @@ public class GlobalConfig implements Serializable {
      * @param dispOrder True for ascending, false for descending
      */
     public void setDispOrder(boolean dispOrder) {
-        this.dispOrder = dispOrder;
+        if(this.dispOrder != dispOrder) {
+            this.dispOrder = dispOrder;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -211,7 +233,10 @@ public class GlobalConfig implements Serializable {
      * @param localDataLocation The local data URL
      */
     public void setLocalDataLocation(String localDataLocation) {
-        this.localDataLocation = validateLocalDataLocation(localDataLocation);
+        if(!this.localDataLocation.equals(localDataLocation)) {
+            this.localDataLocation = validateLocalDataLocation(localDataLocation);
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -228,7 +253,7 @@ public class GlobalConfig implements Serializable {
         }
         return localDataLocation;
     }
-    
+
     /**
      * Gets the preferred network transport type.
      * 
@@ -237,16 +262,19 @@ public class GlobalConfig implements Serializable {
     public int getTransportType() {
         return transportType;
     }
-    
+
     /**
      * Sets the preferred network transport type.
      * 
      * @param transportType the new preferred network transport type
      */
     public void setTransportType(int transportType) {
-        this.transportType = transportType;
+        if(this.transportType != transportType) {
+            this.transportType = transportType;
+            changeType |= CHANGE_TYPE_NETWORK;
+        }
     }
-    
+
     /**
      * Gets whether to use WiFi if available.
      * 
@@ -255,14 +283,17 @@ public class GlobalConfig implements Serializable {
     public boolean getEnableWiFi() {
         return enableWiFi;
     }
-    
+
     /**
      * Sets whether to use WiFi if available.
      * 
      * @param enableWiFi whether to use WiFi if available
      */
     public void setEnableWiFi(boolean enableWiFi) {
-        this.enableWiFi = enableWiFi;
+        if(this.enableWiFi != enableWiFi) {
+            this.enableWiFi = enableWiFi;
+            changeType |= CHANGE_TYPE_NETWORK;
+        }
     }
 
     /**
@@ -280,7 +311,10 @@ public class GlobalConfig implements Serializable {
      * @param connDebug True if enabled, false if disabled
      */
     public void setConnDebug(boolean connDebug) {
-        this.connDebug = connDebug;
+        if(this.connDebug != connDebug) {
+            this.connDebug = connDebug;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -298,7 +332,10 @@ public class GlobalConfig implements Serializable {
      * @param hideDeletedMsg True to hide, false to show
      */
     public void setHideDeletedMsg(boolean hideDeletedMsg) {
-        this.hideDeletedMsg = hideDeletedMsg;
+        if(this.hideDeletedMsg != hideDeletedMsg) {
+            this.hideDeletedMsg = hideDeletedMsg;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /**
@@ -316,7 +353,10 @@ public class GlobalConfig implements Serializable {
      * @param localHostname The local hostname
      */
     public void setLocalHostname(String localHostname) {
-        this.localHostname = localHostname;
+        if(!this.localDataLocation.equals(localHostname)) {
+            this.localHostname = localHostname;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
     }
 
     /* (non-Javadoc)
@@ -340,6 +380,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_localHostname", localHostname);
 
         table.serialize(output);
+        changeType = 0;
     }
 
     /* (non-Javadoc)
@@ -404,6 +445,7 @@ public class GlobalConfig implements Serializable {
         if (value instanceof String) {
             localHostname = (String) value;
         }
+        changeType = 0;
     }
 
     /* (non-Javadoc)
@@ -411,6 +453,15 @@ public class GlobalConfig implements Serializable {
      */
     public long getUniqueId() {
         return uniqueId;
+    }
+
+    /**
+     * Checks if this object has changed since it was last saved.
+     * 
+     * @return the change type, if applicable
+     */
+    public int getChangeType() {
+        return changeType;
     }
 
     /**

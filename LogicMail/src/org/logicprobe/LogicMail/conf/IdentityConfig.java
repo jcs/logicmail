@@ -43,11 +43,15 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  */
 public class IdentityConfig implements Serializable {
     private long uniqueId;
+    private int changeType;
     private String identityName;
     private String fullName;
     private String emailAddress;
     private String replyToAddress;
     private String msgSignature;
+    
+    /** Identity changed. */
+    public static final int IDENTITY_CHANGED = 0x01;
     
     /**
      * Instantiates a new identity with defaults.
@@ -79,6 +83,7 @@ public class IdentityConfig implements Serializable {
         emailAddress = "";
         replyToAddress = "";
         msgSignature = "";
+        changeType = 0;
     }
 
     /* (non-Javadoc)
@@ -103,7 +108,10 @@ public class IdentityConfig implements Serializable {
      * @param identityName The new identity name
      */
     public void setIdentityName(String identityName) {
-        this.identityName = identityName;
+        if(!this.identityName.equals(identityName)) {
+            this.identityName = identityName;
+            changeType |= IDENTITY_CHANGED;
+        }
     }
 
     /**
@@ -121,7 +129,10 @@ public class IdentityConfig implements Serializable {
      * @param fullName The new full name
      */
     public void setFullName(String fullName) {
-        this.fullName = fullName;
+        if(!this.fullName.equals(fullName)) {
+            this.fullName = fullName;
+            changeType |= IDENTITY_CHANGED;
+        }
     }
 
     /**
@@ -139,7 +150,10 @@ public class IdentityConfig implements Serializable {
      * @param emailAddress The new email address
      */
     public void setEmailAddress(String emailAddress) {
-        this.emailAddress = emailAddress;
+        if(!this.emailAddress.equals(emailAddress)) {
+            this.emailAddress = emailAddress;
+            changeType |= IDENTITY_CHANGED;
+        }
     }
 
     /**
@@ -157,7 +171,10 @@ public class IdentityConfig implements Serializable {
      * @param replyToAddress The new Reply-To address
      */
     public void setReplyToAddress(String replyToAddress) {
-        this.replyToAddress = replyToAddress;
+        if(!this.replyToAddress.equals(replyToAddress)) {
+            this.replyToAddress = replyToAddress;
+            changeType |= IDENTITY_CHANGED;
+        }
     }
 
     /**
@@ -175,7 +192,10 @@ public class IdentityConfig implements Serializable {
      * @param msgSignature The new message signature
      */
     public void setMsgSignature(String msgSignature) {
-        this.msgSignature = msgSignature;
+        if(!this.msgSignature.equals(msgSignature)) {
+            this.msgSignature = msgSignature;
+            changeType |= IDENTITY_CHANGED;
+        }
     }
     
     /* (non-Javadoc)
@@ -193,6 +213,7 @@ public class IdentityConfig implements Serializable {
         table.put("identity_msgSignature", msgSignature);
         
         table.serialize(output);
+        changeType = 0;
     }
 
     /* (non-Javadoc)
@@ -207,25 +228,26 @@ public class IdentityConfig implements Serializable {
         Object value;
 
         value = table.get("identity_identityName");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             identityName = (String)value;
         }
         value = table.get("identity_fullName");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             fullName = (String)value;
         }
         value = table.get("identity_emailAddress");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             emailAddress = (String)value;
         }
         value = table.get("identity_replyToAddress");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             replyToAddress = (String)value;
         }
         value = table.get("identity_msgSignature");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             msgSignature = (String)value;
         }
+        changeType = 0;
     }
 
     /* (non-Javadoc)
@@ -233,5 +255,14 @@ public class IdentityConfig implements Serializable {
      */
     public long getUniqueId() {
         return uniqueId;
+    }
+
+    /**
+     * Checks if this object has changed since it was last saved.
+     * 
+     * @return the change type, if applicable
+     */
+    public int getChangeType() {
+        return changeType;
     }
 }

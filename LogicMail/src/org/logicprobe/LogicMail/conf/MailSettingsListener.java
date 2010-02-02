@@ -42,5 +42,5 @@ public interface MailSettingsListener extends EventListener {
 	 * 
 	 * @param e Save event data.
 	 */
-	public void mailSettingsSaved(MailSettingsEvent e);
+	void mailSettingsSaved(MailSettingsEvent e);
 }

@@ -67,7 +67,7 @@ public class MailManager {
 		mailRootNode = new MailRootNode();
 
 		// Make sure the initial configuration is loaded
-		mailSettings_MailSettingsSaved(new MailSettingsEvent(this));
+		mailSettings_MailSettingsSaved(null);
 		
 		// Register a listener for configuration changes
 		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {

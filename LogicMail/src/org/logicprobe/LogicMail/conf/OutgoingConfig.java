@@ -94,7 +94,10 @@ public class OutgoingConfig extends ConnectionConfig {
      * @param useAuth The new authentication method to use, or 0 for none.
      */
     public void setUseAuth(int useAuth) {
-        this.useAuth = useAuth;
+        if(this.useAuth != useAuth) {
+            this.useAuth = useAuth;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
 
     /**
@@ -112,7 +115,10 @@ public class OutgoingConfig extends ConnectionConfig {
      * @param serverUser The new username
      */
     public void setServerUser(String serverUser) {
-        this.serverUser = serverUser;
+        if(!this.serverUser.equals(serverUser)) {
+            this.serverUser = serverUser;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
 
     /**
@@ -130,7 +136,10 @@ public class OutgoingConfig extends ConnectionConfig {
      * @param serverPass The new password
      */
     public void setServerPass(String serverPass) {
-        this.serverPass = serverPass;
+        if(!this.serverPass.equals(serverPass)) {
+            this.serverPass = serverPass;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
     
     /* (non-Javadoc)

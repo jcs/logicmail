@@ -54,6 +54,19 @@ public abstract class AccountConfig extends ConnectionConfig {
     private long sentMailboxId;
     private MailboxNode draftMailbox;
     private long draftMailboxId;
+    
+    /** Account identity configuration selection. */
+    public static final int CHANGE_TYPE_IDENTITY = 0x0100;
+    /** Account outgoing configuration selection. */
+    public static final int CHANGE_TYPE_OUTGOING = 0x0200;
+    /** Account special mailbox settings */
+    public static final int CHANGE_TYPE_MAILBOXES = 0x0400;
+    /** Account download limit settings. */
+    public static final int CHANGE_TYPE_LIMITS = 0x0800;
+    /** Account prompts for user actions. */
+    public static final int CHANGE_TYPE_PROMPTS = 0x1000;
+    /** Account prompts for user actions. */
+    public static final int CHANGE_TYPE_ADVANCED = 0x2000;
 
     /**
      * Instantiates a new connection configuration with defaults.
@@ -111,7 +124,10 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @param serverUser The new username
      */
     public void setServerUser(String serverUser) {
-        this.serverUser = serverUser;
+        if(!this.serverUser.equals(serverUser)) {
+            this.serverUser = serverUser;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
     
     /**
@@ -129,7 +145,10 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @param serverPass The new password
      */
     public void setServerPass(String serverPass) {
-        this.serverPass = serverPass;
+        if(!this.serverPass.equals(serverPass)) {
+            this.serverPass = serverPass;
+            changeType |= CHANGE_TYPE_CONNECTION;
+        }
     }
 
     /**
@@ -150,13 +169,18 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @param identityConfig The new identity configuration
      */
     public void setIdentityConfig(IdentityConfig identityConfig) {
-        if(identityConfig == null) {
-            this.identityConfig = null;
-            this.identityConfigId = -1L;
-        }
-        else {
-            this.identityConfig = identityConfig;
-            this.identityConfigId = identityConfig.getUniqueId();
+        if(this.identityConfig != identityConfig) {
+            if(identityConfig == null) {
+                this.identityConfig = null;
+                this.identityConfigId = -1L;
+            }
+            else {
+                if(this.identityConfig != identityConfig) {
+                }
+                this.identityConfig = identityConfig;
+                this.identityConfigId = identityConfig.getUniqueId();
+            }
+            changeType |= CHANGE_TYPE_IDENTITY;
         }
     }
 
@@ -178,13 +202,16 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @param outgoingConfig The new outgoing connection configuration
      */
     public void setOutgoingConfig(OutgoingConfig outgoingConfig) {
-        if(outgoingConfig == null) {
-            this.outgoingConfig = null;
-            this.outgoingConfigId = -1L;
-        }
-        else {
-            this.outgoingConfig = outgoingConfig;
-            this.outgoingConfigId = outgoingConfig.getUniqueId();
+        if(this.outgoingConfig != outgoingConfig) {
+            if(outgoingConfig == null) {
+                this.outgoingConfig = null;
+                this.outgoingConfigId = -1L;
+            }
+            else {
+                this.outgoingConfig = outgoingConfig;
+                this.outgoingConfigId = outgoingConfig.getUniqueId();
+            }
+            changeType |= CHANGE_TYPE_OUTGOING;
         }
     }
 
@@ -217,13 +244,16 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @param sentMailbox The new sent message mailbox
      */
     public void setSentMailbox(MailboxNode sentMailbox) {
-        if(sentMailbox == null) {
-            this.sentMailbox = null;
-            this.sentMailboxId = -1L;
-        }
-        else {
-            this.sentMailbox = sentMailbox;
-            this.sentMailboxId = sentMailbox.getUniqueId();
+        if(this.sentMailbox != sentMailbox) {
+            if(sentMailbox == null) {
+                this.sentMailbox = null;
+                this.sentMailboxId = -1L;
+            }
+            else {
+                this.sentMailbox = sentMailbox;
+                this.sentMailboxId = sentMailbox.getUniqueId();
+            }
+            changeType |= CHANGE_TYPE_MAILBOXES;
         }
     }
     
@@ -256,13 +286,16 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @param draftMailbox The new draft message mailbox
      */
     public void setDraftMailbox(MailboxNode draftMailbox) {
-        if(draftMailbox == null) {
-            this.draftMailbox = null;
-            this.draftMailboxId = -1L;
-        }
-        else {
-            this.draftMailbox = draftMailbox;
-            this.draftMailboxId = draftMailbox.getUniqueId();
+        if(this.draftMailbox != draftMailbox) {
+            if(draftMailbox == null) {
+                this.draftMailbox = null;
+                this.draftMailboxId = -1L;
+            }
+            else {
+                this.draftMailbox = draftMailbox;
+                this.draftMailboxId = draftMailbox.getUniqueId();
+            }
+            changeType |= CHANGE_TYPE_MAILBOXES;
         }
     }
     
@@ -311,15 +344,15 @@ public abstract class AccountConfig extends ConnectionConfig {
         Object value;
 
         value = table.get("account_serverUser");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             serverUser = (String)value;
         }
         value = table.get("account_serverPass");
-        if(value != null && value instanceof String) {
+        if(value instanceof String) {
             serverPass = (String)value;
         }
         value = table.get("account_identityConfigId");
-        if(value != null && value instanceof Long) {
+        if(value instanceof Long) {
             identityConfigId = ((Long)value).longValue();
         }
         else {
@@ -327,7 +360,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
         identityConfig = null;
         value = table.get("account_outgoingConfigId");
-        if(value != null && value instanceof Long) {
+        if(value instanceof Long) {
             outgoingConfigId = ((Long)value).longValue();
         }
         else {
@@ -336,7 +369,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         outgoingConfig = null;
 
         value = table.get("account_sentMailboxId");
-        if(value != null && value instanceof Long) {
+        if(value instanceof Long) {
         	sentMailboxId = ((Long)value).longValue();
         }
         else {
@@ -344,7 +377,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
         
         value = table.get("account_draftMailboxId");
-        if(value != null && value instanceof Long) {
+        if(value instanceof Long) {
         	draftMailboxId = ((Long)value).longValue();
         }
         else {

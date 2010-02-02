@@ -61,6 +61,17 @@ public class GlobalConfigTest extends TestCase {
         }
     }
     
+    class StubOutputStream extends OutputStream {
+        public StubOutputStream() {
+            super();
+        }
+        public void write(int b) throws IOException {
+        }
+        public int[] getBuffer() {
+            return null;
+        }
+    }
+    
     class TestInputStream extends InputStream {
         private int[] buffer;
         private int index;
@@ -73,6 +84,7 @@ public class GlobalConfigTest extends TestCase {
             return buffer[index++];
         }
     }
+    
     
     public GlobalConfigTest() {
     }
@@ -127,6 +139,27 @@ public class GlobalConfigTest extends TestCase {
             t.printStackTrace();
         }
     }
+
+    public void testChangeType() {
+        DataOutputStream stubOutput = new DataOutputStream(new StubOutputStream());
+        
+        GlobalConfig instance = new GlobalConfig();
+        assertEquals(0, instance.getChangeType());
+        
+        instance.setLanguageCode(instance.getLanguageCode());
+        assertEquals(0, instance.getChangeType());
+        instance.setLanguageCode("en_US");
+        assertEquals(GlobalConfig.CHANGE_TYPE_OTHER, instance.getChangeType());
+        try { instance.serialize(stubOutput); } catch (IOException e) { }
+        assertEquals(0, instance.getChangeType());
+        
+        instance.setEnableWiFi(instance.getEnableWiFi());
+        assertEquals(0, instance.getChangeType());
+        instance.setEnableWiFi(!instance.getEnableWiFi());
+        assertEquals(GlobalConfig.CHANGE_TYPE_NETWORK, instance.getChangeType());
+        try { instance.serialize(stubOutput); } catch (IOException e) { }
+        assertEquals(0, instance.getChangeType());
+    }
     
     public Test suite() {
         TestSuite suite = new TestSuite("GlobalConfig");
@@ -135,6 +168,8 @@ public class GlobalConfigTest extends TestCase {
         { public void run(TestCase tc) {((GlobalConfigTest)tc).testInitialization(); } }));
         suite.addTest(new GlobalConfigTest("serialization", new TestMethod()
         { public void run(TestCase tc) {((GlobalConfigTest)tc).testSerialization(); } }));
+        suite.addTest(new GlobalConfigTest("changeType", new TestMethod()
+        { public void run(TestCase tc) {((GlobalConfigTest)tc).testChangeType(); } }));
 
         return suite;
     }

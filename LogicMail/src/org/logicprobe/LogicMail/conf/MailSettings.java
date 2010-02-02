@@ -50,6 +50,9 @@ public class MailSettings {
     private Vector accountConfigs;
     private Vector outgoingConfigs;
     private DataStore configStore;
+    private boolean isIdentityListDirty;
+    private boolean isAccountListDirty;
+    private boolean isOutgoingListDirty;
     
     private static String GLOBAL_CONFIG = "global_config";
     private static String IDENTITY_CONFIGS = "identity_configs";
@@ -115,6 +118,7 @@ public class MailSettings {
      * Add a new identity configuration
      */
     public void addIdentityConfig(IdentityConfig identityConfig) {
+        isIdentityListDirty = true;
         identityConfigs.addElement(identityConfig);
     }
     
@@ -125,6 +129,7 @@ public class MailSettings {
      * @param index where to insert the identity configuration
      */
     public void insertIdentityConfigAt(IdentityConfig identityConfig, int index) {
+        isIdentityListDirty = true;
     	identityConfigs.insertElementAt(identityConfig, index);
     }
 
@@ -142,6 +147,7 @@ public class MailSettings {
      * Remove the identity configuration at the specified index
      */
     public void removeIdentityConfig(int index) {
+        isIdentityListDirty = true;
         identityConfigs.removeElementAt(index);
     }
 
@@ -163,6 +169,7 @@ public class MailSettings {
      * Add a new account configuration
      */
     public void addAccountConfig(AccountConfig accountConfig) {
+        isAccountListDirty = true;
         accountConfigs.addElement(accountConfig);
     }
     
@@ -173,6 +180,7 @@ public class MailSettings {
      * @param index where to insert the account configuration
      */
     public void insertAccountConfigAt(AccountConfig accountConfig, int index) {
+        isAccountListDirty = true;
     	accountConfigs.insertElementAt(accountConfig, index);
     }
     
@@ -190,6 +198,7 @@ public class MailSettings {
      * Remove the account configuration at the specified index
      */
     public void removeAccountConfig(int index) {
+        isAccountListDirty = true;
         accountConfigs.removeElementAt(index);
     }
 
@@ -234,6 +243,7 @@ public class MailSettings {
      * Add a new outgoing server configuration
      */
     public void addOutgoingConfig(OutgoingConfig outgoingConfig) {
+        isOutgoingListDirty = true;
         outgoingConfigs.addElement(outgoingConfig);
     }
     
@@ -244,6 +254,7 @@ public class MailSettings {
      * @param index where to insert the outgoing server configuration
      */
     public void insertOutgoingConfigAt(OutgoingConfig outgoingConfig, int index) {
+        isOutgoingListDirty = true;
     	outgoingConfigs.insertElementAt(outgoingConfig, index);
     }
     
@@ -261,6 +272,7 @@ public class MailSettings {
      * Remove the outgoing server configuration at the specified index
      */
     public void removeOutgoingConfig(int index) {
+        isOutgoingListDirty = true;
         outgoingConfigs.removeElementAt(index);
     }
 
@@ -276,10 +288,18 @@ public class MailSettings {
      * Save the configurations to persistent storage.
      */
     public void saveSettings() {
+        MailSettingsEvent e = new MailSettingsEvent(this);
+        e.setGlobalChange(globalConfig.getChangeType());
+        int listChangeType = 0;
+        if(isIdentityListDirty) { listChangeType |= MailSettingsEvent.LIST_CHANGED_IDENTITY; }
+        if(isAccountListDirty) { listChangeType |= MailSettingsEvent.LIST_CHANGED_ACCOUNT; }
+        if(isOutgoingListDirty) { listChangeType |= MailSettingsEvent.LIST_CHANGED_OUTGOING; }
+        e.setListChange(listChangeType);
+        
         SerializableVector identityConfigIds = new SerializableVector();
         SerializableVector accountConfigIds = new SerializableVector();
         SerializableVector outgoingConfigIds = new SerializableVector();
-
+        
         configStore.putNamedObject(GLOBAL_CONFIG, globalConfig);
         configStore.putNamedObject(IDENTITY_CONFIGS, identityConfigIds);
         configStore.putNamedObject(ACCOUNT_CONFIGS, accountConfigIds);
@@ -291,6 +311,7 @@ public class MailSettings {
             IdentityConfig config = (IdentityConfig)identityConfigs.elementAt(i);
             identityConfigIds.addElement(new Long(config.getUniqueId()));
             configStore.putObject(config);
+            e.setConfigChange(config, config.getChangeType());
         }
 
         size = accountConfigs.size();
@@ -298,6 +319,7 @@ public class MailSettings {
             AccountConfig config = (AccountConfig)accountConfigs.elementAt(i);
             accountConfigIds.addElement(new Long(config.getUniqueId()));
             configStore.putObject(config);
+            e.setConfigChange(config, config.getChangeType());
         }
 
         size = outgoingConfigs.size();
@@ -305,10 +327,15 @@ public class MailSettings {
             OutgoingConfig config = (OutgoingConfig)outgoingConfigs.elementAt(i);
             outgoingConfigIds.addElement(new Long(config.getUniqueId()));
             configStore.putObject(config);
+            e.setConfigChange(config, config.getChangeType());
         }
 
         configStore.save();
-        fireMailSettingsSaved();
+        fireMailSettingsSaved(e);
+        
+        isIdentityListDirty = false;
+        isAccountListDirty = false;
+        isOutgoingListDirty = false;
     }
         
     /**
@@ -378,6 +405,9 @@ public class MailSettings {
             	}
             }
         }
+        isIdentityListDirty = false;
+        isAccountListDirty = false;
+        isOutgoingListDirty = false;
     }
     
 	/**
@@ -413,13 +443,9 @@ public class MailSettings {
      * Notifies all registered <tt>MailSettingsListener</tt>s that
      * the mail settings have been saved. 
      */
-    protected void fireMailSettingsSaved() {
+    protected void fireMailSettingsSaved(MailSettingsEvent e) {
         Object[] listeners = listenerList.getListeners(MailSettingsListener.class);
-        MailSettingsEvent e = null;
         for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MailSettingsEvent(this);
-            }
             ((MailSettingsListener)listeners[i]).mailSettingsSaved(e);
         }
     }
