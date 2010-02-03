@@ -627,13 +627,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         if(accountConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)accountConfig;
 
-            String folderPrefix = imapFolderPrefixField.getText().trim();
-            if(folderPrefix.length() == 0) {
-                imapConfig.setFolderPrefix(null);
-            }
-            else {
-                imapConfig.setFolderPrefix(folderPrefix);
-            }
+            imapConfig.setFolderPrefix(imapFolderPrefixField.getText().trim());
 
             try {
                 imapConfig.setMaxMessageSize(Integer.parseInt(

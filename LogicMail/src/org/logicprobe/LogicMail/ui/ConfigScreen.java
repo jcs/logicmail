@@ -140,14 +140,24 @@ public class ConfigScreen extends AbstractConfigScreen {
         initMenuItems();
 
         buildAccountsList();
-
-        MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
-            public void mailSettingsSaved(MailSettingsEvent e) {
-                buildAccountsList();
-            }
-        });
     }
 
+    MailSettingsListener mailSettingsListener = new MailSettingsListener() {
+        public void mailSettingsSaved(MailSettingsEvent e) {
+            buildAccountsList();
+        }
+    };
+    
+    protected void onDisplay() {
+        super.onDisplay();
+        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+    }
+    
+    protected void onUndisplay() {
+        MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
+        super.onUndisplay();
+    }
+    
     private void initFileSystemChoices() {
         // Populate fileSystemRoots with a list of all
         // available and writable storage devices

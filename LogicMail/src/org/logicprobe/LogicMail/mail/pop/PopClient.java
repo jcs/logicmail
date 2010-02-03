@@ -67,6 +67,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * 
  */
 public class PopClient implements IncomingMailClient {
+    private MailSettings mailSettings;
     private GlobalConfig globalConfig;
     private PopConfig accountConfig;
     private Connection connection;
@@ -92,6 +93,7 @@ public class PopClient implements IncomingMailClient {
     public PopClient(GlobalConfig globalConfig, PopConfig accountConfig) {
         this.globalConfig = globalConfig;
         this.accountConfig = accountConfig;
+        this.mailSettings = MailSettings.getInstance();
         connection = UtilFactory.getInstance().createConnection(accountConfig);
         popProtocol = new PopProtocol(connection);
         username = accountConfig.getServerUser();
@@ -102,7 +104,7 @@ public class PopClient implements IncomingMailClient {
         activeMailbox.setMsgCount(0);
         openStarted = false;
         configChanged = false;
-        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+        mailSettings.addMailSettingsListener(mailSettingsListener);
     }
 
     private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
@@ -112,27 +114,32 @@ public class PopClient implements IncomingMailClient {
     };
     
     private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
-		if(MailSettings.getInstance().containsAccountConfig(accountConfig)) {
-			// Refresh authentication information from the configuration
-	        username = accountConfig.getServerUser();
-	        password = accountConfig.getServerPass();
-	        
-	        if(!isConnected()) {
-	        	// Rebuild the connection to include new settings
-	            connection = UtilFactory.getInstance().createConnection(accountConfig);
-	            popProtocol = new PopProtocol(connection);
-	        }
-	        else {
-		        // Set a flag to make sure we rebuild the Connection object
-		        // the next time we close the connection.
-		        configChanged = true;
-	        }
-		}
-		else {
-			// We have been deleted, so unregister to make sure we
-			// no longer affect the system and can be garbage collected.
-			MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
-		}
+        // Check for a list change, where we no longer exist afterwards
+        if((e.getListChange() & MailSettingsEvent.LIST_CHANGED_ACCOUNT) != 0
+                && !mailSettings.containsAccountConfig(accountConfig)) {
+            // We have been deleted, so unregister to make sure we
+            // no longer affect the system and can be garbage collected.
+            mailSettings.removeMailSettingsListener(mailSettingsListener);
+        }
+
+        // Check for a change to the global or account network settings
+        if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_NETWORK) != 0
+                || (e.getConfigChange(accountConfig) & AccountConfig.CHANGE_TYPE_CONNECTION) != 0) {
+            // Refresh authentication information from the configuration
+            username = accountConfig.getServerUser();
+            password = accountConfig.getServerPass();
+
+            if(!isConnected()) {
+                // Rebuild the connection to include new settings
+                connection = UtilFactory.getInstance().createConnection(accountConfig);
+                popProtocol = new PopProtocol(connection);
+            }
+            else {
+                // Set a flag to make sure we rebuild the Connection object
+                // the next time we close the connection.
+                configChanged = true;
+            }
+        }
     }
 
     /* (non-Javadoc)
@@ -434,7 +441,7 @@ public class PopClient implements IncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
-    	int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
+    	int count = globalConfig.getRetMsgCount();
 		int msgCount = activeMailbox.getMsgCount();
         int firstIndex = Math.max(1, msgCount - count);
     	getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);

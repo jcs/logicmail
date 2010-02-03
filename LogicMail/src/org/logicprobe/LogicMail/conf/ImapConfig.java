@@ -69,7 +69,7 @@ public class ImapConfig extends AccountConfig {
         setServerPort(143);
         this.maxMessageSize = 32768;
         this.maxFolderDepth = 4;
-        this.folderPrefix = null;
+        this.folderPrefix = "";
         this.onlySubscribedFolders = true;
     }
 
@@ -191,9 +191,6 @@ public class ImapConfig extends AccountConfig {
         value = table.get("account_imap_folderPrefix");
         if(value instanceof String) {
             folderPrefix = (String)value;
-            if(folderPrefix.length() == 0) {
-                folderPrefix = null;
-            }
         }
         value = table.get("account_imap_maxMessageSize");
         if (value instanceof Integer) {

@@ -51,8 +51,10 @@ public class GlobalConfig implements Serializable {
     
     /** Global network settings. */
     public static final int CHANGE_TYPE_NETWORK = 0x01;
+    /** Global data storage settings. */
+    public static final int CHANGE_TYPE_DATA = 0x02;
     /** Global other settings. */
-    public static final int CHANGE_TYPE_OTHER = 0x02;
+    public static final int CHANGE_TYPE_OTHER = 0x04;
 
     /** Prefer plain text display for messages */
     public static final int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
@@ -235,7 +237,7 @@ public class GlobalConfig implements Serializable {
     public void setLocalDataLocation(String localDataLocation) {
         if(!this.localDataLocation.equals(localDataLocation)) {
             this.localDataLocation = validateLocalDataLocation(localDataLocation);
-            changeType |= CHANGE_TYPE_OTHER;
+            changeType |= CHANGE_TYPE_DATA;
         }
     }
 

@@ -71,6 +71,7 @@ import org.logicprobe.LogicMail.util.DataStoreFactory;
  * 
  */
 public class ImapClient implements IncomingMailClient {
+    private MailSettings mailSettings;
     private ImapConfig accountConfig;
     private Connection connection;
     private ImapProtocol imapProtocol;
@@ -125,13 +126,14 @@ public class ImapClient implements IncomingMailClient {
 
     public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
         this.accountConfig = accountConfig;
+        this.mailSettings = MailSettings.getInstance();
         connection = UtilFactory.getInstance().createConnection(accountConfig);
         imapProtocol = new ImapProtocol(connection);
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
         openStarted = false;
         configChanged = false;
-        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+        mailSettings.addMailSettingsListener(mailSettingsListener);
     }
 
     private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
@@ -141,7 +143,17 @@ public class ImapClient implements IncomingMailClient {
     };
 
     private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
-        if(MailSettings.getInstance().containsAccountConfig(accountConfig)) {
+        // Check for a list change, where we no longer exist afterwards
+        if((e.getListChange() & MailSettingsEvent.LIST_CHANGED_ACCOUNT) != 0
+                && !mailSettings.containsAccountConfig(accountConfig)) {
+            // We have been deleted, so unregister to make sure we
+            // no longer affect the system and can be garbage collected.
+            mailSettings.removeMailSettingsListener(mailSettingsListener);
+        }
+
+        // Check for a change to the global or account network settings
+        if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_NETWORK) != 0
+                || (e.getConfigChange(accountConfig) & AccountConfig.CHANGE_TYPE_CONNECTION) != 0) {
             // Refresh authentication information from the configuration
             username = accountConfig.getServerUser();
             password = accountConfig.getServerPass();
@@ -156,11 +168,6 @@ public class ImapClient implements IncomingMailClient {
                 // the next time we close the connection.
                 configChanged = true;
             }
-        }
-        else {
-            // We have been deleted, so unregister to make sure we
-            // no longer affect the system and can be garbage collected.
-            MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
         }
     }
 
@@ -693,7 +700,7 @@ public class ImapClient implements IncomingMailClient {
         }
 
         if(!seenMailboxes.containsKey(activeMailbox)) {
-            int count = MailSettings.getInstance().getGlobalConfig().getRetMsgCount();
+            int count = mailSettings.getGlobalConfig().getRetMsgCount();
             int msgCount = activeMailbox.getMsgCount();
             int firstIndex = Math.max(1, msgCount - count);
             getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);

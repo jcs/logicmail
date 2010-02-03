@@ -44,6 +44,7 @@ import net.rim.device.api.util.InvertedOrderComparator;
 import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
@@ -68,18 +69,20 @@ public class MailFileManager {
 	/**
 	 * Instantiates a new mail file manager.
 	 */
-	private MailFileManager() {
-		mailSettings = MailSettings.getInstance();
-		
-		// Register a listener for configuration changes
-		mailSettings.addMailSettingsListener(new MailSettingsListener() {
-			public void mailSettingsSaved(MailSettingsEvent e) {
-				refreshConfiguration();
-			}
-		});
-		
-		refreshConfiguration();
-	}
+    private MailFileManager() {
+        mailSettings = MailSettings.getInstance();
+
+        // Register a listener for configuration changes
+        mailSettings.addMailSettingsListener(new MailSettingsListener() {
+            public void mailSettingsSaved(MailSettingsEvent e) {
+                if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_DATA) != 0) {
+                    refreshConfiguration();
+                }
+            }
+        });
+
+        refreshConfiguration();
+    }
 	
 	/**
 	 * Gets the single instance of MailFileManager.

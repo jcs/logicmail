@@ -72,8 +72,46 @@ public class MailManager {
 		// Register a listener for configuration changes
 		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
 			public void mailSettingsSaved(MailSettingsEvent e) {
-				mailSettings_MailSettingsSaved(e);
-				refreshMailboxTypes();
+			    // This logic is rather crude, and will trigger a full refresh
+			    // under a wide variety of circumstances.  Its major intent is
+			    // to avoid a refresh in a few situations where a minor
+			    // configuration change affects future behavior and not
+			    // current state.
+			    
+			    boolean refreshAccounts = false;
+			    // Trigger a refresh if either the account or outgoing list has changed
+			    int listChange = e.getListChange();
+			    if((listChange & MailSettingsEvent.LIST_CHANGED_ACCOUNT) != 0
+			            || (listChange & MailSettingsEvent.LIST_CHANGED_OUTGOING) != 0) {
+			        refreshAccounts = true;
+			    }
+			    
+			    // Trigger a refresh if certain account settings have changed
+			    if(!refreshAccounts) {
+			        int num = mailSettings.getNumAccounts();
+			        for(int i=0; i<num; i++) {
+			            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+			            int accountChange = e.getConfigChange(accountConfig);
+			            if((accountChange & AccountConfig.CHANGE_TYPE_NAME) != 0
+			                    || (accountChange & AccountConfig.CHANGE_TYPE_MAILBOXES) != 0
+                                || (accountChange & AccountConfig.CHANGE_TYPE_OUTGOING) != 0) {
+			                refreshAccounts = true;
+			                break;
+			            }
+			            OutgoingConfig outgoingConfig = accountConfig.getOutgoingConfig();
+			            if(outgoingConfig != null
+			                    && (e.getConfigChange(outgoingConfig) & OutgoingConfig.CHANGE_TYPE_CONNECTION) != 0) {
+                            refreshAccounts = true;
+                            break;
+			            }
+			        }
+			    }
+			    
+			    // Trigger a refresh if appropriate
+			    if(refreshAccounts) {
+    			    mailSettings_MailSettingsSaved(e);
+    				refreshMailboxTypes();
+			    }
 			}
 		});
 		

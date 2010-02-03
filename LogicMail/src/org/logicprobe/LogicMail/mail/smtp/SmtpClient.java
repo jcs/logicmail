@@ -54,6 +54,7 @@ import java.util.Hashtable;
  * Implements an SMTP client
  */
 public class SmtpClient implements OutgoingMailClient {
+    private MailSettings mailSettings;
     private GlobalConfig globalConfig;
     private OutgoingConfig outgoingConfig;
     private Connection connection;
@@ -79,6 +80,7 @@ public class SmtpClient implements OutgoingMailClient {
     public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
     	this.globalConfig = globalConfig;
         this.outgoingConfig = outgoingConfig;
+        this.mailSettings = MailSettings.getInstance();
         connection = UtilFactory.getInstance().createConnection(outgoingConfig);
         smtpProtocol = new SmtpProtocol(connection);
 
@@ -92,28 +94,35 @@ public class SmtpClient implements OutgoingMailClient {
 
         openStarted = false;
         configChanged = false;
-        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+        mailSettings.addMailSettingsListener(mailSettingsListener);
     }
 
     private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
-        if (MailSettings.getInstance().containsOutgoingConfig(outgoingConfig)) {
+        // Check for a list change, where we no longer exist afterwards
+        if((e.getListChange() & MailSettingsEvent.LIST_CHANGED_OUTGOING) != 0
+                && !mailSettings.containsOutgoingConfig(outgoingConfig)) {
+            // We have been deleted, so unregister to make sure we
+            // no longer affect the system and can be garbage collected.
+            mailSettings.removeMailSettingsListener(mailSettingsListener);
+        }
+
+        // Check for a change to the global or account network settings
+        if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_NETWORK) != 0
+                || (e.getConfigChange(outgoingConfig) & OutgoingConfig.CHANGE_TYPE_CONNECTION) != 0) {
             // Refresh authentication information from the configuration
             username = outgoingConfig.getServerUser();
             password = outgoingConfig.getServerPass();
 
-            if (!isConnected()) {
+            if(!isConnected()) {
                 // Rebuild the connection to include new settings
                 connection = UtilFactory.getInstance().createConnection(outgoingConfig);
                 smtpProtocol = new SmtpProtocol(connection);
-            } else {
+            }
+            else {
                 // Set a flag to make sure we rebuild the Connection object
                 // the next time we close the connection.
                 configChanged = true;
             }
-        } else {
-            // We have been deleted, so unregister to make sure we
-            // no longer affect the system and can be garbage collected.
-            MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
         }
     }
 
