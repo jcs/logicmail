@@ -46,6 +46,7 @@ import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
@@ -247,18 +248,24 @@ public class MailboxScreen extends AbstractScreenProvider {
         // Check for deleted messages in the mailbox
         if(mailboxNode.getParentAccount().hasExpunge()
                 && mailboxNode.hasDeletedMessages()) {
-            // Prompt for expunge if possible and supported
-            int choice = Dialog.ask(
-                    Dialog.D_YES_NO,
-                    resources.getString(LogicMailResource.MAILBOX_EXPUNGE_PROMPT),
-                    Dialog.YES);
-            
-            // Request expunge if desired
-            if(choice == Dialog.YES) {
+            int expungeMode = MailSettings.getInstance().getGlobalConfig().getExpungeMode();
+            if(expungeMode == GlobalConfig.EXPUNGE_PROMPT) {
+                // Prompt for expunge if possible and supported
+                int choice = Dialog.ask(
+                        Dialog.D_YES_NO,
+                        resources.getString(LogicMailResource.MAILBOX_EXPUNGE_PROMPT),
+                        Dialog.YES);
+
+                // Request expunge if desired
+                if(choice == Dialog.YES) {
+                    mailboxNode.expungeDeletedMessages();
+                }
+            }
+            else if(expungeMode == GlobalConfig.EXPUNGE_ALWAYS) {
                 mailboxNode.expungeDeletedMessages();
             }
         }
-        
+
         // Close the screen
         screen.close();
         return true;

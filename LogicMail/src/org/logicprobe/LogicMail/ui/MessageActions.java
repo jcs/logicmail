@@ -327,8 +327,13 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void deleteMessage(MessageNode messageNode) {
-        if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT)) == Dialog.YES) {
-        	messageNode.deleteMessage();
+        if(MailSettings.getInstance().getGlobalConfig().getPromptOnDelete()) {
+            if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT)) == Dialog.YES) {
+                messageNode.deleteMessage();
+            }
+        }
+        else {
+            messageNode.deleteMessage();
         }
     }
     

@@ -94,6 +94,8 @@ public class ConfigScreen extends AbstractConfigScreen {
     private BasicEditField messageCountEditField;
     private ObjectChoiceField displayOrderChoiceField;
     private CheckboxField hideDeletedMessagesCheckboxField;
+    private CheckboxField promptOnDeleteCheckboxField;
+    private ObjectChoiceField expungeModeChoiceField;
     
     // Networking
     private VerticalFieldManager networkingFieldManager;
@@ -335,6 +337,19 @@ public class ConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_HIDE_DELETED_MESSAGES),
                 existingGlobalConfig.getHideDeletedMsg());
         
+        promptOnDeleteCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_PROMPT_ON_MESSAGE_DELETE),
+                existingGlobalConfig.getPromptOnDelete());
+        
+        expungeModeChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_EXPUNGE_BEHAVIOR),
+                new Object[] {
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_EXPUNGE_PROMPT),
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_EXPUNGE_ALWAYS),
+                    resources.getString(LogicMailResource.CONFIG_GLOBAL_EXPUNGE_NEVER)
+                },
+                existingGlobalConfig.getExpungeMode());
+
         messageDisplayFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_MESSAGE_DISPLAY),
                 Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
@@ -342,6 +357,8 @@ public class ConfigScreen extends AbstractConfigScreen {
         messageDisplayFieldManager.add(messageCountEditField);
         messageDisplayFieldManager.add(displayOrderChoiceField);
         messageDisplayFieldManager.add(hideDeletedMessagesCheckboxField);
+        messageDisplayFieldManager.add(promptOnDeleteCheckboxField);
+        messageDisplayFieldManager.add(expungeModeChoiceField);
         messageDisplayFieldManager.add(new BlankSeparatorField(separatorHeight));
         add(messageDisplayFieldManager);
     }
@@ -971,6 +988,9 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         config.setHideDeletedMsg(hideDeletedMessagesCheckboxField.getChecked());
 
+        config.setPromptOnDelete(promptOnDeleteCheckboxField.getChecked());
+        config.setExpungeMode(expungeModeChoiceField.getSelectedIndex());
+        
         config.setTransportType(getTransportSetting(networkTransportChoiceField.getSelectedIndex()));
         
         config.setEnableWiFi(enableWiFiCheckboxField.getChecked());

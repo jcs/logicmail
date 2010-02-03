@@ -53,14 +53,20 @@ public class GlobalConfig implements Serializable {
     public static final int CHANGE_TYPE_NETWORK = 0x01;
     /** Global data storage settings. */
     public static final int CHANGE_TYPE_DATA = 0x02;
+    /** Global prompt settings. */
+    public static final int CHANGE_TYPE_PROMPTS = 0x04;
     /** Global other settings. */
-    public static final int CHANGE_TYPE_OTHER = 0x04;
+    public static final int CHANGE_TYPE_OTHER = 0x08;
 
     /** Prefer plain text display for messages */
     public static final int MESSAGE_DISPLAY_PLAIN_TEXT = 0;
     /** Prefer HTML display for messages */
     public static final int MESSAGE_DISPLAY_HTML = 1;
 
+    public static final int EXPUNGE_PROMPT = 0;
+    public static final int EXPUNGE_ALWAYS = 1;
+    public static final int EXPUNGE_NEVER = 2;
+    
     /** language code to use for the UI, or null for system default */
     private String languageCode;
     /** true to enable Unicode normalization */
@@ -83,6 +89,10 @@ public class GlobalConfig implements Serializable {
     private boolean hideDeletedMsg;
     /** Local host name override */
     private String localHostname;
+    /** Whether to prompt on deleting messages. */
+    private boolean promptOnDelete;
+    /** The expunge-related behavior when leaving a mailbox. */
+    private int expungeMode;
 
     public static String FILE_URL_PREFIX = "file:///";
 
@@ -121,6 +131,8 @@ public class GlobalConfig implements Serializable {
         this.hideDeletedMsg = true;
         this.localHostname = "";
         this.localDataLocation = "";
+        this.promptOnDelete = true;
+        this.expungeMode = GlobalConfig.EXPUNGE_PROMPT;
         changeType = 0;
     }
 
@@ -361,6 +373,48 @@ public class GlobalConfig implements Serializable {
         }
     }
 
+    /**
+     * Gets whether to prompt on message delete.
+     * 
+     * @return the prompt on delete setting
+     */
+    public boolean getPromptOnDelete() {
+        return promptOnDelete;
+    }
+    
+    /**
+     * Sets whether to prompt on message delete.
+     * 
+     * @param promptOnDelete the new prompt on delete setting
+     */
+    public void setPromptOnDelete(boolean promptOnDelete) {
+        if(this.promptOnDelete != promptOnDelete) {
+            this.promptOnDelete = promptOnDelete;
+            changeType |= CHANGE_TYPE_PROMPTS;
+        }
+    }
+
+    /**
+     * Gets the expunge mode.
+     * 
+     * @return the expunge mode
+     */
+    public int getExpungeMode() {
+        return expungeMode;
+    }
+    
+    /**
+     * Sets the expunge mode.
+     * 
+     * @param expungeMode the new expunge mode
+     */
+    public void setExpungeMode(int expungeMode) {
+        if(this.expungeMode != expungeMode) {
+            this.expungeMode = expungeMode;
+            changeType |= CHANGE_TYPE_PROMPTS;
+        }
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
      */
@@ -380,6 +434,8 @@ public class GlobalConfig implements Serializable {
         table.put("global_connDebug", new Boolean(connDebug));
         table.put("global_hideDeletedMsg", new Boolean(hideDeletedMsg));
         table.put("global_localHostname", localHostname);
+        table.put("global_promptOnDelete", new Boolean(promptOnDelete));
+        table.put("global_expungeMode", new Integer(expungeMode));
 
         table.serialize(output);
         changeType = 0;
@@ -446,6 +502,14 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_localHostname");
         if (value instanceof String) {
             localHostname = (String) value;
+        }
+        value = table.get("global_promptOnDelete");
+        if(value instanceof Boolean) {
+            promptOnDelete = ((Boolean)value).booleanValue();
+        }
+        value = table.get("global_expungeMode");
+        if(value instanceof Integer) {
+            expungeMode = ((Integer)value).intValue();
         }
         changeType = 0;
     }
