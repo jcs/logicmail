@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Vector;
 
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
@@ -327,9 +328,19 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void deleteMessage(MessageNode messageNode) {
-        if(MailSettings.getInstance().getGlobalConfig().getPromptOnDelete()) {
-            if(Dialog.ask(Dialog.D_YES_NO, resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT)) == Dialog.YES) {
+        MailSettings mailSettings = MailSettings.getInstance();
+        if(mailSettings.getGlobalConfig().getPromptOnDelete()) {
+            Dialog dialog = new Dialog(
+                    Dialog.D_YES_NO,
+                    resources.getString(LogicMailResource.MAILBOX_DELETE_PROMPT),
+                    Dialog.NO,
+                    Bitmap.getPredefinedBitmap(Bitmap.QUESTION), 0, true);
+            if(dialog.doModal() == Dialog.YES) {
                 messageNode.deleteMessage();
+                if(dialog.getDontAskAgainValue()) {
+                    mailSettings.getGlobalConfig().setPromptOnDelete(false);
+                    mailSettings.saveSettings();
+                }
             }
         }
         else {

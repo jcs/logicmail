@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
@@ -248,17 +249,30 @@ public class MailboxScreen extends AbstractScreenProvider {
         // Check for deleted messages in the mailbox
         if(mailboxNode.getParentAccount().hasExpunge()
                 && mailboxNode.hasDeletedMessages()) {
-            int expungeMode = MailSettings.getInstance().getGlobalConfig().getExpungeMode();
+            MailSettings mailSettings = MailSettings.getInstance();
+            int expungeMode = mailSettings.getGlobalConfig().getExpungeMode();
             if(expungeMode == GlobalConfig.EXPUNGE_PROMPT) {
-                // Prompt for expunge if possible and supported
-                int choice = Dialog.ask(
+                Dialog dialog = new Dialog(
                         Dialog.D_YES_NO,
                         resources.getString(LogicMailResource.MAILBOX_EXPUNGE_PROMPT),
-                        Dialog.YES);
+                        Dialog.NO,
+                        Bitmap.getPredefinedBitmap(Bitmap.QUESTION), 0, true);
+                int choice = dialog.doModal();
 
                 // Request expunge if desired
                 if(choice == Dialog.YES) {
                     mailboxNode.expungeDeletedMessages();
+                }
+
+                if(dialog.getDontAskAgainValue()) {
+                    if(choice == Dialog.YES) {
+                        mailSettings.getGlobalConfig().setExpungeMode(GlobalConfig.EXPUNGE_ALWAYS);
+                        mailSettings.saveSettings();
+                    }
+                    else if(choice == Dialog.NO) {
+                        mailSettings.getGlobalConfig().setExpungeMode(GlobalConfig.EXPUNGE_NEVER);
+                        mailSettings.saveSettings();
+                    }
                 }
             }
             else if(expungeMode == GlobalConfig.EXPUNGE_ALWAYS) {
