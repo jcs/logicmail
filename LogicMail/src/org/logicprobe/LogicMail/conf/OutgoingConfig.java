@@ -67,6 +67,9 @@ public class OutgoingConfig extends ConnectionConfig {
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(25);
+        useAuth = 0;
+        serverUser = "";
+        serverPass = "";
     }
 
     /* (non-Javadoc)
