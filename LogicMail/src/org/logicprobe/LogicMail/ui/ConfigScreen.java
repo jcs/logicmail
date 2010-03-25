@@ -632,6 +632,8 @@ public class ConfigScreen extends AbstractConfigScreen {
             openSelectedNode();
             retval = true;
             break;
+        default:
+            retval = super.keyChar(key, status, time);
         }
         return retval;
     }
