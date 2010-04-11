@@ -1,4 +1,4 @@
-<Properties ModelVersion="1.1.1">
+<Properties ModelVersion="1.1.2">
   <General Title="LogicMail" Version="1.9.1" Vendor="Derek Konigsberg" Description="LogicMail for BlackBerry"/>
   <Application Type="BlackBerry Application" MainMIDletName="" MainArgs="" HomeScreenPosition="0" StartupTier="7" IsSystemModule="false" IsAutostartup="false"/>
   <Resources hasTitleResource="false" TitleResourceBundleName="" TitleResourceBundleRelativePath="" TitleResourceBundleClassName="" TitleResourceBundleKey="" DescriptionId="">
@@ -10,7 +10,7 @@
   <Compile OutputCompilerMessages="false" ConvertImages="false" CreateWarningForNoExportedRoutine="true" CompressResources="false" AliasList="">
     <PreprocessorDefines/>
   </Compile>
-  <Packaging OutputFileName="LogicMailStartup" OutputFolder="deliverables/4.2.1" PreBuildStep="" PostBuildStep="" CleanStep="" GenerateALXFile="false">
+  <Packaging OutputFileName="LogicMailStartup" OutputFolder="deliverables" PreBuildStep="" PostBuildStep="" CleanStep="" GenerateALXFile="false">
     <AlxFiles/>
   </Packaging>
   <HiddenProperties>

@@ -1,4 +1,4 @@
-<Properties ModelVersion="1.1.1">
+<Properties ModelVersion="1.1.2">
   <General Title="" Version="1.9.1" Vendor="Derek Konigsberg" Description="LogicMail BB 4.7 Touch Platform Library"/>
   <Application Type="Library" MainMIDletName="" MainArgs="" HomeScreenPosition="0" StartupTier="7" IsSystemModule="false" IsAutostartup="false"/>
   <Resources hasTitleResource="false" TitleResourceBundleName="" TitleResourceBundleRelativePath="" TitleResourceBundleClassName="" TitleResourceBundleKey="" DescriptionId="">
@@ -7,7 +7,7 @@
   <Compile OutputCompilerMessages="false" ConvertImages="false" CreateWarningForNoExportedRoutine="true" CompressResources="false" AliasList="">
     <PreprocessorDefines/>
   </Compile>
-  <Packaging OutputFileName="LogicMail_BB47T" OutputFolder="deliverables/4.7.0" PreBuildStep="" PostBuildStep="" CleanStep="" GenerateALXFile="false">
+  <Packaging OutputFileName="LogicMail_BB47T" OutputFolder="deliverables" PreBuildStep="" PostBuildStep="" CleanStep="" GenerateALXFile="false">
     <AlxFiles/>
   </Packaging>
   <HiddenProperties>
