@@ -298,7 +298,6 @@ public class CompositionScreen extends AbstractScreenProvider {
 	
 	        switch (composeType) {
 	        case COMPOSE_REPLY:
-	        	this.replyToMessageNode = sourceMessageNode.toReplyMessage();
 	        	populateMessage = sourceMessageNode.toReplyMessage();
 	            break;
 	        case COMPOSE_REPLY_ALL:
