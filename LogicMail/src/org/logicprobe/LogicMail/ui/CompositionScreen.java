@@ -202,7 +202,6 @@ public class CompositionScreen extends AbstractScreenProvider {
         if (body instanceof TextPart) {
         	MimeMessageContent content = message.getMessageContent(body);
         	if(content instanceof TextContent) {
-	            messageEditField.insert("\r\n");
 	            messageEditField.insert(normalize(((TextContent)content).getText()));
 	            messageEditField.setCursorPosition(0);
         	}

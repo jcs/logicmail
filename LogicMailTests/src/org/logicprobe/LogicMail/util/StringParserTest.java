@@ -560,17 +560,22 @@ public class StringParserTest extends TestCase {
         String text = "Hello World";
         String expectedResult = "Hello World";
         String result = StringParser.parseEncodedHeader(text);
-        assertEquals(expectedResult, result);
+        assertEquals("plain simple", expectedResult, result);
 
         text = "=?iso-8859-1?q?=A1Hol=E1=20Se=F1or!?=";
         expectedResult = "¡Holá Señor!";
         result = StringParser.parseEncodedHeader(text);
-        assertEquals(expectedResult, result);
+        assertEquals("QP simple", expectedResult, result);
 
         text = "Foo =?iso-8859-1?q?=A1Hol=E1=20Se=F1or!?= Bar";
         expectedResult = "Foo ¡Holá Señor! Bar";
         result = StringParser.parseEncodedHeader(text);
-        assertEquals(expectedResult, result);
+        assertEquals("QP mixed", expectedResult, result);
+        
+        text = "=?iso-8859-1?q?=A1Hol=E1_?=\r\n =?iso-8859-1?q?Se=F1or!?=";
+        expectedResult = "¡Holá Señor!";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP multi-line", expectedResult, result);
     }
 
     /**

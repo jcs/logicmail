@@ -717,8 +717,9 @@ public class StringParser {
             qcount = 0;
 
             // Match on "=?"
-            if ((text.charAt(index) == '=') && (text.charAt(index + 1) == '?') &&
-                    ((index + 2) < size)) {
+            if ((text.charAt(index) == '=')
+                    && (text.charAt(index + 1) == '?')
+                    && ((index + 2) < size)) {
                 qcount++;
 
                 // Scan for the closing "?="
@@ -727,10 +728,10 @@ public class StringParser {
                         qcount++;
                     }
 
-                    if ((qcount == 4) && (text.charAt(i) == '?') &&
-                            (text.charAt(i + 1) == '=')) {
-                        buf.append(parseEncodedWord(text.substring(index, i +
-                                    2)));
+                    if ((qcount == 4) && (text.charAt(i) == '?')
+                            && (text.charAt(i + 1) == '=')) {
+                        buf.append(parseEncodedWord(
+                                text.substring(index, i + 2)));
                         index = i + 1;
                         flag = true;
 
@@ -744,7 +745,15 @@ public class StringParser {
                 buf.append(text.charAt(index));
             }
 
-            index++;
+            if((index + 3 < size)
+                    && (text.charAt(index + 1) == '\r')
+                    && (text.charAt(index + 2) == '\n')
+                    && (text.charAt(index + 3) == ' ')) {
+                index += 4;
+            }
+            else {
+                index++;
+            }
         }
 
         // Append the last character, if applicable

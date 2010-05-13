@@ -875,6 +875,7 @@ public class MessageNode implements Node {
 	        StringBuffer buf = new StringBuffer();
 	        
 	        // Create the first line of the reply text
+	        buf.append("\r\n");
 	        buf.append("On ");
 	        buf.append(StringParser.createDateString(date));
 	        buf.append(", ");
@@ -975,6 +976,7 @@ public class MessageNode implements Node {
 	        StringBuffer buf = new StringBuffer();
 	
 	        // Create the first line of the reply text
+	        buf.append("\r\n");
 	        buf.append("----Original Message----\r\n");
 	        
 	        // Add the subject

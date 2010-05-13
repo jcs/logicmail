@@ -43,7 +43,6 @@ import java.io.IOException;
 
 import java.util.Hashtable;
 
-
 /**
  * Converts a message into the equivalent MIME structure
  */
@@ -92,7 +91,7 @@ public class MessageMimeConverter {
 	    }
 	
 	    public void visitTextPart(TextPart part) {
-	        String charset; /* = part.getCharset(); */
+	        String charset;
 	        boolean isBinary;
 	        boolean isQP;
 	        String encoding;
@@ -100,55 +99,34 @@ public class MessageMimeConverter {
 	        if(!(content instanceof TextContent)) { return; }
 	        String text = ((TextContent)content).getText();
 	
-	        // Find the maximum character value in the text
-	        char maxChar = 0;
-	
-	        for (int i = text.length() - 1; i >= 0; --i) {
-	            char ch = text.charAt(i);
-	
-	            if (ch > maxChar) {
-	                maxChar = ch;
-	            }
+            // Determine the charset and encoding from the characteristics of the
+            // text, instead of the properties of the TextPart.  We do it this way
+            // because the TextPart already contains decoded text that could be
+            // encoded in a variety of ways, and because there is no way to
+            // easily create a TextPart from a local decoded String that has the
+            // charset and encoding properties set correctly.
+	        switch(StringParser.getOptimalEncoding(text)) {
+	        case StringParser.ENCODING_QUOTED_PRINTABLE:
+                charset = "ISO-8859-1";
+                isBinary = false;
+                isQP = true;
+                encoding = "quoted-printable";
+	            break;
+	        case StringParser.ENCODING_BASE64:
+                charset = "UTF-8";
+                isBinary = true;
+                isQP = false;
+                encoding = "base64";
+	            break;
+	        case StringParser.ENCODING_7BIT:
+	        default:
+                charset = "US-ASCII";
+                isBinary = false;
+                isQP = false;
+                encoding = "7bit";
+	            break;
 	        }
 	
-	        // Determine the charset and encoding from the characteristics of the
-	        // text, instead of the properties of the TextPart.  We do it this way
-	        // because the TextPart already contains decoded text that could be
-	        // reencoded in a variety of ways, and because there is no way to
-	        // easily create a TextPart from a local unencoded String that has the
-	        // charset and encoding properties set correctly.
-	        if (maxChar > 255) {
-	            charset = "UTF-8";
-	            isBinary = true;
-	            isQP = false;
-	            encoding = "base64";
-	        } else if (maxChar > 127) {
-	            charset = "ISO-8859-1";
-	            isBinary = false;
-	            isQP = true;
-	            encoding = "quoted-printable";
-	        } else {
-	            charset = "US-ASCII";
-	            isBinary = false;
-	            isQP = false;
-	            encoding = "7bit";
-	        }
-	
-	        //        if(charset.equalsIgnoreCase("US-ASCII")) {
-	        //            isBinary = false;
-	        //            isQP = false;
-	        //            encoding = "7bit";
-	        //        }
-	        //        else if(charset.equalsIgnoreCase("ISO-8859-1")) {
-	        //            isBinary = false;
-	        //            isQP = true;
-	        //            encoding = "quoted-printable";
-	        //        }
-	        //        else {
-	        //            isBinary = true;
-	        //            isQP = false;
-	        //            encoding = "base64";
-	        //        }
 	        MIMEOutputStream currentStream = startCurrentStream(part, encoding);
 	
 	        currentStream.setContentType(part.getMimeType() + '/' +

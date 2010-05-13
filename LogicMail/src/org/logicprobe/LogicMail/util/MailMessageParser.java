@@ -140,8 +140,7 @@ public class MailMessageParser {
             buffer.append(strCRLF);
         }
 
-        buffer.append("Subject: ");
-        buffer.append(envelope.subject);
+        buffer.append(StringParser.createEncodedHeader("Subject:", envelope.subject));
         buffer.append(strCRLF);
 
         if (envelope.inReplyTo != null) {

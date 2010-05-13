@@ -82,11 +82,12 @@ public class MessageNodeTest extends TestCase {
 		instance.putMessageContent(content);
 		
 		String expectedText =
-			"On " + StringParser.createDateString(env.date) + ", John Doe wrote:\r\n" +
-			"> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
-			"> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
-			"> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
-			"> nisi ut aliquip ex ea commodo consequat.";
+		    "\r\n" +
+		    "On " + StringParser.createDateString(env.date) + ", John Doe wrote:\r\n" +
+		    "> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+		    "> eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+		    "> ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+		    "> nisi ut aliquip ex ea commodo consequat.";
 
 		MessageNode result = instance.toReplyMessage();
 
@@ -120,18 +121,19 @@ public class MessageNodeTest extends TestCase {
 		instance.setMessageStructure(part);
 		instance.putMessageContent(content);
 	    
-	    String expectedText =
-	            "----Original Message----\r\n"+
-	            "Subject: The Subject\r\n"+
-	            "Date: "+StringParser.createDateString(env.date)+"\r\n"+
-	            "From: \"John Doe\" <jdoe@generic.org>\r\n"+
-	            "To: \"Jim Smith\" <jsmith@something.net>, \"Jane Doe\" <jane.doe@things.org>\r\n"+
-	            "\r\n" +
-	            "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
-	            "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
-	            "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
-	            "nisi ut aliquip ex ea commodo consequat.\r\n"+
-	            "------------------------";
+		String expectedText =
+		    "\r\n" +
+		    "----Original Message----\r\n"+
+		    "Subject: The Subject\r\n"+
+		    "Date: "+StringParser.createDateString(env.date)+"\r\n"+
+		    "From: \"John Doe\" <jdoe@generic.org>\r\n"+
+		    "To: \"Jim Smith\" <jsmith@something.net>, \"Jane Doe\" <jane.doe@things.org>\r\n"+
+		    "\r\n" +
+		    "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do\r\n" +
+		    "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim\r\n" +
+		    "ad minim veniam, quis nostrud exercitation ullamco laboris\r\n" +
+		    "nisi ut aliquip ex ea commodo consequat.\r\n"+
+		    "------------------------";
 
 	    MessageNode result = instance.toForwardMessage();
 	    
