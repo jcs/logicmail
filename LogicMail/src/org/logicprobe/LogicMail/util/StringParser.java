@@ -31,7 +31,10 @@
 package org.logicprobe.LogicMail.util;
 
 import net.rim.device.api.io.Base64InputStream;
+import net.rim.device.api.io.Base64OutputStream;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.DateTimeUtilities;
 import net.rim.device.api.util.NumberUtilities;
 
@@ -47,6 +50,8 @@ import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.AppInfo;
+
 
 /**
  * This class provides a collection of string parsing
@@ -59,6 +64,11 @@ public class StringParser {
     private static final long ONE_HOUR = ONE_MINUTE * 60;
     private static String ENCODING_UTF8 = "UTF-8";
     private static String strCRLF = "\r\n";
+    private static String WORD_SPECIALS = "=_?\"#$%&'(),.:;<>@[\\]^`{|}~";
+    
+    public static final int ENCODING_7BIT = 0;
+    public static final int ENCODING_QUOTED_PRINTABLE = 1;
+    public static final int ENCODING_BASE64 = 2;
     
     private StringParser() {
     }
@@ -777,7 +787,8 @@ public class StringParser {
         if (encoding.charAt(0) == 'Q') {
             try {
                 // Quoted-Printable
-                result = new String(decodeQuotedPrintable(encodedText).getBytes(),
+                result = new String(
+                        decodeQuotedPrintable(encodedText).getBytes(),
                         charset);
             } catch (UnsupportedEncodingException ex) {
                 result = "";
@@ -785,7 +796,8 @@ public class StringParser {
         } else if (encoding.charAt(0) == 'B') {
             // Base64
             try {
-                result = new String(Base64InputStream.decode(encodedText),
+                result = new String(
+                        Base64InputStream.decode(encodedText),
                         charset);
             } catch (IOException e) {
                 result = "";
@@ -796,7 +808,196 @@ public class StringParser {
 
         return result;
     }
+    
+    /**
+     * Checks the provided string for its optimal encoding, and returns a
+     * mail header compatible string according to RFC2047.
+     * 
+     * @param text The text to process.
+     * @return Encoded header string.
+     * @throws UnsupportedEncodingException 
+     */
+    public static String createEncodedHeader(String key, String text) throws UnsupportedEncodingException {
+        StringBuffer buf = new StringBuffer();
+        buf.append(key);
+        buf.append(' ');
+        
+        int encodingType = StringParser.getOptimalEncoding(text);
+        String charset;
+        char encoding;
+        switch(encodingType) {
+        case ENCODING_QUOTED_PRINTABLE:
+            charset = "iso-8859-1";
+            encoding = 'q';
+            break;
+        case ENCODING_BASE64:
+            charset = "utf-8";
+            encoding = 'b';
+            break;
+        case ENCODING_7BIT:
+        default:
+            buf.append(text);
+            return buf.toString();
+        }
+        
+        int index = 0;
+        if(text.length() == 0) { return buf.toString(); }
+        byte[] textBytes = text.getBytes(charset);
+        
+        int prefixLen = 5 + charset.length();
+        
+        while(index < textBytes.length) {
+            int maxEncodedLen;
+            if(index == 0) {
+                maxEncodedLen = 76 - key.length() - prefixLen - 3;
+            }
+            else {
+                buf.append("?=\r\n ");
+                maxEncodedLen = 76 - prefixLen - 3;
+            }
+            
+            buf.append("=?");
+            buf.append(charset);
+            buf.append('?');
+            buf.append(encoding);
+            buf.append('?');
+            
+            if(encodingType == ENCODING_QUOTED_PRINTABLE) {
+                index += encodeHeaderWordQP(textBytes, index, buf, maxEncodedLen);
+            }
+            else {
+                index += encodeHeaderWordB64(textBytes, index, buf, maxEncodedLen);
+            }
+        }
+        
+        buf.append("?=");
+        
+        return buf.toString();
+    }
+    
+    /**
+     * Generate the quoted-printable portion of an encoded word, given
+     * specified length limitations
+     *
+     * @param input the character data to encode
+     * @param offset the offset from which to start
+     * @param buffer the buffer to write encoded output onto
+     * @param maxOutputLen the maximum allowable length of the output
+     * @return the number of bytes of input actually encoded
+     */
+    private static int encodeHeaderWordQP(byte[] input, int offset, StringBuffer buffer, int maxOutputLen) {
+        int count = 0;
+        int curOutputLen = 0;
+        
+        for (int i = offset; i < input.length; i++) {
+            int ch = ((int)input[i]) & 0xFF;
+            
+            if(ch < 0x20 || ch >= 0x7F || WORD_SPECIALS.indexOf(ch) != -1) {
+                if(curOutputLen + 3 > maxOutputLen) {
+                    break;
+                }
+                else {
+                    // Encode this character
+                    String charStr = Integer.toHexString((int) ch).toUpperCase();
+                    buffer.append('=');
+                    if (charStr.length() == 1) {
+                        buffer.append('0');
+                    }
+                    buffer.append(charStr);
+                    curOutputLen += 3;
+                }
+            }
+            else {
+                if(curOutputLen + 1 > maxOutputLen) {
+                    break;
+                }
+                else if(ch == ' ') {
+                    // Encode this space as an underscore
+                    buffer.append('_');
+                    curOutputLen++;
+                }
+                else {
+                    // Leave this character alone
+                    buffer.append((char)ch);
+                    curOutputLen++;
+                }
+            }
+            count++;
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Generate the Base64 portion of an encoded word, given
+     * specified length limitations
+     *
+     * @param input the character data to encode, assuming UTF-8
+     * @param offset the offset from which to start
+     * @param buffer the buffer to write encoded output onto
+     * @param maxOutputLen the maximum allowable length of the output
+     * @return the number of bytes of input actually encoded
+     */
+    private static int encodeHeaderWordB64(byte[] input, int offset, StringBuffer buffer, int maxOutputLen) {
+        // Make the maximum output length a multiple of 4 bytes
+        maxOutputLen = (maxOutputLen / 4) * 4;
+        if(maxOutputLen < 4) { maxOutputLen = 4; }
+        
+        DataBuffer dataBuffer = new DataBuffer();
+        
+        // Assume base64 output is always in multiples of 3 input bytes,
+        // and thus 4 output bytes.  Also, characters are variable length.
+        int i = offset;
+        int count = 0;
+        while (i < input.length) {
+            // Look at the first byte of the next character, and determine
+            // how many bytes that character will consist of
+            int ch = ((int)input[i]) & 0xFF;
+            int nextCharLen = -1;
+            if((ch & 0x80) == 0x00 ) {
+                nextCharLen = 1;
+            }
+            else if((ch & 0xE0) == 0xC0) {
+                nextCharLen = 2;
+            }
+            else if((ch & 0xF0) == 0xE0) {
+                nextCharLen = 3;
+            }
+            else if((ch & 0xF8) == 0xF0) {
+                nextCharLen = 4;
+            }
+            
+            if(nextCharLen == -1 || (i + nextCharLen) > input.length) {
+                // This should only happen on malformed input
+                break;
+            }
 
+            // Round up to the next multiple of 3
+            int nextOutputLen = ((count + nextCharLen) / 3) * 3;
+            // Divide and multiply to reflect 3 input bytes becoming 4 output bytes
+            nextOutputLen = (nextOutputLen / 3) * 4;
+            
+            if(nextOutputLen > maxOutputLen) {
+                break;
+            }
+            else {
+                dataBuffer.write(input, i, nextCharLen);
+                count += nextCharLen;
+                i += nextCharLen;
+            }
+        }
+
+        byte[] data = dataBuffer.toArray();
+        try {
+            String encoded = Base64OutputStream.encodeAsString(data, 0, data.length, false, false);
+            buffer.append(encoded);
+        } catch (IOException e) {
+            EventLogger.logEvent(AppInfo.GUID, ("Unable to encode header: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+        }
+        
+        return count;
+    }
+    
     public static String[] parseTokenString(String text, String token) {
         String[] tok = new String[0];
 
@@ -1265,5 +1466,40 @@ public class StringParser {
             v <<= 8;
         }
         return new String(result);
+    }
+    
+    /**
+     * Gets the optimal encoding for a text string.
+     * This method scans the string for the maximum character value, and
+     * determines the optimal encoding based on it.  The result will be
+     * one of the <tt>ENCODING_XXXX</tt> constants.
+     * 
+     *
+     * @param text the text to scan
+     * @return the optimal encoding
+     */
+    public static int getOptimalEncoding(String text) {
+        int encoding;
+        
+        // Find the maximum character value in the text
+        char maxChar = 0;
+
+        for (int i = text.length() - 1; i >= 0; --i) {
+            char ch = text.charAt(i);
+
+            if (ch > maxChar) {
+                maxChar = ch;
+            }
+        }
+
+        if (maxChar > 255) {
+            encoding = ENCODING_BASE64;
+        } else if (maxChar > 127) {
+            encoding = ENCODING_QUOTED_PRINTABLE;
+        } else {
+            encoding = ENCODING_7BIT;
+        }
+        
+        return encoding;
     }
 }

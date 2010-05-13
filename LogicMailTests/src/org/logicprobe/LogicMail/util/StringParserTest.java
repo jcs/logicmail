@@ -41,7 +41,6 @@ import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
 
-
 /**
  * Unit test for StringParser
  */
@@ -575,6 +574,116 @@ public class StringParserTest extends TestCase {
     }
 
     /**
+     * Test of createEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testCreateEncodedHeaderQP() {
+        System.out.println("createEncodedHeaderQP");
+
+        try {
+            String text = "Hello World";
+            String expectedResult = "Foo: Hello World";
+            String result = StringParser.createEncodedHeader("Foo:", text);
+            assertEquals(expectedResult, result);
+    
+            text = "¡Holá Señor!";
+            expectedResult = "Subject: =?iso-8859-1?q?=A1Hol=E1_Se=F1or!?=";
+            result = StringParser.createEncodedHeader("Subject:", text);
+            assertEquals("QP simple", expectedResult, result);
+            
+            text = "Justo de Canterbury (en ocasiones también llamado Iustus, " +
+            		"nacido probablemente en Roma y fallecido el 10 de " +
+            		"noviembre entre el 627 y el 631), fue un clérigo  y " +
+            		"misionero  italiano, cuarto arzobispo de Canterbury. " +
+            		"Enviado desde Italia  a Inglaterra  por el papa  " +
+            		"Gregorio Magno con la misión de convertir a los " +
+            		"anglosajones. Probablemente llegó en el segundo grupo, " +
+            		"enviado en el año 601. Se convirtió en el primer obispo de " +
+            		"Rochester en 604, y asistió a un concilio local en París " +
+            		"en 614.";
+            
+            result = StringParser.createEncodedHeader("Subject:", text);
+            
+            // Parse the result and see that it matches the original.
+            String parsedResult = StringParser.parseEncodedHeader(removeWraparoundBreaks(result));
+            assertEquals("QP complex", "Subject: " + text, parsedResult);
+        } catch (Throwable t) {
+            fail("Exception thrown during test: "+t.toString());
+            t.printStackTrace();
+        }
+    }
+    
+    /**
+     * Test of createEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testCreateEncodedHeaderB64() {
+        System.out.println("createEncodedHeaderB64");
+        
+        try {
+            String text = "\u041d\u0435\u0440\u0435\u0441\u0442";
+            
+            String result = StringParser.createEncodedHeader("Subject:", text);
+            
+            // Parse the result and see that it matches the original.
+            String parsedResult = StringParser.parseEncodedHeader(removeWraparoundBreaks(result));
+            assertEquals("B64 simple", "Subject: " + text, parsedResult);
+            
+            // Block of Russian text from some Wikipedia article, which is only
+            // so long because of the necessary method of using Russian
+            // characters in a Java string.
+            text = "\u0420\u0435\u0447\u043d\u043e\u0439 \u043e\u043a\u0443" +
+            		"\u043d\u044c \u043e\u0442\u043d\u043e\u0441\u0438\u0442" +
+            		"\u0441\u044f \u043a \u0445\u0438\u0449\u043d\u044b\u043c" +
+            		" \u0440\u044b\u0431\u0430\u043c: \u0432 \u0440\u0430" +
+            		"\u0446\u0438\u043e\u043d\u0435 \u0432\u0437\u0440\u043e" +
+            		"\u0441\u043b\u043e\u0433\u043e \u043e\u043a\u0443\u043d" +
+            		"\u044f \u0437\u043d\u0430\u0447\u0438\u0442\u0435\u043b" +
+            		"\u044c\u043d\u0443\u044e \u0434\u043e\u043b\u044e " +
+            		"\u0437\u0430\u043d\u0438\u043c\u0430\u044e\u0442 " +
+            		"\u0434\u0440\u0443\u0433\u0438\u0435 \u043f\u0440" +
+            		"\u0435\u0441\u043d\u043e\u0432\u043e\u0434\u043d" +
+            		"\u044b\u0435 \u0440\u044b\u0431\u044b. \u0420\u0435" +
+            		"\u0447\u043d\u043e\u0439 \u043e\u043a\u0443\u043d\u044c" +
+            		" \u043f\u0440\u0435\u0434\u043f\u043e\u0447\u0438\u0442" +
+            		"\u0430\u0435\u0442 \u043f\u0440\u0438\u0434\u0435\u0440" +
+            		"\u0436\u0438\u0432\u0430\u0442\u044c\u0441\u044f \u0440" +
+            		"\u0430\u0432\u043d\u0438\u043d\u043d\u044b\u0445 \u0432" +
+            		"\u043e\u0434\u043e\u0451\u043c\u043e\u0432, \u0435" +
+            		"\u0433\u043e \u043c\u043e\u0436\u043d\u043e \u0432" +
+            		"\u0441\u0442\u0440\u0435\u0442\u0438\u0442\u044c " +
+            		"\u0432 \u0440\u0435\u043a\u0430\u0445, \u043e\u0437" +
+            		"\u0451\u0440\u0430\u0445, \u043f\u0440\u0443\u0434" +
+            		"\u0430\u0445, \u0432\u043e\u0434\u043e\u0445\u0440" +
+            		"\u0430\u043d\u0438\u043b\u0438\u0449\u0430\u0445 " +
+            		"\u0438 \u0434\u0430\u0436\u0435 \u0432 \u043c\u0435" +
+            		"\u043d\u0435\u0435 \u0441\u043e\u043b\u043e\u043d\u043e" +
+            		"\u0432\u0430\u0442\u044b\u0445 \u0443\u0447\u0430\u0441" +
+            		"\u0442\u043a\u0430\u0445 \u043c\u043e\u0440\u0435\u0439.";
+            
+            result = StringParser.createEncodedHeader("Subject:", text);
+            
+            // Parse the result and see that it matches the original.
+            parsedResult = StringParser.parseEncodedHeader(removeWraparoundBreaks(result));
+            assertEquals("B64 complex", "Subject: " + text, parsedResult);
+            
+        } catch (Throwable t) {
+            fail("Exception thrown during test: "+t.toString());
+            t.printStackTrace();
+        }
+    }
+    
+    private static String removeWraparoundBreaks(String text) {
+        // Remove the linebreaks from a test result, since they're not correctly
+        // handled by parseEncodedHeader().  This may or may not be a concern,
+        // given the normal usage of that method.
+        StringBuffer buf = new StringBuffer();
+        String[] resultLines = StringParser.parseTokenString(text, "\r\n ");
+        for(int i=0; i<resultLines.length; i++) {
+            buf.append(resultLines[i]);
+        }
+        return buf.toString();
+    }
+    
+    /**
      * Test of parseTokenString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseTokenString() {
@@ -772,121 +881,80 @@ public class StringParserTest extends TestCase {
         assertEquals("Empty", expected, actual);
     }
 
+    public void testGetOptimalEncoding() {
+        System.out.println("getOptimalEncoding");
+        
+        assertEquals(StringParser.ENCODING_7BIT, StringParser.getOptimalEncoding("Hello World"));
+        assertEquals(StringParser.ENCODING_QUOTED_PRINTABLE, StringParser.getOptimalEncoding("¡Holá Señor!"));
+        assertEquals(StringParser.ENCODING_BASE64, StringParser.getOptimalEncoding("\u1057\u1077\u1081\u1095\u1072\u1089"));
+    }
+    
     public Test suite() {
         TestSuite testSuite = new TestSuite("StringParser");
-        testSuite.addTest(new StringParserTest("parseDateString",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseDateString();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("createDateString",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testCreateDateString();
-                }
-            }));
-        testSuite.addTest(new StringParserTest(
-                "nestedParenStringLexerEnvelope1",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testNestedParenStringLexerEnvelope1();
-                }
-            }));
-        testSuite.addTest(new StringParserTest(
-                "nestedParenStringLexerEnvelope2",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testNestedParenStringLexerEnvelope2();
-                }
-            }));
-        testSuite.addTest(new StringParserTest(
-                "nestedParenStringLexerEnvelope3",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testNestedParenStringLexerEnvelope3();
-                }
-            }));
-        testSuite.addTest(new StringParserTest(
-                "nestedParenStringLexerBodyStructure",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testNestedParenStringLexerBodyStructure();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseMailHeaders",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseMailHeaders();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseMailHeadersNoBlank",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseMailHeadersNoBlank();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseEncodedHeader",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseEncodedHeader();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseTokenString",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseTokenString();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseCsvString",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseCsvString();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseValidCharsetString",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseValidCharsetString();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("decodeQuotedPrintable1",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testDecodeQuotedPrintable1();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("decodeQuotedPrintable2",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testDecodeQuotedPrintable2();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("encodeQuotedPrintable1",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testEncodeQuotedPrintable1();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("encodeQuotedPrintable2",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testEncodeQuotedPrintable2();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("parseRecipient",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testParseRecipient();
-                }
-            }));
-        testSuite.addTest(new StringParserTest("mergeRecipient",
-                new TestMethod() {
-                public void run(TestCase tc) {
-                    ((StringParserTest) tc).testMergeRecipient();
-                }
-            }));
+        
+        testSuite.addTest(new StringParserTest("parseDateString", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseDateString(); }}));
+        
+        testSuite.addTest(new StringParserTest("createDateString", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testCreateDateString(); }}));
+        
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope1", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerEnvelope1(); }}));
+        
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope2", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerEnvelope2(); }}));
+        
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope3", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerEnvelope3(); }}));
+        
+        testSuite.addTest(new StringParserTest("nestedParenStringLexerBodyStructure", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerBodyStructure(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseMailHeaders", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseMailHeaders(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseMailHeadersNoBlank", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseMailHeadersNoBlank(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseEncodedHeader", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseEncodedHeader(); }}));
+        
+        testSuite.addTest(new StringParserTest("createEncodedHeaderQP", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testCreateEncodedHeaderQP(); }}));
+        
+        testSuite.addTest(new StringParserTest("createEncodedHeaderB64", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testCreateEncodedHeaderB64(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseTokenString", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseTokenString(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseCsvString", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseCsvString(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseValidCharsetString", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseValidCharsetString(); }}));
+        
+        testSuite.addTest(new StringParserTest("decodeQuotedPrintable1", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintable1(); }}));
+        
+        testSuite.addTest(new StringParserTest("decodeQuotedPrintable2", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintable2(); }}));
+        
+        testSuite.addTest(new StringParserTest("encodeQuotedPrintable1", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testEncodeQuotedPrintable1(); }}));
+        
+        testSuite.addTest(new StringParserTest("encodeQuotedPrintable2", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testEncodeQuotedPrintable2(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseRecipient", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseRecipient(); }}));
+        
+        testSuite.addTest(new StringParserTest("mergeRecipient", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testMergeRecipient(); }}));
 
+        testSuite.addTest(new StringParserTest("getOptimalEncoding", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testGetOptimalEncoding(); }}));
+        
         return testSuite;
     }
 }
