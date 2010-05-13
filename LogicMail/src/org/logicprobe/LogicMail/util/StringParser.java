@@ -817,7 +817,7 @@ public class StringParser {
      * @return Encoded header string.
      * @throws UnsupportedEncodingException 
      */
-    public static String createEncodedHeader(String key, String text) throws UnsupportedEncodingException {
+    public static String createEncodedHeader(String key, String text) {
         StringBuffer buf = new StringBuffer();
         buf.append(key);
         buf.append(' ');
@@ -842,7 +842,13 @@ public class StringParser {
         
         int index = 0;
         if(text.length() == 0) { return buf.toString(); }
-        byte[] textBytes = text.getBytes(charset);
+        byte[] textBytes;
+        try {
+            textBytes = text.getBytes(charset);
+        } catch (UnsupportedEncodingException e) {
+            // This should never happen
+            return buf.toString();
+        }
         
         int prefixLen = 5 + charset.length();
         
