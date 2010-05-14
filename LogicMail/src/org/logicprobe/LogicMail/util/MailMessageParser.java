@@ -108,23 +108,19 @@ public class MailMessageParser {
         StringBuffer buffer = new StringBuffer();
 
         // Create the message headers
-        buffer.append("From: ");
-        buffer.append(StringParser.makeCsvString(envelope.from));
+        buffer.append(StringParser.createEncodedRecipientHeader("From:", envelope.from));
         buffer.append(strCRLF);
 
-        buffer.append("To: ");
-        buffer.append(StringParser.makeCsvString(envelope.to));
+        buffer.append(StringParser.createEncodedRecipientHeader("To:", envelope.to));
         buffer.append(strCRLF);
 
         if ((envelope.cc != null) && (envelope.cc.length > 0)) {
-            buffer.append("Cc: ");
-            buffer.append(StringParser.makeCsvString(envelope.cc));
+            buffer.append(StringParser.createEncodedRecipientHeader("Cc:", envelope.cc));
             buffer.append(strCRLF);
         }
 
         if ((envelope.replyTo != null) && (envelope.replyTo.length > 0)) {
-            buffer.append("Reply-To: ");
-            buffer.append(StringParser.makeCsvString(envelope.replyTo));
+            buffer.append(StringParser.createEncodedRecipientHeader("Reply-To:", envelope.replyTo));
             buffer.append(strCRLF);
         }
 

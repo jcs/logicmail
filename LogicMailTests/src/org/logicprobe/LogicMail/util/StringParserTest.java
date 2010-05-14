@@ -609,7 +609,7 @@ public class StringParserTest extends TestCase {
             result = StringParser.createEncodedHeader("Subject:", text);
             
             // Parse the result and see that it matches the original.
-            String parsedResult = StringParser.parseEncodedHeader(removeWraparoundBreaks(result));
+            String parsedResult = StringParser.parseEncodedHeader(result);
             assertEquals("QP complex", "Subject: " + text, parsedResult);
         } catch (Throwable t) {
             fail("Exception thrown during test: "+t.toString());
@@ -629,7 +629,7 @@ public class StringParserTest extends TestCase {
             String result = StringParser.createEncodedHeader("Subject:", text);
             
             // Parse the result and see that it matches the original.
-            String parsedResult = StringParser.parseEncodedHeader(removeWraparoundBreaks(result));
+            String parsedResult = StringParser.parseEncodedHeader(result);
             assertEquals("B64 simple", "Subject: " + text, parsedResult);
             
             // Block of Russian text from some Wikipedia article, which is only
@@ -667,7 +667,7 @@ public class StringParserTest extends TestCase {
             result = StringParser.createEncodedHeader("Subject:", text);
             
             // Parse the result and see that it matches the original.
-            parsedResult = StringParser.parseEncodedHeader(removeWraparoundBreaks(result));
+            parsedResult = StringParser.parseEncodedHeader(result);
             assertEquals("B64 complex", "Subject: " + text, parsedResult);
             
         } catch (Throwable t) {
@@ -676,16 +676,64 @@ public class StringParserTest extends TestCase {
         }
     }
     
-    private static String removeWraparoundBreaks(String text) {
-        // Remove the linebreaks from a test result, since they're not correctly
-        // handled by parseEncodedHeader().  This may or may not be a concern,
-        // given the normal usage of that method.
-        StringBuffer buf = new StringBuffer();
-        String[] resultLines = StringParser.parseTokenString(text, "\r\n ");
-        for(int i=0; i<resultLines.length; i++) {
-            buf.append(resultLines[i]);
+    /**
+     * Test of createEncodedRecipientHeader method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testCreateEncodedRecipientHeader() {
+        System.out.println("createEncodedRecipientHeader");
+
+        try {
+            String[] recipients = new String[] { "jdoe@generic.org" };
+            String expectedResult = "To: jdoe@generic.org";
+            String result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            assertEquals(expectedResult, result);
+    
+            recipients = new String[] { "jdoe@generic.org" , "foo@bar.com" };
+            expectedResult = "To: jdoe@generic.org, foo@bar.com";
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            assertEquals(expectedResult, result);
+            
+            recipients = new String[] { "\"John Doe\" <jdoe@generic.org>" };
+            expectedResult = "To: \"John Doe\" <jdoe@generic.org>";
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            assertEquals(expectedResult, result);
+    
+            recipients = new String[] { "\"John Doe\" <jdoe@generic.org>", "\"Foobar\" <foo@bar.com>" };
+            expectedResult = "To: \"John Doe\" <jdoe@generic.org>, \"Foobar\" <foo@bar.com>";
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            assertEquals(expectedResult, result);
+            
+            recipients = new String[] { "\"Holá Señor\" <jdoe@generic.org>" };
+            expectedResult = "To: =?iso-8859-1?q?=22Hol=E1_Se=F1or=22?= <jdoe@generic.org>";
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            assertEquals(expectedResult, result);
+            
+            recipients = new String[] { "\"Holá Señor\" <jdoe@generic.org>", "\"Señor Holá\" <foo@bar.com>" };
+            expectedResult = "To: " + StringParser.makeCsvString(recipients);
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            String parsedResult = StringParser.parseEncodedHeader(result);
+            assertEquals(expectedResult, parsedResult);
+            
+            recipients = new String[] { "\"Holá Señor\" <jdoe@generic.org>",
+                    "Bob <bob@blah.net>", "\"Señor Holá\" <foo@bar.com>" };
+            expectedResult = "To: " + StringParser.makeCsvString(recipients);
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            parsedResult = StringParser.parseEncodedHeader(result);
+            assertEquals(expectedResult, parsedResult);
+            
+            recipients = new String[] { "bar@foo.com",
+                    "\"Holá Señor\" <jdoe@generic.org>",
+                    "Bob <bob@blah.net>", "foobar@blah.net",
+                    "\"Señor Holá\" <foo@bar.com>", "jane.doe@something.org" };
+            expectedResult = "To: " + StringParser.makeCsvString(recipients);
+            result = StringParser.createEncodedRecipientHeader("To:", recipients);
+            parsedResult = StringParser.parseEncodedHeader(result);
+            assertEquals(expectedResult, parsedResult);
+            
+        } catch (Throwable t) {
+            fail("Exception thrown during test: "+t.toString());
+            t.printStackTrace();
         }
-        return buf.toString();
     }
     
     /**
@@ -929,6 +977,9 @@ public class StringParserTest extends TestCase {
         
         testSuite.addTest(new StringParserTest("createEncodedHeaderB64", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testCreateEncodedHeaderB64(); }}));
+        
+        testSuite.addTest(new StringParserTest("createEncodedRecipientHeader", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testCreateEncodedRecipientHeader(); }}));
         
         testSuite.addTest(new StringParserTest("parseTokenString", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testParseTokenString(); }}));

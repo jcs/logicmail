@@ -65,6 +65,7 @@ public class StringParser {
     private static String ENCODING_UTF8 = "UTF-8";
     private static String strCRLF = "\r\n";
     private static String WORD_SPECIALS = "=_?\"#$%&'(),.:;<>@[\\]^`{|}~";
+    private static final int MAX_LINE_LEN = 76;
     
     public static final int ENCODING_7BIT = 0;
     public static final int ENCODING_QUOTED_PRINTABLE = 1;
@@ -822,6 +823,7 @@ public class StringParser {
      * Checks the provided string for its optimal encoding, and returns a
      * mail header compatible string according to RFC2047.
      * 
+     * @param key The header key (i.e. "Subject:").
      * @param text The text to process.
      * @return Encoded header string.
      * @throws UnsupportedEncodingException 
@@ -831,6 +833,16 @@ public class StringParser {
         buf.append(key);
         buf.append(' ');
         
+        appendEncodedHeaderSegment(buf, key.length() + 1, text);
+        
+        return buf.toString();
+    }
+    
+    private static int appendEncodedHeaderSegment(StringBuffer buf, int indent, String text) {
+        // If the text is empty, return immediately
+        if(text.length() == 0) { return indent; }
+        
+        // Get the optimal encoding type, and set some variables
         int encodingType = StringParser.getOptimalEncoding(text);
         String charset;
         char encoding;
@@ -845,30 +857,38 @@ public class StringParser {
             break;
         case ENCODING_7BIT:
         default:
+            // Append and return if no encoding is required
             buf.append(text);
-            return buf.toString();
+            return indent + text.length();
+        }
+
+        int lastLineLen = indent;
+        int prefixLen = 5 + charset.length();
+
+        // If the minimum length of an encoded string is greater than the
+        // maximum line length, insert a line break first
+        if((lastLineLen + prefixLen + 3) > MAX_LINE_LEN) {
+            buf.append("\r\n ");
+            lastLineLen = 1;
         }
         
-        int index = 0;
-        if(text.length() == 0) { return buf.toString(); }
+        // Get the byte array representing the text
         byte[] textBytes;
         try {
             textBytes = text.getBytes(charset);
         } catch (UnsupportedEncodingException e) {
             // This should never happen
-            return buf.toString();
+            return indent;
         }
         
-        int prefixLen = 5 + charset.length();
+        int index = 0;
+        int maxEncodedLen = MAX_LINE_LEN - lastLineLen - prefixLen - 3;
         
         while(index < textBytes.length) {
-            int maxEncodedLen;
-            if(index == 0) {
-                maxEncodedLen = 76 - key.length() - prefixLen - 3;
-            }
-            else {
+            if(index > 0) {
                 buf.append("?=\r\n ");
-                maxEncodedLen = 76 - prefixLen - 3;
+                lastLineLen = 1;
+                maxEncodedLen = MAX_LINE_LEN - prefixLen - 3;
             }
             
             buf.append("=?");
@@ -877,17 +897,85 @@ public class StringParser {
             buf.append(encoding);
             buf.append('?');
             
+            int beforeLen = buf.length();
             if(encodingType == ENCODING_QUOTED_PRINTABLE) {
                 index += encodeHeaderWordQP(textBytes, index, buf, maxEncodedLen);
             }
             else {
                 index += encodeHeaderWordB64(textBytes, index, buf, maxEncodedLen);
             }
+            int afterLen = buf.length();
+            lastLineLen += (afterLen - beforeLen);
         }
         
         buf.append("?=");
+        lastLineLen += 2;
+        return lastLineLen;
+    }
+    
+    public static String createEncodedRecipientHeader(String key, String[] recipients) {
+        StringBuffer buf = new StringBuffer();
+        buf.append(key);
+        buf.append(' ');
+
+        int lastLineLen = key.length() + 1;
+        
+        if ((recipients == null) || (recipients.length == 0)) {
+            return buf.toString();
+        }
+        else if (recipients.length == 1) {
+            appendEncodedRecipient(buf, lastLineLen, recipients[0]);
+        }
+        else {
+            for (int i = 0; i < (recipients.length - 1); i++) {
+                lastLineLen = appendEncodedRecipient(buf, lastLineLen, recipients[i]);
+                buf.append(", ");
+            }
+
+            appendEncodedRecipient(buf, lastLineLen, recipients[recipients.length - 1]);
+        }
         
         return buf.toString();
+    }
+    
+    private static int appendEncodedRecipient(StringBuffer buf, int indent, String recipient) {
+        int p = recipient.indexOf("\" <");
+        int q = recipient.indexOf('>');
+        if(p != -1 && q != -1 && p > 0 && p < q) {
+            // Recipient is: "John Doe" <doej@generic.org>
+            int lastLineLen =
+                appendEncodedHeaderSegment(buf, indent, recipient.substring(0, p + 1));
+            String address = recipient.substring(p + 1);
+            int addressLen = address.length();
+            if(lastLineLen + addressLen > MAX_LINE_LEN) {
+                 buf.append(" \r\n");
+                 lastLineLen = 0;
+            }
+            buf.append(address);
+            lastLineLen += addressLen;
+            return lastLineLen;
+        }
+        
+        p = recipient.indexOf(" <");
+        if(p != -1 && q != -1 && p > 0 && p < q) {
+            // Recipient is: John <doej@generic.org>
+            int lastLineLen =
+                appendEncodedHeaderSegment(buf, indent, recipient.substring(0, p));
+            String address = recipient.substring(p);
+            int addressLen = address.length();
+            if(lastLineLen + addressLen > MAX_LINE_LEN) {
+                buf.append(" \r\n");
+                lastLineLen = 0;
+            }
+            buf.append(address);
+            lastLineLen += addressLen;
+            return lastLineLen;
+        }
+        
+        // Assume it is just a usable E-Mail address without any
+        // special encoding needs
+        buf.append(recipient);
+        return indent + recipient.length();
     }
     
     /**
