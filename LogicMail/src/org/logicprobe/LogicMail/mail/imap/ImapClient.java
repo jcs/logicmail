@@ -1003,8 +1003,8 @@ public class ImapClient implements IncomingMailClient {
         flags.flagged = initialFlags.isFlagged();
         flags.deleted = initialFlags.isDeleted();
         flags.draft = initialFlags.isDraft();
-        flags.recent = initialFlags.isRecent();
         flags.junk = initialFlags.isJunk();
+        flags.recent = false; // invalid for appending
 
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);
     }
