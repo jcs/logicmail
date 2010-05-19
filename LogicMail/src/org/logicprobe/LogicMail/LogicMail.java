@@ -43,6 +43,7 @@ import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.RuntimeStore;
+import net.rim.device.api.system.SystemListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Screen;
@@ -73,25 +74,37 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application.
  */
 public final class LogicMail extends UiApplication {
+    private boolean autoStart;
+    private StartupSystemListener systemListener;
     private NavigationController navigationController;
     private Screen loadingScreen;
 
     /**
      * Instantiates a new instance of the application.
      * 
-     * @param autoStart True if this is the autostart instance, false for normal startup
+     * @param args arguments passed to the application's <code>main()</code> method
      */
     public LogicMail(String[] args) {
-        boolean autoStart = false;
         for(int i=0; i<args.length; i++) {
             if(args[i].indexOf("autostartup") != -1) {
                 autoStart = true;    			
             }
         }
         AppInfo.initialize(args);
+    }
 
+    /**
+     * Run the application.
+     */
+    public void run() {
         if(autoStart) {
-            doAutoStart();
+            if(ApplicationManager.getApplicationManager().inStartup()) {
+                systemListener = new StartupSystemListener();
+                this.addSystemListener(systemListener);
+            }
+            else {
+                this.startupInitializationLater();
+            }
         }
         else {
             logStartupAppInfo();
@@ -135,6 +148,7 @@ public final class LogicMail extends UiApplication {
             pushScreen(loadingScreen);
             loadingThread.start();
         }
+        enterEventDispatcher();
     }
 
     private void logStartupAppInfo() {
@@ -180,63 +194,56 @@ public final class LogicMail extends UiApplication {
         loadingScreen.add(new BlankSeparatorField(fieldSpacerSize));
         loadingScreen.add(new LabelField("Version " + AppInfo.getVersion(), Field.FIELD_HCENTER));
     }
-
-    /**
-     * Run the application.
-     */
-    public void run() {
-        enterEventDispatcher();
+    
+    private class StartupSystemListener implements SystemListener {
+        public void powerUp() {
+            removeSystemListener(systemListener);
+            startupInitialization();
+        }
+        
+        public void powerOff() { }
+        public void batteryGood() { }
+        public void batteryLow() { }
+        public void batteryStatusChange(int status) { }
     }
-
-    /**
-     * Method to execute in autostart mode.
-     */
-    private void doAutoStart() {
-        invokeLater(new Runnable()
-        {
-            public void run()
-            {
-                ApplicationManager myApp = ApplicationManager.getApplicationManager();
-                boolean keepGoing = true;
-
-                while (keepGoing)
-                {
-                    if (myApp.inStartup())
-                    {
-                        try { Thread.sleep(1000); }
-                        catch (Exception ex) { }
-                    }
-                    else
-                    {
-                        // The BlackBerry has finished its startup process
-                        // Configure the rollover icons
-                        HomeScreen.updateIcon(AppInfo.getIcon(), 0);
-                        HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
-
-                        // Configure a notification source for each account
-                        MailSettings mailSettings = MailSettings.getInstance();
-                        mailSettings.loadSettings();
-                        int numAccounts = mailSettings.getNumAccounts();
-                        Hashtable eventSourceMap = new Hashtable(numAccounts);
-                        for(int i=0; i<numAccounts; i++) {
-                            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-                            LogicMailEventSource eventSource =
-                                new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
-                            NotificationsManager.registerSource(
-                                    eventSource.getEventSourceId(),
-                                    eventSource,
-                                    NotificationsConstants.CASUAL);
-                            eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
-                        }
-
-                        // Save the registered event sources in the runtime store
-                        RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
-                        keepGoing = false;
-                    }
-                }
-                //Exit the application.
-                System.exit(0);
+    
+    private void startupInitializationLater() {
+        invokeLater(new Runnable() {
+            public void run() {
+                startupInitialization();
             }
         });
+    }
+    
+    private void startupInitialization() {
+        // The BlackBerry has finished its startup process
+
+        if(RuntimeStore.getRuntimeStore().remove(AppInfo.GUID) == null) {
+            // Configure the rollover icons
+            HomeScreen.updateIcon(AppInfo.getIcon(), 0);
+            HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
+        }
+
+        // Configure a notification source for each account
+        MailSettings mailSettings = MailSettings.getInstance();
+        mailSettings.loadSettings();
+        int numAccounts = mailSettings.getNumAccounts();
+        Hashtable eventSourceMap = new Hashtable(numAccounts);
+        for(int i=0; i<numAccounts; i++) {
+            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+            LogicMailEventSource eventSource =
+                new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+            NotificationsManager.registerSource(
+                    eventSource.getEventSourceId(),
+                    eventSource,
+                    NotificationsConstants.CASUAL);
+            eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
+        }
+
+        // Save the registered event sources in the runtime store
+        RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
+        
+        //Exit the application.
+        System.exit(0);
     }
 } 

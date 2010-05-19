@@ -41,12 +41,12 @@ import net.rim.device.api.system.Bitmap;
  */
 public final class AppInfo {
     /** System event log GUID */
-    public final static long GUID = 0x6bc611e33074e780L;
+    public static final long GUID = 0x6bc611e33074e780L;
     
-    private static Bitmap icon = Bitmap.getBitmapResource("logicmail.png");
-    private static Bitmap rolloverIcon = Bitmap.getBitmapResource("logicmail-rollover.png");
-    private static Bitmap newMessagesIcon = Bitmap.getBitmapResource("logicmail-new.png");
-    private static Bitmap newMessagesRolloverIcon = Bitmap.getBitmapResource("logicmail-new-rollover.png");
+    private static final Bitmap icon = Bitmap.getBitmapResource("logicmail.png");
+    private static final Bitmap rolloverIcon = Bitmap.getBitmapResource("logicmail-rollover.png");
+    private static final Bitmap newMessagesIcon = Bitmap.getBitmapResource("logicmail-new.png");
+    private static final Bitmap newMessagesRolloverIcon = Bitmap.getBitmapResource("logicmail-new-rollover.png");
     private static String appName;
     private static String appVersion;
     private static PlatformInfo platformInfo;
