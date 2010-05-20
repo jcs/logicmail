@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -802,7 +803,12 @@ public class MessageNode implements Node {
         }
 
         buffer.append("Date: ");
-        buffer.append(StringParser.createDateString(date));
+        if(date != null) {
+            buffer.append(StringParser.createDateString(date));
+        }
+        else {
+            buffer.append(StringParser.createDateString(Calendar.getInstance().getTime()));
+        }
         buffer.append(strCRLF);
 
         if (includeUserAgent) {

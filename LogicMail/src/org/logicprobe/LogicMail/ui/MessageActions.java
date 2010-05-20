@@ -173,6 +173,15 @@ public class MessageActions {
             !messageNode.hasCachedContent()
             && !messageNode.hasMessageContent()
             && messageNode.isCachable();
+
+        boolean failedOutgoingMessage = false;
+        if(messageNode instanceof OutgoingMessageNode) {
+            OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
+            if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {
+                failedOutgoingMessage = true;
+            }
+        }
+        
         
         if(!isOpen) {
             menu.add(selectItem);
@@ -197,7 +206,7 @@ public class MessageActions {
         // When the actual action is invoked, the destination list will
         // be appropriately filtered to only allow valid destination
         // mailboxes for the current state of the message node.
-        if(!unloaded || mailboxNode.hasCopy()) {
+        if(!unloaded || mailboxNode.hasCopy() || failedOutgoingMessage) {
             menu.add(copyToItem);
         }
         
@@ -218,11 +227,8 @@ public class MessageActions {
         else {
             menu.add(deleteItem);
         }
-        if(messageNode instanceof OutgoingMessageNode) {
-            OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
-            if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {
-                menu.add(sendOutgoingItem);
-            }
+        if(failedOutgoingMessage) {
+            menu.add(sendOutgoingItem);
         }
         
         this.activeMessageNode = messageNode;
@@ -410,7 +416,8 @@ public class MessageActions {
         	MailboxNode selectedMailbox = dialog.getSelectedMailboxNode();
         	if(selectedMailbox != null && selectedMailbox != messageNode.getParent()) {
         		if(selectedMailbox.hasCopy()
-        				&& selectedMailbox.getParentAccount() == messageNode.getParent().getParentAccount()) {
+        				&& selectedMailbox.getParentAccount() == messageNode.getParent().getParentAccount()
+        				&& !(messageNode instanceof OutgoingMessageNode)) {
         		    // The source and destination are on the same mail store,
         		    // and that mail store supports protocol-level copy.
         			selectedMailbox.copyMessageInto(messageNode);

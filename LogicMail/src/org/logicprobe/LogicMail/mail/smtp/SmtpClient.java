@@ -38,6 +38,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.OutgoingMailClient;
+import org.logicprobe.LogicMail.mail.RecipientException;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
@@ -238,23 +239,26 @@ public class SmtpClient implements OutgoingMailClient {
         }
 
         for (int i = 0; i < envelope.to.length; i++) {
-            if (!smtpProtocol.executeRecipient(stripEmail(envelope.to[i]))) {
-                throw new MailException("Error with recipient");
+            String address = stripEmail(envelope.to[i]);
+            if (!smtpProtocol.executeRecipient(address)) {
+                throw new RecipientException(RecipientException.RECIPIENT_TO, address);
             }
         }
 
         if (envelope.cc != null) {
             for (int i = 0; i < envelope.cc.length; i++) {
-                if (!smtpProtocol.executeRecipient(stripEmail(envelope.cc[i]))) {
-                    throw new MailException("Error with recipient");
+                String address = stripEmail(envelope.cc[i]);
+                if (!smtpProtocol.executeRecipient(address)) {
+                    throw new RecipientException(RecipientException.RECIPIENT_CC, address);
                 }
             }
         }
 
         if (envelope.bcc != null) {
             for (int i = 0; i < envelope.bcc.length; i++) {
-                if (!smtpProtocol.executeRecipient(stripEmail(envelope.bcc[i]))) {
-                    throw new MailException("Error with recipient");
+                String address = stripEmail(envelope.bcc[i]);
+                if (!smtpProtocol.executeRecipient(address)) {
+                    throw new RecipientException(RecipientException.RECIPIENT_BCC, address);
                 }
             }
         }

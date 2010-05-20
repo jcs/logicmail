@@ -53,6 +53,7 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.MailMessageParser;
+import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * Implements an interface to messages stored on device file storage
@@ -112,7 +113,8 @@ public class MaildirFolder {
 
         if(!initialized) {
             // Read in the message envelope map
-            FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
+            FileConnection indexFileConnection = (FileConnection)Connector.open(
+                    StringParser.mergePaths(folderUrl, "index.dat"));
             if(indexFileConnection.exists()) {
                 DataInputStream inputStream = indexFileConnection.openDataInputStream();
                 try {
@@ -162,7 +164,8 @@ public class MaildirFolder {
 
         // Write out the message envelope map
         if(messageEnvelopeMapDirty) {
-            FileConnection indexFileConnection = (FileConnection)Connector.open(folderUrl + "/index.dat");
+            FileConnection indexFileConnection = (FileConnection)Connector.open(
+                    StringParser.mergePaths(folderUrl, "index.dat"));
             if(indexFileConnection.exists()) {
                 indexFileConnection.truncate(0);
             }
@@ -224,7 +227,8 @@ public class MaildirFolder {
         nextIndex = 0;
         for(int i=0; i<size; i++) {
             String fileName = (String)fileList.elementAt(i);
-            FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + fileName);
+            FileConnection mailFileConnection = (FileConnection)Connector.open(
+                    StringParser.mergePaths(fileConnection.getURL(), fileName));
 
             if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
                 try {
@@ -331,7 +335,8 @@ public class MaildirFolder {
         String messageSource = null;
         try {
             FileConnection mailFileConnection =
-                (FileConnection)Connector.open(fileConnection.getURL() + '/' + matchingFile);
+                (FileConnection)Connector.open(
+                        StringParser.mergePaths(fileConnection.getURL(), matchingFile));
             if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
                 InputStream inputStream = mailFileConnection.openInputStream();
                 messageSource = getMessageSourceFromStream(inputStream);
@@ -403,7 +408,8 @@ public class MaildirFolder {
         MessageEnvelope envelope = null;
         try {
             // Create a file connection for the new message
-            FileConnection mailFileConnection = (FileConnection)Connector.open(fileConnection.getURL() + '/' + buf.toString());
+            FileConnection mailFileConnection = (FileConnection)Connector.open(
+                    StringParser.mergePaths(fileConnection.getURL(), buf.toString()));
             mailFileConnection.create();
 
             // Write out the message
@@ -475,7 +481,8 @@ public class MaildirFolder {
         if(messageFilename.equals(updatedFilename)) { return false; }
 
         FileConnection mailFileConnection =
-            (FileConnection)Connector.open(fileConnection.getURL() + '/' + messageFilename);
+            (FileConnection)Connector.open(
+                    StringParser.mergePaths(fileConnection.getURL(), messageFilename));
         if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
             mailFileConnection.rename(updatedFilename);
             mailFileConnection.close();
@@ -509,13 +516,14 @@ public class MaildirFolder {
         }
 
         // Iterate through the list and actually delete from storage
-        String baseUrl = fileConnection.getURL() + '/';
+        String baseUrl = fileConnection.getURL();
         e = deletedFiles.elements();
         while(e.hasMoreElements()) {
             String messageFilename = (String)e.nextElement();
             try {
                 FileConnection mailFileConnection =
-                    (FileConnection)Connector.open(baseUrl + messageFilename);
+                    (FileConnection)Connector.open(
+                            StringParser.mergePaths(baseUrl, messageFilename));
                 if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
                     mailFileConnection.delete();
                 }

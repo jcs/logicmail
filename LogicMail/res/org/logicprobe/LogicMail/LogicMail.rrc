@@ -78,6 +78,7 @@ CONFIG_WHAT_ACCOUNT_TYPE#0="What type of account?";
 EMAILADDRESSBOOKEDIT_ALERT_GROUPS_UNSUPPORTED#0="Contact groups are not currently supported!";
 EMAILADDRESSBOOKEDIT_ALERT_NO_ADDRESS#0="The selected contact has no email address!";
 EMAILADDRESSBOOKEDIT_WHICH_ADDRESS#0="Which address?";
+ERROR_RECIPIENT#0="Error with recipient";
 ERROR_UNABLE_TO_OPEN_CONNECTION#0="Unable to open connection";
 ERROR_UNKNOWN#0="Unknown error";
 FILESAVEDIALOG_NAME#0="Name:";

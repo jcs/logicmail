@@ -942,6 +942,23 @@ public class StringParserTest extends TestCase {
         assertEquals(StringParser.ENCODING_BASE64, StringParser.getOptimalEncoding("\u1057\u1077\u1081\u1095\u1072\u1089"));
     }
     
+    public void testMergePaths() {
+        System.out.println("mergePaths");
+        
+        String expected = "file:///foo/bar";
+        String actual = StringParser.mergePaths("file:///foo", "bar");
+        assertEquals(expected, actual);
+        
+        actual = StringParser.mergePaths("file:///foo/", "bar");
+        assertEquals(expected, actual);
+        
+        actual = StringParser.mergePaths("file:///foo", "/bar");
+        assertEquals(expected, actual);
+        
+        actual = StringParser.mergePaths("file:///foo/", "/bar");
+        assertEquals(expected, actual);
+    }
+    
     public Test suite() {
         TestSuite testSuite = new TestSuite("StringParser");
         
@@ -1010,6 +1027,9 @@ public class StringParserTest extends TestCase {
 
         testSuite.addTest(new StringParserTest("getOptimalEncoding", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testGetOptimalEncoding(); }}));
+        
+        testSuite.addTest(new StringParserTest("mergePaths", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testMergePaths(); }}));
         
         return testSuite;
     }

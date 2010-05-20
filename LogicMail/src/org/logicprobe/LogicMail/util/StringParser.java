@@ -1605,4 +1605,36 @@ public class StringParser {
         
         return encoding;
     }
+    
+    /**
+     * Merge two paths, avoiding any duplicate path separators.
+     * This method assumes that both arguments already contain valid
+     * path fragments, and thus it does not do any null or length
+     * checking.
+     *
+     * @param path1 the first path fragment
+     * @param path2 the second path fragment
+     * @return the combined path string
+     */
+    public static String mergePaths(String path1, String path2) {
+        String result;
+        if(path1.lastIndexOf('/') == path1.length() - 1) {
+            if(path2.charAt(0) == '/') {
+                result = path1 + path2.substring(1);
+            }
+            else {
+                result = path1 + path2;
+            }
+        }
+        else {
+            if(path2.charAt(0) == '/') {
+                result = path1 + path2;
+            }
+            else {
+                result = path1 + '/' + path2;
+            }
+        }
+        
+        return result;
+    }
 }
