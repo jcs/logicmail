@@ -785,24 +785,19 @@ public class MessageNode implements Node {
 		StringBuffer buffer = new StringBuffer();
 
 		// Generate the headers
-		// TODO: Handle internationalization-friendly encoding of recipient headers
-        buffer.append("From: ");
-        buffer.append(StringParser.makeCsvString(from));
+        buffer.append(makeRecipientHeader("From:", from));
         buffer.append(strCRLF);
 
-        buffer.append("To: ");
-        buffer.append(StringParser.makeCsvString(to));
+        buffer.append(makeRecipientHeader("To:", to));
         buffer.append(strCRLF);
 
         if ((cc != null) && (cc.length > 0)) {
-            buffer.append("Cc: ");
-            buffer.append(StringParser.makeCsvString(cc));
+            buffer.append(makeRecipientHeader("Cc:", cc));
             buffer.append(strCRLF);
         }
 
         if ((replyTo != null) && (replyTo.length > 0)) {
-            buffer.append("Reply-To: ");
-            buffer.append(StringParser.makeCsvString(replyTo));
+            buffer.append(makeRecipientHeader("Reply-To:", replyTo));
             buffer.append(strCRLF);
         }
 
@@ -818,8 +813,7 @@ public class MessageNode implements Node {
             buffer.append(strCRLF);
         }
 
-        buffer.append("Subject: ");
-        buffer.append(subject);
+        buffer.append(StringParser.createEncodedHeader("Subject:", subject));
         buffer.append(strCRLF);
 
         if (inReplyTo != null) {
@@ -843,6 +837,14 @@ public class MessageNode implements Node {
 			// Return the result
 			return buffer.toString();
         }
+	}
+	
+	private static String makeRecipientHeader(String key, Address[] recipients) {
+	    String[] recipientsStr = new String[recipients.length];
+	    for(int i=0; i<recipients.length; i++) {
+	        recipientsStr[i] = recipients[i].toString();
+	    }
+	    return StringParser.createEncodedRecipientHeader(key, recipientsStr);
 	}
 	
 	//TODO: Weed out duplicates from reply headers
