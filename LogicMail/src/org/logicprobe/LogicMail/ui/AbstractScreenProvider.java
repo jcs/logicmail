@@ -46,6 +46,13 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	protected NavigationController navigationController;
 	
 	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#getStyle()
+	 */
+	public long getStyle() {
+	    return 0;
+	}
+	
+	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#getTitle()
 	 */
 	public String getTitle() {

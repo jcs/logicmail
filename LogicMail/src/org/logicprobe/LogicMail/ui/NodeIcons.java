@@ -38,6 +38,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.Node;
 import org.logicprobe.LogicMail.model.NodeVisitor;
+import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 
 import net.rim.device.api.system.Bitmap;
 
@@ -48,35 +49,37 @@ public class NodeIcons {
     protected static NodeIcons instance = createInstance();
     private NodeIconVisitor visitor = new NodeIconVisitor();
 
-    private Bitmap localAccountIcon;
-    private Bitmap networkAccountIcon0;
-    private Bitmap networkAccountIcon1;
-    private Bitmap folderIcon;
-    private Bitmap folderNewIcon;
-    private Bitmap inboxFolderIcon;
-    private Bitmap inboxNewFolderIcon;
-    private Bitmap outboxFolderIcon;
-    private Bitmap draftsFolderIcon;
-    private Bitmap sentFolderIcon;
-    private Bitmap trashFolderIcon;
-    private Bitmap trashFullFolderIcon;
-    private Bitmap openedMessageIcon;
-    private Bitmap unopenedMessageIcon;
-    private Bitmap repliedMessageIcon;
-    private Bitmap flaggedMessageIcon;
-    private Bitmap draftMessageIcon;
-    private Bitmap deletedMessageIcon;
-    private Bitmap unknownMessageIcon;
-    private Bitmap junkMessageIcon;
-    private Bitmap openedUnloadedMessageIcon;
-    private Bitmap unopenedUnloadedMessageIcon;
-    private Bitmap repliedUnloadedMessageIcon;
-    private Bitmap flaggedUnloadedMessageIcon;
-    private Bitmap draftUnloadedMessageIcon;
-    private Bitmap deletedUnloadedMessageIcon;
-    private Bitmap unknownUnloadedMessageIcon;
-    private Bitmap junkUnloadedMessageIcon;
-
+    private final Bitmap localAccountIcon;
+    private final Bitmap networkAccountIcon0;
+    private final Bitmap networkAccountIcon1;
+    private final Bitmap folderIcon;
+    private final Bitmap folderNewIcon;
+    private final Bitmap inboxFolderIcon;
+    private final Bitmap inboxNewFolderIcon;
+    private final Bitmap outboxFolderIcon;
+    private final Bitmap draftsFolderIcon;
+    private final Bitmap sentFolderIcon;
+    private final Bitmap trashFolderIcon;
+    private final Bitmap trashFullFolderIcon;
+    private final Bitmap openedMessageIcon;
+    private final Bitmap unopenedMessageIcon;
+    private final Bitmap repliedMessageIcon;
+    private final Bitmap flaggedMessageIcon;
+    private final Bitmap draftMessageIcon;
+    private final Bitmap deletedMessageIcon;
+    private final Bitmap unknownMessageIcon;
+    private final Bitmap junkMessageIcon;
+    private final Bitmap openedUnloadedMessageIcon;
+    private final Bitmap unopenedUnloadedMessageIcon;
+    private final Bitmap repliedUnloadedMessageIcon;
+    private final Bitmap flaggedUnloadedMessageIcon;
+    private final Bitmap draftUnloadedMessageIcon;
+    private final Bitmap deletedUnloadedMessageIcon;
+    private final Bitmap unknownUnloadedMessageIcon;
+    private final Bitmap junkUnloadedMessageIcon;
+    private final Bitmap sendReceiveMessageIcon;
+    private final Bitmap sendErrorMessageIcon;
+    
     public final static int ICON_FOLDER = 0;
 
     protected NodeIcons() {
@@ -113,6 +116,8 @@ public class NodeIcons {
         deletedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_deleted_unloaded.png");
         unknownUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_unknown_unloaded.png");
         junkUnloadedMessageIcon     = Bitmap.getBitmapResource("mail_junk_unloaded.png");
+        sendReceiveMessageIcon = Bitmap.getBitmapResource("mail_send_receive.png");
+        sendErrorMessageIcon   = Bitmap.getBitmapResource("mail_send_error.png");
     }
 
     private static NodeIcons createInstance() {
@@ -221,24 +226,38 @@ public class NodeIcons {
         }
 
         public void visit(MessageNode node) {
-            boolean unloaded = !node.hasCachedContent() && !node.hasMessageContent() && node.isCachable();
-            int flags = node.getFlags();
-            if((flags & MessageNode.Flag.DELETED) != 0)
-                this.icon = unloaded ? deletedUnloadedMessageIcon : deletedMessageIcon;
-            else if((flags & MessageNode.Flag.JUNK) != 0)
-                this.icon = unloaded ? junkUnloadedMessageIcon : junkMessageIcon;
-            else if((flags & MessageNode.Flag.ANSWERED) != 0)
-                this.icon = unloaded ? repliedUnloadedMessageIcon: repliedMessageIcon;
-            else if((flags & MessageNode.Flag.FLAGGED) != 0)
-                this.icon = unloaded ? flaggedUnloadedMessageIcon : flaggedMessageIcon;
-            else if((flags & MessageNode.Flag.DRAFT) != 0)
-                this.icon = unloaded ? draftUnloadedMessageIcon: draftMessageIcon;
-            else if((flags & MessageNode.Flag.RECENT) != 0)
-                this.icon = unloaded ? unopenedUnloadedMessageIcon: unopenedMessageIcon;
-            else if((flags & MessageNode.Flag.SEEN) != 0)
-                this.icon = unloaded ? openedUnloadedMessageIcon : openedMessageIcon;
-            else
-                this.icon = unloaded ? unknownUnloadedMessageIcon: unknownMessageIcon;
+            if(node instanceof OutgoingMessageNode) {
+                OutgoingMessageNode outgoingNode = (OutgoingMessageNode)node;
+                if(outgoingNode.isSending()) {
+                    this.icon = sendReceiveMessageIcon;
+                }
+                else if(outgoingNode.hasRecipientError()) {
+                    this.icon = sendErrorMessageIcon;
+                }
+                else {
+                    this.icon = unopenedMessageIcon;
+                }
+            }
+            else {
+                boolean unloaded = !node.hasCachedContent() && !node.hasMessageContent() && node.isCachable();
+                int flags = node.getFlags();
+                if((flags & MessageNode.Flag.DELETED) != 0)
+                    this.icon = unloaded ? deletedUnloadedMessageIcon : deletedMessageIcon;
+                else if((flags & MessageNode.Flag.JUNK) != 0)
+                    this.icon = unloaded ? junkUnloadedMessageIcon : junkMessageIcon;
+                else if((flags & MessageNode.Flag.ANSWERED) != 0)
+                    this.icon = unloaded ? repliedUnloadedMessageIcon: repliedMessageIcon;
+                else if((flags & MessageNode.Flag.FLAGGED) != 0)
+                    this.icon = unloaded ? flaggedUnloadedMessageIcon : flaggedMessageIcon;
+                else if((flags & MessageNode.Flag.DRAFT) != 0)
+                    this.icon = unloaded ? draftUnloadedMessageIcon: draftMessageIcon;
+                else if((flags & MessageNode.Flag.RECENT) != 0)
+                    this.icon = unloaded ? unopenedUnloadedMessageIcon: unopenedMessageIcon;
+                else if((flags & MessageNode.Flag.SEEN) != 0)
+                    this.icon = unloaded ? openedUnloadedMessageIcon : openedMessageIcon;
+                else
+                    this.icon = unloaded ? unknownUnloadedMessageIcon: unknownMessageIcon;
+            }
         }
 
         public void clearIcon() {

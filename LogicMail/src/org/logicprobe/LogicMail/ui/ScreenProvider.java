@@ -37,7 +37,13 @@ import net.rim.device.api.ui.component.Menu;
  * Common interface for all classes that provide UI screens.
  */
 public interface ScreenProvider {
-	
+    /**
+     * Gets the style bits to be passed to the constructor of the screen.
+     * 
+     * @return style bits, or 0 if none are set.
+     */
+	long getStyle();
+    
 	/**
 	 * Gets the title of the screen.
 	 * 

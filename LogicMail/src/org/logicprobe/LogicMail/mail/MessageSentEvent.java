@@ -41,14 +41,25 @@ public class MessageSentEvent extends MailSenderEvent {
 	private MessageEnvelope envelope;
 	private Message message;
 	private String messageSource;
+	private Throwable exception;
 	
 	/** Creates a new instance of MessageSentEvent */
 	public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource) {
-		super(source);
-		this.envelope = envelope;
-		this.message = message;
-		this.messageSource = messageSource;
+		this(source, envelope, message, messageSource, null);
 	}
+	
+    /** Creates a new instance of MessageSentEvent */
+    public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, Throwable exception) {
+        this(source, envelope, message, null, exception);
+    }
+	
+    private MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource, Throwable exception) {
+        super(source);
+        this.envelope = envelope;
+        this.message = message;
+        this.messageSource = messageSource;
+        this.exception = exception;
+    }
 	
 	/**
 	 * Gets the envelope for the message that was sent.
@@ -69,13 +80,24 @@ public class MessageSentEvent extends MailSenderEvent {
 	}
 	
 	/**
-	 * Gets the raw source for the message that was sent.
+	 * Gets the raw source for the message that was sent, if the sending
+	 * operation was successful.
 	 * This is the data that was actually sent to the mail server,
 	 * and is intended to be used for saving copies of sent messages.
 	 * 
-	 * @return Message source.
+	 * @return Message source, or null if the operation failed
 	 */
 	public String getMessageSource() {
 		return this.messageSource;
 	}
+	
+	/**
+	 * If the message sending failed, this gets the exception describing
+	 * the failure.
+	 *
+	 * @return the exception, or null if the operation succeeded
+	 */
+	public Throwable getException() {
+        return exception;
+    }
 }

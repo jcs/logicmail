@@ -71,7 +71,7 @@ public class StandardScreen extends MainScreen {
      * @param screenProvider the screen provider
      */
     public StandardScreen(NavigationController navigationController, ScreenProvider screenProvider) {
-        super();
+        super(screenProvider.getStyle());
         if(navigationController == null || screenProvider == null) {
             throw new IllegalArgumentException();
         }

@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import java.io.IOException;
+import java.util.Hashtable;
 
 import net.rim.device.api.system.EventLogger;
 
@@ -52,7 +53,8 @@ public class OutgoingMessageNode extends MessageNode {
 	private MessageToken replyToToken;
 	private boolean sendAttempted;
 	private boolean sending;
-
+    private Hashtable errorSet;
+    
 	/**
 	 * Creates a new instance of OutgoingMessageNode.
 	 * This constructor is only intended for use in {@link MessageNodeReader}.
@@ -252,5 +254,37 @@ public class OutgoingMessageNode extends MessageNode {
             OutboxMailboxNode outbox = (OutboxMailboxNode)parentMailbox;
             outbox.sendMessage(this);
         }
+    }
+
+    void setToError(int toError) {
+        addRecipientError(this.getTo()[toError]);
+    }
+    
+    void setCcError(int ccError) {
+        addRecipientError(this.getCc()[ccError]);
+    }
+    
+    void setBccError(int bccError) {
+        addRecipientError(this.getBcc()[bccError]);
+    }
+    
+    public boolean hasRecipientError() {
+        return errorSet != null;
+    }
+    
+    public boolean hasRecipientError(Address recipient) {
+        if(errorSet != null && errorSet.containsKey(recipient)) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    
+    private void addRecipientError(Address recipient) {
+        if(errorSet == null) {
+            errorSet = new Hashtable();
+        }
+        errorSet.put(recipient, recipient);
     }
 }

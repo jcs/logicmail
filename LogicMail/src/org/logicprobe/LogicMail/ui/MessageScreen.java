@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -40,10 +41,13 @@ import java.util.Vector;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
+import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.KeypadListener;
+import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
@@ -53,6 +57,7 @@ import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
@@ -76,14 +81,16 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 /**
  * Display an E-Mail message
  */
 public class MessageScreen extends AbstractScreenProvider {
-	private BorderedFieldManager addressFieldManager;
-	private BorderedFieldManager subjectFieldManager;
+    private VerticalFieldManager screenFieldManager;
+    private BorderedFieldManager propertiesFieldManager;
+	private BorderedFieldManager headerFieldManager;
 	private TreeField attachmentsTreeField;
 	private VerticalFieldManager messageFieldManager;
 	private Screen screen;
@@ -95,8 +102,10 @@ public class MessageScreen extends AbstractScreenProvider {
 	private AccountConfig accountConfig;
     private MessageNode messageNode;
     private boolean isSentFolder;
+    private boolean isOutgoingWithErrors;
     private boolean messageRendered;
     private Hashtable requestedContentSet = new Hashtable();
+    private static DateFormat dateFormat = DateFormat.getInstance(DateFormat.DATETIME_DEFAULT);
     
     private UnicodeNormalizer unicodeNormalizer;
     
@@ -112,58 +121,136 @@ public class MessageScreen extends AbstractScreenProvider {
         // Determine if this screen is viewing a sent message
         int mailboxType = messageNode.getParent().getType();
         this.isSentFolder = (mailboxType == MailboxNode.TYPE_SENT) || (mailboxType == MailboxNode.TYPE_OUTBOX);
+        
+        if(messageNode instanceof OutgoingMessageNode) {
+            OutgoingMessageNode outgoingNode = (OutgoingMessageNode)messageNode;
+            if(!outgoingNode.isSending()
+                    && outgoingNode.isSendAttempted()
+                    && outgoingNode.hasRecipientError()) {
+                isOutgoingWithErrors = true;
+            }
+        }
+    }
+    
+    public long getStyle() {
+        return Manager.NO_VERTICAL_SCROLL;
     }
     
     public void initFields(Screen screen) {
         // Create screen elements
+        screenFieldManager = new VerticalFieldManager(Manager.VERTICAL_SCROLL | Manager.VERTICAL_SCROLLBAR);
+        
         FieldFactory fieldFactory = FieldFactory.getInstance();
-        addressFieldManager = fieldFactory.getBorderedFieldManager(
-        		Manager.NO_HORIZONTAL_SCROLL
-        		| Manager.NO_VERTICAL_SCROLL
-        		| BorderedFieldManager.BOTTOM_BORDER_NONE);
-        subjectFieldManager = fieldFactory.getBorderedFieldManager(
-        		Manager.NO_HORIZONTAL_SCROLL
-        		| Manager.NO_VERTICAL_SCROLL
-        		| BorderedFieldManager.BOTTOM_BORDER_LINE);
+        propertiesFieldManager = fieldFactory.getBorderedFieldManager(
+                Manager.NO_HORIZONTAL_SCROLL
+                | Manager.NO_VERTICAL_SCROLL
+                | BorderedFieldManager.BOTTOM_BORDER_NONE);
+        headerFieldManager = fieldFactory.getBorderedFieldManager(
+                Manager.NO_HORIZONTAL_SCROLL
+                | Manager.NO_VERTICAL_SCROLL
+                | BorderedFieldManager.BOTTOM_BORDER_LINE);
         messageFieldManager = new VerticalFieldManager();
         
-        if(isSentFolder) {
-        	Address[] to = messageNode.getTo();
-        	if(to != null && to.length > 0) {
-            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO) + ' ' + normalize(to[0].toString())));
-                if(to.length > 1) {
-                    for(int i=1;i<to.length;i++) {
-                        if(to[i] != null) {
-                        	addressFieldManager.add(new RichTextField("    " + normalize(to[i].toString())));
-                        }
-                    }
-                }
-            }
-        }
-        else {
-        	Address[] from = messageNode.getFrom();
-            if(from != null && from.length > 0) {
-            	addressFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + ' ' + normalize(from[0].toString())));
-                if(from.length > 1) {
-                    for(int i=1;i<from.length;i++) {
-                        if(from[i] != null) {
-                        	addressFieldManager.add(new RichTextField("      " + normalize(from[i].toString())));
-                        }
-                    }
-                }
-            }
-        }
-        String subject = messageNode.getSubject();
-        if(subject != null) {
-            subjectFieldManager.add(new RichTextField(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT) + ' ' + normalize(subject)));
-        }
-
-        screen.add(addressFieldManager);
-        screen.add(subjectFieldManager);
-        screen.add(messageFieldManager);
+        populatePropertiesFields(propertiesFieldManager);
+        populateHeaderFiends(headerFieldManager);
+        
+        screenFieldManager.add(propertiesFieldManager);
+        screenFieldManager.add(headerFieldManager);
+        screenFieldManager.add(messageFieldManager);
+        screen.add(screenFieldManager);
         this.screen = screen;
         this.messageActions = navigationController.getMessageActions();
         initMenuItems();
+    }
+    
+    private void populatePropertiesFields(Manager fieldManager) {
+        MailboxNode mailboxNode = messageNode.getParent();
+        if(mailboxNode != null) {
+            if(mailboxNode.getType() != MailboxNode.TYPE_OUTBOX) {
+                String accountText = mailboxNode.getParentAccount().toString();
+                BasicEditField accountField = new BasicEditField(
+                        resources.getString(LogicMailResource.MESSAGEPROPERTIES_ACCOUNT) + ' ',
+                        accountText, accountText.length(), Field.FOCUSABLE);
+                accountField.setEditable(false);
+                fieldManager.add(accountField);
+            }
+            String mailboxText = mailboxNode.toString();
+            BasicEditField mailboxField = new BasicEditField(
+                    resources.getString(LogicMailResource.MESSAGEPROPERTIES_MAILBOX) + ' ',
+                    mailboxText, mailboxText.length(), Field.FOCUSABLE);
+            mailboxField.setEditable(false);
+            fieldManager.add(mailboxField);
+            fieldManager.add(new BlankSeparatorField(Font.getDefault().getHeight() / 4));
+        }
+        if(isSentFolder) {
+            populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_FROM, messageNode.getFrom());
+        }
+        else {
+            populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_TO, messageNode.getTo());
+        }
+        populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_CC, messageNode.getCc());
+        populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_BCC, messageNode.getBcc());
+        populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_REPLYTO, messageNode.getReplyTo());
+    }
+    
+    private void populateHeaderFiends(Manager fieldManager) {
+        if(isSentFolder) {
+            populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_TO, messageNode.getTo());
+        }
+        else {
+            populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_FROM, messageNode.getFrom());
+        }
+        String subject = messageNode.getSubject();
+        if(subject != null) {
+            RichTextField subjectField = new RichTextField(normalize(subject));
+            subjectField.setFont(subjectField.getFont().derive(Font.BOLD));
+            fieldManager.add(subjectField);
+        }
+
+        Date date = messageNode.getDate();
+        if(date != null) {
+            RichTextField dateField = new RichTextField(dateFormat.formatLocal(date.getTime()));
+            Font font = dateField.getFont();
+            int height = font.getHeight() - 4;
+            if(height > 0) {
+                font = font.derive(font.getStyle(), height);
+            }
+            dateField.setFont(font);
+            fieldManager.add(dateField);
+        }
+    }
+    
+    private void populateRecipientFields(Manager fieldManager, int resourceKey, Address[] recipients) {
+        if(recipients != null && recipients.length > 0) {
+            String prefix = resources.getString(resourceKey) + ' ';
+            for(int i=0;i<recipients.length;i++) {
+                if(isOutgoingWithErrors && ((OutgoingMessageNode)messageNode).hasRecipientError(recipients[i])) {
+                    String text = normalize(recipients[i].toString());
+                    BasicEditField field = new BasicEditField(prefix, text, text.length(), Field.FOCUSABLE) {
+                        protected void paint(Graphics graphics) {
+                            int originalColor = graphics.getColor();
+                            graphics.setColor(Color.RED);
+                            super.paint(graphics);
+                            graphics.setColor(originalColor);
+                        }
+                    };
+                    field.setEditable(false);
+                    fieldManager.add(field);
+                }
+                else {
+                    String text = recipients[i].getName();
+                    if(text != null) {
+                        text = normalize(text);
+                    }
+                    else {
+                        text = recipients[i].getAddress();
+                    }
+                    BasicEditField field = new BasicEditField(prefix, text, text.length(), Field.FOCUSABLE);
+                    field.setEditable(false);
+                    fieldManager.add(field);
+                }
+            }
+        }
     }
     
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
@@ -182,6 +269,8 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
     public void onDisplay() {
+        padAndFocusScreen();
+        
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(!messageNode.hasMessageContent()) {
     		if(!messageNode.refreshMessage()) {
@@ -371,7 +460,7 @@ public class MessageScreen extends AbstractScreenProvider {
                 }
             }
             messageFieldManager.add(new NullField(Field.FOCUSABLE));
-
+            
             for(int i=0;i<size;++i) {
             	Field field = (Field)messageFields.elementAt(i);
             	if(field != null) {
@@ -379,9 +468,33 @@ public class MessageScreen extends AbstractScreenProvider {
             		field.setChangeListener(fieldChangeListener);
             	}
             }
+            
+            padAndFocusScreen();
         }
     }
 
+	private void padAndFocusScreen() {
+	    // Check for the one case where we want the user to see all the message
+	    // properties fields upon opening the message
+	    if(isOutgoingWithErrors) { return; }
+	    
+        // Determine how much padding is necessary at the bottom of the
+        // field to ensure a correct initial scroll position
+        int paddingSize = Display.getHeight()
+            - headerFieldManager.getPreferredHeight()
+            - messageFieldManager.getContentHeight();
+        
+        // Add a blank separator for padding, if necessary
+        if(paddingSize > 0) {
+            messageFieldManager.add(new BlankSeparatorField(paddingSize));
+        }
+        
+        // Set focus and scroll position so the header field is at the
+        // top of the screen
+        headerFieldManager.setFocus();
+        screenFieldManager.setVerticalScroll(headerFieldManager.getContentTop());
+	}
+	
 	/**
 	 * Save the message attachment.
 	 * 

@@ -104,7 +104,7 @@ public class NetworkMailSender extends AbstractMailSender {
         switch(type) {
         case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
             Object[] params = (Object[])tag;
-            fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1]);
+            fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1], exception);
             break;
         }
     }

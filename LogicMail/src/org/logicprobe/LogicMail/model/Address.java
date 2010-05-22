@@ -36,8 +36,8 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Represents an address in an E-Mail message.
  */
 public class Address {
-	private String address;
-	private String name;
+	private final String address;
+	private final String name;
 	
 	/**
 	 * Instantiates a new address.
@@ -99,6 +99,45 @@ public class Address {
 		}
 		return result;
 	}
-	
-	//TODO: Implement header-compatible toString here or in the MIME renderer
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        int result = 1;
+        result = 31 * result + ((address == null) ? 0 : address.hashCode());
+        result = 31 * result + ((name == null) ? 0 : name.hashCode());
+        return result;
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Address other = (Address) obj;
+        if (address == null) {
+            if (other.address != null) {
+                return false;
+            }
+        } else if (!address.equals(other.address)) {
+            return false;
+        }
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        return true;
+    }
 }

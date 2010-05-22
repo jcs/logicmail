@@ -44,6 +44,7 @@ import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.OutgoingMessageToken;
+import org.logicprobe.LogicMail.mail.RecipientException;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -372,6 +373,41 @@ public class OutboxMailboxNode extends MailboxNode {
             outboundMessageMap.remove(message);
             outboundMessageNodeMap.remove(outgoingMessageNode);
             outgoingMessageNode.setSending(false);
+            
+            if(e.getException() instanceof RecipientException) {
+                RecipientException recipientException = (RecipientException)e.getException();
+                String address = recipientException.getAddress();
+                Address[] recipients;
+                switch(recipientException.getCause()) {
+                case RecipientException.RECIPIENT_TO:
+                    recipients = outgoingMessageNode.getTo();
+                    for(int i=0; i<recipients.length; i++) {
+                        if(recipients[i].getAddress().equals(address)) {
+                            outgoingMessageNode.setToError(i);
+                            break;
+                        }
+                    }
+                    break;
+                case RecipientException.RECIPIENT_CC:
+                    recipients = outgoingMessageNode.getCc();
+                    for(int i=0; i<recipients.length; i++) {
+                        if(recipients[i].getAddress().equals(address)) {
+                            outgoingMessageNode.setCcError(i);
+                            break;
+                        }
+                    }
+                    break;
+                case RecipientException.RECIPIENT_BCC:
+                    recipients = outgoingMessageNode.getBcc();
+                    for(int i=0; i<recipients.length; i++) {
+                        if(recipients[i].getAddress().equals(address)) {
+                            outgoingMessageNode.setBccError(i);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
 
