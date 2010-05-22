@@ -357,6 +357,9 @@ public class ImapClient implements IncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderTree(org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException {
+        // Get the folder subscription list, used to prune the results
+        Hashtable subscriptions = getFolderSubscriptions(progressHandler);
+        
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
 
         boolean childrenExtension = capabilities.containsKey("CHILDREN");
@@ -394,28 +397,50 @@ public class ImapClient implements IncomingMailClient {
         FolderTreeItem inbox = findInboxFolder(rootItem);
         if(inbox != null) {
             setInboxFolder(inbox);
+            // Force the INBOX to be selectable, since there are rare cases
+            // where it is created as not being selectable.
+            inbox.setSelectable(true);
         }
 
+        if(subscriptions != null) {
+            FolderTreeItem prunedTree = pruneFolderTree(rootItem, subscriptions);
+            if(prunedTree != null) {
+                rootItem = prunedTree;
+            }
+        }
+        
         return rootItem;
     }
 
-    private void getFolderTreeImpl(FolderTreeItem baseFolder, int depth, boolean childrenExtension, MailProgressHandler progressHandler) throws IOException, MailException {
-        Vector respList;
-        if(depth == 0) {
-            if(accountConfig.getOnlySubscribedFolders()) {
-                respList = imapProtocol.executeLsub(baseFolder.getPath(), "%", progressHandler);
-            }
-            else {
-                respList = imapProtocol.executeList(baseFolder.getPath(), "%", progressHandler);
+    private Hashtable getFolderSubscriptions(MailProgressHandler progressHandler) throws IOException, MailException {
+        Hashtable result = null;
+        if(accountConfig.getOnlySubscribedFolders()) {
+            result = new Hashtable();
+            Vector respList = imapProtocol.executeLsub("", "*", progressHandler);
+            int size = respList.size();
+            for(int i=0;i<size;++i) {
+                ImapProtocol.ListResponse resp = (ImapProtocol.ListResponse)respList.elementAt(i);
+                result.put(resp.name, resp.name);
             }
         }
         else {
-            if(accountConfig.getOnlySubscribedFolders()) {
-                respList = imapProtocol.executeLsub(baseFolder.getPath() + baseFolder.getDelim(), "%", progressHandler);
-            }
-            else {
-                respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%", progressHandler);
-            }
+            result = null;
+        }
+        return result;
+    }
+    
+    private void getFolderTreeImpl(
+            FolderTreeItem baseFolder,
+            int depth,
+            boolean childrenExtension,
+            MailProgressHandler progressHandler) throws IOException, MailException {
+        
+        Vector respList;
+        if(depth == 0) {
+            respList = imapProtocol.executeList(baseFolder.getPath(), "%", progressHandler);
+        }
+        else {
+            respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%", progressHandler);
         }
 
         int size = respList.size();
@@ -438,6 +463,26 @@ public class ImapClient implements IncomingMailClient {
                 // look for children anyways.
                 getFolderTreeImpl(childItem, depth+1, childrenExtension, progressHandler);
             }
+        }
+    }
+
+    private FolderTreeItem pruneFolderTree(FolderTreeItem currentItem, Hashtable subscriptions) {
+        if(subscriptions.contains(currentItem.getPath()) || currentItem.hasChildren()) {
+            FolderTreeItem duplicate = new FolderTreeItem(currentItem);
+            if(currentItem.hasChildren()) {
+                FolderTreeItem[] children = currentItem.children();
+                for(int i=0; i<children.length; i++) {
+                    FolderTreeItem duplicateChild = pruneFolderTree(children[i], subscriptions);
+                    if(duplicateChild != null) {
+                        duplicate.addChild(duplicateChild);
+                        duplicateChild.setParent(duplicate);
+                    }
+                }
+            }
+            return duplicate;
+        }
+        else {
+            return null;
         }
     }
 

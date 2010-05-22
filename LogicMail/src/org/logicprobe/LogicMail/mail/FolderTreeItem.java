@@ -195,6 +195,14 @@ public class FolderTreeItem implements Serializable {
         return parent;
     }
 
+    /**
+     * This method only exists to support folder tree generation code in the
+     * IMAP implementation.  It should never be called from anywhere else.
+     */
+    public void setParent(FolderTreeItem parent) {
+        this.parent = parent;
+    }
+    
     public boolean hasChildren() {
         return (children != null && children.length > 0);
     }
@@ -223,6 +231,14 @@ public class FolderTreeItem implements Serializable {
 
     public boolean isSelectable() {
         return selectable;
+    }
+    
+    /**
+     * This method only exists to support folder tree generation code in the
+     * IMAP implementation.  It should never be called from anywhere else.
+     */
+    public void setSelectable(boolean selectable) {
+        this.selectable = selectable;
     }
     
     public boolean isAppendable() {
