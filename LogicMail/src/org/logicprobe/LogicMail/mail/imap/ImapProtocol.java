@@ -1075,6 +1075,7 @@ public class ImapProtocol {
 
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, 0, -1); }
 
+        StringBuffer buf = new StringBuffer();
         while (line < results.length) {
             p = results[line].indexOf('{');
             q = results[line].indexOf('}');
@@ -1082,8 +1083,13 @@ public class ImapProtocol {
             if ((line < (results.length - 1)) && (p != -1) && (q != -1) &&
                     (p < q) && (q == (results[line].length() - 1))) {
                 int len = Integer.parseInt(results[line].substring(p + 1, q));
-                resultsVec.addElement(results[line].substring(0, p) +
-                        results[line + 1].substring(0, len));
+                
+                buf.append(results[line].substring(0, p));
+                buf.append('"');
+                buf.append(results[line + 1].substring(0, len));
+                buf.append('"');
+                resultsVec.addElement(buf.toString());
+                buf.setLength(0);
                 line += 2;
             } else {
                 resultsVec.addElement(results[line]);

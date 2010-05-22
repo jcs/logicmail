@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.mail.imap;
 
+import j2meunit.framework.AssertionFailedError;
 import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
@@ -341,6 +342,49 @@ public class ImapProtocolTest extends TestCase {
             assertTrue(!result2.marked);
             assertEquals("\\", result2.delim);
             assertEquals("2007\\Q4-2007", result2.name);
+        } catch (Throwable t) {
+            fail("Exception thrown during test: " + t.toString());
+            t.printStackTrace();
+        }
+    }
+    
+    public void testExecuteList7() {
+        try {
+            // Test specified-length encoding for path name, with spaces
+            instance.addExecuteExpectation("LIST", "\"\" \"%\"",
+                    new String[] {
+                    "* LIST (\\Noselect) \":\" {5}", "Marya",
+                    "* LIST (\\Noselect) \":\" {11}", "Old Inboxes",
+                    "* LIST (\\Noinferiors) \":\" {17}", "Pre-filtered Junk" });
+            
+            Vector result = instance.executeList("", "%", null);
+            assertNotNull(result);
+            assertEquals(3, result.size());
+            assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
+            assertTrue(result.elementAt(2) instanceof ImapProtocol.ListResponse);
+            
+            ImapProtocol.ListResponse result1 = (ImapProtocol.ListResponse) result.elementAt(0);
+            ImapProtocol.ListResponse result2 = (ImapProtocol.ListResponse) result.elementAt(1);
+            ImapProtocol.ListResponse result3 = (ImapProtocol.ListResponse) result.elementAt(2);
+            
+            assertTrue(!result1.canSelect);
+            assertTrue(!result1.noInferiors);
+            assertEquals(":", result1.delim);
+            assertEquals("Marya", result1.name);
+            
+            assertTrue(!result2.canSelect);
+            assertTrue(!result2.noInferiors);
+            assertEquals(":", result2.delim);
+            assertEquals("Old Inboxes", result2.name);
+            
+            assertTrue(result3.canSelect);
+            assertTrue(result3.noInferiors);
+            assertEquals(":", result3.delim);
+            assertEquals("Pre-filtered Junk", result3.name);
+            
+        } catch (AssertionFailedError e) {
+            throw e;
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
@@ -849,6 +893,9 @@ public class ImapProtocolTest extends TestCase {
         
         suite.addTest(new ImapProtocolTest("executeList6", new TestMethod()
         { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList6(); }}));
+        
+        suite.addTest(new ImapProtocolTest("executeList7", new TestMethod()
+        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList7(); }}));
         
         suite.addTest(new ImapProtocolTest("executeFetchEnvelope1", new TestMethod()
         { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchEnvelope1(); }}));
