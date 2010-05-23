@@ -245,9 +245,12 @@ public class MessageScreen extends AbstractScreenProvider {
                     else {
                         text = recipients[i].getAddress();
                     }
-                    BasicEditField field = new BasicEditField(prefix, text, text.length(), Field.FOCUSABLE);
-                    field.setEditable(false);
-                    fieldManager.add(field);
+                    int len = text.length();
+                    if(len > 0) {
+                        BasicEditField field = new BasicEditField(prefix, text, len, Field.FOCUSABLE);
+                        field.setEditable(false);
+                        fieldManager.add(field);
+                    }
                 }
             }
         }
@@ -491,7 +494,7 @@ public class MessageScreen extends AbstractScreenProvider {
         
         // Set focus and scroll position so the header field is at the
         // top of the screen
-        headerFieldManager.setFocus();
+        messageFieldManager.setFocus();
         screenFieldManager.setVerticalScroll(headerFieldManager.getContentTop());
 	}
 	
