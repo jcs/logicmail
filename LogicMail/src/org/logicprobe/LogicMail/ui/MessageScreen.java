@@ -150,6 +150,7 @@ public class MessageScreen extends AbstractScreenProvider {
                 | Manager.NO_VERTICAL_SCROLL
                 | BorderedFieldManager.BOTTOM_BORDER_LINE);
         messageFieldManager = new VerticalFieldManager();
+        messageFieldManager.add(new NullField(Field.FOCUSABLE));
         
         populatePropertiesFields(propertiesFieldManager);
         populateHeaderFiends(headerFieldManager);
