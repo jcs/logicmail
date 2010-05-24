@@ -306,8 +306,8 @@ public class ImapProtocol {
 
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
-                        response.exists = Integer.parseInt(rowText.substring(p +
-                                1, q));
+                        response.exists = Integer.parseInt(
+                                rowText.substring(p + 1, q));
                     } catch (NumberFormatException e) {
                         response.exists = 0;
                     }
@@ -318,8 +318,8 @@ public class ImapProtocol {
 
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
-                        response.recent = Integer.parseInt(rowText.substring(p +
-                                1, q));
+                        response.recent = Integer.parseInt(
+                                rowText.substring(p + 1, q));
                     } catch (NumberFormatException e) {
                         response.recent = 0;
                     }
@@ -330,8 +330,8 @@ public class ImapProtocol {
 
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
-                        response.unseen = Integer.parseInt(rowText.substring(p +
-                                1, q));
+                        response.unseen = Integer.parseInt(
+                                rowText.substring(p + 1, q));
                     } catch (NumberFormatException e) {
                         response.unseen = 0;
                     }
@@ -342,8 +342,8 @@ public class ImapProtocol {
 
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
-                        response.uidValidity = Integer.parseInt(rowText.substring(p +
-                                1, q));
+                        response.uidValidity = Integer.parseInt(
+                                rowText.substring(p + 1, q));
                     } catch (NumberFormatException e) {
                         response.uidValidity = 0;
                     }
@@ -354,10 +354,10 @@ public class ImapProtocol {
 
                 if ((q != -1) && (p != -1) && (q > p)) {
                     try {
-                        response.uidNext = Integer.parseInt(rowText.substring(p +
-                                1, q));
+                        response.uidNext = Integer.parseInt(
+                                rowText.substring(p + 1, q));
                     } catch (NumberFormatException e) {
-                        response.uidNext = 0;
+                        response.uidNext = -1;
                     }
                 }
             }
@@ -1539,7 +1539,7 @@ public class ImapProtocol {
         public int exists;
         public int recent;
         public int unseen;
-        public int uidNext;
+        public int uidNext = -1;
         public int uidValidity;
     }
 

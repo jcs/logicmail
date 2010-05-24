@@ -590,14 +590,21 @@ public class ImapClient implements IncomingMailClient {
             return;
         }
 
-        // change active mailbox
+        // Change active mailbox
         ImapProtocol.SelectResponse response = imapProtocol.executeSelect(mailbox.getPath());
 
         this.activeMailbox = mailbox;
         activeMailbox.setMsgCount(response.exists);
+        
+        // If the response lacked a valid UIDNEXT value, then copy it over from
+        // the previous SELECT of this mailbox
+        ImapProtocol.SelectResponse oldResponse = (ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox);
+        if(oldResponse != null && response.uidNext == -1) {
+            response.uidNext = oldResponse.uidNext;
+        }
         knownMailboxes.put(activeMailbox, response);
 
-        // ideally, this should parse out the message counts
+        // Ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
     }
 
@@ -688,6 +695,14 @@ public class ImapClient implements IncomingMailClient {
             for(int i=0; i<result.length; i++) {
                 callback.folderMessageUpdate(result[i]);
             }
+            
+            // If the folder's UIDNEXT parameter was not set when it was
+            // selected, fake it based on the last item returned by the
+            // first FETCH.
+            ImapProtocol.SelectResponse selectResponse = (ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox);
+            if(selectResponse.uidNext == -1 && result.length > 0) {
+                selectResponse.uidNext = result[result.length - 1].getUid() + 1;
+            }
             callback.folderMessageUpdate(null);
         }
         else {
@@ -754,6 +769,15 @@ public class ImapClient implements IncomingMailClient {
         else {
             FolderMessage[] result;
             int uidNext = ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext;
+            
+            if(uidNext == -1) {
+                // This condition should never be possible, since something
+                // should set the UIDNEXT prior to the invocation of this
+                // method.  However, just to be absolutely sure, we will
+                // check anyways so a useful error can be reported.
+                throw new MailException("Next UID for folder is unknown");
+            }
+            
             if(flagsOnly) {
                 ImapProtocol.FetchFlagsResponse[] flagsResponse =
                     imapProtocol.executeFetchFlagsUid(uidNext, progressHandler);
