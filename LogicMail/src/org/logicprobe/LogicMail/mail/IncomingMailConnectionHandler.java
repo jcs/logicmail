@@ -324,7 +324,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         incomingClient.getFolderMessages(
                 firstIndex, lastIndex,
                 new GetFolderMessageCallback(
-                        getFolderMessageUpdateFrequency(),
+                        incomingClient.getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_RANGE,
                         folder,
                         getListener(), tag),
@@ -339,7 +339,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         incomingClient.getFolderMessages(
                 messageTokens,
                 new GetFolderMessageCallback(
-                        getFolderMessageUpdateFrequency(),
+                        incomingClient.getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_SET,
                         folder,
                         getListener(), tag),
@@ -354,7 +354,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         incomingClient.getNewFolderMessages(
                 flagsOnly,
                 new GetFolderMessageCallback(
-                        getFolderMessageUpdateFrequency(),
+                        incomingClient.getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_RECENT,
                         folder,
                         getListener(),
@@ -362,21 +362,6 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         getProgressHandler(message));
     }
 
-    private int getFolderMessageUpdateFrequency() {
-        // Replace this with a more general method:
-        int frequency;
-        if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
-            frequency = 5;
-        }
-        else if(incomingClient instanceof org.logicprobe.LogicMail.mail.pop.PopClient) {
-            frequency = 2;
-        }
-        else {
-            frequency = 10;
-        }
-        return frequency;
-    }
-    
     private void handleRequestMessage(MessageToken messageToken, Object tag) throws IOException, MailException {
         String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
         showStatus(statusMessage);
@@ -398,11 +383,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         MimeMessageContent[] messageContent;
 
         // Replace this with a more general method:
-        if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
+        if(incomingClient.hasMessageParts()) {
             Vector messageContentVector = new Vector();
             for(int i=0; i<messageParts.length; i++) {
                 MimeMessageContent content =
-                    ((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).getMessagePart(messageToken, messageParts[i], getProgressHandler(statusMessage));
+                    incomingClient.getMessagePart(messageToken, messageParts[i], getProgressHandler(statusMessage));
                 if(content != null) {
                     messageContentVector.addElement(content);
                 }
@@ -447,8 +432,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_ANSWERED));
         // Replace this with a more general method:
-        if(incomingClient instanceof org.logicprobe.LogicMail.mail.imap.ImapClient) {
-            ((org.logicprobe.LogicMail.mail.imap.ImapClient)incomingClient).messageAnswered(messageToken, messageFlags);
+        if(incomingClient.hasAnswered()) {
+            incomingClient.messageAnswered(messageToken, messageFlags);
         }
         messageFlags.setAnswered(true);
 

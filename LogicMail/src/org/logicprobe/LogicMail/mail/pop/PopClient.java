@@ -44,9 +44,9 @@ import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.mail.AbstractIncomingMailClient;
 import org.logicprobe.LogicMail.mail.FolderMessageCallback;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -66,7 +66,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * Implements the POP3 client
  * 
  */
-public class PopClient implements IncomingMailClient {
+public class PopClient extends AbstractIncomingMailClient {
     private MailSettings mailSettings;
     private GlobalConfig globalConfig;
     private PopConfig accountConfig;
@@ -247,55 +247,6 @@ public class PopClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasFolders()
-     */
-    public boolean hasFolders() {
-        return false;
-    }
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasUndelete()
-     */
-    public boolean hasUndelete() {
-        return false;
-    }
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasExpunge()
-     */
-    public boolean hasExpunge() {
-        return false;
-    }
-    
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAppend()
-     */
-    public boolean hasAppend() {
-    	return false;
-    }
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasCopy()
-     */
-    public boolean hasCopy() {
-		return false;
-	}
-    
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
-     */
-    public boolean hasIdle() {
-		return false;
-	}
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderTree(org.logicprobe.LogicMail.mail.MailProgressHandler)
-     */
-    public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException {
-        return null;
-    }
-
-    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#refreshFolderStatus(org.logicprobe.LogicMail.mail.FolderTreeItem[], org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler) throws IOException, MailException {
@@ -336,13 +287,6 @@ public class PopClient implements IncomingMailClient {
     public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
-    }
-    
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#expungeActiveFolder()
-     */
-    public void expungeActiveFolder() throws IOException, MailException {
-        // Expunge is not supported, so we do nothing here.
     }
     
     /* (non-Javadoc)
@@ -448,6 +392,13 @@ public class PopClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessageUpdateFrequency()
+     */
+    public int getFolderMessageUpdateFrequency() {
+        return 2;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {
@@ -481,53 +432,10 @@ public class PopClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#undeleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
-     */
-    public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        // Undelete is not supported, so we do nothing here.
-    }
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#appendMessage(org.logicprobe.LogicMail.mail.FolderTreeItem, java.lang.String, org.logicprobe.LogicMail.message.MessageFlags)
-     */
-    public void appendMessage(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) throws IOException, MailException {
-    	// Append is not supported, so we do nothing here.
-    }
-    
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#copyMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.FolderTreeItem)
-     */
-    public void copyMessage(MessageToken messageToken, FolderTreeItem destinationFolder) throws IOException, MailException {
-    	// Copy is not supported, so we do nothing here.
-    }
-    
-    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
      */
     public boolean noop() throws IOException, MailException {
     	popProtocol.executeNoop();
-		return false;
-	}
-
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeBegin()
-	 */
-	public void idleModeBegin() throws IOException, MailException {
-		// Idle mode is not supported, so we do nothing here.
-	}
-
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeEnd()
-	 */
-	public void idleModeEnd() throws IOException, MailException {
-		// Idle mode is not supported, so we do nothing here.
-	}
-
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModePoll()
-	 */
-	public boolean idleModePoll() throws IOException, MailException {
-		// Idle mode is not supported, so we do nothing here.
 		return false;
 	}
 }

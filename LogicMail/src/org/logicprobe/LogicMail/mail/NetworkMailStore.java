@@ -91,13 +91,11 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 
 	public boolean hasMessageParts() {
-		// TODO Fix this type-specific kludge
-		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
+		return client.hasMessageParts();
 	}
 	
 	public boolean hasFlags() {
-		// TODO Fix this type-specific kludge
-		return (client instanceof org.logicprobe.LogicMail.mail.imap.ImapClient);
+		return client.hasAnswered();
 	}
 	
 	public boolean hasAppend() {

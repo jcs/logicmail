@@ -43,9 +43,9 @@ import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
+import org.logicprobe.LogicMail.mail.AbstractIncomingMailClient;
 import org.logicprobe.LogicMail.mail.FolderMessageCallback;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.IncomingMailClient;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -70,7 +70,7 @@ import org.logicprobe.LogicMail.util.DataStoreFactory;
  * Implements the IMAP client
  * 
  */
-public class ImapClient implements IncomingMailClient {
+public class ImapClient extends AbstractIncomingMailClient {
     private MailSettings mailSettings;
     private ImapConfig accountConfig;
     private Connection connection;
@@ -319,6 +319,13 @@ public class ImapClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasMessageParts()
+     */
+    public boolean hasMessageParts() {
+        return true;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasUndelete()
      */
     public boolean hasUndelete() {
@@ -346,6 +353,13 @@ public class ImapClient implements IncomingMailClient {
         return true;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAnswered()
+     */
+    public boolean hasAnswered() {
+        return true;
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
      */
@@ -833,6 +847,13 @@ public class ImapClient implements IncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessageUpdateFrequency()
+     */
+    public int getFolderMessageUpdateFrequency() {
+        return 5;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {
@@ -856,6 +877,9 @@ public class ImapClient implements IncomingMailClient {
         return msg;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessagePart(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MimeMessagePart, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
     public MimeMessageContent getMessagePart(MessageToken messageToken, MimeMessagePart mimeMessagePart, MailProgressHandler progressHandler) throws IOException, MailException {
         ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
         if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
@@ -1034,11 +1058,8 @@ public class ImapClient implements IncomingMailClient {
         refreshMessageFlags(updatedFlags, messageFlags);
     }
 
-    /**
-     * Sets the flags on a message so the server knows it was answered.
-     *
-     * @throws IOException on I/O errors
-     * @throws MailException on protocol errors
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageAnswered(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
      */
     public void messageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
         ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
