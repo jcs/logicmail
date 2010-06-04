@@ -670,9 +670,11 @@ public class AccountNode implements Node {
         MessageNode messageNode = findMessageForToken(e.getMessageToken());
 
         if (messageNode != null) {
-            // Set the SEEN bit
+            // Set the SEEN bit and unset the RECENT bit
             int flags = messageNode.getFlags();
             flags |= MessageNode.Flag.SEEN;
+            flags &= ~MessageNode.Flag.RECENT;
+
             messageNode.setFlags(flags);
 
         	switch(e.getType()) {
