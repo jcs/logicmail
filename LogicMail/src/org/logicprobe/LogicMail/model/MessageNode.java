@@ -653,12 +653,7 @@ public class MessageNode implements Node {
 	 * @return The message structure.
 	 */
 	public MimeMessagePart getMessageStructure() {
-		synchronized(messageContent) {
-			if(this.messageStructure != null) {
-				this.flags |= Flag.SEEN; // SEEN = true
-			}
-			return this.messageStructure;
-		}
+        return this.messageStructure;
 	}
 
 	/**
