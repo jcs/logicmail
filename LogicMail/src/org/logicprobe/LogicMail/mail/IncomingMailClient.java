@@ -136,6 +136,16 @@ public interface IncomingMailClient extends MailClient {
     boolean hasIdle();
     
     /**
+     * Return whether this protocol locks the client's view of its folders
+     * while the client is connected.  This is intended to control idle
+     * behavior when {@link #hasIdle()} returns false.
+     * 
+     * @return True if folder contents are locked while connected, false
+     *         otherwise
+     */
+    boolean hasLockedFolders();
+    
+    /**
      * Get the mail folder tree.
      * <p>
      * This should return null if folders are not supported

@@ -73,6 +73,12 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      */
     private static final int IDLE_POLL_INTERVAL = 500;
 
+    /**
+     * Interval to do explicit NOOP-based polling when the idle state is
+     * not available.  Currently set to 5 minutes.
+     */
+    private static final int NOOP_TIMEOUT = 30000;//FIXME: 300000;
+    
     public IncomingMailConnectionHandler(IncomingMailClient client) {
         super(client);
         this.incomingClient = client;
@@ -152,7 +158,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 if(incomingClient.idleModePoll()) {
                     addRequest(
                             IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder() },
+                            new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
                             null);
                     endIdle = true;
                 }
@@ -180,12 +186,60 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 if(incomingClient.noop()) {
                     addRequest(
                             IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder() },
+                            new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
                             null);
                 }
                 else {
                     // If we had a non-INBOX folder selected, then an idle timeout
                     // should switch the active folder back to the INBOX.
+                    FolderTreeItem inboxMailbox = incomingClient.getInboxFolder();
+                    FolderTreeItem activeMailbox = incomingClient.getActiveFolder();
+                    if(inboxMailbox != null && !inboxMailbox.getPath().equalsIgnoreCase(activeMailbox.getPath())) {
+                        incomingClient.setActiveFolder(inboxMailbox);
+                    }
+                }
+            }
+        }
+        else if(!incomingClient.hasLockedFolders()) {
+            // In this case, we do a NOOP-based polling
+            boolean endIdle = false;
+            int idleTime = 0;
+            while(!endIdle) {
+                // Similar to the idle-polling loop, except no actual network
+                // polling is performed.  This is necessary to monitor the
+                // connection handler to be responsive to new requests.
+                sleepConnectionThread(IDLE_POLL_INTERVAL);
+                idleTime += IDLE_POLL_INTERVAL;
+                
+                if(getShutdownInProgress()) {
+                    endIdle = true;
+                }
+                else if(idleTime >= NOOP_TIMEOUT) {
+                    endIdle = true;
+                }
+                else
+                {
+                    Queue requestQueue = getRequestQueue();
+                    synchronized(requestQueue) {
+                        if(requestQueue.element() != null) {
+                            endIdle = true;
+                        }
+                    }
+                }
+            }
+
+            // Perform a no-operation command on the mail server as an explicit
+            // check for new messages.
+            if(idleTime >= NOOP_TIMEOUT) {
+                if(incomingClient.noop()) {
+                    addRequest(
+                            IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
+                            new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
+                            null);
+                }
+                else {
+                    // If we had a non-INBOX folder selected, then we should
+                    // switch the active folder back to the INBOX.
                     FolderTreeItem inboxMailbox = incomingClient.getInboxFolder();
                     FolderTreeItem activeMailbox = incomingClient.getActiveFolder();
                     if(inboxMailbox != null && !inboxMailbox.getPath().equalsIgnoreCase(activeMailbox.getPath())) {

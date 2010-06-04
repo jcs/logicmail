@@ -398,6 +398,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public void setUsername(String username) { fakeAccountConfig.setServerUser(username); }
 		public boolean hasFolders() { return true; }
 		public boolean hasUndelete() { return true; }
+		public boolean hasLockedFolders() { return true; }
 		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
 		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }

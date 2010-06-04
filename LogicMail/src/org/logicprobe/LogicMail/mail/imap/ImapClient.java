@@ -123,7 +123,12 @@ public class ImapClient extends AbstractIncomingMailClient {
     private Hashtable knownMailboxes = new Hashtable();
 
     private static String strINBOX = "INBOX";
-
+    
+    private static String CAPABILITY_CHILDREN = "CHILDREN";
+    private static String CAPABILITY_NAMESPACE = "NAMESPACE";
+    private static String CAPABILITY_STARTTLS = "STARTTLS";
+    private static String CAPABILITY_IDLE = "IDLE";
+    
     public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
         this.accountConfig = accountConfig;
         this.mailSettings = MailSettings.getInstance();
@@ -191,7 +196,7 @@ public class ImapClient extends AbstractIncomingMailClient {
 
             // TLS initialization
             int serverSecurity = accountConfig.getServerSecurity();
-            if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey("STARTTLS"))
+            if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey(CAPABILITY_STARTTLS))
                     || (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
                 imapProtocol.executeStartTLS();
                 connection.startTLS();
@@ -203,7 +208,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             }
 
             // Get the namespaces, if supported
-            if(capabilities.containsKey("NAMESPACE")) {
+            if(capabilities.containsKey(CAPABILITY_NAMESPACE)) {
                 ImapProtocol.NamespaceResponse nsResponse = imapProtocol.executeNamespace();
 
                 if(nsResponse.personal != null &&
@@ -364,9 +369,16 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasIdle()
      */
     public boolean hasIdle() {
-        return true;
+        return capabilities.containsKey(CAPABILITY_IDLE);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasLockedFolders()
+     */
+    public boolean hasLockedFolders() {
+        return false;
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderTree(org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
@@ -376,7 +388,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         
         FolderTreeItem rootItem = new FolderTreeItem("", "", folderDelim);
 
-        boolean childrenExtension = capabilities.containsKey("CHILDREN");
+        boolean childrenExtension = capabilities.containsKey(CAPABILITY_CHILDREN);
 
         // Special logic to handle a user-specified folder prefix
         String folderPrefix = accountConfig.getFolderPrefix();

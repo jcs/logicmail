@@ -247,6 +247,13 @@ public class PopClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasLockedFolders()
+     */
+    public boolean hasLockedFolders() {
+        return true;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#refreshFolderStatus(org.logicprobe.LogicMail.mail.FolderTreeItem[], org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler) throws IOException, MailException {
