@@ -77,7 +77,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      * Interval to do explicit NOOP-based polling when the idle state is
      * not available.  Currently set to 5 minutes.
      */
-    private static final int NOOP_TIMEOUT = 30000;//FIXME: 300000;
+    private static final int NOOP_TIMEOUT = 300000;
     
     public IncomingMailConnectionHandler(IncomingMailClient client) {
         super(client);
