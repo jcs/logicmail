@@ -1498,6 +1498,9 @@ public class ImapProtocol {
 
         /** Message has recently arrived */
         public boolean recent;
+        
+        /** Message has been forwarded */
+        public boolean forwarded;
 
         /** Message has been flagged as junk */
         public boolean junk;

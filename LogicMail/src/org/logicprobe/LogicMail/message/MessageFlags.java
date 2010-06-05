@@ -43,6 +43,7 @@ public class MessageFlags {
     private boolean deleted;
     private boolean draft;
     private boolean recent;
+    private boolean forwarded;
     private boolean junk;
     
 	public MessageFlags() {
@@ -55,6 +56,7 @@ public class MessageFlags {
 		    boolean deleted,
 		    boolean draft,
 		    boolean recent,
+		    boolean forwarded,
 		    boolean junk) {
 		this.seen = seen;
 		this.answered = answered;
@@ -62,6 +64,7 @@ public class MessageFlags {
 		this.deleted = deleted;
 		this.draft = draft;
 		this.recent = recent;
+		this.forwarded = forwarded;
 		this.junk = junk;
 	}
 	
@@ -147,6 +150,20 @@ public class MessageFlags {
      */
     public void setRecent(boolean recent) {
         this.recent = recent;
+    }
+    
+    /**
+     * Find out whether this message has been forwarded
+     */
+    public boolean isForwarded() {
+        return forwarded;
+    }
+    
+    /**
+     * Set the flag indicating whether this message has been forwarded
+     */
+    public void setForwarded(boolean forwarded) {
+        this.forwarded = forwarded;
     }
     
     /**

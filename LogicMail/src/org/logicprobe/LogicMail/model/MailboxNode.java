@@ -339,6 +339,7 @@ public class MailboxNode implements Node, Serializable {
 		messageFlags.setDeleted((flags & MessageNode.Flag.DELETED) != 0);
 		messageFlags.setDraft((flags & MessageNode.Flag.DRAFT) != 0);
 		messageFlags.setRecent((flags & MessageNode.Flag.RECENT) != 0);
+		messageFlags.setForwarded((flags & MessageNode.Flag.FORWARDED) != 0);
 		messageFlags.setJunk((flags & MessageNode.Flag.JUNK) != 0);
 		
 		// Append the message to the folder

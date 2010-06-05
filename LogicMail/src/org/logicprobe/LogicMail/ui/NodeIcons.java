@@ -64,6 +64,8 @@ public class NodeIcons {
     private final Bitmap openedMessageIcon;
     private final Bitmap unopenedMessageIcon;
     private final Bitmap repliedMessageIcon;
+    private final Bitmap forwardedMessageIcon;
+    private final Bitmap repliedForwardedMessageIcon;
     private final Bitmap flaggedMessageIcon;
     private final Bitmap draftMessageIcon;
     private final Bitmap deletedMessageIcon;
@@ -72,6 +74,8 @@ public class NodeIcons {
     private final Bitmap openedUnloadedMessageIcon;
     private final Bitmap unopenedUnloadedMessageIcon;
     private final Bitmap repliedUnloadedMessageIcon;
+    private final Bitmap forwardedUnloadedMessageIcon;
+    private final Bitmap repliedForwardedUnloadedMessageIcon;
     private final Bitmap flaggedUnloadedMessageIcon;
     private final Bitmap draftUnloadedMessageIcon;
     private final Bitmap deletedUnloadedMessageIcon;
@@ -100,22 +104,26 @@ public class NodeIcons {
         trashFullFolderIcon = Bitmap.getBitmapResource("folder_trash_full.png");
 
         // Load message icons
-        openedMessageIcon   = Bitmap.getBitmapResource("mail_opened.png");
-        unopenedMessageIcon = Bitmap.getBitmapResource("mail_unopened.png");
-        repliedMessageIcon  = Bitmap.getBitmapResource("mail_replied.png");
-        flaggedMessageIcon  = Bitmap.getBitmapResource("mail_flagged.png");
-        draftMessageIcon    = Bitmap.getBitmapResource("mail_draft.png");
-        deletedMessageIcon  = Bitmap.getBitmapResource("mail_deleted.png");
-        unknownMessageIcon  = Bitmap.getBitmapResource("mail_unknown.png");
-        junkMessageIcon     = Bitmap.getBitmapResource("mail_junk.png");
-        openedUnloadedMessageIcon   = Bitmap.getBitmapResource("mail_opened_unloaded.png");
-        unopenedUnloadedMessageIcon = Bitmap.getBitmapResource("mail_unopened_unloaded.png");
-        repliedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_replied_unloaded.png");
-        flaggedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_flagged_unloaded.png");
-        draftUnloadedMessageIcon    = Bitmap.getBitmapResource("mail_draft_unloaded.png");
-        deletedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_deleted_unloaded.png");
-        unknownUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_unknown_unloaded.png");
-        junkUnloadedMessageIcon     = Bitmap.getBitmapResource("mail_junk_unloaded.png");
+        openedMessageIcon    = Bitmap.getBitmapResource("mail_opened.png");
+        unopenedMessageIcon  = Bitmap.getBitmapResource("mail_unopened.png");
+        repliedMessageIcon   = Bitmap.getBitmapResource("mail_replied.png");
+        forwardedMessageIcon = Bitmap.getBitmapResource("mail_forwarded.png");
+        repliedForwardedMessageIcon = Bitmap.getBitmapResource("mail_replied_forwarded.png");
+        flaggedMessageIcon   = Bitmap.getBitmapResource("mail_flagged.png");
+        draftMessageIcon     = Bitmap.getBitmapResource("mail_draft.png");
+        deletedMessageIcon   = Bitmap.getBitmapResource("mail_deleted.png");
+        unknownMessageIcon   = Bitmap.getBitmapResource("mail_unknown.png");
+        junkMessageIcon      = Bitmap.getBitmapResource("mail_junk.png");
+        openedUnloadedMessageIcon    = Bitmap.getBitmapResource("mail_opened_unloaded.png");
+        unopenedUnloadedMessageIcon  = Bitmap.getBitmapResource("mail_unopened_unloaded.png");
+        repliedUnloadedMessageIcon   = Bitmap.getBitmapResource("mail_replied_unloaded.png");
+        forwardedUnloadedMessageIcon = Bitmap.getBitmapResource("mail_forwarded_unloaded.png");
+        repliedForwardedUnloadedMessageIcon = Bitmap.getBitmapResource("mail_replied_forwarded_unloaded.png");
+        flaggedUnloadedMessageIcon   = Bitmap.getBitmapResource("mail_flagged_unloaded.png");
+        draftUnloadedMessageIcon     = Bitmap.getBitmapResource("mail_draft_unloaded.png");
+        deletedUnloadedMessageIcon   = Bitmap.getBitmapResource("mail_deleted_unloaded.png");
+        unknownUnloadedMessageIcon   = Bitmap.getBitmapResource("mail_unknown_unloaded.png");
+        junkUnloadedMessageIcon      = Bitmap.getBitmapResource("mail_junk_unloaded.png");
         sendReceiveMessageIcon = Bitmap.getBitmapResource("mail_send_receive.png");
         sendErrorMessageIcon   = Bitmap.getBitmapResource("mail_send_error.png");
     }
@@ -241,22 +249,37 @@ public class NodeIcons {
             else {
                 boolean unloaded = !node.hasCachedContent() && !node.hasMessageContent() && node.isCachable();
                 int flags = node.getFlags();
-                if((flags & MessageNode.Flag.DELETED) != 0)
+                if((flags & MessageNode.Flag.DELETED) != 0) {
                     this.icon = unloaded ? deletedUnloadedMessageIcon : deletedMessageIcon;
-                else if((flags & MessageNode.Flag.JUNK) != 0)
+                }
+                else if((flags & MessageNode.Flag.JUNK) != 0) {
                     this.icon = unloaded ? junkUnloadedMessageIcon : junkMessageIcon;
-                else if((flags & MessageNode.Flag.ANSWERED) != 0)
-                    this.icon = unloaded ? repliedUnloadedMessageIcon: repliedMessageIcon;
-                else if((flags & MessageNode.Flag.FLAGGED) != 0)
+                }
+                else if((flags & MessageNode.Flag.FLAGGED) != 0) {
                     this.icon = unloaded ? flaggedUnloadedMessageIcon : flaggedMessageIcon;
-                else if((flags & MessageNode.Flag.DRAFT) != 0)
+                }
+                else if((flags & MessageNode.Flag.DRAFT) != 0) {
                     this.icon = unloaded ? draftUnloadedMessageIcon: draftMessageIcon;
-                else if((flags & MessageNode.Flag.RECENT) != 0)
+                }
+                else if((flags & MessageNode.Flag.ANSWERED) != 0
+                        && (flags & MessageNode.Flag.FORWARDED) != 0) {
+                    this.icon = unloaded ? repliedForwardedUnloadedMessageIcon: repliedForwardedMessageIcon;
+                }
+                else if((flags & MessageNode.Flag.ANSWERED) != 0) {
+                    this.icon = unloaded ? repliedUnloadedMessageIcon: repliedMessageIcon;
+                }
+                else if((flags & MessageNode.Flag.FORWARDED) != 0) {
+                    this.icon = unloaded ? forwardedUnloadedMessageIcon: forwardedMessageIcon;
+                }
+                else if((flags & MessageNode.Flag.RECENT) != 0) {
                     this.icon = unloaded ? unopenedUnloadedMessageIcon: unopenedMessageIcon;
-                else if((flags & MessageNode.Flag.SEEN) != 0)
+                }
+                else if((flags & MessageNode.Flag.SEEN) != 0) {
                     this.icon = unloaded ? openedUnloadedMessageIcon : openedMessageIcon;
-                else
+                }
+                else {
                     this.icon = unloaded ? unknownUnloadedMessageIcon: unknownMessageIcon;
+                }
             }
         }
 

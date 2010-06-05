@@ -834,6 +834,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         folderMessage.setRecent(response.flags.recent);
         folderMessage.setFlagged(response.flags.flagged);
         folderMessage.setDraft(response.flags.draft);
+        folderMessage.setForwarded(response.flags.forwarded);
         folderMessage.setJunk(response.flags.junk);
         folderMessage.setStructure(createMessagePartTree(response.structure));
         return folderMessage;
@@ -853,6 +854,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             folderMessages[i].setRecent(response[i].flags.recent);
             folderMessages[i].setFlagged(response[i].flags.flagged);
             folderMessages[i].setDraft(response[i].flags.draft);
+            folderMessages[i].setForwarded(response[i].flags.forwarded);
             folderMessages[i].setJunk(response[i].flags.junk);
         }
         return folderMessages;
@@ -1092,6 +1094,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             messageFlags.setFlagged(updatedFlags.flagged);
             messageFlags.setRecent(updatedFlags.recent);
             messageFlags.setSeen(updatedFlags.seen);
+            messageFlags.setForwarded(updatedFlags.forwarded);
         }
     }
 
@@ -1106,6 +1109,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         flags.deleted = initialFlags.isDeleted();
         flags.draft = initialFlags.isDraft();
         flags.junk = initialFlags.isJunk();
+        flags.forwarded = initialFlags.isForwarded();
         flags.recent = false; // invalid for appending
 
         imapProtocol.executeAppend(folder.getPath(), rawMessage, flags);

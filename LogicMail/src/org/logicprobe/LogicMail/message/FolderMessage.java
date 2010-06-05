@@ -205,6 +205,20 @@ public class FolderMessage implements Serializable {
     }
     
     /**
+     * Find out whether this message has been forwarded
+     */
+    public boolean isForwarded() {
+        return messageFlags.isForwarded();
+    }
+    
+    /**
+     * Set the flag indicating whether this message has been forwarded
+     */
+    public void setForwarded(boolean forwarded) {
+        messageFlags.setForwarded(forwarded);
+    }
+    
+    /**
      * Find out whether this message has been flagged as junk
      */
     public boolean isJunk() {
@@ -258,6 +272,7 @@ public class FolderMessage implements Serializable {
 		output.writeBoolean(messageFlags.isDeleted());
 		output.writeBoolean(messageFlags.isDraft());
 		output.writeBoolean(messageFlags.isRecent());
+        output.writeBoolean(messageFlags.isForwarded());
 		output.writeBoolean(messageFlags.isJunk());
 		
 		if(structure == null) {
@@ -286,6 +301,7 @@ public class FolderMessage implements Serializable {
 		messageFlags.setDeleted(input.readBoolean());
 		messageFlags.setDraft(input.readBoolean());
 		messageFlags.setRecent(input.readBoolean());
+        messageFlags.setForwarded(input.readBoolean());
 		messageFlags.setJunk(input.readBoolean());
 		
 		boolean hasStructure = input.readBoolean();

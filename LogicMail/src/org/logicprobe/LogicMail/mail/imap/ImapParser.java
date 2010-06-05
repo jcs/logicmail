@@ -48,7 +48,17 @@ import java.util.Vector;
  */
 class ImapParser {
     private static String strNIL = "NIL";
-    private static final String MODIFIED_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
+    private static String MODIFIED_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
+
+    private static String FLAG_SEEN = "\\Seen";
+    private static String FLAG_ANSWERED = "\\Answered";
+    private static String FLAG_FLAGGED = "\\Flagged";
+    private static String FLAG_DELETED = "\\Deleted";
+    private static String FLAG_DRAFT = "\\Draft";
+    private static String FLAG_RECENT = "\\Recent";
+    private static String FLAG_FORWARDED = "$Forwarded";
+    private static String FLAG_JUNK0 = "Junk";
+    private static String FLAG_JUNK1 = "$Junk";
 
     private ImapParser() {
     }
@@ -63,20 +73,22 @@ class ImapParser {
             if (flagsVec.elementAt(i) instanceof String) {
                 text = (String) flagsVec.elementAt(i);
 
-                if (text.equalsIgnoreCase("\\Seen")) {
+                if (text.equalsIgnoreCase(FLAG_SEEN)) {
                     flags.seen = true;
-                } else if (text.equalsIgnoreCase("\\Answered")) {
+                } else if (text.equalsIgnoreCase(FLAG_ANSWERED)) {
                     flags.answered = true;
-                } else if (text.equalsIgnoreCase("\\Flagged")) {
+                } else if (text.equalsIgnoreCase(FLAG_FLAGGED)) {
                     flags.flagged = true;
-                } else if (text.equalsIgnoreCase("\\Deleted")) {
+                } else if (text.equalsIgnoreCase(FLAG_DELETED)) {
                     flags.deleted = true;
-                } else if (text.equalsIgnoreCase("\\Draft")) {
+                } else if (text.equalsIgnoreCase(FLAG_DRAFT)) {
                     flags.draft = true;
-                } else if (text.equalsIgnoreCase("\\Recent")) {
+                } else if (text.equalsIgnoreCase(FLAG_RECENT)) {
                     flags.recent = true;
-                } else if (text.equalsIgnoreCase("Junk") ||
-                        text.equalsIgnoreCase("$Junk")) {
+                } else if (text.equalsIgnoreCase(FLAG_FORWARDED)) {
+                    flags.forwarded = true;
+                } else if (text.equalsIgnoreCase(FLAG_JUNK0) ||
+                        text.equalsIgnoreCase(FLAG_JUNK1)) {
                     flags.junk = true;
                 }
             }
@@ -89,47 +101,49 @@ class ImapParser {
         StringBuffer buf = new StringBuffer();
 
         if (flags.seen) {
-            buf.append("\\Seen");
+            buf.append(FLAG_SEEN);
         }
 
         if (flags.answered) {
             if (buf.length() > 0) {
                 buf.append(' ');
             }
-
-            buf.append("\\Answered");
+            buf.append(FLAG_ANSWERED);
         }
 
         if (flags.flagged) {
             if (buf.length() > 0) {
                 buf.append(' ');
             }
-
-            buf.append("\\Flagged");
+            buf.append(FLAG_FLAGGED);
         }
 
         if (flags.deleted) {
             if (buf.length() > 0) {
                 buf.append(' ');
             }
-
-            buf.append("\\Deleted");
+            buf.append(FLAG_DELETED);
         }
 
         if (flags.draft) {
             if (buf.length() > 0) {
                 buf.append(' ');
             }
-
-            buf.append("\\Draft");
+            buf.append(FLAG_DRAFT);
         }
 
         if (flags.recent) {
             if (buf.length() > 0) {
                 buf.append(' ');
             }
+            buf.append(FLAG_RECENT);
+        }
 
-            buf.append("\\Recent");
+        if (flags.forwarded) {
+            if (buf.length() > 0) {
+                buf.append(' ');
+            }
+            buf.append(FLAG_FORWARDED);
         }
 
         return buf.toString();

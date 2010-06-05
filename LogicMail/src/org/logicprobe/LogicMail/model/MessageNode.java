@@ -71,13 +71,14 @@ public class MessageNode implements Node {
 	 * Defines the flags supported by the {@link MessageNode} class.
 	 */
 	public static interface Flag {
-		public static final int SEEN = 1;
-		public static final int ANSWERED = 2;
-		public static final int FLAGGED = 4;
-		public static final int DELETED = 8;
-		public static final int DRAFT = 16;
-		public static final int RECENT = 32;
-		public static final int JUNK = 64;
+		public static final int SEEN      = 1;
+		public static final int ANSWERED  = 2;
+		public static final int FLAGGED   = 4;
+		public static final int DELETED   = 8;
+		public static final int DRAFT     = 16;
+		public static final int RECENT    = 32;
+		public static final int JUNK      = 64;
+        public static final int FORWARDED = 128;
 	}
 	
 	private static class MessageNodeComparator implements Comparator {
@@ -1321,6 +1322,7 @@ public class MessageNode implements Node {
 		if(messageFlags.isDeleted()) { flags |= Flag.DELETED; }
 		if(messageFlags.isDraft()) { flags |= Flag.DRAFT; }
 		if(messageFlags.isRecent()) { flags |= Flag.RECENT; }
+        if(messageFlags.isForwarded()) { flags |= Flag.FORWARDED; }
 		if(messageFlags.isJunk()) { flags |= Flag.JUNK; }
 		return flags;
 	}
@@ -1341,6 +1343,7 @@ public class MessageNode implements Node {
 		messageFlags.setDeleted((flags & Flag.DELETED) != 0);
 		messageFlags.setDraft((flags & Flag.DRAFT) != 0);
 		messageFlags.setRecent((flags & Flag.RECENT) != 0);
+        messageFlags.setForwarded((flags & Flag.FORWARDED) != 0);
 		messageFlags.setJunk((flags & Flag.JUNK) != 0);
 		return messageFlags;
 	}

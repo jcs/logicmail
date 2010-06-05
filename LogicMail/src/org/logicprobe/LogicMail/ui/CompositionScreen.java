@@ -368,13 +368,14 @@ public class CompositionScreen extends AbstractScreenProvider {
         
         envelope.date = Calendar.getInstance().getTime();
         MessageFlags messageFlags = new MessageFlags(
-        		false,
-        		false,
-        		false,
-        		false,
-        		true,
-        		true,
-        		false);
+        		false,  // seen
+        		false,  // answered
+        		false,  // flagged
+        		false,  // deleted
+        		true,   // draft
+        		true,   // recent
+        		false,  // forwarded
+        		false); // junk
         draftMailbox.appendMessage(envelope, message, messageFlags);
         // TODO: Save reply-to information with the draft message
     }

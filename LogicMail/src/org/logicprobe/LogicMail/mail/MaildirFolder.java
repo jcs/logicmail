@@ -258,6 +258,7 @@ public class MaildirFolder {
                         folderMessage.setDraft(fileName.indexOf('D', p) != -1);
                         folderMessage.setFlagged(fileName.indexOf('F', p) != -1);
                         folderMessage.setSeen(fileName.indexOf('S', p) != -1);
+                        folderMessage.setForwarded(fileName.indexOf('P', p) != -1);
 
                         folderMessageList.addElement(folderMessage);
                     }
@@ -444,6 +445,7 @@ public class MaildirFolder {
             result.setDeleted(initialFlags.isDeleted());
             result.setDraft(initialFlags.isDraft());
             result.setFlagged(initialFlags.isFlagged());
+            result.setForwarded(initialFlags.isForwarded());
             result.setSeen(initialFlags.isSeen());
         }
         else {
@@ -570,5 +572,6 @@ public class MaildirFolder {
         if(messageFlags.isDraft()) { buf.append('D'); }
         if(messageFlags.isFlagged()) { buf.append('F'); }
         if(messageFlags.isSeen()) { buf.append('S'); }
+        if(messageFlags.isForwarded()) { buf.append('P'); }
     }
 }

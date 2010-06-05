@@ -458,7 +458,7 @@ public class LocalMailStore extends AbstractMailStore {
                 String messageSource = fromMaildirFolder.getMessageSource(localMessageToken);
                 copiedMessage = toMaildirFolder.appendMessage(
                         messageSource,
-                        new MessageFlags(false, false, false, false, false, true, false));
+                        new MessageFlags(false, false, false, false, false, true, false, false));
 
                 toMaildirFolder.close();
                 fromMaildirFolder.close();
@@ -544,6 +544,7 @@ public class LocalMailStore extends AbstractMailStore {
                 sourceFlags.isDeleted(),
                 sourceFlags.isDraft(),
                 sourceFlags.isRecent(),
+                sourceFlags.isForwarded(),
                 sourceFlags.isJunk());
     }
 }
