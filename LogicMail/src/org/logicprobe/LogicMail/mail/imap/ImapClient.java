@@ -361,7 +361,7 @@ public class ImapClient extends AbstractIncomingMailClient {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasAnswered()
      */
-    public boolean hasAnswered() {
+    public boolean hasFlags() {
         return true;
     }
     
@@ -1053,7 +1053,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
 
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { "\\Deleted" });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { ImapParser.FLAG_DELETED });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
 
@@ -1068,7 +1068,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
 
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), false, new String[] { "\\Deleted" });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), false, new String[] { ImapParser.FLAG_DELETED });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
 
@@ -1082,10 +1082,24 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
 
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { "\\Answered" });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { ImapParser.FLAG_ANSWERED });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageForwarded(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
+    public void messageForwarded(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+        ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+        if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+            throw new MailException("Invalid mailbox for message");
+        }
+
+        ImapProtocol.MessageFlags updatedFlags =
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { ImapParser.FLAG_FORWARDED });
+        refreshMessageFlags(updatedFlags, messageFlags);
+    }
+    
     private static void refreshMessageFlags(ImapProtocol.MessageFlags updatedFlags, MessageFlags messageFlags) {
         if(updatedFlags != null) {
             messageFlags.setAnswered(updatedFlags.answered);

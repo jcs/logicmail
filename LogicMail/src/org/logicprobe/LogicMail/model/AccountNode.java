@@ -413,7 +413,26 @@ public class AccountNode implements Node {
      * @param originalMessageNode Message node this was in reply to.
      */
     public void sendMessageReply(MessageEnvelope envelope, Message message,
-        MessageNode originalMessageNode) {
+            MessageNode originalMessageNode) {
+        sendMessageReplyImpl(envelope, message, originalMessageNode,
+                OutgoingMessageNode.REPLY_ANSWERED);
+    }
+    
+    /**
+     * Sends a forwarded message from this account.
+     *
+     * @param envelope Envelope of the message to send
+     * @param message Message to send.
+     * @param originalMessageNode Message node this was in reply to.
+     */
+    public void sendMessageForwarded(MessageEnvelope envelope, Message message,
+            MessageNode originalMessageNode) {
+        sendMessageReplyImpl(envelope, message, originalMessageNode,
+                OutgoingMessageNode.REPLY_FORWARDED);
+    }
+    
+    private void sendMessageReplyImpl(MessageEnvelope envelope, Message message,
+        MessageNode originalMessageNode, int replyType) {
         if (mailSender != null) {
         	// Construct an outgoing message node
         	FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
@@ -422,7 +441,7 @@ public class AccountNode implements Node {
         	OutgoingMessageNode outgoingMessage =
         		new OutgoingMessageNode(
         				outgoingFolderMessage,
-        				this, mailSender, originalMessageNode);
+        				this, mailSender, originalMessageNode, replyType);
         	outgoingMessage.setMessageStructure(message.getStructure());
         	outgoingMessage.putMessageContent(message.getAllContent());
         	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);

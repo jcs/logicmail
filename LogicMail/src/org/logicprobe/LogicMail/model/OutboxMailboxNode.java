@@ -350,9 +350,16 @@ public class OutboxMailboxNode extends MailboxNode {
             if(replyToMessageAccount != null && replyToMessageToken != null) {
                 AbstractMailStore sendingMailStore = replyToMessageAccount.getMailStore();
                 if(sendingMailStore.hasFlags()) {
-                    sendingMailStore.requestMessageAnswered(
-                            replyToMessageToken,
-                            new MessageFlags());
+                    if(outgoingMessageNode.getReplyType() == OutgoingMessageNode.REPLY_FORWARDED) {
+                        sendingMailStore.requestMessageForwarded(
+                                replyToMessageToken,
+                                new MessageFlags());
+                    }
+                    else {
+                        sendingMailStore.requestMessageAnswered(
+                                replyToMessageToken,
+                                new MessageFlags());
+                    }
                 }
             }
 

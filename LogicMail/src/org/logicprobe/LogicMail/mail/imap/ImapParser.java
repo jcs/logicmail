@@ -48,17 +48,18 @@ import java.util.Vector;
  */
 class ImapParser {
     private static String strNIL = "NIL";
-    private static String MODIFIED_BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
+    private static String MODIFIED_BASE64_ALPHABET =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,";
 
-    private static String FLAG_SEEN = "\\Seen";
-    private static String FLAG_ANSWERED = "\\Answered";
-    private static String FLAG_FLAGGED = "\\Flagged";
-    private static String FLAG_DELETED = "\\Deleted";
-    private static String FLAG_DRAFT = "\\Draft";
-    private static String FLAG_RECENT = "\\Recent";
-    private static String FLAG_FORWARDED = "$Forwarded";
-    private static String FLAG_JUNK0 = "Junk";
-    private static String FLAG_JUNK1 = "$Junk";
+    static String FLAG_SEEN = "\\Seen";
+    static String FLAG_ANSWERED = "\\Answered";
+    static String FLAG_FLAGGED = "\\Flagged";
+    static String FLAG_DELETED = "\\Deleted";
+    static String FLAG_DRAFT = "\\Draft";
+    static String FLAG_RECENT = "\\Recent";
+    static String FLAG_FORWARDED = "$Forwarded";
+    static String FLAG_JUNK0 = "Junk";
+    static String FLAG_JUNK1 = "$Junk";
 
     private ImapParser() {
     }

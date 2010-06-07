@@ -251,6 +251,7 @@ public class AccountNodeTest extends TestCase {
 		public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) { }
 		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) { }
 		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
+        public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
 		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
 		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
 		public void shutdown(boolean wait) { }

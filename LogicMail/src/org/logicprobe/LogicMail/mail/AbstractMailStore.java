@@ -461,6 +461,39 @@ public abstract class AbstractMailStore {
     }
 
     /**
+     * Requests a particular message to be marked as forwarded.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
+     * @param callback The callback to receive success or failure notifications about the request
+     */
+    public abstract void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+
+    /**
+     * Requests a particular message to be marked as forwarded.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
+     */
+    public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags) {
+        requestMessageForwarded(messageToken, messageFlags, null);
+    }
+    
+    /**
      * Requests a message to be appended to a folder.
      * 
      * <p>Unlike other methods, this method requires the raw source of a message

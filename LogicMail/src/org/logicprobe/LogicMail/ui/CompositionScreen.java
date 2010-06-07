@@ -498,7 +498,12 @@ public class CompositionScreen extends AbstractScreenProvider {
     	Message message = generateMessage();
     	
         if (replyToMessageNode != null) {
-            accountNode.sendMessageReply(envelope, message, replyToMessageNode);
+            if(composeType == COMPOSE_FORWARD) {
+                accountNode.sendMessageForwarded(envelope, message, replyToMessageNode);
+            }
+            else {
+                accountNode.sendMessageReply(envelope, message, replyToMessageNode);
+            }
         } else {
             accountNode.sendMessage(envelope, message);
         }

@@ -98,11 +98,18 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         // Default empty implementation for unsupported feature
     }
     
-    public boolean hasAnswered() {
+    public boolean hasFlags() {
         return false;
     }
 
     public void messageAnswered(
+            MessageToken messageToken,
+            MessageFlags messageFlags)
+    throws IOException, MailException {
+        // Default empty implementation for unsupported feature
+    }
+    
+    public void messageForwarded(
             MessageToken messageToken,
             MessageFlags messageFlags)
     throws IOException, MailException {

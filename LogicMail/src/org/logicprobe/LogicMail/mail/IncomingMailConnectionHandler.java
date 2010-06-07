@@ -58,8 +58,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     public static final int REQUEST_MESSAGE_DELETE          = 22;
     public static final int REQUEST_MESSAGE_UNDELETE        = 23;
     public static final int REQUEST_MESSAGE_ANSWERED        = 24;
-    public static final int REQUEST_MESSAGE_APPEND          = 25;
-    public static final int REQUEST_MESSAGE_COPY            = 26;
+    public static final int REQUEST_MESSAGE_FORWARDED       = 25;
+    public static final int REQUEST_MESSAGE_APPEND          = 26;
+    public static final int REQUEST_MESSAGE_COPY            = 27;
 
     /**
      * Maximum amount of time to spend in the idle state.
@@ -135,6 +136,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             break;
         case REQUEST_MESSAGE_ANSWERED:
             handleRequestMessageAnswered((MessageToken)params[0], (MessageFlags)params[1], tag);
+            break;
+        case REQUEST_MESSAGE_FORWARDED:
+            handleRequestMessageForwarded((MessageToken)params[0], (MessageFlags)params[1], tag);
             break;
         case REQUEST_MESSAGE_APPEND:
             handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2], tag);
@@ -484,9 +488,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     }
     
     private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
-        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_ANSWERED));
-        // Replace this with a more general method:
-        if(incomingClient.hasAnswered()) {
+        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
+        if(incomingClient.hasFlags()) {
             incomingClient.messageAnswered(messageToken, messageFlags);
         }
         messageFlags.setAnswered(true);
@@ -497,9 +500,21 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
     
+    private void handleRequestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
+        if(incomingClient.hasFlags()) {
+            incomingClient.messageForwarded(messageToken, messageFlags);
+        }
+        messageFlags.setForwarded(true);
+
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken, messageFlags }, tag);
+        }
+    }
+    
     private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_APPEND));
-        // Clean up this interface:
         if(incomingClient.hasAppend()) {
             incomingClient.appendMessage(folder, rawMessage, initialFlags);
         }

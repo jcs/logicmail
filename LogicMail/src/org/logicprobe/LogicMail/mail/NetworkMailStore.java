@@ -95,7 +95,7 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 	
 	public boolean hasFlags() {
-		return client.hasAnswered();
+		return client.hasFlags();
 	}
 	
 	public boolean hasAppend() {
@@ -176,6 +176,13 @@ public class NetworkMailStore extends AbstractMailStore {
 		}
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags }, callback);
 	}
+	
+    public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+        if(!this.hasFlags()) {
+            throw new UnsupportedOperationException();
+        }
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken, messageFlags }, callback);
+    }
 
 	public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) {
 		if(!this.hasAppend()) {
@@ -253,6 +260,7 @@ public class NetworkMailStore extends AbstractMailStore {
 			fireMessageUndeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED:
             if(callback != null) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);

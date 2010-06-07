@@ -54,6 +54,10 @@ public class OutgoingMessageNode extends MessageNode {
 	private boolean sendAttempted;
 	private boolean sending;
     private Hashtable errorSet;
+    private int replyType;
+    
+    public static final int REPLY_ANSWERED = 0;
+    public static final int REPLY_FORWARDED = 1;
     
 	/**
 	 * Creates a new instance of OutgoingMessageNode.
@@ -72,18 +76,22 @@ public class OutgoingMessageNode extends MessageNode {
      * @param sendingAccount The account the message is being sent from.
      * @param mailSender The mail sender to be used for sending the message.
      * @param replyToMessageNode The message this is a reply to, if applicable.
+     * @param replyType Whether this message is answering or forwarding the
+     *                  <code>replyToMessageNode</code>.
      */
     OutgoingMessageNode(
     		FolderMessage folderMessage,
     		AccountNode sendingAccount,
     		AbstractMailSender mailSender,
-    		MessageNode replyToMessageNode) {
+    		MessageNode replyToMessageNode,
+    		int replyType) {
     	super(folderMessage);
     	this.sendingAccount = sendingAccount;
     	this.mailSender = mailSender;
     	if(replyToMessageNode != null) {
         	this.replyToAccount = replyToMessageNode.getParent().getParentAccount();
         	this.replyToToken = replyToMessageNode.getMessageToken();
+        	this.replyType = replyType;
     	}
     }
 
@@ -98,7 +106,7 @@ public class OutgoingMessageNode extends MessageNode {
     		FolderMessage folderMessage,
     		AccountNode sendingAccount,
     		AbstractMailSender mailSender) {
-    	this(folderMessage, sendingAccount, mailSender, null);
+    	this(folderMessage, sendingAccount, mailSender, null, -1);
     }
 
     public boolean refreshMessage() {
@@ -197,6 +205,16 @@ public class OutgoingMessageNode extends MessageNode {
 	public MessageToken getReplyToToken() {
 	    return replyToToken;
 	}
+	
+	/**
+	 * Gets the reply type, either <code>REPLY_ANSWERED</code> or
+	 * <code>REPLY_FORWARDED</code>.
+	 *
+	 * @return the reply type, if applicable
+	 */
+	public int getReplyType() {
+        return replyType;
+    }
 	
 	/**
 	 * Set whether the sending of this message has been attempted.

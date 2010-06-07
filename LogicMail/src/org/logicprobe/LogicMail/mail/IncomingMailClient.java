@@ -117,13 +117,14 @@ public interface IncomingMailClient extends MailClient {
     boolean hasExpunge();
     
     /**
-     * Return whether the underlying protocol supports marking a message
-     * as being answered.
+     * Return whether the underlying protocol supports message flags.
      * 
-     * @return True if answered-marking is supported, false otherwise
+     * @return True if message flags are supported, false otherwise
+     * 
      * @see #messageAnswered(MessageToken, MessageFlags)
+     * @see #messageForwarded(MessageToken, MessageFlags)
      */
-    boolean hasAnswered();
+    boolean hasFlags();
     
     /**
      * Return whether the underlying protocol supports an idle connection mode.
@@ -406,11 +407,28 @@ public interface IncomingMailClient extends MailClient {
      * This should do nothing if the underlying protocol does not support
      * setting an answered state on a message.
      *
+     * @param messageToken Token identifying the message being modified
+     * @param messageFlags Existing message flags, to be updated with new flags
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
-     * @see #hasAnswered()
+     * @see #hasFlags()
      */
     void messageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    
+    /**
+     * Sets the flags on a message so the server knows it was forwarded.
+     * This should do nothing if the underlying protocol does not support
+     * setting a forwarded state on a message.
+     *
+     * @param messageToken Token identifying the message being modified
+     * @param messageFlags Existing message flags, to be updated with new flags
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     * @see #hasFlags()
+     */
+    void messageForwarded(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
     
     /**
      * Sends the underlying protocol's no-operation command.
