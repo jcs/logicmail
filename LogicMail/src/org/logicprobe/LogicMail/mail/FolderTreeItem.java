@@ -98,6 +98,8 @@ public class FolderTreeItem implements Serializable {
      * @param name The name of the folder
      * @param path The full path to this folder
      * @param delim The path delimiter
+     * @param selectable True if the folder is selectable
+     * @param appendable True if messages can be appended to the folder
      */
     public FolderTreeItem(FolderTreeItem parent, String name, String path, String delim, boolean selectable, boolean appendable) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
@@ -124,6 +126,7 @@ public class FolderTreeItem implements Serializable {
         this.path = source.path;
         this.delim = source.delim;
         this.selectable = source.selectable;
+        this.appendable = source.appendable;
         this.msgCount = source.msgCount;
         this.unseenCount = source.unseenCount;
     }
@@ -154,8 +157,9 @@ public class FolderTreeItem implements Serializable {
             for(int i=0;i<children.length;i++)
                 children[i].serialize(output);
         }
-        else
+        else {
             output.writeInt(0);
+        }
     }
     
     /* (non-Javadoc)
