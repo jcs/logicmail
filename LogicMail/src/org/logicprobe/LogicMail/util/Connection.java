@@ -171,6 +171,9 @@ public abstract class Connection {
         // Populate the bit-flags for the selected transport types
         // based on the configuration parameters.
         switch(transportType) {
+        case ConnectionConfig.TRANSPORT_WIFI_ONLY:
+            transports = Connection.TRANSPORT_WIFI;
+            break;
         case ConnectionConfig.TRANSPORT_AUTO:
             transports = Connection.TRANSPORT_AUTO;
             break;

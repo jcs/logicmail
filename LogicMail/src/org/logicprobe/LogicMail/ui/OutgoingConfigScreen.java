@@ -140,7 +140,8 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_AUTO),
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_DIRECT_TCP),
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_MDS),
-                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2)
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WIFI_ONLY)
         };
         networkTransportChoiceField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_NETWORK_TRANSPORT),
@@ -206,6 +207,10 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
             enableWiFiCheckboxField.setChecked(false);
             enableWiFiCheckboxField.setEditable(false);
         }
+        else if(networkTransportChoiceField.getSelectedIndex() == 5) {
+            enableWiFiCheckboxField.setChecked(true);
+            enableWiFiCheckboxField.setEditable(false);
+        }
         else {
             enableWiFiCheckboxField.setChecked(true);
             enableWiFiCheckboxField.setEditable(true);
@@ -229,6 +234,9 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
             break;
         case ConnectionConfig.TRANSPORT_WAP2:
             result = 4;
+            break;
+        case ConnectionConfig.TRANSPORT_WIFI_ONLY:
+            result = 5;
             break;
         default:
             result = 0;
@@ -254,6 +262,9 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
             break;
         case 4:
             result = ConnectionConfig.TRANSPORT_WAP2;
+            break;
+        case 5:
+            result = ConnectionConfig.TRANSPORT_WIFI_ONLY;
             break;
         default:
             result = ConnectionConfig.TRANSPORT_GLOBAL;

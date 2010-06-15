@@ -370,12 +370,18 @@ public class ConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_AUTO),
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_DIRECT_TCP),
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_MDS),
-                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2)
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WAP2),
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_WIFI_ONLY)
         };
         networkTransportChoiceField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_NETWORK_TRANSPORT),
                 transportChoices,
                 getTransportChoice(existingGlobalConfig.getTransportType()));
+        networkTransportChoiceField.setChangeListener(new FieldChangeListener() {
+            public void fieldChanged(Field field, int context) {
+                networkTransportChoiceFieldChanged(field, context);
+            }
+        });
         
         enableWiFiCheckboxField = new CheckboxField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_ENABLE_WIFI),
@@ -413,7 +419,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         networkingFieldManager.add(new BlankSeparatorField(separatorHeight));
         add(networkingFieldManager);
     }
-    
+
     private void initOtherFields() {
         otherFieldManager = new VerticalFieldManager();
         
@@ -524,6 +530,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         case ConnectionConfig.TRANSPORT_WAP2:
             result = 3;
             break;
+        case ConnectionConfig.TRANSPORT_WIFI_ONLY:
+            result = 4;
+            break;
         default:
             result = 0;
             break;
@@ -546,6 +555,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         case 3:
             result = ConnectionConfig.TRANSPORT_WAP2;
             break;
+        case 4:
+            result = ConnectionConfig.TRANSPORT_WIFI_ONLY;
+            break;
         default:
             result = ConnectionConfig.TRANSPORT_AUTO;
             break;
@@ -553,7 +565,17 @@ public class ConfigScreen extends AbstractConfigScreen {
         return result;
     }
     
-    public void overrideHostnameCheckboxFieldChanged(Field field, int context) {
+    private void networkTransportChoiceFieldChanged(Field field, int context) {
+        if(networkTransportChoiceField.getSelectedIndex() == 4) {
+            enableWiFiCheckboxField.setChecked(true);
+            enableWiFiCheckboxField.setEditable(false);
+        }
+        else if(!enableWiFiCheckboxField.isEditable()) {
+            enableWiFiCheckboxField.setEditable(true);
+        }
+    }
+    
+    private void overrideHostnameCheckboxFieldChanged(Field field, int context) {
         if (overrideHostnameCheckboxField.getChecked()) {
             localHostnameEditField.setText(localHostname);
             localHostnameEditField.setEditable(true);

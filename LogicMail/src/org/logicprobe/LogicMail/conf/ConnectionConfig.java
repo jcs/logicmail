@@ -67,6 +67,8 @@ public abstract class ConnectionConfig implements Serializable {
     public static final int TRANSPORT_MDS = 20;
     /** Use the WAP 2.0 transport */
     public static final int TRANSPORT_WAP2 = 30;
+    /** Use only WiFi, disabling all other transport types */
+    public static final int TRANSPORT_WIFI_ONLY = 99;
     /** Automatically select the transport type */
     public static final int TRANSPORT_AUTO = 9999;
 
