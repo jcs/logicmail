@@ -54,7 +54,11 @@ public class PopProtocol {
     
     /**
      * Execute the "CAPA" command
-     * @return Table of server capabilities
+     * <p>
+     * This is an optional command, defined in RFC 2449.
+     * </p>
+     * @return Table of server capabilities, or <code>null</code> if the command
+     *         is not supported by the server
      */
 	public Hashtable executeCapa() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
@@ -62,10 +66,10 @@ public class PopProtocol {
                 ("PopProtocol.executeCapa()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-        String[] replyText = executeFollow("CAPA", null);
+        String[] replyText = executeFollow("CAPA", false, null);
         
         if ((replyText == null) || (replyText.length < 1)) {
-            throw new MailException("Unable to query server capabilities");
+            return null;
         }
 
         Hashtable table = new Hashtable();
@@ -89,14 +93,16 @@ public class PopProtocol {
      * Execute the "STARTTLS" command.
      * The underlying connection mode must be switched after the
      * successful execution of this command.
+     * 
+     * @return true, if successful
      */
-	public void executeStartTLS() throws IOException, MailException {
+	public boolean executeStartTLS() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("PopProtocol.executeStartTLS()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-        execute("STARTTLS");
+        return execute("STARTTLS", false) != null;
 	}
 	
     /**
@@ -187,7 +193,7 @@ public class PopProtocol {
             ("PopProtocol.executeTop("+index+", "+lines+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        return executeFollow("TOP " + index + " " + lines, progressHandler);
+        return executeFollow("TOP " + index + " " + lines, true, progressHandler);
     }
     
     /**
@@ -247,12 +253,16 @@ public class PopProtocol {
      * receiving every new line until a lone "." is encountered.
      *
      * @param command The command to execute
+     * @param errorFatal If true, then an "-ERR" response to the command will
+     *                   generate an exception.
      * @param progressHandler progress handler
-     * @return An array of lines containing the response
+     * @return An array of lines containing the response, or <code>null</code>
+     *         if <code>errorFatal</code> is <code>false</code> and the
+     *         response was an error.
      */
-    private String[] executeFollow(String command, MailProgressHandler progressHandler) throws IOException, MailException {
+    private String[] executeFollow(String command, boolean errorFatal, MailProgressHandler progressHandler) throws IOException, MailException {
     	int preCount = connection.getBytesReceived();
-        execute(command);
+        if(execute(command, errorFatal) == null) { return null; }
         
         String buffer = connection.receive();
         int postCount = connection.getBytesReceived();
@@ -278,6 +288,21 @@ public class PopProtocol {
      * @return The result
      */
     private String execute(String command) throws IOException, MailException {
+        return execute(command, false);
+    }
+    
+    /**
+     * Execute a POP3 command, and return the result.
+     * If the command is null, we still wait for a result
+     * so we can receive a multi-line response.
+     *
+     * @param command The command
+     * @param errorFatal If true, then an "-ERR" response to the command will
+     *                   generate an exception.
+     * @return The result, or <code>null</code> if <code>errorFatal</code> is
+     *         <code>false</code> and the response was an error.
+     */
+    private String execute(String command, boolean errorFatal) throws IOException, MailException {
         if(command != null) {
             connection.sendCommand(command);
         }
@@ -285,7 +310,12 @@ public class PopProtocol {
         String result = connection.receive();
         
         if((result.length() > 1) && (result.charAt(0) == '-')) {
-            throw new MailException(result);
+            if(errorFatal) {
+                throw new MailException(result);
+            }
+            else {
+                return null;
+            }
         }
         
         return result;

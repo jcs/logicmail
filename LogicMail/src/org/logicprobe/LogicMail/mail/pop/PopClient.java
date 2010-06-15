@@ -172,10 +172,20 @@ public class PopClient extends AbstractIncomingMailClient {
         
         // TLS initialization
         int serverSecurity = accountConfig.getServerSecurity();
-        if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey("STARTTLS"))
+        if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE
+                && capabilities != null && capabilities.containsKey("STARTTLS"))
         		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
-        	popProtocol.executeStartTLS();
-        	connection.startTLS();
+        	if(popProtocol.executeStartTLS()) {
+        	    connection.startTLS();
+        	}
+        	else {
+        	    return false;
+        	}
+        }
+        else if(capabilities == null && serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE) {
+            if(popProtocol.executeStartTLS()) {
+                connection.startTLS();
+            }
         }
         
         try {
