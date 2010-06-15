@@ -85,6 +85,7 @@ public class ConnectionBB50 extends Connection {
         if(descriptor != null) {
             StreamConnection connection = (StreamConnection)descriptor.getConnection();
             logConnectionInformation(descriptor);
+            setConnectionUrl(descriptor.getUrl());
             return connection;
         }
         else {

@@ -210,6 +210,7 @@ public class ConnectionBB42 extends Connection {
                 EventLogger.logEvent(AppInfo.GUID, msg.getBytes(),
                         EventLogger.INFORMATION);
             }
+            setConnectionUrl(connectStr);
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, e.getMessage().getBytes(), EventLogger.ERROR);
             socket = null;

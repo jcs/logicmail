@@ -125,6 +125,7 @@ public abstract class Connection {
     protected int transports;
     private StreamConnection socket;
     private String localAddress;
+    private String connectionUrl;
     protected GlobalConfig globalConfig;
     protected InputStream input;
     protected OutputStream output;
@@ -229,7 +230,9 @@ public abstract class Connection {
     /**
      * Open a stream connection.
      * This method should encapsulate all platform-specific logic for opening
-     * network connections.
+     * network connections.  If the connection is successfully opened, this
+     * method should also call {@link #setConnectionUrl(String)} to set the
+     * chosen connection string.
      * 
      * @return the stream connection
      * 
@@ -237,6 +240,24 @@ public abstract class Connection {
      */
     protected abstract StreamConnection openStreamConnection() throws IOException;
 
+    /**
+     * Sets the connection string used to open the current connection.
+     *
+     * @param connectionUrl the new connection string
+     */
+    protected void setConnectionUrl(String connectionUrl) {
+        this.connectionUrl = connectionUrl;
+    }
+    
+    /**
+     * Gets the connection string used to open the current connection.
+     *
+     * @return the connection string
+     */
+    public String getConnectionUrl() {
+        return connectionUrl;
+    }
+    
     /**
      * Closes a connection.
      */
@@ -270,6 +291,8 @@ public abstract class Connection {
 
         utilFactory.removeOpenConnection(this);
 
+        setConnectionUrl(null);
+        
         EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
                 EventLogger.INFORMATION);
     }
@@ -617,6 +640,10 @@ public abstract class Connection {
     public void startTLS() throws IOException {
         // Shortcut the method if we're already in SSL mode
         if(socket instanceof TLS10Connection) { return; }
+        
+        if(socket == null || connectionUrl == null) {
+            throw new IOException("Connection has not been opened");
+        }
 
         try {
             TLS10Connection tlsSocket = new TLS10Connection(
@@ -624,7 +651,7 @@ public abstract class Connection {
                             socket,
                             (DataInputStream)input,
                             (DataOutputStream)output),
-                            serverName + ':' + serverPort,
+                            connectionUrl,
                             true);
 
             socket = tlsSocket;
