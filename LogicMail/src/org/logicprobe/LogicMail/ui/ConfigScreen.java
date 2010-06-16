@@ -292,7 +292,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         
         public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
-            int yPos = y + (getRowHeight() / 2) - 8;
+            int fontHeight = graphics.getFont().getHeight();
+            
+            int yPos = y + (fontHeight / 2) - 8;
             if(isFocus && index == getSelectedIndex()) {
                 graphics.drawBitmap(width - 15, yPos, 10, 16, chevronIconHighlighted, 0, 0);
             }

@@ -68,12 +68,13 @@ public class TouchScreenTreeField extends TreeField {
 		if(isNodeSelectable(node)) {
 			int rowWidth = width + indent;
 			int xPos = rowWidth - (chevronIconWidth * 2);
+			int yPos = y + (graphics.getFont().getHeight() / 2) - 11;
 			
 			if(getCurrentNode() == node) {
-				graphics.drawBitmap(xPos, y, chevronIconWidth, chevronIconHeight, chevronIconHighlighted, 0, 0);
+				graphics.drawBitmap(xPos, yPos, chevronIconWidth, chevronIconHeight, chevronIconHighlighted, 0, 0);
 			}
 			else {
-				graphics.drawBitmap(xPos, y, chevronIconWidth, chevronIconHeight, chevronIcon, 0, 0);
+				graphics.drawBitmap(xPos, yPos, chevronIconWidth, chevronIconHeight, chevronIcon, 0, 0);
 			}
 			
 			drawWidth -= (rowWidth - xPos);
