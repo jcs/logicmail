@@ -487,10 +487,19 @@ public class MailboxScreen extends AbstractScreenProvider {
             }
             else {
                 if(index > 0 && messageFieldManager.getField(index - 1) instanceof MessageSeparatorField) {
-                    index--;
+                    Date sepDate = ((MessageSeparatorField)messageFieldManager.getField(index - 1)).getDate();
+                    if(DateTimeUtilities.isSameDate(messageDate.getTime(), sepDate.getTime())) {
+                        index--;
+                    }
                 }
                 
-                Field nextField = messageFieldManager.getField(index);
+                Field nextField;
+                if(index < messageFieldManager.getFieldCount()) {
+                    nextField = messageFieldManager.getField(index);
+                }
+                else {
+                    nextField = null;
+                }
                 
                 if(nextField instanceof MessageSeparatorField) {
                     Date sepDate = ((MessageSeparatorField)nextField).getDate();
@@ -502,7 +511,7 @@ public class MailboxScreen extends AbstractScreenProvider {
                         messageFieldManager.insert(messageField, index + 1);
                     }
                 }
-                else {
+                else if(nextField instanceof MailboxMessageField) {
                     Date nextDate = ((MailboxMessageField)nextField).getMessageNode().getDate();
                     if(DateTimeUtilities.isSameDate(messageDate.getTime(), nextDate.getTime())) {
                         messageFieldManager.insert(messageField, index);
@@ -511,6 +520,10 @@ public class MailboxScreen extends AbstractScreenProvider {
                         messageFieldManager.insert(new MessageSeparatorField(messageDate), index);
                         messageFieldManager.insert(messageField, index);
                     }
+                }
+                else {
+                    messageFieldManager.insert(new MessageSeparatorField(messageDate), index);
+                    messageFieldManager.insert(messageField, index);
                 }
             }
         }
@@ -522,6 +535,16 @@ public class MailboxScreen extends AbstractScreenProvider {
             }
             else  {
                 Field prevField = messageFieldManager.getField(index - 1);
+
+                if(prevField instanceof MessageSeparatorField) {
+                    Date sepDate = ((MessageSeparatorField)prevField).getDate();
+                    if(!DateTimeUtilities.isSameDate(messageDate.getTime(), sepDate.getTime())
+                            && index > 1
+                            && messageFieldManager.getField(index - 2) instanceof MailboxMessageField) {
+                        index--;
+                        prevField = messageFieldManager.getField(index - 1);
+                    }
+                }
                 
                 if(prevField instanceof MessageSeparatorField) {
                     Date sepDate = ((MessageSeparatorField)prevField).getDate();
