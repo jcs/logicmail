@@ -313,8 +313,7 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     public void makeMenu(Menu menu, int instance) {
-    	if(screen.getFieldWithFocus() == messageFieldManager
-    			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
+    	if(messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
     		int node = attachmentsTreeField.getCurrentNode();
     		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof MimeMessagePart) {
     			menu.add(saveAttachmentItem);
@@ -358,8 +357,7 @@ public class MessageScreen extends AbstractScreenProvider {
         switch(key) {
             case Keypad.KEY_ENTER:
             case Keypad.KEY_SPACE:
-            	if(screen.getFieldWithFocus() == messageFieldManager
-            			&& messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
+            	if(messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
             		int node = attachmentsTreeField.getCurrentNode();
             		if(node != -1) {
 	            		if(attachmentsTreeField.getCookie(node) instanceof ContentPart) {
