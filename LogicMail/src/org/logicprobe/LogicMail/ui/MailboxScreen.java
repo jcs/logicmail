@@ -31,9 +31,12 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
@@ -45,10 +48,13 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.DateTimeUtilities;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
@@ -73,7 +79,11 @@ public class MailboxScreen extends AbstractScreenProvider {
     private Hashtable messageFieldMap;
     private boolean firstDisplay = true;
     private MailSettings mailSettings;
+    private GlobalConfig globalConfig;
     private VerticalFieldManager messageFieldManager;
+    private boolean navigationMoved;
+    private boolean displayOrder;
+    private boolean hideDeleted;
     private Screen screen;
     private MessageActions messageActions;
     private boolean composeEnabled;
@@ -89,7 +99,8 @@ public class MailboxScreen extends AbstractScreenProvider {
     	this.mailboxNode = mailboxNode;
     	this.knownMessages = new Vector();
     	this.messageFieldMap = new Hashtable();
-    	mailSettings = MailSettings.getInstance();
+    	this.mailSettings = MailSettings.getInstance();
+    	this.globalConfig = this.mailSettings.getGlobalConfig();
     }
 
     public String getTitle() {
@@ -104,6 +115,29 @@ public class MailboxScreen extends AbstractScreenProvider {
     public MailboxNode getMailboxNode() {
     	return mailboxNode;
     }
+    
+    private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
+        public void mailSettingsSaved(MailSettingsEvent e) {
+            if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_OTHER) != 0) {
+                if(globalConfig.getDispOrder() != displayOrder) {
+                    UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+                        public void run() {
+                            displayOrder = !displayOrder;
+                            displayableChanged();
+                        }
+                    });
+                }
+                if(globalConfig.getHideDeletedMsg() != hideDeleted) {
+                    UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+                        public void run() {
+                            hideDeleted = !hideDeleted;
+                            displayableChanged();
+                        }
+                    });
+                }
+            }
+        }
+    };
     
     /** The mailbox node listener. */
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
@@ -131,7 +165,18 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
     public void onDisplay() {
+        if(this.hideDeleted != globalConfig.getHideDeletedMsg()) {
+            this.hideDeleted = !this.hideDeleted;
+            displayableChanged();
+        }
+        
+        if(this.displayOrder != globalConfig.getDispOrder()) {
+            this.displayOrder = !this.displayOrder;
+            displayableChanged();
+        }
+        this.mailSettings.addMailSettingsListener(mailSettingsListener);
         this.mailboxNode.addMailboxNodeListener(mailboxNodeListener);
+        
         if(firstDisplay) {
             MessageNode[] initialMessages = this.mailboxNode.getMessages();
             for(int i=0; i<initialMessages.length; i++) {
@@ -160,6 +205,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 	 * @see org.logicprobe.LogicMail.ui.BaseScreen#onUndisplay()
 	 */
 	public void onUndisplay() {
+        this.mailSettings.removeMailSettingsListener(mailSettingsListener);
         this.mailboxNode.removeMailboxNodeListener(mailboxNodeListener);
         int size = knownMessages.size();
         for(int i=0; i<size; i++) {
@@ -205,17 +251,11 @@ public class MailboxScreen extends AbstractScreenProvider {
 	 * Initializes the fields.
 	 */
 	public void initFields(Screen screen) {
-		messageFieldManager = new VerticalFieldManager(Manager.USE_ALL_WIDTH | Manager.USE_ALL_HEIGHT) {
-			protected boolean navigationMovement(int dx, int dy, int status, int time) {
-				// Prevent downward navigation if on the last field in the message list.
-				// This is necessary to prevent weird scrolling behavior.
-				if(dy > 0 && messageFieldManager.getFieldWithFocusIndex() == messageFieldManager.getFieldCount() - 1) {
-					return true;
-				}
-				else {
-					return super.navigationMovement(dx, dy, status, time);
-				}
-			}
+		messageFieldManager = new VerticalFieldManager(Manager.VERTICAL_SCROLL | Manager.VERTICAL_SCROLLBAR) {
+		    protected boolean navigationMovement(int dx, int dy, int status, int time) {
+		        navigationMoved = true;
+		        return super.navigationMovement(dx, dy, status, time);
+		    }
 		};
         screen.add(messageFieldManager);
         this.screen = screen;
@@ -250,7 +290,7 @@ public class MailboxScreen extends AbstractScreenProvider {
         if(mailboxNode.getParentAccount().hasExpunge()
                 && mailboxNode.hasDeletedMessages()) {
             MailSettings mailSettings = MailSettings.getInstance();
-            int expungeMode = mailSettings.getGlobalConfig().getExpungeMode();
+            int expungeMode = globalConfig.getExpungeMode();
             if(expungeMode == GlobalConfig.EXPUNGE_PROMPT) {
                 Dialog dialog = new Dialog(
                         Dialog.D_YES_NO,
@@ -266,11 +306,11 @@ public class MailboxScreen extends AbstractScreenProvider {
 
                 if(dialog.getDontAskAgainValue()) {
                     if(choice == Dialog.YES) {
-                        mailSettings.getGlobalConfig().setExpungeMode(GlobalConfig.EXPUNGE_ALWAYS);
+                        globalConfig.setExpungeMode(GlobalConfig.EXPUNGE_ALWAYS);
                         mailSettings.saveSettings();
                     }
                     else if(choice == Dialog.NO) {
-                        mailSettings.getGlobalConfig().setExpungeMode(GlobalConfig.EXPUNGE_NEVER);
+                        globalConfig.setExpungeMode(GlobalConfig.EXPUNGE_NEVER);
                         mailSettings.saveSettings();
                     }
                 }
@@ -313,7 +353,7 @@ public class MailboxScreen extends AbstractScreenProvider {
                 if(screen != null && screen.isDisplayed()) {
                     messageNodes[i].removeMessageNodeListener(messageNodeListener);
                 }
-                removeDisplayableMessage(messageNodes[i])              ;  
+                removeDisplayableMessage(messageNodes[i]);
                 knownMessages.removeElement(messageNodes[i]);
             }
     	}
@@ -328,13 +368,38 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @return True if it should be displayed, false otherwise.
      */
     private boolean isMessageDisplayable(MessageNode messageNode) {
-    	if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0 &&
-    	   mailSettings.getGlobalConfig().getHideDeletedMsg()) {
-    		return false;
-    	}
-    	else {
-    		return true;
-    	}
+        if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0
+                && hideDeleted) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+    
+    /**
+     * A configuration item affecting the displayable state of messages has
+     * changed.  Since this is infrequent, this operation will take the simple
+     * approach of emptying and repopulating the screen.
+     */
+    private void displayableChanged() {
+        int size = knownMessages.size();
+        if(size == 0) { return; }
+        
+        // Clear out all the existing content from the field manager and map
+        messageFieldMap.clear();
+        messageFieldManager.deleteAll();
+        
+        // Reset the flag that controls field focus behavior
+        navigationMoved = false;
+        
+        // Get the known messages display them if appropriate
+        for(int i=0; i<size; i++) {
+            MessageNode messageNode = (MessageNode)knownMessages.elementAt(i);
+            if(isMessageDisplayable(messageNode)) {
+                insertDisplayableMessage(messageNode);
+            }
+        }
     }
     
     /**
@@ -344,14 +409,13 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @param messageNode Message to insert.
      */
     private void insertDisplayableMessage(MessageNode messageNode) {
-    	// TODO: Make sorting by mailbox order vs message date an option
-    	int selectedIndex = messageFieldManager.getFieldWithFocusIndex();
+    	Field selectedField = messageFieldManager.getFieldWithFocus();
     	
 		if(messageFieldManager.getFieldCount() > 0) {
 			Comparator comparator = MessageNode.getComparator();
 			int index = messageFieldManager.getFieldCount();
 			
-			if(mailSettings.getGlobalConfig().getDispOrder()) {
+			if(displayOrder) {
 				// Ascending order
 				MessageNode lastMessage = getLastDisplayedMessage(index - 1);
 				while(lastMessage != null && index > 0 && comparator.compare(lastMessage, messageNode) >= 0) {
@@ -370,19 +434,30 @@ public class MailboxScreen extends AbstractScreenProvider {
 			MailboxMessageField mailboxMessageField =
 				new MailboxMessageField(mailboxNode, messageNode, Field.USE_ALL_WIDTH | Field.FOCUSABLE);
 			messageFieldMap.put(messageNode, mailboxMessageField);
-			messageFieldManager.insert(
-					mailboxMessageField,
-					index);
-			if(selectedIndex != -1) { messageFieldManager.getField(selectedIndex).setFocus(); }
+            insertMessageField(mailboxMessageField, index);
 		}
 		else {
 			MailboxMessageField mailboxMessageField =
 				new MailboxMessageField(mailboxNode, messageNode, Field.USE_ALL_WIDTH | Field.FOCUSABLE);
 			messageFieldMap.put(messageNode, mailboxMessageField);
-			messageFieldManager.insert(
-					mailboxMessageField,
-					0);
-			if(selectedIndex != -1) { messageFieldManager.getField(selectedIndex).setFocus(); }
+			insertMessageField(mailboxMessageField, 0);
+		}
+		
+		if(!navigationMoved) {
+		    // Select newest message
+            int count = messageFieldManager.getFieldCount();
+            if(count > 0) {
+                if(displayOrder) {
+                    messageFieldManager.getField(count - 1).setFocus();
+                }
+                else {
+                    messageFieldManager.getField(0).setFocus();
+                }
+            }
+		}
+		else {
+		    // Keep previous selection
+            if(selectedField != null) { selectedField.setFocus(); }
 		}
     }
 
@@ -396,7 +471,106 @@ public class MailboxScreen extends AbstractScreenProvider {
         MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.remove(messageNode);
         if(mailboxMessageField == null) { return; }
 
-        messageFieldManager.delete(mailboxMessageField);
+        deleteMessageField(mailboxMessageField);
+    }
+    
+    private void insertMessageField(MailboxMessageField messageField, int index) {
+        // It is assumed that the index will only be 0 for the first message.
+        
+        Date messageDate = messageField.getMessageNode().getDate();
+        
+        if(displayOrder) {
+            // Ascending order
+            if(messageFieldManager.getFieldCount() == 0) {
+                messageFieldManager.add(messageField);
+                messageFieldManager.add(new MessageSeparatorField(messageDate));
+            }
+            else {
+                if(index > 0 && messageFieldManager.getField(index - 1) instanceof MessageSeparatorField) {
+                    index--;
+                }
+                
+                Field nextField = messageFieldManager.getField(index);
+                
+                if(nextField instanceof MessageSeparatorField) {
+                    Date sepDate = ((MessageSeparatorField)nextField).getDate();
+                    if(DateTimeUtilities.isSameDate(messageDate.getTime(), sepDate.getTime())) {
+                        messageFieldManager.insert(messageField, index);
+                    }
+                    else {
+                        messageFieldManager.insert(new MessageSeparatorField(messageDate), index + 1);
+                        messageFieldManager.insert(messageField, index + 1);
+                    }
+                }
+                else {
+                    Date nextDate = ((MailboxMessageField)nextField).getMessageNode().getDate();
+                    if(DateTimeUtilities.isSameDate(messageDate.getTime(), nextDate.getTime())) {
+                        messageFieldManager.insert(messageField, index);
+                    }
+                    else {
+                        messageFieldManager.insert(new MessageSeparatorField(messageDate), index);
+                        messageFieldManager.insert(messageField, index);
+                    }
+                }
+            }
+        }
+        else {
+            // Descending order
+            if(messageFieldManager.getFieldCount() == 0) {
+                messageFieldManager.add(new MessageSeparatorField(messageDate));
+                messageFieldManager.add(messageField);
+            }
+            else  {
+                Field prevField = messageFieldManager.getField(index - 1);
+                
+                if(prevField instanceof MessageSeparatorField) {
+                    Date sepDate = ((MessageSeparatorField)prevField).getDate();
+                    if(DateTimeUtilities.isSameDate(messageDate.getTime(), sepDate.getTime())) {
+                        messageFieldManager.insert(messageField, index);
+                    }
+                    else {
+                        messageFieldManager.insert(new MessageSeparatorField(messageDate), index - 1);
+                        messageFieldManager.insert(messageField, index);
+                    }
+                }
+                else {
+                    Date prevDate = ((MailboxMessageField)prevField).getMessageNode().getDate();
+                    if(DateTimeUtilities.isSameDate(messageDate.getTime(), prevDate.getTime())) {
+                        messageFieldManager.insert(messageField, index);
+                    }
+                    else {
+                        messageFieldManager.insert(new MessageSeparatorField(messageDate), index);
+                        messageFieldManager.insert(messageField, index + 1);
+                    }
+                }
+            }
+        }
+    }
+    
+    private void deleteMessageField(MailboxMessageField messageField) {
+        int fieldCount = messageFieldManager.getFieldCount();
+        int index = messageField.getIndex();
+        
+        if(displayOrder) {
+            // Ascending order
+            if(messageFieldManager.getField(index + 1) instanceof MessageSeparatorField
+                    && (index == 0 || messageFieldManager.getField(index - 1) instanceof MessageSeparatorField)) {
+                messageFieldManager.deleteRange(index, 2);
+            }
+            else {
+                messageFieldManager.delete(messageField);
+            }
+        }
+        else {
+            // Descending order
+            if(messageFieldManager.getField(index - 1) instanceof MessageSeparatorField
+                    && (index == fieldCount - 1 || messageFieldManager.getField(index + 1) instanceof MessageSeparatorField)) {
+                messageFieldManager.deleteRange(index - 1, 2);
+            }
+            else {
+                messageFieldManager.delete(messageField);
+            }
+        }
     }
     
     /**
@@ -429,9 +603,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 			
 			if(currentlyDisplayed && !displayable) {
 				// Remove from display
-				MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.get(messageNode);
-				messageFieldManager.delete(mailboxMessageField);
-				messageFieldMap.remove(messageNode);
+			    removeDisplayableMessage(messageNode);
 			}
 			else if(!currentlyDisplayed && displayable) {
 				// Add to display
@@ -514,5 +686,30 @@ public class MailboxScreen extends AbstractScreenProvider {
     		screen.scroll(Manager.DOWNWARD);
     		break;
     	}
+    }
+    
+    private static class MessageSeparatorField extends LabeledSeparatorField {
+        private final Date date;
+        
+        public MessageSeparatorField(Date date) {
+            super(Field.FOCUSABLE | LabeledSeparatorField.BOTTOM_BORDER);
+   
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            
+            StringBuffer buffer = new StringBuffer();
+            DateFormat.getInstance(DateFormat.DATE_LONG).format(cal, buffer, null);
+            setText(buffer.toString());
+            
+            this.date = cal.getTime();
+        }
+        
+        public Date getDate() {
+            return date;
+        }
     }
 }
