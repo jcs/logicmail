@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.PlatformInfo;
+
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Field;
@@ -48,6 +50,9 @@ public class LabeledSeparatorField extends Field {
     public static final long TOP_BORDER = 0x0000000000020L;
     public static final long BOTTOM_BORDER = 0x0000000000040L;
 
+    private static final boolean hasTouchscreen = PlatformInfo.getInstance().hasTouchscreen();
+    private boolean touchHeight;
+    
     /**
      * Instantiates a new mailbox separator field.
      * 
@@ -59,6 +64,7 @@ public class LabeledSeparatorField extends Field {
         this.text = text;
         topBorder = ((style & TOP_BORDER) == TOP_BORDER);
         bottomBorder = ((style & BOTTOM_BORDER) == BOTTOM_BORDER);
+        touchHeight = hasTouchscreen && (getStyle() & Field.FOCUSABLE) != 0;
     }
 
     /**
@@ -93,7 +99,12 @@ public class LabeledSeparatorField extends Field {
      * @see net.rim.device.api.ui.Field#getPreferredHeight()
      */
     public int getPreferredHeight() {
-        return Font.getDefault().getHeight();
+        if(touchHeight) {
+            return getFont().getHeight() + 10;
+        }
+        else {
+            return getFont().getHeight();
+        }
     };
 
     /* (non-Javadoc)
@@ -119,9 +130,10 @@ public class LabeledSeparatorField extends Field {
         int width = this.getWidth();
         int height = this.getHeight();
         int originalColor = graphics.getColor();
-        int textWidth = Font.getDefault().getAdvance(text);
+        Font font = this.getFont();
+        int textWidth = font.getAdvance(text);
 
-        int textX = width / 2 - textWidth / 2;
+        int textX = (width >>> 1) - (textWidth >>> 1);
         if(textX <= 0) {
             textX = 0;
             textWidth = width;
@@ -146,6 +158,12 @@ public class LabeledSeparatorField extends Field {
         }
         graphics.setColor(originalColor);
 
-        graphics.drawText(text, textX, 0, DrawStyle.ELLIPSIS, textWidth);
+        if(touchHeight) {
+            int y = (height >>> 1) - (font.getHeight() >>> 1);
+            graphics.drawText(text, textX, y, DrawStyle.ELLIPSIS, textWidth);
+        }
+        else {
+            graphics.drawText(text, textX, 0, DrawStyle.ELLIPSIS, textWidth);
+        }
     }
 }

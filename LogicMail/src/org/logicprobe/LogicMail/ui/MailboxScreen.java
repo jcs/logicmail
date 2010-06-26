@@ -84,7 +84,6 @@ public class MailboxScreen extends AbstractScreenProvider {
     private boolean navigationMoved;
     private boolean displayOrder;
     private boolean hideDeleted;
-    private Screen screen;
     private MessageActions messageActions;
     private boolean composeEnabled;
 
@@ -251,6 +250,8 @@ public class MailboxScreen extends AbstractScreenProvider {
 	 * Initializes the fields.
 	 */
 	public void initFields(Screen screen) {
+        super.initFields(screen);
+
 		messageFieldManager = new VerticalFieldManager(Manager.VERTICAL_SCROLL | Manager.VERTICAL_SCROLLBAR) {
 		    protected boolean navigationMovement(int dx, int dy, int status, int time) {
 		        navigationMoved = true;
@@ -258,7 +259,6 @@ public class MailboxScreen extends AbstractScreenProvider {
 		    }
 		};
         screen.add(messageFieldManager);
-        this.screen = screen;
     	this.messageActions = navigationController.getMessageActions();
         initMenuItems();
 	}    

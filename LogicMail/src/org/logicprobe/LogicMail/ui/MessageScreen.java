@@ -92,7 +92,6 @@ public class MessageScreen extends AbstractScreenProvider {
 	private LabelField attachmentsLabelField;
 	private BorderedFieldManager attachmentsFieldManager;
 	private VerticalFieldManager messageFieldManager;
-	private Screen screen;
     private MessageActions messageActions;
     
     private MenuItem saveAttachmentItem;
@@ -136,6 +135,8 @@ public class MessageScreen extends AbstractScreenProvider {
     }
     
     public void initFields(Screen screen) {
+        super.initFields(screen);
+        
         // Create screen elements
         screenFieldManager = new VerticalFieldManager(Manager.VERTICAL_SCROLL | Manager.VERTICAL_SCROLLBAR);
         
@@ -158,7 +159,6 @@ public class MessageScreen extends AbstractScreenProvider {
         screenFieldManager.add(headerFieldManager);
         screenFieldManager.add(messageFieldManager);
         screen.add(screenFieldManager);
-        this.screen = screen;
         this.messageActions = navigationController.getMessageActions();
         initMenuItems();
     }

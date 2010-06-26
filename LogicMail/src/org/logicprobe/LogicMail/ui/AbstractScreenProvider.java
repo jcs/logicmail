@@ -44,6 +44,8 @@ import net.rim.device.api.ui.component.Menu;
 public abstract class AbstractScreenProvider implements ScreenProvider {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	protected NavigationController navigationController;
+    protected Screen screen;
+	private StandardScreen standardScreen;
 	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#getStyle()
@@ -80,17 +82,24 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 		this.navigationController = navigationController;
 	}
 	
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#initFields(net.rim.device.api.ui.Screen)
+	/**
+	 * Called when the screen's fields should be initialized and added.
+	 * Implementations that override this method need to make sure that they
+	 * call <code>super.initFields(Screen)</code> within their implementation
+	 * to make sure that this base class is initialized correctly.
+	 * 
+	 * @param screen the screen implementations should add fields to
 	 */
 	public void initFields(Screen screen) {
+	    this.screen = screen;
+	    this.standardScreen = (StandardScreen)standardScreen;
 	}
 
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#keyChar(char, int, int)
 	 */
 	public boolean keyChar(char c, int status, int time) {
-		return false;
+		return standardScreen.keyCharDefault(c, status, time);
 	}
 
 	/* (non-Javadoc)
@@ -103,7 +112,7 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#navigationClick(int, int)
 	 */
 	public boolean navigationClick(int status, int time) {
-		return false;
+		return standardScreen.navigationClickDefault(status, time);
 	}
 
 	/* (non-Javadoc)

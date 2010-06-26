@@ -83,7 +83,6 @@ public class CompositionScreen extends AbstractScreenProvider {
     private AccountConfig accountConfig;
     private UnicodeNormalizer unicodeNormalizer;
     
-    private Screen screen;
     private BorderedFieldManager recipientsFieldManager;
 	private BorderedFieldManager subjectFieldManager;
 	private BorderedFieldManager messageFieldManager;
@@ -248,6 +247,8 @@ public class CompositionScreen extends AbstractScreenProvider {
     }
     
     public void initFields(Screen screen) {
+        super.initFields(screen);
+
         FieldFactory fieldFactory = FieldFactory.getInstance();
     	recipientsFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
@@ -313,8 +314,6 @@ public class CompositionScreen extends AbstractScreenProvider {
 	        appendSignature();
     		messageEditField.setEditable(true);
         }
-        
-        this.screen = screen;
     }
 
     public boolean onClose() {

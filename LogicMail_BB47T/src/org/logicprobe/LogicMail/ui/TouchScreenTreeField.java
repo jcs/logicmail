@@ -43,11 +43,11 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
  * that offer the choice.
  */
 public class TouchScreenTreeField extends TreeField {
-	private TreeFieldCallback callback;
-	private static Bitmap chevronIcon = Bitmap.getBitmapResource("chevron_right_black_15x22.png");
-	private static Bitmap chevronIconHighlighted = Bitmap.getBitmapResource("chevron_right_white_15x22.png");
-	private static int chevronIconWidth = chevronIcon.getWidth();
-	private static int chevronIconHeight = chevronIcon.getHeight();
+	private final TreeFieldCallback callback;
+	private static final Bitmap chevronIcon = Bitmap.getBitmapResource("chevron_right_black_15x22.png");
+	private static final Bitmap chevronIconHighlighted = Bitmap.getBitmapResource("chevron_right_white_15x22.png");
+	private static final int chevronIconWidth = chevronIcon.getWidth();
+	private static final int chevronIconHeight = chevronIcon.getHeight();
 	
 	public TouchScreenTreeField(TreeFieldCallback callback, long style) {
 		super(new TreeFieldCallbackProxy(), style);

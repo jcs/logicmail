@@ -286,24 +286,38 @@ public class StandardScreen extends MainScreen {
      * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
     protected boolean navigationClick(int status, int time) {
-        boolean result = screenProvider.navigationClick(status, time);
-        if(!result) {
-            result = super.navigationClick(status, time);
-        }
-        return result;
+        return screenProvider.navigationClick(status, time);
     }
 
+    /**
+     * Provides a way for <code>ScreenProvider</code> implementations to call
+     * {@link net.rim.device.api.ui.Screen#navigationClick(int, int)} if they
+     * do not want to override its behavior.
+     *
+     * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
+     */
+    boolean navigationClickDefault(int status, int time) {
+        return super.navigationClick(status, time);
+    }
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     protected boolean keyChar(char c, int status, int time) {
-        boolean result = screenProvider.keyChar(c, status, time);
-        if(!result) {
-            result = super.keyChar(c, status, time);
-        }
-        return result;
+        return screenProvider.keyChar(c, status, time);
     }
 
+    /**
+     * Provides a way for <code>ScreenProvider</code> implementations to call
+     * {@link net.rim.device.api.ui.Screen#keyChar(char, int, int)} if they
+     * do not want to override its behavior.
+     *
+     * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
+     */
+    boolean keyCharDefault(char c, int status, int time) {
+        return super.keyChar(c, status, time);
+    }
+    
     /**
      * Gets the enabled state of a shortcut button.
      * Provided for subclasses that support shortcut buttons.

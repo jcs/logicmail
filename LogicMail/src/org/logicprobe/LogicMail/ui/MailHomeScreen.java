@@ -77,7 +77,6 @@ public class MailHomeScreen extends AbstractScreenProvider {
     private static final int SHORTCUT_UP = 3;
     private static final int SHORTCUT_DOWN = 4;
 
-    private Screen screen;
     private MailRootNode mailRootNode;
     private MailManager mailManager;
     private Hashtable accountTreeNodeMap;
@@ -174,6 +173,8 @@ public class MailHomeScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#initFields(net.rim.device.api.ui.Screen)
      */
     public void initFields(Screen screen) {
+        super.initFields(screen);
+
         treeField = FieldFactory.getInstance().getScreenTreeField(new TreeFieldCallback() {
             public void drawTreeItem(TreeField treeField, Graphics graphics,
                     int node, int y, int width, int indent) {
@@ -191,7 +192,6 @@ public class MailHomeScreen extends AbstractScreenProvider {
         screen.add(treeField);
 
         initMenuItems();
-        this.screen = screen;
 
         refreshMailTree();
         mailManager.addMailManagerListener(mailManagerListener);
