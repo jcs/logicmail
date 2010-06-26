@@ -170,6 +170,7 @@ MESSAGEPROPERTIES_SUBJECT#0="Subject:";
 MESSAGEPROPERTIES_TITLE#0="Message Properties";
 MESSAGEPROPERTIES_TO#0="To:";
 MESSAGERENDERER_UNSUPPORTED#0="Unsupported type:";
+MESSAGE_ATTACHMENT#0="Attachment";
 MESSAGE_ATTACHMENTS#0="Attachments";
 MESSAGE_NOTDISPLAYABLE#0="This message does not contain any sections that could be displayed.";
 MESSAGE_NO_ACCOUNTS_HAVE_SENDERS#0="No accounts are currently configured for sending mail.";

@@ -46,25 +46,39 @@ public class BorderedFieldManager extends Manager {
 	
 	private static final int borderMargin = borderWidth * 2;
 	
+	protected static final long BORDER_STYLE_MASK = 0x00000000000000F0L;
+    protected static final long FILL_STYLE_MASK   = 0x0000000000000F00L;
+    
 	/**
 	 * Show a normal border on the bottom.
 	 */
-	public static final long BOTTOM_BORDER_NORMAL = 0x0000000000000L;
+	public static final long BOTTOM_BORDER_NORMAL = 0x0000000000000000L;
 	
 	/**
 	 * Do not show a border on the bottom.
 	 * Used to eliminate excessive border space on
 	 * vertically stacked instances.
 	 */
-	public static final long BOTTOM_BORDER_NONE = 0x0000000000020L;
+	public static final long BOTTOM_BORDER_NONE = 0x0000000000000020L;
 	
 	/**
 	 * Show a line on the bottom of the border.
 	 */
-	public static final long BOTTOM_BORDER_LINE = 0x0000000000040L;
+	public static final long BOTTOM_BORDER_LINE = 0x0000000000000040L;
+	
+	/**
+	 * Fill in the bordered area, which is normal behavior.
+	 */
+	public static final long OUTER_FILL_NORMAL = 0x0000000000000000L;
+	
+	/**
+	 * Only draw the inner line, not filling the outer area.
+	 */
+    public static final long OUTER_FILL_NONE = 0x0000000000000100L;
 	
 	private boolean bottomBorderNone;
 	private boolean bottomBorderLine;
+	private boolean outerFill;
 	private boolean useAllHeight;
 	
 	/**
@@ -72,10 +86,7 @@ public class BorderedFieldManager extends Manager {
 	 */
 	public BorderedFieldManager() {
         super(Manager.NO_HORIZONTAL_SCROLL | Manager.NO_VERTICAL_SCROLL | BOTTOM_BORDER_NORMAL);
-    	long style = this.getStyle();
-        bottomBorderNone = ((style & BOTTOM_BORDER_NONE) == BOTTOM_BORDER_NONE);
-        bottomBorderLine = ((style & BOTTOM_BORDER_LINE) == BOTTOM_BORDER_LINE);
-        useAllHeight = ((style & USE_ALL_HEIGHT) == USE_ALL_HEIGHT);
+        initStyles();
     }
 
     /**
@@ -85,11 +96,20 @@ public class BorderedFieldManager extends Manager {
      */
     public BorderedFieldManager(long style) {
         super(style);
-        bottomBorderNone = ((style & BOTTOM_BORDER_NONE) == BOTTOM_BORDER_NONE);
-        bottomBorderLine = ((style & BOTTOM_BORDER_LINE) == BOTTOM_BORDER_LINE);
-        useAllHeight = ((style & USE_ALL_HEIGHT) == USE_ALL_HEIGHT);
+        initStyles();
     }
 
+    private void initStyles() {
+        long style = this.getStyle();
+        
+        bottomBorderNone = (style & BORDER_STYLE_MASK) == BOTTOM_BORDER_NONE;
+        bottomBorderLine = (style & BORDER_STYLE_MASK) == BOTTOM_BORDER_LINE;
+        
+        outerFill = (style & FILL_STYLE_MASK) == OUTER_FILL_NORMAL;
+        
+        useAllHeight = ((style & USE_ALL_HEIGHT) == USE_ALL_HEIGHT);
+    }
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Manager#paint(net.rim.device.api.ui.Graphics)
      */
@@ -109,17 +129,25 @@ public class BorderedFieldManager extends Manager {
     }
 
     protected void paintBorder(Graphics graphics, int width, int height, int backgroundColor) {
-        // Paint the fill for the field
-        graphics.setColor(Color.LIGHTGREY);
-        graphics.fillRect(0, 0, width, height);
-
-        // Paint the rounded rectangular cutout section for the contents
-        graphics.setColor(backgroundColor);
-        graphics.fillRoundRect(borderWidth, borderWidth, width - borderMargin, height - (bottomBorderNone ? borderWidth : borderMargin), 10, 10);
+        if(outerFill) {
+            // Paint the fill for the field
+            graphics.setColor(Color.LIGHTGREY);
+            graphics.fillRect(0, 0, width, height);
+    
+            // Paint the rounded rectangular cutout section for the contents
+            graphics.setColor(backgroundColor);
+            graphics.fillRoundRect(borderWidth, borderWidth,
+                    width - borderMargin,
+                    height - (bottomBorderNone ? borderWidth : borderMargin),
+                    10, 10);
+        }
 
         // Paint the inner border of the cutout section
         graphics.setColor(Color.DARKGRAY);
-        graphics.drawRoundRect(borderWidth, borderWidth, width - borderMargin, height - (bottomBorderNone ? borderWidth : borderMargin), 10, 10);
+        graphics.drawRoundRect(borderWidth, borderWidth,
+                width - borderMargin,
+                height - (bottomBorderNone ? borderWidth : borderMargin),
+                10, 10);
     }
     
     protected void paintSeparator(Graphics graphics, int width, int height) {

@@ -43,7 +43,6 @@ import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Application;
-import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.KeypadListener;
@@ -59,13 +58,12 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.NullField;
 import net.rim.device.api.ui.component.Status;
-import net.rim.device.api.ui.component.TreeField;
-import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import org.logicprobe.LogicMail.AppInfo;
@@ -91,7 +89,8 @@ public class MessageScreen extends AbstractScreenProvider {
     private VerticalFieldManager screenFieldManager;
     private BorderedFieldManager propertiesFieldManager;
 	private BorderedFieldManager headerFieldManager;
-	private TreeField attachmentsTreeField;
+	private LabelField attachmentsLabelField;
+	private BorderedFieldManager attachmentsFieldManager;
 	private VerticalFieldManager messageFieldManager;
 	private Screen screen;
     private MessageActions messageActions;
@@ -153,7 +152,7 @@ public class MessageScreen extends AbstractScreenProvider {
         messageFieldManager.add(new NullField(Field.FOCUSABLE));
         
         populatePropertiesFields(propertiesFieldManager);
-        populateHeaderFiends(headerFieldManager);
+        populateHeaderFields(headerFieldManager);
         
         screenFieldManager.add(propertiesFieldManager);
         screenFieldManager.add(headerFieldManager);
@@ -194,7 +193,7 @@ public class MessageScreen extends AbstractScreenProvider {
         populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_REPLYTO, messageNode.getReplyTo());
     }
     
-    private void populateHeaderFiends(Manager fieldManager) {
+    private void populateHeaderFields(Manager fieldManager) {
         if(isSentFolder) {
             populateRecipientFields(fieldManager, LogicMailResource.MESSAGEPROPERTIES_TO, messageNode.getTo());
         }
@@ -296,10 +295,10 @@ public class MessageScreen extends AbstractScreenProvider {
     private void initMenuItems() {
 	    saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 300050, 1005) {
 	        public void run() {
-	    		int node = attachmentsTreeField.getCurrentNode();
-	    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof ContentPart) {
-	    			saveAttachment((ContentPart)attachmentsTreeField.getCookie(node));
-	    		}
+	            Field field = attachmentsFieldManager.getFieldWithFocus();
+	            if(field instanceof AttachmentField) {
+	                saveAttachment(((AttachmentField)field).getMessagePart());
+	            }
 	        }
 	    };
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
@@ -313,10 +312,9 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     public void makeMenu(Menu menu, int instance) {
-    	if(messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
-    		int node = attachmentsTreeField.getCurrentNode();
-    		if(node != -1 && attachmentsTreeField.getCookie(node) instanceof MimeMessagePart) {
-    			menu.add(saveAttachmentItem);
+    	if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
+    		if(attachmentsFieldManager.getFieldWithFocus() instanceof AttachmentField) {
+                menu.add(saveAttachmentItem);
     		}
     	}
     	
@@ -331,57 +329,55 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#navigationClick(int, int)
      */
     public boolean navigationClick(int status, int time) {
-    	if(attachmentsTreeField != null && attachmentsTreeField == screen.getLeafFieldWithFocus()) {
-    		int node = attachmentsTreeField.getCurrentNode();
-    		if(node != -1 && attachmentsTreeField.getFirstChild(node) != -1) {
-    			attachmentsTreeField.setExpanded(node, !attachmentsTreeField.getExpanded(node));
-    			return true;
-    		}
-    		else {
-    			return false;
-    		}
-    	}
-    	else {
-    		return false;
-    	}
+        if(attachmentsLabelField.isFocus()
+                && attachmentsFieldManager != null
+                && attachmentsFieldManager.getFieldCount() > 0) {
+            attachmentsFieldManager.setFocus();
+            attachmentsFieldManager.getField(0).setFocus();
+            return true;
+        }
+        else if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
+            saveAttachmentItem.run();
+            return true;
+        }
+        else {
+            return false;
+        }
     }
     
     /* (non-Javadoc)
-     * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
+     * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#keyChar(char, int, int)
      */
-    public boolean keyChar(char key,
-                           int status,
-                           int time)
-    {
+    public boolean keyChar(
+            char key,
+            int status,
+            int time) {
         boolean retval = false;
         switch(key) {
-            case Keypad.KEY_ENTER:
-            case Keypad.KEY_SPACE:
-            	if(messageFieldManager.getFieldWithFocus() == attachmentsTreeField) {
-            		int node = attachmentsTreeField.getCurrentNode();
-            		if(node != -1) {
-	            		if(attachmentsTreeField.getCookie(node) instanceof ContentPart) {
-	            			saveAttachment((ContentPart)attachmentsTreeField.getCookie(node));
-	            			retval = true;
-	            		}
-	            		else if(attachmentsTreeField.getFirstChild(node) != -1) {
-	            			attachmentsTreeField.setExpanded(node, !attachmentsTreeField.getExpanded(node));
-	            			retval = true;
-	            		}
-            		}
-            	}
-            	else {
-	            	if(status == 0) {
-	                    screen.scroll(Manager.DOWNWARD);
-	                    retval = true;
-	                }
-	                else if(status == KeypadListener.STATUS_ALT) {
-	                	screen.scroll(Manager.UPWARD);
-	                    retval = true;
-	                }
-            	}
-                break;
-	        }
+        case Keypad.KEY_ENTER:
+            if(attachmentsLabelField.isFocus()
+                    && attachmentsFieldManager != null
+                    && attachmentsFieldManager.getFieldCount() > 0) {
+                attachmentsFieldManager.setFocus();
+                attachmentsFieldManager.getField(0).setFocus();
+                retval = true;
+            }
+            else if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
+                saveAttachmentItem.run();
+                retval = true;
+            }
+            break;
+        case Keypad.KEY_SPACE:
+            if(status == 0) {
+                screen.scroll(Manager.DOWNWARD);
+                retval = true;
+            }
+            else if(status == KeypadListener.STATUS_ALT) {
+                screen.scroll(Manager.UPWARD);
+                retval = true;
+            }
+            break;
+        }
         return retval;
     }
     
@@ -410,21 +406,6 @@ public class MessageScreen extends AbstractScreenProvider {
 
     private void renderMessage() {
 		Vector messageFields = new Vector();
-
-		// Add a collapsed TreeField to show attachments, if any exist
-    	MimeMessagePart[] attachmentParts = messageNode.getAttachmentParts();
-    	if(attachmentParts != null && attachmentParts.length > 0) {
-    		attachmentsTreeField = new TreeField(new TreeFieldCallback() {
-    			public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
-    				attachmentsTreeField_DrawTreeItem(treeField, graphics, node, y, width, indent);
-    			}}, Field.FOCUSABLE);
-    		attachmentsTreeField.setDefaultExpanded(false);
-    		int id = attachmentsTreeField.addChildNode(0, resources.getString(LogicMailResource.MESSAGE_ATTACHMENTS));
-    		for(int i=attachmentParts.length - 1; i>=0; --i) {
-    			attachmentsTreeField.addChildNode(id, attachmentParts[i]);
-    		}
-    		messageFields.addElement(attachmentsTreeField);
-    	}
     	
     	// Add fields to display the message body
     	MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());    	
@@ -440,6 +421,22 @@ public class MessageScreen extends AbstractScreenProvider {
 			messageFields.addElement(
 					new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
     	}
+    	
+    	// Add the attachments list at the bottom of the message
+        MimeMessagePart[] attachmentParts = messageNode.getAttachmentParts();
+        if(attachmentParts != null && attachmentParts.length > 0) {
+            attachmentsFieldManager =
+                FieldFactory.getInstance().getBorderedFieldManager(
+                        BorderedFieldManager.BOTTOM_BORDER_NORMAL
+                        | BorderedFieldManager.OUTER_FILL_NONE);
+            for(int i=0; i<attachmentParts.length; i++) {
+                attachmentsFieldManager.add(new AttachmentField(messageNode, (ContentPart)attachmentParts[i]));
+            }
+            messageFields.addElement(attachmentsFieldManager);
+        }
+        else {
+            attachmentsFieldManager = null;
+        }
     	
 		drawMessageFields(messageFields);
 		messageRendered = true;
@@ -469,6 +466,29 @@ public class MessageScreen extends AbstractScreenProvider {
                 	MessageFieldFactory.handleRenderedField(field);
             		field.setChangeListener(fieldChangeListener);
             	}
+            }
+            
+            // Add the attachment indicator header
+            if(attachmentsLabelField != null) {
+                headerFieldManager.delete(attachmentsLabelField);
+                attachmentsLabelField = null;
+            }
+            if(attachmentsFieldManager != null) {
+                int attachmentCount = attachmentsFieldManager.getFieldCount();
+                if(attachmentCount == 1) {
+                    attachmentsLabelField = new LabelField(
+                            "1 "
+                            + resources.getString(LogicMailResource.MESSAGE_ATTACHMENT),
+                            Field.FOCUSABLE);
+                    headerFieldManager.add(attachmentsLabelField);
+                }
+                else if(attachmentCount > 1) {
+                    attachmentsLabelField = new LabelField(
+                            Integer.toString(attachmentCount) + ' '
+                            + resources.getString(LogicMailResource.MESSAGE_ATTACHMENTS),
+                            Field.FOCUSABLE);
+                    headerFieldManager.add(attachmentsLabelField);
+                }
             }
             
             padAndFocusScreen();
@@ -565,72 +585,6 @@ public class MessageScreen extends AbstractScreenProvider {
 			}
     	}
     }
-    
-	private void attachmentsTreeField_DrawTreeItem(
-			TreeField treeField,
-			Graphics graphics,
-			int node,
-			int y,
-			int width,
-			int indent) {
-		Object cookie = attachmentsTreeField.getCookie(node);
-		if(cookie instanceof ContentPart) {
-			ContentPart messagePart = (ContentPart)cookie;
-			
-	    	StringBuffer buf = new StringBuffer();
-	    	buf.append(messagePart.getName());
-	    	if(buf.length() == 0) {
-	    		buf.append(messagePart.getMimeType());
-	    		buf.append('/');
-	    		buf.append(messagePart.getMimeSubtype());
-	    	}
-
-	    	int partSize = messagePart.getSize();
-	    	if(partSize > 0) {
-	    		buf.append(" (");
-	    		if(partSize < 1024) {
-	    			buf.append(partSize);
-	    			buf.append('B');
-	    		}
-	    		else {
-	    			partSize /= 1024;
-	    			buf.append(partSize);
-	    			buf.append("kB");
-	    		}
-	    		buf.append(')');
-	    	}
-
-	    	Bitmap icon = MessageIcons.getIcon(messagePart);
-	    	if(icon != null) {
-	    		int rowHeight = treeField.getRowHeight();
-	    		int fontHeight = graphics.getFont().getHeight();
-
-	    		graphics.drawBitmap(
-	    				indent + (rowHeight/2 - icon.getWidth()/2),
-	    				y + (fontHeight/2 - icon.getWidth()/2),
-	    				icon.getWidth(),
-	    				icon.getHeight(),
-	    				icon, 0, 0);
-	    		
-	    		indent += rowHeight;
-	    	}
-	    	
-	    	Font originalFont = graphics.getFont();
-	    	Font displayFont;
-	    	if(messageNode.getMessageContent(messagePart) != null) {
-	    		displayFont = originalFont.derive(Font.BOLD);
-	    	}
-	    	else {
-	    		displayFont = originalFont;
-	    	}
-	    	graphics.setFont(displayFont);
-	    	graphics.drawText(buf.toString(), indent, y, Graphics.ELLIPSIS, width);
-	    	graphics.setFont(originalFont);
-		}
-		else {
-			graphics.drawText(cookie.toString(), indent, y, Graphics.ELLIPSIS, width);
-		}
-	}
 
 	/**
 	 * Invoked by a field when a property changes. 
