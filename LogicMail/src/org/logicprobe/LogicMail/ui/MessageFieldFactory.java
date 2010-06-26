@@ -44,6 +44,7 @@ import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.component.ActiveRichTextField;
 import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.RichTextField;
 
@@ -74,7 +75,7 @@ public class MessageFieldFactory {
     		return createBrowserField(messageNode, content);
     	}
     	else {
-    		return new RichTextField(getNormalizedText(content));
+    		return new ActiveRichTextField(getNormalizedText(content));
     	}
 	}
 
