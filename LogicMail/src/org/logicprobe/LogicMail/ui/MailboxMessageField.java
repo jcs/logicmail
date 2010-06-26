@@ -102,7 +102,7 @@ public class MailboxMessageField extends Field {
 	 */
 	protected void layout(int width, int height) {
         maxWidth = width;
-        lineHeight = getPreferredHeight() / 2;
+        lineHeight = getPreferredHeight() >>> 1;
 		setExtent(width, getPreferredHeight());
 	}
 
@@ -132,6 +132,8 @@ public class MailboxMessageField extends Field {
 	 * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
 	 */
 	protected void paint(Graphics graphics) {
+	    int doubleLineHeight = lineHeight * 2;
+	    int halfLineHeight = lineHeight >>> 1;
         String senderText = createSenderText();
         String dateString = createDisplayDate();
         Bitmap attachmentIcon = null;
@@ -149,12 +151,12 @@ public class MailboxMessageField extends Field {
         
         // Draw the separator line
         graphics.setColor(Color.DARKGRAY);
-        graphics.drawLine(0, lineHeight * 2 - 1, width, lineHeight * 2 - 1);
+        graphics.drawLine(0, doubleLineHeight - 1, width, doubleLineHeight - 1);
         graphics.setColor(originalColor);
         
         // Draw the message icon
         Bitmap messageIcon = NodeIcons.getIcon(messageNode);
-        int iconY = (lineHeight / 2) - (messageIcon.getHeight() / 2);
+        int iconY = halfLineHeight - (messageIcon.getHeight() >>> 1);
         graphics.drawBitmap(
                 1,
                 iconY,
@@ -167,17 +169,26 @@ public class MailboxMessageField extends Field {
             graphics.setColor(originalColor);
         }
         
+        // Draw the message icon, if applicable
         if(attachmentIcon != null) {
-            graphics.drawBitmap(1, lineHeight, 20, lineHeight*2, attachmentIcon, 0, 0);
+            graphics.drawBitmap(1,
+                    doubleLineHeight - halfLineHeight - (attachmentIcon.getHeight() >>> 1),
+                    20, lineHeight, attachmentIcon, 0, 0);
         }
 
+        Font normalFont = graphics.getFont();
+        
         // Draw the sender text
+        if((messageNode.getFlags() & MessageNode.Flag.SEEN) == 0) {
+            graphics.setFont(normalFont.derive(Font.BOLD));
+        }
         if(senderText != null) {
             graphics.drawText(
 	    		normalize(senderText), 20, 0,
 	    		DrawStyle.ELLIPSIS,
 	    		senderWidth);
         }
+        graphics.setFont(normalFont);
         
         // Draw the subject text
         String subject = messageNode.getSubject();
@@ -246,27 +257,11 @@ public class MailboxMessageField extends Field {
         	return null;
         }
         
-        Calendar nowCal = Calendar.getInstance();
-        Calendar dispCal = Calendar.getInstance();
-        DateFormat dateFormat;
+        DateFormat dateFormat = DateFormat.getInstance(DateFormat.TIME_MEDIUM);
 
+        Calendar dispCal = Calendar.getInstance();
         dispCal.setTime(date);
 
-        // Determine the date format to display,
-        // based on the distance from the current time
-        if(nowCal.get(Calendar.YEAR) == dispCal.get(Calendar.YEAR))
-            if((nowCal.get(Calendar.MONTH) == dispCal.get(Calendar.MONTH)) &&
-            (nowCal.get(Calendar.DAY_OF_MONTH) == dispCal.get(Calendar.DAY_OF_MONTH))) {
-            	// Show just the time
-                dateFormat = DateFormat.getInstance(DateFormat.TIME_MEDIUM);
-            }
-            else {
-                dateFormat = DateFormat.getInstance(DateFormat.DATE_SHORT);
-            }
-        else {
-            dateFormat = DateFormat.getInstance(DateFormat.DATE_SHORT);
-        }
-    
         StringBuffer buffer = new StringBuffer();
         dateFormat.format(dispCal, buffer, null);
         return buffer.toString();
