@@ -76,7 +76,6 @@ public class AccountNode implements Node {
     private AccountConfig accountConfig;
     private int status;
     private boolean shutdown = false;
-    private DataStore accountDataStore;
     
     /** Map of folders to message to fetch for them. */
     private Hashtable folderMessagesToFetch;
@@ -864,34 +863,30 @@ public class AccountNode implements Node {
      * Saves the mailbox tree to persistent storage.
      */
     private void save() {
-        if (accountDataStore == null) {
-            accountDataStore = DataStoreFactory.getConnectionCacheStore();
-        }
+        DataStore connectionCache = DataStoreFactory.getConnectionCacheStore();
 
         if(mailStore.isLocal()) {
-        	accountDataStore.putNamedObject("LocalMailStore", rootMailbox);
+            connectionCache.putNamedObject("LocalMailStore", rootMailbox);
         }
         else {
-        	accountDataStore.putNamedObject(Long.toString(accountConfig.getUniqueId()), rootMailbox);
+            connectionCache.putNamedObject(Long.toString(accountConfig.getUniqueId()), rootMailbox);
         }
-        accountDataStore.save();
+        connectionCache.save();
     }
 
     /**
      * Loads the mailbox tree from persistent storage.
      */
     private void load() {
-        if (accountDataStore == null) {
-            accountDataStore = DataStoreFactory.getConnectionCacheStore();
-        }
+        DataStore connectionCache = DataStoreFactory.getConnectionCacheStore();
         
         Object loadedObject;
         if(mailStore.isLocal()) {
-	        loadedObject = accountDataStore.getNamedObject("LocalMailStore");
+	        loadedObject = connectionCache.getNamedObject("LocalMailStore");
         	
         }
         else {
-	        loadedObject = accountDataStore.getNamedObject(Long.toString(accountConfig.getUniqueId()));
+	        loadedObject = connectionCache.getNamedObject(Long.toString(accountConfig.getUniqueId()));
         }
         
         if (loadedObject instanceof MailboxNode) {
@@ -906,15 +901,22 @@ public class AccountNode implements Node {
     /**
      * Clear any persistent data associated with this account node.
      *
-     * <p>When this account node removed from the model tree
-     * because the underlying account has been deleted,
-     * this method needs to be called to ensure that
-     * persistent data does not linger on the device.
+     * <p>
+     * When this account node removed from the model tree because the
+     * underlying account has been deleted, this method needs to be called to
+     * ensure that persistent data does not linger on the device.
+     * </p>
      */
     public void removeSavedData() {
-        if (accountDataStore != null) {
-            accountDataStore.delete();
-            accountDataStore = null;
+        if (!mailStore.isLocal()) {
+            DataStore connectionCache = DataStoreFactory.getConnectionCacheStore();
+            connectionCache.removeNamedObject(Long.toString(accountConfig.getUniqueId()));
+            
+            // This will only exist on certain account types, but this is the
+            // easiest place from which to clean it up.
+            connectionCache.removeNamedObject(Long.toString(accountConfig.getUniqueId()) + "_INBOX");
+            
+            connectionCache.save();
         }
     }
 

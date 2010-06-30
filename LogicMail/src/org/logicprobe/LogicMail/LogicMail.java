@@ -38,6 +38,7 @@ import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
+import net.rim.device.api.synchronization.SyncManager;
 import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.Display;
@@ -57,6 +58,7 @@ import org.logicprobe.LogicMail.ui.BlankSeparatorField;
 import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.ui.ThrobberField;
+import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
@@ -114,6 +116,7 @@ public final class LogicMail extends UiApplication {
             Thread loadingThread = new Thread() {
                 public void run() {
                     // Load the configuration
+                    DataStoreFactory.getConnectionCacheStore().load();
                     MailSettings.getInstance().loadSettings();
                     // Set the language, if configured
                     String languageCode =
@@ -222,6 +225,9 @@ public final class LogicMail extends UiApplication {
             // Configure the rollover icons
             HomeScreen.updateIcon(AppInfo.getIcon(), 0);
             HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
+            
+            // Register for synchronization
+            SyncManager.getInstance().enableSynchronization(LogicMailSyncCollection.getInstance());
         }
 
         // Configure a notification source for each account

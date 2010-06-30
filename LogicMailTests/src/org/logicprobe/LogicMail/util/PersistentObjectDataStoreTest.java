@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2007, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,40 +35,33 @@ import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
-import javax.microedition.rms.RecordStore;
-import javax.microedition.rms.RecordStoreException;
+
+import net.rim.device.api.system.PersistentStore;
 
 /**
- * Unit test for RmsDataStore
+ * Unit test for PersistentObjectDataStore
  */
-public class RmsDataStoreTest extends TestCase {
-    private String storeName;
+public class PersistentObjectDataStoreTest extends TestCase {
+    // "org.logicprobe.LogicMail.util.PersistentObjectDataStoreTest"
+    private static final long storeUid = 0xcf9cd4c50a72e8abL;
     
     /** Creates a new instance of RmsDataStoreTest */
-    public RmsDataStoreTest() {
+    public PersistentObjectDataStoreTest() {
     }
     
-    public RmsDataStoreTest(String testName, TestMethod testMethod) {
+    public PersistentObjectDataStoreTest(String testName, TestMethod testMethod) {
         super(testName, testMethod);
     }
 
     public void setUp() {
-        storeName = "LogicMail_RmsDataStoreTest";
     }
 
     public void tearDown() {
-        // Delete the test record store
-        try {
-            RecordStore.deleteRecordStore(storeName);
-        } catch (RecordStoreException exp) {
-            // do nothing
-        }
-
-        storeName = null;
+        PersistentStore.destroyPersistentObject(storeUid);
     }
 
     public void testObject() {
-        RmsDataStore instance = new RmsDataStore(storeName);
+        PersistentObjectDataStore instance = new PersistentObjectDataStore(storeUid);
         SerializableTestClass testObject1 = new SerializableTestClass();
         SerializableTestClass testObject2 = new SerializableTestClass();
         testObject1.setValue(40);
@@ -91,7 +84,7 @@ public class RmsDataStoreTest extends TestCase {
     }
 
     public void testNamedObject() {
-        RmsDataStore instance = new RmsDataStore(storeName);
+        PersistentObjectDataStore instance = new PersistentObjectDataStore(storeUid);
         SerializableTestClass testObject1 = new SerializableTestClass();
         SerializableTestClass testObject2 = new SerializableTestClass();
         testObject1.setValue(40);
@@ -119,7 +112,7 @@ public class RmsDataStoreTest extends TestCase {
     }
     
     public void testSaveLoad() {
-        RmsDataStore instance = new RmsDataStore(storeName);
+        PersistentObjectDataStore instance = new PersistentObjectDataStore(storeUid);
         SerializableTestClass testObject1 = new SerializableTestClass();
         SerializableTestClass testObject2 = new SerializableTestClass();
         testObject1.setValue(40);
@@ -132,7 +125,7 @@ public class RmsDataStoreTest extends TestCase {
         
         instance.save();
         
-        instance = new RmsDataStore(storeName);
+        instance = new PersistentObjectDataStore(storeUid);
         assertNull(instance.getNamedObject("Test 1"));
         assertNull(instance.getObject(testId1));
         assertNull(instance.getObject(testId2));
@@ -155,14 +148,14 @@ public class RmsDataStoreTest extends TestCase {
     }
     
     public Test suite() {
-        TestSuite suite = new TestSuite("RmsDataStore");
+        TestSuite suite = new TestSuite("PersistentObjectDataStore");
 
-        suite.addTest(new RmsDataStoreTest("Object", new TestMethod()
-        { public void run(TestCase tc) {((RmsDataStoreTest)tc).testObject(); } }));
-        suite.addTest(new RmsDataStoreTest("Named object", new TestMethod()
-        { public void run(TestCase tc) {((RmsDataStoreTest)tc).testNamedObject(); } }));
-        suite.addTest(new RmsDataStoreTest("Save Load", new TestMethod()
-        { public void run(TestCase tc) {((RmsDataStoreTest)tc).testSaveLoad(); } }));
+        suite.addTest(new PersistentObjectDataStoreTest("Object", new TestMethod()
+        { public void run(TestCase tc) {((PersistentObjectDataStoreTest)tc).testObject(); } }));
+        suite.addTest(new PersistentObjectDataStoreTest("Named object", new TestMethod()
+        { public void run(TestCase tc) {((PersistentObjectDataStoreTest)tc).testNamedObject(); } }));
+        suite.addTest(new PersistentObjectDataStoreTest("Save Load", new TestMethod()
+        { public void run(TestCase tc) {((PersistentObjectDataStoreTest)tc).testSaveLoad(); } }));
 
         return suite;
     }

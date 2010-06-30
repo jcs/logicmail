@@ -296,6 +296,11 @@ public class MailSettings {
         if(isOutgoingListDirty) { listChangeType |= MailSettingsEvent.LIST_CHANGED_OUTGOING; }
         e.setListChange(listChangeType);
         
+        // Clean out any old configuration objects from the store
+        removeExistingSettings(IDENTITY_CONFIGS);
+        removeExistingSettings(ACCOUNT_CONFIGS);
+        removeExistingSettings(OUTGOING_CONFIGS);
+        
         SerializableVector identityConfigIds = new SerializableVector();
         SerializableVector accountConfigIds = new SerializableVector();
         SerializableVector outgoingConfigIds = new SerializableVector();
@@ -338,6 +343,16 @@ public class MailSettings {
         isOutgoingListDirty = false;
     }
         
+    private void removeExistingSettings(String key) {
+        Object object = configStore.getNamedObject(key);
+        if(object instanceof SerializableVector) {
+            SerializableVector existingItems = (SerializableVector)object;
+            for(int i = existingItems.size() - 1; i >= 0; --i) {
+                configStore.removeObject(((Long)existingItems.elementAt(i)).longValue());
+            }
+        }
+    }
+
     /**
      * Load the configurations from persistent storage.
      * This method should only be called once in the lifetime of

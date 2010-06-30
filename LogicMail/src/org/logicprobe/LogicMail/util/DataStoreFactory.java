@@ -85,7 +85,6 @@ public final class DataStoreFactory {
         if(connectionCacheStore == null) {
         	// "org.logicprobe.LogicMail.store.connection"
             connectionCacheStore = new PersistentObjectDataStore(0xe53945d6e054c98cL);
-            connectionCacheStore.load();
         }
         return connectionCacheStore;
     }

@@ -49,7 +49,7 @@ public class UtilTests extends TestCase {
         testSuite.addTest(new StringParserTest().suite());
         testSuite.addTest(new SerializableHashtableTest().suite());
         testSuite.addTest(new EventListenerListTest().suite());
-        testSuite.addTest(new RmsDataStoreTest().suite());
+        testSuite.addTest(new PersistentObjectDataStoreTest().suite());
         testSuite.addTest(new QueueTest().suite());
         return testSuite;
     }

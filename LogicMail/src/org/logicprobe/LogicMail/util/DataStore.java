@@ -42,69 +42,116 @@ package org.logicprobe.LogicMail.util;
 public interface DataStore {
     /**
      * Gets an object by name lookup.
+     * 
      * @param name Name for the object
      * @return Matching object
      */
-    public abstract Serializable getNamedObject(String name);
+    Serializable getNamedObject(String name);
     
     /**
      * Gets an array of all the named objects available.
+     * 
      * @return Array of available named objects
      */
-    public abstract String[] getNamedObjects();
+    String[] getNamedObjects();
     
     /**
      * Gets an object by unique id lookup.
+     * 
      * @param id Unique id for the object
      * @return Matching object
      */
-    public abstract Serializable getObject(long id);
+    Serializable getObject(long id);
     
     /**
      * Puts an object into the store with a name mapping.
      * This should also create the necessary unique id mapping.
      * If the object matching the name already exists in the store,
      * it will be overwritten.
+     * 
      * @param name Name for the object
      * @param object Object to store
      */
-    public abstract void putNamedObject(String name, Serializable object);
+    void putNamedObject(String name, Serializable object);
     
     /**
      * Puts an object into the store.
      * If the object matching the same unique id already exists in the store,
      * it will be overwritten.
+     * 
      * @param object Object to store
      */
-    public abstract void putObject(Serializable object);
+    void putObject(Serializable object);
     
     /**
      * Removes an object with a name mapping from the store.
      * This will also remove the unique id mapping.
+     * 
      * @param name Name of object to remove
      */
-    public abstract void removeNamedObject(String name);
+    void removeNamedObject(String name);
     
     /**
      * Removes an object from the store.
+     * 
      * @param object Object to remove
      */
-    public abstract void removeObject(Serializable object);
+    void removeObject(Serializable object);
+    
+    /**
+     * Removes an object from the store.
+     * 
+     * @param id Unique id for the object to remove
+     */
+    void removeObject(long id);
     
     /**
      * Save the contents of the store to persistent memory.
      */
-    public abstract void save();
+    void save();
+    
     
     /**
      * Load the contents of the store from persistent memory.
      */
-    public abstract void load();
-    
+    void load();
+
     /**
      * Delete this store from the device.
      * Calling save() or load() after this method may result
      * in the store being recreated.
      */
-    public abstract void delete();
+    void delete();
+    
+    
+    /**
+     * Gets the UID that the synchronization object for this store will be
+     * using.  This is necessary so than a <code>SyncCollection</code>
+     * implementation can know which synchronization object belongs to this
+     * data store.
+     *
+     * @return the sync object UID
+     */
+    int getSyncObjectUID();
+    
+    /**
+     * Gets a sync object containing the persistent data this data store is
+     * responsible for managing.  Implementations must be completely
+     * independent of the loaded state of the data store, and thus operate
+     * directly upon the backing persistence mechanism.
+     *
+     * @return the sync object
+     */
+    DataStoreSyncObject getSyncObject();
+    
+    /**
+     * Sets the persistent data this data store is responsible for managing
+     * from the provided sync object.  Implementations must be completely
+     * independent of the loaded state of the data store, and thus operate
+     * directly upon the backing persistence mechanism.
+     *
+     * @param syncObject the sync object from which to populate this data store
+     * @return true, if this data store was actually populated
+     */
+    boolean setSyncObject(DataStoreSyncObject syncObject);
 }

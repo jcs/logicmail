@@ -32,11 +32,12 @@
 package org.logicprobe.LogicMail.util;
 
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Vector;
 
 import net.rim.device.api.system.PersistentObject;
 import net.rim.device.api.system.PersistentStore;
+import net.rim.device.api.util.LongHashtable;
+import net.rim.device.api.util.ToLongHashtable;
 
 public class PersistentObjectDataStore implements DataStore {
     /** Unique id for the root persistent object */
@@ -44,10 +45,10 @@ public class PersistentObjectDataStore implements DataStore {
     /** Root persistent object store */
     private PersistentObject store;
     /** Name to UID mappings */
-    private Hashtable nameMap;
+    private ToLongHashtable nameMap;
     /** UID to Object mappings */
-    private Hashtable objectMap;
-
+    private LongHashtable objectMap;
+    
     /**
      * Creates a new instance of RmsDataStore.
      * @param storeUid Unique ID of the store to use.
@@ -55,17 +56,16 @@ public class PersistentObjectDataStore implements DataStore {
     public PersistentObjectDataStore(long storeUid) {
         this.storeUid = storeUid;
         this.store = PersistentStore.getPersistentObject(storeUid);
-        this.objectMap = new Hashtable();
-        this.nameMap = new Hashtable();
+        this.nameMap = new ToLongHashtable();
+        this.objectMap = new LongHashtable();
     }
 
     public Serializable getNamedObject(String name) {
         // Get the ID that matches the name
-        Object value = nameMap.get(name);
-        if(value instanceof Long) {
+        long id = nameMap.get(name);
+        if(id != -1) {
             // Now get the object that matches the ID
-            value = objectMap.get(value);
-            return (Serializable)value;
+            return (Serializable)objectMap.get(id);
         }
         else {
             return null;
@@ -81,29 +81,43 @@ public class PersistentObjectDataStore implements DataStore {
         }
         return result;
     }
-
+    
     public Serializable getObject(long id) {
-        return (Serializable)objectMap.get(new Long(id));
+        return (Serializable)objectMap.get(id);
     }
 
     public void putNamedObject(String name, Serializable object) {
-        nameMap.put(name, new Long(object.getUniqueId()));
+        // If this replaces an existing named object, we need to make sure to
+        // remove the old object from the object map.
+        long oldObjectId = nameMap.get(name);
+        if(oldObjectId != -1) {
+            objectMap.remove(oldObjectId);
+        }
+        
+        nameMap.put(name, object.getUniqueId());
         putObject(object);
     }
 
     public void putObject(Serializable object) {
-        objectMap.put(new Long(object.getUniqueId()), object);
+        objectMap.put(object.getUniqueId(), object);
     }
 
     public void removeNamedObject(String name) {
-        removeObject(getNamedObject(name));
+        Serializable object = getNamedObject(name);
+        if(object != null) {
+            objectMap.remove(object.getUniqueId());
+        }
         nameMap.remove(name);
     }
 
     public void removeObject(Serializable object) {
-        objectMap.remove(new Long(object.getUniqueId()));
+        objectMap.remove(object.getUniqueId());
     }
-
+    
+    public void removeObject(long id) {
+        objectMap.remove(id);
+    }
+    
     public void save() {
         Vector objectData = new Vector();
 
@@ -125,25 +139,27 @@ public class PersistentObjectDataStore implements DataStore {
     }
 
     public void load() {
-        Hashtable newNameMap = null;
-        Vector newObjectMap = null;
+        ToLongHashtable newNameMap = null;
+        Vector newObjects = null;
         synchronized(store) {
             Object[] storeData = (Object[])store.getContents();
-            if(storeData != null) {
-                newNameMap = (Hashtable)storeData[0];
-                newObjectMap = (Vector)storeData[1];
+            if(storeData != null && storeData.length == 2
+                    && storeData[0] instanceof ToLongHashtable
+                    && storeData[1] instanceof Vector) {
+                newNameMap = (ToLongHashtable)storeData[0];
+                newObjects = (Vector)storeData[1];
             }
         }
-        if(newNameMap != null && newObjectMap != null) {
+        if(newNameMap != null && newObjects != null) {
             nameMap = newNameMap;
             Object deserializedObject;
-            int size = newObjectMap.size();
+            int size = newObjects.size();
             for(int i=0; i<size; i++) {
                 try {
-                    deserializedObject = SerializationUtils.deserializeClass((byte[])newObjectMap.elementAt(i));
+                    deserializedObject = SerializationUtils.deserializeClass((byte[])newObjects.elementAt(i));
                     if(deserializedObject != null) {
                         objectMap.put(
-                                new Long(((Serializable)deserializedObject).getUniqueId()),
+                                ((Serializable)deserializedObject).getUniqueId(),
                                 deserializedObject);
                     }
                 } catch (Exception exp) { }
@@ -153,5 +169,43 @@ public class PersistentObjectDataStore implements DataStore {
 
     public void delete() {
         PersistentStore.destroyPersistentObject(storeUid);
+    }
+
+    public int getSyncObjectUID() {
+        return (int)storeUid;
+    }
+    
+    public DataStoreSyncObject getSyncObject() {
+        DataStoreSyncObject syncObject = new DataStoreSyncObject((int)storeUid);
+        Object[] storeData = (Object[])store.getContents();
+        if(storeData != null && storeData.length == 2
+                && storeData[0] instanceof ToLongHashtable
+                && storeData[1] instanceof Vector) {
+            syncObject.setNameMap((ToLongHashtable)storeData[0]);
+            syncObject.setObjectData((Vector)storeData[1]);
+        }
+        else {
+            syncObject.setNameMap(new ToLongHashtable());
+            syncObject.setObjectData(new Vector());
+        }
+        return syncObject;
+    }
+
+    public boolean setSyncObject(DataStoreSyncObject syncObject) {
+        // Extra sanity checking to avoid populating from invalid data
+        if(syncObject == null
+                || syncObject.getUID() != (int)storeUid
+                || syncObject.getNameMap() == null
+                || syncObject.getObjectData() == null) {
+            return false;
+        }
+        
+        Object[] storeData = {
+                syncObject.getNameMap(),
+                syncObject.getObjectData() };
+        
+        store.setContents(storeData);
+        store.commit();
+        return true;
     }
 }
