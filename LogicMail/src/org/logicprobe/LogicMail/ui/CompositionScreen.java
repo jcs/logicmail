@@ -78,6 +78,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     public final static int COMPOSE_FORWARD = 3;
     
     private int composeType = -1;
+    private String initialRecipient;
     private MessageNode sourceMessageNode;
     private AccountNode accountNode;
     private AccountConfig accountConfig;
@@ -151,9 +152,7 @@ public class CompositionScreen extends AbstractScreenProvider {
      */
     public CompositionScreen(AccountNode accountNode, String recipient) {
     	this(accountNode);
-
-    	EmailAddressBookEditField toAddressField = (EmailAddressBookEditField) recipientsFieldManager.getField(0);
-    	toAddressField.setText(recipient);
+    	this.initialRecipient = recipient;
     }
 
     /**
@@ -279,6 +278,12 @@ public class CompositionScreen extends AbstractScreenProvider {
         if(sourceMessageNode == null) {
             appendSignature();
     		messageEditField.setEditable(true);
+
+    		if(initialRecipient != null) {
+    		    EmailAddressBookEditField toAddressField =
+    		        (EmailAddressBookEditField)recipientsFieldManager.getField(0);
+    		    toAddressField.setText(initialRecipient);
+    		}
         }
         else if(composeType == COMPOSE_NORMAL) {
         	if(sourceMessageNode.getMessageStructure() != null) {

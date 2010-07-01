@@ -329,7 +329,8 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#navigationClick(int, int)
      */
     public boolean navigationClick(int status, int time) {
-        if(attachmentsLabelField.isFocus()
+        if(attachmentsLabelField != null
+                && attachmentsLabelField.isFocus()
                 && attachmentsFieldManager != null
                 && attachmentsFieldManager.getFieldCount() > 0) {
             attachmentsFieldManager.setFocus();

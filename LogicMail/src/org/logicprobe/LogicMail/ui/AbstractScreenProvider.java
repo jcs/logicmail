@@ -92,7 +92,7 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	 */
 	public void initFields(Screen screen) {
 	    this.screen = screen;
-	    this.standardScreen = (StandardScreen)standardScreen;
+	    this.standardScreen = (StandardScreen)screen;
 	}
 
 	/* (non-Javadoc)
