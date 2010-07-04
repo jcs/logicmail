@@ -248,7 +248,15 @@ public class GlobalConfig implements Serializable {
      */
     public void setLocalDataLocation(String localDataLocation) {
         if(!this.localDataLocation.equals(localDataLocation)) {
-            this.localDataLocation = validateLocalDataLocation(localDataLocation);
+            String validLocation = validateLocalDataLocation(localDataLocation);
+
+            if(validLocation != null) {
+                this.localDataLocation = validLocation;
+            }
+            else {
+                this.localDataLocation = "";
+            }
+            
             changeType |= CHANGE_TYPE_DATA;
         }
     }
@@ -531,13 +539,13 @@ public class GlobalConfig implements Serializable {
     }
 
     /**
-     * Checks provided filesystem root to make sure it exists,
-     * creating any intermediate directories as necessary,
-     * and returns a fully qualified file URL.
+     * Checks provided filesystem root to make sure it exists, creating any
+     * intermediate directories as necessary, and returns a fully qualified
+     * file URL.
      * 
      * @param fsRoot filesystem root to validate
-     * @return fully qualified and valid file URL,
-     * or null if one could not be created
+     * @return fully qualified and valid file URL, or null if one could not
+     * be created
      */
     private static String validateLocalDataLocation(String fsRoot) {
         String url;
