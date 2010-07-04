@@ -54,6 +54,7 @@ import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.HolsterListener;
 import net.rim.device.api.system.RuntimeStore;
+import net.rim.device.api.util.LongHashtable;
 
 /**
  * Handles new message notification through the various
@@ -164,9 +165,9 @@ public class NotificationHandler {
 	 */
 	private void updateAccountSubscriptions() {
 		// Get the registered event sources from the runtime store
-		Hashtable eventSourceMap = (Hashtable)RuntimeStore.getRuntimeStore().get(AppInfo.GUID);
+		LongHashtable eventSourceMap = (LongHashtable)RuntimeStore.getRuntimeStore().get(AppInfo.GUID);
 		if(eventSourceMap == null) {
-			eventSourceMap = new Hashtable();
+			eventSourceMap = new LongHashtable();
 			RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
 		}
 		
@@ -180,7 +181,7 @@ public class NotificationHandler {
 				
 				// Register the notification source, if necessary
 				AccountConfig accountConfig = accountNodes[i].getAccountConfig();
-				LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(new Long(accountConfig.getUniqueId()));
+				LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountConfig.getUniqueId());
 				if(eventSource == null || !eventSource.getAccountName().equals(accountConfig.getAcctName())) {
 					eventSource =
 						new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
@@ -188,7 +189,7 @@ public class NotificationHandler {
 	        			eventSource.getEventSourceId(),
 	        			eventSource,
 	        			NotificationsConstants.CASUAL);
-	            	eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
+	            	eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
 				}
 			}
 		}
@@ -218,7 +219,7 @@ public class NotificationHandler {
 			accountNode.removeAccountNodeListener(accountNodeListener);
 
 			// Unregister the notification source
-			Long eventSourceKey = new Long(accountNode.getAccountConfig().getUniqueId());
+			long eventSourceKey = accountNode.getAccountConfig().getUniqueId();
 			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
 			if(eventSource != null) {
 				NotificationsManager.deregisterSource(eventSource.getEventSourceId());

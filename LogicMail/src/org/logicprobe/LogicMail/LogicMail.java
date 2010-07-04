@@ -32,7 +32,6 @@
 package org.logicprobe.LogicMail;
 
 import java.util.Calendar;
-import java.util.Hashtable;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.i18n.Locale;
@@ -52,6 +51,7 @@ import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
+import net.rim.device.api.util.LongHashtable;
 
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.ui.BlankSeparatorField;
@@ -234,7 +234,7 @@ public final class LogicMail extends UiApplication {
         MailSettings mailSettings = MailSettings.getInstance();
         mailSettings.loadSettings();
         int numAccounts = mailSettings.getNumAccounts();
-        Hashtable eventSourceMap = new Hashtable(numAccounts);
+        LongHashtable eventSourceMap = new LongHashtable(numAccounts);
         for(int i=0; i<numAccounts; i++) {
             AccountConfig accountConfig = mailSettings.getAccountConfig(i);
             LogicMailEventSource eventSource =
@@ -243,7 +243,7 @@ public final class LogicMail extends UiApplication {
                     eventSource.getEventSourceId(),
                     eventSource,
                     NotificationsConstants.CASUAL);
-            eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
+            eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
         }
 
         // Save the registered event sources in the runtime store

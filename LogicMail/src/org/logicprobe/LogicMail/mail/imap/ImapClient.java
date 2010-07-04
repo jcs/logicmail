@@ -446,7 +446,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             int size = respList.size();
             for(int i=0;i<size;++i) {
                 ImapProtocol.ListResponse resp = (ImapProtocol.ListResponse)respList.elementAt(i);
-                result.put(resp.name, resp.name);
+                result.put(resp.name, Boolean.TRUE);
             }
         }
         else {
@@ -493,7 +493,7 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     private FolderTreeItem pruneFolderTree(FolderTreeItem currentItem, Hashtable subscriptions) {
-        if(subscriptions.contains(currentItem.getPath()) || currentItem.hasChildren()) {
+        if(subscriptions.containsKey(currentItem.getPath()) || currentItem.hasChildren()) {
             FolderTreeItem duplicate = new FolderTreeItem(currentItem);
             if(currentItem.hasChildren()) {
                 FolderTreeItem[] children = currentItem.children();
@@ -790,7 +790,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             int msgCount = activeMailbox.getMsgCount();
             int firstIndex = Math.max(1, msgCount - count);
             getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);
-            seenMailboxes.put(activeMailbox, new Object());
+            seenMailboxes.put(activeMailbox, Boolean.TRUE);
         }
         else {
             FolderMessage[] result;

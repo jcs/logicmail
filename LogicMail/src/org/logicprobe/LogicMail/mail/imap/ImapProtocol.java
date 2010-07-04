@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.mail.imap;
 
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -1283,12 +1284,12 @@ public class ImapProtocol {
         String[] result = new String[arguments.length];
         int count = 0;
 
-        Hashtable commandMap = new Hashtable();
+        ToIntHashtable commandMap = new ToIntHashtable();
         StringBuffer commandBuf = new StringBuffer();
 
         for (int i = 0; i < arguments.length; i++) {
             String tag = "A" + (commandCount++);
-            commandMap.put(tag, new Integer(i));
+            commandMap.put(tag, i);
             commandBuf.append(tag);
             commandBuf.append(' ');
             commandBuf.append(command);
@@ -1321,7 +1322,7 @@ public class ImapProtocol {
             p = temp.indexOf(" ");
 
             if ((p != -1) && commandMap.containsKey(temp.substring(0, p))) {
-                result[((Integer) commandMap.get(temp.substring(0, p))).intValue()] = tempResult;
+                result[commandMap.get(temp.substring(0, p))] = tempResult;
                 tempResult = "";
                 count++;
             } else {

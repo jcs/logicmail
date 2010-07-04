@@ -303,6 +303,6 @@ public class OutgoingMessageNode extends MessageNode {
         if(errorSet == null) {
             errorSet = new Hashtable();
         }
-        errorSet.put(recipient, recipient);
+        errorSet.put(recipient, Boolean.TRUE);
     }
 }

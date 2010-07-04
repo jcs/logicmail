@@ -31,7 +31,6 @@
 package org.logicprobe.LogicMail;
 
 import java.io.EOFException;
-import java.util.Hashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -47,6 +46,7 @@ import net.rim.device.api.synchronization.SyncConverter;
 import net.rim.device.api.synchronization.SyncObject;
 import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.util.DataBuffer;
+import net.rim.device.api.util.LongHashtable;
 
 public class LogicMailSyncCollection implements SyncCollection, SyncConverter {
     private static LogicMailSyncCollection instance;
@@ -79,7 +79,7 @@ public class LogicMailSyncCollection implements SyncCollection, SyncConverter {
         MailSettings mailSettings = MailSettings.getInstance();
         mailSettings.loadSettings();
         int numAccounts = mailSettings.getNumAccounts();
-        Hashtable eventSourceMap = new Hashtable(numAccounts);
+        LongHashtable eventSourceMap = new LongHashtable(numAccounts);
         for(int i=0; i<numAccounts; i++) {
             AccountConfig accountConfig = mailSettings.getAccountConfig(i);
             LogicMailEventSource eventSource =
@@ -88,7 +88,7 @@ public class LogicMailSyncCollection implements SyncCollection, SyncConverter {
                     eventSource.getEventSourceId(),
                     eventSource,
                     NotificationsConstants.CASUAL);
-            eventSourceMap.put(new Long(accountConfig.getUniqueId()), eventSource);
+            eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
         }
         RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
     }

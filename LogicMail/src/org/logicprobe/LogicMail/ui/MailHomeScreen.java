@@ -48,6 +48,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.AccountNode;
@@ -96,12 +97,12 @@ public class MailHomeScreen extends AbstractScreenProvider {
     private MenuItem sendUnsentItem;
     private MenuItem disconnectItem;
 
-    private Hashtable nodeIdMap;
+    private ToIntHashtable nodeIdMap;
 
     public MailHomeScreen(MailRootNode mailRootNode) {
         this.firstVisible = true;
         this.mailRootNode = mailRootNode;
-        this.nodeIdMap = new Hashtable();
+        this.nodeIdMap = new ToIntHashtable();
         this.mailManager = MailManager.getInstance();
         this.accountTreeNodeMap = new Hashtable();
         this.mailboxTreeNodeMap = new Hashtable();
@@ -417,7 +418,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
             if(nodes != null) {
                 for(int i = nodes.length - 1; i >= 0; --i) {
                     int id = treeField.addChildNode(0, nodes[i]);
-                    nodeIdMap.put(nodes[i], new Integer(id));
+                    nodeIdMap.put(nodes[i], id);
                     if(i == 0) { firstNode = id; }
                     populateMailTreeChildren(id, nodes[i]);
                 }
@@ -432,17 +433,17 @@ public class MailHomeScreen extends AbstractScreenProvider {
         if(node.children != null) {
             for(int i = node.children.length - 1; i >= 0; --i) {
                 int id = treeField.addChildNode(parent, node.children[i]);
-                nodeIdMap.put(node.children[i], new Integer(id));
+                nodeIdMap.put(node.children[i], id);
                 populateMailTreeChildren(id, node.children[i]);
             }
         }
     }
 
     public void refreshMailTreeNode(MailHomeTreeNode node) {
-        Integer nodeInt = (Integer)nodeIdMap.get(node);
-        if(nodeInt != null) {
+        int nodeId = nodeIdMap.get(node);
+        if(nodeId != -1) {
             synchronized(UiApplication.getEventLock()) {
-                treeField.invalidateNode(nodeInt.intValue());
+                treeField.invalidateNode(nodeId);
             }
         }
     }

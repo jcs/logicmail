@@ -47,6 +47,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.container.VerticalFieldManager;
+import net.rim.device.api.util.ToIntHashtable;
 
 /**
  * Provides a common dialog for selecting a mailbox
@@ -54,7 +55,7 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 public class MailboxSelectionDialog extends Dialog {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private AccountNode[] accounts;
-	private Hashtable nodeIdMap;
+	private ToIntHashtable nodeIdMap;
 	private MailboxNode selectedMailboxNode;
 	private TreeField treeField;
 	private Hashtable unselectableNodeSet;
@@ -76,7 +77,7 @@ public class MailboxSelectionDialog extends Dialog {
 		
 		initFields();
 		
-		nodeIdMap = new Hashtable();
+		nodeIdMap = new ToIntHashtable();
 		unselectableNodeSet = new Hashtable();
 		populateTreeField();
 	}
@@ -101,7 +102,7 @@ public class MailboxSelectionDialog extends Dialog {
 	 */
 	public void setSelectedMailboxNode(MailboxNode mailboxNode) {
 		if(mailboxNode != null && nodeIdMap.containsKey(mailboxNode)) {
-			int id = ((Integer)nodeIdMap.get(mailboxNode)).intValue();
+			int id = nodeIdMap.get(mailboxNode);
 			treeField.setCurrentNode(id);
 		}
 		selectedMailboxNode = mailboxNode;
@@ -125,7 +126,7 @@ public class MailboxSelectionDialog extends Dialog {
 	 */
 	public void addUnselectableNode(MailboxNode mailboxNode) {
 		if(!unselectableNodeSet.containsKey(mailboxNode)) {
-			unselectableNodeSet.put(mailboxNode, new Object());
+			unselectableNodeSet.put(mailboxNode, Boolean.TRUE);
 		}
 	}
 	
@@ -145,7 +146,7 @@ public class MailboxSelectionDialog extends Dialog {
 		for(int i=accounts.length - 1; i >= 0; --i) {
 			int id = treeField.addChildNode(0, accounts[i]);
 			if(i == 0) { firstNode = id; }
-			nodeIdMap.put(accounts[i], new Integer(id));
+			nodeIdMap.put(accounts[i], id);
 			
 			MailboxNode rootMailbox = accounts[i].getRootMailbox();
 			if(rootMailbox != null) {
@@ -162,7 +163,7 @@ public class MailboxSelectionDialog extends Dialog {
 	
 	private void populateTreeFieldMailbox(int parent, MailboxNode mailboxNode) {
 		int id = treeField.addChildNode(parent, mailboxNode);
-		nodeIdMap.put(mailboxNode, new Integer(id));
+		nodeIdMap.put(mailboxNode, id);
 		
 		MailboxNode[] mailboxes = mailboxNode.getMailboxes();
 		for(int i=mailboxes.length - 1; i >= 0; --i) {

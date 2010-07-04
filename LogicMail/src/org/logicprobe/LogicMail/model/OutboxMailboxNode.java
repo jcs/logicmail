@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.Hashtable;
 
 import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -58,7 +59,7 @@ public class OutboxMailboxNode extends MailboxNode {
     /** Set of loaded messages, to prevent redundant saving. */
     private Hashtable savedMessageSet = new Hashtable();
 
-    private Hashtable mailSenderTable = new Hashtable();
+    private ToIntHashtable mailSenderTable = new ToIntHashtable();
     private Hashtable outboundMessageMap = new Hashtable();
     private Hashtable outboundMessageNodeMap = new Hashtable();
 
@@ -199,7 +200,7 @@ public class OutboxMailboxNode extends MailboxNode {
                 OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
                 // Loaded messages were always send-attempted at least once
                 outgoingMessage.setSendAttempted(true);
-                savedMessageSet.put(messageNode, messageNode);
+                savedMessageSet.put(messageNode, Boolean.TRUE);
                 OutboxMailboxNode.this.addMessage(messageNode);
             }
         }
@@ -251,7 +252,7 @@ public class OutboxMailboxNode extends MailboxNode {
             try {
                 MailFileManager.getInstance().writeMessage(outgoingMessageNode);
                 outgoingMessageNode.setCached(true);
-                savedMessageSet.put(outgoingMessageNode, outgoingMessageNode);
+                savedMessageSet.put(outgoingMessageNode, Boolean.TRUE);
             } catch (IOException exp) {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to store outgoing message: " + exp.toString()).getBytes(),
@@ -421,20 +422,20 @@ public class OutboxMailboxNode extends MailboxNode {
     private void addMailSenderListener(AbstractMailSender mailSender) {
         if(!mailSenderTable.containsKey(mailSender)) {
             mailSender.addMailSenderListener(mailSenderListener);
-            mailSenderTable.put(mailSender, new Integer(1));
+            mailSenderTable.put(mailSender, 1);
         }
         else {
-            int count = ((Integer)mailSenderTable.get(mailSender)).intValue();
-            mailSenderTable.put(mailSender, new Integer(++count));
+            int count = mailSenderTable.get(mailSender);
+            mailSenderTable.put(mailSender, ++count);
         }
     }
 
     private void removeMailSenderListener(AbstractMailSender mailSender) {
         if(mailSenderTable.containsKey(mailSender)) {
-            int count = ((Integer)mailSenderTable.get(mailSender)).intValue();
+            int count = mailSenderTable.get(mailSender);
             count--;
             if(count > 0) {
-                mailSenderTable.put(mailSender, new Integer(count));
+                mailSenderTable.put(mailSender, count);
             }
             else {
                 mailSender.removeMailSenderListener(mailSenderListener);
