@@ -50,7 +50,13 @@ public class ApplicationContent extends MimeMessageContent {
 			throw new UnsupportedContentException("Unsupported encoding");
         }
 	}
-
+	
+    public ApplicationContent(ApplicationPart applicationPart, byte[] rawData) throws UnsupportedContentException {
+        super(applicationPart);
+        applicationPart.setEncoding("base64");
+        this.rawData = rawData;
+    }
+    
 	/**
 	 * Instantiates a new application content object for deserialization.
 	 */

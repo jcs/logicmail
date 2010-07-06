@@ -75,10 +75,16 @@ public class BorderedFieldManager extends Manager {
 	 * Only draw the inner line, not filling the outer area.
 	 */
     public static final long OUTER_FILL_NONE = 0x0000000000000100L;
+    
+    /**
+     * Do not draw any fill.
+     */
+    public static final long FILL_NONE = 0x0000000000000200L;
 	
 	private boolean bottomBorderNone;
 	private boolean bottomBorderLine;
 	private boolean outerFill;
+	private boolean noFill;
 	private boolean useAllHeight;
 	
 	/**
@@ -106,6 +112,7 @@ public class BorderedFieldManager extends Manager {
         bottomBorderLine = (style & BORDER_STYLE_MASK) == BOTTOM_BORDER_LINE;
         
         outerFill = (style & FILL_STYLE_MASK) == OUTER_FILL_NORMAL;
+        noFill = (style & FILL_STYLE_MASK) == FILL_NONE;
         
         useAllHeight = ((style & USE_ALL_HEIGHT) == USE_ALL_HEIGHT);
     }
@@ -129,6 +136,8 @@ public class BorderedFieldManager extends Manager {
     }
 
     protected void paintBorder(Graphics graphics, int width, int height, int backgroundColor) {
+        if(noFill) { return; }
+        
         if(outerFill) {
             // Paint the fill for the field
             graphics.setColor(Color.LIGHTGREY);

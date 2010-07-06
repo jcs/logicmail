@@ -158,15 +158,22 @@ public class MessageMimeConverter {
 	    public void visitImagePart(ImagePart part) {
 	        MimeMessageContent content = message.getContent(part);
 	        if(!(content instanceof ImageContent)) { return; }
+	        
+	        byte[] data;
 	        EncodedImage image = ((ImageContent)content).getImage();
-
+	        if(image != null) {
+	            data = image.getData();
+	        }
+	        else {
+	            data = content.getRawData();
+	        }
+	        
 	        MIMEOutputStream currentStream = startCurrentStream(part, "base64");
 	        
 	        currentStream.setContentType(part.getMimeType() + '/' +
 	            part.getMimeSubtype());
 	
 	        try {
-	            byte[] data = image.getData();
 	            currentStream.write(Base64OutputStream.encode(data, 0, data.length, true, true));
 	        } catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID,
@@ -201,13 +208,31 @@ public class MessageMimeConverter {
                         byteArrayOutputStream,
                         isMultiPart,
                         encoding);
+                
+                if(!isMultiPart) {
+                    addPartHeaders(mimeOutputStream, part);
+                }
                 currentStream = mimeOutputStream;
             } else {
                 MIMEOutputStream parentStream = (MIMEOutputStream) partMimeMap.get(part.getParent());
                 currentStream = parentStream.getPartOutputStream(isMultiPart, encoding);
+                addPartHeaders(currentStream, part);
             }
             partMimeMap.put(part, currentStream);
             return currentStream;
+        }
+        
+        private void addPartHeaders(MIMEOutputStream mimeStream, MimeMessagePart part) {
+            if(part instanceof ContentPart) {
+                ContentPart contentPart = (ContentPart)part;
+                String name = contentPart.getName();
+                if(name.length() > 0) {
+                    mimeStream.addContentTypeParameter("name", name);
+                    if(contentPart.getDisposition().equalsIgnoreCase("attachment")) {
+                        mimeStream.addHeaderField("Content-Disposition: attachment; filename\"" + name + "\"");
+                    }
+                }
+            }
         }
         
         private void finishCurrentStream(MIMEOutputStream currentStream) {

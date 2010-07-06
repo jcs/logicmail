@@ -47,12 +47,19 @@ public class MessageIcons {
 	private static MessageIcons instance = new MessageIcons();
 	private MessagePartIconVisitor visitor = new MessagePartIconVisitor();
 
-	private Bitmap mimeImageBitmap;
-	private Bitmap mimeTextBitmap;
-	private Bitmap mimeAudioBitmap;
-	private Bitmap mimeVideoBitmap;
-	private Bitmap mimeApplicationBitmap;
-	private Bitmap mimeMessageBitmap;
+	private static final Bitmap mimeImageBitmap = Bitmap.getBitmapResource("mime_image.png");
+	private static final Bitmap mimeTextBitmap = Bitmap.getBitmapResource("mime_text.png");
+	private static final Bitmap mimeAudioBitmap = Bitmap.getBitmapResource("mime_audio.png");
+	private static final Bitmap mimeVideoBitmap = Bitmap.getBitmapResource("mime_video.png");
+	private static final Bitmap mimeApplicationBitmap = Bitmap.getBitmapResource("mime_application.png");
+	private static final Bitmap mimeMessageBitmap = Bitmap.getBitmapResource("mime_message.png");
+	
+	private static String MIME_IMAGE = "image";
+	private static String MIME_TEXT = "text";
+	private static String MIME_AUDIO = "audio";
+	private static String MIME_VIDEO = "video";
+	private static String MIME_APPLICATION = "application";
+	private static String MIME_MESSAGE = "message";
 	
 	private MessageIcons() {
 		
@@ -62,6 +69,33 @@ public class MessageIcons {
 		return instance.getIconImpl(mimeMessagePart);
 	}
 
+	public static Bitmap getIcon(String mimeType) {
+	    Bitmap icon;
+	    if(mimeType.startsWith(MIME_IMAGE)) {
+	        icon = mimeImageBitmap;
+	    }
+	    else if(mimeType.startsWith(MIME_TEXT)) {
+            icon = mimeTextBitmap;
+        }
+        else if(mimeType.startsWith(MIME_AUDIO)) {
+            icon = mimeAudioBitmap;
+        }
+        else if(mimeType.startsWith(MIME_VIDEO)) {
+            icon = mimeVideoBitmap;
+        }
+        else if(mimeType.startsWith(MIME_APPLICATION)) {
+            icon = mimeApplicationBitmap;
+        }
+        else if(mimeType.startsWith(MIME_MESSAGE)) {
+            icon = mimeMessageBitmap;
+        }
+        else {
+            icon = mimeApplicationBitmap;
+        }
+	    
+	    return icon;
+	}
+	
 	private Bitmap getIconImpl(MimeMessagePart mimeMessagePart) {
 		visitor.clearIcon();
 		mimeMessagePart.accept(visitor);
@@ -73,41 +107,26 @@ public class MessageIcons {
 
 		public void visitApplicationPart(ApplicationPart part) {
 			if(icon != null) { return; }
-			if(mimeApplicationBitmap == null) {
-				mimeApplicationBitmap = Bitmap.getBitmapResource("mime_application.png");
-			}
 			icon = mimeApplicationBitmap;
 		}
 
 		public void visitAudioPart(AudioPart part) {
 			if(icon != null) { return; }
-			if(mimeAudioBitmap == null) {
-				mimeAudioBitmap = Bitmap.getBitmapResource("mime_audio.png");
-			}
 			icon = mimeAudioBitmap;
 		}
 
 		public void visitImagePart(ImagePart part) {
 			if(icon != null) { return; }
-			if(mimeImageBitmap == null) {
-				mimeImageBitmap = Bitmap.getBitmapResource("mime_image.png");
-			}
 			icon = mimeImageBitmap;
 		}
 
 		public void visitTextPart(TextPart part) {
 			if(icon != null) { return; }
-			if(mimeTextBitmap == null) {
-				mimeTextBitmap = Bitmap.getBitmapResource("mime_text.png");
-			}
 			icon = mimeTextBitmap;
 		}
 		
 		public void visitMessagePart(MessagePart part) {
 			if(icon != null) { return; }
-			if(mimeMessageBitmap == null) {
-				mimeMessageBitmap = Bitmap.getBitmapResource("mime_message.png");
-			}
 			icon = mimeMessageBitmap;
 		}
 		
@@ -116,9 +135,6 @@ public class MessageIcons {
 		}
 
 		public void visitVideoPart(VideoPart part) {
-			if(mimeVideoBitmap == null) {
-				mimeVideoBitmap = Bitmap.getBitmapResource("mime_video.png");
-			}
 			icon = mimeVideoBitmap;
 		}
 

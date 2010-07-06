@@ -51,6 +51,12 @@ public class AudioContent extends MimeMessageContent {
         }
 	}
 
+	public AudioContent(AudioPart audioPart, byte[] rawData) {
+	    super(audioPart);
+	    audioPart.setEncoding("base64");
+	    this.rawData = rawData;
+	}
+	
 	/**
 	 * Instantiates a new audio content object for deserialization.
 	 */

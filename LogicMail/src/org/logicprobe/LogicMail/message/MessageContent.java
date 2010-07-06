@@ -51,6 +51,12 @@ public class MessageContent extends MimeMessageContent {
         }
 	}
 
+    public MessageContent(MessagePart messagePart, byte[] rawData) {
+        super(messagePart);
+        messagePart.setEncoding("base64");
+        this.rawData = rawData;
+    }	
+	
 	/**
 	 * Instantiates a new message content object for deserialization.
 	 */

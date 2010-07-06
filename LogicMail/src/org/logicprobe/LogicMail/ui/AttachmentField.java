@@ -66,7 +66,6 @@ public class AttachmentField extends Field {
         this.attachmentName = buildMessageName(messagePart);
         this.attachmentSize = buildMessageSizeText(messagePart);
     }
-
     
     /**
      * Gets the message node an attachment is being shown from.
@@ -129,7 +128,7 @@ public class AttachmentField extends Field {
      */
     public int getPreferredHeight() {
         Font font = getFont();
-        if(messageNode.getMessageContent(messagePart) != null) {
+        if(messageNode != null && messageNode.getMessageContent(messagePart) != null) {
             font = font.derive(Font.BOLD);
         }
         if(hasTouchscreen) {
@@ -146,7 +145,7 @@ public class AttachmentField extends Field {
     protected void paint(Graphics graphics) {
         int halfHeight = getHeight() >>> 1;
         Font font = graphics.getFont();
-        if(messageNode.getMessageContent(messagePart) != null) {
+        if(messageNode != null && messageNode.getMessageContent(messagePart) != null) {
             font = font.derive(Font.BOLD);
         }
         

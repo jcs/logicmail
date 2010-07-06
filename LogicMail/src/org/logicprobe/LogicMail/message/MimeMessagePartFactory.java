@@ -42,6 +42,7 @@ public class MimeMessagePartFactory {
      * @param encoding Encoding type (i.e. 7bit, base64)
      * @param param Type-specific parameter (i.e. charset, filename)
      * @param disposition Content disposition for the part
+     * @param contentId Content ID
      * @param size Size of the content this part refers to, or -1 if not available
      * @param tag Protocol-specific tag for addressing the part
      */
@@ -93,6 +94,7 @@ public class MimeMessagePartFactory {
      * @param encoding Encoding type (i.e. 7bit, base64)
      * @param param Type-specific parameter (i.e. charset, filename)
      * @param disposition Content disposition for the part
+     * @param contentId Content ID
      * @param size Size of the content this part refers to, or -1 if not available
      */
     public static MimeMessagePart createMimeMessagePart(

@@ -110,6 +110,11 @@ public class TextContent extends MimeMessageContent {
         	throw new UnsupportedContentException("Unsupported subtype");
         }
     }
+    
+    public TextContent(TextPart textPart, byte[] rawData) {
+        super(textPart);
+        this.text = new String(rawData);
+    }
 	
     /**
      * Instantiates a new text content object for deserialization.

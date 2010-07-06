@@ -243,15 +243,16 @@ public class FolderSelectionDialog extends Dialog {
 				icon = folderBitmap;
 			}
 			int iconSide = icon.getWidth();
+			int iconSideHalf = iconSide >>> 1;
 
 			graphics.drawBitmap(
-					rowHeight/2 - iconSide/2,
-					y + (fontHeight/2 - iconSide/2),
+					(rowHeight >>> 1) - iconSideHalf,
+					y + ((fontHeight >>> 1) - iconSideHalf),
 					iconSide,
 					iconSide,
 					icon, 0, 0);
 			
-			int indent = iconSide + iconSide/2;
+			int indent = Math.max(rowHeight, iconSide + iconSideHalf);
 			graphics.drawText(elementName, indent, y, DrawStyle.ELLIPSIS, width - indent);
 		}
 

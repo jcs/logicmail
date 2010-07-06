@@ -71,6 +71,12 @@ public class ImageContent extends MimeMessageContent {
         }
 	}
 	
+	public ImageContent(ImagePart imagePart, byte[] rawData) {
+        super(imagePart);
+        imagePart.setEncoding("base64");
+        this.rawData = rawData;
+	}
+	
 	/**
 	 * Instantiates a new image content object for deserialization.
 	 */

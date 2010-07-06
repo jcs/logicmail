@@ -48,7 +48,6 @@ import org.logicprobe.LogicMail.util.MailMessageParser;
 
 import java.io.IOException;
 
-import java.util.Calendar;
 import java.util.Hashtable;
 
 /**
@@ -227,7 +226,6 @@ public class SmtpClient implements OutgoingMailClient {
         StringBuffer buffer = new StringBuffer();
 
         // Generate the headers
-        envelope.date = Calendar.getInstance().getTime();
         buffer.append(MailMessageParser.generateMessageHeaders(envelope, true));
         
         // Add the body

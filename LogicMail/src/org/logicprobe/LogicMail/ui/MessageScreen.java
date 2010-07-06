@@ -544,8 +544,8 @@ public class MessageScreen extends AbstractScreenProvider {
 	}
 
     private void saveAttachmentInBackground(MimeMessageContent content, String fileUrl) {
-		(new SaveAttachmentThread(content, fileUrl)).start();
-		Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
+        // Start the save thread
+        (new SaveAttachmentThread(content, fileUrl)).start();
     }
     
     private static class SaveAttachmentThread extends Thread {
@@ -563,11 +563,40 @@ public class MessageScreen extends AbstractScreenProvider {
 			if(rawData != null) {
 				try {
 					FileConnection fileConnection = (FileConnection)Connector.open(fileUrl);
-					fileConnection.create();
-					DataOutputStream outputStream = fileConnection.openDataOutputStream();
-					outputStream.write(rawData);
-					outputStream.close();
-					fileConnection.close();
+					if(fileConnection.exists()) {
+	                    final boolean[] overwriteExisting = new boolean[1];
+		                UiApplication.getUiApplication().invokeAndWait(new Runnable() {
+		                    public void run() {
+		                        int result = Dialog.ask(
+		                                Dialog.D_YES_NO,
+		                                resources.getString(LogicMailResource.MESSAGE_OVERWRITE_EXISTING_FILE),
+		                                Dialog.NO);
+		                        if(result == Dialog.YES) {
+		                            overwriteExisting[0] = true;
+		                        }
+		                    }
+		                });
+		                if(overwriteExisting[0]) {
+		                    fileConnection.delete();
+		                }
+		                else {
+		                    fileConnection.close();
+		                    fileConnection = null;
+		                }
+					}
+					if(fileConnection != null) {
+				        // Notify the user that an attachment is being saved
+				        UiApplication.getUiApplication().invokeLater(new Runnable() {
+				            public void run() {
+				                Status.show(resources.getString(LogicMailResource.MESSAGE_SAVING_ATTACHMENT));
+				            }
+				        });
+    					fileConnection.create();
+    					DataOutputStream outputStream = fileConnection.openDataOutputStream();
+    					outputStream.write(rawData);
+    					outputStream.close();
+    					fileConnection.close();
+					}
 					success = true;
 				} catch (IOException e) {
 					EventLogger.logEvent(AppInfo.GUID, ("Unable to save: " + fileUrl).getBytes(), EventLogger.ERROR);
@@ -580,9 +609,11 @@ public class MessageScreen extends AbstractScreenProvider {
 			}
 			
 			if(!success) {
-				synchronized(UiApplication.getEventLock()) {
-					Status.show(resources.getString(LogicMailResource.MESSAGE_UNABLE_TO_SAVE_ATTACHMENT));
-				}
+		        UiApplication.getUiApplication().invokeLater(new Runnable() {
+		            public void run() {
+	                    Status.show(resources.getString(LogicMailResource.MESSAGE_UNABLE_TO_SAVE_ATTACHMENT));
+		            }
+		        });
 			}
     	}
     }

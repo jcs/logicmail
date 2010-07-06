@@ -51,6 +51,12 @@ public class VideoContent extends MimeMessageContent {
         }
 	}
 
+    public VideoContent(VideoPart videoPart, byte[] rawData) {
+        super(videoPart);
+        videoPart.setEncoding("base64");
+        this.rawData = rawData;
+    }
+    
 	/**
 	 * Instantiates a new video content object for deserialization.
 	 */

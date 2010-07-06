@@ -347,7 +347,7 @@ public class SmtpProtocol {
             return false;
         }
         
-        connection.send(message);
+        connection.sendRaw(message);
         result = execute("\r\n.");
         
         return result.startsWith("250");

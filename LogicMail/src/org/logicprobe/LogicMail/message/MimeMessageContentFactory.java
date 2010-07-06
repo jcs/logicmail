@@ -40,39 +40,37 @@ public class MimeMessageContentFactory {
 	 * Creates a new MessageContent object.
 	 * 
 	 * @param mimeMessagePart The message part describing the MIME properties for the content.
-	 * @param encoding The encoding for the data.
-	 * @param param The type-specific parameter, if applicable.
-	 * @param data The raw data from which to decode the content.
+	 * @param encodedData The encoded data from which to decode the content.
 	 * 
 	 * @return The message content object.
 	 * 
 	 * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
 	 */
-	public static MimeMessageContent createContent(MimeMessagePart mimeMessagePart, String data) throws UnsupportedContentException {
+	public static MimeMessageContent createContent(MimeMessagePart mimeMessagePart, String encodedData) throws UnsupportedContentException {
     	MimeMessageContent content;
     	if(mimeMessagePart instanceof TextPart) {
     		TextPart textPart = (TextPart)mimeMessagePart;
-    		content = new TextContent(textPart, textPart.getEncoding(), textPart.getCharset(), data);
+    		content = new TextContent(textPart, textPart.getEncoding(), textPart.getCharset(), encodedData);
     	}
     	else if(mimeMessagePart instanceof ImagePart) {
     		ImagePart imagePart = (ImagePart)mimeMessagePart;
-    		content = new ImageContent(imagePart, imagePart.getEncoding(), data);
+    		content = new ImageContent(imagePart, imagePart.getEncoding(), encodedData);
     	}
     	else if(mimeMessagePart instanceof ApplicationPart) {
     		ApplicationPart applicationPart = (ApplicationPart)mimeMessagePart;
-    		content = new ApplicationContent(applicationPart, applicationPart.getEncoding(), data);
+    		content = new ApplicationContent(applicationPart, applicationPart.getEncoding(), encodedData);
     	}
     	else if(mimeMessagePart instanceof AudioPart) {
     		AudioPart audioPart = (AudioPart)mimeMessagePart;
-    		content = new AudioContent(audioPart, audioPart.getEncoding(), data);
+    		content = new AudioContent(audioPart, audioPart.getEncoding(), encodedData);
     	}
     	else if(mimeMessagePart instanceof VideoPart) {
     		VideoPart videoPart = (VideoPart)mimeMessagePart;
-    		content = new VideoContent(videoPart, videoPart.getEncoding(), data);
+    		content = new VideoContent(videoPart, videoPart.getEncoding(), encodedData);
     	}
     	else if(mimeMessagePart instanceof MessagePart) {
     		MessagePart messagePart = (MessagePart)mimeMessagePart;
-    		content = new MessageContent(messagePart, messagePart.getEncoding(), data);
+    		content = new MessageContent(messagePart, messagePart.getEncoding(), encodedData);
     	}
     	else {
     		throw new UnsupportedContentException("Unsupported content type");
@@ -80,6 +78,48 @@ public class MimeMessageContentFactory {
     	return content;
     }
 
+    /**
+     * Creates a new MessageContent object.
+     * 
+     * @param mimeMessagePart The message part describing the MIME properties for the content.
+     * @param rawData The raw data from which to encode the content.
+     * 
+     * @return The message content object.
+     * 
+     * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
+     */
+	public static MimeMessageContent createContent(MimeMessagePart mimeMessagePart, byte[] rawData) throws UnsupportedContentException {
+	    MimeMessageContent content;
+        if(mimeMessagePart instanceof TextPart) {
+            TextPart textPart = (TextPart)mimeMessagePart;
+            content = new TextContent(textPart, rawData);
+        }
+        else if(mimeMessagePart instanceof ImagePart) {
+            ImagePart imagePart = (ImagePart)mimeMessagePart;
+            content = new ImageContent(imagePart, rawData);
+        }
+        else if(mimeMessagePart instanceof ApplicationPart) {
+            ApplicationPart applicationPart = (ApplicationPart)mimeMessagePart;
+            content = new ApplicationContent(applicationPart, rawData);
+        }
+        else if(mimeMessagePart instanceof AudioPart) {
+            AudioPart audioPart = (AudioPart)mimeMessagePart;
+            content = new AudioContent(audioPart, rawData);
+        }
+        else if(mimeMessagePart instanceof VideoPart) {
+            VideoPart videoPart = (VideoPart)mimeMessagePart;
+            content = new VideoContent(videoPart, rawData);
+        }
+        else if(mimeMessagePart instanceof MessagePart) {
+            MessagePart messagePart = (MessagePart)mimeMessagePart;
+            content = new MessageContent(messagePart, rawData);
+        }
+        else {
+            throw new UnsupportedContentException("Unsupported content type");
+        }
+	    return content;
+	}
+	
 	/**
      * Find out if a particular message content type is supported
      * without having to create it.  This is useful to optimize
