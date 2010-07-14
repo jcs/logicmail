@@ -40,9 +40,6 @@ import javax.microedition.io.file.FileSystemRegistry;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.message.ContentPart;
-import org.logicprobe.LogicMail.message.MimeMessagePart;
-import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
 
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.io.MIMETypeAssociations;
@@ -78,7 +75,6 @@ public class FilePickerDialog extends Dialog {
     private String dialogTitleBase;
     private String folderUrl;
     private String fileUrl;
-    private ContentPart mimeContentPart;
     private Vector folderList;
     private IntVector folderElementTypeList;
     private Vector fileList;
@@ -151,16 +147,6 @@ public class FilePickerDialog extends Dialog {
      */
     public String getFileUrl() {
         return fileUrl;
-    }
-    
-    /**
-     * Gets the MIME content part encapsulating information about the
-     * currently selected file.
-     *
-     * @return the MIME content part, or null if no file selected
-     */
-    public ContentPart getMimeContentPart() {
-        return mimeContentPart;
     }
     
     /**
@@ -276,46 +262,16 @@ public class FilePickerDialog extends Dialog {
                     folderUrl + selectedItem);
             if(fileConnection.canRead()) {
                 fileUrl = fileConnection.getURL();
-                
-                String mimeType = MIMETypeAssociations.getMIMEType(fileUrl);
-                if(mimeType == null) {
-                    mimeType = "application/octet-stream";
-                }
-                
-                int p = mimeType.indexOf('/');
-                String mimeSubtype = mimeType.substring(p + 1);
-                mimeType = mimeType.substring(0, p);
-                
-                p = fileUrl.lastIndexOf('/');
-                String fileName = fileUrl.substring(p + 1);
-                
-                MimeMessagePart part =
-                    MimeMessagePartFactory.createMimeMessagePart(
-                            mimeType,
-                            mimeSubtype,
-                            fileName,
-                            null,         // encoding
-                            null,         // param
-                            "attachment", // disposition
-                            null,         // content ID
-                            (int)fileConnection.fileSize(),
-                            fileUrl);
-                
-                if(part instanceof ContentPart) {
-                    mimeContentPart = (ContentPart)part;
-                }
             }
             else {
                 fileUrl = null;
-                mimeContentPart = null;
             }
             fileConnection.close();
         } catch (IOException e) {
             fileUrl = null;
-            mimeContentPart = null;
         }
         
-        if(fileUrl != null && mimeContentPart != null) {
+        if(fileUrl != null) {
             select(Dialog.OK);
         }
     }

@@ -103,18 +103,23 @@ public final class NavigationController {
 		});
 	}
 	
+	//TODO: Figure out where/when/how to clear screen transitions
+	
 	public synchronized void displayMailbox(MailboxNode mailboxNode) {
 		StandardScreen screen = screenFactory.getMailboxScreen(this, mailboxNode);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_SLIDE);
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayMessage(MessageNode messageNode) {
 		StandardScreen screen = screenFactory.getMessageScreen(this, messageNode);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_SLIDE);
 		uiApplication.pushScreen(screen);
 	}
 	
 	public synchronized void displayComposition(AccountNode accountNode) {
 		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 
@@ -123,11 +128,13 @@ public final class NavigationController {
 				this,
 				accountNode,
 				messageNode);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 
 	public void displayComposition(AccountNode accountNode, String address) {
 		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode, address);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 	
@@ -137,6 +144,7 @@ public final class NavigationController {
 				accountNode,
 				messageNode,
 				replyAll);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 
@@ -145,6 +153,7 @@ public final class NavigationController {
 				this,
 				accountNode,
 				messageNode);
+        ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 	

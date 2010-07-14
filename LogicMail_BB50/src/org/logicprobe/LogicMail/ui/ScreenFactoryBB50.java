@@ -30,13 +30,14 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.TransitionContext;
 import net.rim.device.api.ui.Ui;
 import net.rim.device.api.ui.UiEngineInstance;
+import net.rim.device.api.ui.picker.FilePicker;
 
 public class ScreenFactoryBB50 extends ScreenFactoryBB42 {
-    
     public void attachScreenTransition(Screen screen, int transitionType) {
         UiEngineInstance uiEngine = Ui.getUiEngineInstance();
         TransitionContext pushAction = null;
@@ -57,11 +58,7 @@ public class ScreenFactoryBB50 extends ScreenFactoryBB42 {
         case TransitionContext.TRANSITION_SLIDE:
             pushAction = new TransitionContext(TransitionContext.TRANSITION_SLIDE);
             popAction = new TransitionContext(TransitionContext.TRANSITION_SLIDE);
-
-            //pushAction.setIntAttribute(TransitionContext.ATTR_DURATION, 750);
             pushAction.setIntAttribute(TransitionContext.ATTR_DIRECTION, TransitionContext.DIRECTION_LEFT);
-
-            //popAction.setIntAttribute(TransitionContext.ATTR_DURATION, 750);
             popAction.setIntAttribute(TransitionContext.ATTR_DIRECTION, TransitionContext.DIRECTION_RIGHT);
             break;
         case TransitionContext.TRANSITION_WIPE:
@@ -71,6 +68,8 @@ public class ScreenFactoryBB50 extends ScreenFactoryBB42 {
         case TransitionContext.TRANSITION_ZOOM:
             pushAction = new TransitionContext(TransitionContext.TRANSITION_ZOOM);
             popAction = new TransitionContext(TransitionContext.TRANSITION_ZOOM);
+            pushAction.setIntAttribute(TransitionContext.ATTR_KIND, TransitionContext.KIND_IN);
+            popAction.setIntAttribute(TransitionContext.ATTR_KIND, TransitionContext.KIND_OUT);
             break;
         default:
             pushAction = new TransitionContext(TransitionContext.TRANSITION_NONE);
@@ -84,5 +83,21 @@ public class ScreenFactoryBB50 extends ScreenFactoryBB42 {
         UiEngineInstance uiEngine = Ui.getUiEngineInstance();
         uiEngine.setTransition(null, screen, UiEngineInstance.TRIGGER_PUSH, null);
         uiEngine.setTransition(screen, null, UiEngineInstance.TRIGGER_POP, null);
+    }
+    
+    public String showFilePicker() {
+        String fileUrl;
+        try {
+            fileUrl = FilePicker.getInstance().show();
+        } catch (ControlledAccessException e) {
+            // There is a bug (JAVAAPI-830) in certain BlackBerry OS 5.0
+            // releases that causes this exception to be thrown if the new
+            // FilePicker API is used on an actual device.  To avoid having to
+            // know specifically when the FilePicker will work, we catch this
+            // exception and fall back to our own implementation.
+            fileUrl = super.showFilePicker();
+        }
+        
+        return fileUrl;
     }
 }

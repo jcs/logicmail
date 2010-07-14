@@ -30,6 +30,9 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.ui.VirtualKeyboard;
+import net.rim.device.api.ui.component.Dialog;
+
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 
@@ -44,4 +47,15 @@ public class ScreenFactoryBB47T extends ScreenFactoryBB42 {
 	public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
 		return new StandardTouchScreen(navigationController, new MailboxScreen(mailboxNode));
 	}
+    
+    public String showFilePicker() {
+        FilePickerDialog dialog = new FilePickerDialog();
+        dialog.getVirtualKeyboard().setVisibility(VirtualKeyboard.HIDE_FORCE);
+        if(dialog.doModal() == Dialog.OK) {
+            return dialog.getFileUrl();
+        }
+        else {
+            return null;
+        }
+    }
 }

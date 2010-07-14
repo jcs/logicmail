@@ -103,4 +103,6 @@ public abstract class ScreenFactory {
     public abstract StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll);
 
     public abstract StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
+    
+    public abstract String showFilePicker();
 }

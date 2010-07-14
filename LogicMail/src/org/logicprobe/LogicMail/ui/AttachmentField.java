@@ -108,7 +108,7 @@ public class AttachmentField extends Field {
             else {
                 partSize /= 1024;
                 buf.append(partSize);
-                buf.append("kB");
+                buf.append("KB");
             }
             buf.append(')');
         }

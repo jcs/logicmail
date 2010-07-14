@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Screen;
+import net.rim.device.api.ui.component.Dialog;
 
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
@@ -89,5 +90,15 @@ public class ScreenFactoryBB42 extends ScreenFactory {
 				accountNode,
 				messageNode,
 				CompositionScreen.COMPOSE_FORWARD));
+	}
+	
+	public String showFilePicker() {
+	    FilePickerDialog dialog = new FilePickerDialog();
+	    if(dialog.doModal() == Dialog.OK) {
+	        return dialog.getFileUrl();
+	    }
+	    else {
+	        return null;
+	    }
 	}
 }

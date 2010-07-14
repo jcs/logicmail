@@ -38,6 +38,7 @@ import java.util.Vector;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
+import net.rim.device.api.io.MIMETypeAssociations;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
@@ -906,16 +907,59 @@ public class CompositionScreen extends AbstractScreenProvider {
      * Attach a file to the current message.
      */
     private void attachFile() {
-        FilePickerDialog dialog = new FilePickerDialog();
-        if(dialog.doModal() == Dialog.OK) {
-            if(attachmentsFieldManager == null) {
-                attachmentsFieldManager = FieldFactory.getInstance().getBorderedFieldManager(
-                        BorderedFieldManager.BOTTOM_BORDER_NORMAL
-                        | BorderedFieldManager.OUTER_FILL_NONE);
-                messageFieldManager.add(attachmentsFieldManager);
+        String fileUrl = ScreenFactory.getInstance().showFilePicker();
+        if(fileUrl != null) {
+            ContentPart attachmentPart = handleSelectedFile(fileUrl);
+            if(attachmentPart != null) {
+                if(attachmentsFieldManager == null) {
+                    attachmentsFieldManager = FieldFactory.getInstance().getBorderedFieldManager(
+                            BorderedFieldManager.BOTTOM_BORDER_NORMAL
+                            | BorderedFieldManager.OUTER_FILL_NONE);
+                    messageFieldManager.add(attachmentsFieldManager);
+                }
+                attachmentsFieldManager.add(new AttachmentField(null, attachmentPart));
             }
-            attachmentsFieldManager.add(new AttachmentField(null, dialog.getMimeContentPart()));
         }
+    }
+    
+    private ContentPart handleSelectedFile(String fileUrl) {
+        ContentPart mimeContentPart = null;
+        try {
+            FileConnection fileConnection = (FileConnection)Connector.open(fileUrl);
+            if(fileConnection.canRead()) {
+                String mimeType = MIMETypeAssociations.getMIMEType(fileUrl);
+                if(mimeType == null) {
+                    mimeType = "application/octet-stream";
+                }
+                
+                int p = mimeType.indexOf('/');
+                String mimeSubtype = mimeType.substring(p + 1);
+                mimeType = mimeType.substring(0, p);
+                
+                p = fileUrl.lastIndexOf('/');
+                String fileName = fileUrl.substring(p + 1);
+                
+                MimeMessagePart part =
+                    MimeMessagePartFactory.createMimeMessagePart(
+                            mimeType,
+                            mimeSubtype,
+                            fileName,
+                            null,         // encoding
+                            null,         // param
+                            "attachment", // disposition
+                            null,         // content ID
+                            (int)fileConnection.fileSize(),
+                            fileUrl);
+                
+                if(part instanceof ContentPart) {
+                    mimeContentPart = (ContentPart)part;
+                }
+            }
+            fileConnection.close();
+        } catch (IOException e) {
+            mimeContentPart = null;
+        }
+        return mimeContentPart;
     }
     
     /**
