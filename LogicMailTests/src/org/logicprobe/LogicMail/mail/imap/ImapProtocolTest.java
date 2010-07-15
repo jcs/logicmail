@@ -863,6 +863,28 @@ public class ImapProtocolTest extends TestCase {
             t.printStackTrace();
         }
     }
+    
+    public void testExecuteStore3() {
+        try {
+            instance.addExecuteExpectation("UID STORE",
+                "36410 +FLAGS (\\Deleted)",
+                new String[] { "* 5 FETCH (UID 36410 FLAGS (\\Deleted \\Seen $NotJunk NotJunk))" });
+
+            ImapProtocol.MessageFlags result = instance.executeStore(36410, true,
+                    new String[] { "\\Deleted" });
+            assertNotNull(result);
+
+            assertTrue(result.seen);
+            assertTrue(!result.answered);
+            assertTrue(result.deleted);
+            assertTrue(!result.draft);
+            assertTrue(!result.flagged);
+            assertTrue(!result.recent);
+        } catch (Throwable t) {
+            fail("Exception thrown during test: " + t.toString());
+            t.printStackTrace();
+        }
+    }
 
     public Test suite() {
         TestSuite suite = new TestSuite("ImapProtocol");
@@ -920,6 +942,9 @@ public class ImapProtocolTest extends TestCase {
         
         suite.addTest(new ImapProtocolTest("executeStore2", new TestMethod()
         { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteStore2(); }}));
+        
+        suite.addTest(new ImapProtocolTest("executeStore3", new TestMethod()
+        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteStore3(); }}));
         
         return suite;
     }
