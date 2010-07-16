@@ -54,9 +54,10 @@ import java.util.Hashtable;
  * Implements an SMTP client
  */
 public class SmtpClient implements OutgoingMailClient {
-    private MailSettings mailSettings;
-    private GlobalConfig globalConfig;
-    private OutgoingConfig outgoingConfig;
+    private final MailSettings mailSettings;
+    private final GlobalConfig globalConfig;
+    private final OutgoingConfig outgoingConfig;
+    private String hostname;
     private Connection connection;
     private SmtpProtocol smtpProtocol;
     private boolean isFresh;
@@ -133,13 +134,13 @@ public class SmtpClient implements OutgoingMailClient {
             // Eat the initial server response
             connection.receive();
 
-            String hostname = globalConfig.getLocalHostname();
+            hostname = globalConfig.getLocalHostname();
 
-            if (hostname.length() == 0) {
-                hostname = System.getProperty("microedition.hostname");
-
-                if (hostname == null) {
-                    hostname = connection.getLocalAddress();
+            if (hostname == null || hostname.length() == 0) {
+                hostname = connection.getLocalAddress();
+                
+                if(hostname == null || hostname.length() == 0) {
+                    hostname = System.getProperty("microedition.hostname");
                 }
             }
 
@@ -153,6 +154,9 @@ public class SmtpClient implements OutgoingMailClient {
         		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
         	smtpProtocol.executeStartTLS();
         	connection.startTLS();
+        	
+        	// Re-execute the EHLO command, since some servers require this
+        	capabilities = smtpProtocol.executeExtendedHello(hostname);
         }
         
         if (outgoingConfig.getUseAuth() > 0) {

@@ -48,16 +48,16 @@ import org.logicprobe.LogicMail.util.StringParser;
  * This class implements the commands for the SMTP protocol
  */
 public class SmtpProtocol {
-    private Connection connection;
+    private final Connection connection;
     
     /** Specifies the PLAIN authentication mechanism */
-    public static int AUTH_PLAIN = 1;
+    public static final int AUTH_PLAIN = 1;
     /** Specifies the LOGIN authentication mechanism */
-    public static int AUTH_LOGIN = 2;
+    public static final int AUTH_LOGIN = 2;
     /** Specifies the CRAM-MD5 authentication mechanism */
-    public static int AUTH_CRAM_MD5 = 3;
+    public static final int AUTH_CRAM_MD5 = 3;
     /** Specifies the DIGEST-MD5 authentication mechanism */
-    public static int AUTH_DIGEST_MD5 = 4;
+    public static final int AUTH_DIGEST_MD5 = 4;
     
     /** Creates a new instance of SmtpProtocol */
     public SmtpProtocol(Connection connection) {
@@ -81,8 +81,8 @@ public class SmtpProtocol {
         String result;
         byte[] data;
         if(mech == AUTH_PLAIN) {
-            result = execute("AUTH PLAIN");
-            if(!result.startsWith("334")) {
+            result = execute(STR_AUTH_PLAIN);
+            if(!result.startsWith(CODE_334)) {
                 throw new MailException(result.substring(4));
             }
             
@@ -101,52 +101,52 @@ public class SmtpProtocol {
             }
             
             result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("235")) {
+            if(!result.startsWith(CODE_235)) {
                 return false;
             }
         }
         else if(mech == AUTH_LOGIN) {
-            result = execute("AUTH LOGIN");
-            if(!result.startsWith("334")) {
+            result = execute(STR_AUTH_LOGIN);
+            if(!result.startsWith(CODE_334)) {
                 throw new MailException(result.substring(4));
             }
             data = username.getBytes();
             result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("334")) {
+            if(!result.startsWith(CODE_334)) {
                 throw new MailException("Authentication error");
             }
             data = password.getBytes();
             result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith("235")) {
+            if(!result.startsWith(CODE_235)) {
                 return false;
             }
         }
         else if(mech == AUTH_CRAM_MD5) {
-            result = execute("AUTH CRAM-MD5");
-            if(!result.startsWith("334")) {
+            result = execute(STR_AUTH_CRAM_MD5);
+            if(!result.startsWith(CODE_334)) {
                 throw new MailException(result.substring(4));
             }
             
             byte[] challenge = Base64InputStream.decode(result.substring(4));
            
-            byte[] s = password.getBytes("US-ASCII");
+            byte[] s = password.getBytes(US_ASCII);
             byte[] digest = hmac_md5(s, challenge);
             StringBuffer buf = new StringBuffer();
             buf.append(username);
             buf.append(' ');
             buf.append(byteArrayToHexString(digest));
 
-            byte[] eval = buf.toString().getBytes("US-ASCII");
+            byte[] eval = buf.toString().getBytes(US_ASCII);
             
             result = execute(Base64OutputStream.encodeAsString(eval, 0, eval.length, false, false));
-            if(!result.startsWith("235")) {
+            if(!result.startsWith(CODE_235)) {
                 return false;
             }
         }
         else if(mech == AUTH_DIGEST_MD5) {
             // Note: This code does not currently work correctly
             result = execute("AUTH DIGEST-MD5");
-            if(!result.startsWith("334")) {
+            if(!result.startsWith(CODE_334)) {
                 throw new MailException(result.substring(4));
             }
             
@@ -246,11 +246,11 @@ public class SmtpProtocol {
             System.err.println("-->Response: " + buf.toString());
             byte[] response = buf.toString().getBytes(charset);
             result = execute(Base64OutputStream.encodeAsString(response, 0, response.length, false, false));
-            if(!result.startsWith("334")) {
+            if(!result.startsWith(CODE_334)) {
                 return false;
             }
             System.err.println("-->Result: "+(new String(Base64InputStream.decode(result))));
-            if(!result.startsWith("235")) {
+            if(!result.startsWith(CODE_235)) {
                 return false;
             }
         }
@@ -272,7 +272,7 @@ public class SmtpProtocol {
             ("SmtpProtocol.executeExtendedHello(\""+domain+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String[] result = executeFollow("EHLO " + domain);
+        String[] result = executeFollow(EHLO + ' ' + domain);
         Hashtable items = new Hashtable();
         for(int i=0; i<result.length; i++) {
             if(result[i].length() > 4) {
@@ -293,7 +293,7 @@ public class SmtpProtocol {
                 ("SmtpProtocol.executeStartTLS()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-		execute("STARTTLS");
+		execute(STARTTLS);
 	}
 
     /**
@@ -310,7 +310,7 @@ public class SmtpProtocol {
             EventLogger.DEBUG_INFO);
         }
         String result = execute("MAIL FROM:<" + sender + ">");
-        return result.startsWith("250");
+        return result.startsWith(CODE_250);
     }
 
     /**
@@ -327,7 +327,7 @@ public class SmtpProtocol {
             EventLogger.DEBUG_INFO);
         }
         String result = execute("RCPT TO:<" + recipient + ">");
-        return result.startsWith("250");
+        return result.startsWith(CODE_250);
     }
     
     /**
@@ -342,15 +342,15 @@ public class SmtpProtocol {
             ("SmtpProtocol.executeData(\""+message+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result = execute("DATA");
-        if(!result.startsWith("354")) {
+        String result = execute(DATA);
+        if(!result.startsWith(CODE_354)) {
             return false;
         }
         
         connection.sendRaw(message);
         result = execute("\r\n.");
         
-        return result.startsWith("250");
+        return result.startsWith(CODE_250);
     }
     
     /**
@@ -364,8 +364,8 @@ public class SmtpProtocol {
             ("SmtpProtocol.executeReset()").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result = execute("RSET");
-        return result.startsWith("250");
+        String result = execute(RSET);
+        return result.startsWith(CODE_250);
     }
     
     /**
@@ -379,8 +379,8 @@ public class SmtpProtocol {
             ("SmtpProtocol.executeQuit()").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result = execute("QUIT");
-        return result.startsWith("221");
+        String result = execute(QUIT);
+        return result.startsWith(CODE_221);
     }
 
     /**
@@ -491,7 +491,7 @@ public class SmtpProtocol {
 
     private static String parseValue(String input) {
         int p, q;
-        p = input.indexOf("=") + 1;
+        p = input.indexOf('=') + 1;
         q = input.length() - 1;
         if(q <= p) {
             return null;
@@ -504,4 +504,20 @@ public class SmtpProtocol {
         }
         return input.substring(p, q+1);
     }
+
+    // String constants
+    private static String STR_AUTH_PLAIN = "AUTH PLAIN";
+    private static String STR_AUTH_LOGIN = "AUTH LOGIN";
+    private static String STR_AUTH_CRAM_MD5 = "AUTH CRAM-MD5";
+    private static String US_ASCII = "US-ASCII";
+    private static String CODE_221 = "221";
+    private static String CODE_235 = "235";
+    private static String CODE_250 = "250";
+    private static String CODE_334 = "334";
+    private static String CODE_354 = "354";
+    private static String EHLO = "EHLO";
+    private static String STARTTLS = "STARTTLS";
+    private static String DATA = "DATA";
+    private static String RSET = "RSET";
+    private static String QUIT = "QUIT";
 }
