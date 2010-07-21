@@ -113,17 +113,16 @@ public class ImapClient extends AbstractIncomingMailClient {
      * messages should be based on a limited range, or
      * the UIDNEXT parameter.
      */
-    private Hashtable seenMailboxes = new Hashtable();
+    private final Hashtable seenMailboxes = new Hashtable();
 
     /**
      * Known mailboxes, used to track protocol-specific
      * information on mailboxes that is not exposed
      * to other classes.
      */
-    private Hashtable knownMailboxes = new Hashtable();
+    private final Hashtable knownMailboxes = new Hashtable();
 
-    private static String strINBOX = "INBOX";
-    
+    private static String INBOX = "INBOX";
     private static String CAPABILITY_CHILDREN = "CHILDREN";
     private static String CAPABILITY_NAMESPACE = "NAMESPACE";
     private static String CAPABILITY_STARTTLS = "STARTTLS";
@@ -401,8 +400,8 @@ public class ImapClient extends AbstractIncomingMailClient {
             // If the STATUS fails, a MailException will be thrown, which we can
             // safely ignore.  Otherwise, create a folder item and add it.
             try {
-                imapProtocol.executeStatus(new String[] { strINBOX }, null);
-                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, strINBOX, strINBOX, folderDelim, true, true);
+                imapProtocol.executeStatus(new String[] { INBOX }, null);
+                FolderTreeItem inboxItem = new FolderTreeItem(rootItem, INBOX, INBOX, folderDelim, true, true);
                 rootItem.addChild(inboxItem);
             } catch (MailException exp) { }
 
@@ -429,6 +428,12 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
 
         if(subscriptions != null) {
+            // If the subscriptions set does not contain the INBOX folder for
+            // some reason, explicitly add it.  This prevents unusual behavior
+            // where the user cannot find the INBOX in their folder tree.
+            if(!subscriptions.containsKey(inbox.getPath())) {
+                subscriptions.put(inbox.getPath(), Boolean.TRUE);
+            }
             FolderTreeItem prunedTree = pruneFolderTree(rootItem, subscriptions);
             if(prunedTree != null) {
                 rootItem = prunedTree;
@@ -549,7 +554,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @return INBOX folder
      */
     private FolderTreeItem findInboxFolder(FolderTreeItem mailbox) {
-        if(mailbox.getName().equals(strINBOX)) {
+        if(mailbox.getName().equals(INBOX)) {
             return mailbox;
         }
         else if(mailbox.hasChildren()) {
