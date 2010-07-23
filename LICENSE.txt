@@ -30,29 +30,6 @@
 
 ******************************************************************************
 
- File: LogicMail/src/org/logicprobe/LogicMail/util/Connection.java
-
- ----------------------------------------------------------------------------
-
- Portions of this file originated from:
- 
-  Mail4ME - Mail for the Java 2 Micro Edition
- 
-  A lightweight, J2ME- (and also J2SE-) compatible package for sending and
-  receiving Internet mail messages using the SMTP and POP3 protocols.
- 
-  Copyright (c) 2000-2002 Jorg Pleumann <joerg@pleumann.de>
- 
-  Mail4ME is part of the EnhydraME family of projects. See the following web
-  sites for more information:
- 
-  -> http://mail4me.enhydra.org
-  -> http://me.enhydra.org
- 
-  Mail4ME is distributed under the Enhydra Public License (EPL)
-
-******************************************************************************
-
  File: LogicMail/src/org/logicprobe/LogicMail/util/MD5.java
 
  This file is a modified version of the one covered by the license below.
