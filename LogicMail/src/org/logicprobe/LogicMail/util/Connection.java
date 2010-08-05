@@ -398,9 +398,9 @@ public abstract class Connection {
             int bytesAvailable = input.available();
             while(bytesAvailable > 0) {
                 byte[] buf = new byte[bytesAvailable];
-                input.read(buf);
-                byteStream.write(buf);
-                bytesReceived += bytesAvailable;
+                int len = input.read(buf);
+                byteStream.write(buf, 0, len);
+                bytesReceived += len;
                 
                 // Check read data for a usable line
                 line = checkForLine();
