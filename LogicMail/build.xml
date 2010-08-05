@@ -31,6 +31,7 @@
   	<attribute name="platformfileset"/>
     <sequential>
       <mkdir dir="${dist.dir}/@{platform}"/>
+      <copy file="res/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
       <rapc output="${module.name}"
             srcdir="src"
             destdir="${dist.dir}/@{platform}"
@@ -41,7 +42,7 @@
              version="${module.version}.${module.build}"
              type="cldc"
              midletclass="org.logicprobe.LogicMail.LogicMail"
-             icon="../../res/icons/logicmail.png"
+             icon="logicmail.png"
              arguments="-build:${module.build}">
           <entry arguments="-build:${module.build} autostartup"
                  systemmodule="true"
@@ -63,6 +64,7 @@
           <fileset refid="@{platformfileset}" />
         </src>
       </rapc>
+      <delete file="${dist.dir}/@{platform}/logicmail.png"/>
     </sequential>
   </macrodef>
   
