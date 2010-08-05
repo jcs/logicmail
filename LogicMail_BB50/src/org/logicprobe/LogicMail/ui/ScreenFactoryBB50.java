@@ -35,9 +35,11 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.TransitionContext;
 import net.rim.device.api.ui.Ui;
 import net.rim.device.api.ui.UiEngineInstance;
+import net.rim.device.api.ui.VirtualKeyboard;
+import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.picker.FilePicker;
 
-public class ScreenFactoryBB50 extends ScreenFactoryBB42 {
+public class ScreenFactoryBB50 extends ScreenFactoryBB47 {
     public void attachScreenTransition(Screen screen, int transitionType) {
         UiEngineInstance uiEngine = Ui.getUiEngineInstance();
         TransitionContext pushAction = null;
@@ -95,7 +97,16 @@ public class ScreenFactoryBB50 extends ScreenFactoryBB42 {
             // FilePicker API is used on an actual device.  To avoid having to
             // know specifically when the FilePicker will work, we catch this
             // exception and fall back to our own implementation.
-            fileUrl = super.showFilePicker();
+            FilePickerDialog dialog = new FilePickerDialog();
+            if(hasTouchscreen) {
+                dialog.getVirtualKeyboard().setVisibility(VirtualKeyboard.HIDE_FORCE);
+            }
+            if(dialog.doModal() == Dialog.OK) {
+                fileUrl = dialog.getFileUrl();
+            }
+            else {
+                fileUrl = null;
+            }
         }
         
         return fileUrl;

@@ -30,35 +30,34 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.component.TreeField;
-import net.rim.device.api.ui.component.TreeFieldCallback;
+import net.rim.device.api.system.Display;
+import net.rim.device.api.ui.Color;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.Manager;
 
-import org.logicprobe.LogicMail.util.PlatformUtils;
-
-public abstract class FieldFactory {
-    private static FieldFactory instance;
-
-    /**
-     * Array of concrete FieldFactory classes, in order from the highest
-     * API version to the lowest.
-     */
-    private static String[] factoryClasses = {
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB50",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB46",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB42"
-    };
-    
-    public static synchronized FieldFactory getInstance() {
-        if(instance == null) {
-            instance = (FieldFactory)PlatformUtils.getFactoryInstance(factoryClasses);
-        }
-        return instance;
-    }
-
-    public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
-    
-    public abstract BorderedFieldManager getBorderedFieldManager();
-    
-    public abstract BorderedFieldManager getBorderedFieldManager(long style);
+public class ShortcutBarManager extends Manager {
+	private static final int HEIGHT = 54;
+	
+	public ShortcutBarManager() {
+		super(Manager.USE_ALL_WIDTH);
+	}
+	
+	protected void sublayout(int maxWidth, int maxHeight) {
+		int displayWidth = Display.getWidth();
+		int buttonWidth = displayWidth / 5;
+		int count = this.getFieldCount();
+		for(int i=0; i<count; i++) {
+			Field field = this.getField(i);
+			this.setPositionChild(field, (i * buttonWidth) + 1, 1);
+			this.layoutChild(field, buttonWidth - 2, HEIGHT - 2);
+		}
+		setExtent(displayWidth, HEIGHT);
+	}
+	
+	protected void paint(Graphics graphics) {
+		graphics.setBackgroundColor(Color.BLACK);
+		graphics.clear();
+		super.paint(graphics);
+	}	
 }

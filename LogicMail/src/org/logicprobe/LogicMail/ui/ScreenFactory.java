@@ -32,7 +32,6 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Screen;
 
-import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -52,23 +51,9 @@ public abstract class ScreenFactory {
         "org.logicprobe.LogicMail.ui.ScreenFactoryBB42"
     };
 
-    /**
-     * Array of concrete ScreenFactory classes, in order from the highest
-     * API version to the lowest, for touch screen devices.
-     */
-    private static String[] factoryClassesTouch = {
-        "org.logicprobe.LogicMail.ui.ScreenFactoryBB50T",
-        "org.logicprobe.LogicMail.ui.ScreenFactoryBB47T",
-    };
-    
     public static synchronized ScreenFactory getInstance() {
         if(instance == null) {
-            if(PlatformInfo.getInstance().hasTouchscreen()) {
-                instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClassesTouch);
-            }
-            else {
-                instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClasses);
-            }
+            instance = (ScreenFactory)PlatformUtils.getFactoryInstance(factoryClasses);
         }
         return instance;
     }

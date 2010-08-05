@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *    notice, this list of conditions and the following disclaimer. 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other materials provided with the distribution. 
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -30,35 +30,18 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.component.TreeField;
-import net.rim.device.api.ui.component.TreeFieldCallback;
+import net.rim.device.api.system.Bitmap;
 
-import org.logicprobe.LogicMail.util.PlatformUtils;
+import org.logicprobe.LogicMail.model.MailRootNode;
+import org.logicprobe.LogicMail.model.Node;
 
-public abstract class FieldFactory {
-    private static FieldFactory instance;
+public class TouchMailHomeScreen extends MailHomeScreen {
 
-    /**
-     * Array of concrete FieldFactory classes, in order from the highest
-     * API version to the lowest.
-     */
-    private static String[] factoryClasses = {
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB50",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB46",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB42"
-    };
-    
-    public static synchronized FieldFactory getInstance() {
-        if(instance == null) {
-            instance = (FieldFactory)PlatformUtils.getFactoryInstance(factoryClasses);
-        }
-        return instance;
+    public TouchMailHomeScreen(MailRootNode mailRootNode) {
+        super(mailRootNode);
     }
 
-    public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
-    
-    public abstract BorderedFieldManager getBorderedFieldManager();
-    
-    public abstract BorderedFieldManager getBorderedFieldManager(long style);
+    protected Bitmap getNodeIcon(Node node) {
+        return TouchNodeIcons.getBigIcon(node);
+    }
 }
