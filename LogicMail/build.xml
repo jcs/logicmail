@@ -31,7 +31,6 @@
   	<attribute name="platformfileset"/>
     <sequential>
       <mkdir dir="${dist.dir}/@{platform}"/>
-      <copy file="res/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
       <rapc output="${module.name}"
             srcdir="src"
             destdir="${dist.dir}/@{platform}"
@@ -42,7 +41,7 @@
              version="${module.version}.${module.build}"
              type="cldc"
              midletclass="org.logicprobe.LogicMail.LogicMail"
-             icon="logicmail.png"
+             icon="../../res/icons/logicmail.png"
              arguments="-build:${module.build}">
           <entry arguments="-build:${module.build} autostartup"
                  systemmodule="true"
@@ -64,7 +63,6 @@
           <fileset refid="@{platformfileset}" />
         </src>
       </rapc>
-      <delete file="${dist.dir}/@{platform}/logicmail.png"/>
     </sequential>
   </macrodef>
   
@@ -88,16 +86,7 @@
         <include name="LogicMail_BB47/src/**/*.java" />
         <include name="LogicMail_BB47/res/**/*.png" />
       </fileset>
-      <fileset id="bb470t_fileset" dir="..">
-        <include name="LogicMail_BB46/src/**/*.java" />
-        <include name="LogicMail_BB46/res/**/*.png" />
-        <include name="LogicMail_BB47/src/**/*.java" />
-        <include name="LogicMail_BB47/res/**/*.png" />
-        <include name="LogicMail_BB47T/src/**/*.java" />
-        <include name="LogicMail_BB47T/res/**/*.png" />
-      </fileset>
       <build-platform jdehome="${jde470.home}" platform="BB470" defines="BLACKBERRY_4_7_0" platformfileset="bb470_fileset"/>
-      <build-platform jdehome="${jde470.home}" platform="BB470T" defines="BLACKBERRY_4_7_0" platformfileset="bb470t_fileset"/>
     </then></if>
     <if><isset property="jde500.home"/><then>
       <fileset id="bb500_fileset" dir="..">
@@ -108,20 +97,7 @@
         <include name="LogicMail_BB50/src/**/*.java" />
         <include name="LogicMail_BB50/res/**/*.png" />
       </fileset>
-      <fileset id="bb500t_fileset" dir="..">
-        <include name="LogicMail_BB46/src/**/*.java" />
-        <include name="LogicMail_BB46/res/**/*.png" />
-        <include name="LogicMail_BB47/src/**/*.java" />
-        <include name="LogicMail_BB47/res/**/*.png" />
-        <include name="LogicMail_BB47T/src/**/*.java" />
-        <include name="LogicMail_BB47T/res/**/*.png" />
-        <include name="LogicMail_BB50/src/**/*.java" />
-        <include name="LogicMail_BB50/res/**/*.png" />
-        <include name="LogicMail_BB50T/src/**/*.java" />
-        <include name="LogicMail_BB50T/res/**/*.png" />
-      </fileset>
       <build-platform jdehome="${jde500.home}" platform="BB500" defines="BLACKBERRY_5_0_0" platformfileset="bb500_fileset"/>
-      <build-platform jdehome="${jde500.home}" platform="BB500T" defines="BLACKBERRY_5_0_0" platformfileset="bb500t_fileset"/>
     </then></if>
   </target>
 
@@ -144,20 +120,12 @@
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB470/${module.name}.cod"/>
-      <sigtool jdehome="${jde470.home}"
-               password="${sigtool.password}"
-               forceclose="true"
-               codfile="${dist.dir}/BB470T/${module.name}.cod"/>
     </then></if>
     <if><isset property="jde500.home"/><then>
       <sigtool jdehome="${jde500.home}"
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB500/${module.name}.cod"/>
-      <sigtool jdehome="${jde500.home}"
-               password="${sigtool.password}"
-               forceclose="true"
-               codfile="${dist.dir}/BB500T/${module.name}.cod"/>
     </then></if>
   </target>
   
@@ -203,17 +171,11 @@
         <codset dir="BB460" greaterthanequal="4.6.0" lessthan="4.7.0">
           <fileset dir="${dist.dir}/BB460" includes="*.cod" />
         </codset>
-        <codset dir="BB470" greaterthanequal="4.7.0" lessthan="5.0.0" keyboardType="Qwerty|Reduced">
+        <codset dir="BB470" greaterthanequal="4.7.0" lessthan="5.0.0">
           <fileset dir="${dist.dir}/BB470" includes="*.cod" />
         </codset>
-        <codset dir="BB470T" greaterthanequal="4.7.0" lessthan="5.0.0" keyboardType="Virtual">
-          <fileset dir="${dist.dir}/BB470T" includes="*.cod" />
-        </codset>
-        <codset dir="BB500" greaterthanequal="5.0.0" keyboardType="Qwerty|Reduced">
+        <codset dir="BB500" greaterthanequal="5.0.0">
           <fileset dir="${dist.dir}/BB500" includes="*.cod" />
-        </codset>
-        <codset dir="BB500T" greaterthanequal="5.0.0" keyboardType="Virtual">
-          <fileset dir="${dist.dir}/BB500T" includes="*.cod" />
         </codset>
       </application>
 	</alx>
@@ -263,14 +225,12 @@
       </insert>
       <insert if="jde470.home" path="/application">
          <![CDATA[
-           <jad blackberryVersion="[4.7.0,5.0.0)" KeyboardType="Qwerty|Reduced" file="BB470/${module.name}.jad"/>
-           <jad blackberryVersion="[4.7.0,5.0.0)" KeyboardType="Virtual" file="BB470T/${module.name}.jad"/>
+           <jad blackberryVersion="[4.7.0,5.0.0)" file="BB470/${module.name}.jad"/>
          ]]>
       </insert>
       <insert if="jde500.home" path="/application">
          <![CDATA[
-           <jad blackberryVersion="[5.0.0,)" KeyboardType="Qwerty|Reduced" file="BB500/${module.name}.jad"/>
-           <jad blackberryVersion="[5.0.0,)" KeyboardType="Virtual" file="BB500T/${module.name}.jad"/>
+           <jad blackberryVersion="[5.0.0,)" file="BB500/${module.name}.jad"/>
          ]]>
       </insert>
     </xmltask>
@@ -282,11 +242,9 @@
     </then></if>
     <if><isset property="jde470.home"/><then>
       <copy-ota-files src="${dist.dir}/BB470" dest="${dist.ota.dir}/${module.version}/BB470"/>
-      <copy-ota-files src="${dist.dir}/BB470T" dest="${dist.ota.dir}/${module.version}/BB470T"/>
     </then></if>
     <if><isset property="jde500.home"/><then>
       <copy-ota-files src="${dist.dir}/BB500" dest="${dist.ota.dir}/${module.version}/BB500"/>
-      <copy-ota-files src="${dist.dir}/BB500T" dest="${dist.ota.dir}/${module.version}/BB500T"/>
     </then></if>
   </target>
   
