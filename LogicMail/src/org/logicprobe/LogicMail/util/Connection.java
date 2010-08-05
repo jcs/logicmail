@@ -409,6 +409,16 @@ public abstract class Connection {
                 }
                 
                 bytesAvailable = input.available();
+
+                // If no bytes are reported as being available, but we have
+                // not yet received a full line, then we need to attempt
+                // another single-byte blocking read.
+                if(bytesAvailable == 0) {
+                    firstByte = input.read();
+                    byteStream.write((byte)firstByte);
+                    bytesReceived++;
+                    bytesAvailable = input.available();
+                }
             }
         }
         else {
