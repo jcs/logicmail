@@ -53,7 +53,7 @@ public class StandardScreen extends MainScreen {
     protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
     protected static StatusBarField statusBarField = new StatusBarField();
     private NavigationController navigationController;
-    private HeaderField headerField;
+    private Field titleField;
     private Field originalStatusField;
     private Field currentStatusField;
 
@@ -87,13 +87,20 @@ public class StandardScreen extends MainScreen {
     private void initialize() {
         // Create screen elements
         if(screenProvider.getTitle() != null) {
-            this.headerField = new HeaderField(resources.getString(LogicMailResource.APPNAME) + " - " + screenProvider.getTitle());
-            setTitle(headerField);
+            this.titleField = createTitleField();
+            setTitle(titleField);
         }
 
         initMenuItems();
         screenProvider.setNavigationController(navigationController);
         screenProvider.initFields(this);
+    }
+    
+    protected Field createTitleField() {
+        return new HeaderField(
+                resources.getString(LogicMailResource.APPNAME)
+                + " - "
+                + screenProvider.getTitle());
     }
 
     /* (non-Javadoc)
@@ -242,18 +249,22 @@ public class StandardScreen extends MainScreen {
                         accounts[i].requestDisconnect(true);
                     }
                 }
-                headerField.removeListeners();
+                cleanupTitleField(titleField);
                 NotificationHandler.getInstance().shutdown();
                 System.exit(0);
             }
         }
         else {
-            headerField.removeListeners();
+            cleanupTitleField(titleField);
             NotificationHandler.getInstance().shutdown();
             System.exit(0);
         }
     }
 
+    protected void cleanupTitleField(Field titleField) {
+        ((HeaderField)titleField).removeListeners();
+    }
+    
     /**
      * Shows the configuration screen.
      * Subclasses should override this method if they need to

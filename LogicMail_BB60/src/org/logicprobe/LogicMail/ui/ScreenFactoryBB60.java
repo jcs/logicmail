@@ -30,52 +30,9 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import org.logicprobe.LogicMail.model.MailRootNode;
-import org.logicprobe.LogicMail.model.MailboxNode;
+public class ScreenFactoryBB60 extends ScreenFactoryBB50 {
 
-import net.rim.device.api.ui.Touchscreen;
-import net.rim.device.api.ui.VirtualKeyboard;
-import net.rim.device.api.ui.component.Dialog;
-
-public class ScreenFactoryBB47 extends ScreenFactoryBB42 {
-    protected boolean hasTouchscreen;
-    
-    public ScreenFactoryBB47() {
-        hasTouchscreen = Touchscreen.isSupported();
-    }
-    
-    public StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {
-        if(hasTouchscreen) {
-            return getStandardTouchScreen(navigationController, new TouchMailHomeScreen(mailRootNode));
-        }
-        else {
-            return new StandardScreen(navigationController, new MailHomeScreen(mailRootNode));
-        }
-    }
-
-    public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-        if(hasTouchscreen) {
-            return getStandardTouchScreen(navigationController, new MailboxScreen(mailboxNode));
-        }
-        else {
-            return new StandardScreen(navigationController, new MailboxScreen(mailboxNode));
-        }
-    }
-    
-    public String showFilePicker() {
-        FilePickerDialog dialog = new FilePickerDialog();
-        if(hasTouchscreen) {
-            dialog.getVirtualKeyboard().setVisibility(VirtualKeyboard.HIDE_FORCE);
-        }
-        if(dialog.doModal() == Dialog.OK) {
-            return dialog.getFileUrl();
-        }
-        else {
-            return null;
-        }
-    }
-    
     protected StandardScreen getStandardTouchScreen(NavigationController navigationController, ScreenProvider screenProvider) {
-        return new StandardTouchScreen(navigationController, screenProvider);
+        return new StandardTouchScreenBB60(navigationController, screenProvider);
     }
 }

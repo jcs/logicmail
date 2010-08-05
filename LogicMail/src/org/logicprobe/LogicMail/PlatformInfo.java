@@ -46,6 +46,7 @@ public abstract class PlatformInfo {
      * API version to the lowest.
      */
     private static String[] infoClasses = {
+        "org.logicprobe.LogicMail.PlatformInfoBB60",
         "org.logicprobe.LogicMail.PlatformInfoBB50",
         "org.logicprobe.LogicMail.PlatformInfoBB47",
         "org.logicprobe.LogicMail.PlatformInfoBB46",
