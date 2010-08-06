@@ -101,6 +101,19 @@
       </fileset>
       <build-platform jdehome="${jde500.home}" platform="BB500" defines="BLACKBERRY_5_0_0" platformfileset="bb500_fileset"/>
     </then></if>
+    <if><isset property="jde600.home"/><then>
+      <fileset id="bb600_fileset" dir="..">
+        <include name="LogicMail_BB46/src/**/*.java" />
+        <include name="LogicMail_BB46/res/**/*.png" />
+        <include name="LogicMail_BB47/src/**/*.java" />
+        <include name="LogicMail_BB47/res/**/*.png" />
+        <include name="LogicMail_BB50/src/**/*.java" />
+        <include name="LogicMail_BB50/res/**/*.png" />
+        <include name="LogicMail_BB60/src/**/*.java" />
+        <include name="LogicMail_BB60/res/**/*.png" />
+      </fileset>
+      <build-platform jdehome="${jde600.home}" platform="BB600" defines="BLACKBERRY_6_0_0" platformfileset="bb600_fileset"/>
+    </then></if>
   </target>
 
   <!-- Sign the application -->
@@ -128,6 +141,12 @@
                password="${sigtool.password}"
                forceclose="true"
                codfile="${dist.dir}/BB500/${module.name}.cod"/>
+    </then></if>
+    <if><isset property="jde600.home"/><then>
+      <sigtool jdehome="${jde600.home}"
+               password="${sigtool.password}"
+               forceclose="true"
+               codfile="${dist.dir}/BB600/${module.name}.cod"/>
     </then></if>
   </target>
   
@@ -176,8 +195,11 @@
         <codset dir="BB470" greaterthanequal="4.7.0" lessthan="5.0.0">
           <fileset dir="${dist.dir}/BB470" includes="*.cod" />
         </codset>
-        <codset dir="BB500" greaterthanequal="5.0.0">
+        <codset dir="BB500" greaterthanequal="5.0.0" lessthan="6.0.0">
           <fileset dir="${dist.dir}/BB500" includes="*.cod" />
+        </codset>
+        <codset dir="BB600" greaterthanequal="6.0.0">
+          <fileset dir="${dist.dir}/BB600" includes="*.cod" />
         </codset>
       </application>
 	</alx>
@@ -232,9 +254,14 @@
       </insert>
       <insert if="jde500.home" path="/application">
          <![CDATA[
-           <jad blackberryVersion="[5.0.0,)" file="BB500/${module.name}.jad"/>
+           <jad blackberryVersion="[5.0.0,6.0.0)" file="BB500/${module.name}.jad"/>
          ]]>
       </insert>
+        <insert if="jde600.home" path="/application">
+         <![CDATA[
+           <jad blackberryVersion="[6.0.0,)" file="BB600/${module.name}.jad"/>
+         ]]>
+        </insert>
     </xmltask>
     <if><isset property="jde421.home"/><then>
       <copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
@@ -247,6 +274,9 @@
     </then></if>
     <if><isset property="jde500.home"/><then>
       <copy-ota-files src="${dist.dir}/BB500" dest="${dist.ota.dir}/${module.version}/BB500"/>
+    </then></if>
+    <if><isset property="jde600.home"/><then>
+      <copy-ota-files src="${dist.dir}/BB600" dest="${dist.ota.dir}/${module.version}/BB600"/>
     </then></if>
   </target>
   
