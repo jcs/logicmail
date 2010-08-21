@@ -60,6 +60,7 @@ import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.ThreadQueue;
 
 /**
  * Message node for the mail data model.
@@ -164,6 +165,9 @@ public class MessageNode implements Node {
 	private EventListenerList listenerList = new EventListenerList();
 	private boolean refreshInProgress;
 
+	/** Thread queue for calls to MailFileManager. */
+	private static final ThreadQueue threadQueue = new ThreadQueue();
+	
 	/**
 	 * Instantiates a new message node.
 	 * 
@@ -626,25 +630,31 @@ public class MessageNode implements Node {
 	
 	/**
 	 * Commits the current state of the message to the cache, if applicable.
-	 * 
-	 * @return True if written to cache, false otherwise
 	 */
-	boolean commitMessage() {
-		boolean result = false;
+	void commitMessage() {
+	    boolean writeToCache;
 		synchronized(messageContent) {
-			if(!isCached() && isCachable()) {
-				try {
-					MailFileManager.getInstance().writeMessage(this);
-					setCached(true);
-					result = true;
-				} catch (IOException e) {
-					System.err.println("-->Unable to write message: " + e.getMessage());
-				} catch (Throwable t) {
-					System.err.println("-->Unable to write message: " + t.getMessage());
-				}
-			}
+		    writeToCache = !isCached() && isCachable();
 		}
-		return result;
+		if(!writeToCache) { return; }
+		
+	    synchronized (threadQueue) {
+	        threadQueue.invokeLater(new Runnable() {
+	            public void run() {
+	                synchronized(messageContent) {
+	                    try {
+	                        MailFileManager.getInstance().writeMessage(MessageNode.this);
+	                        setCached(true);
+	                    } catch (Throwable t) {
+	                        EventLogger.logEvent(AppInfo.GUID,
+	                                ("Unable to write message to cache\r\n"
+	                                        + t.getMessage()).getBytes(),
+	                                        EventLogger.ERROR);
+	                    }
+	                }
+	            }
+	        });
+	    }
 	}
 	
 	/**
