@@ -480,13 +480,15 @@ public class ImapProtocol {
         executeResponse(FETCH,
                 Integer.toString(firstIndex) + CHAR_COLON +
                 Integer.toString(lastIndex) + " (FLAGS UID)",
-                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
-                    FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
-                    if(response != null) {
-                        result.addElement(response);
-                    }
-                }},
-                progressHandler);
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
+                if(response != null) {
+                    result.addElement(response);
+                }
+            }
+            public void executeComplete() { }},
+            progressHandler);
 
         FetchFlagsResponse[] resultArray = new FetchFlagsResponse[result.size()];
         result.copyInto(resultArray);
@@ -512,13 +514,15 @@ public class ImapProtocol {
         executeResponse(UID_FETCH,
                 Integer.toString(uidNext) + CHAR_COLON_ASTERISK +
                 " (FLAGS UID)",
-                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
-                    FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
-                    if(response != null) {
-                        result.addElement(response);
-                    }
-                }},
-                progressHandler);
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
+                if(response != null) {
+                    result.addElement(response);
+                }
+            }
+            public void executeComplete() { }},
+            progressHandler);
 
         FetchFlagsResponse[] resultArray = new FetchFlagsResponse[result.size()];
         result.copyInto(resultArray);
@@ -609,10 +613,17 @@ public class ImapProtocol {
                 Integer.toString(firstIndex) + CHAR_COLON +
                 Integer.toString(lastIndex) +
                 " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
-                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
-                    prepareFetchEnvelopeResponse(rawLine, callback);
-                }},
-                progressHandler);
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                prepareFetchEnvelopeResponse(rawLine, callback);
+            }
+            public void executeComplete() {
+                if(callback != null) {
+                    callback.responseAvailable(null);
+                }
+            }
+        },
+        progressHandler);
     }
 
     /**
@@ -633,10 +644,17 @@ public class ImapProtocol {
         executeResponse(UID_FETCH,
                 Integer.toString(uidNext) + CHAR_COLON_ASTERISK +
                 " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
-                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
-                    prepareFetchEnvelopeResponse(rawLine, callback);
-                }},
-                progressHandler);
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                prepareFetchEnvelopeResponse(rawLine, callback);
+            }
+            public void executeComplete() {
+                if(callback != null) {
+                    callback.responseAvailable(null);
+                }
+            }
+        },
+        progressHandler);
     }
 
     /**
@@ -673,10 +691,17 @@ public class ImapProtocol {
 
         executeResponse(UID_FETCH,
                 uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
-                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
-                    prepareFetchEnvelopeResponse(rawLine, callback);
-                }},
-                progressHandler);
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                prepareFetchEnvelopeResponse(rawLine, callback);
+            }
+            public void executeComplete() {
+                if(callback != null) {
+                    callback.responseAvailable(null);
+                }
+            }
+        },
+        progressHandler);
     }
 
     private void prepareFetchEnvelopeResponse(byte[] rawText, FetchEnvelopeCallback callback) {
@@ -1417,6 +1442,14 @@ public class ImapProtocol {
             }
         }
 
+        try {
+            callback.executeComplete();
+        } catch (Throwable t) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to complete processing the response: " + t.getMessage()).getBytes(),
+                    EventLogger.ERROR);
+        }
+        
         if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
                 StringArrays.startsWith(temp, NO_PREFIX,
                     tagBytes.length)) {
@@ -1429,6 +1462,7 @@ public class ImapProtocol {
      */
     protected interface ExecuteCallback {
         void processResponse(byte[] rawLine);
+        void executeComplete();
     }
     
     /**
