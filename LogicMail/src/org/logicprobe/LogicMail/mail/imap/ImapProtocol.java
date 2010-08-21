@@ -475,11 +475,22 @@ public class ImapProtocol {
                 lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
-        byte[][] rawList = executeResponse(FETCH,
+        final Vector result = new Vector(lastIndex - firstIndex);
+        
+        executeResponse(FETCH,
                 Integer.toString(firstIndex) + CHAR_COLON +
-                Integer.toString(lastIndex) + " (FLAGS UID)", progressHandler);
+                Integer.toString(lastIndex) + " (FLAGS UID)",
+                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
+                    FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
+                    if(response != null) {
+                        result.addElement(response);
+                    }
+                }},
+                progressHandler);
 
-        return prepareFetchFlagsResponse(rawList, progressHandler);
+        FetchFlagsResponse[] resultArray = new FetchFlagsResponse[result.size()];
+        result.copyInto(resultArray);
+        return resultArray;
     }
 
     /**
@@ -496,104 +507,86 @@ public class ImapProtocol {
                 EventLogger.DEBUG_INFO);
         }
 
-        byte[][] rawList = executeResponse(UID_FETCH,
+        final Vector result = new Vector();
+        
+        executeResponse(UID_FETCH,
                 Integer.toString(uidNext) + CHAR_COLON_ASTERISK +
-                " (FLAGS UID)", progressHandler);
+                " (FLAGS UID)",
+                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
+                    FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
+                    if(response != null) {
+                        result.addElement(response);
+                    }
+                }},
+                progressHandler);
 
-        return prepareFetchFlagsResponse(rawList, progressHandler);
+        FetchFlagsResponse[] resultArray = new FetchFlagsResponse[result.size()];
+        result.copyInto(resultArray);
+        return resultArray;
     }
 
-    private FetchFlagsResponse[] prepareFetchFlagsResponse(byte[][] rawList,
-        MailProgressHandler progressHandler) throws IOException, MailException {
-        if (progressHandler != null) {
-            progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING,
-                0, -1);
-        }
-
-        Vector flagResponses = new Vector();
-
-        if (progressHandler != null) {
-            progressHandler.mailProgress(
-                    MailProgressHandler.TYPE_PROCESSING, 0, rawList.length);
+    private FetchFlagsResponse prepareFetchFlagsResponse(byte[] rawText) {
+        if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
+            return null;
         }
         
-        for (int i = 0; i < rawList.length; i++) {
-            byte[] rawText = rawList[i];
-            if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
-                continue;
-            }
-            
+        FetchFlagsResponse flagRespItem = new FetchFlagsResponse();
+        
+        try {
+            Vector parsedText = null;
+
             try {
-                Vector parsedText = null;
+                int offset = Arrays.getIndex(rawText, (byte)'(');
+                parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
+            } catch (Exception exp) {
+                parsedText = null;
+                return null;
+            }
 
-                try {
-                    int offset = Arrays.getIndex(rawText, (byte)'(');
-                    parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
-                } catch (Exception exp) {
-                    parsedText = null;
+            
+            flagRespItem.flags = null;
 
-                    continue;
-                }
+            // Iterate through results, locating and parsing the
+            // FLAGS and ENVELOPE sections in an order-independent way.
+            int parsedSize = parsedText.size();
 
-                FetchFlagsResponse flagRespItem = new FetchFlagsResponse();
-                flagRespItem.flags = null;
-
-                // Iterate through results, locating and parsing the
-                // FLAGS and ENVELOPE sections in an order-independent way.
-                int parsedSize = parsedText.size();
-
-                for (int j = 0; j < parsedSize; j++) {
-                    if (parsedText.elementAt(j) instanceof String) {
-                        if (((String) parsedText.elementAt(j)).equals(FLAGS) &&
-                                (parsedSize > (j + 1)) &&
-                                parsedText.elementAt(j + 1) instanceof Vector) {
-                            flagRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j +
+            for (int j = 0; j < parsedSize; j++) {
+                if (parsedText.elementAt(j) instanceof String) {
+                    if (((String) parsedText.elementAt(j)).equals(FLAGS) &&
+                            (parsedSize > (j + 1)) &&
+                            parsedText.elementAt(j + 1) instanceof Vector) {
+                        flagRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j +
+                                    1));
+                    } else if (((String) parsedText.elementAt(j)).equals(
+                                UID) && (parsedSize > (j + 1)) &&
+                            parsedText.elementAt(j + 1) instanceof String) {
+                        try {
+                            flagRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j +
                                         1));
-                        } else if (((String) parsedText.elementAt(j)).equals(
-                                    UID) && (parsedSize > (j + 1)) &&
-                                parsedText.elementAt(j + 1) instanceof String) {
-                            try {
-                                flagRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j +
-                                            1));
-                            } catch (NumberFormatException e) {
-                                flagRespItem.uid = -1;
-                            }
+                        } catch (NumberFormatException e) {
+                            flagRespItem.uid = -1;
                         }
                     }
                 }
-
-                if (flagRespItem.flags == null) {
-                    flagRespItem.flags = new MessageFlags();
-                }
-
-                // Find the message index in the reply
-                int spaceIndex = Arrays.getIndex(rawText, (byte)' ');
-                int fetchIndex = StringArrays.indexOf(rawText, FETCH.getBytes(), spaceIndex);
-                int midx = StringArrays.parseInt(rawText, spaceIndex + 1, fetchIndex - spaceIndex - 2);
-
-                flagRespItem.index = midx;
-                flagResponses.addElement(flagRespItem);
-            } catch (Exception exp) {
-                EventLogger.logEvent(AppInfo.GUID,
-                    ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
             }
 
-            if (progressHandler != null) {
-                progressHandler.mailProgress(
-                        MailProgressHandler.TYPE_PROCESSING, i, rawList.length);
+            if (flagRespItem.flags == null) {
+                flagRespItem.flags = new MessageFlags();
             }
+
+            // Find the message index in the reply
+            int spaceIndex = Arrays.getIndex(rawText, (byte)' ');
+            int fetchIndex = StringArrays.indexOf(rawText, FETCH.getBytes(), spaceIndex);
+            int midx = StringArrays.parseInt(rawText, spaceIndex + 1, fetchIndex - spaceIndex - 2);
+
+            flagRespItem.index = midx;
+        } catch (Throwable exp) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
+            flagRespItem = null;
         }
 
-        FetchFlagsResponse[] result = new FetchFlagsResponse[flagResponses.size()];
-        flagResponses.copyInto(result);
-
-        if (progressHandler != null) {
-            progressHandler.mailProgress(
-                    MailProgressHandler.TYPE_PROCESSING,
-                    rawList.length, rawList.length);
-        }
-
-        return result;
+        return flagRespItem;
     }
 
     /**
@@ -604,7 +597,7 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      */
     public void executeFetchEnvelope(int firstIndex, int lastIndex,
-        FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
+        final FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -612,12 +605,14 @@ public class ImapProtocol {
                 lastIndex + ")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
-        byte[][] rawList = executeResponse(FETCH,
+        executeResponse(FETCH,
                 Integer.toString(firstIndex) + CHAR_COLON +
                 Integer.toString(lastIndex) +
-                " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
-
-        prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
+                " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
+                    prepareFetchEnvelopeResponse(rawLine, callback);
+                }},
+                progressHandler);
     }
 
     /**
@@ -627,7 +622,7 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      */
     public void executeFetchEnvelopeUid(int uidNext,
-        FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
+        final FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -635,11 +630,13 @@ public class ImapProtocol {
                 EventLogger.DEBUG_INFO);
         }
 
-        byte[][] rawList = executeResponse(UID_FETCH,
+        executeResponse(UID_FETCH,
                 Integer.toString(uidNext) + CHAR_COLON_ASTERISK +
-                " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
-
-        prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
+                " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
+                    prepareFetchEnvelopeResponse(rawLine, callback);
+                }},
+                progressHandler);
     }
 
     /**
@@ -649,7 +646,7 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      */
     public void executeFetchEnvelopeUid(int[] uids,
-        FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
+        final FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException {
         if (uids.length == 0) {
             callback.responseAvailable(null);
@@ -674,113 +671,93 @@ public class ImapProtocol {
                 EventLogger.DEBUG_INFO);
         }
 
-        byte[][] rawList = executeResponse(UID_FETCH,
-                uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)", progressHandler);
-
-        prepareFetchEnvelopeResponse(rawList, callback, progressHandler);
+        executeResponse(UID_FETCH,
+                uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+                new ExecuteCallback() { public void processResponse(byte[] rawLine) {
+                    prepareFetchEnvelopeResponse(rawLine, callback);
+                }},
+                progressHandler);
     }
 
-    private void prepareFetchEnvelopeResponse(byte[][] rawList,
-        FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
-        throws IOException, MailException {
-        if (progressHandler != null) {
-            progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING,
-                0, -1);
+    private void prepareFetchEnvelopeResponse(byte[] rawText, FetchEnvelopeCallback callback) {
+        if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
+            return;
         }
+        
+        FetchEnvelopeResponse envRespItem = null;
+        try {
+            MessageEnvelope env = null;
+            ImapParser.MessageSection structure = null;
+            Vector parsedText = null;
 
-        if (progressHandler != null) {
-            progressHandler.mailProgress(
-                    MailProgressHandler.TYPE_PROCESSING, 0, rawList.length);
-        }
-
-        for (int i = 0; i < rawList.length; i++) {
-            byte[] rawText = rawList[i];
-            if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
-                continue;
-            }
-            
-            FetchEnvelopeResponse envRespItem = null;
             try {
-                MessageEnvelope env = null;
-                ImapParser.MessageSection structure = null;
-                Vector parsedText = null;
-
-                try {
-                    int offset = Arrays.getIndex(rawText, (byte)'(');
-                    parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
-                } catch (Exception exp) {
-                    continue;
-                }
-
-                envRespItem = new FetchEnvelopeResponse();
-                envRespItem.flags = null;
-
-                // Iterate through results, locating and parsing the
-                // FLAGS and ENVELOPE sections in an order-independent way.
-                int parsedSize = parsedText.size();
-
-                for (int j = 0; j < parsedSize; j++) {
-                    if (FLAGS.equals(parsedText.elementAt(j))
-                            && (parsedSize > (j + 1))
-                            && parsedText.elementAt(j + 1) instanceof Vector) {
-                        envRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j + 1));
-                    }
-                    else if (UID.equals(parsedText.elementAt(j))
-                            && (parsedSize > (j + 1))
-                            && parsedText.elementAt(j + 1) instanceof String) {
-                        try {
-                            envRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j + 1));
-                        } catch (NumberFormatException e) {
-                            envRespItem.uid = -1;
-                        }
-                    }
-                    else if (ENVELOPE.equals(parsedText.elementAt(j))
-                            && (parsedSize > (j + 1))
-                            && parsedText.elementAt(j + 1) instanceof Vector) {
-                        env = ImapParser.parseMessageEnvelope((Vector) parsedText.elementAt(j + 1));
-                    }
-                    else if (BODYSTRUCTURE.equals(parsedText.elementAt(j))
-                            && (parsedSize > (j + 1))
-                            && parsedText.elementAt(j + 1) instanceof Vector) {
-                        structure = ImapParser.parseMessageStructureParameter((Vector) parsedText.elementAt(j + 1));
-                    }
-                }
-
-                // If either of the above sections were not found, then populate
-                // the reply with the relevant dummy data.
-                if (env == null) {
-                    env = ImapParser.generateDummyEnvelope();
-                }
-
-                if (envRespItem.flags == null) {
-                    envRespItem.flags = new MessageFlags();
-                }
-
-                // Find the message index in the reply
-                int spaceIndex = Arrays.getIndex(rawText, (byte)' ');
-                int fetchIndex = StringArrays.indexOf(rawText, FETCH.getBytes(), spaceIndex);
-                int midx = StringArrays.parseInt(rawText, spaceIndex + 1, fetchIndex - spaceIndex - 2);
-
-                envRespItem.index = midx;
-                envRespItem.envelope = env;
-                envRespItem.structure = structure;
+                int offset = Arrays.getIndex(rawText, (byte)'(');
+                parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
             } catch (Exception exp) {
-                EventLogger.logEvent(AppInfo.GUID,
-                    ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
-                envRespItem = null;
+                return;
             }
 
-            if (envRespItem != null) {
-                callback.responseAvailable(envRespItem);
+            envRespItem = new FetchEnvelopeResponse();
+            envRespItem.flags = null;
+
+            // Iterate through results, locating and parsing the
+            // FLAGS and ENVELOPE sections in an order-independent way.
+            int parsedSize = parsedText.size();
+
+            for (int j = 0; j < parsedSize; j++) {
+                if (FLAGS.equals(parsedText.elementAt(j))
+                        && (parsedSize > (j + 1))
+                        && parsedText.elementAt(j + 1) instanceof Vector) {
+                    envRespItem.flags = ImapParser.parseMessageFlags((Vector) parsedText.elementAt(j + 1));
+                }
+                else if (UID.equals(parsedText.elementAt(j))
+                        && (parsedSize > (j + 1))
+                        && parsedText.elementAt(j + 1) instanceof String) {
+                    try {
+                        envRespItem.uid = Integer.parseInt((String) parsedText.elementAt(j + 1));
+                    } catch (NumberFormatException e) {
+                        envRespItem.uid = -1;
+                    }
+                }
+                else if (ENVELOPE.equals(parsedText.elementAt(j))
+                        && (parsedSize > (j + 1))
+                        && parsedText.elementAt(j + 1) instanceof Vector) {
+                    env = ImapParser.parseMessageEnvelope((Vector) parsedText.elementAt(j + 1));
+                }
+                else if (BODYSTRUCTURE.equals(parsedText.elementAt(j))
+                        && (parsedSize > (j + 1))
+                        && parsedText.elementAt(j + 1) instanceof Vector) {
+                    structure = ImapParser.parseMessageStructureParameter((Vector) parsedText.elementAt(j + 1));
+                }
             }
 
-            if (progressHandler != null) {
-                progressHandler.mailProgress(
-                        MailProgressHandler.TYPE_PROCESSING, i, rawList.length);
+            // If either of the above sections were not found, then populate
+            // the reply with the relevant dummy data.
+            if (env == null) {
+                env = ImapParser.generateDummyEnvelope();
             }
+
+            if (envRespItem.flags == null) {
+                envRespItem.flags = new MessageFlags();
+            }
+
+            // Find the message index in the reply
+            int spaceIndex = Arrays.getIndex(rawText, (byte)' ');
+            int fetchIndex = StringArrays.indexOf(rawText, FETCH.getBytes(), spaceIndex);
+            int midx = StringArrays.parseInt(rawText, spaceIndex + 1, fetchIndex - spaceIndex - 2);
+
+            envRespItem.index = midx;
+            envRespItem.envelope = env;
+            envRespItem.structure = structure;
+        } catch (Exception exp) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
+            envRespItem = null;
         }
 
-        callback.responseAvailable(null);
+        if (envRespItem != null) {
+            callback.responseAvailable(envRespItem);
+        }
     }
 
     /**
@@ -1392,6 +1369,68 @@ public class ImapProtocol {
         return result;
     }
 
+    /**
+     * Executes an IMAP command, invoking the supplied callback on each line
+     * of the response.
+     * 
+     * @param command IMAP command
+     * @param arguments Arguments for the command
+     * @param callback the callback to invoke on each line of the response
+     * @param progressHandler the progress handler
+     * @return List of returned strings
+     */
+    protected void executeResponse(String command, String arguments,
+            ExecuteCallback callback, MailProgressHandler progressHandler)
+    throws IOException, MailException {
+        
+        String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
+        connection.sendCommand(tag + command +
+            ((arguments == null) ? "" : (CHAR_SP + arguments)));
+
+        byte[] tagBytes = tag.getBytes();
+
+        int preCount = connection.getBytesReceived();
+        byte[] temp = connection.receive(executeResponseTester);
+        int postCount = connection.getBytesReceived();
+
+        if (progressHandler != null) {
+            progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK,
+                (postCount - preCount), -1);
+        }
+
+        while (!StringArrays.startsWith(temp, tagBytes)) {
+            try {
+                callback.processResponse(temp);
+            } catch (Throwable t) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to parse response: " + t.getMessage()).getBytes(),
+                        EventLogger.ERROR);
+            }
+            
+            preCount = postCount;
+            temp = connection.receive(executeResponseTester);
+            postCount = connection.getBytesReceived();
+
+            if (progressHandler != null) {
+                progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK,
+                    (postCount - preCount), -1);
+            }
+        }
+
+        if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
+                StringArrays.startsWith(temp, NO_PREFIX,
+                    tagBytes.length)) {
+            throw new MailException(new String(temp));
+        }
+    }
+    
+    /**
+     * Callback interface for <code>executeResponse()</code>.
+     */
+    protected interface ExecuteCallback {
+        void processResponse(byte[] rawLine);
+    }
+    
     /**
      * Executes an IMAP command, and returns the reply as an
      * array of strings.

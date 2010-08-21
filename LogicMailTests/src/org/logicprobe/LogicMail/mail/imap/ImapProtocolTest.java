@@ -1093,6 +1093,21 @@ public class ImapProtocolTest extends TestCase {
             return result;
         }
         
+        protected void executeResponse(String command, String arguments,
+                ExecuteCallback callback, MailProgressHandler progressHandler)
+                throws IOException, MailException {
+            assertTrue("No expectations", !executeExpectations.isEmpty());
+
+            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();
+            assertEquals("Bad command", expect.command, command);
+            assertEquals("Bad arguments", expect.arguments, arguments);
+            executeExpectations.removeElement(expect);
+
+            for(int i=0; i<expect.result.length; i++) {
+                callback.processResponse(expect.result[i].getBytes());
+            }
+        }
+        
         private class ExecuteExpectation {
             public String command;
             public String arguments;
