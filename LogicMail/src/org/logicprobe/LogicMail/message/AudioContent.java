@@ -32,17 +32,15 @@ package org.logicprobe.LogicMail.message;
 
 import java.io.IOException;
 
-import net.rim.device.api.io.Base64InputStream;
-
 public class AudioContent extends MimeMessageContent {
 	private byte[] rawData;
 	
-	public AudioContent(AudioPart audioPart, String encoding, String data) throws UnsupportedContentException {
+	public AudioContent(AudioPart audioPart, String encoding, byte[] data) throws UnsupportedContentException {
 		super(audioPart);
         // Decode the binary data
-        if (encoding.equalsIgnoreCase("base64")) {
+        if (encoding.equalsIgnoreCase(ENCODING_BASE64)) {
         	try {
-		        this.rawData = Base64InputStream.decode(data);
+		        this.rawData = decodeBase64(data);
         	} catch (IOException e) {
         		throw new UnsupportedContentException("Unable to decode");
         	}
@@ -53,7 +51,7 @@ public class AudioContent extends MimeMessageContent {
 
 	public AudioContent(AudioPart audioPart, byte[] rawData) {
 	    super(audioPart);
-	    audioPart.setEncoding("base64");
+	    audioPart.setEncoding(ENCODING_BASE64);
 	    this.rawData = rawData;
 	}
 	

@@ -30,9 +30,13 @@
  */
 package org.logicprobe.LogicMail.message;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+
+import net.rim.device.api.io.Base64InputStream;
 
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializationUtils;
@@ -46,6 +50,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 public abstract class MimeMessageContent implements Serializable {
     private long uniqueId;
     private ContentPart messagePart;
+    protected static String ENCODING_BASE64 = "base64";
 
     /**
      * Instantiates a new message content object
@@ -91,6 +96,39 @@ public abstract class MimeMessageContent implements Serializable {
      */
     protected abstract void putRawData(byte[] rawData);
 
+    /**
+     * Decode the provided data as Base64.
+     * 
+     * @param data byte array representing a Base64-encoded string
+     * @return decoded form of the input data
+     * @throws IOException thrown if a decoding error occurred.
+     */
+    protected static byte[] decodeBase64(byte[] data) throws IOException {
+        if(data == null || data.length == 0) {
+            return new byte[0];
+        }
+        
+        byte[] decodedData;
+        if(data.length < 32768) {
+            decodedData = Base64InputStream.decode(data, 0, data.length);
+        }
+        else {
+            Base64InputStream inputStream = new Base64InputStream(new ByteArrayInputStream(data, 0, data.length));
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream(65536);
+            
+            byte[] buf = new byte[1024];
+            int count;
+            while ((count = inputStream.read(buf)) >= 0)
+            {
+                outputStream.write(buf, 0, count);
+            }
+            inputStream.close();
+            
+            decodedData = outputStream.toByteArray();
+        }
+        return decodedData;
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
      */

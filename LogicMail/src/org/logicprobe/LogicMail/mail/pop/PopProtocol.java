@@ -264,7 +264,7 @@ public class PopProtocol {
     	int preCount = connection.getBytesReceived();
         if(execute(command, errorFatal) == null) { return null; }
         
-        String buffer = connection.receive();
+        String buffer = new String(connection.receive());
         int postCount = connection.getBytesReceived();
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
 
@@ -272,7 +272,7 @@ public class PopProtocol {
         while(buffer != null && !buffer.equals(".")) {
             Arrays.add(lines, buffer);
             preCount = postCount;
-            buffer = connection.receive();
+            buffer = new String(connection.receive());
             postCount = connection.getBytesReceived();
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }
@@ -307,7 +307,7 @@ public class PopProtocol {
             connection.sendCommand(command);
         }
         
-        String result = connection.receive();
+        String result = new String(connection.receive());
         
         if((result.length() > 1) && (result.charAt(0) == '-')) {
             if(errorFatal) {

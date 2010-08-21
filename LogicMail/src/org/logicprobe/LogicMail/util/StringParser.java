@@ -48,7 +48,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.TimeZone;
-import java.util.Vector;
 
 import org.logicprobe.LogicMail.AppInfo;
 
@@ -468,157 +467,6 @@ public class StringParser {
     }
 
     /**
-     * Recursively parse a nested paren string.
-     * Parses through a string of the form "(A (B C (D) E F))" and
-     * returns a tree of Vector and String objects representing its
-     * contents.  This is useful for parsing the response to the
-     * IMAP "ENVELOPE" fetch command.
-     *
-     * @param rawText The raw text to be parsed
-     * @return A tree of Vector and String objects
-     */
-    public static Vector nestedParenStringLexer(String rawText) {
-        Vector parsedText = new Vector();
-
-        // Sanity checking
-        if (!((rawText.charAt(0) == '(') &&
-                (rawText.charAt(rawText.length() - 1) == ')'))) {
-            return null;
-        }
-
-        int p = 1;
-        int q = p;
-        int len;
-        String tmpText;
-        boolean inQuote = false;
-
-        while (q < rawText.length()) {
-            if (isQuoteChar(rawText, q, p)) {
-                if (!inQuote) {
-                    inQuote = true;
-                    p = q;
-                } else {
-                    parsedText.addElement(rawText.substring(p + 1, q));
-                    p = q + 1;
-                    inQuote = false;
-                }
-            } else if ((rawText.charAt(q) == '{') && !inQuote) {
-                p = rawText.indexOf('}', q);
-                len = Integer.parseInt(rawText.substring(q + 1, p));
-                p++;
-
-                while ((rawText.charAt(p) == '\r') ||
-                        (rawText.charAt(p) == '\n'))
-                    p++;
-
-                // Quick kludge for length miscalculation due to the way
-                // line breaks are currently handled
-                tmpText = rawText.substring(p, p + len);
-
-                if (tmpText.endsWith(" NIL")) {
-                    len -= 4;
-                } else if (tmpText.endsWith(" NI")) {
-                    len -= 3;
-                } else if (tmpText.endsWith(" N")) {
-                    len -= 2;
-                } else if (tmpText.endsWith(" ")) {
-                    len -= 1;
-                }
-
-                parsedText.addElement(rawText.substring(p, p + len));
-                q = p + len;
-            } else if (((rawText.charAt(q) == ' ') && !inQuote) ||
-                    (q == (rawText.length() - 1))) {
-                if ((q - p) > 0) {
-                    parsedText.addElement(rawText.substring(p, q).trim());
-                    p = q;
-                } else {
-                    p++;
-                }
-            } else if ((rawText.charAt(q) == '(') && !inQuote) {
-                p = q;
-
-                // paren matching
-                int level = 0;
-                boolean subInQuote = false;
-
-                for (int i = q + 1; i < rawText.length(); i++) {
-                    if ((rawText.charAt(i) == '{') && !subInQuote) {
-                        int matchIndex = rawText.indexOf('}', i);
-
-                        if ((matchIndex > (i + 1)) &&
-                                (rawText.charAt(matchIndex + 1) != ' ')) {
-                            int matchLen = Integer.parseInt(rawText.substring(i +
-                                        1, matchIndex));
-                            matchIndex++;
-
-                            while ((rawText.charAt(matchIndex) == '\r') ||
-                                    (rawText.charAt(matchIndex) == '\n')) {
-                                matchIndex++;
-                            }
-
-                            i = matchIndex + matchLen;
-                        }
-                    }
-
-                    if (isQuoteChar(rawText, i, q + 1) && !subInQuote) {
-                        subInQuote = true;
-                    } else if (isQuoteChar(rawText, i, q + 1) && subInQuote) {
-                        subInQuote = false;
-                    }
-
-                    if ((rawText.charAt(i) == '(') && !subInQuote) {
-                        level++;
-                    } else if ((rawText.charAt(i) == ')') && !subInQuote) {
-                        if (level == 0) {
-                            q = i;
-
-                            break;
-                        } else {
-                            level--;
-                        }
-                    }
-                }
-
-                if ((q == 1) || (q < p)) {
-                    return null;
-                } else {
-                    parsedText.addElement(nestedParenStringLexer(
-                            rawText.substring(p, q + 1)));
-                }
-
-                p = q + 1;
-            }
-
-            q++;
-        }
-
-        return parsedText;
-    }
-
-    /**
-     * Helper method to determine if a character is a quote.
-     */
-    private static boolean isQuoteChar(String rawText, int index, int startIndex) {
-        if (index == startIndex) {
-            return rawText.charAt(index) == '\"';
-        } else if (rawText.charAt(index) == '\"') {
-            if (rawText.charAt(index - 1) == '\\') {
-                if (((index - 2) < startIndex) ||
-                        (rawText.charAt(index - 2) == '\\')) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return true;
-            }
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * This method iterates through the raw lines that make up
      * standard E-Mail headers, and parses them out into hash
      * table entries that can be queried by other methods.
@@ -798,7 +646,7 @@ public class StringParser {
             try {
                 // Quoted-Printable
                 result = new String(
-                        decodeQuotedPrintable(encodedText).getBytes(),
+                        decodeQuotedPrintable(encodedText.getBytes()).getBytes(),
                         charset);
             } catch (UnsupportedEncodingException ex) {
                 result = "";
@@ -1270,39 +1118,37 @@ public class StringParser {
     /**
      * Decode a quoted-printable string
      */
-    public static String decodeQuotedPrintable(String text) {
+    public static String decodeQuotedPrintable(byte[] text) {
         StringBuffer buffer = new StringBuffer();
         int index = 0;
-        int length = text.length();
+        int length = text.length;
 
         while (index < length) {
-            if (text.charAt(index) == '=') {
+            if (text[index] == (byte)'=') {
                 if ((index + 2) >= length) {
                     break;
                 } else {
-                    char ch1 = text.charAt(index + 1);
-                    char ch2 = text.charAt(index + 2);
+                    byte ch1 = text[index + 1];
+                    byte ch2 = text[index + 2];
 
-                    if ((ch1 == '\r') && (ch2 == '\n')) {
+                    if ((ch1 == (byte)'\r') && (ch2 == (byte)'\n')) {
                         index += 3;
-                    } else if (ch1 == '\n') {
+                    } else if (ch1 == (byte)'\n') {
                         index += 2;
                     } else {
                         try {
-                            int charVal = Integer.parseInt(text.substring(index +
-                                        1, index + 3), 16);
+                            int charVal = StringArrays.parseHexInt(text, index + 1, 2);
                             buffer.append((char) charVal);
-                        } catch (NumberFormatException exp) {
-                        }
+                        } catch (NumberFormatException exp) { }
 
                         index += 3;
                     }
                 }
-            } else if (text.charAt(index) == '_') {
+            } else if (text[index] == (byte)'_') {
                 buffer.append(' ');
                 index++;
             } else {
-                buffer.append(text.charAt(index));
+                buffer.append((char)text[index]);
                 index++;
             }
         }

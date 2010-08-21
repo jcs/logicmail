@@ -658,8 +658,8 @@ public class CompositionScreen extends AbstractScreenProvider {
             		"text", "plain", null, "7bit", "us-ascii", "", "", contentText.length());
             MimeMessageContent bodyContent;
             try {
-    			bodyContent = MimeMessageContentFactory.createContent(
-    					bodyPart, contentText);
+    			bodyContent = MimeMessageContentFactory.createContentEncoded(
+    					bodyPart, contentText.getBytes());
     		} catch (UnsupportedContentException e) {
     			bodyContent = null;
     		}
@@ -762,7 +762,7 @@ public class CompositionScreen extends AbstractScreenProvider {
                 if(data != null && data.length > 0) {
                     try {
                         MimeMessageContent attachmentContent =
-                            MimeMessageContentFactory.createContent(attachmentPart, data);
+                            MimeMessageContentFactory.createContentRaw(attachmentPart, data);
                         MultiPart multiPart = (MultiPart)pendingMessage.getStructure();
                         multiPart.addPart(attachmentPart);
                         pendingMessage.putContent(attachmentPart, attachmentContent);

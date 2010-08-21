@@ -36,14 +36,17 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 
+import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.util.StringParser;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
+
 
 /**
  * Unit test for ImapProtocol
@@ -347,42 +350,42 @@ public class ImapProtocolTest extends TestCase {
             t.printStackTrace();
         }
     }
-    
+
     public void testExecuteList7() {
         try {
             // Test specified-length encoding for path name, with spaces
             instance.addExecuteExpectation("LIST", "\"\" \"%\"",
-                    new String[] {
+                new String[] {
                     "* LIST (\\Noselect) \":\" {5}", "Marya",
                     "* LIST (\\Noselect) \":\" {11}", "Old Inboxes",
-                    "* LIST (\\Noinferiors) \":\" {17}", "Pre-filtered Junk" });
-            
+                    "* LIST (\\Noinferiors) \":\" {17}", "Pre-filtered Junk"
+                });
+
             Vector result = instance.executeList("", "%", null);
             assertNotNull(result);
             assertEquals(3, result.size());
             assertTrue(result.elementAt(0) instanceof ImapProtocol.ListResponse);
             assertTrue(result.elementAt(1) instanceof ImapProtocol.ListResponse);
             assertTrue(result.elementAt(2) instanceof ImapProtocol.ListResponse);
-            
+
             ImapProtocol.ListResponse result1 = (ImapProtocol.ListResponse) result.elementAt(0);
             ImapProtocol.ListResponse result2 = (ImapProtocol.ListResponse) result.elementAt(1);
             ImapProtocol.ListResponse result3 = (ImapProtocol.ListResponse) result.elementAt(2);
-            
+
             assertTrue(!result1.canSelect);
             assertTrue(!result1.noInferiors);
             assertEquals(":", result1.delim);
             assertEquals("Marya", result1.name);
-            
+
             assertTrue(!result2.canSelect);
             assertTrue(!result2.noInferiors);
             assertEquals(":", result2.delim);
             assertEquals("Old Inboxes", result2.name);
-            
+
             assertTrue(result3.canSelect);
             assertTrue(result3.noInferiors);
             assertEquals(":", result3.delim);
             assertEquals("Pre-filtered Junk", result3.name);
-            
         } catch (AssertionFailedError e) {
             throw e;
         } catch (Throwable t) {
@@ -390,26 +393,11 @@ public class ImapProtocolTest extends TestCase {
             t.printStackTrace();
         }
     }
-    
-    private static class ShimCallback implements ImapProtocol.FetchEnvelopeCallback {
-        private Vector responses = new Vector();
-        
-        public void responseAvailable(ImapProtocol.FetchEnvelopeResponse response) {
-            if(response != null) {
-                responses.addElement(response);
-            }
-        }
-        
-        public ImapProtocol.FetchEnvelopeResponse[] getResponses() {
-            ImapProtocol.FetchEnvelopeResponse[] result = new ImapProtocol.FetchEnvelopeResponse[responses.size()];
-            responses.copyInto(result);
-            return result;
-        }
-    }
 
     public void testExecuteFetchEnvelope1() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+            instance.addExecuteExpectation("FETCH",
+                "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (FLAGS (\\Answered \\Seen) UID 10 " +
                     "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
@@ -424,8 +412,9 @@ public class ImapProtocolTest extends TestCase {
 
             ShimCallback shim = new ShimCallback();
             instance.executeFetchEnvelope(1, 1, shim, null);
+
             ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
-            
+
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -481,7 +470,7 @@ public class ImapProtocolTest extends TestCase {
             assertEquals("<200703121933.25327.jdoe@generic.test>", env.inReplyTo);
             assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>",
                 env.messageId);
-            
+
             ImapParser.MessageSection structure = result[0].structure;
             assertNotNull(structure);
             assertEquals("text", structure.type);
@@ -496,7 +485,8 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope2() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+            instance.addExecuteExpectation("FETCH",
+                "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (" +
                     "ENVELOPE (\"Sun, 08 Jul 2007 09:48:47 +0100\" \"A Test\" " +
@@ -511,8 +501,9 @@ public class ImapProtocolTest extends TestCase {
 
             ShimCallback shim = new ShimCallback();
             instance.executeFetchEnvelope(1, 1, shim, null);
+
             ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
-            
+
             assertNotNull(result);
             assertEquals(1, result.length);
             assertNotNull(result[0]);
@@ -582,7 +573,8 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope3() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+            instance.addExecuteExpectation("FETCH",
+                "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (" + "FLAGS (\\Seen) UID 10 " +
                     "ENVELOPE (\"Wed, 06 Aug 2008 02:23:30 -0000\" " +
@@ -598,6 +590,7 @@ public class ImapProtocolTest extends TestCase {
 
             ShimCallback shim = new ShimCallback();
             instance.executeFetchEnvelope(1, 1, shim, null);
+
             ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
 
             assertNotNull(result);
@@ -626,7 +619,7 @@ public class ImapProtocolTest extends TestCase {
             assertEquals(StringParser.createDateString(cal.getTime()),
                 StringParser.createDateString(env.date));
 
-            assertEquals("[LogicMail for BlackBerry] #93: Endless \\\"refresh folders\\\" loop when using qmail server",
+            assertEquals("[LogicMail for BlackBerry] #93: Endless \"refresh folders\" loop when using qmail server",
                 env.subject);
 
             assertNotNull(env.from);
@@ -672,7 +665,8 @@ public class ImapProtocolTest extends TestCase {
 
     public void testExecuteFetchEnvelope4() {
         try {
-            instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+            instance.addExecuteExpectation("FETCH",
+                "1:1 (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new String[] {
                     "* 1 FETCH (FLAGS (\\Seen) UID 10 " +
                     "ENVELOPE (\"Sun, 10 Aug 2008 14:47:16 -0000\" " +
@@ -688,6 +682,7 @@ public class ImapProtocolTest extends TestCase {
 
             ShimCallback shim = new ShimCallback();
             instance.executeFetchEnvelope(1, 1, shim, null);
+
             ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
 
             assertNotNull(result);
@@ -715,7 +710,7 @@ public class ImapProtocolTest extends TestCase {
             assertEquals(StringParser.createDateString(cal.getTime()),
                 StringParser.createDateString(env.date));
 
-            assertEquals("Re: [LogicMail for BlackBerry] #94: Message \\\"\\\"This message does not contain any sections that could be displayed\\\"",
+            assertEquals("Re: [LogicMail for BlackBerry] #94: Message \"\"This message does not contain any sections that could be displayed\"",
                 env.subject);
 
             assertNotNull(env.from);
@@ -759,67 +754,63 @@ public class ImapProtocolTest extends TestCase {
             t.printStackTrace();
         }
     }
-    
+
     public void testExecuteFetchFlags1() {
         try {
             instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID)",
-                    new String[] {
-                        "* 1 FETCH (FLAGS () UID 42)"
-                    });
+                new String[] { "* 1 FETCH (FLAGS () UID 42)" });
 
-                ImapProtocol.FetchFlagsResponse[] result = instance.executeFetchFlags(1, 1, null);
-                
-                assertNotNull(result);
-                assertEquals(1, result.length);
-                assertEquals(1, result[0].index);
-                assertEquals(42, result[0].uid);
-                
-                ImapProtocol.MessageFlags flags = result[0].flags;
-                assertNotNull(flags);
-                assertTrue("answered", !flags.answered);
-                assertTrue("deleted", !flags.deleted);
-                assertTrue("draft", !flags.draft);
-                assertTrue("flagged", !flags.flagged);
-                assertTrue("junk", !flags.junk);
-                assertTrue("recent", !flags.recent);
-                assertTrue("seen", !flags.seen);
-            
+            ImapProtocol.FetchFlagsResponse[] result = instance.executeFetchFlags(1,
+                    1, null);
+
+            assertNotNull(result);
+            assertEquals(1, result.length);
+            assertEquals(1, result[0].index);
+            assertEquals(42, result[0].uid);
+
+            ImapProtocol.MessageFlags flags = result[0].flags;
+            assertNotNull(flags);
+            assertTrue("answered", !flags.answered);
+            assertTrue("deleted", !flags.deleted);
+            assertTrue("draft", !flags.draft);
+            assertTrue("flagged", !flags.flagged);
+            assertTrue("junk", !flags.junk);
+            assertTrue("recent", !flags.recent);
+            assertTrue("seen", !flags.seen);
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
         }
     }
-    
+
     public void testExecuteFetchFlags2() {
         try {
             instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID)",
-                    new String[] {
-                        "* 1 FETCH (FLAGS (\\Seen) UID 42)"
-                    });
+                new String[] { "* 1 FETCH (FLAGS (\\Seen) UID 42)" });
 
-                ImapProtocol.FetchFlagsResponse[] result = instance.executeFetchFlags(1, 1, null);
-                
-                assertNotNull(result);
-                assertEquals(1, result.length);
-                assertEquals(1, result[0].index);
-                assertEquals(42, result[0].uid);
-                
-                ImapProtocol.MessageFlags flags = result[0].flags;
-                assertNotNull(flags);
-                assertTrue("answered", !flags.answered);
-                assertTrue("deleted", !flags.deleted);
-                assertTrue("draft", !flags.draft);
-                assertTrue("flagged", !flags.flagged);
-                assertTrue("junk", !flags.junk);
-                assertTrue("recent", !flags.recent);
-                assertTrue("seen", flags.seen);
-            
+            ImapProtocol.FetchFlagsResponse[] result = instance.executeFetchFlags(1,
+                    1, null);
+
+            assertNotNull(result);
+            assertEquals(1, result.length);
+            assertEquals(1, result[0].index);
+            assertEquals(42, result[0].uid);
+
+            ImapProtocol.MessageFlags flags = result[0].flags;
+            assertNotNull(flags);
+            assertTrue("answered", !flags.answered);
+            assertTrue("deleted", !flags.deleted);
+            assertTrue("draft", !flags.draft);
+            assertTrue("flagged", !flags.flagged);
+            assertTrue("junk", !flags.junk);
+            assertTrue("recent", !flags.recent);
+            assertTrue("seen", flags.seen);
         } catch (Throwable t) {
             fail("Exception thrown during test: " + t.toString());
             t.printStackTrace();
         }
     }
-    
+
     public void testExecuteStore1() {
         try {
             instance.addExecuteExpectation("UID STORE",
@@ -863,15 +854,17 @@ public class ImapProtocolTest extends TestCase {
             t.printStackTrace();
         }
     }
-    
+
     public void testExecuteStore3() {
         try {
             instance.addExecuteExpectation("UID STORE",
                 "36410 +FLAGS (\\Deleted)",
-                new String[] { "* 5 FETCH (UID 36410 FLAGS (\\Deleted \\Seen $NotJunk NotJunk))" });
+                new String[] {
+                    "* 5 FETCH (UID 36410 FLAGS (\\Deleted \\Seen $NotJunk NotJunk))"
+                });
 
-            ImapProtocol.MessageFlags result = instance.executeStore(36410, true,
-                    new String[] { "\\Deleted" });
+            ImapProtocol.MessageFlags result = instance.executeStore(36410,
+                    true, new String[] { "\\Deleted" });
             assertNotNull(result);
 
             assertTrue(result.seen);
@@ -889,64 +882,158 @@ public class ImapProtocolTest extends TestCase {
     public Test suite() {
         TestSuite suite = new TestSuite("ImapProtocol");
 
-        suite.addTest(new ImapProtocolTest("executeCapability", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteCapability(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeNamespace1", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteNamespace1(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeNamespace2", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteNamespace2(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList1", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList1(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList2", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList2(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList3", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList3(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList4", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList4(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList5", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList5(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList6", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList6(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeList7", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteList7(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeFetchEnvelope1", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchEnvelope1(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeFetchEnvelope2", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchEnvelope2(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeFetchEnvelope3", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchEnvelope3(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeFetchEnvelope4", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchEnvelope4(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeFetchFlags1", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchFlags1(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeFetchFlags2", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteFetchFlags2(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeStore1", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteStore1(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeStore2", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteStore2(); }}));
-        
-        suite.addTest(new ImapProtocolTest("executeStore3", new TestMethod()
-        { public void run(TestCase tc) { ((ImapProtocolTest) tc).testExecuteStore3(); }}));
-        
+        suite.addTest(new ImapProtocolTest("executeCapability",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteCapability();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeNamespace1",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteNamespace1();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeNamespace2",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteNamespace2();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList1",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList1();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList2",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList2();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList3",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList3();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList4",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList4();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList5",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList5();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList6",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList6();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeList7",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteList7();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelope1",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteFetchEnvelope1();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelope2",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteFetchEnvelope2();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelope3",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteFetchEnvelope3();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelope4",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteFetchEnvelope4();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeFetchFlags1",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteFetchFlags1();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeFetchFlags2",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteFetchFlags2();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeStore1",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteStore1();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeStore2",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteStore2();
+                }
+            }));
+
+        suite.addTest(new ImapProtocolTest("executeStore3",
+                new TestMethod() {
+                public void run(TestCase tc) {
+                    ((ImapProtocolTest) tc).testExecuteStore3();
+                }
+            }));
+
         return suite;
+    }
+
+    private static class ShimCallback implements ImapProtocol.FetchEnvelopeCallback {
+        private Vector responses = new Vector();
+
+        public void responseAvailable(
+            ImapProtocol.FetchEnvelopeResponse response) {
+            if (response != null) {
+                responses.addElement(response);
+            }
+        }
+
+        public ImapProtocol.FetchEnvelopeResponse[] getResponses() {
+            ImapProtocol.FetchEnvelopeResponse[] result = new ImapProtocol.FetchEnvelopeResponse[responses.size()];
+            responses.copyInto(result);
+
+            return result;
+        }
     }
 
     /**
@@ -978,7 +1065,8 @@ public class ImapProtocolTest extends TestCase {
             assertTrue("Expectations failed", executeExpectations.isEmpty());
         }
 
-        protected String[] execute(String command, String arguments, MailProgressHandler progressHandler) {
+        protected String[] execute(String command, String arguments,
+            MailProgressHandler progressHandler) {
             assertTrue("No expectations", !executeExpectations.isEmpty());
 
             ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();
@@ -989,6 +1077,22 @@ public class ImapProtocolTest extends TestCase {
             return expect.result;
         }
 
+        protected byte[][] executeResponse(String command, String arguments,
+                MailProgressHandler progressHandler) throws IOException, MailException {
+            assertTrue("No expectations", !executeExpectations.isEmpty());
+
+            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();
+            assertEquals("Bad command", expect.command, command);
+            assertEquals("Bad arguments", expect.arguments, arguments);
+            executeExpectations.removeElement(expect);
+
+            byte[][] result = new byte[expect.result.length][];
+            for(int i=0; i<expect.result.length; i++) {
+                result[i] = expect.result[i].getBytes();
+            }
+            return result;
+        }
+        
         private class ExecuteExpectation {
             public String command;
             public String arguments;

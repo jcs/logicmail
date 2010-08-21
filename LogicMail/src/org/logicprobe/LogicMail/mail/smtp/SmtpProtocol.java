@@ -396,7 +396,7 @@ public class SmtpProtocol {
             connection.sendCommand(command);
         }
         
-        String result = connection.receive();
+        String result = new String(connection.receive());
         
         return result;
     }
@@ -413,10 +413,10 @@ public class SmtpProtocol {
     private String[] executeFollow(String command) throws IOException, MailException {
         execute(command);
             
-        String buffer = connection.receive();
+        String buffer = new String(connection.receive());
         String[] lines = new String[0];
         while(buffer != null) {
-            buffer = connection.receive();
+            buffer = new String(connection.receive());
             Arrays.add(lines, buffer);
             if(buffer.length() >=4 && buffer.charAt(3) == ' ') {
                 break;

@@ -916,10 +916,10 @@ public class ImapClient extends AbstractIncomingMailClient {
         if(!(messageToken instanceof ImapMessageToken)) { return null; }
 
 
-        String data = getMessageBody(imapMessageToken.getImapMessageUid(), partAddress, progressHandler);
+        byte[] data = getMessageBody(imapMessageToken.getImapMessageUid(), partAddress, progressHandler);
         MimeMessageContent content;
         try {
-            content = MimeMessageContentFactory.createContent(mimeMessagePart, data);
+            content = MimeMessageContentFactory.createContentEncoded(mimeMessagePart, data);
         } catch (UnsupportedContentException e) {
             content = null;
         }
@@ -936,7 +936,7 @@ public class ImapClient extends AbstractIncomingMailClient {
     {
         MimeMessagePart part;
         if(MimeMessagePartFactory.isMimeMessagePartSupported(structure.type, structure.subtype)) {
-            String data;
+            byte[] data;
             if(structure.type.equalsIgnoreCase("multipart"))
                 data = null;
             else {
@@ -960,7 +960,7 @@ public class ImapClient extends AbstractIncomingMailClient {
                     structure.size,
                     structure.address);
             try {
-                contentMap.put(part, MimeMessageContentFactory.createContent(part, data));
+                contentMap.put(part, MimeMessageContentFactory.createContentEncoded(part, data));
             } catch (UnsupportedContentException e) {
                 System.err.println("UnsupportedContentException: " + e.getMessage());
             }
@@ -1041,7 +1041,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         return item;
     }
 
-    private String getMessageBody(int uid, String address, MailProgressHandler progressHandler) throws IOException, MailException {
+    private byte[] getMessageBody(int uid, String address, MailProgressHandler progressHandler) throws IOException, MailException {
         if(activeMailbox == null) {
             throw new MailException("Mailbox not selected");
         }

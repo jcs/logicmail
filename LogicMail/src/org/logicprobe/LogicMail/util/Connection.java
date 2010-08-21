@@ -96,13 +96,20 @@ public abstract class Connection {
     private int fakeAvailable = -1;
     private int bytesSent = 0;
     private int bytesReceived = 0;
+    private final Object socketLock = new Object();
     
     /**
      * Byte stream used to hold received data before it is passed back to
      * the rest of the application.
      */
     private final ByteArrayOutputStream byteStream = new NoCopyByteArrayOutputStream(1024);
-
+    
+    /**
+     * Temporary read buffer used as an intermediary between the socket and
+     * the byteStream.
+     */
+    private final byte[] readBuffer = new byte[1024];
+    
     /**
      * Initializes a new connection object.
      * 
@@ -162,24 +169,26 @@ public abstract class Connection {
     /**
      * Opens a connection.
      */
-    public synchronized void open() throws IOException {
+    public void open() throws IOException {
         if ((input != null) || (output != null) || (socket != null)) {
             close();
         }
         
         utilFactory.addOpenConnection(this);
 
-        socket = openStreamConnection();
-        if(socket == null) {
-            throw new IOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION));
+        synchronized(socketLock) {
+            socket = openStreamConnection();
+            if(socket == null) {
+                throw new IOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION));
+            }
+            
+            input = socket.openDataInputStream();
+            output = socket.openDataOutputStream();
+            localAddress = ((SocketConnection) socket).getLocalAddress();
+            bytesSent = 0;
+            bytesReceived = 0;
         }
         
-        input = socket.openDataInputStream();
-        output = socket.openDataOutputStream();
-        localAddress = ((SocketConnection) socket).getLocalAddress();
-        bytesSent = 0;
-        bytesReceived = 0;
-
         if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
             String msg = "Connection established:\r\n" + "Socket: " +
             socket.getClass().toString() + strCRLF + "Local address: " +
@@ -223,37 +232,38 @@ public abstract class Connection {
     /**
      * Closes a connection.
      */
-    public synchronized void close() throws IOException {
-        try {
-            if (input != null) {
-                input.close();
+    public void close() throws IOException {
+        synchronized(socketLock) {
+            try {
+                if (input != null) {
+                    input.close();
+                    input = null;
+                }
+            } catch (Exception exp) {
                 input = null;
             }
-        } catch (Exception exp) {
-            input = null;
-        }
-
-        try {
-            if (output != null) {
-                output.close();
+    
+            try {
+                if (output != null) {
+                    output.close();
+                    output = null;
+                }
+            } catch (Exception exp) {
                 output = null;
             }
-        } catch (Exception exp) {
-            output = null;
-        }
-
-        try {
-            if (socket != null) {
-                socket.close();
+    
+            try {
+                if (socket != null) {
+                    socket.close();
+                    socket = null;
+                }
+            } catch (Exception exp) {
                 socket = null;
             }
-        } catch (Exception exp) {
-            socket = null;
+            setConnectionUrl(null);
         }
-
+        
         utilFactory.removeOpenConnection(this);
-
-        setConnectionUrl(null);
         
         EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
                 EventLogger.INFORMATION);
@@ -320,22 +330,24 @@ public abstract class Connection {
      * No cleanup is performed, as it is expected that the string
      * is a prepared protocol command.
      */
-    public synchronized void sendCommand(String s) throws IOException {
+    public void sendCommand(String s) throws IOException {
         if (globalConfig.getConnDebug()) {
             EventLogger.logEvent(AppInfo.GUID, ("[SEND CMD] " + s).getBytes(),
                     EventLogger.DEBUG_INFO);
         }
 
-        if (s == null) {
-            output.write(CRLF, 0, 2);
-            bytesSent += 2;
-        } else {
-            byte[] buf = (s + strCRLF).getBytes();
-            output.write(buf);
-            bytesSent += buf.length;
+        synchronized(socketLock) {
+            if (s == null) {
+                output.write(CRLF, 0, 2);
+                bytesSent += 2;
+            } else {
+                byte[] buf = (s + strCRLF).getBytes();
+                output.write(buf);
+                bytesSent += buf.length;
+            }
+    
+            output.flush();
         }
-
-        output.flush();
     }
 
     /**
@@ -346,7 +358,7 @@ public abstract class Connection {
      *
      * @see #send
      */
-    public synchronized void sendRaw(String s) throws IOException {
+    public void sendRaw(String s) throws IOException {
         byte[] buf = s.getBytes();
 
         if (globalConfig.getConnDebug()) {
@@ -354,10 +366,12 @@ public abstract class Connection {
                     ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
         }
 
-        output.write(buf, 0, buf.length);
-        bytesSent += buf.length;
-
-        output.flush();
+        synchronized(socketLock) {
+            output.write(buf, 0, buf.length);
+            bytesSent += buf.length;
+    
+            output.flush();
+        }
     }
 
     /**
@@ -373,7 +387,7 @@ public abstract class Connection {
             return fakeAvailable;
         }
     }
-    
+
     /**
      * Receives a string from the server. This method is used internally for
      * incoming communication from the server. The main thing it does is
@@ -381,63 +395,88 @@ public abstract class Connection {
      * lines that were terminated at least by a LF.  Neither CRs nor LFs are
      * returned as part of the result.
      *
-     * @see #send
+     * @return the complete line, minus the CRLF, as a byte array
      */
-    public synchronized String receive() throws IOException {
-        // Check existing data for a usable line
-        String line = checkForLine();
-        if(line != null) {
-            return line;
-        }
-
-        // Read from the socket
-        int firstByte = input.read();
-        if(firstByte != -1) {
-            byteStream.write((byte)firstByte);
-            bytesReceived++;
-            int bytesAvailable = input.available();
-            while(bytesAvailable > 0) {
-                byte[] buf = new byte[bytesAvailable];
-                int len = input.read(buf);
-                byteStream.write(buf, 0, len);
-                bytesReceived += len;
-                
-                // Check read data for a usable line
-                line = checkForLine();
-                if(line != null) {
-                    return line;
-                }
-                
-                bytesAvailable = input.available();
-
-                // If no bytes are reported as being available, but we have
-                // not yet received a full line, then we need to attempt
-                // another single-byte blocking read.
-                if(bytesAvailable == 0) {
-                    firstByte = input.read();
-                    byteStream.write((byte)firstByte);
-                    bytesReceived++;
-                    bytesAvailable = input.available();
-                }
-            }
-        }
-        else {
-            // If we got here, that means that the InputStream is either closed
-            // or we are in some otherwise unrecoverable state.  This means we
-            // will try to close the connection, ignore any errors from the
-            // close operation, and throw an IOException.
-            
-            EventLogger.logEvent(AppInfo.GUID,
-                    "Unable to read from socket, closing connection".getBytes(),
-                    EventLogger.INFORMATION);
-
-            try {
-                close();
-            } catch (IOException e) { }
-
-            throw new IOException("Connection closed");
+    public byte[] receive() throws IOException {
+        return receive(lineResponseTester);
+    }
+    
+    
+    /**
+     * Receives a string from the server. This method is used internally for
+     * incoming communication from the server.
+     *
+     * @param responseTester class to determine when a complete response has
+     *   been read from the network, and whether to trim it prior to returning
+     * @return the complete response, as a byte array
+     */
+    public byte[] receive(ConnectionResponseTester responseTester) throws IOException {
+        byte[] result = receiveImpl(responseTester);
+        
+        if(result != null && globalConfig.getConnDebug()) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("[RECV] " + responseTester.logString(result)).getBytes(),
+                        EventLogger.DEBUG_INFO);
         }
         
+        return result;
+    }
+    
+    private byte[] receiveImpl(ConnectionResponseTester responseTester) throws IOException {
+        synchronized(socketLock) {
+            // Check existing data for a usable line
+            byte[] line = checkForLine(responseTester);
+            if(line != null) {
+                return line;
+            }
+    
+            // Read from the socket
+            int firstByte = input.read();
+            if(firstByte != -1) {
+                byteStream.write((byte)firstByte);
+                bytesReceived++;
+                int bytesAvailable = input.available();
+                while(bytesAvailable > 0) {
+                    int len = input.read(readBuffer);
+                    byteStream.write(readBuffer, 0, len);
+                    bytesReceived += len;
+                    
+                    // Check read data for a usable line
+                    line = checkForLine(responseTester);
+                    if(line != null) {
+                        return line;
+                    }
+                    
+                    bytesAvailable = input.available();
+    
+                    // If no bytes are reported as being available, but we have
+                    // not yet received a full line, then we need to attempt
+                    // another single-byte blocking read.
+                    if(bytesAvailable == 0) {
+                        firstByte = input.read();
+                        byteStream.write((byte)firstByte);
+                        bytesReceived++;
+                        bytesAvailable = input.available();
+                    }
+                }
+            }
+            else {
+                // If we got here, that means that the InputStream is either closed
+                // or we are in some otherwise unrecoverable state.  This means we
+                // will try to close the connection, ignore any errors from the
+                // close operation, and throw an IOException.
+                
+                EventLogger.logEvent(AppInfo.GUID,
+                        "Unable to read from socket, closing connection".getBytes(),
+                        EventLogger.INFORMATION);
+    
+                try {
+                    close();
+                } catch (IOException e) { }
+    
+                throw new IOException("Connection closed");
+            }
+        }
         // This should never normally happen
         return null;
     }
@@ -449,28 +488,21 @@ public abstract class Connection {
      *
      * @return the trimmed string which ended in a CRLF in the source data
      */
-    private String checkForLine() throws IOException {
-        String result;
+    private byte[] checkForLine(ConnectionResponseTester responseTester) throws IOException {
+        byte[] result;
         
         byte[] buf = byteStream.toByteArray();
         int size = byteStream.size();
         
-        int p = Arrays.getIndex(buf, LF);
-        if(p != -1 && p < size) {
-            int q = p + 1;
-            if(p > 0 && buf[p - 1] == CR) {
-                p--;
-            }
-            result = new String(buf, 0, p);
+        int p = responseTester.checkForCompleteResponse(buf, size);
+        
+        if(p != -1) {
+            int trimCount = responseTester.trimCount();
             
-            if (globalConfig.getConnDebug()) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("[RECV] " + result).getBytes(),
-                        EventLogger.DEBUG_INFO);
-            }
+            result = Arrays.copy(buf, 0, p - trimCount);
             
-            if(q < size) {
-                buf = Arrays.copy(buf, q, size - q);
+            if(p < size) {
+                buf = Arrays.copy(buf, p, size - p);
                 byteStream.reset();
                 byteStream.write(buf);
                 fakeAvailable = buf.length;
@@ -487,6 +519,35 @@ public abstract class Connection {
         return result;
     }
 
+    private static ConnectionResponseTester lineResponseTester = new ConnectionResponseTester() {
+        private int trimCount;
+        
+        public int checkForCompleteResponse(byte[] buf, int len) {
+            trimCount = 0;
+            int p = Arrays.getIndex(buf, LF);
+            if(p != -1 && p < len) {
+                if(p > 0 && buf[p - 1] == CR) {
+                    trimCount = 2;
+                }
+                else {
+                    trimCount = 1;
+                }
+                return ++p;
+            }
+            else {
+                return -1;
+            }
+        }
+
+        public int trimCount() {
+            return trimCount;
+        }
+        
+        public String logString(byte[] result) {
+            return new String(result);
+        };
+    };
+    
     /**
      * Switches the underlying connection to SSL mode, as commonly done after
      * sending a <tt>STARTTLS</tt> command to the server.
@@ -494,33 +555,35 @@ public abstract class Connection {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     public void startTLS() throws IOException {
-        // Shortcut the method if we're already in SSL mode
-        if(socket instanceof TLS10Connection) { return; }
-        
-        if(socket == null || connectionUrl == null) {
-            throw new IOException("Connection has not been opened");
-        }
-
-        try {
-            TLS10Connection tlsSocket = new TLS10Connection(
-                    new StreamConnectionWrapper(
-                            socket,
-                            (DataInputStream)input,
-                            (DataOutputStream)output),
-                            connectionUrl,
-                            true);
-
-            socket = tlsSocket;
-            input = socket.openDataInputStream();
-            output = socket.openDataOutputStream();
-        } catch (IOException e) {
-            EventLogger.logEvent(AppInfo.GUID,
-                    ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
-            throw new IOException("Unable to switch to TLS mode");
-        } catch (TLSException e) {
-            EventLogger.logEvent(AppInfo.GUID,
-                    ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
-            throw new IOException("Unable to switch to TLS mode");
+        synchronized(socketLock) {
+            // Shortcut the method if we're already in SSL mode
+            if(socket instanceof TLS10Connection) { return; }
+            
+            if(socket == null || connectionUrl == null) {
+                throw new IOException("Connection has not been opened");
+            }
+    
+            try {
+                TLS10Connection tlsSocket = new TLS10Connection(
+                        new StreamConnectionWrapper(
+                                socket,
+                                (DataInputStream)input,
+                                (DataOutputStream)output),
+                                connectionUrl,
+                                true);
+    
+                socket = tlsSocket;
+                input = socket.openDataInputStream();
+                output = socket.openDataOutputStream();
+            } catch (IOException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+                throw new IOException("Unable to switch to TLS mode");
+            } catch (TLSException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+                throw new IOException("Unable to switch to TLS mode");
+            }
         }
     }
 

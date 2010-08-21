@@ -39,7 +39,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.TimeZone;
-import java.util.Vector;
 
 /**
  * Unit test for StringParser
@@ -189,299 +188,6 @@ public class StringParserTest extends TestCase {
                 TimeZone.getTimeZone("GMT"));
         assertEquals("GMT", expected, actual);
     }
-
-    /**
-     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
-     */
-    public void testNestedParenStringLexerEnvelope1() {
-        System.out.println("nestedParenStringLexer (Envelope1)");
-
-        String rawText = "(FLAGS (\\Answered \\Seen) " +
-            "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
-            "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
-            "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
-            "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
-            "((\"John Doe\" NIL \"jdoe\" \"generic.test\")) " + "NIL NIL " +
-            "\"<200703121933.25327.jdoe@generic.test>\" " +
-            "\"<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>\"))";
-
-        Vector result = StringParser.nestedParenStringLexer(rawText);
-        Vector temp;
-
-        //printTree(result, 0);
-        assertEquals("FLAGS", (String) result.elementAt(0));
-
-        Vector flags = (Vector) result.elementAt(1);
-        assertEquals("\\Answered", (String) flags.elementAt(0));
-        assertEquals("\\Seen", (String) flags.elementAt(1));
-
-        assertEquals("ENVELOPE", (String) result.elementAt(2));
-
-        Vector envelope = (Vector) result.elementAt(3);
-        assertNotNull(envelope);
-        assertEquals("Mon, 12 Mar 2007 19:38:31 -0700",
-            (String) envelope.elementAt(0));
-        assertEquals("Re: Calm down! :-)", (String) envelope.elementAt(1));
-
-        temp = (Vector) envelope.elementAt(2);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("jim smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("scratch.test", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(3);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("jim smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("scratch.test", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(4);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("jim smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("scratch.test", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(5);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("John Doe", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jdoe", (String) temp.elementAt(2));
-        assertEquals("generic.test", (String) temp.elementAt(3));
-
-        assertEquals("NIL", (String) envelope.elementAt(6));
-        assertEquals("NIL", (String) envelope.elementAt(7));
-        assertEquals("<200703121933.25327.jdoe@generic.test>",
-            (String) envelope.elementAt(8));
-        assertEquals("<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>",
-            (String) envelope.elementAt(9));
-    }
-
-    /**
-     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
-     */
-    public void testNestedParenStringLexerEnvelope2() {
-        System.out.println("nestedParenStringLexer (Envelope2)");
-
-        String rawText = "(FLAGS () ENVELOPE (\"Sun, 18 Mar 2007 09:04:29 -0700\" {23}\r\n" +
-            "[list] \"this is a test\" " +
-            "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
-            "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
-            "((\"Jim Smith\" NIL \"jsmith\" \"XXXX\")) " +
-            "((NIL NIL \"jsmith\" \"XXXXXXXX\")) " +
-            "NIL NIL NIL \"<45FD630D.1040808@XXXXX>\"))";
-
-        Vector result = StringParser.nestedParenStringLexer(rawText);
-        Vector temp;
-
-        //printTree(result, 0);
-        assertEquals("FLAGS", (String) result.elementAt(0));
-
-        Vector flags = (Vector) result.elementAt(1);
-        assertEquals(0, flags.size());
-
-        assertEquals("ENVELOPE", (String) result.elementAt(2));
-
-        Vector envelope = (Vector) result.elementAt(3);
-        assertNotNull(envelope);
-        assertEquals("Sun, 18 Mar 2007 09:04:29 -0700",
-            (String) envelope.elementAt(0));
-        assertEquals("[list] \"this is a test\"", (String) envelope.elementAt(1));
-
-        temp = (Vector) envelope.elementAt(2);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("Jim Smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("XXXX", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(3);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("Jim Smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("XXXX", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(4);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("Jim Smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("XXXX", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(5);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("NIL", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("XXXXXXXX", (String) temp.elementAt(3));
-
-        assertEquals("NIL", (String) envelope.elementAt(6));
-        assertEquals("NIL", (String) envelope.elementAt(7));
-        assertEquals("NIL", (String) envelope.elementAt(8));
-        assertEquals("<45FD630D.1040808@XXXXX>", (String) envelope.elementAt(9));
-    }
-
-    /**
-     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
-     */
-    public void testNestedParenStringLexerEnvelope3() {
-        System.out.println("nestedParenStringLexer (Envelope3)");
-
-        String rawText = "(FLAGS (\\Seen) " +
-            "ENVELOPE (\"Fri, 15 Jun 2007 12:37:27 -0400\" {42}\r\n" +
-            "[Theelist] 19\" monitor free to a good home " +
-            "((\"Jim Smith\" NIL \"jsmith\" \"smith.test\")) " +
-            "((NIL NIL \"thelist-bounces\" \"thelist.test\")) " +
-            "((\"This is the list\" NIL \"thelist\" \"thelist.test\")) " +
-            "((\"This is the list\" NIL \"thelist\" \"thelist.test\")) " +
-            "NIL NIL NIL " +
-            "\"<1ECCDABD-5242-4180-9584-E5873C3FEA17@smith.test>\"))";
-
-        Vector result = StringParser.nestedParenStringLexer(rawText);
-        Vector temp;
-
-        //printTree(result, 0);
-        assertEquals("FLAGS", (String) result.elementAt(0));
-
-        Vector flags = (Vector) result.elementAt(1);
-        assertEquals("\\Seen", (String) flags.elementAt(0));
-
-        assertEquals("ENVELOPE", (String) result.elementAt(2));
-
-        Vector envelope = (Vector) result.elementAt(3);
-        assertNotNull(envelope);
-        assertEquals("Fri, 15 Jun 2007 12:37:27 -0400",
-            (String) envelope.elementAt(0));
-        assertEquals("[Theelist] 19\" monitor free to a good home",
-            (String) envelope.elementAt(1));
-
-        temp = (Vector) envelope.elementAt(2);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("Jim Smith", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("jsmith", (String) temp.elementAt(2));
-        assertEquals("smith.test", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(3);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("NIL", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("thelist-bounces", (String) temp.elementAt(2));
-        assertEquals("thelist.test", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(4);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("This is the list", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("thelist", (String) temp.elementAt(2));
-        assertEquals("thelist.test", (String) temp.elementAt(3));
-
-        temp = (Vector) envelope.elementAt(5);
-        temp = (Vector) temp.elementAt(0);
-        assertEquals("This is the list", (String) temp.elementAt(0));
-        assertEquals("NIL", (String) temp.elementAt(1));
-        assertEquals("thelist", (String) temp.elementAt(2));
-        assertEquals("thelist.test", (String) temp.elementAt(3));
-
-        assertEquals("NIL", (String) envelope.elementAt(6));
-        assertEquals("NIL", (String) envelope.elementAt(7));
-        assertEquals("NIL", (String) envelope.elementAt(8));
-        assertEquals("<1ECCDABD-5242-4180-9584-E5873C3FEA17@smith.test>",
-            (String) envelope.elementAt(9));
-    }
-
-    /**
-     * Test of nestedParenStringLexer method, of class org.logicprobe.LogicMail.util.StringParser.
-     */
-    public void testNestedParenStringLexerBodyStructure() {
-        System.out.println("nestedParenStringLexer (BodyStructure)");
-
-        String rawText = "(BODYSTRUCTURE " +
-            "((\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 165 8 NIL NIL NIL) " +
-            "(\"TEXT\" \"HTML\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 627 10 NIL NIL NIL) " +
-            "\"ALTERNATIVE\" (\"BOUNDARY\" \"Boundary-00=_y9RuEFduwo6YU42\") (\"INLINE\" NIL) NIL))";
-
-        Vector result = StringParser.nestedParenStringLexer(rawText);
-        Vector temp1;
-        Vector temp2;
-        Vector temp3;
-
-        //printTree(result, 0);
-        assertEquals("BODYSTRUCTURE", (String) result.elementAt(0));
-        temp1 = (Vector) result.elementAt(1);
-
-        temp2 = (Vector) temp1.elementAt(0);
-        assertEquals("TEXT", (String) temp2.elementAt(0));
-        assertEquals("PLAIN", (String) temp2.elementAt(1));
-        temp3 = (Vector) temp2.elementAt(2);
-        assertEquals("CHARSET", (String) temp3.elementAt(0));
-        assertEquals("us-ascii", (String) temp3.elementAt(1));
-        assertEquals("NIL", (String) temp2.elementAt(3));
-        assertEquals("NIL", (String) temp2.elementAt(4));
-        assertEquals("7BIT", (String) temp2.elementAt(5));
-        assertEquals("165", (String) temp2.elementAt(6));
-        assertEquals("8", (String) temp2.elementAt(7));
-        assertEquals("NIL", (String) temp2.elementAt(8));
-        assertEquals("NIL", (String) temp2.elementAt(9));
-        assertEquals("NIL", (String) temp2.elementAt(10));
-
-        temp2 = (Vector) temp1.elementAt(1);
-        assertEquals("TEXT", (String) temp2.elementAt(0));
-        assertEquals("HTML", (String) temp2.elementAt(1));
-        temp3 = (Vector) temp2.elementAt(2);
-        assertEquals("CHARSET", (String) temp3.elementAt(0));
-        assertEquals("us-ascii", (String) temp3.elementAt(1));
-        assertEquals("NIL", (String) temp2.elementAt(3));
-        assertEquals("NIL", (String) temp2.elementAt(4));
-        assertEquals("7BIT", (String) temp2.elementAt(5));
-        assertEquals("627", (String) temp2.elementAt(6));
-        assertEquals("10", (String) temp2.elementAt(7));
-        assertEquals("NIL", (String) temp2.elementAt(8));
-        assertEquals("NIL", (String) temp2.elementAt(9));
-        assertEquals("NIL", (String) temp2.elementAt(10));
-
-        assertEquals("ALTERNATIVE", (String) temp1.elementAt(2));
-
-        temp2 = (Vector) temp1.elementAt(3);
-        assertEquals("BOUNDARY", (String) temp2.elementAt(0));
-        assertEquals("Boundary-00=_y9RuEFduwo6YU42", (String) temp2.elementAt(1));
-
-        temp2 = (Vector) temp1.elementAt(4);
-        assertEquals("INLINE", (String) temp2.elementAt(0));
-        assertEquals("NIL", (String) temp2.elementAt(1));
-
-        assertEquals("NIL", (String) temp1.elementAt(5));
-    }
-
-    //    /**
-    //     * This method prints the parse tree for debugging purposes.
-    //     * @param node Node to start at.
-    //     * @param level Level to print from.
-    //     */
-    //    private void printTree(Object node, int level) {
-    //        if(node instanceof Vector) {
-    //            Vector vec = (Vector)node;
-    //            int size = vec.size();
-    //            for(int i=0; i<size; i++)
-    //                printTree(vec.elementAt(i), level + 1);
-    //        }
-    //        else {
-    //            StringBuffer buf = new StringBuffer();
-    //            buf.append(level+">");
-    //            for(int i=0; i<level; i++)
-    //                buf.append("    ");
-    //            if(node != null) {
-    //                buf.append(node.toString());
-    //            }
-    //            else {
-    //                buf.append("null");
-    //            }
-    //            System.err.println(buf.toString());
-    //        }
-    //    }
 
     /**
      * Test of parseMailHeaders method, of class org.logicprobe.LogicMail.util.StringParser.
@@ -838,7 +544,7 @@ public class StringParserTest extends TestCase {
 
         String text = "=A1Hol=E1 Se=F1or!";
         String expectedResult = "¡Holá Señor!";
-        String result = StringParser.decodeQuotedPrintable(text);
+        String result = StringParser.decodeQuotedPrintable(text.getBytes());
         assertEquals(expectedResult, result);
     }
 
@@ -852,7 +558,7 @@ public class StringParserTest extends TestCase {
         String text = "=A1Hol=E1 Se=F1or!=20=20H=\n" +
             "ow=20are=20you=20today?";
         String expectedResult = "¡Holá Señor!  How are you today?";
-        String result = StringParser.decodeQuotedPrintable(text);
+        String result = StringParser.decodeQuotedPrintable(text.getBytes());
         assertEquals(expectedResult, result);
     }
 
@@ -967,18 +673,6 @@ public class StringParserTest extends TestCase {
         
         testSuite.addTest(new StringParserTest("createDateString", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testCreateDateString(); }}));
-        
-        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope1", new TestMethod()
-        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerEnvelope1(); }}));
-        
-        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope2", new TestMethod()
-        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerEnvelope2(); }}));
-        
-        testSuite.addTest(new StringParserTest("nestedParenStringLexerEnvelope3", new TestMethod()
-        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerEnvelope3(); }}));
-        
-        testSuite.addTest(new StringParserTest("nestedParenStringLexerBodyStructure", new TestMethod()
-        { public void run(TestCase tc) { ((StringParserTest) tc).testNestedParenStringLexerBodyStructure(); }}));
         
         testSuite.addTest(new StringParserTest("parseMailHeaders", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testParseMailHeaders(); }}));

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,30 +28,44 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.util;
 
-import j2meunit.framework.Test;
-import j2meunit.framework.TestCase;
-import j2meunit.framework.TestSuite;
-
 /**
- * Unit test suite for the LogicMail.util classes
+ * Abstract base for classes that test the contents of a <code>byte[]</code>
+ * array received from the network to see if it contains a complete response
+ * that should be passed back to the requestor.
  */
-public class UtilTests extends TestCase {
+public abstract class ConnectionResponseTester {
+    /**
+     * Checks the provided buffer for a complete response.
+     * 
+     * @param buf the raw socket receive buffer
+     * @param len the length of the valid data within the buffer
+     * @return length of the complete response, or <code>-1</code> if none
+     *   is currently available within the buffer
+     */
+    public abstract int checkForCompleteResponse(byte[] buf, int len);
     
-    public UtilTests() {
-        super();
-    }
+    /**
+     * Number of characters to trim from the response prior to returning the
+     * resulting data.  Primarily useful for cases such as trimming CRLF codes.
+     * Expect this method to be called immediately following a call to
+     * {{@link #checkForCompleteResponse(byte[], int)} that provides a
+     * successful result.
+     * 
+     * @return number of characters to trim
+     */
+    public int trimCount() { return 0; }
     
-    public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.util");
-        testSuite.addTest(new StringParserTest().suite());
-        testSuite.addTest(new StringArraysTest().suite());
-        testSuite.addTest(new SerializableHashtableTest().suite());
-        testSuite.addTest(new EventListenerListTest().suite());
-        testSuite.addTest(new PersistentObjectDataStoreTest().suite());
-        testSuite.addTest(new QueueTest().suite());
-        return testSuite;
+    /**
+     * Log string to use if connection debugging is enabled.
+     * <p>
+     * The default behavior is to return the length of the byte array.
+     * </p>
+     * @param the raw data about to be returned to the requestor
+     * @return the string to put in the event log
+     */
+    public String logString(byte[] result) {
+        return '[' + Integer.toString(result.length) + ']';
     }
 }

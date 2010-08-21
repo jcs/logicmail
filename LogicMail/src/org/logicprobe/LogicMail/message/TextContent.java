@@ -33,8 +33,6 @@ package org.logicprobe.LogicMail.message;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-import net.rim.device.api.io.Base64InputStream;
-
 import org.logicprobe.LogicMail.util.StringFactory;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -53,19 +51,25 @@ public class TextContent extends MimeMessageContent {
     		TextPart textPart,
             String encoding,
             String charset,
-            String data) throws UnsupportedContentException {
+            byte[] data) throws UnsupportedContentException {
     	super(textPart);
     	String mimeSubtype = textPart.getMimeSubtype();
     	
+        // Check for a supported text sub-type
+        if (!mimeSubtype.equalsIgnoreCase("plain") &&
+                !mimeSubtype.equalsIgnoreCase("html")) {
+            throw new UnsupportedContentException("Unsupported subtype");
+        }
+        
         // Check for any encodings that need to be handled
         if (encoding.equalsIgnoreCase("quoted-printable")) {
-            data = StringParser.decodeQuotedPrintable(data);
+            this.text = StringParser.decodeQuotedPrintable(data);
         }
-        else if (encoding.equalsIgnoreCase("base64")) {
+        else if (encoding.equalsIgnoreCase(ENCODING_BASE64)) {
         	byte[] textBytes;
 
             try {
-                textBytes = Base64InputStream.decode(data);
+                textBytes = decodeBase64(data);
             } catch (IOException exp) {
                 throw new UnsupportedContentException("Unable to decode");
             }
@@ -76,38 +80,26 @@ public class TextContent extends MimeMessageContent {
                     charset = "ISO-8859-1";
                 }
 
-                data = StringFactory.create(textBytes, charset);
+                this.text = StringFactory.create(textBytes, charset);
             } catch (UnsupportedEncodingException exp) {
                 // If encoding type is bad, attempt with the default encoding
                 // so the user will at least see something.
-                data = new String(textBytes);
+                this.text = new String(textBytes);
             }
         }
-        else if ((charset != null) &&
-                !charset.equalsIgnoreCase("ISO-8859-1") &&
-                !charset.equalsIgnoreCase("US-ASCII")) {
+        else if (charset != null) {
             // If the text is not encoded (i.e. 7bit or 8bit) and uses a
             // non-Latin charset, then bring the text back to a byte array
             // and attempt to decode it based on the charset parameter.
-            byte[] textBytes = data.getBytes();
 
             try {
-                data = StringFactory.create(textBytes, charset);
+                this.text = StringFactory.create(data, charset);
             } catch (UnsupportedEncodingException exp) {
-                // If encoding type is bad, leave the message text as
-                // it was originally.  This may result in the user seeing
-                // garbage, but at least they'll know there was a
-                // decoding problem.
+                // If encoding type is bad, use the default platform charset.
+                // This may result in the user seeing garbage, but at least
+                // they'll know there was a decoding problem.
+                this.text = new String(data);
             }
-        }
-
-        // Check for a supported text sub-type and decode if necessary
-        if (mimeSubtype.equalsIgnoreCase("plain") ||
-                mimeSubtype.equalsIgnoreCase("html")) {
-            this.text = data;
-        }
-        else {
-        	throw new UnsupportedContentException("Unsupported subtype");
         }
     }
     

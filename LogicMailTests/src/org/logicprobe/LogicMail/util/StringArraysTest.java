@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,30 +28,60 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.util;
 
 import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
+import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 
 /**
- * Unit test suite for the LogicMail.util classes
+ * Unit test for StringArrays
  */
-public class UtilTests extends TestCase {
+public class StringArraysTest extends TestCase {
+    public StringArraysTest() {
+    }
+
+    public StringArraysTest(String testName, TestMethod testMethod) {
+        super(testName, testMethod);
+    }
+
+    public void setUp() {
+    }
+
+    public void tearDown() {
+    }
+
+    public void testParseInt() {
+        assertEquals(4, StringArrays.parseInt("4".getBytes(), 0, 1));
+        assertEquals(42, StringArrays.parseInt("42".getBytes(), 0, 2));
+        assertEquals(42, StringArrays.parseInt("x42x".getBytes(), 1, 2));
+        
+        try {
+            StringArrays.parseInt("x42x".getBytes(), 0, 4);
+            fail("Did not throw exception");
+        } catch (NumberFormatException e) { }
+    }
     
-    public UtilTests() {
-        super();
+    public void testParseHexInt() {
+        assertEquals(0x0A, StringArrays.parseHexInt("A".getBytes(), 0, 1));
+        assertEquals(0x4A, StringArrays.parseHexInt("4A".getBytes(), 0, 2));
+        assertEquals(0x42, StringArrays.parseHexInt("x42x".getBytes(), 1, 2));
+        
+        try {
+            StringArrays.parseInt("x42x".getBytes(), 0, 4);
+            fail("Did not throw exception");
+        } catch (NumberFormatException e) { }
     }
     
     public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.util");
-        testSuite.addTest(new StringParserTest().suite());
-        testSuite.addTest(new StringArraysTest().suite());
-        testSuite.addTest(new SerializableHashtableTest().suite());
-        testSuite.addTest(new EventListenerListTest().suite());
-        testSuite.addTest(new PersistentObjectDataStoreTest().suite());
-        testSuite.addTest(new QueueTest().suite());
+        TestSuite testSuite = new TestSuite("StringArrays");
+        
+        testSuite.addTest(new StringArraysTest("parseInt", new TestMethod()
+        { public void run(TestCase tc) { ((StringArraysTest) tc).testParseInt(); }}));
+        testSuite.addTest(new StringArraysTest("parseHexInt", new TestMethod()
+        { public void run(TestCase tc) { ((StringArraysTest) tc).testParseHexInt(); }}));
+        
         return testSuite;
     }
 }
