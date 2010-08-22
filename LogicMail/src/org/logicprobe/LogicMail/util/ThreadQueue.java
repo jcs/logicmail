@@ -30,6 +30,10 @@
  */
 package org.logicprobe.LogicMail.util;
 
+import net.rim.device.api.system.EventLogger;
+
+import org.logicprobe.LogicMail.AppInfo;
+
 // TODO: Write rigorous tests for this class
 
 /**
@@ -128,7 +132,9 @@ public class ThreadQueue {
 				try {
 					runnable.run();
 				} catch (RuntimeException exp) {
-					System.err.println(exp.toString());
+	                EventLogger.logEvent(AppInfo.GUID,
+	                        ("RuntimeException: " + exp.getMessage()).getBytes(),
+	                        EventLogger.ERROR);
 				}
 			}
 		}

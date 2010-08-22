@@ -40,6 +40,7 @@ import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.io.MIMETypeAssociations;
 import net.rim.device.api.system.Application;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Keypad;
@@ -53,6 +54,7 @@ import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.DataBuffer;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
@@ -755,7 +757,9 @@ public class CompositionScreen extends AbstractScreenProvider {
                     input.close();
                     fileConnection.close();
                 } catch (IOException e) {
-                    System.err.println("Error: " + e);
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Error: " + e.getMessage()).getBytes(),
+                            EventLogger.ERROR);
                     data = null;
                 }
                 

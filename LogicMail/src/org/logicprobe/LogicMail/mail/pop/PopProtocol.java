@@ -75,7 +75,6 @@ public class PopProtocol {
         Hashtable table = new Hashtable();
 
         for(int i=0; i<replyText.length; i++) {
-        	System.err.println('"' + replyText[i] + '"');
         	int p = replyText[i].indexOf(' ');
         	int len = replyText[i].length();
         	if(p != -1 && p + 1 < len) {

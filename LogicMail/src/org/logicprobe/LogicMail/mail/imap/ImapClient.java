@@ -36,6 +36,9 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.system.EventLogger;
+
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -962,7 +965,9 @@ public class ImapClient extends AbstractIncomingMailClient {
             try {
                 contentMap.put(part, MimeMessageContentFactory.createContentEncoded(part, data));
             } catch (UnsupportedContentException e) {
-                System.err.println("UnsupportedContentException: " + e.getMessage());
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("UnsupportedContentException: " + e.getMessage()).getBytes(),
+                        EventLogger.WARNING);
             }
         }
         else if(structure.address.equals("1")) {
