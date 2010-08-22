@@ -37,6 +37,18 @@ package org.logicprobe.LogicMail.model;
  */
 public interface MessageNodeCallback {
     /**
+     * Called when a <code>MessageNode</code> is about to be loaded, to check
+     * whether or not to proceed with the load operation.
+     * Since this is expected to be called from <code>MailFileManager</code>
+     * prior to actually loading message data, only the filename-based UID can
+     * be provided.
+     * 
+     * @param messageUid the string-form UID for the message to be loaded
+     * @return true, if the message should be loaded
+     */
+    boolean messageNodeAvailable(String messageUid);
+    
+    /**
      * Called when a <code>MessageNode</code> is created or updated,
      * depending on the purpose of the method that invoked the this
      * callback.

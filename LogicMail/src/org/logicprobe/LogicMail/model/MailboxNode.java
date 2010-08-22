@@ -68,12 +68,16 @@ public class MailboxNode implements Node, Serializable {
 	private SimpleSortingVector messages;
 	private Hashtable messageMap;
 	private Hashtable messageTokenMap;
+	private Hashtable messageTokenUidSet;
 	private EventListenerList listenerList = new EventListenerList();
 	private int type;
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
 	private int unseenMessageCount;
     private Vector pendingExpungeMessages = new Vector();
+    
+    private Hashtable messagesBeingLoaded = new Hashtable();
+    private Hashtable unappliedFlagUpdates = new Hashtable();
     
     /**
      * Flag to ensure that a flags-only fetch only happens on the first
@@ -143,6 +147,7 @@ public class MailboxNode implements Node, Serializable {
 		this.messages.setSort(true);
 		this.messageMap = new Hashtable();
 		this.messageTokenMap = new Hashtable();
+		this.messageTokenUidSet = new Hashtable();
 		if(folderTreeItem != null) {
 			this.setFolderTreeItem(new FolderTreeItem(folderTreeItem));
 		}
@@ -538,6 +543,7 @@ public class MailboxNode implements Node, Serializable {
 	void addMessage(MessageNode message) {
 		boolean messageAdded;
 		synchronized(messages) {
+		    messagesBeingLoaded.remove(message.getMessageToken().getMessageUid());
 			messageAdded = addMessageImpl(message);
 		}
 		if(messageAdded) {
@@ -586,6 +592,23 @@ public class MailboxNode implements Node, Serializable {
 			messages.addElement(message);
 			messageMap.put(message, message);
 			messageTokenMap.put(message.getMessageToken(), message);
+			messageTokenUidSet.put(message.getMessageToken().getMessageUid(), Boolean.TRUE);
+			
+			Object[] element = (Object[])unappliedFlagUpdates.remove(
+			        message.getMessageToken().getMessageUid());
+			if(element != null) {
+			    MessageToken messageToken = (MessageToken)element[0];
+			    MessageFlags messageFlags = (MessageFlags)element[1];
+                // Message already exists in the mailbox, and just needs
+                // its flags updated.
+			    message.setFlags(MessageNode.convertMessageFlags(messageFlags));
+
+                // Update the token based on the token that came along
+                // with the flags.  This will update any volatile state
+                // information, such as POP message indices
+			    message.getMessageToken().updateToken(messageToken);
+			    message.setExistsOnServer(true);
+			}
 			message.commitMessage();
 			return true;
 		}
@@ -606,6 +629,7 @@ public class MailboxNode implements Node, Serializable {
 				message.setParent(null);
 				messageMap.remove(message);
 				messageTokenMap.remove(message.getMessageToken());
+				messageTokenUidSet.remove(message.getMessageToken().getMessageUid());
 			}
 		}
         updateUnseenMessages(false);
@@ -640,6 +664,7 @@ public class MailboxNode implements Node, Serializable {
                 messageNode.setParent(null);
                 messageMap.remove(messageNode);
                 messageTokenMap.remove(messageNode.getMessageToken());
+                messageTokenUidSet.remove(messageNode.getMessageToken().getMessageUid());
                 tokensToRemove[i] = messageNode.getMessageToken();
                 removedMessageNodes[i] = messageNode;
             }
@@ -673,6 +698,45 @@ public class MailboxNode implements Node, Serializable {
     }
 
     /**
+     * Attempt to update the flags for a message within this mailbox.
+     * If the <code>MessageNode</code> for the token already exists within
+     * the mailbox, its flags will be updated.  If it does not exist, but is in
+     * the process of being loaded from cache, the flag change will be saved
+     * and applied as the message load completes.  If the message neither
+     * exists nor is being loaded, false will be returned.
+     *
+     * @param messageToken the message token
+     * @param messageFlags the flags to update
+     * @return true, if the update was applied or saved
+     */
+    boolean updateMessageFlags(MessageToken messageToken, MessageFlags messageFlags) {
+        boolean result = false;
+        synchronized(messages) {
+            if(messagesBeingLoaded.containsKey(messageToken.getMessageUid())) {
+                unappliedFlagUpdates.put(messageToken.getMessageUid(), new Object[] { messageToken, messageFlags });
+                result = true;
+            }
+            else {
+                MessageNode messageNode = (MessageNode)messageTokenMap.get(messageToken);
+                if(messageNode != null) {
+                    // Message already exists in the mailbox, and just needs
+                    // its flags updated.
+                    messageNode.setFlags(MessageNode.convertMessageFlags(messageFlags));
+
+                    // Update the token based on the token that came along
+                    // with the flags.  This will update any volatile state
+                    // information, such as POP message indices
+                    messageNode.getMessageToken().updateToken(messageToken);
+                    messageNode.setExistsOnServer(true);
+
+                    result = true;
+                }
+            }
+        }
+        return result;
+    }
+    
+    /**
      * Called when the mail store notifies of a completed expunge operation on
      * this folder, so anything we expected to be expunged can be cleaned out.
      */
@@ -701,6 +765,7 @@ public class MailboxNode implements Node, Serializable {
 			messages.removeAllElements();
 			messageMap.clear();
 			messageTokenMap.clear();
+			messageTokenUidSet.clear();
 		}
         updateUnseenMessages(false);
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
@@ -931,6 +996,20 @@ public class MailboxNode implements Node, Serializable {
         synchronized(fetchLock) {
             if(parentAccount.getAccountConfig() != null) {
                 if(fetchThread == null || !fetchThread.isAlive()) {
+                    // Request flags and tokens for recent messages from the mail store
+                    parentAccount.getMailStore().requestFolderMessagesRecent(
+                            folderTreeItem,
+                            fetchFlagsOnly,
+                            new MailStoreRequestCallback() {
+                                public void mailStoreRequestComplete() {
+                                    synchronized(fetchLock) {
+                                        fetchFlagsOnly = false;
+                                    }
+                                }
+                                public void mailStoreRequestFailed(Throwable exception) { }
+                            });
+                    
+                    // Start the cache loading process
                     fetchThread = new RefreshMessagesThread();
                     fetchThread.start();
                 }
@@ -958,25 +1037,36 @@ public class MailboxNode implements Node, Serializable {
             }
         }
 
+        public boolean messageNodeAvailable(String messageUid) {
+            boolean result;
+            synchronized(messages) {
+                if(messageTokenUidSet.containsKey(messageUid)) {
+                    result = false;
+                }
+                else {
+                    messagesBeingLoaded.put(messageUid, Boolean.TRUE);
+                    result = true;
+                }
+            }
+            return result;
+        }
+
         public void messageNodeUpdated(MessageNode messageNode) {
             if(messageNode != null) {
+                // If the initial flags fetch is complete, then ignore all
+                // nodes loaded from cache that don't have pending flag updates.
+                synchronized(fetchLock) {
+                    if(!fetchFlagsOnly) {
+                        synchronized(messages) {
+                            if(!unappliedFlagUpdates.containsKey(messageNode.getMessageToken().getMessageUid())) {
+                                return;
+                            }
+                        }
+                    }
+                }
                 MailboxNode.this.addMessage(messageNode);
             }
-            else {
-                // Request flags and tokens for recent messages from the mail store
-                parentAccount.getMailStore().requestFolderMessagesRecent(
-                        folderTreeItem,
-                        fetchFlagsOnly,
-                        new MailStoreRequestCallback() {
-                            public void mailStoreRequestComplete() {
-                                synchronized(fetchLock) {
-                                    fetchFlagsOnly = false;
-                                }
-                            }
-                            public void mailStoreRequestFailed(Throwable exception) { }
-                        });
-            }
-        }        
+        }
     }
     
 	/**

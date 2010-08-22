@@ -440,11 +440,13 @@ public class MailHomeScreen extends AbstractScreenProvider {
     }
 
     public void refreshMailTreeNode(MailHomeTreeNode node) {
-        int nodeId = nodeIdMap.get(node);
+        final int nodeId = nodeIdMap.get(node);
         if(nodeId != -1) {
-            synchronized(UiApplication.getEventLock()) {
-                treeField.invalidateNode(nodeId);
-            }
+            UiApplication.getUiApplication().invokeLater(new Runnable() {
+                public void run() {
+                    treeField.invalidateNode(nodeId);
+                }
+            });
         }
     }
 

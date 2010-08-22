@@ -195,6 +195,10 @@ public class OutboxMailboxNode extends MailboxNode {
             }
         }
 
+        public boolean messageNodeAvailable(String messageUid) {
+            return true;
+        }
+        
         public void messageNodeUpdated(MessageNode messageNode) {
             if(messageNode instanceof OutgoingMessageNode) {
                 OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;

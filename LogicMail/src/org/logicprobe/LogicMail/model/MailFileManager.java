@@ -231,8 +231,21 @@ public class MailFileManager {
         if(cacheUrl == null) { callback.messageNodeUpdated(null); }
         
         String[] fileUrls = getMessageFiles(mailboxNode);
+        Vector fileUrlsToLoad = new Vector(fileUrls.length);
         for(int i=0; i<fileUrls.length; i++) {
-            MessageNode messageNode = readMessageNode(fileUrls[i]);
+            int p = fileUrls[i].lastIndexOf('/');
+            int q = fileUrls[i].lastIndexOf('.');
+            if(p != -1 && q != -1 && p < q) {
+                String messageUid = fileUrls[i].substring(p + 1, q);
+                if(callback.messageNodeAvailable(messageUid)) {
+                    fileUrlsToLoad.addElement(fileUrls[i]);
+                }
+            }
+        }
+        
+        int size = fileUrlsToLoad.size();
+        for(int i=0; i<size; i++) {
+            MessageNode messageNode = readMessageNode((String)fileUrlsToLoad.elementAt(i));
             if(messageNode != null) {
                 if(loadContent) {
                     MimeMessageContent[] content = readMessageContent(mailboxNode, messageNode.getMessageToken());

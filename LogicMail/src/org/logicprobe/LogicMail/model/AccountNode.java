@@ -609,29 +609,19 @@ public class AccountNode implements Node {
             if(e.isFlagsOnly()) {
             	// Only flags have been retrieved, so the existing messages need to
             	// be checked and additional actions requested accordingly.
-            	//TODO: Implement flags-only logic
 	            for (int i = 0; i < folderMessages.length; i++) {
-	            	MessageNode messageNode =
-	            		mailboxNode.getMessageByToken(folderMessages[i].getMessageToken());
-	            	if(messageNode != null) {
-	            		messageNode.setFlags(MessageNode.convertMessageFlags(folderMessages[i].getFlags()));
-	            		
-	            		// Update the token based on the token that came along
-	            		// with the flags.  This will update any volatile state
-	            		// information, such as POP message indices
-	            		messageNode.getMessageToken().updateToken(folderMessages[i].getMessageToken());
-	            		messageNode.setExistsOnServer(true);
-	            	}
-	            	else {
-	            	    synchronized(folderMessagesToFetch) {
-	            	        Vector messagesToFetch = (Vector)folderMessagesToFetch.get(e.getFolder());
-	            	        if(messagesToFetch == null) {
-	            	            messagesToFetch = new Vector();
-	            	            folderMessagesToFetch.put(e.getFolder(), messagesToFetch);
-	            	        }
-	            	        messagesToFetch.addElement(folderMessages[i].getMessageToken());
-	            	    }
-	            	}
+	                if(!mailboxNode.updateMessageFlags(folderMessages[i].getMessageToken(), folderMessages[i].getFlags())) {
+                        // Message does not currently exist in the mailbox, and
+                        // is not in the process of being loaded from cache.
+                        synchronized(folderMessagesToFetch) {
+                            Vector messagesToFetch = (Vector)folderMessagesToFetch.get(e.getFolder());
+                            if(messagesToFetch == null) {
+                                messagesToFetch = new Vector();
+                                folderMessagesToFetch.put(e.getFolder(), messagesToFetch);
+                            }
+                            messagesToFetch.addElement(folderMessages[i].getMessageToken());
+                        }
+	                }
 	            }
             }
             else {
