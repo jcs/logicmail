@@ -32,8 +32,10 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.ui.Screen;
+import net.rim.device.api.ui.ScreenUiEngineAttachedListener;
 import net.rim.device.api.ui.TransitionContext;
 import net.rim.device.api.ui.Ui;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.UiEngineInstance;
 import net.rim.device.api.ui.VirtualKeyboard;
 import net.rim.device.api.ui.component.Dialog;
@@ -79,8 +81,26 @@ public class ScreenFactoryBB50 extends ScreenFactoryBB47 {
         }
         uiEngine.setTransition(null, screen, UiEngineInstance.TRIGGER_PUSH, pushAction);
         uiEngine.setTransition(screen, null, UiEngineInstance.TRIGGER_POP, popAction);
+        screen.addScreenUiEngineAttachedListener(uiEngineListener);
     }
 
+    /**
+     * Listener to clean up screen transitions after a screen is popped off
+     * the display stack.
+     */
+    private ScreenUiEngineAttachedListener uiEngineListener = new ScreenUiEngineAttachedListener() {
+        public void onScreenUiEngineAttached(final Screen screen, boolean attached) {
+            if(!attached) {
+                screen.removeScreenUiEngineAttachedListener(this);
+                UiApplication.getUiApplication().invokeLater(new Runnable() {
+                    public void run() {
+                        clearScreenTransition(screen);
+                    }
+                });
+            }
+        }
+    };
+    
     public void clearScreenTransition(Screen screen) {
         UiEngineInstance uiEngine = Ui.getUiEngineInstance();
         uiEngine.setTransition(null, screen, UiEngineInstance.TRIGGER_PUSH, null);
