@@ -437,7 +437,7 @@ public abstract class Connection {
                 bytesReceived++;
                 int bytesAvailable = input.available();
                 while(bytesAvailable > 0) {
-                    int len = input.read(readBuffer);
+                    int len = input.read(readBuffer, 0, Math.min(bytesAvailable, readBuffer.length));
                     byteStream.write(readBuffer, 0, len);
                     bytesReceived += len;
                     
