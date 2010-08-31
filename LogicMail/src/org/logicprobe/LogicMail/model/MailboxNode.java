@@ -76,8 +76,18 @@ public class MailboxNode implements Node, Serializable {
 	private int unseenMessageCount;
     private Vector pendingExpungeMessages = new Vector();
     
+    /** Set of messages being loaded from cache. */
     private Hashtable messagesBeingLoaded = new Hashtable();
+    /** Map of unapplied message flag updates received from the server. */
     private Hashtable unappliedFlagUpdates = new Hashtable();
+    /** Set of messages known to the server. */
+    private Hashtable messagesKnownToServer = new Hashtable();
+    
+    /** Flag to keep track of external requests for cache cleanup. */
+    private boolean removeMessagesNotOnServerRequested;
+    
+    /** Flag to keep track of initial cache load process. */
+    private boolean cacheLoadInProgress;
     
     /**
      * Flag to ensure that a flags-only fetch only happens on the first
@@ -636,28 +646,48 @@ public class MailboxNode implements Node, Serializable {
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
 	}
 
-
     /**
      * Removes all messages not marked as existing on the server.
      */
-    void removeMessagesNotOnServer() {
+	void removeMessagesNotOnServer() {
         synchronized(messages) {
-            Vector messagesToRemove = new Vector();
-            
-            // Populate a list of the messages to remove
-            int size = messages.size();
-            for(int i=0; i<size; i++) {
-                MessageNode messageNode = (MessageNode)messages.elementAt(i);
-                if(!messageNode.existsOnServer()) {
-                    messagesToRemove.addElement(messageNode);
-                }
+            // If cache load is in progress, take note of request and return
+            if(cacheLoadInProgress) {
+                removeMessagesNotOnServerRequested = true;
             }
-            
-            size = messagesToRemove.size();
-            if(size == 0) { return; }
-            
+            else {
+                removeMessagesNotOnServerImpl();
+            }
+        }
+	}
+	
+    private void removeMessagesNotOnServerImpl() {
+        Vector messagesToRemove = new Vector();
+        Vector messagesToRetain = new Vector();
+        
+        // Populate a list of the messages to remove
+        int size = messages.size();
+        for(int i=0; i<size; i++) {
+            MessageNode messageNode = (MessageNode)messages.elementAt(i);
+            if(!messageNode.existsOnServer()) {
+                messagesToRemove.addElement(messageNode);
+            }
+            else {
+                String messageUid = messageNode.getMessageToken().getMessageUid();
+                messagesToRetain.addElement(messageUid);
+                messagesKnownToServer.remove(messageUid);
+            }
+        }
+        
+        // Iterate through any remaining items in our server-known message set,
+        // and add them to the retention list.
+        for(Enumeration e = messagesKnownToServer.keys(); e.hasMoreElements(); ) {
+            messagesToRetain.addElement(e.nextElement());
+        }
+        
+        size = messagesToRemove.size();
+        if(size > 0) {
             MessageNode[] removedMessageNodes = new MessageNode[size];
-            MessageToken[] tokensToRemove = new MessageToken[size];
             for(int i=0; i<size; i++) {
                 MessageNode messageNode = (MessageNode)messagesToRemove.elementAt(i);
                 messages.removeElement(messageNode);
@@ -665,29 +695,34 @@ public class MailboxNode implements Node, Serializable {
                 messageMap.remove(messageNode);
                 messageTokenMap.remove(messageNode.getMessageToken());
                 messageTokenUidSet.remove(messageNode.getMessageToken().getMessageUid());
-                tokensToRemove[i] = messageNode.getMessageToken();
                 removedMessageNodes[i] = messageNode;
             }
             
             if(this.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
-                (new RemoveFromCacheThread(tokensToRemove)).start();
+                (new RemoveFromCacheThread(messagesToRetain)).start();
             }
             updateUnseenMessages(false);
             fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessageNodes);
         }
+        else {
+            if(this.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
+                (new RemoveFromCacheThread(messagesToRetain)).start();
+            }
+        }
     }
 	
     private class RemoveFromCacheThread extends Thread {
-        private MessageToken[] messageTokens;
+        private String[] uidsToRetain;
         
-        public RemoveFromCacheThread(MessageToken[] messageTokens) {
-            this.messageTokens = messageTokens;
+        public RemoveFromCacheThread(Vector uidsToRetain) {
+            this.uidsToRetain = new String[uidsToRetain.size()];
+            uidsToRetain.copyInto(this.uidsToRetain);
         }
         
         public void run() {
             yield();
             try {
-                MailFileManager.getInstance().removeMessageNodes(MailboxNode.this, messageTokens);
+                MailFileManager.getInstance().removeStaleMessageNodes(MailboxNode.this, uidsToRetain);
             } catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to remove messages from the cache\r\n"
@@ -711,25 +746,35 @@ public class MailboxNode implements Node, Serializable {
      */
     boolean updateMessageFlags(MessageToken messageToken, MessageFlags messageFlags) {
         boolean result = false;
-        synchronized(messages) {
-            if(messagesBeingLoaded.containsKey(messageToken.getMessageUid())) {
-                unappliedFlagUpdates.put(messageToken.getMessageUid(), new Object[] { messageToken, messageFlags });
-                result = true;
-            }
-            else {
-                MessageNode messageNode = (MessageNode)messageTokenMap.get(messageToken);
-                if(messageNode != null) {
-                    // Message already exists in the mailbox, and just needs
-                    // its flags updated.
-                    messageNode.setFlags(MessageNode.convertMessageFlags(messageFlags));
-
-                    // Update the token based on the token that came along
-                    // with the flags.  This will update any volatile state
-                    // information, such as POP message indices
-                    messageNode.getMessageToken().updateToken(messageToken);
-                    messageNode.setExistsOnServer(true);
-
+        synchronized(fetchLock) {
+            synchronized(messages) {
+                // If this method is called during the initial flags fetch, then
+                // track all messages updates are received for.  This is how we
+                // build a collection of messages that exist on the server, for the
+                // purposes of cache cleanup.
+                
+                    if(fetchFlagsOnly) {
+                        messagesKnownToServer.put(messageToken.getMessageUid(), Boolean.TRUE);
+                    }
+                if(messagesBeingLoaded.containsKey(messageToken.getMessageUid())) {
+                    unappliedFlagUpdates.put(messageToken.getMessageUid(), new Object[] { messageToken, messageFlags });
                     result = true;
+                }
+                else {
+                    MessageNode messageNode = (MessageNode)messageTokenMap.get(messageToken);
+                    if(messageNode != null) {
+                        // Message already exists in the mailbox, and just needs
+                        // its flags updated.
+                        messageNode.setFlags(MessageNode.convertMessageFlags(messageFlags));
+    
+                        // Update the token based on the token that came along
+                        // with the flags.  This will update any volatile state
+                        // information, such as POP message indices
+                        messageNode.getMessageToken().updateToken(messageToken);
+                        messageNode.setExistsOnServer(true);
+    
+                        result = true;
+                    }
                 }
             }
         }
@@ -996,6 +1041,10 @@ public class MailboxNode implements Node, Serializable {
         synchronized(fetchLock) {
             if(parentAccount.getAccountConfig() != null) {
                 if(fetchThread == null || !fetchThread.isAlive()) {
+                    synchronized(messages) {
+                        cacheLoadInProgress = true;
+                    }
+                    
                     // Request flags and tokens for recent messages from the mail store
                     parentAccount.getMailStore().requestFolderMessagesRecent(
                             folderTreeItem,
@@ -1021,6 +1070,8 @@ public class MailboxNode implements Node, Serializable {
     }
     
     private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
+        private Vector messagesToAdd = new Vector();
+        
         public RefreshMessagesThread() {
             
         }
@@ -1029,6 +1080,17 @@ public class MailboxNode implements Node, Serializable {
             yield();
             try {
                 MailFileManager.getInstance().readMessageNodes(MailboxNode.this, this);
+                addLoadedMessages();
+                
+                // If the server fetch completed before the cache load, then
+                // execute the pending post-load cache cleanup.
+                synchronized(messages) {
+                    cacheLoadInProgress = false;
+                    if(removeMessagesNotOnServerRequested) {
+                        removeMessagesNotOnServerRequested = false;
+                        removeMessagesNotOnServerImpl();
+                    }
+                }
             } catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to read messages from cache\r\n"
@@ -1041,9 +1103,11 @@ public class MailboxNode implements Node, Serializable {
             boolean result;
             synchronized(messages) {
                 if(messageTokenUidSet.containsKey(messageUid)) {
+                    // Don't load messages that have already been loaded
                     result = false;
                 }
                 else {
+                    // Keep track of messages that will be loaded
                     messagesBeingLoaded.put(messageUid, Boolean.TRUE);
                     result = true;
                 }
@@ -1064,8 +1128,21 @@ public class MailboxNode implements Node, Serializable {
                         }
                     }
                 }
-                MailboxNode.this.addMessage(messageNode);
+                messagesToAdd.addElement(messageNode);
+                if(messagesToAdd.size() == 4) {
+                    addLoadedMessages();
+                }
             }
+        }
+        
+        private void addLoadedMessages() {
+            int size = messagesToAdd.size();
+            if(size == 0) { return; }
+            
+            MessageNode[] messageArray = new MessageNode[size];
+            messagesToAdd.copyInto(messageArray);
+            messagesToAdd.removeAllElements();
+            MailboxNode.this.addMessages(messageArray);
         }
     }
     

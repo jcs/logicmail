@@ -34,6 +34,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -433,6 +434,44 @@ public class MailFileManager {
 		MimeMessageContent[] result = new MimeMessageContent[content.size()];
 		content.copyInto(result);
 		return result;
+	}
+	
+	public synchronized void removeStaleMessageNodes(MailboxNode mailboxNode, String[] uidsToRetain) throws IOException {
+	    if(cacheUrl == null) { return; }
+	    
+	    Hashtable retentionSet = new Hashtable();
+	    for(int i=0; i<uidsToRetain.length; i++) {
+	        retentionSet.put(uidsToRetain[i], Boolean.TRUE);
+	    }
+	    
+        String[] fileUrls = getMessageFiles(mailboxNode);
+        Vector fileUrlsToDelete = new Vector();
+        for(int i=0; i<fileUrls.length; i++) {
+            int p = fileUrls[i].lastIndexOf('/');
+            int q = fileUrls[i].lastIndexOf('.');
+            if(p != -1 && q != -1 && p < q) {
+                String messageUid = fileUrls[i].substring(p + 1, q);
+                if(!retentionSet.containsKey(messageUid)) {
+                    fileUrlsToDelete.addElement(fileUrls[i]);
+                }
+            }
+        }
+        
+        int size = fileUrlsToDelete.size();
+        for(int i=0; i<size; i++) {
+            try {
+                FileConnection fc = (FileConnection)Connector.open((String)fileUrlsToDelete.elementAt(i));
+                if(fc.exists() && fc.canRead()) {
+                    fc.delete();
+                }
+            } catch (IOException exp) {
+                if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Error deleting message from cache: " + exp.toString()).getBytes(),
+                            EventLogger.DEBUG_INFO);
+                }
+            }
+        }
 	}
 	
 	public synchronized void removeMessageNodes(MailboxNode mailboxNode, MessageToken[] messageTokens) throws IOException {
