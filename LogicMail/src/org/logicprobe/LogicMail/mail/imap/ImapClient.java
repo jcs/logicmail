@@ -64,7 +64,7 @@ import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 import org.logicprobe.LogicMail.message.UnsupportedPart;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.UtilFactory;
+import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 
@@ -74,14 +74,14 @@ import org.logicprobe.LogicMail.util.DataStoreFactory;
  * 
  */
 public class ImapClient extends AbstractIncomingMailClient {
-    private MailSettings mailSettings;
-    private ImapConfig accountConfig;
+    private final NetworkConnector networkConnector;
+    private final MailSettings mailSettings;
+    private final ImapConfig accountConfig;
+    private final ImapProtocol imapProtocol;
     private Connection connection;
-    private ImapProtocol imapProtocol;
     private String username;
     private String password;
     private boolean openStarted;
-    private boolean configChanged;
 
     /**
      * Table of supported server capabilities
@@ -131,15 +131,14 @@ public class ImapClient extends AbstractIncomingMailClient {
     private static String CAPABILITY_STARTTLS = "STARTTLS";
     private static String CAPABILITY_IDLE = "IDLE";
     
-    public ImapClient(GlobalConfig globalConfig, ImapConfig accountConfig) {
+    public ImapClient(NetworkConnector networkConnector, GlobalConfig globalConfig, ImapConfig accountConfig) {
+        this.networkConnector = networkConnector;
         this.accountConfig = accountConfig;
         this.mailSettings = MailSettings.getInstance();
-        connection = UtilFactory.getInstance().createConnection(accountConfig);
-        imapProtocol = new ImapProtocol(connection);
+        imapProtocol = new ImapProtocol();
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
         openStarted = false;
-        configChanged = false;
         mailSettings.addMailSettingsListener(mailSettingsListener);
     }
 
@@ -164,17 +163,6 @@ public class ImapClient extends AbstractIncomingMailClient {
             // Refresh authentication information from the configuration
             username = accountConfig.getServerUser();
             password = accountConfig.getServerPass();
-
-            if(!isConnected()) {
-                // Rebuild the connection to include new settings
-                connection = UtilFactory.getInstance().createConnection(accountConfig);
-                imapProtocol = new ImapProtocol(connection);
-            }
-            else {
-                // Set a flag to make sure we rebuild the Connection object
-                // the next time we close the connection.
-                configChanged = true;
-            }
         }
     }
 
@@ -184,12 +172,14 @@ public class ImapClient extends AbstractIncomingMailClient {
     public boolean open() throws IOException, MailException {
         try {
             if(!openStarted) {
-                connection.open();
+                connection = networkConnector.open(accountConfig);
+                imapProtocol.setConnection(connection);
+                
                 activeMailbox = null;
 
                 // Swallow the initial "* OK" line from the server
                 connection.receive();
-
+                
                 // Find out server capabilities
                 capabilities = imapProtocol.executeCapability();
 
@@ -201,7 +191,8 @@ public class ImapClient extends AbstractIncomingMailClient {
             if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey(CAPABILITY_STARTTLS))
                     || (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
                 imapProtocol.executeStartTLS();
-                connection.startTLS();
+                connection = networkConnector.getConnectionAsTLS(connection);
+                imapProtocol.setConnection(connection);
             }
 
             // Authenticate with the server
@@ -250,30 +241,22 @@ public class ImapClient extends AbstractIncomingMailClient {
      */
     public void close() throws IOException, MailException {
         if(connection.isConnected()) {
-            // Not closing to avoid expunging deleted messages
-            //if(activeMailbox != null && !activeMailbox.equals("")) {
-            //    imapProtocol.executeClose();
-            //}
+            // Note: Active mailbox is not closed to avoid unintentionally
+            // expunging deleted messages.
             try {
                 imapProtocol.executeLogout();
             } catch (Exception exp) { }
         }
         activeMailbox = null;
         connection.close();
-
-        if(configChanged) {
-            // Rebuild the connection to include new settings
-            connection = UtilFactory.getInstance().createConnection(accountConfig);
-            imapProtocol = new ImapProtocol(connection);
-            configChanged = false;
-        }
+        connection = null;
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MailClient#isConnected()
      */
     public boolean isConnected() {
-        return connection.isConnected();
+        return connection != null && connection.isConnected();
     }
 
     /* (non-Javadoc)

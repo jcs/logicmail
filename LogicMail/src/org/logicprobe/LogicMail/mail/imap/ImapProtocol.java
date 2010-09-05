@@ -48,12 +48,10 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Vector;
 
-
 /**
  * This class implements the commands for the IMAP protocol
  */
 public class ImapProtocol {
-
     private Connection connection;
     private String idleCommandTag;
 
@@ -64,10 +62,20 @@ public class ImapProtocol {
     private int commandCount = 0;
 
     /** Creates a new instance of ImapProtocol */
-    public ImapProtocol(Connection connection) {
-        this.connection = connection;
+    public ImapProtocol() {
     }
 
+    /**
+     * Sets the connection instance used by this class.
+     * This must be set after opening the connection, and prior to calling any
+     * command methods.
+     *
+     * @param connection the new connection instance
+     */
+    public void setConnection(Connection connection) {
+        this.connection = connection;
+    }
+    
     /**
      * Execute the "STARTTLS" command.
      * The underlying connection mode must be switched after the

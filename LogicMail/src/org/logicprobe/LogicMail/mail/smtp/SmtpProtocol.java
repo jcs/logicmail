@@ -42,13 +42,12 @@ import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.MD5;
-import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * This class implements the commands for the SMTP protocol
  */
 public class SmtpProtocol {
-    private final Connection connection;
+    private Connection connection;
     
     /** Specifies the PLAIN authentication mechanism */
     public static final int AUTH_PLAIN = 1;
@@ -60,7 +59,17 @@ public class SmtpProtocol {
     public static final int AUTH_DIGEST_MD5 = 4;
     
     /** Creates a new instance of SmtpProtocol */
-    public SmtpProtocol(Connection connection) {
+    public SmtpProtocol() {
+    }
+    
+    /**
+     * Sets the connection instance used by this class.
+     * This must be set after opening the connection, and prior to calling any
+     * command methods.
+     *
+     * @param connection the new connection instance
+     */
+    public void setConnection(Connection connection) {
         this.connection = connection;
     }
     
@@ -139,117 +148,6 @@ public class SmtpProtocol {
             byte[] eval = buf.toString().getBytes(US_ASCII);
             
             result = execute(Base64OutputStream.encodeAsString(eval, 0, eval.length, false, false));
-            if(!result.startsWith(CODE_235)) {
-                return false;
-            }
-        }
-        else if(mech == AUTH_DIGEST_MD5) {
-            // Note: This code does not currently work correctly
-            result = execute("AUTH DIGEST-MD5");
-            if(!result.startsWith(CODE_334)) {
-                throw new MailException(result.substring(4));
-            }
-            
-            String challenge = new String(Base64InputStream.decode(result.substring(4)));
-            System.err.println("-->Challenge: " + challenge);
-            // Note, the fields with CSV string values will get mucked up
-            String[] fields = StringParser.parseTokenString(challenge, ",");
-            int i;
-            String realm = null;
-            String nonce = null;
-            String qop = null;
-            String algorithm = null;
-            String charset = null;
-            for(i = 0; i < fields.length; i++) {
-                if(fields[i].startsWith("realm")) {
-                    realm = parseValue(fields[i]);
-                }
-                else if(fields[i].startsWith("nonce")) {
-                    nonce = parseValue(fields[i]);
-                }
-                else if(fields[i].startsWith("qop")) {
-                    qop = parseValue(fields[i]);
-                }
-                else if(fields[i].startsWith("algorithm")) {
-                    algorithm = parseValue(fields[i]);
-                }
-                else if(fields[i].startsWith("charset")) {
-                    charset = parseValue(fields[i]);
-                }
-            }
-            System.err.println("-->  Realm: "+realm);
-            System.err.println("-->  Nonce: "+nonce);
-            System.err.println("-->  Qop: "+qop);
-            System.err.println("-->  Algorithm: "+algorithm);
-            System.err.println("-->  Charset: "+charset);
-            
-            StringBuffer buf = new StringBuffer();
-            MD5 md5 = new MD5();
-            // Generate the response
-            // If authzid is not specified, then A1 is:
-            // A1 = { H( { username-value, ":", realm-value, ":", passwd } ),
-            //       ":", nonce-value, ":", cnonce-value }
-            buf.append(username);
-            buf.append(':');
-            buf.append(realm);
-            buf.append(':');
-            buf.append(password);
-            md5.update(buf.toString().getBytes(charset));
-            String A1 = byteArrayToHexString(md5.getDigest()); // HEX(H(A1))
-            System.err.println("A1: HEX(H( { "+buf.toString()+" )) = " + A1);
-            
-            // If the "qop" directive's value is "auth", then A2 is:
-            // A2 = { "AUTHENTICATE:", digest-uri-value }
-            buf = new StringBuffer();
-            md5.reset();
-            buf.append("AUTHENTICATE:");
-            buf.append("smtp/");
-            buf.append(connection.getServerName());
-            md5.update(buf.toString().getBytes(charset));
-            String A2 = byteArrayToHexString(md5.getDigest()); // HEX(H(A2))
-            System.err.println("A2: HEX(H("+buf.toString()+")) = " + A2);
-            
-            String cnonce = "K4esOhbue3/urOGXWiEivkF9WUeZziawEHFC9nEz4BA=";
-            String nc = "00000001";
-
-            //HEX( KD ( HEX(H(A1)),
-            //     { nonce-value, ":" nc-value, ":",
-            //       cnonce-value, ":", qop-value, ":", HEX(H(A2)) }))
-            buf = new StringBuffer();
-            md5.reset();
-            buf.append(A1);
-            buf.append(':');
-            buf.append(nonce);
-            buf.append(':');
-            buf.append(nc);
-            buf.append(':');
-            buf.append(cnonce);
-            buf.append(':');
-            buf.append("auth");
-            buf.append(':');
-            buf.append(A2);
-            md5.update(buf.toString().getBytes(charset));
-            String resp = byteArrayToHexString(md5.getDigest());
-            System.err.println("HEX(MD5("+buf.toString()+")) = " + resp);
-            
-            // Craft the reply
-            buf = new StringBuffer();
-            buf.append("charset="+charset+",");
-            buf.append("username=\""+username+"\",");
-            buf.append("realm=\""+realm+"\",");
-            buf.append("nonce=\""+nonce+"\",");
-            buf.append("nc="+nc+",");
-            buf.append("cnonce=\""+cnonce+"\",");
-            buf.append("digest-uri=\"smtp/"+connection.getServerName()+"\",");
-            buf.append("response="+resp+",");
-            buf.append("qop=auth");
-            System.err.println("-->Response: " + buf.toString());
-            byte[] response = buf.toString().getBytes(charset);
-            result = execute(Base64OutputStream.encodeAsString(response, 0, response.length, false, false));
-            if(!result.startsWith(CODE_334)) {
-                return false;
-            }
-            System.err.println("-->Result: "+(new String(Base64InputStream.decode(result))));
             if(!result.startsWith(CODE_235)) {
                 return false;
             }
@@ -487,22 +385,6 @@ public class SmtpProtocol {
         digest = md5.getDigest();
         
         return digest;
-    }
-
-    private static String parseValue(String input) {
-        int p, q;
-        p = input.indexOf('=') + 1;
-        q = input.length() - 1;
-        if(q <= p) {
-            return null;
-        }
-        if(input.charAt(p) == '\"') {
-            p++;
-        }
-        if(input.charAt(q) == '\"') {
-            q--;
-        }
-        return input.substring(p, q+1);
     }
 
     // String constants

@@ -31,66 +31,37 @@
 
 package org.logicprobe.LogicMail.util;
 
-import net.rim.device.api.crypto.tls.tls10.TLS10Connection;
-import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.io.NoCopyByteArrayOutputStream;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
-import net.rim.device.cldc.io.ssl.TLSException;
 
 import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 import javax.microedition.io.SocketConnection;
-import javax.microedition.io.StreamConnection;
 
 
 /**
- * This is the abstract base class for socket connections used inside the SMTP,
- * POP3, and IMAP protocols of the mail package.  It handles the details of
- * sending data in what ever manner is appropriate to the mail protocol, and
- * receiving data in whole lines.  The specifics of opening network connections
- * on the BlackBerry platform is delegated to subclasses.
+ * This class serves as a facade for socket connections used by the various
+ * protocols supported by this application.  It handles the details of sending
+ * and receiving data in whole lines, with customizable logic to meet protocol
+ * specific needs.
  */
-public abstract class Connection {
-    protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-    
-    /** Select everything except WiFi */
-    protected static final int TRANSPORT_AUTO = 0xFE;
-    /** Select WiFi */
-    protected static final int TRANSPORT_WIFI = 0x01;
-    /** Select Direct TCP */
-    protected static final int TRANSPORT_DIRECT_TCP = 0x02;
-    /** Select MDS */
-    protected static final int TRANSPORT_MDS = 0x04;
-    /** Select WAP 2.0 */
-    protected static final int TRANSPORT_WAP2 = 0x08;
-
+public class Connection {
     private static final byte CR = (byte)0x0D;
     private static final byte LF = (byte)0x0A;
     private static final byte[] CRLF = new byte[] { CR, LF };
     private static String strCRLF = "\r\n";
 
-    private UtilFactory utilFactory;
-    protected String serverName;
-    protected int serverPort;
-    protected boolean useSSL;
-    protected int transports;
-    private StreamConnection socket;
+    private SocketConnection socket;
     private String localAddress;
-    private String connectionUrl;
-    protected GlobalConfig globalConfig;
-    protected boolean useWiFi;
+    private GlobalConfig globalConfig;
     private InputStream input;
     private OutputStream output;
     private int fakeAvailable = -1;
@@ -113,157 +84,39 @@ public abstract class Connection {
     /**
      * Initializes a new connection object.
      * 
-     * @param connectionConfig Configuration data for the connection
+     * @param socket Socket representing the connection
+     * @throws IOException Thrown if an I/O error occurs
      */
-    protected Connection(ConnectionConfig connectionConfig) {
+    protected Connection(SocketConnection socket) throws IOException {
         this.globalConfig = MailSettings.getInstance().getGlobalConfig();
-        this.utilFactory = UtilFactory.getInstance();
         
-        this.serverName = connectionConfig.getServerName();
-        this.serverPort = connectionConfig.getServerPort();
-        this.useSSL = (connectionConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL);
-        
-        int transportType;
-        boolean enableWiFi;
-        if(connectionConfig.getTransportType() == ConnectionConfig.TRANSPORT_GLOBAL) {
-            transportType = globalConfig.getTransportType();
-            enableWiFi = globalConfig.getEnableWiFi();
-        }
-        else {
-            transportType = connectionConfig.getTransportType();
-            enableWiFi = connectionConfig.getEnableWiFi();
-        }
-
-        // Populate the bit-flags for the selected transport types
-        // based on the configuration parameters.
-        switch(transportType) {
-        case ConnectionConfig.TRANSPORT_WIFI_ONLY:
-            transports = Connection.TRANSPORT_WIFI;
-            break;
-        case ConnectionConfig.TRANSPORT_AUTO:
-            transports = Connection.TRANSPORT_AUTO;
-            break;
-        case ConnectionConfig.TRANSPORT_DIRECT_TCP:
-            transports = Connection.TRANSPORT_DIRECT_TCP;
-            break;
-        case ConnectionConfig.TRANSPORT_MDS:
-            transports = Connection.TRANSPORT_MDS;
-            break;
-        case ConnectionConfig.TRANSPORT_WAP2:
-            transports = Connection.TRANSPORT_WAP2;
-            break;
-        default:
-            // Should only get here in rare cases of invalid configuration
-            // data, so we select full automatic with WiFi.
-            transports = Connection.TRANSPORT_AUTO;
-            enableWiFi = true;
-            break;
-        }
-        if(enableWiFi) { transports |= Connection.TRANSPORT_WIFI; }
-        
-        this.input = null;
-        this.output = null;
-        this.socket = null;
-    }
-    
-    /**
-     * Opens a connection.
-     */
-    public void open() throws IOException {
-        if ((input != null) || (output != null) || (socket != null)) {
-            close();
-        }
-        
-        utilFactory.addOpenConnection(this);
-
-        synchronized(socketLock) {
-            socket = openStreamConnection();
-            if(socket == null) {
-                throw new IOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION));
-            }
-            
-            input = socket.openDataInputStream();
-            output = socket.openDataOutputStream();
-            localAddress = ((SocketConnection) socket).getLocalAddress();
-            bytesSent = 0;
-            bytesReceived = 0;
-        }
-        
-        if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-            String msg = "Connection established:\r\n" + "Socket: " +
-            socket.getClass().toString() + strCRLF + "Local address: " +
-            localAddress + strCRLF;
-            EventLogger.logEvent(AppInfo.GUID, msg.getBytes(),
-                    EventLogger.INFORMATION);
-        }
-    }
-    
-    /**
-     * Open a stream connection.
-     * This method should encapsulate all platform-specific logic for opening
-     * network connections.  If the connection is successfully opened, this
-     * method should also call {@link #setConnectionUrl(String)} to set the
-     * chosen connection string.
-     * 
-     * @return the stream connection
-     * 
-     * @throws IOException Signals that an I/O exception has occurred.
-     */
-    protected abstract StreamConnection openStreamConnection() throws IOException;
-
-    /**
-     * Sets the connection string used to open the current connection.
-     *
-     * @param connectionUrl the new connection string
-     */
-    protected void setConnectionUrl(String connectionUrl) {
-        this.connectionUrl = connectionUrl;
-    }
-    
-    /**
-     * Gets the connection string used to open the current connection.
-     *
-     * @return the connection string
-     */
-    public String getConnectionUrl() {
-        return connectionUrl;
+        this.socket = socket;
+        this.input = socket.openDataInputStream();
+        this.output = socket.openDataOutputStream();
+        this.localAddress = socket.getLocalAddress();
+        this.bytesSent = 0;
+        this.bytesReceived = 0;
     }
     
     /**
      * Closes a connection.
      */
-    public void close() throws IOException {
+    public void close() {
         synchronized(socketLock) {
             try {
-                if (input != null) {
-                    input.close();
-                    input = null;
-                }
+                input.close();
+                output.close();
+                socket.close();
             } catch (Exception exp) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Error closing connection: " + exp.getMessage()).getBytes(),
+                        EventLogger.WARNING);
+            } finally {
                 input = null;
-            }
-    
-            try {
-                if (output != null) {
-                    output.close();
-                    output = null;
-                }
-            } catch (Exception exp) {
                 output = null;
-            }
-    
-            try {
-                if (socket != null) {
-                    socket.close();
-                    socket = null;
-                }
-            } catch (Exception exp) {
                 socket = null;
             }
-            setConnectionUrl(null);
         }
-        
-        utilFactory.removeOpenConnection(this);
         
         EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
                 EventLogger.INFORMATION);
@@ -287,14 +140,6 @@ public abstract class Connection {
      */
     public String getLocalAddress() {
         return localAddress;
-    }
-
-    /**
-     * Get the server name used when this connection was created
-     * @return Server name
-     */
-    public String getServerName() {
-        return serverName;
     }
 
     /**
@@ -325,6 +170,39 @@ public abstract class Connection {
         return bytesReceived;
     }
 
+    /**
+     * Gets the socket used by this connection instance.
+     * This method should only be called by <code>NetworkConnector</code>
+     * for the purpose of creating new wrapped sockets.
+     *
+     * @return the connection socket
+     */
+    SocketConnection getSocket() {
+        return socket;
+    }
+    
+    /**
+     * Gets the input stream used by this connection instance.
+     * This method should only be called by <code>NetworkConnector</code>
+     * for the purpose of creating new wrapped sockets.
+     *
+     * @return the connection socket's input stream
+     */
+    InputStream getInput() {
+        return input;
+    }
+    
+    /**
+     * Gets the output stream used by this connection instance.
+     * This method should only be called by <code>NetworkConnector</code>
+     * for the purpose of creating new wrapped sockets.
+     *
+     * @return the connection socket's output stream
+     */
+    OutputStream getOutput() {
+        return output;
+    }
+    
     /**
      * Sends a string to the server, terminating it with a CRLF.
      * No cleanup is performed, as it is expected that the string
@@ -381,10 +259,12 @@ public abstract class Connection {
      * @see InputStream#available()
      */
     public int available() throws IOException {
-        if (fakeAvailable == -1) {
-            return input.available();
-        } else {
-            return fakeAvailable;
+        synchronized(socketLock) {
+            if (fakeAvailable == -1) {
+                return input.available();
+            } else {
+                return fakeAvailable;
+            }
         }
     }
 
@@ -400,7 +280,6 @@ public abstract class Connection {
     public byte[] receive() throws IOException {
         return receive(lineResponseTester);
     }
-    
     
     /**
      * Receives a string from the server. This method is used internally for
@@ -470,9 +349,7 @@ public abstract class Connection {
                         "Unable to read from socket, closing connection".getBytes(),
                         EventLogger.INFORMATION);
     
-                try {
-                    close();
-                } catch (IOException e) { }
+                close();
     
                 throw new IOException("Connection closed");
             }
@@ -547,75 +424,4 @@ public abstract class Connection {
             return new String(result);
         };
     };
-    
-    /**
-     * Switches the underlying connection to SSL mode, as commonly done after
-     * sending a <tt>STARTTLS</tt> command to the server.
-     * 
-     * @throws IOException Signals that an I/O exception has occurred.
-     */
-    public void startTLS() throws IOException {
-        synchronized(socketLock) {
-            // Shortcut the method if we're already in SSL mode
-            if(socket instanceof TLS10Connection) { return; }
-            
-            if(socket == null || connectionUrl == null) {
-                throw new IOException("Connection has not been opened");
-            }
-    
-            try {
-                TLS10Connection tlsSocket = new TLS10Connection(
-                        new StreamConnectionWrapper(
-                                socket,
-                                (DataInputStream)input,
-                                (DataOutputStream)output),
-                                connectionUrl,
-                                true);
-    
-                socket = tlsSocket;
-                input = socket.openDataInputStream();
-                output = socket.openDataOutputStream();
-            } catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
-                throw new IOException("Unable to switch to TLS mode");
-            } catch (TLSException e) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
-                throw new IOException("Unable to switch to TLS mode");
-            }
-        }
-    }
-
-    /**
-     * Decorator to wrap an existing stream connection so its I/O streams
-     * can be reopened without throwing exceptions.
-     */
-    private static class StreamConnectionWrapper implements StreamConnection {
-        private StreamConnection stream;
-        private DataInputStream dataInputStream;
-        private DataOutputStream dataOutputStream;
-
-        public StreamConnectionWrapper(StreamConnection stream, DataInputStream dataInputStream, DataOutputStream dataOutputStream) {
-            this.stream = stream;
-            this.dataInputStream = dataInputStream;
-            this.dataOutputStream = dataOutputStream;
-        }
-
-        public DataInputStream openDataInputStream() throws IOException {
-            return dataInputStream;
-        }
-        public InputStream openInputStream() throws IOException {
-            return dataInputStream;
-        }
-        public void close() throws IOException {
-            stream.close();
-        }
-        public DataOutputStream openDataOutputStream() throws IOException {
-            return dataOutputStream;
-        }
-        public OutputStream openOutputStream() throws IOException {
-            return dataOutputStream;
-        }
-    }
 }

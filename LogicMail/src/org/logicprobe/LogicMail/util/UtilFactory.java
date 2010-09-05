@@ -30,10 +30,8 @@
  */
 package org.logicprobe.LogicMail.util;
 
-import java.io.IOException;
-import java.util.Vector;
-
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 
 /**
  * Creates platform-specific instances of various utility classes.
@@ -52,8 +50,6 @@ public abstract class UtilFactory {
         "org.logicprobe.LogicMail.util.UtilFactoryBB42"
     };
 
-    private Vector openConnections = new Vector();
-
     /**
      * Gets the single instance of UtilFactory.
      * 
@@ -69,60 +65,10 @@ public abstract class UtilFactory {
     protected UtilFactory() {
     }
 
-    void addOpenConnection(Connection connection) {
-        synchronized (openConnections) {
-            if (!openConnections.contains(connection)) {
-                openConnections.addElement(connection);
-            }
-        }
-    }
-    
-    void removeOpenConnection(Connection connection) {
-        synchronized (openConnections) {
-            if (openConnections.contains(connection)) {
-                openConnections.removeElement(connection);
-            }
-        }
-    }
-    
     /**
-     * Determine whether open connections exist
-     *
-     * @return True if there are open connections
-     */
-    public boolean hasOpenConnections() {
-        boolean result;
-
-        synchronized (openConnections) {
-            result = !openConnections.isEmpty();
-        }
-
-        return result;
-    }
-
-    /**
-     * Close all open connections
-     */
-    public void closeAllConnections() {
-        synchronized (openConnections) {
-            int size = openConnections.size();
-
-            for (int i = 0; i < size; i++) {
-                try {
-                    ((Connection) openConnections.elementAt(i)).close();
-                } catch (IOException e) { }
-            }
-
-            openConnections.removeAllElements();
-        }
-    }
-    
-    /**
-     * Creates a new connection object.
+     * Gets the connector used to open network connections.
      * 
-     * connectionConfig Configuration data for the connection
-     * 
-     * @return the connection object
+     * @return platform-specific connector instance
      */
-    public abstract Connection createConnection(ConnectionConfig connectionConfig);
+    public abstract NetworkConnector getNetworkConnector(GlobalConfig globalConfig, ConnectionConfig connectionConfig);
 }

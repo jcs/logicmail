@@ -41,14 +41,15 @@ import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.imap.ImapClient;
 import org.logicprobe.LogicMail.mail.pop.PopClient;
 import org.logicprobe.LogicMail.mail.smtp.SmtpClient;
+import org.logicprobe.LogicMail.util.UtilFactory;
 
 /**
  * Factory to handle creation and configuration of
  * concrete IncomingMailClient instances
  */
 public class MailClientFactory {
-    private static Hashtable incomingClientTable = new Hashtable();
-    private static Hashtable outgoingClientTable = new Hashtable();
+    private static final Hashtable incomingClientTable = new Hashtable();
+    private static final Hashtable outgoingClientTable = new Hashtable();
     
     private MailClientFactory() { }
     
@@ -66,11 +67,15 @@ public class MailClientFactory {
         if(client == null) {
             GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
             if(acctConfig instanceof PopConfig) {
-                client = new PopClient(globalConfig, (PopConfig)acctConfig);
+                client = new PopClient(
+                        UtilFactory.getInstance().getNetworkConnector(globalConfig, acctConfig),
+                        globalConfig, (PopConfig)acctConfig);
                 incomingClientTable.put(acctConfig, client);
             }
             else if(acctConfig instanceof ImapConfig) {
-                client = new ImapClient(globalConfig, (ImapConfig)acctConfig);
+                client = new ImapClient(
+                        UtilFactory.getInstance().getNetworkConnector(globalConfig, acctConfig),
+                        globalConfig, (ImapConfig)acctConfig);
                 incomingClientTable.put(acctConfig, client);
             }
         }
@@ -104,7 +109,9 @@ public class MailClientFactory {
 
             if(client == null) {
                 GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
-                client = new SmtpClient(globalConfig, outgoingConfig);
+                client = new SmtpClient(
+                        UtilFactory.getInstance().getNetworkConnector(globalConfig, outgoingConfig),
+                        globalConfig, outgoingConfig);
                 outgoingClientTable.put(outgoingConfig, client);
             }
         }

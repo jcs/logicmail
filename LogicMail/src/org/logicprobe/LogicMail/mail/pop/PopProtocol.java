@@ -48,7 +48,17 @@ public class PopProtocol {
     private Connection connection;
     
     /** Creates a new instance of PopProtocol */
-    public PopProtocol(Connection connection) {
+    public PopProtocol() {
+    }
+    
+    /**
+     * Sets the connection instance used by this class.
+     * This must be set after opening the connection, and prior to calling any
+     * command methods.
+     *
+     * @param connection the new connection instance
+     */
+    public void setConnection(Connection connection) {
         this.connection = connection;
     }
     

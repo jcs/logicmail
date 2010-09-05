@@ -52,6 +52,7 @@ public class UtilTests extends TestCase {
         testSuite.addTest(new EventListenerListTest().suite());
         testSuite.addTest(new PersistentObjectDataStoreTest().suite());
         testSuite.addTest(new QueueTest().suite());
+        testSuite.addTest(new ConnectionTest().suite());
         return testSuite;
     }
 }

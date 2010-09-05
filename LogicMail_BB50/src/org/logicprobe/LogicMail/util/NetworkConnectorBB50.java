@@ -32,7 +32,7 @@ package org.logicprobe.LogicMail.util;
 
 import java.io.IOException;
 
-import javax.microedition.io.StreamConnection;
+import javax.microedition.io.SocketConnection;
 
 import net.rim.device.api.io.transport.ConnectionDescriptor;
 import net.rim.device.api.io.transport.ConnectionFactory;
@@ -42,17 +42,39 @@ import net.rim.device.api.util.IntVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class ConnectionBB50 extends Connection {
-    private ConnectionFactory connectionFactory;
+public class NetworkConnectorBB50 extends AbstractNetworkConnector {
+
+    public NetworkConnectorBB50(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
+        super(globalConfig, connectionConfig);
+    }
     
-    public ConnectionBB50(ConnectionConfig connectionConfig) {
-        super(connectionConfig);
-        
+    protected SocketConnection openSocketConnection() throws IOException {
         // Create a new connection factory instance
-        connectionFactory = new ConnectionFactory();
+        ConnectionFactory connectionFactory = new ConnectionFactory();
         
         // Prepare the preferred transports set
+        setPreferredTransports(connectionFactory);
+        
+        // Build the simple connection string
+        String url = buildSimpleConnectionString();
+
+        // Get the connection through the connection factory
+        ConnectionDescriptor descriptor = connectionFactory.getConnection(url);
+        
+        if(descriptor != null) {
+            SocketConnection connection = (SocketConnection)descriptor.getConnection();
+            logConnectionInformation(descriptor);
+            setConnectionUrl(descriptor.getUrl());
+            return connection;
+        }
+        else {
+            throw new IOException("Unable to open connection");
+        }
+    }
+
+    private void setPreferredTransports(ConnectionFactory connectionFactory) {
         IntVector preferredTransports = new IntVector();
         if((transports & TRANSPORT_WIFI) != 0) {
             preferredTransports.addElement(TransportInfo.TRANSPORT_TCP_WIFI);
@@ -69,8 +91,7 @@ public class ConnectionBB50 extends Connection {
         connectionFactory.setPreferredTransportTypes(preferredTransports.toArray());
     }
 
-    protected StreamConnection openStreamConnection() throws IOException {
-        // Build the simple connection string
+    private String buildSimpleConnectionString() {
         StringBuffer buf = new StringBuffer();
         buf.append(useSSL ? "ssl" : "socket");
         buf.append("://");
@@ -78,19 +99,7 @@ public class ConnectionBB50 extends Connection {
         buf.append(':');
         buf.append(serverPort);
         String url = buf.toString();
-
-        // Get the connection through the connection factory
-        ConnectionDescriptor descriptor = connectionFactory.getConnection(url);
-        
-        if(descriptor != null) {
-            StreamConnection connection = (StreamConnection)descriptor.getConnection();
-            logConnectionInformation(descriptor);
-            setConnectionUrl(descriptor.getUrl());
-            return connection;
-        }
-        else {
-            return null;
-        }
+        return url;
     }
 
     private void logConnectionInformation(ConnectionDescriptor descriptor) {

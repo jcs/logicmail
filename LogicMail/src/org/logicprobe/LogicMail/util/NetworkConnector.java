@@ -30,15 +30,31 @@
  */
 package org.logicprobe.LogicMail.util;
 
-import org.logicprobe.LogicMail.conf.ConnectionConfig;
-import org.logicprobe.LogicMail.conf.GlobalConfig;
+import java.io.IOException;
 
-public class UtilFactoryBB50 extends UtilFactoryBB46 {
-    public UtilFactoryBB50() {
-        super();
-    }
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
+
+/**
+ * Factory for opening new TCP socket connections.
+ */
+public interface NetworkConnector {
+    /**
+     * Open a new network connection, using the provided configuration.
+     *
+     * @param connectionConfig the connection configuration
+     * @return the opened connection instance
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    Connection open(ConnectionConfig connectionConfig) throws IOException;
     
-    public NetworkConnector getNetworkConnector(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
-        return new NetworkConnectorBB50(globalConfig, connectionConfig);
-    }
+    /**
+     * Returns a connection instance that has been switched into TLS mode,
+     * as is commonly done after sending a protocol-specific <tt>STARTTLS</tt>
+     * command to the server.
+     *
+     * @param connection the connection instance to switch
+     * @return connection instance in TLS mode
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    Connection getConnectionAsTLS(Connection connection) throws IOException;
 }

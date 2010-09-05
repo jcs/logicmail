@@ -34,27 +34,23 @@ import net.rim.device.api.system.CoverageInfo;
 import net.rim.device.api.system.WLANInfo;
 
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class ConnectionBB46 extends ConnectionBB42 {
-    
-    /**
-     * Initializes a new connection object.
-     * 
-     * @param connectionConfig Configuration data for the connection
-     */
-    ConnectionBB46(ConnectionConfig connectionConfig) {
-        super(connectionConfig);
+public class NetworkConnectorBB46 extends NetworkConnectorBB42 {
+
+    public NetworkConnectorBB46(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
+        super(globalConfig, connectionConfig);
     }
-
+    
     protected void initializeCoverage() {
-        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_DIRECT)){
+        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_DIRECT)) {
             coverageTCP=true;
             coverageWAP2=true;
         }
-        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_MDS)){           
+        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_MDS)) {           
             coverageMDS=true;
         }   
-        if(WLANInfo.getWLANState()==WLANInfo.WLAN_STATE_CONNECTED){
+        if(WLANInfo.getWLANState()==WLANInfo.WLAN_STATE_CONNECTED) {
             coverageWiFi = true;
         }
     }

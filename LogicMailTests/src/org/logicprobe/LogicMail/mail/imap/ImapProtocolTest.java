@@ -1044,7 +1044,7 @@ public class ImapProtocolTest extends TestCase {
         private Vector executeExpectations;
 
         public TestImapProtocol() {
-            super(null);
+            super();
             executeExpectations = new Vector();
         }
 

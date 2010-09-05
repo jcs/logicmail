@@ -57,7 +57,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.UtilFactory;
+import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -67,15 +67,15 @@ import org.logicprobe.LogicMail.util.StringParser;
  * 
  */
 public class PopClient extends AbstractIncomingMailClient {
-    private MailSettings mailSettings;
-    private GlobalConfig globalConfig;
-    private PopConfig accountConfig;
+    private final NetworkConnector networkConnector;
+    private final MailSettings mailSettings;
+    private final GlobalConfig globalConfig;
+    private final PopConfig accountConfig;
+    private final PopProtocol popProtocol;
     private Connection connection;
-    private PopProtocol popProtocol;
     private String username;
     private String password;
     private boolean openStarted;
-    private boolean configChanged;
     
     /**
      * Table of supported server capabilities
@@ -90,12 +90,12 @@ public class PopClient extends AbstractIncomingMailClient {
     private FolderTreeItem activeMailbox = null;
     
     /** Creates a new instance of PopClient */
-    public PopClient(GlobalConfig globalConfig, PopConfig accountConfig) {
+    public PopClient(NetworkConnector networkConnector, GlobalConfig globalConfig, PopConfig accountConfig) {
+        this.networkConnector = networkConnector;
         this.globalConfig = globalConfig;
         this.accountConfig = accountConfig;
         this.mailSettings = MailSettings.getInstance();
-        connection = UtilFactory.getInstance().createConnection(accountConfig);
-        popProtocol = new PopProtocol(connection);
+        popProtocol = new PopProtocol();
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
         
@@ -103,7 +103,6 @@ public class PopClient extends AbstractIncomingMailClient {
         activeMailbox = new FolderTreeItem("INBOX", "INBOX", "");
         activeMailbox.setMsgCount(0);
         openStarted = false;
-        configChanged = false;
         mailSettings.addMailSettingsListener(mailSettingsListener);
     }
 
@@ -128,17 +127,6 @@ public class PopClient extends AbstractIncomingMailClient {
             // Refresh authentication information from the configuration
             username = accountConfig.getServerUser();
             password = accountConfig.getServerPass();
-
-            if(!isConnected()) {
-                // Rebuild the connection to include new settings
-                connection = UtilFactory.getInstance().createConnection(accountConfig);
-                popProtocol = new PopProtocol(connection);
-            }
-            else {
-                // Set a flag to make sure we rebuild the Connection object
-                // the next time we close the connection.
-                configChanged = true;
-            }
         }
     }
 
@@ -161,7 +149,9 @@ public class PopClient extends AbstractIncomingMailClient {
      */
     public boolean open() throws IOException, MailException {
         if(!openStarted) {
-            connection.open();
+            connection = networkConnector.open(accountConfig);
+            popProtocol.setConnection(connection);
+            
             // Eat the initial server response
             connection.receive();
             openStarted = true;
@@ -176,7 +166,8 @@ public class PopClient extends AbstractIncomingMailClient {
                 && capabilities != null && capabilities.containsKey("STARTTLS"))
         		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
         	if(popProtocol.executeStartTLS()) {
-        	    connection.startTLS();
+        	    connection = networkConnector.getConnectionAsTLS(connection);
+        	    popProtocol.setConnection(connection);
         	}
         	else {
         	    return false;
@@ -184,7 +175,8 @@ public class PopClient extends AbstractIncomingMailClient {
         }
         else if(capabilities == null && serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE) {
             if(popProtocol.executeStartTLS()) {
-                connection.startTLS();
+                connection = networkConnector.getConnectionAsTLS(connection);
+                popProtocol.setConnection(connection);
             }
         }
         
@@ -212,20 +204,14 @@ public class PopClient extends AbstractIncomingMailClient {
             } catch (Exception exp) { }
         }
         connection.close();
-        
-        if(configChanged) {
-        	// Rebuild the connection to include new settings
-            connection = UtilFactory.getInstance().createConnection(accountConfig);
-            popProtocol = new PopProtocol(connection);
-            configChanged = false;
-        }
+        connection = null;
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MailClient#isConnected()
      */
     public boolean isConnected() {
-        return connection.isConnected();
+        return connection != null && connection.isConnected();
     }
 
     /* (non-Javadoc)

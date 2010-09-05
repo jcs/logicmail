@@ -31,16 +31,14 @@
 package org.logicprobe.LogicMail.util;
 
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 
 public class UtilFactoryBB46 extends UtilFactoryBB42 {
     public UtilFactoryBB46() {
         super();
     }
     
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.util.UtilFactory#createConnection(org.logicprobe.LogicMail.conf.ConnectionConfig)
-     */
-    public Connection createConnection(ConnectionConfig connectionConfig) {
-        return new ConnectionBB46(connectionConfig);
+    public NetworkConnector getNetworkConnector(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
+        return new NetworkConnectorBB46(globalConfig, connectionConfig);
     }
 }

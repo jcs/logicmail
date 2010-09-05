@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.util;
 import java.io.IOException;
 
 import javax.microedition.io.Connector;
-import javax.microedition.io.StreamConnection;
+import javax.microedition.io.SocketConnection;
 
 import net.rim.device.api.servicebook.ServiceBook;
 import net.rim.device.api.servicebook.ServiceRecord;
@@ -43,66 +43,56 @@ import net.rim.device.api.system.RadioInfo;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class ConnectionBB42 extends Connection {
-
+public class NetworkConnectorBB42 extends AbstractNetworkConnector {
+    
     /** Stores transport ServiceBooks if found. Otherwise, null */
     private ServiceRecord srMDS, srWAP2, srWiFi;
     /** Flags indicating the coverage status of each transport */
     protected boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
-
-    /**
-     * Initializes a new connection object.
-     * 
-     * @param connectionConfig Configuration data for the connection
-     */
-    ConnectionBB42(ConnectionConfig connectionConfig) {
-        super(connectionConfig);
+    
+    public NetworkConnectorBB42(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
+        super(globalConfig, connectionConfig);
     }
-
-    protected StreamConnection openStreamConnection() throws IOException {
+    
+    protected SocketConnection openSocketConnection() throws IOException {
         initializeTransportAvailability();
         
-        StringBuffer buf = new StringBuffer();
-        buf.append(useSSL ? "ssl" : "socket");
-        buf.append("://");
-        buf.append(serverName);
-        buf.append(':');
-        buf.append(serverPort);
-        String urlBase = buf.toString();
+        String urlBase = buildConnectionStringBase();
         
-        StreamConnection connection = null;
-        if(((transports & TRANSPORT_WIFI) != 0) && coverageWiFi) {
-            connection = attemptWiFi(urlBase);
-        }
-        if(connection == null && ((transports & TRANSPORT_DIRECT_TCP) != 0) && coverageTCP) {
-            connection = attemptDirectTCP(urlBase);
-        }
-        if(connection == null && ((transports & TRANSPORT_MDS) != 0) && srMDS != null && coverageMDS) {
-            connection = attemptMDS(urlBase);
-        }
-        if(connection == null && ((transports & TRANSPORT_WAP2) != 0) && srWAP2 != null && coverageWAP2) {
-            connection = attemptWAP2(urlBase);
-        }
+        SocketConnection connection = attemptToOpenConnection(urlBase);
         
         return connection;
     }
-
+    
     /**
      * Initializes the ServiceRecord instances for each transport (if available). Otherwise leaves it null.
      * Also determines if sufficient coverage is available for each transport and sets coverage* flags.
      */
     private void initializeTransportAvailability() {
+        ServiceRecord[] records = getServiceRecords();
+
+        checkForKnownRecordTypes(records);
+        
+        initializeCoverage();
+        
+        logAvailableTransports();
+    }
+
+    private ServiceRecord[] getServiceRecords() {
         ServiceBook sb = ServiceBook.getSB();
         ServiceRecord[] records = sb.getRecords();
+        return records;
+    }
 
+    private void checkForKnownRecordTypes(ServiceRecord[] records) {
         for (int i = 0; i < records.length; i++) {
             ServiceRecord myRecord = records[i];
-            String cid, uid;
 
             if (myRecord.isValid() && !myRecord.isDisabled()) {
-                cid = myRecord.getCid().toLowerCase();
-                uid = myRecord.getUid().toLowerCase();
+                String cid = myRecord.getCid().toLowerCase();
+                String uid = myRecord.getUid().toLowerCase();
                 // BES
                 if (cid.indexOf("ippp") != -1 && uid.indexOf("gpmds") == -1) {
                     srMDS = myRecord;
@@ -116,24 +106,6 @@ public class ConnectionBB42 extends Connection {
                     srWAP2 = myRecord;
                 }
             }
-        }
-        
-        initializeCoverage();
-        
-        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-            StringBuffer buf = new StringBuffer();
-            buf.append("Availability: ");
-            buf.append("MDS="); buf.append(srMDS != null);
-            buf.append(", WAP2="); buf.append(srWAP2 != null);
-            buf.append(", WiFi="); buf.append(srWiFi != null);
-            buf.append("\r\n");
-            buf.append("Coverage: ");
-            buf.append("TCP="); buf.append(coverageTCP);
-            buf.append(", MDS="); buf.append(coverageMDS);
-            buf.append(", WAP2="); buf.append(coverageWAP2);
-            buf.append(", WiFi="); buf.append(coverageWiFi);
-            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(),
-                    EventLogger.DEBUG_INFO);
         }
     }
 
@@ -158,63 +130,98 @@ public class ConnectionBB42 extends Connection {
             coverageWiFi = true;
         }
     }
+
+    private void logAvailableTransports() {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("Availability: ");
+            buf.append("MDS=").append(srMDS != null);
+            buf.append(", WAP2=").append(srWAP2 != null);
+            buf.append(", WiFi=").append(srWiFi != null);
+            buf.append("\r\n");
+            buf.append("Coverage: ");
+            buf.append("TCP=").append(coverageTCP);
+            buf.append(", MDS=").append(coverageMDS);
+            buf.append(", WAP2=").append(coverageWAP2);
+            buf.append(", WiFi=").append(coverageWiFi);
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+    }
     
-    private StreamConnection attemptWiFi(String urlBase) {
+    private String buildConnectionStringBase() {
+        StringBuffer buf = new StringBuffer();
+        buf.append(useSSL ? "ssl" : "socket");
+        buf.append("://");
+        buf.append(serverName);
+        buf.append(':');
+        buf.append(serverPort);
+        String urlBase = buf.toString();
+        return urlBase;
+    }
+
+    private SocketConnection attemptToOpenConnection(String urlBase) throws IOException {
+        SocketConnection connection = null;
+        if(((transports & TRANSPORT_WIFI) != 0) && coverageWiFi) {
+            connection = attemptWiFi(urlBase);
+        }
+        if(connection == null && ((transports & TRANSPORT_DIRECT_TCP) != 0) && coverageTCP) {
+            connection = attemptDirectTCP(urlBase);
+        }
+        if(connection == null && ((transports & TRANSPORT_MDS) != 0) && srMDS != null && coverageMDS) {
+            connection = attemptMDS(urlBase);
+        }
+        if(connection == null && ((transports & TRANSPORT_WAP2) != 0) && srWAP2 != null && coverageWAP2) {
+            connection = attemptWAP2(urlBase);
+        }
+        return connection;
+    }
+    
+    private SocketConnection attemptWiFi(String urlBase) throws IOException {
         String connectStr = urlBase + ";interface=wifi";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting WiFi".getBytes(),
                     EventLogger.DEBUG_INFO);
         }
-        StreamConnection socket = openSocket(connectStr);
+        SocketConnection socket = openSocket(connectStr);
         return socket;
     }
 
-    private StreamConnection attemptDirectTCP(String urlBase) {
+    private SocketConnection attemptDirectTCP(String urlBase) throws IOException {
         String connectStr = urlBase + ";deviceside=true";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting Direct TCP".getBytes(),
                     EventLogger.DEBUG_INFO);
         }
-        StreamConnection socket = openSocket(connectStr);
+        SocketConnection socket = openSocket(connectStr);
         return socket;
     }
 
-    private StreamConnection attemptMDS(String urlBase) {
+    private SocketConnection attemptMDS(String urlBase) throws IOException {
         String connectStr = urlBase + ";deviceside=false";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting MDS".getBytes(),
                     EventLogger.DEBUG_INFO);
         }
-        StreamConnection socket = openSocket(connectStr);
+        SocketConnection socket = openSocket(connectStr);
         return socket;
     }
 
-    private StreamConnection attemptWAP2(String urlBase) {
+    private SocketConnection attemptWAP2(String urlBase) throws IOException {
         String connectStr = urlBase + ";deviceside=true;ConnectionUID=" + srWAP2.getUid();
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting WAP2".getBytes(),
                     EventLogger.DEBUG_INFO);
         }
-        StreamConnection socket = openSocket(connectStr);
+        SocketConnection socket = openSocket(connectStr);
         return socket;
     }
 
-    private StreamConnection openSocket(String connectStr) {
-        StreamConnection socket;
-        try {
-            socket = (StreamConnection) Connector.open(
-                    connectStr,
-                    Connector.READ_WRITE, true);
-            if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
-                String msg = "Opened connection:\r\n" + connectStr + "\r\n";
-                EventLogger.logEvent(AppInfo.GUID, msg.getBytes(),
-                        EventLogger.INFORMATION);
-            }
-            setConnectionUrl(connectStr);
-        } catch (IOException e) {
-            EventLogger.logEvent(AppInfo.GUID, e.getMessage().getBytes(), EventLogger.ERROR);
-            socket = null;
-        }
+    private SocketConnection openSocket(String connectStr) throws IOException {
+        SocketConnection socket = (SocketConnection) Connector.open(
+                connectStr,
+                Connector.READ_WRITE, true);
+        setConnectionUrl(connectStr);
         return socket;
     }
 }

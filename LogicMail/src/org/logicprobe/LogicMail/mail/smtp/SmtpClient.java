@@ -43,7 +43,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.UtilFactory;
+import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.MailMessageParser;
 
 import java.io.IOException;
@@ -54,17 +54,17 @@ import java.util.Hashtable;
  * Implements an SMTP client
  */
 public class SmtpClient implements OutgoingMailClient {
+    private final NetworkConnector networkConnector;
     private final MailSettings mailSettings;
     private final GlobalConfig globalConfig;
     private final OutgoingConfig outgoingConfig;
+    private final SmtpProtocol smtpProtocol;
     private String hostname;
     private Connection connection;
-    private SmtpProtocol smtpProtocol;
     private boolean isFresh;
     private boolean openStarted;
     private String username;
     private String password;
-    private boolean configChanged;
     
     /**
      * Table of supported server capabilities
@@ -78,12 +78,12 @@ public class SmtpClient implements OutgoingMailClient {
         };
 
     /** Creates a new instance of SmtpClient */
-    public SmtpClient(GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
+    public SmtpClient(NetworkConnector networkConnector, GlobalConfig globalConfig, OutgoingConfig outgoingConfig) {
+        this.networkConnector = networkConnector;
     	this.globalConfig = globalConfig;
         this.outgoingConfig = outgoingConfig;
         this.mailSettings = MailSettings.getInstance();
-        connection = UtilFactory.getInstance().createConnection(outgoingConfig);
-        smtpProtocol = new SmtpProtocol(connection);
+        smtpProtocol = new SmtpProtocol();
 
         if (outgoingConfig.getUseAuth() > 0) {
             username = outgoingConfig.getServerUser();
@@ -94,7 +94,6 @@ public class SmtpClient implements OutgoingMailClient {
         }
 
         openStarted = false;
-        configChanged = false;
         mailSettings.addMailSettingsListener(mailSettingsListener);
     }
 
@@ -113,23 +112,13 @@ public class SmtpClient implements OutgoingMailClient {
             // Refresh authentication information from the configuration
             username = outgoingConfig.getServerUser();
             password = outgoingConfig.getServerPass();
-
-            if(!isConnected()) {
-                // Rebuild the connection to include new settings
-                connection = UtilFactory.getInstance().createConnection(outgoingConfig);
-                smtpProtocol = new SmtpProtocol(connection);
-            }
-            else {
-                // Set a flag to make sure we rebuild the Connection object
-                // the next time we close the connection.
-                configChanged = true;
-            }
         }
     }
 
     public boolean open() throws IOException, MailException {
         if (!openStarted) {
-            connection.open();
+            connection = networkConnector.open(outgoingConfig);
+            smtpProtocol.setConnection(connection);
 
             // Eat the initial server response
             connection.receive();
@@ -153,7 +142,8 @@ public class SmtpClient implements OutgoingMailClient {
         if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey("STARTTLS"))
         		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
         	smtpProtocol.executeStartTLS();
-        	connection.startTLS();
+        	connection = networkConnector.getConnectionAsTLS(connection);
+        	smtpProtocol.setConnection(connection);
         	
         	// Re-execute the EHLO command, since some servers require this
         	capabilities = smtpProtocol.executeExtendedHello(hostname);
@@ -181,13 +171,7 @@ public class SmtpClient implements OutgoingMailClient {
         }
 
         connection.close();
-
-        if (configChanged) {
-            // Rebuild the connection to include new settings
-            connection = UtilFactory.getInstance().createConnection(outgoingConfig);
-            smtpProtocol = new SmtpProtocol(connection);
-            configChanged = false;
-        }
+        connection = null;
     }
 
     public ConnectionConfig getConnectionConfig() {
@@ -195,7 +179,7 @@ public class SmtpClient implements OutgoingMailClient {
     }
 
     public boolean isConnected() {
-        return connection.isConnected();
+        return connection != null && connection.isConnected();
     }
 
     public String getUsername() {
