@@ -173,6 +173,44 @@ public class ImapResponseLineTesterTest extends TestCase {
         assertEquals("Case 7", 2, trimCount);
     }
     
+    public void testMultipleChecks() {
+        byte[] input = "Hello World\r\n".getBytes();
+        int responseLength = instance.checkForCompleteResponse(input, 4);
+        assertEquals("Case 1", -1, responseLength);
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        int trimCount = instance.trimCount();
+        assertEquals("Case 1", input.length, responseLength);
+        assertEquals("Case 1", 2, trimCount);
+        
+        input = "Hello World\r\n".getBytes();
+        responseLength = instance.checkForCompleteResponse(input, input.length - 1);
+        assertEquals("Case 2", -1, responseLength);
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        trimCount = instance.trimCount();
+        assertEquals("Case 2", input.length, responseLength);
+        assertEquals("Case 2", 2, trimCount);
+    }
+
+    public void testMultipleChecksWithLiteral() {
+        byte[] input = "Hello {33}\r\nWorld Of Fun And Stuff And Things\r\n".getBytes();
+        int responseLength = instance.checkForCompleteResponse(input, 7);
+        assertEquals("Hello {", -1, responseLength);
+
+        responseLength = instance.checkForCompleteResponse(input, 9);
+        assertEquals("Hello {33", -1, responseLength);
+
+        responseLength = instance.checkForCompleteResponse(input, 10);
+        assertEquals("Hello {33}", -1, responseLength);
+        
+        responseLength = instance.checkForCompleteResponse(input, 12);
+        assertEquals("Hello {33}\\r\\n", -1, responseLength);
+        
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        assertEquals("Complete", input.length, responseLength);
+        int trimCount = instance.trimCount();
+        assertEquals("Complete", 2, trimCount);
+    }
+    
     public Test suite() {
         TestSuite suite = new TestSuite("ImapResponseLineTester");
 
@@ -184,6 +222,10 @@ public class ImapResponseLineTesterTest extends TestCase {
         { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testLinesWithLiteral(); }}));
         suite.addTest(new ImapResponseLineTesterTest("linesWithMalformedLiteral", new TestMethod()
         { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testLinesWithMalformedLiteral(); }}));
+        suite.addTest(new ImapResponseLineTesterTest("multipleChecks", new TestMethod()
+        { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testMultipleChecks(); }}));
+        suite.addTest(new ImapResponseLineTesterTest("multipleChecksWithLiteral", new TestMethod()
+        { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testMultipleChecksWithLiteral(); }}));
 
         return suite;
     }
