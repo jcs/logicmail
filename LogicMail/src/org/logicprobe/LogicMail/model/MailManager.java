@@ -68,51 +68,12 @@ public class MailManager {
 		mailRootNode = new MailRootNode();
 
 		// Make sure the initial configuration is loaded
-		mailSettings_MailSettingsSaved(null);
+		updateMailModelAccountList();
 		
 		// Register a listener for configuration changes
 		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
 			public void mailSettingsSaved(MailSettingsEvent e) {
-			    // This logic is rather crude, and will trigger a full refresh
-			    // under a wide variety of circumstances.  Its major intent is
-			    // to avoid a refresh in a few situations where a minor
-			    // configuration change affects future behavior and not
-			    // current state.
-			    
-			    boolean refreshAccounts = false;
-			    // Trigger a refresh if either the account or outgoing list has changed
-			    int listChange = e.getListChange();
-			    if((listChange & MailSettingsEvent.LIST_CHANGED_ACCOUNT) != 0
-			            || (listChange & MailSettingsEvent.LIST_CHANGED_OUTGOING) != 0) {
-			        refreshAccounts = true;
-			    }
-			    
-			    // Trigger a refresh if certain account settings have changed
-			    if(!refreshAccounts) {
-			        int num = mailSettings.getNumAccounts();
-			        for(int i=0; i<num; i++) {
-			            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-			            int accountChange = e.getConfigChange(accountConfig);
-			            if((accountChange & AccountConfig.CHANGE_TYPE_NAME) != 0
-			                    || (accountChange & AccountConfig.CHANGE_TYPE_MAILBOXES) != 0
-                                || (accountChange & AccountConfig.CHANGE_TYPE_OUTGOING) != 0) {
-			                refreshAccounts = true;
-			                break;
-			            }
-			            OutgoingConfig outgoingConfig = accountConfig.getOutgoingConfig();
-			            if(outgoingConfig != null
-			                    && (e.getConfigChange(outgoingConfig) & OutgoingConfig.CHANGE_TYPE_CONNECTION) != 0) {
-                            refreshAccounts = true;
-                            break;
-			            }
-			        }
-			    }
-			    
-			    // Trigger a refresh if appropriate
-			    if(refreshAccounts) {
-    			    mailSettings_MailSettingsSaved(e);
-    				refreshMailboxTypes();
-			    }
+			    mailSettings_MailSettingsSaved(e);
 			}
 		});
 		
@@ -195,93 +156,147 @@ public class MailManager {
 		return outboxMailboxNode;
 	}
 
-	/**
-	 * Called when the account configuration has changed,
-	 * to cause the mail model to update its account list.
-	 */
-	private synchronized void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
-		// Build the new account list from the configuration and
-		// the existing account nodes.  This works by checking to see
-		// if an account already exists, and only creating new nodes
-		// for new accounts.
-		NetworkAccountNode[] existingAccounts = mailRootNode.getNetworkAccounts();
-		Vector newAccounts = new Vector();
-		
-		int num = mailSettings.getNumAccounts();
-		boolean accountExists;
-		for(int i=0; i<num; i++) {
-			AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-			accountExists = false;
-			for(int j=0; j<existingAccounts.length; j++) {
-				if(accountConfig == existingAccounts[j].getAccountConfig()) {
-					accountExists = true;
-					newAccounts.addElement(existingAccounts[j]);
-					break;
-				}
-			}
-			if(!accountExists) {
-				AccountNode newAccountNode = new NetworkAccountNode((NetworkMailStore) MailFactory.createMailStore(accountConfig));
-				newAccountNode.load();
-				newAccounts.addElement(newAccountNode);
-			}
-		}
-
-		// Remove and replace all account nodes from the root node.
-		// This approach is taken to preserve any ordering which may
-		// have been changed in the configuration.
-		for(int i=0; i<existingAccounts.length; i++) {
-			mailRootNode.removeAccount(existingAccounts[i]);
-		}
-		num = newAccounts.size();
-		for(int i=0; i<num; i++) {
-			mailRootNode.addAccount((NetworkAccountNode)newAccounts.elementAt(i));
-		}
-		
-		// Clear deleted accounts from the MailFactory and persistent storage
-		for(int i=0; i<existingAccounts.length; i++) {
-			boolean accountDeleted = true;
-			int size = newAccounts.size();
-			for(int j=0; j<size; j++) {
-				AccountNode newAccount = (AccountNode)newAccounts.elementAt(j);
-				if(newAccount == existingAccounts[i]) {
-					accountDeleted = false;
-					break;
-				}
-			}
-			if(accountDeleted) {
-				existingAccounts[i].removeSavedData();
-				MailFactory.clearMailStore(existingAccounts[i].getAccountConfig());
-			}
-		}
-		
-		// Get the newly updated account list, and determine whether
-		// we need to update any mail senders.
-		existingAccounts = mailRootNode.getNetworkAccounts();
-		for(int i=0; i<existingAccounts.length; i++) {
-		    NetworkAccountNode networkAccount = existingAccounts[i];
-			AbstractMailSender mailSender = networkAccount.getMailSender();
-			OutgoingConfig outgoingConfig = networkAccount.getAccountConfig().getOutgoingConfig();
-			if(outgoingConfig == null) {
-				if(mailSender != null) {
-					mailSender.shutdown(false);
-				}
-				networkAccount.setMailSender(null);
-			}
-			else if((mailSender instanceof NetworkMailSender
-			       &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
-				mailSender.shutdown(false);
-				networkAccount.setMailSender(MailFactory.createMailSender(networkAccount.getAccountConfig().getOutgoingConfig()));
-			}
-			else if(mailSender == null) {
-			    networkAccount.setMailSender(MailFactory.createMailSender(networkAccount.getAccountConfig().getOutgoingConfig()));
-			}
-		}
-		
-		//TODO: Clear deleted senders from the MailFactory
-		
-		// Notify any listeners
-		fireMailConfigurationChanged();
+	private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
+        // This logic is rather crude, and will trigger a full refresh
+        // under a wide variety of circumstances.  Its major intent is
+        // to avoid a refresh in a few situations where a minor
+        // configuration change affects future behavior and not
+        // current state.
+        
+        boolean shouldRefreshAccounts =
+            connectionListChanged(e) || accountChangeRequiringRefresh(e);
+        
+        // Trigger a refresh if appropriate
+        if(shouldRefreshAccounts) {
+            updateMailModelAccountList();
+            refreshMailboxTypes();
+        }
 	}
+
+    private boolean connectionListChanged(MailSettingsEvent e) {
+        int listChange = e.getListChange();
+        return (listChange & MailSettingsEvent.LIST_CHANGED_ACCOUNT) != 0
+                || (listChange & MailSettingsEvent.LIST_CHANGED_OUTGOING) != 0;
+    }
+	
+    private boolean accountChangeRequiringRefresh(MailSettingsEvent e) {
+        boolean refreshRequired = false;
+        int num = mailSettings.getNumAccounts();
+        for(int i=0; i<num; i++) {
+            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+            int accountChange = e.getConfigChange(accountConfig);
+            if((accountChange & AccountConfig.CHANGE_TYPE_NAME) != 0
+                    || (accountChange & AccountConfig.CHANGE_TYPE_MAILBOXES) != 0
+                    || (accountChange & AccountConfig.CHANGE_TYPE_OUTGOING) != 0) {
+                refreshRequired = true;
+                break;
+            }
+            OutgoingConfig outgoingConfig = accountConfig.getOutgoingConfig();
+            if(outgoingConfig != null
+                    && (e.getConfigChange(outgoingConfig) & OutgoingConfig.CHANGE_TYPE_CONNECTION) != 0) {
+                refreshRequired = true;
+                break;
+            }
+        }
+        return refreshRequired;
+    }
+    
+    /**
+     * Called when the account configuration has changed,
+     * to cause the mail model to update its account list.
+     */
+    private synchronized void updateMailModelAccountList() {
+        // Build the new account list from the configuration and
+        // the existing account nodes.  This works by checking to see
+        // if an account already exists, and only creating new nodes
+        // for new accounts.
+        NetworkAccountNode[] existingAccounts = mailRootNode.getNetworkAccounts();
+        NetworkAccountNode[] newAccounts = getNewNetworkAccountNodes(existingAccounts);
+
+        // Remove and replace all account nodes from the root node.
+        // This approach is taken to preserve any ordering which may
+        // have been changed in the configuration.
+        mailRootNode.removeAccounts(existingAccounts);
+        mailRootNode.addAccounts(newAccounts);
+
+        // Clear deleted accounts from the MailFactory and persistent storage
+        clearDeletedAccounts(existingAccounts, newAccounts);
+
+        // Get the newly updated account list, and determine whether
+        // we need to update any mail senders.
+        NetworkAccountNode[] updatedAccounts = mailRootNode.getNetworkAccounts();
+        updateAccountMailSenders(updatedAccounts);
+
+        //TODO: Clear deleted senders from the MailFactory
+
+        // Notify any listeners
+        fireMailConfigurationChanged();
+    }
+
+	private NetworkAccountNode[] getNewNetworkAccountNodes(NetworkAccountNode[] existingAccounts) {
+	    Vector newAccounts = new Vector();
+
+	    int num = mailSettings.getNumAccounts();
+	    boolean accountExists;
+	    for(int i=0; i<num; i++) {
+	        AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+	        accountExists = false;
+	        for(int j=0; j<existingAccounts.length; j++) {
+	            if(accountConfig == existingAccounts[j].getAccountConfig()) {
+	                accountExists = true;
+	                newAccounts.addElement(existingAccounts[j]);
+	                break;
+	            }
+	        }
+	        if(!accountExists) {
+	            AccountNode newAccountNode = new NetworkAccountNode((NetworkMailStore) MailFactory.createMailStore(accountConfig));
+	            newAccountNode.load();
+	            newAccounts.addElement(newAccountNode);
+	        }
+	    }
+	    NetworkAccountNode[] newAccountsArray = new NetworkAccountNode[newAccounts.size()];
+	    newAccounts.copyInto(newAccountsArray);
+	    return newAccountsArray;
+	}
+	
+    private void clearDeletedAccounts(NetworkAccountNode[] existingAccounts, NetworkAccountNode[] newAccounts) {
+        for(int i=0; i<existingAccounts.length; i++) {
+            boolean accountDeleted = true;
+            for(int j=0; j<newAccounts.length; j++) {
+                NetworkAccountNode newAccount = newAccounts[j];
+                if(newAccount == existingAccounts[i]) {
+                    accountDeleted = false;
+                    break;
+                }
+            }
+            if(accountDeleted) {
+                existingAccounts[i].removeSavedData();
+                MailFactory.clearMailStore(existingAccounts[i].getAccountConfig());
+            }
+        }
+    }
+
+    private void updateAccountMailSenders(NetworkAccountNode[] updatedAccounts) {
+        for(int i=0; i<updatedAccounts.length; i++) {
+            NetworkAccountNode networkAccount = updatedAccounts[i];
+            AbstractMailSender mailSender = networkAccount.getMailSender();
+            OutgoingConfig outgoingConfig = networkAccount.getAccountConfig().getOutgoingConfig();
+            if(outgoingConfig == null) {
+                if(mailSender != null) {
+                    mailSender.shutdown(false);
+                }
+                networkAccount.setMailSender(null);
+            }
+            else if((mailSender instanceof NetworkMailSender
+                    &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
+                mailSender.shutdown(false);
+                networkAccount.setMailSender(MailFactory.createMailSender(networkAccount.getAccountConfig().getOutgoingConfig()));
+            }
+            else if(mailSender == null) {
+                networkAccount.setMailSender(MailFactory.createMailSender(networkAccount.getAccountConfig().getOutgoingConfig()));
+            }
+        }
+    }
 
 	/**
 	 * Handle connection state changes by updating the
