@@ -8,8 +8,8 @@ import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
-import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
@@ -567,14 +567,9 @@ public class AccountConfigWizard extends WizardController {
         mailSettings.saveSettings();
         
         // Find the newly created account, and trigger a folder refresh (if applicable)
-        AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
-        for(int i=0; i<accounts.length; i++) {
-            if(accounts[i].getAccountConfig() == accountConfig) {
-                if(accounts[i].hasFolders()) {
-                    accounts[i].refreshMailboxes();
-                }
-                break;
-            }
+        NetworkAccountNode newAccount = MailManager.getInstance().getMailRootNode().findAccountForConfig(accountConfig);
+        if(newAccount != null && newAccount.hasFolders()) {
+            newAccount.refreshMailboxes();
         }
     }
 

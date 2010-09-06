@@ -45,6 +45,7 @@ import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
 import org.logicprobe.LogicMail.mail.MailFactory;
 import org.logicprobe.LogicMail.mail.NetworkMailSender;
+import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
@@ -124,14 +125,10 @@ public class MailManager {
 			public void mailConnectionLogin(MailConnectionLoginEvent e) { }
 		});
 		
-		// Refresh data from local account nodes
-		AccountNode[] accounts = mailRootNode.getAccounts();
-		for(int i=0; i<accounts.length; i++) {
-			if(accounts[i].getStatus() == AccountNode.STATUS_LOCAL) {
-				accounts[i].refreshMailboxes();
-				accounts[i].refreshMailboxStatus();
-			}
-		}
+		// Refresh data from local account node
+		LocalAccountNode localAccount = mailRootNode.getLocalAccount();
+		localAccount.refreshMailboxes();
+		localAccount.refreshMailboxStatus();
 
 		MailboxNode[] localMailboxes = mailRootNode.getLocalAccount().getRootMailbox().getMailboxes();
 		for(int i=0; i<localMailboxes.length; i++) {
@@ -207,15 +204,8 @@ public class MailManager {
 		// the existing account nodes.  This works by checking to see
 		// if an account already exists, and only creating new nodes
 		// for new accounts.
-		AccountNode[] existingAccounts = mailRootNode.getAccounts();
+		NetworkAccountNode[] existingAccounts = mailRootNode.getNetworkAccounts();
 		Vector newAccounts = new Vector();
-		
-		// Prepopulate the new account list with the local accounts
-		for(int i=0; i < existingAccounts.length; i++) {
-			if(existingAccounts[i].getStatus() == AccountNode.STATUS_LOCAL) {
-				newAccounts.addElement(existingAccounts[i]);
-			}
-		}
 		
 		int num = mailSettings.getNumAccounts();
 		boolean accountExists;
@@ -230,7 +220,8 @@ public class MailManager {
 				}
 			}
 			if(!accountExists) {
-				AccountNode newAccountNode = new AccountNode(MailFactory.createMailStore(accountConfig));
+				AccountNode newAccountNode = new NetworkAccountNode((NetworkMailStore) MailFactory.createMailStore(accountConfig));
+				newAccountNode.load();
 				newAccounts.addElement(newAccountNode);
 			}
 		}
@@ -243,7 +234,7 @@ public class MailManager {
 		}
 		num = newAccounts.size();
 		for(int i=0; i<num; i++) {
-			mailRootNode.addAccount((AccountNode)newAccounts.elementAt(i));
+			mailRootNode.addAccount((NetworkAccountNode)newAccounts.elementAt(i));
 		}
 		
 		// Clear deleted accounts from the MailFactory and persistent storage
@@ -265,25 +256,24 @@ public class MailManager {
 		
 		// Get the newly updated account list, and determine whether
 		// we need to update any mail senders.
-		existingAccounts = mailRootNode.getAccounts();
+		existingAccounts = mailRootNode.getNetworkAccounts();
 		for(int i=0; i<existingAccounts.length; i++) {
-			if(existingAccounts[i].getStatus() != AccountNode.STATUS_LOCAL) {
-				AbstractMailSender mailSender = existingAccounts[i].getMailSender();
-				OutgoingConfig outgoingConfig = existingAccounts[i].getAccountConfig().getOutgoingConfig();
-				if(outgoingConfig == null) {
-					if(mailSender != null) {
-						mailSender.shutdown(false);
-					}
-					existingAccounts[i].setMailSender(null);
-				}
-				else if((mailSender instanceof NetworkMailSender
-				       &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
+		    NetworkAccountNode networkAccount = existingAccounts[i];
+			AbstractMailSender mailSender = networkAccount.getMailSender();
+			OutgoingConfig outgoingConfig = networkAccount.getAccountConfig().getOutgoingConfig();
+			if(outgoingConfig == null) {
+				if(mailSender != null) {
 					mailSender.shutdown(false);
-					existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
 				}
-				else if(mailSender == null) {
-					existingAccounts[i].setMailSender(MailFactory.createMailSender(existingAccounts[i].getAccountConfig().getOutgoingConfig()));
-				}
+				networkAccount.setMailSender(null);
+			}
+			else if((mailSender instanceof NetworkMailSender
+			       &&((NetworkMailSender)mailSender).getOutgoingConfig() != outgoingConfig)) {
+				mailSender.shutdown(false);
+				networkAccount.setMailSender(MailFactory.createMailSender(networkAccount.getAccountConfig().getOutgoingConfig()));
+			}
+			else if(mailSender == null) {
+			    networkAccount.setMailSender(MailFactory.createMailSender(networkAccount.getAccountConfig().getOutgoingConfig()));
 			}
 		}
 		
@@ -301,14 +291,8 @@ public class MailManager {
 	 */
 	private void mailConnectionManager_MailConnectionStateChanged(MailConnectionStateEvent e) {
 		// Find the account node associated with this event
-		AccountNode[] accounts = mailRootNode.getAccounts();
-		AccountNode matchingAccount = null;
-		for(int i=0; i<accounts.length; i++) {
-			if(e.getConnectionConfig().equals(accounts[i].getAccountConfig())) {
-				matchingAccount = accounts[i];
-				break;
-			}
-		}
+		AccountNode matchingAccount = mailRootNode.findAccountForConfig(
+		        (AccountConfig)e.getConnectionConfig());
 		
 		// Update account state
 		if(matchingAccount != null) {

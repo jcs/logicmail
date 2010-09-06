@@ -188,9 +188,9 @@ public class MessageNodeWriter {
 		    // Put the outgoing flag
 		    table.put(HEADER_KEY_OUTGOING, Boolean.TRUE);
 		    
-		    if(outgoingMessage.getSendingAccount() != null && outgoingMessage.getSendingAccount().getAccountConfig() != null) {
+		    if(outgoingMessage.getSendingAccount() != null && outgoingMessage.getSendingAccount() instanceof NetworkAccountNode) {
 		        table.put(HEADER_KEY_OUTGOING_SENDING_ACCOUNT,
-		                new Long(outgoingMessage.getSendingAccount().getAccountConfig().getUniqueId()));
+		                new Long(((NetworkAccountNode)outgoingMessage.getSendingAccount()).getAccountConfig().getUniqueId()));
 		    }
 		    if(outgoingMessage.getMailSender() != null && outgoingMessage.getMailSender() instanceof NetworkMailSender) {
 		        NetworkMailSender mailSender = (NetworkMailSender)outgoingMessage.getMailSender();
@@ -202,8 +202,8 @@ public class MessageNodeWriter {
 		    
 		    if(outgoingMessage.getReplyToAccount() != null) {
 	            AccountNode replyToAccount = outgoingMessage.getReplyToAccount();
-	            if(replyToAccount.getAccountConfig() != null) {
-	                table.put(HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT, new Long(replyToAccount.getAccountConfig().getUniqueId()));
+	            if(replyToAccount instanceof NetworkAccountNode) {
+	                table.put(HEADER_KEY_OUTGOING_REPLYTO_ACCOUNT, new Long(((NetworkAccountNode)replyToAccount).getAccountConfig().getUniqueId()));
 	            }
 		    }
 		    

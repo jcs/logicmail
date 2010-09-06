@@ -77,12 +77,12 @@ import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 import org.logicprobe.LogicMail.message.VideoPart;
-import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
@@ -99,7 +99,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     private int composeType = -1;
     private String initialRecipient;
     private MessageNode sourceMessageNode;
-    private AccountNode accountNode;
+    private NetworkAccountNode accountNode;
     private AccountConfig accountConfig;
     private UnicodeNormalizer unicodeNormalizer;
     
@@ -169,7 +169,7 @@ public class CompositionScreen extends AbstractScreenProvider {
      *
      * @param accountNode Account node
      */
-    public CompositionScreen(AccountNode accountNode) {
+    public CompositionScreen(NetworkAccountNode accountNode) {
         this.accountNode = accountNode;
         this.accountConfig = accountNode.getAccountConfig();
         this.identityConfig = accountConfig.getIdentityConfig();
@@ -184,7 +184,7 @@ public class CompositionScreen extends AbstractScreenProvider {
      * @param accountNode Account node
      * @param recipient Message recipient address to pre-populate the "To" field with
      */
-    public CompositionScreen(AccountNode accountNode, String recipient) {
+    public CompositionScreen(NetworkAccountNode accountNode, String recipient) {
     	this(accountNode);
     	this.initialRecipient = recipient;
     }
@@ -199,7 +199,7 @@ public class CompositionScreen extends AbstractScreenProvider {
      * @param composeType Type of message we are creating
      */
     public CompositionScreen(
-    		AccountNode accountNode,
+            NetworkAccountNode accountNode,
     		MessageNode messageNode,
     		int composeType) {
         this.accountNode = accountNode;

@@ -51,6 +51,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 
 /**
@@ -190,12 +191,15 @@ public class MessageActions {
         menu.add(propertiesItem);
         
         if(!unloaded) {
-            if(accountNode.hasMailSender()) {
-                menu.add(replyItem);
-                if(accountNode.hasIdentity()) {
-                    menu.add(replyAllItem);
+            if(accountNode instanceof NetworkAccountNode) {
+                NetworkAccountNode networkAccount = (NetworkAccountNode)accountNode;
+                if(networkAccount.hasMailSender()) {
+                    menu.add(replyItem);
+                    if(networkAccount.hasIdentity()) {
+                        menu.add(replyAllItem);
+                    }
+                    menu.add(forwardItem);
                 }
-                menu.add(forwardItem);
             }
         }
         
@@ -263,16 +267,14 @@ public class MessageActions {
     	// Build a list of all the accounts that have this mailbox
     	// configured as their drafts folder, and have a mail sender
     	Vector matchingAccounts = new Vector();
-    	AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+    	NetworkAccountNode[] accounts = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
 
     	for(int i=0; i<accounts.length; i++) {
     	    if(accounts[i].hasMailSender()) {
         		AccountConfig accountConfig = accounts[i].getAccountConfig();
-        		if(accountConfig != null) {
-        			if(accountConfig.getDraftMailbox() == messageNode.getParent()) {
-        				matchingAccounts.addElement(accounts[i]);
-        			}
-        		}
+    			if(accountConfig.getDraftMailbox() == messageNode.getParent()) {
+    				matchingAccounts.addElement(accounts[i]);
+    			}
     	    }
     	}
 
@@ -281,7 +283,7 @@ public class MessageActions {
     	// user to select from.
     	if(matchingAccounts.size() == 0) {
         	for(int i=0; i<accounts.length; i++) {
-        		if(accounts[i].hasMailSender() && accounts[i].getAccountConfig() != null) {
+        		if(accounts[i].hasMailSender()) {
     				matchingAccounts.addElement(accounts[i]);
         		}
         	}
@@ -289,10 +291,10 @@ public class MessageActions {
     	
     	// Select the account node that matches this mailbox, prompting the
     	// user if necessary.
-    	AccountNode account;
+    	NetworkAccountNode account;
     	int size = matchingAccounts.size();
     	if(size > 1) {
-    		AccountNode[] choices = new AccountNode[size];
+    	    NetworkAccountNode[] choices = new NetworkAccountNode[size];
     		matchingAccounts.copyInto(choices);
         	int result = Dialog.ask(
     			resources.getString(LogicMailResource.MAILBOX_DRAFT_MULTIPLE_ACCOUNTS),
@@ -305,7 +307,7 @@ public class MessageActions {
         	}
     	}
     	else if(size == 1) {
-    		account = (AccountNode)matchingAccounts.elementAt(0);
+    		account = (NetworkAccountNode)matchingAccounts.elementAt(0);
     	}
     	else {
     	    Dialog.alert(resources.getString(LogicMailResource.MESSAGE_NO_ACCOUNTS_HAVE_SENDERS));
@@ -370,7 +372,7 @@ public class MessageActions {
      */
     public void replyMessage(MessageNode messageNode) {
         if(messageNode.hasMessageContent()) {
-            navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, false);
+            navigationController.displayCompositionReply((NetworkAccountNode)messageNode.getParent().getParentAccount(), messageNode, false);
         }
     }
     
@@ -381,7 +383,7 @@ public class MessageActions {
      */
     public void replyAllMessage(MessageNode messageNode) {
         if(messageNode.hasMessageContent()) {
-            navigationController.displayCompositionReply(messageNode.getParent().getParentAccount(), messageNode, true);
+            navigationController.displayCompositionReply((NetworkAccountNode)messageNode.getParent().getParentAccount(), messageNode, true);
         }
     }
     
@@ -392,7 +394,7 @@ public class MessageActions {
      */
     public void forwardMessage(MessageNode messageNode) {
         if(messageNode.hasMessageContent()) {
-            navigationController.displayCompositionForward(messageNode.getParent().getParentAccount(), messageNode);
+            navigationController.displayCompositionForward((NetworkAccountNode)messageNode.getParent().getParentAccount(), messageNode);
         }
     }
     

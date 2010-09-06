@@ -62,6 +62,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.model.Node;
 import org.logicprobe.LogicMail.model.OutboxMailboxNode;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
@@ -382,16 +383,16 @@ public class MailHomeScreen extends AbstractScreenProvider {
     private void disconnectItemHandler(MailHomeTreeNode treeNode) {
         AccountNode accountNode = getAccountForTreeNode(treeNode);
 
-        if(accountNode != null) {
-            accountNode.requestDisconnect(false);
+        if(accountNode instanceof NetworkAccountNode) {
+            ((NetworkAccountNode)accountNode).requestDisconnect(false);
         }
     }
 
     private void compositionItemHandler(MailHomeTreeNode treeNode) {
         AccountNode accountNode = getAccountForTreeNode(treeNode);
 
-        if(accountNode != null && accountNode.getAccountConfig() != null) {
-            navigationController.displayComposition(accountNode);
+        if(accountNode instanceof NetworkAccountNode) {
+            navigationController.displayComposition((NetworkAccountNode)accountNode);
         }
     }
 
@@ -467,7 +468,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
         if(visible && firstVisible) {
             firstVisible = false;
             // Check to see if there are no configured accounts
-            if(mailRootNode.getAccounts().length <= 1) {
+            if(mailRootNode.getNetworkAccounts().length == 0) {
                 navigationController.displayAccountConfigurationWizard();
             }
         }
@@ -480,7 +481,8 @@ public class MailHomeScreen extends AbstractScreenProvider {
         MailHomeTreeNode treeNode = (MailHomeTreeNode)treeField.getCookie(treeField.getCurrentNode());
         if(treeNode.node instanceof MailboxNode) {
             menu.add(selectFolderItem);
-            if(((MailboxNode)treeNode.node).getParentAccount().hasMailSender()) {
+            AccountNode parentAccount = ((MailboxNode)treeNode.node).getParentAccount();
+            if(parentAccount instanceof NetworkAccountNode && ((NetworkAccountNode)parentAccount).hasMailSender()) {
                 menu.add(compositionItem);
             }
             if(treeNode.node instanceof OutboxMailboxNode
@@ -496,7 +498,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
             if(accountNode.hasFolders()) {
                 menu.add(refreshFoldersItem);
             }
-            if(accountNode.hasMailSender()) {
+            if(accountNode instanceof NetworkAccountNode && ((NetworkAccountNode)accountNode).hasMailSender()) {
                 menu.add(compositionItem);
             }
             if(accountNode.getStatus() == AccountNode.STATUS_ONLINE) {
@@ -591,8 +593,8 @@ public class MailHomeScreen extends AbstractScreenProvider {
 
             // Check whether we can enable composition
             MailHomeTreeNode treeNode = (MailHomeTreeNode)treeField.getCookie(curNode);
-            if(treeNode.node instanceof AccountNode) {
-                if(((AccountNode)treeNode.node).hasMailSender()) {
+            if(treeNode.node instanceof NetworkAccountNode) {
+                if(((NetworkAccountNode)treeNode.node).hasMailSender()) {
                     enableCompose = true;
                 }
                 else {
@@ -600,7 +602,8 @@ public class MailHomeScreen extends AbstractScreenProvider {
                 }
             }
             else if(treeNode.node instanceof MailboxNode) {
-                if(((MailboxNode)treeNode.node).getParentAccount().hasMailSender()) {
+                AccountNode parentAccount = ((MailboxNode)treeNode.node).getParentAccount();
+                if(parentAccount instanceof NetworkAccountNode && ((NetworkAccountNode)parentAccount).hasMailSender()) {
                     enableCompose = true;
                 }
                 else {

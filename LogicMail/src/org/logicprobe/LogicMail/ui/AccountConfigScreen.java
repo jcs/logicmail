@@ -59,6 +59,7 @@ import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 /**
  * Account configuration screen
@@ -452,7 +453,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         Vector accountNodeVector = new Vector();
         for(int i=0; i<accountNodes.length; i++) {
             if(accountNodes[i].getStatus() == AccountNode.STATUS_LOCAL ||
-                    accountNodes[i].getAccountConfig() == accountConfig) {
+                    ((NetworkAccountNode)accountNodes[i]).getAccountConfig() == accountConfig) {
                 accountNodeVector.addElement(accountNodes[i]);
             }
         }

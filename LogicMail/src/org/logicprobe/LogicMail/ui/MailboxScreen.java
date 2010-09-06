@@ -61,6 +61,7 @@ import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
@@ -193,7 +194,8 @@ public class MailboxScreen extends AbstractScreenProvider {
         	((MessageNode)knownMessages.elementAt(i)).addMessageNodeListener(messageNodeListener);
         }
         
-        composeEnabled = mailboxNode.getParentAccount().hasMailSender();
+        composeEnabled = (mailboxNode.getParentAccount() instanceof NetworkAccountNode)
+            && ((NetworkAccountNode)mailboxNode.getParentAccount()).hasMailSender();
         ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_COMPOSE, composeEnabled);
         
         // TODO: Support message list changes between display pushing
@@ -266,7 +268,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 	private void initMenuItems() {
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
-	        	navigationController.displayComposition(mailboxNode.getParentAccount());
+	        	navigationController.displayComposition((NetworkAccountNode)mailboxNode.getParentAccount());
 	        }
 	    };
 	}

@@ -221,8 +221,8 @@ public class MailboxNode implements Node, Serializable {
 		// configuration.  This is necessary because this node's original ID
 		// will not be serialized, yet it still needs a way to be matched up
 		// with a local cache folder.
-		if(this.type == TYPE_INBOX && !this.parentAccount.hasFolders() && this.parentAccount.getAccountConfig() != null) {
-		    this.uniqueId = this.parentAccount.getAccountConfig().getUniqueId();
+		if(this.type == TYPE_INBOX && !this.parentAccount.hasFolders() && this.parentAccount instanceof NetworkAccountNode) {
+		    this.uniqueId = ((NetworkAccountNode)this.parentAccount).getAccountConfig().getUniqueId();
 		}
 	}
 	
@@ -1039,7 +1039,7 @@ public class MailboxNode implements Node, Serializable {
     public void refreshMessages() {
     	// Fetch messages stored in the cache
         synchronized(fetchLock) {
-            if(parentAccount.getAccountConfig() != null) {
+            if(parentAccount instanceof NetworkAccountNode) {
                 if(fetchThread == null || !fetchThread.isAlive()) {
                     synchronized(messages) {
                         cacheLoadInProgress = true;

@@ -79,6 +79,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.model.OutgoingMessageNode;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
@@ -110,7 +111,9 @@ public class MessageScreen extends AbstractScreenProvider {
     public MessageScreen(MessageNode messageNode)
     {
         this.messageNode = messageNode;
-        this.accountConfig = messageNode.getParent().getParentAccount().getAccountConfig();
+        if(messageNode.getParent().getParentAccount() instanceof NetworkAccountNode) {
+            this.accountConfig = ((NetworkAccountNode)messageNode.getParent().getParentAccount()).getAccountConfig();
+        }
         
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
@@ -303,7 +306,7 @@ public class MessageScreen extends AbstractScreenProvider {
 	    };
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
-	            navigationController.displayComposition(messageNode.getParent().getParentAccount());
+	            navigationController.displayComposition((NetworkAccountNode)messageNode.getParent().getParentAccount());
 	        }
 	    };
     }
@@ -629,7 +632,7 @@ public class MessageScreen extends AbstractScreenProvider {
     	if(field instanceof BrowserFieldManager) {
     		if((context & BrowserFieldManager.ACTION_SEND_EMAIL) != 0) {
     			String address = ((BrowserFieldManager)field).getSelectedToken();
-                navigationController.displayComposition(messageNode.getParent().getParentAccount(), address);
+                navigationController.displayComposition((NetworkAccountNode)messageNode.getParent().getParentAccount(), address);
     		}
     	}
 	}

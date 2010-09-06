@@ -32,6 +32,8 @@ package org.logicprobe.LogicMail.model;
 
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.mail.LocalMailStore;
 import org.logicprobe.LogicMail.mail.MailFactory;
 
 /**
@@ -40,16 +42,18 @@ import org.logicprobe.LogicMail.mail.MailFactory;
  * as its children.
  */
 public class MailRootNode implements Node {
-	private Vector accounts;
+    private LocalAccountNode localAccountNode;
+	private final Vector networkAccounts;
 	private AccountNode[] accountsArray;
-	private AccountNode localAccountNode;
+	private NetworkAccountNode[] networkAccountsArray;
+	private final Object accountsLock = new Object();
 	
 	public MailRootNode() {
-		this.accounts = new Vector();
+		this.networkAccounts = new Vector();
 
-		// Add the local mail store
-		localAccountNode = new AccountNode(MailFactory.createLocalMailStore());
-		accounts.addElement(localAccountNode);
+		// Add the local mail store account
+		localAccountNode = new LocalAccountNode((LocalMailStore) MailFactory.createLocalMailStore());
+		localAccountNode.load();
 	}
 	
 	public void accept(NodeVisitor visitor) {
@@ -69,16 +73,57 @@ public class MailRootNode implements Node {
 		// Since this method is used quite frequently, a reference to the
 		// temporary snapshot array is kept.  It is only recreated if the
 		// accounts vector is modified.
-		synchronized(accounts) {
+		synchronized(accountsLock) {
 			if(accountsArray == null) {
-				int size = accounts.size();
-				accountsArray = new AccountNode[size];
+				int size = networkAccounts.size();
+				accountsArray = new AccountNode[size + 1];
+				accountsArray[0] = localAccountNode;
 				for(int i=0; i<size; i++) {
-					accountsArray[i] = (AccountNode)accounts.elementAt(i);
+					accountsArray[i + 1] = (AccountNode)networkAccounts.elementAt(i);
 				}
 			}
 		}
 		return accountsArray;
+	}
+	
+    /**
+     * Get the network accounts contained within the mail data model.
+     * This method returns an array that is a shallow copy of the
+     * live accounts list.  Since multiple calls to this method
+     * may return the same instance of that array, it should
+     * not be modified by callers.
+     *  
+     * @return Network account nodes.
+     */
+	public NetworkAccountNode[] getNetworkAccounts() {
+        // Since this method is used quite frequently, a reference to the
+        // temporary snapshot array is kept.  It is only recreated if the
+        // accounts vector is modified.
+        synchronized(accountsLock) {
+            if(networkAccountsArray == null) {
+                int size = networkAccounts.size();
+                networkAccountsArray = new NetworkAccountNode[size];
+                networkAccounts.copyInto(networkAccountsArray);
+            }
+        }
+        return networkAccountsArray;
+	}
+	
+	/**
+	 * Find the account node matching the provided account configuration.
+	 * This is a convenience method for a relatively common operation.
+	 *
+	 * @param accountConfig the account configuration
+	 * @return the network account node, or null if none found
+	 */
+	public NetworkAccountNode findAccountForConfig(AccountConfig accountConfig) {
+	    NetworkAccountNode[] networkAccounts = getNetworkAccounts();
+	    for(int i=0; i<networkAccounts.length; i++) {
+	        if(accountConfig.equals(networkAccounts[i].getAccountConfig())) {
+	            return networkAccounts[i];
+	        }
+	    }
+	    return null;
 	}
 	
 	/**
@@ -86,36 +131,38 @@ public class MailRootNode implements Node {
 	 * 
 	 * @return Local account node.
 	 */
-	public AccountNode getLocalAccount() {
+	public LocalAccountNode getLocalAccount() {
 		return localAccountNode;
 	}
 	
 	/**
-	 * Adds an account to the mail data model.
+	 * Adds a network account to the mail data model.
 	 * The account is appended to the end of the
 	 * live accounts list.
 	 * 
 	 * @param account The account to add.
 	 */
-	void addAccount(AccountNode account) {
-		synchronized(accounts) {
-			if(!accounts.contains(account)) {
-				accounts.addElement(account);
+	void addAccount(NetworkAccountNode account) {
+		synchronized(accountsLock) {
+			if(!networkAccounts.contains(account)) {
+			    networkAccounts.addElement(account);
 				accountsArray = null;
+				networkAccountsArray = null;
 			}
 		}
 	}
 	
 	/**
-	 * Removes an account from the mail data mode.
+	 * Removes a network account from the mail data model.
 	 * 
 	 * @param account The account to remove
 	 */
-	void removeAccount(AccountNode account) {
-		synchronized(accounts) {
-			if(accounts.contains(account)) {
-				accounts.removeElement(account);
+	void removeAccount(NetworkAccountNode account) {
+		synchronized(accountsLock) {
+			if(networkAccounts.contains(account)) {
+			    networkAccounts.removeElement(account);
 				accountsArray = null;
+				networkAccountsArray = null;
 			}
 		}
 	}

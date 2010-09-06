@@ -33,10 +33,10 @@ package org.logicprobe.LogicMail.ui;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.component.Dialog;
 
-import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 public class ScreenFactoryBB42 extends ScreenFactory {
 
@@ -63,29 +63,29 @@ public class ScreenFactoryBB42 extends ScreenFactory {
 		return new StandardScreen(navigationController, new MessageScreen(messageNode));
 	}
 
-	public StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode) {
+	public StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode) {
 		return new StandardScreen(navigationController, new CompositionScreen(accountNode));
 	}
 	
-	public StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode) {
+	public StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode) {
 		return new StandardScreen(navigationController, new CompositionScreen(
 				accountNode,
 				messageNode,
 				CompositionScreen.COMPOSE_NORMAL));
 	}
 	
-	public StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, String address) {
+	public StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode, String address) {
 		return new StandardScreen(navigationController, new CompositionScreen(accountNode, address));
 	}
 	
-	public StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll) {
+	public StandardScreen getCompositionReplyScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode, boolean replyAll) {
 		return new StandardScreen(navigationController, new CompositionScreen(
 				accountNode,
 				messageNode,
 				replyAll ? CompositionScreen.COMPOSE_REPLY_ALL : CompositionScreen.COMPOSE_REPLY));
 	}
 	
-	public StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode) {
+	public StandardScreen getCompositionForwardScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode) {
 		return new StandardScreen(navigationController, new CompositionScreen(
 				accountNode,
 				messageNode,

@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
@@ -231,7 +232,7 @@ public class StandardScreen extends MainScreen {
 
     public void tryShutdownApplication() {
         // Get all accounts
-        AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+        NetworkAccountNode[] accounts = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
 
         // Find out of we still have an open connection
         boolean openConnection = false;

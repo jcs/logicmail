@@ -47,6 +47,7 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.notification.NotificationsConstants;
@@ -172,25 +173,23 @@ public class NotificationHandler {
 		}
 		
 		// Subscribe to any new accounts
-		AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
+		NetworkAccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
 		for(int i=0; i<accountNodes.length; i++) {
-			if(accountNodes[i].getStatus() != AccountNode.STATUS_LOCAL) {
-				updateAccountMap(accountNodes[i]);
-				
-				accountNodes[i].addAccountNodeListener(accountNodeListener);
-				
-				// Register the notification source, if necessary
-				AccountConfig accountConfig = accountNodes[i].getAccountConfig();
-				LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountConfig.getUniqueId());
-				if(eventSource == null || !eventSource.getAccountName().equals(accountConfig.getAcctName())) {
-					eventSource =
-						new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
-	            	NotificationsManager.registerSource(
-	        			eventSource.getEventSourceId(),
-	        			eventSource,
-	        			NotificationsConstants.CASUAL);
-	            	eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
-				}
+			updateAccountMap(accountNodes[i]);
+			
+			accountNodes[i].addAccountNodeListener(accountNodeListener);
+			
+			// Register the notification source, if necessary
+			AccountConfig accountConfig = ((NetworkAccountNode)accountNodes[i]).getAccountConfig();
+			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountConfig.getUniqueId());
+			if(eventSource == null || !eventSource.getAccountName().equals(accountConfig.getAcctName())) {
+				eventSource =
+					new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+            	NotificationsManager.registerSource(
+        			eventSource.getEventSourceId(),
+        			eventSource,
+        			NotificationsConstants.CASUAL);
+            	eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
 			}
 		}
 
@@ -219,7 +218,7 @@ public class NotificationHandler {
 			accountNode.removeAccountNodeListener(accountNodeListener);
 
 			// Unregister the notification source
-			long eventSourceKey = accountNode.getAccountConfig().getUniqueId();
+			long eventSourceKey = ((NetworkAccountNode)accountNode).getAccountConfig().getUniqueId();
 			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
 			if(eventSource != null) {
 				NotificationsManager.deregisterSource(eventSource.getEventSourceId());
@@ -263,7 +262,7 @@ public class NotificationHandler {
 	 * @param mailboxNode The mailbox node containing the new messages
 	 */
 	private void notifyNewMessages(MailboxNode mailboxNode) {
-		long sourceId = AppInfo.GUID + mailboxNode.getParentAccount().getAccountConfig().getUniqueId();
+		long sourceId = AppInfo.GUID + ((NetworkAccountNode)mailboxNode.getParentAccount()).getAccountConfig().getUniqueId();
 		NotificationsManager.triggerImmediateEvent(sourceId, 0, this, null);
 		setAppIcon(true);
 	}
@@ -275,7 +274,7 @@ public class NotificationHandler {
 		Enumeration e = accountMap.keys();
 		while(e.hasMoreElements()) {
 			AccountNode accountNode = (AccountNode)e.nextElement();
-			long sourceId = AppInfo.GUID + accountNode.getAccountConfig().getUniqueId();
+			long sourceId = AppInfo.GUID + ((NetworkAccountNode)accountNode).getAccountConfig().getUniqueId();
 			NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
 		}
 		

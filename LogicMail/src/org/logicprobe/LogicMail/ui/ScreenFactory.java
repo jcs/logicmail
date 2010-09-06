@@ -32,10 +32,10 @@ package org.logicprobe.LogicMail.ui;
 
 import net.rim.device.api.ui.Screen;
 
-import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
 public abstract class ScreenFactory {
@@ -80,15 +80,15 @@ public abstract class ScreenFactory {
 
     public abstract StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode);
 
-    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode);
+    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode);
 
-    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
+    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode);
 
-    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, AccountNode accountNode, String address);
+    public abstract StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode, String address);
 
-    public abstract StandardScreen getCompositionReplyScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode, boolean replyAll);
+    public abstract StandardScreen getCompositionReplyScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode, boolean replyAll);
 
-    public abstract StandardScreen getCompositionForwardScreen(NavigationController navigationController, AccountNode accountNode, MessageNode messageNode);
+    public abstract StandardScreen getCompositionForwardScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode);
     
     public abstract String showFilePicker();
 }

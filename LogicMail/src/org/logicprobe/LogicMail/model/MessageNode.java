@@ -277,7 +277,7 @@ public class MessageNode implements Node {
 	public boolean isCachable() {
 		if(parent != null
 				&& parent.getParentAccount() != null
-				&& parent.getParentAccount().getAccountConfig() != null) {
+				&& parent.getParentAccount() instanceof NetworkAccountNode) {
 			return true;
 		}
 		else {
@@ -1130,9 +1130,11 @@ public class MessageNode implements Node {
 			if(mailStore.hasMessageParts()) {
 				int maxSize = Integer.MAX_VALUE;
 				MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(this.messageStructure);
-				AccountConfig accountConfig = parent.getParentAccount().getAccountConfig();
-				if(accountConfig instanceof ImapConfig) {
-					maxSize = ((ImapConfig)accountConfig).getMaxMessageSize();
+				if(parent.getParentAccount() instanceof NetworkAccountNode) {
+    				AccountConfig accountConfig = ((NetworkAccountNode)parent.getParentAccount()).getAccountConfig();
+    				if(accountConfig instanceof ImapConfig) {
+    					maxSize = ((ImapConfig)accountConfig).getMaxMessageSize();
+    				}
 				}
 				Vector partsToFetch = new Vector();
 				int sizeRequested = 0;

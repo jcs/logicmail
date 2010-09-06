@@ -30,8 +30,6 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
@@ -41,12 +39,7 @@ import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
-import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageEnvelope;
-import org.logicprobe.LogicMail.util.DataStore;
-import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 import java.util.Enumeration;
@@ -61,56 +54,38 @@ import java.util.Vector;
  * Eventually a more elegant approach will need to
  * be implemented.
  */
-public class AccountNode implements Node {
+public abstract class AccountNode implements Node {
     public final static int STATUS_LOCAL = 0;
     public final static int STATUS_OFFLINE = 1;
     public final static int STATUS_ONLINE = 2;
     private AbstractMailStore mailStore;
-    private boolean usePersistedState;
-    private AbstractMailSender mailSender;
     private MailRootNode parent;
     private MailboxNode rootMailbox;
     private Hashtable pathMailboxMap;
     private Object rootMailboxLock = new Object();
     private EventListenerList listenerList = new EventListenerList();
-    private AccountConfig accountConfig;
-    private int status;
-    private boolean shutdown = false;
     
-    /** Map of folders to message to fetch for them. */
+    protected int status;
+   
+    /** Map of folders to messages to fetch for them. */
     private Hashtable folderMessagesToFetch;
     
     /**
      * Construct a new node for a network account.
      *
      * @param accountConfig Account configuration.
-     * @param loadState True to load the stored account state, false to construct fresh
      */
-    AccountNode(AbstractMailStore mailStore) {
-    	this(mailStore, true);
-    }
-    
-    /**
-     * Construct a new node for a network account.
-     *
-     * @param accountConfig Account configuration.
-     * @param usePersistedState True to use persisted account state, false otherwise
-     */
-    AccountNode(AbstractMailStore mailStore, boolean usePersistedState) {
+    protected AccountNode(AbstractMailStore mailStore) {
         this.rootMailbox = null;
         this.pathMailboxMap = new Hashtable();
         this.folderMessagesToFetch = new Hashtable();
 
         this.mailStore = mailStore;
-        this.usePersistedState = usePersistedState;
 
-        if (!mailStore.isLocal() && mailStore instanceof NetworkMailStore) {
-            this.accountConfig = ((NetworkMailStore) mailStore).getAccountConfig();
-            this.status = STATUS_OFFLINE;
-        } else {
-            this.status = STATUS_LOCAL;
-        }
+        addMailStoreListeners();
+    }
 
+    private void addMailStoreListeners() {
         this.mailStore.addMailStoreListener(new MailStoreListener() {
             public void folderTreeUpdated(FolderEvent e) {
                 mailStore_FolderTreeUpdated(e);
@@ -148,74 +123,12 @@ public class AccountNode implements Node {
                 mailStore_messageUndeleted(e);
             }
         });
-
-        if (!mailStore.hasFolders()) {
-            // Create the fake INBOX node for non-folder-capable mail stores
-            this.rootMailbox = new MailboxNode(new FolderTreeItem("", "", ""),
-                    false,
-                    -1);
-            this.rootMailbox.setParentAccount(this);
-
-            MailboxNode inboxNode = new MailboxNode(new FolderTreeItem(
-                    "INBOX", "INBOX", "", true), false, MailboxNode.TYPE_INBOX);
-            inboxNode.setParentAccount(this);
-            this.rootMailbox.addMailbox(inboxNode);
-            pathMailboxMap.put("INBOX", inboxNode);
-        }
-
-        // Load any saved tree data
-        if(usePersistedState) { load(); }
     }
 
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
     }
 
-    /**
-     * Gets the mail sender associated with this account.
-     *
-     * @return The mail sender.
-     */
-    AbstractMailSender getMailSender() {
-        return this.mailSender;
-    }
-
-    /**
-     * Sets the mail sender associated with this account.
-     * This is not set in the constructor since it can change
-     * whenever account configuration changes.
-     *
-     * @param mailSender The mail sender.
-     */
-    void setMailSender(AbstractMailSender mailSender) {
-        if ((this.mailSender != null) && (mailSender == null)) {
-            this.mailSender = null;
-        } else if ((this.mailSender != null) &&
-                (this.mailSender != mailSender)) {
-            this.mailSender = mailSender;
-        } else if ((this.mailSender == null) && (mailSender != null)) {
-            this.mailSender = mailSender;
-        }
-    }
-
-    /**
-     * Returns whether this account has a mail sender associated with it.
-     *
-     * @return True if mail can be sent, false otherwise.
-     */
-    public boolean hasMailSender() {
-        return (this.mailSender != null);
-    }
-
-    /**
-     * Returns whether this account has an identity associated with it.
-     * 
-     * @return True if an identity is configured, false otherwise.
-     */
-    public boolean hasIdentity() {
-        return this.accountConfig.getIdentityConfig() != null;
-    }
-    
     /**
      * Sets the root node which is the parent of this account.
      *
@@ -249,28 +162,6 @@ public class AccountNode implements Node {
     }
 
     /**
-     * Gets the name of this account.
-     *
-     * @return The name.
-     */
-    public String toString() {
-        if (accountConfig != null) {
-            return this.accountConfig.toString();
-        } else {
-            return "Local Folders";
-        }
-    }
-
-    /**
-     * Gets the account configuration.
-     *
-     * @return The account configuration, or null for local accounts.
-     */
-    public AccountConfig getAccountConfig() {
-        return this.accountConfig;
-    }
-
-    /**
      * Gets the mail store associated with this account.
      *
      * @return The mail store.
@@ -288,11 +179,6 @@ public class AccountNode implements Node {
         if (this.status != status) {
             this.status = status;
 
-            if ((this.status == STATUS_OFFLINE) && !shutdown &&
-                    mailStore instanceof NetworkMailStore) {
-                ((NetworkMailStore) mailStore).restart();
-            }
-
             fireAccountStatusChanged(AccountNodeEvent.TYPE_CONNECTION);
         }
     }
@@ -304,22 +190,6 @@ public class AccountNode implements Node {
      */
     public int getStatus() {
         return this.status;
-    }
-
-    /**
-     * Requests that this account be disconnected.
-     * <p>
-     * This method is only valid for the <tt>STATUS_ONLINE<tt>
-     * status, and will do nothing in any other state.
-     * </p>
-     *
-     * @param shutdown True if the application is closing, false if the mail store should be usable again.
-     */
-    public void requestDisconnect(boolean shutdown) {
-        if ((status == STATUS_ONLINE) && mailStore instanceof NetworkMailStore) {
-            ((NetworkMailStore) mailStore).shutdown(false);
-            this.shutdown = shutdown;
-        }
     }
 
     /**
@@ -382,72 +252,6 @@ public class AccountNode implements Node {
     }
 
     /**
-     * Sends a message from this account.
-     *
-     * @param envelope Envelope of the message to send
-     * @param message Message to send.
-     */
-    public void sendMessage(MessageEnvelope envelope, Message message) {
-        if (mailSender != null) {
-        	// Construct an outgoing message node
-        	FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
-        	outgoingFolderMessage.setSeen(false);
-        	outgoingFolderMessage.setRecent(true);
-        	OutgoingMessageNode outgoingMessage =
-        		new OutgoingMessageNode(
-        				outgoingFolderMessage,
-        				this, mailSender);
-        	
-        	outgoingMessage.setMessageStructure(message.getStructure());
-        	outgoingMessage.putMessageContent(message.getAllContent());
-        	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
-        }
-    }
-
-    /**
-     * Sends a reply message from this account.
-     *
-     * @param envelope Envelope of the message to send
-     * @param message Message to send.
-     * @param originalMessageNode Message node this was in reply to.
-     */
-    public void sendMessageReply(MessageEnvelope envelope, Message message,
-            MessageNode originalMessageNode) {
-        sendMessageReplyImpl(envelope, message, originalMessageNode,
-                OutgoingMessageNode.REPLY_ANSWERED);
-    }
-    
-    /**
-     * Sends a forwarded message from this account.
-     *
-     * @param envelope Envelope of the message to send
-     * @param message Message to send.
-     * @param originalMessageNode Message node this was in reply to.
-     */
-    public void sendMessageForwarded(MessageEnvelope envelope, Message message,
-            MessageNode originalMessageNode) {
-        sendMessageReplyImpl(envelope, message, originalMessageNode,
-                OutgoingMessageNode.REPLY_FORWARDED);
-    }
-    
-    private void sendMessageReplyImpl(MessageEnvelope envelope, Message message,
-        MessageNode originalMessageNode, int replyType) {
-        if (mailSender != null) {
-        	// Construct an outgoing message node
-        	FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
-        	outgoingFolderMessage.setSeen(false);
-        	outgoingFolderMessage.setRecent(true);
-        	OutgoingMessageNode outgoingMessage =
-        		new OutgoingMessageNode(
-        				outgoingFolderMessage,
-        				this, mailSender, originalMessageNode, replyType);
-        	outgoingMessage.setMessageStructure(message.getStructure());
-        	outgoingMessage.putMessageContent(message.getAllContent());
-        	MailManager.getInstance().getOutboxMailboxNode().addMessage(outgoingMessage);
-        }
-    }
-
-    /**
      * Handles folder tree updates.
      *
      * @param e Event data.
@@ -476,8 +280,7 @@ public class AccountNode implements Node {
                     String path = mailboxNode.getFolderTreeItem().getPath();
 
                     if (folderPathMap.containsKey(path)) {
-                        mailboxNode.setFolderTreeItem((FolderTreeItem) folderPathMap.get(
-                                path));
+                        mailboxNode.setFolderTreeItem((FolderTreeItem) folderPathMap.get(path));
                         remainingMailboxMap.put(path, mailboxNode);
                     }
                 }
@@ -490,7 +293,7 @@ public class AccountNode implements Node {
             populateMailboxNodes(rootFolder, rootMailbox, remainingMailboxMap);
         }
 
-        if(usePersistedState) { save(); }
+        save();
         fireAccountStatusChanged(AccountNodeEvent.TYPE_MAILBOX_TREE);
     }
 
@@ -577,8 +380,7 @@ public class AccountNode implements Node {
             mailboxFolder.setMsgCount(currentFolder.getMsgCount());
             mailboxFolder.setUnseenCount(currentFolder.getUnseenCount());
             mailboxNode.updateUnseenFolderTreeItem();
-            mailboxNode.fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS,
-                null);
+            mailboxNode.fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
         }
 
         if (currentFolder.hasChildren()) {
@@ -778,25 +580,13 @@ public class AccountNode implements Node {
      * @param folderTreeItem Source folder tree item.
      * @return Mailbox type
      */
-    private int getMailboxType(FolderTreeItem folderTreeItem) {
-    	int mailboxType = MailboxNode.TYPE_NORMAL;
+    protected int getMailboxType(FolderTreeItem folderTreeItem) {
+    	int mailboxType;
         if (folderTreeItem.getPath().equalsIgnoreCase("INBOX")) {
         	mailboxType = MailboxNode.TYPE_INBOX;
         }
-        else if(status == STATUS_LOCAL) {
-        	String path = folderTreeItem.getPath();
-            if (path.equalsIgnoreCase("Outbox")) {
-            	mailboxType = MailboxNode.TYPE_OUTBOX;
-            }
-            else if (path.equalsIgnoreCase("Drafts")) {
-            	mailboxType = MailboxNode.TYPE_DRAFTS;
-            }
-            else if (path.equalsIgnoreCase("Sent")) {
-            	mailboxType = MailboxNode.TYPE_SENT;
-            }
-            else if (path.equalsIgnoreCase("Trash")) {
-            	mailboxType = MailboxNode.TYPE_TRASH;
-            }
+        else {
+            mailboxType = MailboxNode.TYPE_NORMAL;
         }
         return mailboxType;
     }
@@ -852,41 +642,12 @@ public class AccountNode implements Node {
     /**
      * Saves the mailbox tree to persistent storage.
      */
-    private void save() {
-        DataStore connectionCache = DataStoreFactory.getConnectionCacheStore();
-
-        if(mailStore.isLocal()) {
-            connectionCache.putNamedObject("LocalMailStore", rootMailbox);
-        }
-        else {
-            connectionCache.putNamedObject(Long.toString(accountConfig.getUniqueId()), rootMailbox);
-        }
-        connectionCache.save();
-    }
+    abstract void save();
 
     /**
      * Loads the mailbox tree from persistent storage.
      */
-    private void load() {
-        DataStore connectionCache = DataStoreFactory.getConnectionCacheStore();
-        
-        Object loadedObject;
-        if(mailStore.isLocal()) {
-	        loadedObject = connectionCache.getNamedObject("LocalMailStore");
-        	
-        }
-        else {
-	        loadedObject = connectionCache.getNamedObject(Long.toString(accountConfig.getUniqueId()));
-        }
-        
-        if (loadedObject instanceof MailboxNode) {
-            synchronized (rootMailboxLock) {
-                this.rootMailbox = (MailboxNode) loadedObject;
-                this.rootMailbox.setParentAccount(this);
-                prepareDeserializedMailboxNode(rootMailbox);
-            }
-        }
-    }
+    abstract void load();
 
     /**
      * Clear any persistent data associated with this account node.
@@ -897,19 +658,22 @@ public class AccountNode implements Node {
      * ensure that persistent data does not linger on the device.
      * </p>
      */
-    public void removeSavedData() {
-        if (!mailStore.isLocal()) {
-            DataStore connectionCache = DataStoreFactory.getConnectionCacheStore();
-            connectionCache.removeNamedObject(Long.toString(accountConfig.getUniqueId()));
-            
-            // This will only exist on certain account types, but this is the
-            // easiest place from which to clean it up.
-            connectionCache.removeNamedObject(Long.toString(accountConfig.getUniqueId()) + "_INBOX");
-            
-            connectionCache.save();
-        }
+    protected void removeSavedData() {
+        // Default empty implementation
     }
 
+    /**
+     * Sets the top-level mailbox contained within this account.
+     * This method should only be called by subclasses when loading saved
+     * account data.
+     */
+    protected void setRootMailbox(MailboxNode mailboxNode) {
+        synchronized (rootMailboxLock) {
+            this.rootMailbox = mailboxNode;
+            prepareDeserializedMailboxNode(rootMailbox);
+        }
+    }
+    
     /**
      * Traverses the deserialized mailbox nodes, populates any necessary
      * data structures in the account node, and sets the mailbox parent

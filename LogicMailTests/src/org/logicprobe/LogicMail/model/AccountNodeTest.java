@@ -70,7 +70,7 @@ public class AccountNodeTest extends TestCase {
     	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("1_One", "INBOX.1_One", "."));
     	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("2_Two", "INBOX.2_Two", "."));
     	
-        instance = new AccountNode(mailStore, false);
+        instance = new TestAccountNode(mailStore, false);
     	instance.addAccountNodeListener(new AccountNodeListener() {
     		public void accountStatusChanged(AccountNodeEvent e) {
     			accountNodeEvent = e;
@@ -202,6 +202,14 @@ public class AccountNodeTest extends TestCase {
         { public void run(TestCase tc) {((AccountNodeTest)tc).testRefreshMailboxStatus(); } }));
 
         return suite;
+    }
+    
+    private class TestAccountNode extends AccountNode {
+        protected TestAccountNode(TestMailStore mailStore, boolean usePersistedState) {
+            super(mailStore);
+        }
+        protected void save() { }
+        protected void load() { }
     }
     
     private class TestMailStore extends AbstractMailStore {

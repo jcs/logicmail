@@ -42,11 +42,11 @@ import org.logicprobe.LogicMail.mail.MailConnectionLoginEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionManager;
 import org.logicprobe.LogicMail.mail.MailConnectionStateEvent;
 import org.logicprobe.LogicMail.mail.MailConnectionStatusEvent;
-import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.util.EventObjectRunnable;
 
 /**
@@ -117,13 +117,13 @@ public final class NavigationController {
 		uiApplication.pushScreen(screen);
 	}
 	
-	public synchronized void displayComposition(AccountNode accountNode) {
+	public synchronized void displayComposition(NetworkAccountNode accountNode) {
 		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode);
         ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 
-	public synchronized void displayComposition(AccountNode accountNode, MessageNode messageNode) {
+	public synchronized void displayComposition(NetworkAccountNode accountNode, MessageNode messageNode) {
 		StandardScreen screen = screenFactory.getCompositionScreen(
 				this,
 				accountNode,
@@ -132,13 +132,13 @@ public final class NavigationController {
 		uiApplication.pushScreen(screen);
 	}
 
-	public void displayComposition(AccountNode accountNode, String address) {
+	public void displayComposition(NetworkAccountNode accountNode, String address) {
 		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode, address);
         ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);
 	}
 	
-	public synchronized void displayCompositionReply(AccountNode accountNode, MessageNode messageNode, boolean replyAll) {
+	public synchronized void displayCompositionReply(NetworkAccountNode accountNode, MessageNode messageNode, boolean replyAll) {
 		StandardScreen screen = screenFactory.getCompositionReplyScreen(
 				this,
 				accountNode,
@@ -148,7 +148,7 @@ public final class NavigationController {
 		uiApplication.pushScreen(screen);
 	}
 
-	public synchronized void displayCompositionForward(AccountNode accountNode, MessageNode messageNode) {
+	public synchronized void displayCompositionForward(NetworkAccountNode accountNode, MessageNode messageNode) {
 		StandardScreen screen = screenFactory.getCompositionForwardScreen(
 				this,
 				accountNode,

@@ -338,7 +338,7 @@ public class OutboxMailboxNode extends MailboxNode {
 
             // Store to the Sent folder
             if(outgoingMessageNode.getSendingAccount() != null) {
-                AccountConfig sendingAccountConfig = outgoingMessageNode.getSendingAccount().getAccountConfig();
+                AccountConfig sendingAccountConfig = ((NetworkAccountNode)outgoingMessageNode.getSendingAccount()).getAccountConfig();
 
                 // Append to the Sent message folder, if available
                 MailboxNode sentMailbox = sendingAccountConfig.getSentMailbox();

@@ -332,7 +332,7 @@ public class MailFileManager {
 	    }
 	    else {
     		accountUid = StringParser.toHexString(
-    				mailboxNode.getParentAccount().getAccountConfig().getUniqueId()).toLowerCase();
+    				((NetworkAccountNode)mailboxNode.getParentAccount()).getAccountConfig().getUniqueId()).toLowerCase();
     		mailboxUid = StringParser.toHexString(
     				mailboxNode.getUniqueId()).toLowerCase();
 	    }

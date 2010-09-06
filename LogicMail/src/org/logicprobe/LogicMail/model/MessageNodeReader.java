@@ -328,18 +328,16 @@ public class MessageNodeReader {
 
         // Resolve the accounts
         if(sendingAccountId != -1 || replyToAccountId != -1) {
-            AccountNode[] accounts = MailManager.getInstance().getMailRootNode().getAccounts();
+            NetworkAccountNode[] accounts = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
             for(int i=0; i<accounts.length; i++) {
-                if(accounts[i].getAccountConfig() != null) {
-                    long accountId = accounts[i].getAccountConfig().getUniqueId();
+                long accountId = accounts[i].getAccountConfig().getUniqueId();
 
-                    if(accountId == sendingAccountId) {
-                        messageNode.setSendingAccount(accounts[i]);
-                    }
+                if(accountId == sendingAccountId) {
+                    messageNode.setSendingAccount(accounts[i]);
+                }
 
-                    if(accountId == replyToAccountId) {
-                        replyToAccount = accounts[i];
-                    }
+                if(accountId == replyToAccountId) {
+                    replyToAccount = accounts[i];
                 }
             }
         }
