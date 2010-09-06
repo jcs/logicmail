@@ -46,7 +46,6 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.container.VerticalFieldManager;
-import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.DateTimeUtilities;
 
@@ -120,7 +119,7 @@ public class MailboxScreen extends AbstractScreenProvider {
         public void mailSettingsSaved(MailSettingsEvent e) {
             if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_OTHER) != 0) {
                 if(globalConfig.getDispOrder() != displayOrder) {
-                    UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+                    invokeLater(new EventObjectRunnable(e) {
                         public void run() {
                             displayOrder = !displayOrder;
                             displayableChanged();
@@ -128,7 +127,7 @@ public class MailboxScreen extends AbstractScreenProvider {
                     });
                 }
                 if(globalConfig.getHideDeletedMsg() != hideDeleted) {
-                    UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+                    invokeLater(new EventObjectRunnable(e) {
                         public void run() {
                             hideDeleted = !hideDeleted;
                             displayableChanged();
@@ -142,7 +141,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     /** The mailbox node listener. */
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
 		public void mailboxStatusChanged(MailboxNodeEvent e) {
-			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			invokeLater(new EventObjectRunnable(e) {
 				public void run() {
 					mailboxNode_MailboxStatusChanged((MailboxNodeEvent)getEvent());
 				}
@@ -153,7 +152,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     /** The message node listener. */
     private MessageNodeListener messageNodeListener = new MessageNodeListener() {
 		public void messageStatusChanged(MessageNodeEvent e) {
-			UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+			invokeLater(new EventObjectRunnable(e) {
 				public void run() {
 					messageNode_MessageStatusChanged((MessageNodeEvent)getEvent());
 				}

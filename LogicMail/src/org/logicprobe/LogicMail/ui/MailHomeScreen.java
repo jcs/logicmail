@@ -407,27 +407,29 @@ public class MailHomeScreen extends AbstractScreenProvider {
         }
     }
 
-    public void populateMailTree(MailHomeTreeNode rootNode) {
-        synchronized(UiApplication.getEventLock()) {
-            // Clear any existing nodes
-            treeField.deleteAll();
-            nodeIdMap.clear();
+    public void populateMailTree(final MailHomeTreeNode rootNode) {
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
+            public void run() {
+                // Clear any existing nodes
+                treeField.deleteAll();
+                nodeIdMap.clear();
 
-            // Freshly populate the tree
-            int firstNode = -1;
-            MailHomeTreeNode[] nodes = rootNode.children;
-            if(nodes != null) {
-                for(int i = nodes.length - 1; i >= 0; --i) {
-                    int id = treeField.addChildNode(0, nodes[i]);
-                    nodeIdMap.put(nodes[i], id);
-                    if(i == 0) { firstNode = id; }
-                    populateMailTreeChildren(id, nodes[i]);
+                // Freshly populate the tree
+                int firstNode = -1;
+                MailHomeTreeNode[] nodes = rootNode.children;
+                if(nodes != null) {
+                    for(int i = nodes.length - 1; i >= 0; --i) {
+                        int id = treeField.addChildNode(0, nodes[i]);
+                        nodeIdMap.put(nodes[i], id);
+                        if(i == 0) { firstNode = id; }
+                        populateMailTreeChildren(id, nodes[i]);
+                    }
+                }
+                if(firstNode != -1) {
+                    treeField.setCurrentNode(firstNode);
                 }
             }
-            if(firstNode != -1) {
-                treeField.setCurrentNode(firstNode);
-            }
-        }
+        });
     }
 
     private void populateMailTreeChildren(int parent, MailHomeTreeNode node) {
@@ -443,7 +445,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
     public void refreshMailTreeNode(MailHomeTreeNode node) {
         final int nodeId = nodeIdMap.get(node);
         if(nodeId != -1) {
-            UiApplication.getUiApplication().invokeLater(new Runnable() {
+            invokeLater(new Runnable() {
                 public void run() {
                     treeField.invalidateNode(nodeId);
                 }

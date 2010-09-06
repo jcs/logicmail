@@ -30,11 +30,14 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import java.util.Vector;
+
 import net.rim.device.api.i18n.ResourceBundle;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 
 import net.rim.device.api.ui.Screen;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Menu;
 
 /**
@@ -46,6 +49,9 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	protected NavigationController navigationController;
     protected Screen screen;
 	private StandardScreen standardScreen;
+    private final Object invokeLock = new Object();
+	private Vector invokeItems = new Vector();
+	private boolean invokeInProgress = false;
 	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#getStyle()
@@ -152,4 +158,40 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	 */
 	public void shortcutAction(ShortcutItem item) {
 	}
+	
+	/**
+	 * Puts the runnable object within this screen's UI event queue, so that it
+	 * is run on the application's UI event queue.  This intermediate queue is
+	 * necessary to prevent the event thread from filling up with items in
+	 * cases where the screen experiences a lot of updates.
+	 *
+	 * @param runnable the runnable object
+	 */
+	public void invokeLater(Runnable runnable) {
+	    synchronized(invokeLock) {
+	        invokeItems.addElement(runnable);
+	        if(!invokeInProgress) {
+	            invokeInProgress = true;
+	            UiApplication.getUiApplication().invokeLater(invokeLaterRunnable);
+	        }
+	    }
+	}
+	
+	private final Runnable invokeLaterRunnable = new Runnable() {
+        public void run() {
+            Vector currentInvokeItems;
+            synchronized(invokeLock) {
+                currentInvokeItems = invokeItems;
+                invokeItems = new Vector();
+            }
+            int size = currentInvokeItems.size();
+            for(int i=0; i<size; i++) {
+                Runnable runnable = (Runnable)currentInvokeItems.elementAt(i);
+                runnable.run();
+            }
+            synchronized(invokeLock) {
+                invokeInProgress = false;
+            }
+        }
+	};
 }

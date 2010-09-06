@@ -140,8 +140,4 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         // Default empty implementation for unsupported feature
         return false;
     }
-    
-    public int getFolderMessageUpdateFrequency() {
-        return 10;
-    }
 }

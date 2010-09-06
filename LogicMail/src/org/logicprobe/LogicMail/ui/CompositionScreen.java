@@ -47,7 +47,6 @@ import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
-import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
@@ -222,7 +221,7 @@ public class CompositionScreen extends AbstractScreenProvider {
             messageNode.removeMessageNodeListener(messageNodeListener);
 
             // Schedule the UI update
-            UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
+            invokeLater(new EventObjectRunnable(e) {
                 public void run() {
                     MessageNode messageNode = (MessageNode)getEvent().getSource();
                     populateFromMessage(messageNode);

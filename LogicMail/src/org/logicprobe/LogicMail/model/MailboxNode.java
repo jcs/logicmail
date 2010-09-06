@@ -1070,8 +1070,6 @@ public class MailboxNode implements Node, Serializable {
     }
     
     private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
-        private Vector messagesToAdd = new Vector();
-        
         public RefreshMessagesThread() {
             
         }
@@ -1080,7 +1078,6 @@ public class MailboxNode implements Node, Serializable {
             yield();
             try {
                 MailFileManager.getInstance().readMessageNodes(MailboxNode.this, this);
-                addLoadedMessages();
                 
                 // If the server fetch completed before the cache load, then
                 // execute the pending post-load cache cleanup.
@@ -1128,21 +1125,8 @@ public class MailboxNode implements Node, Serializable {
                         }
                     }
                 }
-                messagesToAdd.addElement(messageNode);
-                if(messagesToAdd.size() == 4) {
-                    addLoadedMessages();
-                }
+                MailboxNode.this.addMessage(messageNode);
             }
-        }
-        
-        private void addLoadedMessages() {
-            int size = messagesToAdd.size();
-            if(size == 0) { return; }
-            
-            MessageNode[] messageArray = new MessageNode[size];
-            messagesToAdd.copyInto(messageArray);
-            messagesToAdd.removeAllElements();
-            MailboxNode.this.addMessages(messageArray);
         }
     }
     

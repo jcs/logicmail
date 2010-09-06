@@ -852,13 +852,6 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessageUpdateFrequency()
-     */
-    public int getFolderMessageUpdateFrequency() {
-        return 5;
-    }
-    
-    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {

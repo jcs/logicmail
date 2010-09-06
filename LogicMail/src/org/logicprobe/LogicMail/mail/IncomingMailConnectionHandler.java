@@ -302,67 +302,37 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     }
 
     private static class GetFolderMessageCallback implements FolderMessageCallback {
-        private int maxCount;
         private int type;
         private FolderTreeItem folder;
         private MailConnectionHandlerListener listener;
         private Object tag;
         private Object param;
-        private FolderMessage[] folderMessages;
-        private int count;
 
-        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object tag) {
-            this(maxCount, type, folder, listener, null, tag);
+        public GetFolderMessageCallback(int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object tag) {
+            this(type, folder, listener, null, tag);
         }
 
-        public GetFolderMessageCallback(int maxCount, int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object param, Object tag) {
-            this.maxCount = maxCount;
+        public GetFolderMessageCallback(int type, FolderTreeItem folder, MailConnectionHandlerListener listener, Object param, Object tag) {
             this.type = type;
             this.folder = folder;
             this.listener = listener;
             this.param = param;
             this.tag = tag;
-            this.count = 0;
         }
 
         public void folderMessageUpdate(FolderMessage folderMessage) {
-            FolderMessage[] resultMessages = null;
-            synchronized(this) {
-                if(folderMessage != null) {
-                    if(count == 0) {
-                        folderMessages = new FolderMessage[maxCount];
-                    }
-                    folderMessages[count++] = folderMessage;
-                }
-
-                if(count == maxCount) {
-                    resultMessages = folderMessages;
-                    folderMessages = null;
-                    count = 0;
-                }
-                else if(folderMessage == null) {
-                    resultMessages = new FolderMessage[count];
-                    for(int i=0; i<count; i++) {
-                        resultMessages[i] = folderMessages[i];
-                    }
-                    folderMessages = null;
-                    count = 0;
-                }
-            }
-
             if(listener != null) {
-                if(resultMessages != null) {
+                if(folderMessage != null) {
                     if(param == null) {
-                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages }, tag);
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, new FolderMessage[] { folderMessage } }, tag);
                     }
                     else {
-                        listener.mailConnectionRequestComplete(type, new Object[] { folder, resultMessages, param }, tag);
+                        listener.mailConnectionRequestComplete(type, new Object[] { folder, new FolderMessage[] { folderMessage }, param }, tag);
                     }
                 }
-
-                // If this is the last update of the sequence, make sure we notify
-                // the listener with a null array so it knows we are done.
-                if(folderMessage == null) {
+                else {
+                    // If this is the last update of the sequence, make sure we
+                    // notify the listener with a null array so it knows we are done.
                     if(param == null) {
                         listener.mailConnectionRequestComplete(type, new Object[] { folder, null }, tag);
                     }
@@ -382,7 +352,6 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         incomingClient.getFolderMessages(
                 firstIndex, lastIndex,
                 new GetFolderMessageCallback(
-                        incomingClient.getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_RANGE,
                         folder,
                         getListener(), tag),
@@ -397,7 +366,6 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         incomingClient.getFolderMessages(
                 messageTokens,
                 new GetFolderMessageCallback(
-                        incomingClient.getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_SET,
                         folder,
                         getListener(), tag),
@@ -412,7 +380,6 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         incomingClient.getNewFolderMessages(
                 flagsOnly,
                 new GetFolderMessageCallback(
-                        incomingClient.getFolderMessageUpdateFrequency(),
                         REQUEST_FOLDER_MESSAGES_RECENT,
                         folder,
                         getListener(),

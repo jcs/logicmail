@@ -300,16 +300,6 @@ public interface IncomingMailClient extends MailClient {
     void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
-     * Gets the frequency with which folder message updates should be passed
-     * to higher levels of the application.  This value should be a best guess
-     * based on how long it takes to receive and parse incoming folder message
-     * data.
-     * 
-     * @return Recommended folder message update frequency
-     */
-    int getFolderMessageUpdateFrequency();
-    
-    /**
      * Get a particular message from the selected folder.
      * <p>
      * The details of message retrieval should be constrained by
