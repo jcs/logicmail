@@ -54,6 +54,7 @@ import java.util.Vector;
 public class ImapProtocol {
     private Connection connection;
     private String idleCommandTag;
+    private static final ConnectionResponseTester executeResponseTester = new ImapResponseLineTester();    
 
     /**
      * Counts the commands executed so far in this session. Every command of an
@@ -1743,88 +1744,6 @@ public class ImapProtocol {
         public String delim;
         public String name;
     }
-    
-    private static ConnectionResponseTester executeResponseTester = new ConnectionResponseTester() {
-        private static final byte CR = (byte) 0x0D;
-        private static final byte LF = (byte) 0x0A;
-        private int trimCount;
-        private int lastLength = 0;
-        private int literalLength = 0;
-
-        public int checkForCompleteResponse(byte[] buf, int len) {
-            trimCount = 0;
-
-            if (literalLength > 0) {
-                if ((lastLength + literalLength) < len) {
-                    lastLength += literalLength;
-                    literalLength = 0;
-                } else {
-                    literalLength -= (len - lastLength);
-                    lastLength = len;
-
-                    return -1;
-                }
-            }
-
-            int p = StringArrays.indexOf(buf, LF, lastLength);
-
-            while ((p != -1) && (p < len)) {
-                if ((p > 0) && (buf[p - 1] == CR)) {
-                    if ((p > 3) && (buf[p - 2] == '}')) {
-                        int i = p - 3;
-
-                        while (i >= 0) {
-                            if ((buf[i] >= '0') && (buf[i] <= '9')) {
-                                i--;
-                            } else if (buf[i] == '{') {
-                                try {
-                                    literalLength = StringArrays.parseInt(buf, i + 1, p - i - 3);
-                                    break;
-                                } catch (NumberFormatException e) { }
-                            }
-                        }
-                    }
-
-                    trimCount = 2;
-                } else {
-                    trimCount = 1;
-                }
-
-                p++;
-
-                if (literalLength > 0) {
-                    if ((len - p) >= literalLength) {
-                        p += literalLength;
-                        literalLength = 0;
-                    } else {
-                        literalLength -= (len - p);
-                        lastLength = len;
-
-                        return -1;
-                    }
-                } else {
-                    lastLength = 0;
-                    literalLength = 0;
-
-                    return p;
-                }
-
-                p = StringArrays.indexOf(buf, LF, p);
-            }
-
-            lastLength = len;
-
-            return -1;
-        }
-
-        public int trimCount() {
-            return trimCount;
-        }
-
-        public String logString(byte[] result) {
-            return new String(result);
-        }
-    };
     
     // String constants
     private static String UID_COPY = "UID COPY";

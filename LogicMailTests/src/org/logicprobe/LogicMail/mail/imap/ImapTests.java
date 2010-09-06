@@ -48,6 +48,7 @@ public class ImapTests extends TestCase {
         TestSuite suite = new TestSuite("LogicMail.mail.imap");
         suite.addTest(new ImapParserTest().suite());
         suite.addTest(new ImapProtocolTest().suite());
+        suite.addTest(new ImapResponseLineTesterTest().suite());
         return suite;
     }
 }
