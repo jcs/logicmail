@@ -36,7 +36,6 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailEventSource;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.AccountNodeEvent;
 import org.logicprobe.LogicMail.model.AccountNodeListener;
@@ -180,16 +179,17 @@ public class NotificationHandler {
 			accountNodes[i].addAccountNodeListener(accountNodeListener);
 			
 			// Register the notification source, if necessary
-			AccountConfig accountConfig = ((NetworkAccountNode)accountNodes[i]).getAccountConfig();
-			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountConfig.getUniqueId());
-			if(eventSource == null || !eventSource.getAccountName().equals(accountConfig.getAcctName())) {
+			long accountUniqueId = ((NetworkAccountNode)accountNodes[i]).getUniqueId();
+			String accountName = accountNodes[i].toString();
+			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountUniqueId);
+			if(eventSource == null || !eventSource.getAccountName().equals(accountName)) {
 				eventSource =
-					new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+					new LogicMailEventSource(accountName, accountUniqueId);
             	NotificationsManager.registerSource(
         			eventSource.getEventSourceId(),
         			eventSource,
         			NotificationsConstants.CASUAL);
-            	eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
+            	eventSourceMap.put(accountUniqueId, eventSource);
 			}
 		}
 
@@ -218,7 +218,7 @@ public class NotificationHandler {
 			accountNode.removeAccountNodeListener(accountNodeListener);
 
 			// Unregister the notification source
-			long eventSourceKey = ((NetworkAccountNode)accountNode).getAccountConfig().getUniqueId();
+			long eventSourceKey = ((NetworkAccountNode)accountNode).getUniqueId();
 			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
 			if(eventSource != null) {
 				NotificationsManager.deregisterSource(eventSource.getEventSourceId());
@@ -262,7 +262,7 @@ public class NotificationHandler {
 	 * @param mailboxNode The mailbox node containing the new messages
 	 */
 	private void notifyNewMessages(MailboxNode mailboxNode) {
-		long sourceId = AppInfo.GUID + ((NetworkAccountNode)mailboxNode.getParentAccount()).getAccountConfig().getUniqueId();
+		long sourceId = AppInfo.GUID + ((NetworkAccountNode)mailboxNode.getParentAccount()).getUniqueId();
 		NotificationsManager.triggerImmediateEvent(sourceId, 0, this, null);
 		setAppIcon(true);
 	}
@@ -274,7 +274,7 @@ public class NotificationHandler {
 		Enumeration e = accountMap.keys();
 		while(e.hasMoreElements()) {
 			AccountNode accountNode = (AccountNode)e.nextElement();
-			long sourceId = AppInfo.GUID + ((NetworkAccountNode)accountNode).getAccountConfig().getUniqueId();
+			long sourceId = AppInfo.GUID + ((NetworkAccountNode)accountNode).getUniqueId();
 			NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
 		}
 		

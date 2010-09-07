@@ -211,7 +211,7 @@ public class MailManager {
         // if an account already exists, and only creating new nodes
         // for new accounts.
         NetworkAccountNode[] existingAccounts = mailRootNode.getNetworkAccounts();
-        NetworkAccountNode[] newAccounts = getNewNetworkAccountNodes(existingAccounts);
+        NetworkAccountNode[] newAccounts = getNewNetworkAccountNodes();
 
         // Remove and replace all account nodes from the root node.
         // This approach is taken to preserve any ordering which may
@@ -233,22 +233,18 @@ public class MailManager {
         fireMailConfigurationChanged();
     }
 
-	private NetworkAccountNode[] getNewNetworkAccountNodes(NetworkAccountNode[] existingAccounts) {
+	private NetworkAccountNode[] getNewNetworkAccountNodes() {
 	    Vector newAccounts = new Vector();
 
 	    int num = mailSettings.getNumAccounts();
-	    boolean accountExists;
 	    for(int i=0; i<num; i++) {
 	        AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-	        accountExists = false;
-	        for(int j=0; j<existingAccounts.length; j++) {
-	            if(accountConfig == existingAccounts[j].getAccountConfig()) {
-	                accountExists = true;
-	                newAccounts.addElement(existingAccounts[j]);
-	                break;
-	            }
+	        NetworkAccountNode existingAccountNode = mailRootNode.findAccountForConfig(accountConfig);
+
+	        if(existingAccountNode != null) {
+	            newAccounts.addElement(existingAccountNode);
 	        }
-	        if(!accountExists) {
+	        else {
 	            AccountNode newAccountNode = new NetworkAccountNode((NetworkMailStore) MailFactory.createMailStore(accountConfig));
 	            newAccountNode.load();
 	            newAccounts.addElement(newAccountNode);

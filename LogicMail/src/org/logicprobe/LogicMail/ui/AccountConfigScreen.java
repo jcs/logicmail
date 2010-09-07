@@ -58,8 +58,8 @@ import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
-import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 /**
  * Account configuration screen
@@ -449,15 +449,16 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 
         // Build an array containing the current account node, if it already exists,
         // and any local account nodes.
-        AccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getAccounts();
-        Vector accountNodeVector = new Vector();
-        for(int i=0; i<accountNodes.length; i++) {
-            if(accountNodes[i].getStatus() == AccountNode.STATUS_LOCAL ||
-                    ((NetworkAccountNode)accountNodes[i]).getAccountConfig() == accountConfig) {
-                accountNodeVector.addElement(accountNodes[i]);
-            }
+        MailRootNode mailRootNode = MailManager.getInstance().getMailRootNode();
+        Vector accountNodeVector = new Vector(2);
+        accountNodeVector.addElement(mailRootNode.getLocalAccount());
+        
+        AccountNode currentAccountNode = mailRootNode.findAccountForConfig(accountConfig);
+        if(currentAccountNode != null) {
+            accountNodeVector.addElement(currentAccountNode);
         }
-        accountNodes = new AccountNode[accountNodeVector.size()];
+        
+        AccountNode[] accountNodes = new AccountNode[accountNodeVector.size()];
         accountNodeVector.copyInto(accountNodes);
 
         MailboxSelectionDialog dialog = new MailboxSelectionDialog(titleText, accountNodes);

@@ -55,7 +55,6 @@ import net.rim.device.api.util.DataBuffer;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
@@ -99,7 +98,6 @@ public class CompositionScreen extends AbstractScreenProvider {
     private String initialRecipient;
     private MessageNode sourceMessageNode;
     private NetworkAccountNode accountNode;
-    private AccountConfig accountConfig;
     private UnicodeNormalizer unicodeNormalizer;
     
     private BorderedFieldManager recipientsFieldManager;
@@ -170,8 +168,7 @@ public class CompositionScreen extends AbstractScreenProvider {
      */
     public CompositionScreen(NetworkAccountNode accountNode) {
         this.accountNode = accountNode;
-        this.accountConfig = accountNode.getAccountConfig();
-        this.identityConfig = accountConfig.getIdentityConfig();
+        this.identityConfig = accountNode.getIdentityConfig();
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
         }
@@ -202,8 +199,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     		MessageNode messageNode,
     		int composeType) {
         this.accountNode = accountNode;
-        this.accountConfig = accountNode.getAccountConfig();
-        this.identityConfig = accountConfig.getIdentityConfig();
+        this.identityConfig = accountNode.getIdentityConfig();
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
         }
@@ -430,7 +426,7 @@ public class CompositionScreen extends AbstractScreenProvider {
                 (messageEditField.getText().length() > 0))) {
 
         	boolean shouldClose = false;
-        	if(accountConfig.getDraftMailbox() != null) {
+        	if(accountNode.getDraftMailbox() != null) {
         		int choice = Dialog.ask(
         				resources.getString(LogicMailResource.COMPOSITION_PROMPT_SAVE_OR_DISCARD),
         				new Object[] {
@@ -473,7 +469,7 @@ public class CompositionScreen extends AbstractScreenProvider {
                 .getText().length() > 0) {
             menu.add(sendMenuItem);
         }
-        MailboxNode draftMailbox = accountConfig.getDraftMailbox();
+        MailboxNode draftMailbox = accountNode.getDraftMailbox();
         if(draftMailbox != null
                 && ((subjectEditField.getText().length() > 0)
                 || (messageEditField.getText().length() > 0))) {
@@ -550,7 +546,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     }
     
     private void saveAsDraft() {
-        final MailboxNode draftMailbox = accountConfig.getDraftMailbox();
+        final MailboxNode draftMailbox = accountNode.getDraftMailbox();
         final MessageEnvelope envelope = generateEnvelope();
         generateMessage(new Runnable() {
             public void run() {
@@ -614,33 +610,22 @@ public class CompositionScreen extends AbstractScreenProvider {
 
         // Set the sender and reply-to addresses
         // (this comes from identity settings)
-        if (identityConfig != null) {
-            env.from = new String[1];
+        env.from = new String[1];
 
-            String fullName = identityConfig.getFullName();
+        String fullName = identityConfig.getFullName();
 
-            if ((fullName != null) && (fullName.length() > 0)) {
-                env.from[0] = "\"" + fullName + "\"" + " <" +
-                    identityConfig.getEmailAddress() + ">";
-            } else {
-                env.from[0] = identityConfig.getEmailAddress();
-            }
-
-            String replyToAddress = identityConfig.getReplyToAddress();
-
-            if ((replyToAddress != null) && (replyToAddress.length() > 0)) {
-                env.replyTo = new String[1];
-                env.replyTo[0] = replyToAddress;
-            }
+        if ((fullName != null) && (fullName.length() > 0)) {
+            env.from[0] = "\"" + fullName + "\"" + " <" +
+            identityConfig.getEmailAddress() + ">";
         } else {
-            // There are rare situations where the IdentityConfig could be null,
-            // such as if the user deleted their identity configuration without
-            // editing their account again to force the creation of a default identity.
-            // Eventually this should be prevented, but for now we will just elegantly
-            // handle the case of missing identity information.
-            env.from = new String[1];
-            env.from[0] = accountConfig.getServerUser() + "@" +
-                accountConfig.getServerName();
+            env.from[0] = identityConfig.getEmailAddress();
+        }
+
+        String replyToAddress = identityConfig.getReplyToAddress();
+
+        if ((replyToAddress != null) && (replyToAddress.length() > 0)) {
+            env.replyTo = new String[1];
+            env.replyTo[0] = replyToAddress;
         }
 
         // Set the subject

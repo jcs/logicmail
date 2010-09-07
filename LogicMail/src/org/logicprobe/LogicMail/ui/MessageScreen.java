@@ -68,12 +68,12 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
+import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
@@ -98,8 +98,8 @@ public class MessageScreen extends AbstractScreenProvider {
     private MenuItem saveAttachmentItem;
     private MenuItem compositionItem;
 	
-	private AccountConfig accountConfig;
     private MessageNode messageNode;
+    private AccountNode parentAccount;
     private boolean isSentFolder;
     private boolean isOutgoingWithErrors;
     private boolean messageRendered;
@@ -111,9 +111,7 @@ public class MessageScreen extends AbstractScreenProvider {
     public MessageScreen(MessageNode messageNode)
     {
         this.messageNode = messageNode;
-        if(messageNode.getParent().getParentAccount() instanceof NetworkAccountNode) {
-            this.accountConfig = ((NetworkAccountNode)messageNode.getParent().getParentAccount()).getAccountConfig();
-        }
+        this.parentAccount = messageNode.getParent().getParentAccount();
         
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
@@ -170,7 +168,7 @@ public class MessageScreen extends AbstractScreenProvider {
         MailboxNode mailboxNode = messageNode.getParent();
         if(mailboxNode != null) {
             if(mailboxNode.getType() != MailboxNode.TYPE_OUTBOX) {
-                String accountText = mailboxNode.getParentAccount().toString();
+                String accountText = parentAccount.toString();
                 BasicEditField accountField = new BasicEditField(
                         resources.getString(LogicMailResource.MESSAGEPROPERTIES_ACCOUNT) + ' ',
                         accountText, accountText.length(), Field.FOCUSABLE);
@@ -306,7 +304,7 @@ public class MessageScreen extends AbstractScreenProvider {
 	    };
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
-	            navigationController.displayComposition((NetworkAccountNode)messageNode.getParent().getParentAccount());
+	            navigationController.displayComposition((NetworkAccountNode)parentAccount);
 	        }
 	    };
     }
@@ -323,7 +321,8 @@ public class MessageScreen extends AbstractScreenProvider {
     	
     	messageActions.makeMenu(menu, instance, messageNode, true);
     	
-        if(accountConfig != null && accountConfig.getOutgoingConfig() != null) {
+    	if(parentAccount instanceof NetworkAccountNode
+    	        && ((NetworkAccountNode)parentAccount).hasMailSender()) {
             menu.add(compositionItem);
         }
     }
@@ -632,7 +631,7 @@ public class MessageScreen extends AbstractScreenProvider {
     	if(field instanceof BrowserFieldManager) {
     		if((context & BrowserFieldManager.ACTION_SEND_EMAIL) != 0) {
     			String address = ((BrowserFieldManager)field).getSelectedToken();
-                navigationController.displayComposition((NetworkAccountNode)messageNode.getParent().getParentAccount(), address);
+                navigationController.displayComposition((NetworkAccountNode)parentAccount, address);
     		}
     	}
 	}

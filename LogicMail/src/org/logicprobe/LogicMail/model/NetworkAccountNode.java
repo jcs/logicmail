@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
@@ -81,12 +82,42 @@ public class NetworkAccountNode extends AccountNode {
     }
     
     /**
+     * Gets the unique ID for this account.
+     * This is primarily intended for use as an offline reference in places
+     * where an object reference is not practical.
+     *
+     * @return the unique ID
+     */
+    public long getUniqueId() {
+        return this.accountConfig.getUniqueId();
+    }
+    
+    /**
      * Gets the account configuration.
      *
      * @return The account configuration
      */
-    public AccountConfig getAccountConfig() {
+    AccountConfig getAccountConfig() {
         return this.accountConfig;
+    }
+    
+    /**
+     * Gets the identity configuration.
+     * If no identity configuration is available, a usable placeholder will be
+     * returned to prevent the result from being null.
+     * 
+     * @return The identity configuration
+     */
+    public IdentityConfig getIdentityConfig() {
+        IdentityConfig identityConfig = this.accountConfig.getIdentityConfig();
+        if(identityConfig == null) {
+            identityConfig = new IdentityConfig();
+            identityConfig.setEmailAddress(
+                    this.accountConfig.getServerUser()
+                    + '@' +
+                    this.accountConfig.getServerName());
+        }
+        return identityConfig;
     }
     
     void setStatus(int status) {
@@ -134,6 +165,24 @@ public class NetworkAccountNode extends AccountNode {
      */
     public boolean hasIdentity() {
         return this.accountConfig.getIdentityConfig() != null;
+    }
+    
+    /**
+     * Gets the sent message mailbox.
+     * 
+     * @return The sent message mailbox
+     */
+    public MailboxNode getSentMailbox() {
+        return this.accountConfig.getSentMailbox();
+    }
+    
+    /**
+     * Gets the draft message mailbox.
+     * 
+     * @return The draft message mailbox
+     */
+    public MailboxNode getDraftMailbox() {
+        return this.accountConfig.getDraftMailbox();
     }
     
     /**

@@ -40,7 +40,6 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 
 import org.logicprobe.LogicMail.LogicMailResource;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
@@ -271,8 +270,7 @@ public class MessageActions {
 
     	for(int i=0; i<accounts.length; i++) {
     	    if(accounts[i].hasMailSender()) {
-        		AccountConfig accountConfig = accounts[i].getAccountConfig();
-    			if(accountConfig.getDraftMailbox() == messageNode.getParent()) {
+    			if(accounts[i].getDraftMailbox() == messageNode.getParent()) {
     				matchingAccounts.addElement(accounts[i]);
     			}
     	    }

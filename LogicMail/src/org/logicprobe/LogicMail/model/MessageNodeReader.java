@@ -330,7 +330,7 @@ public class MessageNodeReader {
         if(sendingAccountId != -1 || replyToAccountId != -1) {
             NetworkAccountNode[] accounts = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
             for(int i=0; i<accounts.length; i++) {
-                long accountId = accounts[i].getAccountConfig().getUniqueId();
+                long accountId = accounts[i].getUniqueId();
 
                 if(accountId == sendingAccountId) {
                     messageNode.setSendingAccount(accounts[i]);

@@ -37,7 +37,6 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -338,10 +337,10 @@ public class OutboxMailboxNode extends MailboxNode {
 
             // Store to the Sent folder
             if(outgoingMessageNode.getSendingAccount() != null) {
-                AccountConfig sendingAccountConfig = ((NetworkAccountNode)outgoingMessageNode.getSendingAccount()).getAccountConfig();
-
+                NetworkAccountNode sendingAccount = (NetworkAccountNode)outgoingMessageNode.getSendingAccount();
+                
                 // Append to the Sent message folder, if available
-                MailboxNode sentMailbox = sendingAccountConfig.getSentMailbox();
+                MailboxNode sentMailbox = sendingAccount.getSentMailbox();
                 if(sentMailbox != null && sentMailbox.hasAppend()) {
                     MessageFlags initialFlags = new MessageFlags();
                     initialFlags.setSeen(true);
