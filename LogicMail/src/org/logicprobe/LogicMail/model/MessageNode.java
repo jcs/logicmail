@@ -378,6 +378,7 @@ public class MessageNode implements Node {
 		    if(this.getParent() != null) {
 		        this.getParent().updateUnseenMessages(true);
 		    }
+		    fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
 		}
 	}
 

@@ -512,7 +512,6 @@ public abstract class AccountNode implements Node {
 
         if (messageNode != null) {
         	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
-            messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
         }
     }
 
@@ -526,7 +525,6 @@ public abstract class AccountNode implements Node {
 
         if (messageNode != null) {
         	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
-            messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
         }
     }
 
@@ -540,7 +538,6 @@ public abstract class AccountNode implements Node {
 
         if (messageNode != null) {
         	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
-            messageNode.fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
         }
     }
 
