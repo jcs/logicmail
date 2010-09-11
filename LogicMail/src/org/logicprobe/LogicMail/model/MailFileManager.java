@@ -52,6 +52,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.URLEncoder;
 
 /**
  * Front-end for reading and writing messages from local file storage.
@@ -145,9 +146,7 @@ public class MailFileManager {
 		String url = fileConnection.getURL();
 		fileConnection.close();
 		fileConnection = (FileConnection)Connector.open(
-				url
-				+ messageNode.getMessageToken().getMessageUid()
-				+ MSG_SUFFIX);
+				getMessageFileUrl(url, messageNode.getMessageToken()));
 		if(fileConnection.exists()) {
 			fileConnection.truncate(0);
 		}
@@ -234,10 +233,8 @@ public class MailFileManager {
         String[] fileUrls = getMessageFiles(mailboxNode);
         Vector fileUrlsToLoad = new Vector(fileUrls.length);
         for(int i=0; i<fileUrls.length; i++) {
-            int p = fileUrls[i].lastIndexOf('/');
-            int q = fileUrls[i].lastIndexOf('.');
-            if(p != -1 && q != -1 && p < q) {
-                String messageUid = fileUrls[i].substring(p + 1, q);
+            String messageUid = getMessageUidFromFileUrl(fileUrls[i]);
+            if(messageUid != null) {
                 if(callback.messageNodeAvailable(messageUid)) {
                     fileUrlsToLoad.addElement(fileUrls[i]);
                 }
@@ -258,7 +255,7 @@ public class MailFileManager {
         
         callback.messageNodeUpdated(null);
     }
-	
+
     private String[] getMessageFiles(MailboxNode mailboxNode) throws IOException {
         SimpleSortingVector fileVector = new SimpleSortingVector();
         if(mailSettings.getGlobalConfig().getDispOrder()) {
@@ -293,10 +290,7 @@ public class MailFileManager {
 		
 		String mailboxUrl = fileConnection.getURL();
 		fileConnection.close();
-		String fileUrl =
-				mailboxUrl
-				+ messageToken.getMessageUid()
-				+ MSG_SUFFIX;
+		String fileUrl = getMessageFileUrl(mailboxUrl, messageToken);
 		MessageNode messageNode = readMessageNode(fileUrl);
 		if(loadContent) {
 			MimeMessageContent[] content = readMessageContent(mailboxNode, messageToken);
@@ -313,10 +307,7 @@ public class MailFileManager {
 		
 		String mailboxUrl = fileConnection.getURL();
 		fileConnection.close();
-		String fileUrl =
-				mailboxUrl
-				+ messageToken.getMessageUid()
-				+ MSG_SUFFIX;
+		String fileUrl = getMessageFileUrl(mailboxUrl, messageToken);
 		MimeMessageContent[] messageContent = readMessageContent(fileUrl, messageToken);
 		
 		return messageContent;
@@ -484,7 +475,7 @@ public class MailFileManager {
         for(int i=0; i<messageTokens.length; i++) {
             try {
                 FileConnection mailFileConnection =
-                    (FileConnection)Connector.open(mailboxUrl + messageTokens[i].getMessageUid() + MSG_SUFFIX);
+                    (FileConnection)Connector.open(getMessageFileUrl(mailboxUrl, messageTokens[i]));
                 if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
                     mailFileConnection.delete();
                 }
@@ -508,7 +499,7 @@ public class MailFileManager {
         
         try {
             FileConnection mailFileConnection =
-                (FileConnection)Connector.open(mailboxUrl + messageToken.getMessageUid() + MSG_SUFFIX);
+                (FileConnection)Connector.open(getMessageFileUrl(mailboxUrl, messageToken));
             if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
                 mailFileConnection.delete();
             }
@@ -519,6 +510,21 @@ public class MailFileManager {
                         ("Error deleting message from cache: " + exp.toString()).getBytes(),
                         EventLogger.DEBUG_INFO);
             }
+        }
+    }
+
+    private static String getMessageFileUrl(String mailboxUrl, MessageToken messageToken) {
+        return mailboxUrl + URLEncoder.encode(messageToken.getMessageUid()) + MSG_SUFFIX;
+    }
+    
+    private static String getMessageUidFromFileUrl(String fileUrl) {
+        int p = fileUrl.lastIndexOf('/');
+        int q = fileUrl.lastIndexOf('.');
+        if(p != -1 && q != -1 && p < q) {
+            return URLEncoder.decode(fileUrl.substring(p + 1, q));
+        }
+        else {
+            return null;
         }
     }
 }
