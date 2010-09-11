@@ -301,20 +301,22 @@ public class MailManager {
 	 * @param e Event data.
 	 */
 	private void mailConnectionManager_MailConnectionStateChanged(MailConnectionStateEvent e) {
-		// Find the account node associated with this event
-		AccountNode matchingAccount = mailRootNode.findAccountForConfig(
-		        (AccountConfig)e.getConnectionConfig());
-		
-		// Update account state
-		if(matchingAccount != null) {
-			int state = e.getState();
-			if(state == MailConnectionStateEvent.STATE_CONNECTED) {
-				matchingAccount.setStatus(AccountNode.STATUS_ONLINE);
-			}
-			else if(state == MailConnectionStateEvent.STATE_DISCONNECTED) {
-				matchingAccount.setStatus(AccountNode.STATUS_OFFLINE);
-			}
-		}
+	    if(e.getConnectionConfig() instanceof AccountConfig) {
+    		// Find the account node associated with this event
+    		AccountNode matchingAccount = mailRootNode.findAccountForConfig(
+    		        (AccountConfig)e.getConnectionConfig());
+    		
+    		// Update account state
+    		if(matchingAccount != null) {
+    			int state = e.getState();
+    			if(state == MailConnectionStateEvent.STATE_CONNECTED) {
+    				matchingAccount.setStatus(AccountNode.STATUS_ONLINE);
+    			}
+    			else if(state == MailConnectionStateEvent.STATE_DISCONNECTED) {
+    				matchingAccount.setStatus(AccountNode.STATUS_OFFLINE);
+    			}
+    		}
+	    }
 	}
 	
 	/**

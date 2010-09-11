@@ -184,6 +184,39 @@ public class MessageMimeConverter {
 	        finishCurrentStream(currentStream);
 	    }
 	
+	    public void visitApplicationPart(ApplicationPart part) {
+	        encodePartToCurrentStream(part);
+	    }
+	    
+	    public void visitAudioPart(AudioPart part) {
+            encodePartToCurrentStream(part);
+	    }
+	    
+	    public void visitVideoPart(VideoPart part) {
+            encodePartToCurrentStream(part);
+	    }
+
+        private void encodePartToCurrentStream(ContentPart part) {
+            MimeMessageContent content = message.getContent(part);
+
+            byte[] data = content.getRawData();
+
+            MIMEOutputStream currentStream = startCurrentStream(part, "base64");
+
+            currentStream.setContentType(part.getMimeType() + '/' +
+                    part.getMimeSubtype());
+
+            try {
+                currentStream.write(Base64OutputStream.encode(data, 0, data.length, true, true));
+            } catch (IOException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("MIME conversion error: " + e.toString()).getBytes(),
+                        EventLogger.ERROR);
+            }
+
+            finishCurrentStream(currentStream);
+        }
+
 	    public void visitUnsupportedPart(UnsupportedPart part) {
 	        MIMEOutputStream currentStream = startCurrentStream(part, "7bit");
 	

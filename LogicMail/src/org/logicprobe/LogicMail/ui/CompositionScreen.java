@@ -651,7 +651,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     		}
             
     		if(attachmentsFieldManager != null) {
-    		    MultiPart multiPart = new MultiPart("mixed");
+    		    MultiPart multiPart = new MultiPart(MultiPart.MIXED);
     		    pendingMessage = new Message(multiPart);
     		    multiPart.addPart(bodyPart);
     		    

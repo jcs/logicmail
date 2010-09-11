@@ -71,7 +71,7 @@ public class MimeMessagePartTransformer {
 			if(part.getParent() instanceof MultiPart) {
 				MultiPart parent = (MultiPart)part.getParent();
 				
-				if(parent.getMimeSubtype().equalsIgnoreCase("alternative")) {
+				if(parent.getMimeSubtype().equalsIgnoreCase(MultiPart.ALTERNATIVE)) {
 					String subType = part.getMimeSubtype();
 					
 					if(displayFormat == GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT) {
