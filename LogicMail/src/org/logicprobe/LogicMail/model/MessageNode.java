@@ -45,6 +45,7 @@ import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
+import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
 import org.logicprobe.LogicMail.message.ContentPart;
@@ -159,10 +160,10 @@ public class MessageNode implements Node {
 	
 	private MailboxNode parent;
 	private MimeMessagePart messageStructure;
-	private Hashtable messageContent = new Hashtable();
+	private final Hashtable messageContent = new Hashtable();
 	private MimeMessagePart[] attachmentParts;
 	private String messageSource;
-	private EventListenerList listenerList = new EventListenerList();
+	private final EventListenerList listenerList = new EventListenerList();
 	private boolean refreshInProgress;
 
 	/** Thread queue for calls to MailFileManager. */
@@ -1274,6 +1275,42 @@ public class MessageNode implements Node {
 		}
 	}
 	
+    /**
+     * Called when the mail store has new message data available.
+     *
+     * @param e the event from the mail store
+     */
+    void mailStoreMessageAvailable(MessageEvent e) {
+        // Set the SEEN bit and unset the RECENT bit
+        int flags = getFlags();
+        flags |= MessageNode.Flag.SEEN;
+        flags &= ~MessageNode.Flag.RECENT;
+
+        setFlags(flags);
+
+        switch(e.getType()) {
+        case MessageEvent.TYPE_FULLY_LOADED:
+            setMessageStructure(e.getMessageStructure());
+            setMessageSource(e.getMessageSource());
+            putMessageContent(e.getMessageContent());
+            commitMessage();
+            break;
+        case MessageEvent.TYPE_CONTENT_LOADED:
+            putMessageContent(e.getMessageContent());
+            commitMessage();
+            break;
+        }
+    }
+    
+    /**
+     * Called when the mail store notifies that message flags have changed.
+     *
+     * @param e the event from the mail store
+     */
+    void mailStoreMessageFlagsChanged(MessageEvent e) {
+        setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
+    }
+    
 	/**
 	 * Adds a <tt>MessageNodeListener</tt> to the message node.
 	 * 

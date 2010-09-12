@@ -168,11 +168,14 @@ public class OutboxMailboxNode extends MailboxNode {
 
     public void refreshMessages() {
         // Fetch messages stored in the cache
-        synchronized(fetchLock) {
+        if(refreshInProgress.compareAndSet(false, true)) {
             if(!hasRefreshed && fetchThread == null || !fetchThread.isAlive()) {
                 hasRefreshed = true;
                 fetchThread = new RefreshMessagesThread();
                 fetchThread.start();
+            }
+            else {
+                refreshInProgress.set(false);
             }
         }
     }
@@ -183,7 +186,6 @@ public class OutboxMailboxNode extends MailboxNode {
         }
 
         public void run() {
-            yield();
             try {
                 MailFileManager.getInstance().readMessageNodes(OutboxMailboxNode.this, true, this);
             } catch (IOException e) {
@@ -192,6 +194,7 @@ public class OutboxMailboxNode extends MailboxNode {
                                 + e.getMessage()).getBytes(),
                                 EventLogger.ERROR);
             }
+            refreshInProgress.set(false);
         }
 
         public boolean messageNodeAvailable(String messageUid) {

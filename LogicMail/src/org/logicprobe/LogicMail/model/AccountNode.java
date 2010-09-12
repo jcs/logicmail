@@ -39,7 +39,6 @@ import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
-import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 import java.util.Enumeration;
@@ -48,27 +47,23 @@ import java.util.Vector;
 
 /**
  * Account node for the mail data model.
- * This node contains only the root <tt>MailboxNode</tt> instance.
- * Currently the type of mail store backing this node is
- * determined by the constructor that is called.
- * Eventually a more elegant approach will need to
- * be implemented.
+ * This node contains the root <code>MailboxNode</code> instance and delegates
+ * events from the underlying mail store to the appropriate
+ * <code>MailboxNode</code> or <code>MessageNode</code>.
  */
 public abstract class AccountNode implements Node {
     public final static int STATUS_LOCAL = 0;
     public final static int STATUS_OFFLINE = 1;
     public final static int STATUS_ONLINE = 2;
-    private AbstractMailStore mailStore;
+    
+    private final AbstractMailStore mailStore;
     private MailRootNode parent;
     private MailboxNode rootMailbox;
-    private Hashtable pathMailboxMap;
-    private Object rootMailboxLock = new Object();
-    private EventListenerList listenerList = new EventListenerList();
+    private final Hashtable pathMailboxMap;
+    private final Object rootMailboxLock = new Object();
+    private final EventListenerList listenerList = new EventListenerList();
     
     protected int status;
-   
-    /** Map of folders to messages to fetch for them. */
-    private Hashtable folderMessagesToFetch;
     
     /**
      * Construct a new node for a network account.
@@ -78,7 +73,6 @@ public abstract class AccountNode implements Node {
     protected AccountNode(AbstractMailStore mailStore) {
         this.rootMailbox = null;
         this.pathMailboxMap = new Hashtable();
-        this.folderMessagesToFetch = new Hashtable();
 
         this.mailStore = mailStore;
 
@@ -88,41 +82,73 @@ public abstract class AccountNode implements Node {
     private void addMailStoreListeners() {
         this.mailStore.addMailStoreListener(new MailStoreListener() {
             public void folderTreeUpdated(FolderEvent e) {
-                mailStore_FolderTreeUpdated(e);
+                mailStoreFolderTreeUpdated(e);
             }
         });
 
         this.mailStore.addFolderListener(new FolderListener() {
             public void folderStatusChanged(FolderEvent e) {
-                mailStore_FolderStatusChanged(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                mailboxNode.mailStoreFolderStatusChanged(e);
             }
 
             public void folderMessagesAvailable(FolderMessagesEvent e) {
-                mailStore_FolderMessagesAvailable(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                mailboxNode.mailStoreFolderMessagesAvailable(e);
             }
 
             public void folderExpunged(FolderEvent e) {
-                mailStore_FolderExpunged(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                mailboxNode.mailStoreFolderExpunged(e);
             }
         });
 
         this.mailStore.addMessageListener(new MessageListener() {
             public void messageAvailable(MessageEvent e) {
-                mailStore_messageAvailable(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                if(mailboxNode != null) {
+                    mailboxNode.mailStoreMessageAvailable(e);
+                }
             }
 
             public void messageFlagsChanged(MessageEvent e) {
-                mailStore_messageFlagsChanged(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                if(mailboxNode != null) {
+                    mailboxNode.mailStoreMessageFlagsChanged(e);
+                }
             }
 
             public void messageDeleted(MessageEvent e) {
-                mailStore_messageDeleted(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                if(mailboxNode != null) {
+                    mailboxNode.mailStoreMessageFlagsChanged(e);
+                }
             }
 
             public void messageUndeleted(MessageEvent e) {
-                mailStore_messageUndeleted(e);
+                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
+                if(mailboxNode != null) {
+                    mailboxNode.mailStoreMessageFlagsChanged(e);
+                }
             }
         });
+    }
+    
+    private MailboxNode getMailboxNodeForEvent(FolderEvent e) {
+        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder().getPath());
+        return mailboxNode;
+    }
+    
+    private MailboxNode getMailboxNodeForEvent(MessageEvent e) {
+        MessageToken messageToken = e.getMessageToken();
+        Enumeration en = pathMailboxMap.elements();
+        while(en.hasMoreElements()) {
+            MailboxNode currentMailbox = (MailboxNode)en.nextElement();
+            if(messageToken.containedWithin(currentMailbox.getFolderTreeItem())) {
+                return currentMailbox;
+            }
+        }
+        return null;
     }
 
     public void accept(NodeVisitor visitor) {
@@ -256,7 +282,7 @@ public abstract class AccountNode implements Node {
      *
      * @param e Event data.
      */
-    private void mailStore_FolderTreeUpdated(FolderEvent e) {
+    private void mailStoreFolderTreeUpdated(FolderEvent e) {
         FolderTreeItem rootFolder = e.getFolder();
 
         synchronized (rootMailboxLock) {
@@ -355,214 +381,6 @@ public abstract class AccountNode implements Node {
                     remainingMailboxMap);
                 currentMailbox.addMailbox(childMailbox);
             }
-        }
-    }
-
-    /**
-     * Handles folder status changes.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_FolderStatusChanged(FolderEvent e) {
-        updateMailboxStatus(e.getFolder());
-    }
-
-    /**
-     * Recursively update mailbox status.
-     *
-     * @param currentFolder Folder item to start from.
-     */
-    private void updateMailboxStatus(FolderTreeItem currentFolder) {
-        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(currentFolder.getPath());
-
-        if (mailboxNode != null) {
-            FolderTreeItem mailboxFolder = mailboxNode.getFolderTreeItem();
-            mailboxFolder.setMsgCount(currentFolder.getMsgCount());
-            mailboxFolder.setUnseenCount(currentFolder.getUnseenCount());
-            mailboxNode.updateUnseenFolderTreeItem();
-            mailboxNode.fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
-        }
-
-        if (currentFolder.hasChildren()) {
-            FolderTreeItem[] children = currentFolder.children();
-
-            for (int i = 0; i < children.length; i++) {
-                updateMailboxStatus(children[i]);
-            }
-        }
-    }
-
-    /**
-     * Handles folder messages becoming available.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_FolderMessagesAvailable(FolderMessagesEvent e) {
-        if (e.getMessages() != null) {
-            // Find the MailboxNode that this event applies to.
-            // If none apply, then shortcut out of here.
-            if (!pathMailboxMap.containsKey(e.getFolder().getPath())) {
-                return;
-            }
-
-            MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder().getPath());
-            FolderMessage[] folderMessages = e.getMessages();
-
-            if(e.isFlagsOnly()) {
-            	// Only flags have been retrieved, so the existing messages need to
-            	// be checked and additional actions requested accordingly.
-	            for (int i = 0; i < folderMessages.length; i++) {
-	                if(!mailboxNode.updateMessageFlags(folderMessages[i].getMessageToken(), folderMessages[i].getFlags())) {
-                        // Message does not currently exist in the mailbox, and
-                        // is not in the process of being loaded from cache.
-                        synchronized(folderMessagesToFetch) {
-                            Vector messagesToFetch = (Vector)folderMessagesToFetch.get(e.getFolder());
-                            if(messagesToFetch == null) {
-                                messagesToFetch = new Vector();
-                                folderMessagesToFetch.put(e.getFolder(), messagesToFetch);
-                            }
-                            messagesToFetch.addElement(folderMessages[i].getMessageToken());
-                        }
-	                }
-	            }
-            }
-            else {
-	            // Determine what MessageNodes need to be created, and add them.
-	            Vector addedMessages = new Vector();
-	
-	            for (int i = 0; i < folderMessages.length; i++) {
-	                MessageNode messageNode = new MessageNode(folderMessages[i]);
-	                messageNode.setExistsOnServer(true);
-	                addedMessages.addElement(messageNode);
-	            }
-	
-	            MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
-	            addedMessages.copyInto(addedMessagesArray);
-	            mailboxNode.addMessages(addedMessagesArray);
-            }
-        }
-        else {
-            synchronized(folderMessagesToFetch) {
-                FolderTreeItem fetchFolder = e.getFolder();
-                
-                // Clean out all messages that couldn't be verified against the server
-                MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(fetchFolder.getPath());
-                mailboxNode.removeMessagesNotOnServer();
-                
-                // Queue a fetch for messages that do exist
-                Vector messagesToFetch = (Vector)folderMessagesToFetch.remove(fetchFolder);
-                if(messagesToFetch != null) {
-                    MessageToken[] fetchArray = new MessageToken[messagesToFetch.size()];
-                    messagesToFetch.copyInto(fetchArray);
-                    mailStore.requestFolderMessagesSet(e.getFolder(), fetchArray);
-                }
-            }
-        }
-    }
-
-    /**
-     * Handles a folder being expunged.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_FolderExpunged(FolderEvent e) {
-        FolderTreeItem fetchFolder = e.getFolder();
-        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(fetchFolder.getPath());
-        mailboxNode.handleExpungeNotification();
-    }
-
-    /**
-     * Handles a message being loaded.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_messageAvailable(MessageEvent e) {
-        MessageNode messageNode = findMessageForToken(e.getMessageToken());
-
-        if (messageNode != null) {
-            // Set the SEEN bit and unset the RECENT bit
-            int flags = messageNode.getFlags();
-            flags |= MessageNode.Flag.SEEN;
-            flags &= ~MessageNode.Flag.RECENT;
-
-            messageNode.setFlags(flags);
-
-        	switch(e.getType()) {
-        	case MessageEvent.TYPE_FULLY_LOADED:
-                messageNode.setMessageStructure(e.getMessageStructure());
-                messageNode.setMessageSource(e.getMessageSource());
-                messageNode.putMessageContent(e.getMessageContent());
-                messageNode.commitMessage();
-                break;
-        	case MessageEvent.TYPE_CONTENT_LOADED:
-                messageNode.putMessageContent(e.getMessageContent());
-                messageNode.commitMessage();
-                break;
-        	}
-        }
-    }
-
-    /**
-     * Handles a message flags changing.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_messageFlagsChanged(MessageEvent e) {
-        MessageNode messageNode = findMessageForToken(e.getMessageToken());
-
-        if (messageNode != null) {
-        	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
-        }
-    }
-
-    /**
-     * Handles a message being deleted.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_messageDeleted(MessageEvent e) {
-        MessageNode messageNode = findMessageForToken(e.getMessageToken());
-
-        if (messageNode != null) {
-        	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
-        }
-    }
-
-    /**
-     * Handles a message being undeleted.
-     *
-     * @param e Event data.
-     */
-    private void mailStore_messageUndeleted(MessageEvent e) {
-        MessageNode messageNode = findMessageForToken(e.getMessageToken());
-
-        if (messageNode != null) {
-        	messageNode.setFlags(MessageNode.convertMessageFlags(e.getMessageFlags()));
-        }
-    }
-
-    /**
-     * Finds the message node matching a particular token.
-     *
-     * @param messageToken
-     * @return Message node, or null if none was found.
-     */
-    private MessageNode findMessageForToken(MessageToken messageToken) {
-    	MailboxNode mailboxNode = null;
-    	Enumeration e = pathMailboxMap.elements();
-    	while(e.hasMoreElements()) {
-    		MailboxNode currentMailbox = (MailboxNode)e.nextElement();
-    		if(messageToken.containedWithin(currentMailbox.getFolderTreeItem())) {
-    			mailboxNode = currentMailbox;
-    			break;
-    		}
-    	}
-    	
-        if (mailboxNode != null) {
-            // Change this to use the a real tag object once implemented
-            return mailboxNode.getMessageByToken(messageToken);
-        } else {
-            return null;
         }
     }
 

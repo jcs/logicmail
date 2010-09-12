@@ -253,7 +253,19 @@ public class AccountNodeTest extends TestCase {
 		}
 		
 		public void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback) {
-			fireFolderStatusChanged(statusUpdatedRootFolder);
+		    for(int i=0; i<folders.length; i++) {
+		        requestFolderStatusImpl(statusUpdatedRootFolder);
+		    }
+		}
+		
+		private void requestFolderStatusImpl(FolderTreeItem folder) {
+		    fireFolderStatusChanged(folder);
+		    if(folder.hasChildren()) {
+		        FolderTreeItem[] children = folder.children();
+		        for(int i=0; i<children.length; i++) {
+		            requestFolderStatusImpl(children[i]);
+		        }
+		    }
 		}
 		
 		public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) { }
