@@ -30,27 +30,44 @@
  */
 package org.logicprobe.LogicMail.util;
 
-import net.rim.device.api.util.CharacterUtilities;
+import net.rim.device.api.util.Arrays;
 
 /**
- * Simple URL encoder utility class.
- * Assumes all input strings are confined to ASCII characters, and thus may
- * not correctly handle Unicode characters.
+ * Simple filename encoder utility class.
+ * Assumes all input strings are confined to ASCII characters, and outputs
+ * names compatible with the BlackBerry filesystem.
  */
 public class FilenameEncoder {
+    /** Prefix character for encoding. */
+    private static final char ENCODED_PREFIX = '!';
     
+    /**
+     * Array of characters which are not valid in filenames.  This list is a
+     * combination of characters normally encoded in URLs and characters
+     * experimentally determined to be invalid in BlackBerry filenames.
+     */
+    private static final byte[] INVALID_CHARS = {
+            '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005',
+            '\u0006', '\u0007', '\b', '\t', '\n', '\u000B', '\f', '\r',
+            '\u000E', '\u000F', '\u0010', '\u0011', '\u0012', '\u0013',
+            '\u0014', '\u0015', '\u0016', '\u0017', '\u0018', '\u0019',
+            '\u001A', '\u001B', '\u001C', '\u001D', '\u001E', '\u001F',
+            '"', '%', '*', '/', ':', '<', '>', '?', '\\', '|',
+            '#', '&', '@', '+', ' ', ';', '=', '$', ',', '~', '^', '`',
+            '[', ']', '{', '}',
+            ENCODED_PREFIX
+    };
+
     public static String encode(String string) {
         StringBuffer buf = new StringBuffer();
         int len = string.length();
         for(int i=0; i<len; i++) {
             char ch = string.charAt(i);
-            if(CharacterUtilities.isLetter(ch)
-                    || CharacterUtilities.isDigit(ch)
-                    || isUnconvertedSpecial(ch)) {
+            if(isValidCharacter(ch)) {
                 buf.append(ch);
             }
             else {
-                buf.append('%');
+                buf.append(ENCODED_PREFIX);
                 String hex = Integer.toHexString((byte)ch).toUpperCase();
                 if(hex.length() == 1) {
                     buf.append('0');
@@ -62,8 +79,8 @@ public class FilenameEncoder {
         return buf.toString();
     }
     
-    private static boolean isUnconvertedSpecial(char ch) {
-        return ch == '.' || ch == '-' || ch == '*' || ch == '_';
+    private static boolean isValidCharacter(char ch) {
+        return Arrays.getIndex(INVALID_CHARS, (byte)ch) == -1;
     }
 
     public static String decode(String string) {
@@ -71,7 +88,7 @@ public class FilenameEncoder {
         int len = string.length();
         for(int i=0; i<len; i++) {
             char ch = string.charAt(i);
-            if(ch == '%' && i + 2 < len
+            if(ch == ENCODED_PREFIX && i + 2 < len
                     && isHexDigit(string.charAt(i + 1)) && isHexDigit(string.charAt(i + 2))) {
                 int decodedChar = Integer.parseInt(string.substring(i + 1, i + 3), 16);
                 buf.append((char)decodedChar);

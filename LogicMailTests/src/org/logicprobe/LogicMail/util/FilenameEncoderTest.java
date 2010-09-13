@@ -52,8 +52,10 @@ public class FilenameEncoderTest extends TestCase {
     
     public void testStringNeedingComplexEncoding() {
         String input = "<AANLkTi=HmeCMneW-U+BHamLyPLs11xN5x45CxOty6bqC@mail.gmail.com>";
-        String expected = "%3CAANLkTi%3DHmeCMneW-U%2BBHamLyPLs11xN5x45CxOty6bqC%40mail.gmail.com%3E";
-        assertEquals(expected, FilenameEncoder.encode(input));
+        String expected = "!3CAANLkTi!3DHmeCMneW-U!2BBHamLyPLs11xN5x45CxOty6bqC!40mail.gmail.com!3E";
+        String encoded = FilenameEncoder.encode(input);
+        assertEquals(expected, encoded);
+        //writeFileWithName(encoded);
     }
 
     public void testStringNotNeedingDecoding() {
@@ -64,13 +66,32 @@ public class FilenameEncoderTest extends TestCase {
     }
     
     public void testStringNeedingComplexDecoding() {
-        String input = "%3CAANLkTi%3DHmeCMneW-U%2BBHamLyPLs11xN5x45CxOty6bqC%40mail.gmail.com%3E";
+        String input = "!3CAANLkTi!3DHmeCMneW-U!2BBHamLyPLs11xN5x45CxOty6bqC!40mail.gmail.com!3E";
         String expected = "<AANLkTi=HmeCMneW-U+BHamLyPLs11xN5x45CxOty6bqC@mail.gmail.com>";
         assertEquals(expected, FilenameEncoder.decode(input));
     }
+
+// This requires a configured SDCard space, and is thus disabled by default:
+//    private static String URL_BASE = "file:///SDCard/BlackBerry/";
+//    private static String FILE_EXT = ".dat";
+//    private void writeFileWithName(String filename) {
+//        try {
+//            String fileUrl = URL_BASE + filename + FILE_EXT;
+//            javax.microedition.io.file.FileConnection fc = (javax.microedition.io.file.FileConnection)javax.microedition.io.Connector.open(fileUrl);
+//            fc.create();
+//            fc.close();
+//            
+//            fc = (javax.microedition.io.file.FileConnection)Connector.open(fileUrl);
+//            assertTrue(fc.exists());
+//            fc.delete();
+//            fc.close();
+//        } catch (Throwable t) {
+//            fail("Unable to use filename: \"" + filename + "\"");
+//        }
+//    }
     
     public Test suite() {
-        TestSuite suite = new TestSuite("URLEncoder");
+        TestSuite suite = new TestSuite("FilenameEncoder");
         
         suite.addTest(new FilenameEncoderTest("stringNotNeedingEncoding", new TestMethod()
         { public void run(TestCase tc) { ((FilenameEncoderTest) tc).testStringNotNeedingEncoding(); }}));
