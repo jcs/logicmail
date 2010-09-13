@@ -53,7 +53,7 @@ public class UtilTests extends TestCase {
         testSuite.addTest(new PersistentObjectDataStoreTest().suite());
         testSuite.addTest(new QueueTest().suite());
         testSuite.addTest(new ConnectionTest().suite());
-        testSuite.addTest(new URLEncoderTest().suite());
+        testSuite.addTest(new FilenameEncoderTest().suite());
         testSuite.addTest(new AtomicBooleanTest().suite());
         return testSuite;
     }

@@ -35,52 +35,52 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 
-public class URLEncoderTest extends TestCase {
-    public URLEncoderTest() {
+public class FilenameEncoderTest extends TestCase {
+    public FilenameEncoderTest() {
     }
 
-    public URLEncoderTest(String testName, TestMethod testMethod) {
+    public FilenameEncoderTest(String testName, TestMethod testMethod) {
         super(testName, testMethod);
     }
     
     public void testStringNotNeedingEncoding() {
-        assertEquals("12", URLEncoder.encode("12"));
-        assertEquals("3F", URLEncoder.encode("3F"));
-        assertEquals("Hello", URLEncoder.encode("Hello"));
-        assertEquals("1337DEADBEEF", URLEncoder.encode("1337DEADBEEF"));
+        assertEquals("12", FilenameEncoder.encode("12"));
+        assertEquals("3F", FilenameEncoder.encode("3F"));
+        assertEquals("Hello", FilenameEncoder.encode("Hello"));
+        assertEquals("1337DEADBEEF", FilenameEncoder.encode("1337DEADBEEF"));
     }
     
     public void testStringNeedingComplexEncoding() {
         String input = "<AANLkTi=HmeCMneW-U+BHamLyPLs11xN5x45CxOty6bqC@mail.gmail.com>";
         String expected = "%3CAANLkTi%3DHmeCMneW-U%2BBHamLyPLs11xN5x45CxOty6bqC%40mail.gmail.com%3E";
-        assertEquals(expected, URLEncoder.encode(input));
+        assertEquals(expected, FilenameEncoder.encode(input));
     }
 
     public void testStringNotNeedingDecoding() {
-        assertEquals("12", URLEncoder.decode("12"));
-        assertEquals("3F", URLEncoder.decode("3F"));
-        assertEquals("Hello", URLEncoder.decode("Hello"));
-        assertEquals("1337DEADBEEF", URLEncoder.decode("1337DEADBEEF"));
+        assertEquals("12", FilenameEncoder.decode("12"));
+        assertEquals("3F", FilenameEncoder.decode("3F"));
+        assertEquals("Hello", FilenameEncoder.decode("Hello"));
+        assertEquals("1337DEADBEEF", FilenameEncoder.decode("1337DEADBEEF"));
     }
     
     public void testStringNeedingComplexDecoding() {
         String input = "%3CAANLkTi%3DHmeCMneW-U%2BBHamLyPLs11xN5x45CxOty6bqC%40mail.gmail.com%3E";
         String expected = "<AANLkTi=HmeCMneW-U+BHamLyPLs11xN5x45CxOty6bqC@mail.gmail.com>";
-        assertEquals(expected, URLEncoder.decode(input));
+        assertEquals(expected, FilenameEncoder.decode(input));
     }
     
     public Test suite() {
         TestSuite suite = new TestSuite("URLEncoder");
         
-        suite.addTest(new URLEncoderTest("stringNotNeedingEncoding", new TestMethod()
-        { public void run(TestCase tc) { ((URLEncoderTest) tc).testStringNotNeedingEncoding(); }}));
-        suite.addTest(new URLEncoderTest("stringNeedingComplexEncoding", new TestMethod()
-        { public void run(TestCase tc) { ((URLEncoderTest) tc).testStringNeedingComplexEncoding(); }}));
-        suite.addTest(new URLEncoderTest("stringNotNeedingDecoding", new TestMethod()
-        { public void run(TestCase tc) { ((URLEncoderTest) tc).testStringNotNeedingDecoding(); }}));
-        suite.addTest(new URLEncoderTest("stringNeedingComplexDecoding", new TestMethod()
-        { public void run(TestCase tc) { ((URLEncoderTest) tc).testStringNeedingComplexDecoding(); }}));
-
+        suite.addTest(new FilenameEncoderTest("stringNotNeedingEncoding", new TestMethod()
+        { public void run(TestCase tc) { ((FilenameEncoderTest) tc).testStringNotNeedingEncoding(); }}));
+        suite.addTest(new FilenameEncoderTest("stringNeedingComplexEncoding", new TestMethod()
+        { public void run(TestCase tc) { ((FilenameEncoderTest) tc).testStringNeedingComplexEncoding(); }}));
+        suite.addTest(new FilenameEncoderTest("stringNotNeedingDecoding", new TestMethod()
+        { public void run(TestCase tc) { ((FilenameEncoderTest) tc).testStringNotNeedingDecoding(); }}));
+        suite.addTest(new FilenameEncoderTest("stringNeedingComplexDecoding", new TestMethod()
+        { public void run(TestCase tc) { ((FilenameEncoderTest) tc).testStringNeedingComplexDecoding(); }}));
+        
         return suite;
     }
 }

@@ -52,7 +52,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.util.StringParser;
-import org.logicprobe.LogicMail.util.URLEncoder;
+import org.logicprobe.LogicMail.util.FilenameEncoder;
 
 /**
  * Front-end for reading and writing messages from local file storage.
@@ -514,14 +514,14 @@ public class MailFileManager {
     }
 
     private static String getMessageFileUrl(String mailboxUrl, MessageToken messageToken) {
-        return mailboxUrl + URLEncoder.encode(messageToken.getMessageUid()) + MSG_SUFFIX;
+        return mailboxUrl + FilenameEncoder.encode(messageToken.getMessageUid()) + MSG_SUFFIX;
     }
     
     private static String getMessageUidFromFileUrl(String fileUrl) {
         int p = fileUrl.lastIndexOf('/');
         int q = fileUrl.lastIndexOf('.');
         if(p != -1 && q != -1 && p < q) {
-            return URLEncoder.decode(fileUrl.substring(p + 1, q));
+            return FilenameEncoder.decode(fileUrl.substring(p + 1, q));
         }
         else {
             return null;

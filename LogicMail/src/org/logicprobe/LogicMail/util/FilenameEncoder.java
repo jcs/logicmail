@@ -37,7 +37,7 @@ import net.rim.device.api.util.CharacterUtilities;
  * Assumes all input strings are confined to ASCII characters, and thus may
  * not correctly handle Unicode characters.
  */
-public class URLEncoder {
+public class FilenameEncoder {
     
     public static String encode(String string) {
         StringBuffer buf = new StringBuffer();
