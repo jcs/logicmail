@@ -61,8 +61,6 @@ public class StringParserTest extends TestCase {
      * Test of parseDateString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseDateString() {
-        System.out.println("parseDateString");
-
         String rawDate;
         Date result;
         Calendar cal = Calendar.getInstance();
@@ -144,8 +142,6 @@ public class StringParserTest extends TestCase {
      * Test of createDateString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testCreateDateString() {
-        System.out.println("createDateString");
-
         // Test for time zone GMT-5
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT-5"));
         cal.set(Calendar.YEAR, 2007);
@@ -193,8 +189,6 @@ public class StringParserTest extends TestCase {
      * Test of parseMailHeaders method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseMailHeaders() {
-        System.out.println("parseMailHeaders");
-
         String[] rawLines = {
                 "Return-Path: <jdoe@generic.test>",
                 "Received: from hyperion.generic.test ([unix socket])",
@@ -244,7 +238,6 @@ public class StringParserTest extends TestCase {
     public void testParseMailHeadersNoBlank() {
         // Test for correct handling of invalid input where there is no
         // blank line between the last header and the message body.
-        System.out.println("parseMailHeadersNoBlank");
 
         String[] rawLines = {
                 "Return-Path: <jdoe@generic.test>", "Subject: Some test message",
@@ -261,8 +254,6 @@ public class StringParserTest extends TestCase {
      * Test of parseEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseEncodedHeader() {
-        System.out.println("parseEncodedHeader");
-
         String text = "Hello World";
         String expectedResult = "Hello World";
         String result = StringParser.parseEncodedHeader(text);
@@ -282,14 +273,61 @@ public class StringParserTest extends TestCase {
         expectedResult = "¡Holá Señor!";
         result = StringParser.parseEncodedHeader(text);
         assertEquals("QP multi-line", expectedResult, result);
+
+        text = "=?iso-8859-1?q?=A1Hol=E1_?=    =?iso-8859-1?q?Se=F1or!?=";
+        expectedResult = "¡Holá Señor!";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP multi-line whitespace 1", expectedResult, result);
+        
+        text = " =?utf-8?B?R2V0IFJlYWR5IA==?= =?utf-8?B?Zm9yIEJsYWNrQg==?= " +
+        		"=?utf-8?B?ZXJyeSBERVZDTw==?= =?utf-8?B?TiBGb3VyIFNxdQ==?= " +
+        		"=?utf-8?B?YXJlIENoYWxsZQ==?= =?utf-8?B?bmdlIQ==?=";
+        expectedResult = "Get Ready for BlackBerry DEVCON Four Square Challenge!";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP multi-line whitespace 2", expectedResult, result);
     }
 
+    public void testParseEncodedHeaderMalformed() {
+        String text = " ";
+        String expectedResult = " ";
+        String result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+
+        text = "=";
+        expectedResult = "=";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+        
+        text = " =";
+        expectedResult = " =";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+        
+        text = " ?";
+        expectedResult = " ?";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals(expectedResult, result);
+        
+        text = "=?iso-8859-1?q?Hol=E1?= =Jim";
+        expectedResult = "Holá =Jim";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP prefix 1", expectedResult, result);
+        
+        text = "=?iso-8859-1?q?Hol=E1?= =?Jim";
+        expectedResult = "Holá =?Jim";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP prefix 2", expectedResult, result);
+        
+        text = "=?iso-8859-1?q?Hol=E1?=   =?Jim";
+        expectedResult = "Holá   =?Jim";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP prefix 3", expectedResult, result);
+    }
+    
     /**
      * Test of createEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testCreateEncodedHeaderQP() {
-        System.out.println("createEncodedHeaderQP");
-
         try {
             String text = "Hello World";
             String expectedResult = "Foo: Hello World";
@@ -327,8 +365,6 @@ public class StringParserTest extends TestCase {
      * Test of createEncodedHeader method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testCreateEncodedHeaderB64() {
-        System.out.println("createEncodedHeaderB64");
-        
         try {
             String text = "\u041d\u0435\u0440\u0435\u0441\u0442";
             
@@ -386,8 +422,6 @@ public class StringParserTest extends TestCase {
      * Test of createEncodedRecipientHeader method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testCreateEncodedRecipientHeader() {
-        System.out.println("createEncodedRecipientHeader");
-
         try {
             String[] recipients = new String[] { "jdoe@generic.org" };
             String expectedResult = "To: jdoe@generic.org";
@@ -446,8 +480,6 @@ public class StringParserTest extends TestCase {
      * Test of parseTokenString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseTokenString() {
-        System.out.println("parseTokenString");
-
         String text = "one.red, two.green, three.blue";
         String token = ", ";
 
@@ -465,8 +497,6 @@ public class StringParserTest extends TestCase {
      * Test of parseCsvString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseCsvString() {
-        System.out.println("parseCsvString");
-
         String text = "One, Two, Three";
         String[] expectedResult = { "One", "Two", "Three" };
         String[] result = StringParser.parseCsvString(text);
@@ -521,8 +551,6 @@ public class StringParserTest extends TestCase {
      * Test of parseValidCharsetString method, of class org.logicprobe.LogicMail.util.StringParser.
      */
     public void testParseValidCharsetString() {
-        System.out.println("parseValidCharsetString");
-
         this.assertEquals("Accepting bad input", "ISO-8859-1",
             StringParser.parseValidCharsetString("foo"));
         this.assertEquals("Accepting ISO-8859-1", "ISO-8859-1",
@@ -540,8 +568,6 @@ public class StringParserTest extends TestCase {
      * Basic test.
      */
     public void testDecodeQuotedPrintable1() {
-        System.out.println("decodeQuotedPrintable");
-
         String text = "=A1Hol=E1 Se=F1or!";
         String expectedResult = "¡Holá Señor!";
         String result = StringParser.decodeQuotedPrintable(text.getBytes());
@@ -553,8 +579,6 @@ public class StringParserTest extends TestCase {
      * Soft line-break test.
      */
     public void testDecodeQuotedPrintable2() {
-        System.out.println("decodeQuotedPrintable");
-
         String text = "=A1Hol=E1 Se=F1or!=20=20H=\n" +
             "ow=20are=20you=20today?";
         String expectedResult = "¡Holá Señor!  How are you today?";
@@ -567,8 +591,6 @@ public class StringParserTest extends TestCase {
      * Basic test.
      */
     public void testEncodeQuotedPrintable1() {
-        System.out.println("encodeQuotedPrintable");
-
         String text = "¡Holá Señor!";
         String expectedResult = "=A1Hol=E1=20Se=F1or!";
         String result = StringParser.encodeQuotedPrintable(text);
@@ -580,8 +602,6 @@ public class StringParserTest extends TestCase {
      * Soft line-break test.
      */
     public void testEncodeQuotedPrintable2() {
-        System.out.println("encodeQuotedPrintable");
-
         String text = "¡Holá Señor! ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ¡Holá Señor!";
         String expectedResult = "=A1Hol=E1=20Se=F1or!=20ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=\r\n0123456789=20=A1Hol=E1=20Se=F1or!";
         String result = StringParser.encodeQuotedPrintable(text);
@@ -589,8 +609,6 @@ public class StringParserTest extends TestCase {
     }
 
     public void testParseRecipient() {
-        System.out.println("parseRecipient");
-
         String text = "John Doe <doej@generic.org>";
         String[] expected = new String[] { "John Doe", "doej@generic.org" };
         String[] actual = StringParser.parseRecipient(text);
@@ -612,8 +630,6 @@ public class StringParserTest extends TestCase {
     }
 
     public void testMergeRecipient() {
-        System.out.println("mergeRecipient");
-
         String expected = "\"John Doe\" <doej@generic.org>";
         String actual = StringParser.mergeRecipient("John Doe",
                 "doej@generic.org");
@@ -641,16 +657,12 @@ public class StringParserTest extends TestCase {
     }
 
     public void testGetOptimalEncoding() {
-        System.out.println("getOptimalEncoding");
-        
         assertEquals(StringParser.ENCODING_7BIT, StringParser.getOptimalEncoding("Hello World"));
         assertEquals(StringParser.ENCODING_QUOTED_PRINTABLE, StringParser.getOptimalEncoding("¡Holá Señor!"));
         assertEquals(StringParser.ENCODING_BASE64, StringParser.getOptimalEncoding("\u1057\u1077\u1081\u1095\u1072\u1089"));
     }
     
     public void testMergePaths() {
-        System.out.println("mergePaths");
-        
         String expected = "file:///foo/bar";
         String actual = StringParser.mergePaths("file:///foo", "bar");
         assertEquals(expected, actual);
@@ -682,6 +694,9 @@ public class StringParserTest extends TestCase {
         
         testSuite.addTest(new StringParserTest("parseEncodedHeader", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testParseEncodedHeader(); }}));
+        
+        testSuite.addTest(new StringParserTest("parseEncodedHeaderMalformed", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseEncodedHeaderMalformed(); }}));
         
         testSuite.addTest(new StringParserTest("createEncodedHeaderQP", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testCreateEncodedHeaderQP(); }}));

@@ -48,6 +48,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.TimeZone;
+import java.util.Vector;
 
 import org.logicprobe.LogicMail.AppInfo;
 
@@ -515,7 +516,7 @@ public class StringParser {
 
         return table;
     }
-
+    
     /**
      * Scans the provided string for blocks of text encoded according
      * to RFC2047, decodes them accordingly, and returns a new Unicode
@@ -532,6 +533,48 @@ public class StringParser {
             return null;
         }
 
+        text = reencodeStringIfNecessary(text);
+
+        int size = text.length();
+
+        // Shortcut to avoid processing strings too short
+        // to contain encoded sections.  ("=?X?B??=")
+        if (size < 8) {
+            return text;
+        }
+        
+        Vector tokenizedHeader = tokenizeEncodedHeader(text);
+        
+        StringBuffer buf = new StringBuffer();
+        
+        size = tokenizedHeader.size();
+        for(int i=0; i<size; i+=2) {
+            Boolean isEncoded = (Boolean)tokenizedHeader.elementAt(i);
+            String element = (String)tokenizedHeader.elementAt(i + 1);
+            
+            if(isEncoded == Boolean.TRUE) {
+                buf.append(parseEncodedWord(element));
+            }
+            else if(notWhitespace(element)) {
+                buf.append(element);
+            }
+        }
+
+        return buf.toString();
+    }
+
+    private static boolean notWhitespace(String text) {
+        int size = text.length();
+        for(int i=0; i<size; i++) {
+            char ch = text.charAt(i);
+            if(ch != ' ' && ch != '\t') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String reencodeStringIfNecessary(String text) {
         // Check for any characters outside of US-ASCII,
         // and if any are found, recreate the string using
         // UTF-8 encoding.
@@ -547,72 +590,144 @@ public class StringParser {
                 break;
             }
         }
-
-        int size = text.length();
-
-        // Shortcut to avoid processing strings too short
-        // to contain encoded sections.  ("=?X?B??=")
-        if (size < 8) {
-            return text;
-        }
-
+        return text;
+    }
+    
+    private static Vector tokenizeEncodedHeader(String text) {
+        Vector result = new Vector();
         StringBuffer buf = new StringBuffer();
+        int size = text.length();
         int index = 0;
-        int qcount;
-        boolean flag = false;
 
-        while (index < (size - 1)) {
-            flag = false;
-            qcount = 0;
-
-            // Match on "=?"
-            if ((text.charAt(index) == '=')
-                    && (text.charAt(index + 1) == '?')
-                    && ((index + 2) < size)) {
-                qcount++;
-
-                // Scan for the closing "?="
-                for (int i = index + 2; i < (size - 1); i++) {
-                    if (text.charAt(i) == '?') {
-                        qcount++;
-                    }
-
-                    if ((qcount == 4) && (text.charAt(i) == '?')
-                            && (text.charAt(i + 1) == '=')) {
-                        buf.append(parseEncodedWord(
-                                text.substring(index, i + 2)));
-                        index = i + 1;
-                        flag = true;
-
-                        break;
-                    }
+        while (index < size) {
+            if((index + 2 < size)
+                    && (text.charAt(index) == '\r')
+                    && (text.charAt(index + 1) == '\n')
+                    && (text.charAt(index + 2) == ' ')) {
+                index += 3;
+                if(index == size) { break; }
+            }
+            
+            int p = checkForEncodedWord(text, index, size);
+            
+            if(p != -1) {
+                // Encoded word found
+                
+                if(buf.length() > 0) {
+                    result.addElement(Boolean.FALSE);
+                    result.addElement(buf.toString());
+                    buf.setLength(0);
                 }
-            }
-
-            // Handle the case that an encoded word was not found
-            if (!flag) {
-                buf.append(text.charAt(index));
-            }
-
-            if((index + 3 < size)
-                    && (text.charAt(index + 1) == '\r')
-                    && (text.charAt(index + 2) == '\n')
-                    && (text.charAt(index + 3) == ' ')) {
-                index += 4;
+                
+                result.addElement(Boolean.TRUE);
+                result.addElement(text.substring(index, p + 1));
+                
+                index = p + 1;
             }
             else {
+                // Plain text found
+                buf.append(text.charAt(index));
                 index++;
             }
         }
 
-        // Append the last character, if applicable
-        if (!flag) {
-            buf.append(text.charAt(index));
+        // Append plain text at the end, if applicable
+        if(buf.length() > 0) {
+            result.addElement(Boolean.FALSE);
+            result.addElement(buf.toString());
+            buf.setLength(0);
         }
-
-        return buf.toString();
+        
+        return result;
     }
 
+    private static char[] RFC2047_ESPECIALS = {
+        '(', ')', '<', '>', '@', ',', ';', ':', '"',
+        '/', '[', ']', '?', '.', '='};
+    
+    private static int checkForEncodedWord(String text, int fromIndex, int size) {
+        if (size < 8) { return -1; }
+        
+//        encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
+//        charset = token
+//        encoding = token
+//        token = 1*<Any CHAR except SPACE, CTLs, and especials>
+//        CTL         =  <any ASCII control           ; (  0.- 31.)
+//        especials = "(" / ")" / "<" / ">" / "@" / "," / ";" / ":" / "
+//                    <"> / "/" / "[" / "]" / "?" / "." / "="
+//        encoded-text = 1*<Any printable ASCII character other than "?" or SPACE>
+        
+        if (text.charAt(fromIndex) == '='
+            && text.charAt(fromIndex + 1) == '?') {
+            int index = fromIndex + 2;
+            
+            // Accept: charset (token)
+            index = acceptEncodedWordToken(text, index, size);
+            if(index == -1) { return -1; }
+            
+            // Accept: encoding (token)
+            index = acceptEncodedWordToken(text, index, size);
+            if(index == -1) { return -1; }
+
+            // Accept: encoded-text
+            index = acceptEncodedWordEncodedText(text, index, size);
+            if(index == -1) { return -1; }
+            
+            char ch = text.charAt(index);
+            if(ch == '=') {
+                return index;
+            }
+            else {
+                return -1;
+            }
+        }
+        else {
+            return -1;
+        }
+    }
+
+    private static int acceptEncodedWordToken(String text, int index, int size) {
+        while(index < size) {
+            char ch = text.charAt(index);
+            if(ch != ' ' && ch > 31
+                    && Arrays.getIndex(RFC2047_ESPECIALS, ch) == -1) {
+                index++;
+            }
+            else if(ch == '?') {
+                index++;
+                break;
+            }
+            else {
+                return -1;
+            }
+        }
+        if(index == size) {
+            return -1;
+        }
+        else {
+            return index;
+        }
+    }
+    
+    public static int acceptEncodedWordEncodedText(String text, int index, int size) {
+        while(index < size) {
+            char ch = text.charAt(index);
+            if(ch > 31 && ch != '?' && ch != ' ') {
+                index++;
+            }
+            else if(ch == '?') {
+                index++;
+                break;
+            }
+        }
+        if(index == size) {
+            return -1;
+        }
+        else {
+            return index;
+        }
+    }
+    
     /**
      * Parses an encoded word, per RFC2047.
      * Assumes that the input has already been separated out from the
