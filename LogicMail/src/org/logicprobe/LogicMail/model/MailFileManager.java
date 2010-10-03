@@ -292,6 +292,8 @@ public class MailFileManager {
 		fileConnection.close();
 		String fileUrl = getMessageFileUrl(mailboxUrl, messageToken);
 		MessageNode messageNode = readMessageNode(fileUrl);
+		if(messageNode == null) { return null; }
+		
 		if(loadContent) {
 			MimeMessageContent[] content = readMessageContent(mailboxNode, messageToken);
 			messageNode.putMessageContent(content);

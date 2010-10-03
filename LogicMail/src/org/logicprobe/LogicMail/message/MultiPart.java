@@ -131,9 +131,14 @@ public class MultiPart extends MimeMessagePart {
 		output.writeBoolean(partRelated);
 		output.writeBoolean(partSigned);
 		
-		output.writeInt(parts.length);
-		for(int i=0; i<parts.length; i++) {
-			SerializationUtils.serializeClass(parts[i], output);
+		if(parts == null) {
+		    output.writeInt(0);
+		}
+		else {
+    		output.writeInt(parts.length);
+    		for(int i=0; i<parts.length; i++) {
+    			SerializationUtils.serializeClass(parts[i], output);
+    		}
 		}
 	}
 	
