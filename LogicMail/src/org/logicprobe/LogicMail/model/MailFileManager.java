@@ -434,7 +434,7 @@ public class MailFileManager {
 	    
 	    Hashtable retentionSet = new Hashtable();
 	    for(int i=0; i<uidsToRetain.length; i++) {
-	        retentionSet.put(uidsToRetain[i], Boolean.TRUE);
+	        retentionSet.put(FilenameEncoder.encode(uidsToRetain[i]), Boolean.TRUE);
 	    }
 	    
         String[] fileUrls = getMessageFiles(mailboxNode);
