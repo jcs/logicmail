@@ -285,6 +285,11 @@ public class StringParserTest extends TestCase {
         expectedResult = "Get Ready for BlackBerry DEVCON Four Square Challenge!";
         result = StringParser.parseEncodedHeader(text);
         assertEquals("QP multi-line whitespace 2", expectedResult, result);
+        
+        text = "=?iso-8859-1?Q?Your 7digital download receipt?=";
+        expectedResult = "Your 7digital download receipt";
+        result = StringParser.parseEncodedHeader(text);
+        assertEquals("QP unencoded spaces", expectedResult, result);
     }
 
     public void testParseEncodedHeaderMalformed() {

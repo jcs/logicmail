@@ -646,7 +646,7 @@ public class StringParser {
         '/', '[', ']', '?', '.', '='};
     
     private static int checkForEncodedWord(String text, int fromIndex, int size) {
-        if (size < 8) { return -1; }
+        if ((size - fromIndex) < 8) { return -1; }
         
 //        encoded-word = "=?" charset "?" encoding "?" encoded-text "?="
 //        charset = token
@@ -670,7 +670,11 @@ public class StringParser {
             if(index == -1) { return -1; }
 
             // Accept: encoded-text
-            index = acceptEncodedWordEncodedText(text, index, size);
+            // Special case to allow spaces if the text is encoded as
+            // quoted-printable, so malformed headers are handled correctly.
+            boolean allowSpaces =
+                (Character.toUpperCase(text.charAt(index - 2)) == 'Q');
+            index = acceptEncodedWordEncodedText(text, index, size, allowSpaces);
             if(index == -1) { return -1; }
             
             char ch = text.charAt(index);
@@ -709,15 +713,18 @@ public class StringParser {
         }
     }
     
-    public static int acceptEncodedWordEncodedText(String text, int index, int size) {
+    public static int acceptEncodedWordEncodedText(String text, int index, int size, boolean allowSpaces) {
         while(index < size) {
             char ch = text.charAt(index);
-            if(ch > 31 && ch != '?' && ch != ' ') {
+            if(ch > 31 && ch != '?' && (allowSpaces || ch != ' ')) {
                 index++;
             }
             else if(ch == '?') {
                 index++;
                 break;
+            }
+            else {
+                return -1;
             }
         }
         if(index == size) {
