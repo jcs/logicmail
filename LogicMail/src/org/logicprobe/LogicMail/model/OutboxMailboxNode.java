@@ -38,7 +38,6 @@ import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
-import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailSenderListener;
 import org.logicprobe.LogicMail.mail.MessageSentEvent;
@@ -49,6 +48,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.util.AtomicBoolean;
 import org.logicprobe.LogicMail.util.StringParser;
 
 public class OutboxMailboxNode extends MailboxNode {
@@ -62,6 +62,9 @@ public class OutboxMailboxNode extends MailboxNode {
     private Hashtable outboundMessageMap = new Hashtable();
     private Hashtable outboundMessageNodeMap = new Hashtable();
 
+    private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    private Thread fetchThread;
+    
     private MailSenderListener mailSenderListener = new MailSenderListener() {
         public void messageSent(MessageSentEvent e) {
             mailSender_MessageSent(e);
@@ -355,7 +358,7 @@ public class OutboxMailboxNode extends MailboxNode {
             AccountNode replyToMessageAccount = outgoingMessageNode.getReplyToAccount();
             MessageToken replyToMessageToken = outgoingMessageNode.getReplyToToken();
             if(replyToMessageAccount != null && replyToMessageToken != null) {
-                AbstractMailStore sendingMailStore = replyToMessageAccount.getMailStore();
+                MailStoreServices sendingMailStore = replyToMessageAccount.getMailStoreServices();
                 if(sendingMailStore.hasFlags()) {
                     if(outgoingMessageNode.getReplyType() == OutgoingMessageNode.REPLY_FORWARDED) {
                         sendingMailStore.requestMessageForwarded(

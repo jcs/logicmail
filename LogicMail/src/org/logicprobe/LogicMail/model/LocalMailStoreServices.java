@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,57 +28,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.logicprobe.LogicMail.model;
 
-package org.logicprobe.LogicMail.mail;
+import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.LocalMailStore;
 
-import org.logicprobe.LogicMail.message.FolderMessage;
-
-public class FolderMessagesEvent extends FolderEvent {
-	private FolderMessage[] messages;
-	private boolean flagsOnly;
-	private boolean server;
-	
-	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly, boolean server) {
-		super(source, folder);
-		this.messages = messages;
-		this.flagsOnly = flagsOnly;
-		this.server = server;
-	}
-	
-    public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
-        this(source, folder, messages, flagsOnly, true);
+public class LocalMailStoreServices extends MailStoreServices {
+    private final LocalMailStore mailStore;
+    
+    protected LocalMailStoreServices(LocalMailStore mailStore) {
+        super(mailStore);
+        this.mailStore = mailStore;
     }
 
-	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages) {
-		this(source, folder, messages, false, true);
-	}
-	
-	/**
-	 * Gets the folder messages that have been made available
-	 * or updated to trigger this event.
-	 * 
-	 * @return Updates messages
-	 */
-	public FolderMessage[] getMessages() {
-		return messages;
-	}
-	
-	/**
-	 * Checks if the newly available folder messages contain only
-	 * flag information.
-	 * 
-	 * @return true, if updated messages are flags only
-	 */
-	public boolean isFlagsOnly() {
-		return flagsOnly;
-	}
-	
-	/**
-	 * Checks if the event came from a server response.
-	 *
-	 * @return true, if it is server event
-	 */
-	public boolean isServer() {
-	    return server;
-	}
+    public void requestFolderRefresh(FolderTreeItem folderTreeItem) {
+        mailStore.requestFolderMessagesRecent(folderTreeItem);
+    }
 }

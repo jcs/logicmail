@@ -46,6 +46,7 @@ import j2meunit.framework.TestSuite;
 
 public class AccountNodeTest extends TestCase {
     private AccountNode instance = null;
+    private TestMailStoreServices mailStoreServices = null;
     private TestMailStore mailStore = null;
     private AccountNodeEvent accountNodeEvent = null;
     private Hashtable mailboxStatusChangedEvents = new Hashtable();
@@ -70,7 +71,9 @@ public class AccountNodeTest extends TestCase {
     	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("1_One", "INBOX.1_One", "."));
     	mailStore.rootFolder.children()[0].addChild(new FolderTreeItem("2_Two", "INBOX.2_Two", "."));
     	
-        instance = new TestAccountNode(mailStore, false);
+    	mailStoreServices = new TestMailStoreServices(mailStore);
+    	
+        instance = new TestAccountNode(mailStoreServices);
     	instance.addAccountNodeListener(new AccountNodeListener() {
     		public void accountStatusChanged(AccountNodeEvent e) {
     			accountNodeEvent = e;
@@ -205,11 +208,19 @@ public class AccountNodeTest extends TestCase {
     }
     
     private class TestAccountNode extends AccountNode {
-        protected TestAccountNode(TestMailStore mailStore, boolean usePersistedState) {
-            super(mailStore);
+        protected TestAccountNode(TestMailStoreServices mailStoreServices) {
+            super(mailStoreServices);
         }
         protected void save() { }
         protected void load() { }
+    }
+    
+    private class TestMailStoreServices extends MailStoreServices {
+        public TestMailStoreServices(TestMailStore mailStore) {
+            super(mailStore);
+        }
+
+        public void requestFolderRefresh(FolderTreeItem folderTreeItem) { }
     }
     
     private class TestMailStore extends AbstractMailStore {

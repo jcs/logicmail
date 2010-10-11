@@ -88,10 +88,15 @@ public class MessageEnvelope implements Serializable {
 	}
 
 	private static void serializeArray(DataOutput output, String[] array) throws IOException {
-		output.writeInt(array.length);
-		for(int i=0; i<array.length; i++) {
-			output.writeUTF(array[i]);
-		}
+	    if(array == null) {
+	        output.writeInt(0);
+	    }
+	    else {
+    		output.writeInt(array.length);
+    		for(int i=0; i<array.length; i++) {
+    			output.writeUTF(array[i]);
+    		}
+	    }
 	}
 	
 	/* (non-Javadoc)

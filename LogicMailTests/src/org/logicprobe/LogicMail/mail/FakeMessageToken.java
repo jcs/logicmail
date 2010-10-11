@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,57 +28,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.mail;
 
-import org.logicprobe.LogicMail.message.FolderMessage;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
-public class FolderMessagesEvent extends FolderEvent {
-	private FolderMessage[] messages;
-	private boolean flagsOnly;
-	private boolean server;
-	
-	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly, boolean server) {
-		super(source, folder);
-		this.messages = messages;
-		this.flagsOnly = flagsOnly;
-		this.server = server;
-	}
-	
-    public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
-        this(source, folder, messages, flagsOnly, true);
-    }
-
-	public FolderMessagesEvent(Object source, FolderTreeItem folder, FolderMessage[] messages) {
-		this(source, folder, messages, false, true);
-	}
-	
-	/**
-	 * Gets the folder messages that have been made available
-	 * or updated to trigger this event.
-	 * 
-	 * @return Updates messages
-	 */
-	public FolderMessage[] getMessages() {
-		return messages;
-	}
-	
-	/**
-	 * Checks if the newly available folder messages contain only
-	 * flag information.
-	 * 
-	 * @return true, if updated messages are flags only
-	 */
-	public boolean isFlagsOnly() {
-		return flagsOnly;
-	}
-	
-	/**
-	 * Checks if the event came from a server response.
-	 *
-	 * @return true, if it is server event
-	 */
-	public boolean isServer() {
-	    return server;
-	}
+/**
+ * Fake message token for test cases.
+ * This is exposed as a public class to support test cases involving
+ * object serialization.
+ */
+public class FakeMessageToken implements MessageToken {
+    private long uniqueId;
+    public FakeMessageToken() { this.uniqueId = 0; }
+    public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
+    public long getUniqueId() { return uniqueId; }
+    public void deserialize(DataInput input) throws IOException { uniqueId = input.readLong(); }
+    public void serialize(DataOutput output) throws IOException { output.writeLong(uniqueId); }
+    public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
+    public String getMessageUid() { return Long.toString(uniqueId); }
+    public void updateToken(MessageToken messageToken) { }
+    public boolean isLoadable() { return true; }
 }

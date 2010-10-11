@@ -34,7 +34,6 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -43,11 +42,11 @@ import org.logicprobe.LogicMail.util.DataStoreFactory;
 
 public class NetworkAccountNode extends AccountNode {
     private AccountConfig accountConfig;
-    private NetworkMailStore networkMailStore;
+    private NetworkMailStoreServices networkMailStore;
     private AbstractMailSender mailSender;
     private boolean shutdown = false;
 
-    NetworkAccountNode(NetworkMailStore mailStore) {
+    NetworkAccountNode(NetworkMailStoreServices mailStore) {
         super(mailStore);
         
         this.networkMailStore = mailStore;
@@ -281,7 +280,8 @@ public class NetworkAccountNode extends AccountNode {
         // This will only exist on certain account types, but this is the
         // easiest place from which to clean it up.
         connectionCache.removeNamedObject(Long.toString(accountConfig.getUniqueId()) + "_INBOX");
-        
         connectionCache.save();
+        
+        super.removeSavedData();
     }
 }

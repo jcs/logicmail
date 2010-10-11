@@ -35,6 +35,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.rim.device.api.util.Comparator;
+
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializationUtils;
@@ -57,6 +59,8 @@ public class FolderMessage implements Serializable {
     private MessageFlags messageFlags;
     private MimeMessagePart structure;
 
+    private static final FolderMessageComparator comparator = new FolderMessageComparator();
+    
     /**
      * Creates a new empty instance of FolderMessage.
      */
@@ -80,6 +84,15 @@ public class FolderMessage implements Serializable {
     }
 
     /**
+     * Gets the comparator used to compare messages for insertion ordering.
+     *
+     * @return the comparator
+     */
+    public static Comparator getComparator() {
+        return comparator;
+    }
+    
+    /**
      * Gets the token for referencing this message.
      * 
      * @return The message token.
@@ -97,13 +110,21 @@ public class FolderMessage implements Serializable {
     }
 
     /**
-     * Get the mailbox index of this message
+     * Get the mailbox index of this message.
      * @return index
      */
     public int getIndex() {
         return index;
     }
 
+    /**
+     * Sets the mailbox index of this message.
+     * @param index the new index
+     */
+    public void setIndex(int index) {
+        this.index = index;
+    }
+    
     /**
      * Get the unique ID of this message
      * @return unique ID
@@ -118,6 +139,14 @@ public class FolderMessage implements Serializable {
      */
     public MessageFlags getFlags() {
     	return messageFlags;
+    }
+    
+    /**
+     * Sets the flags associated with this message.
+     * @param messageFlags the new message flags
+     */
+    public void setFlags(MessageFlags messageFlags) {
+        this.messageFlags = messageFlags;
     }
     
     /**
@@ -308,5 +337,53 @@ public class FolderMessage implements Serializable {
 		if(hasStructure) {
 			structure = (MimeMessagePart)SerializationUtils.deserializeClass(input);
 		}
+	}
+	
+    /* (non-Javadoc)
+     * @see java.lang.Object#hashCode()
+     */
+    public int hashCode() {
+        return 31 * 1 + (int) (uniqueId ^ (uniqueId >>> 32));
+    }
+
+    /* (non-Javadoc)
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        FolderMessage other = (FolderMessage) obj;
+        if (uniqueId != other.uniqueId) {
+            return false;
+        }
+        return true;
+    }
+	
+	private static class FolderMessageComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            if(o1 instanceof FolderMessage && o2 instanceof FolderMessage) {
+                FolderMessage message1 = (FolderMessage)o1;
+                FolderMessage message2 = (FolderMessage)o2;
+                if(message1.index < message2.index) {
+                    return -1;
+                }
+                else if(message1.index > message2.index) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }
+            else {
+                throw new ClassCastException("Cannot compare types");
+            }
+        }
 	}
 }

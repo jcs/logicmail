@@ -281,6 +281,32 @@ public class MailFileManager {
         }
         return result;
     }
+
+    public synchronized boolean messageNodeExists(MailboxNode mailboxNode, MessageToken messageToken) {
+        if(cacheUrl == null) { return false; }
+        
+        FileConnection fileConnection = null;
+        try {
+            fileConnection = getMailboxFileConnection(mailboxNode);
+            if(!fileConnection.exists()) { return false; }
+            
+            String mailboxUrl = fileConnection.getURL();
+            fileConnection.close();
+            String fileUrl = getMessageFileUrl(mailboxUrl, messageToken);
+            fileConnection = (FileConnection)Connector.open(fileUrl);
+            if(fileConnection.exists() && fileConnection.canRead()) {
+                return true;
+            }
+            fileConnection.close();
+        } catch (IOException e) {
+            return false;
+        } finally {
+            if(fileConnection != null) {
+                try { fileConnection.close(); } catch (Exception e) { }
+            }
+        }
+        return false;
+    }
     
 	public synchronized MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
 		if(cacheUrl == null) { return null; }
@@ -379,12 +405,16 @@ public class MailFileManager {
 		FileConnection fileConnection = null;
 		try {
 			fileConnection = (FileConnection)Connector.open(fileUrl);
-			DataInputStream input = fileConnection.openDataInputStream();
-			MessageNodeReader reader = new MessageNodeReader(input);
-			result = reader.readMessageNode();
-			result.setCached(true);
-			input.close();
-			fileConnection.close();
+			if(fileConnection.exists()) {
+    			DataInputStream input = fileConnection.openDataInputStream();
+    			MessageNodeReader reader = new MessageNodeReader(input);
+    			result = reader.readMessageNode();
+    			result.setCached(true);
+    			input.close();
+			}
+			else {
+			    result = null;
+			}
 		} catch (Exception e) {
 			EventLogger.logEvent(AppInfo.GUID,
 	                ("Unable to read token: " + fileUrl

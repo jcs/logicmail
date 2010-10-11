@@ -44,7 +44,6 @@ import net.rim.device.api.util.Comparator;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
-import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
@@ -301,7 +300,10 @@ public class MessageNode implements Node {
 	 * @param existsOnServer true if the message has been verified to exist on a server
 	 */
 	void setExistsOnServer(boolean existsOnServer) {
-	    this.existsOnServer = existsOnServer;
+	    if(this.existsOnServer != existsOnServer) {
+	        this.existsOnServer = existsOnServer;
+            fireMessageStatusChanged(MessageNodeEvent.TYPE_FLAGS);
+	    }
 	}
 	
 	/**
@@ -1128,7 +1130,7 @@ public class MessageNode implements Node {
 		boolean result = false;
 		if(!refreshInProgress) {
 			refreshInProgress = true;
-			AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+			MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 			if(mailStore.hasMessageParts()) {
 				int maxSize = Integer.MAX_VALUE;
 				MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(this.messageStructure);
@@ -1190,7 +1192,7 @@ public class MessageNode implements Node {
     			}
 			}
 			if(!messageLoaded) {
-				AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+			    MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 				mailStore.requestMessage(messageToken);
 			}
 		}
@@ -1227,7 +1229,7 @@ public class MessageNode implements Node {
 			if(!contentToLoad.isEmpty()) {
 				MimeMessagePart[] partsToLoad = new MimeMessagePart[contentToLoad.size()];
 				contentToLoad.copyInto(partsToLoad);
-				AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+				MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 				mailStore.requestMessageParts(messageToken, partsToLoad);
 			}
 		}
@@ -1239,7 +1241,7 @@ public class MessageNode implements Node {
 	 * @param messagePart Content part to load
 	 */
 	public void requestContentPart(ContentPart messagePart) {
-		AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+	    MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 		if(mailStore.hasMessageParts()) {
 			mailStore.requestMessageParts(messageToken, new MimeMessagePart[] { messagePart });
 		}
@@ -1251,7 +1253,7 @@ public class MessageNode implements Node {
 	 * change event for the message flags.
 	 */
 	public void deleteMessage() {
-		parent.getParentAccount().getMailStore().requestMessageDelete(
+		parent.getParentAccount().getMailStoreServices().requestMessageDelete(
 				messageToken,
 				createMessageFlags(this.flags));
 	}
@@ -1267,7 +1269,7 @@ public class MessageNode implements Node {
 	 * </p>
 	 */
 	public void undeleteMessage() {
-		AbstractMailStore mailStore = parent.getParentAccount().getMailStore();
+	    MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 		if(mailStore.hasUndelete()) {
 			mailStore.requestMessageUndelete(
 				messageToken,

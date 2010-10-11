@@ -37,25 +37,19 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.SimpleSortingVector;
 
-import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
-import org.logicprobe.LogicMail.message.MessageMimeConverter;
-import org.logicprobe.LogicMail.util.AtomicBoolean;
 import org.logicprobe.LogicMail.util.EventListenerList;
-import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializationUtils;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -81,36 +75,6 @@ public class MailboxNode implements Node, Serializable {
 	private int unseenMessageCount;
     private final Vector pendingExpungeMessages = new Vector();
     
-    /** List of folder messages to fetch during a refresh. */
-    private final Vector folderMessagesToFetch = new Vector();
-    
-    /** Set of messages being loaded from cache. */
-    private final Hashtable messagesBeingLoaded = new Hashtable();
-    /** Map of unapplied message flag updates received from the server. */
-    private final Hashtable unappliedFlagUpdates = new Hashtable();
-    /** Set of messages known to the server. */
-    private final Hashtable messagesKnownToServer = new Hashtable();
-    
-    /** Flag to keep track of external requests for cache cleanup. */
-    private boolean removeMessagesNotOnServerRequested;
-    
-    /** Flag to keep track of initial cache load process. */
-    private boolean cacheLoadInProgress;
-    
-	/**
-	 * Flag to track whether we have completed the initial refresh of this
-	 * mailbox.  The initial refresh consists of a flags-only fetch followed
-	 * by a conventional fetch of missing messages.
-	 */
-	private volatile boolean initialRefreshCompleted;
-    
-	/**
-	 * Flag to track whether a mailbox refresh is currently in progress.
-	 */
-	protected final AtomicBoolean refreshInProgress = new AtomicBoolean();
-	
-	protected Thread fetchThread;
-	
 	public final static int TYPE_NORMAL = 0;
 	public final static int TYPE_INBOX  = 1;
 	public final static int TYPE_OUTBOX = 2;
@@ -309,9 +273,7 @@ public class MailboxNode implements Node, Serializable {
 		synchronized(mailboxes) {
 			int size = mailboxes.size();
 			result = new MailboxNode[size];
-			for(int i=0; i<size; i++) {
-				result[i] = (MailboxNode)mailboxes.elementAt(i);
-			}
+			mailboxes.copyInto(result);
 		}
 		return result;
 	}
@@ -329,9 +291,7 @@ public class MailboxNode implements Node, Serializable {
 		synchronized(messages) {
 			int size = messages.size();
 			result = new MessageNode[size];
-			for(int i=0; i<size; i++) {
-				result[i] = (MessageNode)messages.elementAt(i);
-			}
+			messages.copyInto(result);
 		}
 		return result;
 	}
@@ -348,33 +308,8 @@ public class MailboxNode implements Node, Serializable {
 	 * @param message Message to append
 	 */
 	public void appendMessage(MessageNode message) {
-		// Sanity check
-		if(!this.hasAppend) {
-			return;
-		}
-		String rawMessage = message.getMessageSource();
-		if(rawMessage == null) {
-			// Generate the message source
-	        rawMessage = message.toMimeMessage(false);
-		}
-
-		// Generate the protocol-layer-compatible flag object
-		int flags = message.getFlags();
-		MessageFlags messageFlags = new MessageFlags();
-		messageFlags.setSeen((flags & MessageNode.Flag.SEEN) != 0);
-		messageFlags.setAnswered((flags & MessageNode.Flag.ANSWERED) != 0);
-		messageFlags.setFlagged((flags & MessageNode.Flag.FLAGGED) != 0);
-		messageFlags.setDeleted((flags & MessageNode.Flag.DELETED) != 0);
-		messageFlags.setDraft((flags & MessageNode.Flag.DRAFT) != 0);
-		messageFlags.setRecent((flags & MessageNode.Flag.RECENT) != 0);
-		messageFlags.setForwarded((flags & MessageNode.Flag.FORWARDED) != 0);
-		messageFlags.setJunk((flags & MessageNode.Flag.JUNK) != 0);
-		
-		// Append the message to the folder
-		parentAccount.getMailStore().requestMessageAppend(
-				this.folderTreeItem,
-				rawMessage,
-				messageFlags);
+	    parentAccount.getMailStoreServices().requestMessageAppend(
+	            this.folderTreeItem, message);
 	}
 
 	/**
@@ -391,36 +326,8 @@ public class MailboxNode implements Node, Serializable {
 	 * @param messageFlags Flags for the message
 	 */
 	public void appendMessage(MessageEnvelope envelope, Message message, MessageFlags messageFlags) {
-		// Sanity check
-		if(!this.hasAppend) {
-			return;
-		}
-		// Generate the message source
-        String rawMessage = generateRawMessage(envelope, message);
-
-		// Append the message to the folder
-		parentAccount.getMailStore().requestMessageAppend(
-				this.folderTreeItem,
-				rawMessage,
-				messageFlags);
-	}
-
-	/**
-	 * Generate raw message source for an object-structured message.
-	 * 
-	 * @param envelope The envelope of the message to transform
-	 * @param message The message to transform
-	 * @return The raw source
-	 */
-	private String generateRawMessage(MessageEnvelope envelope, Message message) {
-		StringBuffer buf = new StringBuffer();
-		buf.append(MailMessageParser.generateMessageHeaders(envelope, false));
-		
-        MessageMimeConverter messageMime = new MessageMimeConverter(message);
-        buf.append(messageMime.toMimeString());
-
-        String rawMessage = buf.toString();
-        return rawMessage;
+	    parentAccount.getMailStoreServices().requestMessageAppend(
+	            this.folderTreeItem, envelope, message, messageFlags);
 	}
 	
 	/**
@@ -436,11 +343,8 @@ public class MailboxNode implements Node, Serializable {
 	 * @param initialFlags Initial flags for the message
 	 */
 	public void appendRawMessage(String rawMessage, MessageFlags initialFlags) {
-		// Sanity check
-		if(!this.hasAppend) {
-			return;
-		}
-		parentAccount.getMailStore().requestMessageAppend(this.folderTreeItem, rawMessage, initialFlags);
+		parentAccount.getMailStoreServices().requestMessageAppend(
+		        this.folderTreeItem, rawMessage, initialFlags);
 	}
 
 	/**
@@ -455,13 +359,8 @@ public class MailboxNode implements Node, Serializable {
 	 * @param messageNode Message to copy into this mailbox
 	 */
 	public void copyMessageInto(MessageNode messageNode) {
-		// Sanity check
-		if(!(this.hasAppend
-				&& this.hasCopy()
-				&& messageNode.getParent().getParentAccount() == this.parentAccount)) {
-			return;
-		}
-		parentAccount.getMailStore().requestMessageCopy(messageNode.getMessageToken(), this.folderTreeItem);
+		parentAccount.getMailStoreServices().requestMessageCopy(
+		        this.folderTreeItem, messageNode);
 	}
 
     /**
@@ -477,48 +376,8 @@ public class MailboxNode implements Node, Serializable {
      * @param messageNode Message to copy into this mailbox
      */
 	public void moveMessageInto(MessageNode messageNode) {
-	    // Sanity check
-	    if(!(this.hasAppend
-	            && this.hasCopy()
-	            && messageNode.getParent().getParentAccount() == this.parentAccount)) {
-	        return;
-	    }
-	    parentAccount.getMailStore().requestMessageCopy(
-	            messageNode.getMessageToken(),
-	            this.folderTreeItem,
-	            new MoveMessageIntoCallback(messageNode));
-	}
-	
-	/**
-	 * Callback to handle the result of the copy operation dispatched
-	 * from <code>moveMessageInto(messageNode)</code>.  If that operation
-	 * succeeds, then a request is dispatched to mark the original message
-	 * as deleted.  If it fails, then nothing happens.
-	 */
-	private class MoveMessageIntoCallback implements MailStoreRequestCallback {
-	    private MessageNode messageNode;
-	    
-	    /**
-    	 * Instantiates a new callback for handling the result
-    	 * of the copy operation involved in a message move.
-    	 * 
-    	 * @param messageNode the source message node
-    	 */
-    	public MoveMessageIntoCallback(MessageNode messageNode) {
-	        this.messageNode = messageNode;
-	    }
-	    
-        public void mailStoreRequestComplete() {
-            // If the move request succeeded, then dispatch a request
-            // to have the original message marked as deleted.
-            parentAccount.getMailStore().requestMessageDelete(
-                    messageNode.getMessageToken(),
-                    MessageNode.createMessageFlags(messageNode.getFlags()));
-        }
-
-        public void mailStoreRequestFailed(Throwable exception) {
-            // Do nothing if the request failed
-        }
+        parentAccount.getMailStoreServices().requestMessageMove(
+                this.folderTreeItem, messageNode);
 	}
 	
 	/**
@@ -566,7 +425,6 @@ public class MailboxNode implements Node, Serializable {
 	void addMessage(MessageNode message) {
 		boolean messageAdded;
 		synchronized(messages) {
-		    messagesBeingLoaded.remove(message.getMessageToken().getMessageUid());
 			messageAdded = addMessageImpl(message);
 		}
 		if(messageAdded) {
@@ -616,23 +474,9 @@ public class MailboxNode implements Node, Serializable {
 			messageMap.put(message, message);
 			messageTokenMap.put(message.getMessageToken(), message);
 			messageTokenUidSet.put(message.getMessageToken().getMessageUid(), Boolean.TRUE);
-			
-			Object[] element = (Object[])unappliedFlagUpdates.remove(
-			        message.getMessageToken().getMessageUid());
-			if(element != null) {
-			    MessageToken messageToken = (MessageToken)element[0];
-			    MessageFlags messageFlags = (MessageFlags)element[1];
-                // Message already exists in the mailbox, and just needs
-                // its flags updated.
-			    message.setFlags(MessageNode.convertMessageFlags(messageFlags));
-
-                // Update the token based on the token that came along
-                // with the flags.  This will update any volatile state
-                // information, such as POP message indices
-			    message.getMessageToken().updateToken(messageToken);
-			    message.setExistsOnServer(true);
+			if(getParentAccount() instanceof NetworkAccountNode) {
+			    message.setCachedContent(MailFileManager.getInstance().messageNodeExists(this, message.getMessageToken()));
 			}
-			message.commitMessage();
 			return true;
 		}
 		else {
@@ -659,91 +503,6 @@ public class MailboxNode implements Node, Serializable {
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
 	}
 
-    /**
-     * Removes all messages not marked as existing on the server.
-     */
-	private void removeMessagesNotOnServer() {
-        synchronized(messages) {
-            // If cache load is in progress, take note of request and return
-            if(cacheLoadInProgress) {
-                removeMessagesNotOnServerRequested = true;
-            }
-            else {
-                removeMessagesNotOnServerImpl();
-            }
-        }
-	}
-	
-    private void removeMessagesNotOnServerImpl() {
-        Vector messagesToRemove = new Vector();
-        Vector messagesToRetain = new Vector();
-        
-        // Populate a list of the messages to remove
-        int size = messages.size();
-        for(int i=0; i<size; i++) {
-            MessageNode messageNode = (MessageNode)messages.elementAt(i);
-            if(!messageNode.existsOnServer()) {
-                messagesToRemove.addElement(messageNode);
-            }
-            else {
-                String messageUid = messageNode.getMessageToken().getMessageUid();
-                messagesToRetain.addElement(messageUid);
-                messagesKnownToServer.remove(messageUid);
-            }
-        }
-        
-        // Iterate through any remaining items in our server-known message set,
-        // and add them to the retention list.
-        for(Enumeration e = messagesKnownToServer.keys(); e.hasMoreElements(); ) {
-            messagesToRetain.addElement(e.nextElement());
-        }
-        
-        size = messagesToRemove.size();
-        if(size > 0) {
-            MessageNode[] removedMessageNodes = new MessageNode[size];
-            for(int i=0; i<size; i++) {
-                MessageNode messageNode = (MessageNode)messagesToRemove.elementAt(i);
-                messages.removeElement(messageNode);
-                messageNode.setParent(null);
-                messageMap.remove(messageNode);
-                messageTokenMap.remove(messageNode.getMessageToken());
-                messageTokenUidSet.remove(messageNode.getMessageToken().getMessageUid());
-                removedMessageNodes[i] = messageNode;
-            }
-            
-            if(this.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
-                (new RemoveFromCacheThread(messagesToRetain)).start();
-            }
-            updateUnseenMessages(false);
-            fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessageNodes);
-        }
-        else {
-            if(this.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
-                (new RemoveFromCacheThread(messagesToRetain)).start();
-            }
-        }
-    }
-	
-    private class RemoveFromCacheThread extends Thread {
-        private String[] uidsToRetain;
-        
-        public RemoveFromCacheThread(Vector uidsToRetain) {
-            this.uidsToRetain = new String[uidsToRetain.size()];
-            uidsToRetain.copyInto(this.uidsToRetain);
-        }
-        
-        public void run() {
-            try {
-                MailFileManager.getInstance().removeStaleMessageNodes(MailboxNode.this, uidsToRetain);
-            } catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("Unable to remove messages from the cache\r\n"
-                                + e.getMessage()).getBytes(),
-                                EventLogger.ERROR);
-            }
-        }
-    }
-	
 	/**
 	 * Removes all messages from this mailbox.
 	 */
@@ -838,7 +597,7 @@ public class MailboxNode implements Node, Serializable {
 	 * @return True if messages can be copied into this mailbox.
 	 */
 	public boolean hasCopy() {
-		return parentAccount != null && parentAccount.getMailStore().hasCopy();
+		return parentAccount != null && parentAccount.getMailStoreServices().hasCopy();
 	}
 	
 	/**
@@ -928,7 +687,7 @@ public class MailboxNode implements Node, Serializable {
                 }
             }
         }
-        parentAccount.getMailStore().requestFolderExpunge(this.folderTreeItem);
+        parentAccount.getMailStoreServices().requestFolderExpunge(this.folderTreeItem);
     }
 
     /**
@@ -985,59 +744,25 @@ public class MailboxNode implements Node, Serializable {
         
         if (folderMessages != null) {
             if(e.isFlagsOnly()) {
-                folderMessagesAvailableFlagsOnly(folderMessages);
+                folderMessagesAvailableFlagsOnly(folderMessages, e.isServer());
             }
             else {
-                folderMessagesAvailable(folderMessages);
+                folderMessagesAvailable(folderMessages, e.isServer());
             }
         }
         else {
-            folderMessagesAvailableComplete();
+            //folderMessagesAvailableComplete();
         }
     }
 
-    private void folderMessagesAvailableFlagsOnly(FolderMessage[] folderMessages) {
+    private void folderMessagesAvailableFlagsOnly(FolderMessage[] folderMessages, boolean server) {
         // Only flags have been retrieved, so the existing messages need to
         // be checked and additional actions requested accordingly.
         for (int i = 0; i < folderMessages.length; i++) {
-            if(!updateMessageFlags(folderMessages[i].getMessageToken(), folderMessages[i].getFlags())) {
-                // Message does not currently exist in the mailbox, and
-                // is not in the process of being loaded from cache.
-                synchronized(folderMessagesToFetch) {
-                    folderMessagesToFetch.addElement(folderMessages[i].getMessageToken());
-                }
-            }
-        }
-    }
-
-    /**
-     * Attempt to update the flags for a message within this mailbox.
-     * If the <code>MessageNode</code> for the token already exists within
-     * the mailbox, its flags will be updated.  If it does not exist, but is in
-     * the process of being loaded from cache, the flag change will be saved
-     * and applied as the message load completes.  If the message neither
-     * exists nor is being loaded, false will be returned.
-     *
-     * @param messageToken the message token
-     * @param messageFlags the flags to update
-     * @return true, if the update was applied or saved
-     */
-    private boolean updateMessageFlags(MessageToken messageToken, MessageFlags messageFlags) {
-        boolean result = false;
-        synchronized(messages) {
-            // If this method is called during the initial flags fetch, then
-            // track all messages updates are received for.  This is how we
-            // build a collection of messages that exist on the server, for the
-            // purposes of cache cleanup.
-            if(!initialRefreshCompleted) {
-                messagesKnownToServer.put(messageToken.getMessageUid(), Boolean.TRUE);
-            }
+            MessageToken messageToken = folderMessages[i].getMessageToken();
+            MessageFlags messageFlags = folderMessages[i].getFlags();
             
-            if(messagesBeingLoaded.containsKey(messageToken.getMessageUid())) {
-                unappliedFlagUpdates.put(messageToken.getMessageUid(), new Object[] { messageToken, messageFlags });
-                result = true;
-            }
-            else {
+            synchronized(messages) {
                 MessageNode messageNode = (MessageNode)messageTokenMap.get(messageToken);
                 if(messageNode != null) {
                     // Message already exists in the mailbox, and just needs
@@ -1048,43 +773,28 @@ public class MailboxNode implements Node, Serializable {
                     // with the flags.  This will update any volatile state
                     // information, such as POP message indices
                     messageNode.getMessageToken().updateToken(messageToken);
-                    messageNode.setExistsOnServer(true);
 
-                    result = true;
+                    if(server && !messageNode.existsOnServer()) {
+                        messageNode.setExistsOnServer(true);
+                    }
                 }
             }
         }
-        return result;
     }
 
-    private void folderMessagesAvailable(FolderMessage[] folderMessages) {
+    private void folderMessagesAvailable(FolderMessage[] folderMessages, boolean server) {
         // Determine what MessageNodes need to be created, and add them.
         Vector addedMessages = new Vector();
    
         for (int i = 0; i < folderMessages.length; i++) {
             MessageNode messageNode = new MessageNode(folderMessages[i]);
-            messageNode.setExistsOnServer(true);
+            messageNode.setExistsOnServer(server);
             addedMessages.addElement(messageNode);
         }
    
         MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
         addedMessages.copyInto(addedMessagesArray);
         addMessages(addedMessagesArray);
-    }
-
-    private void folderMessagesAvailableComplete() {
-        synchronized(folderMessagesToFetch) {
-            // Clean out all messages that couldn't be verified against the server
-            removeMessagesNotOnServer();
-            
-            // Queue a fetch for messages that do exist
-            if(!folderMessagesToFetch.isEmpty()) {
-                MessageToken[] fetchArray = new MessageToken[folderMessagesToFetch.size()];
-                folderMessagesToFetch.copyInto(fetchArray);
-                folderMessagesToFetch.removeAllElements();
-                parentAccount.getMailStore().requestFolderMessagesSet(folderTreeItem, fetchArray);
-            }
-        }
     }
     
     /**
@@ -1100,7 +810,6 @@ public class MailboxNode implements Node, Serializable {
                 ((MessageNode)en.nextElement()).setExistsOnServer(false);
             }
             pendingExpungeMessages.removeAllElements();
-            removeMessagesNotOnServer();
         }
     }
 
@@ -1147,100 +856,7 @@ public class MailboxNode implements Node, Serializable {
      * messages without replacing the existing ones. 
      */
     public void refreshMessages() {
-    	// Fetch messages stored in the cache
-        if(refreshInProgress.compareAndSet(false, true)) {
-            if(parentAccount instanceof NetworkAccountNode) {
-                if(fetchThread == null || !fetchThread.isAlive()) {
-                    synchronized(messages) {
-                        cacheLoadInProgress = true;
-                    }
-                    
-                    // Request flags and tokens for recent messages from the mail store
-                    boolean fetchFlagsOnly = !initialRefreshCompleted;
-                    parentAccount.getMailStore().requestFolderMessagesRecent(
-                            folderTreeItem,
-                            fetchFlagsOnly,
-                            new MailStoreRequestCallback() {
-                                public void mailStoreRequestComplete() {
-                                    initialRefreshCompleted = true;
-                                    refreshInProgress.set(false);
-                                }
-                                public void mailStoreRequestFailed(Throwable exception) {
-                                    refreshInProgress.set(false);
-                                }
-                            });
-                    
-                    // Start the cache loading process
-                    fetchThread = new RefreshMessagesThread();
-                    fetchThread.start();
-                }
-                else {
-                    refreshInProgress.set(false);
-                }
-            }
-            else {
-                refreshInProgress.set(false);
-                parentAccount.getMailStore().requestFolderMessagesRecent(this.folderTreeItem);
-            }
-        }
-    }
-    
-    private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
-        public RefreshMessagesThread() {
-            
-        }
-        
-        public void run() {
-            try {
-                MailFileManager.getInstance().readMessageNodes(MailboxNode.this, this);
-                
-                // If the server fetch completed before the cache load, then
-                // execute the pending post-load cache cleanup.
-                synchronized(messages) {
-                    cacheLoadInProgress = false;
-                    if(removeMessagesNotOnServerRequested) {
-                        removeMessagesNotOnServerRequested = false;
-                        removeMessagesNotOnServerImpl();
-                    }
-                }
-            } catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("Unable to read messages from cache\r\n"
-                                + e.getMessage()).getBytes(),
-                                EventLogger.ERROR);
-            }
-        }
-
-        public boolean messageNodeAvailable(String messageUid) {
-            boolean result;
-            synchronized(messages) {
-                if(messageTokenUidSet.containsKey(messageUid)) {
-                    // Don't load messages that have already been loaded
-                    result = false;
-                }
-                else {
-                    // Keep track of messages that will be loaded
-                    messagesBeingLoaded.put(messageUid, Boolean.TRUE);
-                    result = true;
-                }
-            }
-            return result;
-        }
-
-        public void messageNodeUpdated(MessageNode messageNode) {
-            if(messageNode != null) {
-                // If the initial flags fetch is complete, then ignore all
-                // nodes loaded from cache that don't have pending flag updates.
-                if(initialRefreshCompleted) {
-                    synchronized(messages) {
-                        if(!unappliedFlagUpdates.containsKey(messageNode.getMessageToken().getMessageUid())) {
-                            return;
-                        }
-                    }
-                }
-                MailboxNode.this.addMessage(messageNode);
-            }
-        }
+        parentAccount.getMailStoreServices().requestFolderRefresh(this.folderTreeItem);
     }
     
 	/**

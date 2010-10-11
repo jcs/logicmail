@@ -50,6 +50,7 @@ public class ModelTests extends TestCase {
         testSuite.addTest(new MessageNodeTest().suite());
         testSuite.addTest(new MessageNodeWriterTest().suite());
         testSuite.addTest(new MailFileComparatorTest().suite());
+        testSuite.addTest(new FolderMessageCacheTest().suite());
         return testSuite;
     }
 }

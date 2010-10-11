@@ -56,7 +56,7 @@ public class MailboxNodeTest extends TestCase {
     }
     
     public void setUp() {
-    	instance = new MailboxNode();
+    	instance = new MailboxNode(new FolderTreeItem("INBOX", "INBOX", "."));
     }
     
     public void tearDown() {

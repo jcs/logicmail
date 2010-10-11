@@ -52,7 +52,8 @@ public class MailRootNode implements Node {
         this.networkAccounts = new Vector();
 
         // Add the local mail store account
-        localAccountNode = new LocalAccountNode((LocalMailStore) MailFactory.createLocalMailStore());
+        localAccountNode = new LocalAccountNode(new LocalMailStoreServices(
+                (LocalMailStore) MailFactory.createLocalMailStore()));
         localAccountNode.load();
     }
 

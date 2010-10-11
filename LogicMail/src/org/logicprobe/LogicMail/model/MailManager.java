@@ -55,10 +55,11 @@ import org.logicprobe.LogicMail.util.EventListenerList;
  */
 public class MailManager {
 	private static MailManager instance = null;
-	private EventListenerList listenerList = new EventListenerList();
-	private MailRootNode mailRootNode;
-	private MailSettings mailSettings;
-	private OutboxMailboxNode outboxMailboxNode;
+	private final EventListenerList listenerList = new EventListenerList();
+	private final MailRootNode mailRootNode;
+	private final MailSettings mailSettings;
+	private final FolderMessageCache folderMessageCache;
+    private OutboxMailboxNode outboxMailboxNode;
 	
 	/**
 	 * Constructor.
@@ -66,6 +67,8 @@ public class MailManager {
 	private MailManager() {
 		mailSettings = MailSettings.getInstance();
 		mailRootNode = new MailRootNode();
+		folderMessageCache = new FolderMessageCache();
+		folderMessageCache.restore();
 
 		// Make sure the initial configuration is loaded
 		updateMailModelAccountList();
@@ -245,7 +248,10 @@ public class MailManager {
 	            newAccounts.addElement(existingAccountNode);
 	        }
 	        else {
-	            AccountNode newAccountNode = new NetworkAccountNode((NetworkMailStore) MailFactory.createMailStore(accountConfig));
+	            AccountNode newAccountNode = new NetworkAccountNode(
+	                    new NetworkMailStoreServices(
+	                            (NetworkMailStore) MailFactory.createMailStore(accountConfig),
+	                            folderMessageCache));
 	            newAccountNode.load();
 	            newAccounts.addElement(newAccountNode);
 	        }

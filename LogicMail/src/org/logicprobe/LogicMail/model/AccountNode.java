@@ -30,7 +30,6 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
@@ -56,7 +55,7 @@ public abstract class AccountNode implements Node {
     public final static int STATUS_OFFLINE = 1;
     public final static int STATUS_ONLINE = 2;
     
-    private final AbstractMailStore mailStore;
+    protected final MailStoreServices mailStoreServices;
     private MailRootNode parent;
     private MailboxNode rootMailbox;
     private final Hashtable pathMailboxMap;
@@ -68,25 +67,25 @@ public abstract class AccountNode implements Node {
     /**
      * Construct a new node for a network account.
      *
-     * @param accountConfig Account configuration.
+     * @param mailStoreServices Services for interacting with the mail store.
      */
-    protected AccountNode(AbstractMailStore mailStore) {
+    protected AccountNode(MailStoreServices mailStoreServices) {
         this.rootMailbox = null;
         this.pathMailboxMap = new Hashtable();
 
-        this.mailStore = mailStore;
+        this.mailStoreServices = mailStoreServices;
 
         addMailStoreListeners();
     }
 
     private void addMailStoreListeners() {
-        this.mailStore.addMailStoreListener(new MailStoreListener() {
+        this.mailStoreServices.addMailStoreListener(new MailStoreListener() {
             public void folderTreeUpdated(FolderEvent e) {
                 mailStoreFolderTreeUpdated(e);
             }
         });
 
-        this.mailStore.addFolderListener(new FolderListener() {
+        this.mailStoreServices.addFolderListener(new FolderListener() {
             public void folderStatusChanged(FolderEvent e) {
                 MailboxNode mailboxNode = getMailboxNodeForEvent(e);
                 mailboxNode.mailStoreFolderStatusChanged(e);
@@ -103,7 +102,7 @@ public abstract class AccountNode implements Node {
             }
         });
 
-        this.mailStore.addMessageListener(new MessageListener() {
+        this.mailStoreServices.addMessageListener(new MessageListener() {
             public void messageAvailable(MessageEvent e) {
                 MailboxNode mailboxNode = getMailboxNodeForEvent(e);
                 if(mailboxNode != null) {
@@ -188,12 +187,12 @@ public abstract class AccountNode implements Node {
     }
 
     /**
-     * Gets the mail store associated with this account.
+     * Gets the mail store services associated with this account.
      *
-     * @return The mail store.
+     * @return The mail store services.
      */
-    AbstractMailStore getMailStore() {
-        return this.mailStore;
+    MailStoreServices getMailStoreServices() {
+        return this.mailStoreServices;
     }
 
     /**
@@ -227,7 +226,7 @@ public abstract class AccountNode implements Node {
      * @return True if supported, false otherwise.
      */
     public boolean hasFolders() {
-        return this.mailStore.hasFolders();
+        return this.mailStoreServices.hasFolders();
     }
 
     /**
@@ -236,7 +235,7 @@ public abstract class AccountNode implements Node {
      * @return True if supported, false otherwise.
      */
     public boolean hasUndelete() {
-        return this.mailStore.hasUndelete();
+        return this.mailStoreServices.hasUndelete();
     }
 
     /**
@@ -245,7 +244,7 @@ public abstract class AccountNode implements Node {
      * @return True if supported, false otherwise.
      */
     public boolean hasExpunge() {
-        return this.mailStore.hasExpunge();
+        return this.mailStoreServices.hasExpunge();
     }
 
     /**
@@ -254,8 +253,8 @@ public abstract class AccountNode implements Node {
      * AccountStatusChanged event.
      */
     public void refreshMailboxes() {
-        if (mailStore.hasFolders()) {
-            mailStore.requestFolderTree();
+        if (mailStoreServices.hasFolders()) {
+            mailStoreServices.requestFolderTree();
         }
     }
 
@@ -266,6 +265,18 @@ public abstract class AccountNode implements Node {
      * updated mailboxes.
      */
     public void refreshMailboxStatus() {
+        FolderTreeItem[] folders = getFolderTreeItems();
+
+        mailStoreServices.requestFolderStatus(folders);
+    }
+
+    /**
+     * Gets a flag list of the folder tree items for all the mailboxes
+     * contained within this account.
+     *
+     * @return the folder tree item array
+     */
+    protected FolderTreeItem[] getFolderTreeItems() {
         int size = pathMailboxMap.size();
         FolderTreeItem[] folders = new FolderTreeItem[size];
         Enumeration e = pathMailboxMap.keys();
@@ -273,8 +284,7 @@ public abstract class AccountNode implements Node {
         for (int i = 0; i < size; i++) {
             folders[i] = ((MailboxNode) pathMailboxMap.get(e.nextElement())).getFolderTreeItem();
         }
-
-        mailStore.requestFolderStatus(folders);
+        return folders;
     }
 
     /**
@@ -474,7 +484,8 @@ public abstract class AccountNode implements Node {
      * </p>
      */
     protected void removeSavedData() {
-        // Default empty implementation
+        FolderTreeItem[] folderTreeItems = this.getFolderTreeItems();
+        mailStoreServices.removeSavedData(folderTreeItems);
     }
 
     /**

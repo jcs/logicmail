@@ -31,13 +31,12 @@
 package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.LocalMailStore;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 
 public class LocalAccountNode extends AccountNode {
 
-    LocalAccountNode(LocalMailStore mailStore) {
+    LocalAccountNode(LocalMailStoreServices mailStore) {
         super(mailStore);
         
         this.status = STATUS_LOCAL;
