@@ -42,6 +42,7 @@ import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.mail.FolderEvent;
+import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageEvent;
@@ -74,7 +75,7 @@ public class MailboxNode implements Node, Serializable {
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
 	private int unseenMessageCount;
-    private final Vector pendingExpungeMessages = new Vector();
+    private final Hashtable pendingExpungeMessageSet = new Hashtable();
     
 	public final static int TYPE_NORMAL = 0;
 	public final static int TYPE_INBOX  = 1;
@@ -483,23 +484,64 @@ public class MailboxNode implements Node, Serializable {
 		}
 	}
 	
+    /**
+     * Removes a message from this mailbox.
+     * 
+     * @param message The message to remove
+     */
+	void removeMessage(MessageNode message) {
+	    boolean messageRemoved;
+	    synchronized(messages) {
+	        messageRemoved = removeMessageImpl(message);
+	    }
+	    if(messageRemoved) {
+	        updateUnseenMessages(false);
+	        fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
+	    }
+	}
+	
+    /**
+     * Removes messages from this mailbox.
+     * 
+     * @param message The messages to remove
+     */
+	void removeMessages(MessageNode[] messages) {
+	    Vector removedMessages = null;
+	    synchronized(messages) {
+            for(int i=0; i<messages.length; i++) {
+                if(removeMessageImpl(messages[i])) {
+                    if(removedMessages == null) {
+                        removedMessages = new Vector();
+                    }
+                    removedMessages.addElement(messages[i]);
+                }
+            }
+	    }
+        if(removedMessages != null) {
+            MessageNode[] removedMessagesArray = new MessageNode[removedMessages.size()];
+            removedMessages.copyInto(removedMessagesArray);
+            updateUnseenMessages(false);
+            fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessagesArray);
+        }
+	}
+	
 	/**
 	 * Removes a message from this mailbox.
 	 * 
 	 * @param message The message to remove
 	 */
-	void removeMessage(MessageNode message) {
-		synchronized(messages) {
-			if(messageMap.containsKey(message)) {
-				messages.removeElement(MessageNode.getComparator(), message);
-				message.setParent(null);
-				messageMap.remove(message);
-				messageTokenMap.remove(message.getMessageToken());
-				messageTokenUidSet.remove(message.getMessageToken().getMessageUid());
-			}
+	private boolean removeMessageImpl(MessageNode message) {
+		if(messageMap.containsKey(message)) {
+			messages.removeElement(MessageNode.getComparator(), message);
+			message.setParent(null);
+			messageMap.remove(message);
+			messageTokenMap.remove(message.getMessageToken());
+			messageTokenUidSet.remove(message.getMessageToken().getMessageUid());
+			return true;
 		}
-        updateUnseenMessages(false);
-		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
+		else {
+		    return false;
+		}
 	}
 
 	/**
@@ -682,7 +724,7 @@ public class MailboxNode implements Node, Serializable {
                 MessageNode messageNode = (MessageNode)messages.elementAt(i);
                 int flags = messageNode.getFlags();
                 if((flags & MessageNode.Flag.DELETED) != 0) {
-                    pendingExpungeMessages.addElement(messageNode);
+                    pendingExpungeMessageSet.put(messageNode.getMessageToken(), messageNode);
                 }
             }
         }
@@ -749,9 +791,6 @@ public class MailboxNode implements Node, Serializable {
                 folderMessagesAvailable(folderMessages, e.isServer());
             }
         }
-        else {
-            //folderMessagesAvailableComplete();
-        }
     }
 
     private void folderMessagesAvailableFlagsOnly(FolderMessage[] folderMessages, boolean server) {
@@ -802,13 +841,37 @@ public class MailboxNode implements Node, Serializable {
      * 
      * @param e the event from the mail store
      */
-    void mailStoreFolderExpunged(FolderEvent e) {
-        synchronized(messages) {
-            Enumeration en = pendingExpungeMessages.elements();
-            while(en.hasMoreElements()) {
-                ((MessageNode)en.nextElement()).setExistsOnServer(false);
+    void mailStoreFolderExpunged(FolderExpungedEvent e) {
+        MessageToken[] tokens = e.getExpungedTokens();
+        if(tokens != null) {
+            // If an array of tokens was provided, then this is an explicit
+            // request to remove certain messages from this mailbox.
+            MessageNode[] messagesToRemove;
+            synchronized(messages) {
+                Vector messages = new Vector();
+                for(int i=0; i<tokens.length; i++) {
+                    MessageNode message = (MessageNode)messageTokenMap.get(tokens[i]);
+                    if(message != null) {
+                        messages.addElement(message);
+                        pendingExpungeMessageSet.remove(tokens[i]);
+                    }
+                }
+                messagesToRemove = new MessageNode[messages.size()];
+                messages.copyInto(messagesToRemove);
             }
-            pendingExpungeMessages.removeAllElements();
+            removeMessages(messagesToRemove);
+        }
+        else {
+            // Otherwise, the normal expunge behavior is to simply remove all
+            // messages that were marked as deleted when the expunge action
+            // was requested.
+            synchronized(messages) {
+                Enumeration en = pendingExpungeMessageSet.elements();
+                while(en.hasMoreElements()) {
+                    ((MessageNode)en.nextElement()).setExistsOnServer(false);
+                }
+                pendingExpungeMessageSet.clear();
+            }
         }
     }
 

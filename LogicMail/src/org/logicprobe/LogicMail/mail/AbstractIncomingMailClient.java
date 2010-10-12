@@ -120,8 +120,9 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         return false;
     }
 
-    public void expungeActiveFolder() throws IOException, MailException {
+    public int[] expungeActiveFolder() throws IOException, MailException {
         // Default empty implementation for unsupported feature
+        return new int[0];
     }
     
     public boolean hasIdle() {

@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.mail.imap;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.IntIntHashtable;
+import net.rim.device.api.util.IntVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -383,14 +384,40 @@ public class ImapProtocol {
         return response;
     }
 
-    public void executeExpunge() throws IOException, MailException {
+    /**
+     * Execute the "EXPUNGE" command.
+     *
+     * @return an array of the indices of all expunged messages
+     */
+    public int[] executeExpunge() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("ImapProtocol.executeExpunge()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
 
-        execute("EXPUNGE", null, null);
+        String[] replyText = execute("EXPUNGE", null, null);
+        
+        IntVector indexVector = new IntVector();
+        
+        for (int i = 0; i < replyText.length; i++) {
+            String rowText = replyText[i].toUpperCase();
+            int p;
+            int q;
+            if ((p = rowText.indexOf(" EXPUNGE")) != -1) {
+                q = p;
+                p = rowText.indexOf(' ');
+
+                if ((q != -1) && (p != -1) && (q > p)) {
+                    try {
+                        indexVector.addElement(
+                                Integer.parseInt(rowText.substring(p + 1, q)));
+                    } catch (NumberFormatException e) { }
+                }
+            }
+        }
+        
+        return indexVector.toArray();
     }
 
     public StatusResponse[] executeStatus(String[] mboxpaths,

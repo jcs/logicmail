@@ -150,10 +150,15 @@ public class NetworkMailStoreServices extends MailStoreServices {
             
             // Remove orphaned messages from the cache
             Enumeration e = orphanedMessageSet.elements();
+            MessageToken[] orphanedTokens = new MessageToken[orphanedMessageSet.size()];
+            int index = 0;
             while(e.hasMoreElements()) {
-                folderMessageCache.removeFolderMessage(folderTreeItem, (FolderMessage)e.nextElement());
+                FolderMessage message = (FolderMessage)e.nextElement();
+                folderMessageCache.removeFolderMessage(folderTreeItem, message);
+                orphanedTokens[index++] = message.getMessageToken();
             }
             orphanedMessageSet.clear();
+            NetworkMailStoreServices.super.fireFolderExpunged(folderTreeItem, orphanedTokens);
             
             // Queue a fetch for messages missing from the cache
             if(!messageTokensToFetch.isEmpty()) {
@@ -221,7 +226,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
     }
 
-    protected void fireFolderExpunged(FolderTreeItem folder) {
+    protected void fireFolderExpunged(FolderTreeItem folder, int[] indices) {
         FolderMessage[] messages = folderMessageCache.getFolderMessages(folder);
         for(int i=0; i<messages.length; i++) {
             if(messages[i].isDeleted()) {
@@ -229,6 +234,6 @@ public class NetworkMailStoreServices extends MailStoreServices {
             }
         }
         folderMessageCache.commit();
-        super.fireFolderExpunged(folder);
+        super.fireFolderExpunged(folder, indices);
     }
 }

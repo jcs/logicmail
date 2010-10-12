@@ -282,11 +282,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_EXPUNGE);
         showStatus(message);
         checkActiveFolder(folder);
-        incomingClient.expungeActiveFolder();
+        int[] indices = incomingClient.expungeActiveFolder();
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, folder, tag);
+            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, new Object[] { folder, indices } , tag);
         }
     }
 

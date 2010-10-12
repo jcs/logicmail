@@ -154,7 +154,7 @@ public class LocalMailStore extends AbstractMailStore {
             
             if(expunged) {
                 if(callback != null) { callback.mailStoreRequestComplete(); }
-                fireFolderExpunged(requestFolder);
+                fireFolderExpunged(requestFolder, null);
             }
             else {
                 if(callback != null) { callback.mailStoreRequestFailed(throwable); }

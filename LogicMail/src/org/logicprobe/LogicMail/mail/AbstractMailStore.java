@@ -719,14 +719,15 @@ public abstract class AbstractMailStore {
      * Notifies all registered <tt>FolderListener</tt>s that
      * the folder has been expunged.
      * 
+     * @param indices an array of the indices of all expunged messages, or null if not provided
      * @param root The root node of the updated folder tree
      */
-    protected void fireFolderExpunged(FolderTreeItem root) {
+    protected void fireFolderExpunged(FolderTreeItem root, int[] indices) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
-        FolderEvent e = null;
+        FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderEvent(this, root);
+                e = new FolderExpungedEvent(this, root, indices);
             }
             ((FolderListener)listeners[i]).folderExpunged(e);
         }

@@ -667,10 +667,11 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#expungeActiveFolder()
+     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#expungeActiveFolder()
      */
-    public void expungeActiveFolder() throws IOException, MailException {
-        imapProtocol.executeExpunge();
+    public int[] expungeActiveFolder() throws IOException, MailException {
+        int[] indices = imapProtocol.executeExpunge();
+        return indices;
     }
 
     /* (non-Javadoc)

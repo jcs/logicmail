@@ -95,7 +95,7 @@ public class NetworkMailStoreTest extends TestCase {
 			public void folderStatusChanged(FolderEvent e) {
 				eventFolderStatusChanged = e;
 			}
-            public void folderExpunged(FolderEvent e) {
+            public void folderExpunged(FolderExpungedEvent e) {
             }
     	});
     	

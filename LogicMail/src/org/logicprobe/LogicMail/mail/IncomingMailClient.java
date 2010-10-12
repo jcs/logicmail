@@ -242,10 +242,12 @@ public interface IncomingMailClient extends MailClient {
      * This should do nothing if the underlying protocol does not support
      * expunge.
      *
+     * @return an array of the indices of all expunged messages
+     * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    void expungeActiveFolder()
+    int[] expungeActiveFolder()
         throws IOException, MailException;
     
     /**

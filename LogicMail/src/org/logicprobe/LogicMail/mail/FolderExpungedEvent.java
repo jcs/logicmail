@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,26 +28,39 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Object for folder events. 
- */
-public class FolderEvent extends MailStoreEvent {
-	private final FolderTreeItem folder;
-	
-    /** Creates a new instance of FolderEvent */
-	public FolderEvent(Object source, FolderTreeItem folder) {
-		super(source);
-		this.folder = folder;
-	}
+public class FolderExpungedEvent extends FolderEvent {
+    private final int[] indices;
+    private final MessageToken[] tokens;
+    
+    public FolderExpungedEvent(Object source, FolderTreeItem folder, int[] indices) {
+        super(source, folder);
+        this.indices = indices;
+        this.tokens = null;
+    }
+    
+    public FolderExpungedEvent(Object source, FolderTreeItem folder, MessageToken[] tokens) {
+        super(source, folder);
+        this.indices = null;
+        this.tokens = tokens;
+    }
 
-	/**
-	 * Gets the folder that has been updated to trigger this event.
-	 * @return Updated folder
-	 */
-	public FolderTreeItem getFolder() {
-		return folder;
-	}
+    /**
+     * Gets the indices of the expunged messages.
+     *
+     * @return the expunged indices, or null if none available
+     */
+    public int[] getExpungedIndices() {
+        return indices;
+    }
+    
+    /**
+     * Gets the tokens of the expunged messages.
+     *
+     * @return the expunged tokens, or null if none available
+     */
+    public MessageToken[] getExpungedTokens() {
+        return tokens;
+    }
 }

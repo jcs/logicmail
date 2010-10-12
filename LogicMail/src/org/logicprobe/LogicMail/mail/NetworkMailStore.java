@@ -215,7 +215,8 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
             if(callback != null) { callback.mailStoreRequestComplete(); }
-		    fireFolderExpunged((FolderTreeItem)result);
+            results = (Object[])result;
+		    fireFolderExpunged((FolderTreeItem)results[0], (int[])results[1]);
 		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
             if(callback != null) { callback.mailStoreRequestComplete(); }

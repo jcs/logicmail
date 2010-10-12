@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
+import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -72,8 +73,8 @@ public abstract class MailStoreServices {
             public void folderStatusChanged(FolderEvent e) {
                 fireFolderStatusChanged(e.getFolder());
             }
-            public void folderExpunged(FolderEvent e) {
-                fireFolderExpunged(e.getFolder());
+            public void folderExpunged(FolderExpungedEvent e) {
+                fireFolderExpunged(e.getFolder(), e.getExpungedIndices());
             }
         });
         mailStore.addMessageListener(new MessageListener() {
@@ -562,15 +563,34 @@ public abstract class MailStoreServices {
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the folder has been expunged.
-     * 
+     *
+     * @param indices an array of the indices of all expunged messages, or null if not provided
      * @param folder The folder which has had its deleted messages expunged
      */
-    protected void fireFolderExpunged(FolderTreeItem folder) {
+    protected void fireFolderExpunged(FolderTreeItem folder, int[] indices) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
-        FolderEvent e = null;
+        FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderEvent(this, folder);
+                e = new FolderExpungedEvent(this, folder, indices);
+            }
+            ((FolderListener)listeners[i]).folderExpunged(e);
+        }
+    }
+
+    /**
+     * Notifies all registered <tt>FolderListener</tt>s that
+     * the folder has been expunged.
+     *
+     * @param tokens an array of the tokens of all expunged messages, or null if not provided
+     * @param folder The folder which has had its deleted messages expunged
+     */
+    protected void fireFolderExpunged(FolderTreeItem folder, MessageToken[] tokens) {
+        Object[] listeners = listenerList.getListeners(FolderListener.class);
+        FolderExpungedEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderExpungedEvent(this, folder, tokens);
             }
             ((FolderListener)listeners[i]).folderExpunged(e);
         }

@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.mail.FolderEvent;
+import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -96,7 +97,7 @@ public abstract class AccountNode implements Node {
                 mailboxNode.mailStoreFolderMessagesAvailable(e);
             }
 
-            public void folderExpunged(FolderEvent e) {
+            public void folderExpunged(FolderExpungedEvent e) {
                 MailboxNode mailboxNode = getMailboxNodeForEvent(e);
                 mailboxNode.mailStoreFolderExpunged(e);
             }

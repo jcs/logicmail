@@ -781,6 +781,22 @@ public class ImapProtocolTest extends TestCase {
         assertTrue(!result.recent);
     }
    
+    public void testExecuteExpunge() throws Throwable {
+        instance.addExecuteExpectation("EXPUNGE", null,
+                new String[] {
+                    "* 80 EXPUNGE",
+                    "* 81 EXPUNGE",
+                    "* 78 EXISTS",
+                    "* 2 RECENT"
+                });
+        
+        int[] result = instance.executeExpunge();
+        assertNotNull(result);
+        assertEquals(2, result.length);
+        assertEquals(80, result[0]);
+        assertEquals(81, result[1]);
+    }
+    
     public Test suite() {
         TestSuite suite = new TestSuite("ImapProtocol");
 
@@ -828,6 +844,9 @@ public class ImapProtocolTest extends TestCase {
         suite.addTest(new ImapProtocolTest("executeStore3", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteStore3(); }}));
 
+        suite.addTest(new ImapProtocolTest("executeExpunge", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteExpunge(); }}));
+        
         return suite;
     }
 

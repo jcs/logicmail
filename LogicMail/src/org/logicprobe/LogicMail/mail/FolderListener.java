@@ -56,5 +56,5 @@ public interface FolderListener extends EventListener {
      * 
      * @param e Folder event data
      */
-    public void folderExpunged(FolderEvent e);
+    public void folderExpunged(FolderExpungedEvent e);
 }
