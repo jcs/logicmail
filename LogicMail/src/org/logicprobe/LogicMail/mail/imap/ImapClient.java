@@ -809,6 +809,7 @@ public class ImapClient extends AbstractIncomingMailClient {
                 for(int i=0; i<result.length; i++) {
                     callback.folderMessageUpdate(result[i]);
                 }
+                callback.folderMessageUpdate(null);
             }
             else {
                 imapProtocol.executeFetchEnvelopeUid(uidNext, new ImapNewFetchEnvelopeCallback(callback), progressHandler);

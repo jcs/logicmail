@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import net.rim.device.api.util.IntHashtable;
@@ -41,27 +42,38 @@ import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.util.AtomicBoolean;
 
 public class NetworkMailStoreServices extends MailStoreServices {
     private final NetworkMailStore mailStore;
     private final FolderMessageCache folderMessageCache;
     
-    /**
-     * Flag to track whether a mailbox refresh is currently in progress.
-     */
-    private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    /** Data structure to keep folder-specific refresh state. */
+    private static class FolderRefreshState {
+        /**
+         * Flag to track whether a folder refresh is currently in progress.
+         */
+        public volatile boolean refreshInProgress;
+        
+        /**
+         * Indicates that the initial refresh has completed, and that subsequent
+         * refreshes should not try to reconcile against the cache.
+         */
+        public boolean initialRefreshComplete;
+        
+        public Vector pendingFlagUpdates = new Vector();
+        
+        /**
+         * Set of messages that have been loaded from the cache, but no longer
+         * exist on the server.
+         */
+        public IntHashtable orphanedMessageSet = new IntHashtable();
+        
+        public Thread refreshThread;
+    }
     
-    private final Vector pendingFlagUpdates = new Vector();
+    /** Map of FolderTreeItem objects to corresponding FolderRefreshState data */
+    private final Hashtable folderRefreshStateMap = new Hashtable();
     
-    /**
-     * Set of messages that have been loaded from the cache, but no longer
-     * exist on the server.
-     */
-    private final IntHashtable orphanedMessageSet = new IntHashtable();
-    
-    private Thread refreshThread;
-
     public NetworkMailStoreServices(NetworkMailStore mailStore, FolderMessageCache folderMessageCache) {
         super(mailStore);
         this.mailStore = mailStore;
@@ -77,16 +89,43 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
 
     public void requestFolderRefresh(final FolderTreeItem folderTreeItem) {
-        if(refreshInProgress.compareAndSet(false, true)) {
-            refreshThread = new Thread() { public void run() {
+        final FolderRefreshState stateData;
+        synchronized(folderRefreshStateMap) {
+            FolderRefreshState tempState = (FolderRefreshState)folderRefreshStateMap.get(folderTreeItem);
+            if(tempState == null) {
+                stateData = new FolderRefreshState();
+                folderRefreshStateMap.put(folderTreeItem, stateData);
+            }
+            else if(tempState.refreshInProgress) {
+                // Immediately shortcut out if a refresh of this folder is
+                // currently in progress.
+                return;
+            }
+            else {
+                stateData = tempState;
+            }
+            stateData.refreshInProgress = true;
+        }
+        
+        if(stateData != null) {
+            stateData.refreshThread = new Thread() { public void run() {
                 // Queue a request for new folder messages from the mail store
                 mailStore.requestFolderMessagesRecent(folderTreeItem, true, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() { }
                     public void mailStoreRequestFailed(Throwable exception) {
-                        pendingFlagUpdates.removeAllElements();
-                        refreshInProgress.set(false);
+                        FolderRefreshState stateData;
+                        synchronized(folderRefreshStateMap) {
+                            stateData = (FolderRefreshState)folderRefreshStateMap.get(folderTreeItem);
+                        }
+                        if(stateData != null) {
+                            stateData.pendingFlagUpdates.removeAllElements();
+                            stateData.refreshInProgress = false;
+                        }
                     }
                 });
+                
+                // Skip cache loading after the initial refresh
+                if(stateData.initialRefreshComplete) { return; }
                 
                 // Fetch messages stored in cache
                 FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
@@ -97,40 +136,50 @@ public class NetworkMailStoreServices extends MailStoreServices {
                     // cache.  Server-side messages will be removed from the
                     // set later on.
                     for(int i=0; i<messages.length; i++) {
-                        orphanedMessageSet.put(messages[i].getUid(), messages[i]);
+                        stateData.orphanedMessageSet.put(messages[i].getUid(), messages[i]);
                     }
                 }
             }};
-            refreshThread.start();
+            stateData.refreshThread.start();
         }
     }
     
     private void flagsRefreshComplete(final FolderTreeItem folderTreeItem) {
         (new Thread() { public void run() {
+            FolderRefreshState stateData;
+            synchronized(folderRefreshStateMap) {
+                stateData = (FolderRefreshState)folderRefreshStateMap.get(folderTreeItem);
+            }
+            if(stateData == null) { return; }
+            
             // Make sure the cache refresh is completed
             try {
-                refreshThread.join();
+                stateData.refreshThread.join();
             } catch (InterruptedException e) { }
-            refreshThread = null;
+            stateData.refreshThread = null;
             
             // Check if the first server request failed.  If it did fail,
             // then do some quick cleanup and shortcut out.
-            if(!refreshInProgress.get()) {
-                orphanedMessageSet.clear();
+            if(!stateData.refreshInProgress) {
+                stateData.orphanedMessageSet.clear();
                 return;
             }
+            
+            // Set a flag indicating that the initial fetch completed,
+            // so we know how to handle subsequent fetches
+            stateData.initialRefreshComplete = true;
             
             Vector messagesUpdated = new Vector();
             Vector messageTokensToFetch = new Vector();
 
             // Apply pending flag updates, while building a list of messages
             // that still need to be fetched
-            int size = pendingFlagUpdates.size();
+            int size = stateData.pendingFlagUpdates.size();
             for(int i=0; i<size; i++) {
-                FolderMessage message = (FolderMessage)pendingFlagUpdates.elementAt(i);
+                FolderMessage message = (FolderMessage)stateData.pendingFlagUpdates.elementAt(i);
                 
                 // Remove messages with received flag updates from the orphan set
-                orphanedMessageSet.remove(message.getUid());
+                stateData.orphanedMessageSet.remove(message.getUid());
                 
                 if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
                     messagesUpdated.addElement(message);
@@ -139,7 +188,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
                     messageTokensToFetch.addElement(message.getMessageToken());
                 }
             }
-            pendingFlagUpdates.removeAllElements();
+            stateData.pendingFlagUpdates.removeAllElements();
             
             // Notify with any flag updates
             if(!messagesUpdated.isEmpty()) {
@@ -149,15 +198,15 @@ public class NetworkMailStoreServices extends MailStoreServices {
             }
             
             // Remove orphaned messages from the cache
-            Enumeration e = orphanedMessageSet.elements();
-            MessageToken[] orphanedTokens = new MessageToken[orphanedMessageSet.size()];
+            Enumeration e = stateData.orphanedMessageSet.elements();
+            MessageToken[] orphanedTokens = new MessageToken[stateData.orphanedMessageSet.size()];
             int index = 0;
             while(e.hasMoreElements()) {
                 FolderMessage message = (FolderMessage)e.nextElement();
                 folderMessageCache.removeFolderMessage(folderTreeItem, message);
                 orphanedTokens[index++] = message.getMessageToken();
             }
-            orphanedMessageSet.clear();
+            stateData.orphanedMessageSet.clear();
             NetworkMailStoreServices.super.fireFolderExpunged(folderTreeItem, orphanedTokens);
             
             // Queue a fetch for messages missing from the cache
@@ -167,17 +216,27 @@ public class NetworkMailStoreServices extends MailStoreServices {
                 messageTokensToFetch.removeAllElements();
                 mailStore.requestFolderMessagesSet(folderTreeItem, fetchArray, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() {
-                        refreshInProgress.set(false);
+                        synchronized(folderRefreshStateMap) {
+                            FolderRefreshState stateData = (FolderRefreshState)folderRefreshStateMap.get(folderTreeItem);
+                            if(stateData != null) {
+                                stateData.refreshInProgress = false;
+                            }
+                        }
                         folderMessageCache.commit();
                     }
                     public void mailStoreRequestFailed(Throwable exception) {
-                        refreshInProgress.set(false);
+                        synchronized(folderRefreshStateMap) {
+                            FolderRefreshState stateData = (FolderRefreshState)folderRefreshStateMap.get(folderTreeItem);
+                            if(stateData != null) {
+                                stateData.refreshInProgress = false;
+                            }
+                        }
                         folderMessageCache.commit();
                     }
                 });
             }
             else {
-                refreshInProgress.set(false);
+                stateData.refreshInProgress = false;
                 folderMessageCache.commit();
             }
         }}).start();
@@ -192,11 +251,16 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     protected void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
+        FolderRefreshState stateData;
+        synchronized(folderRefreshStateMap) {
+            stateData = (FolderRefreshState)folderRefreshStateMap.get(folder);
+        }
+        
         if(messages != null) {
             if(flagsOnly) {
-                if(refreshInProgress.get()) {
+                if(stateData != null && stateData.refreshInProgress) {
                     for(int i=0; i<messages.length; i++) {
-                        pendingFlagUpdates.addElement(messages[i]);
+                        stateData.pendingFlagUpdates.addElement(messages[i]);
                     }
                 }
                 else {
@@ -214,7 +278,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             }
         }
         else {
-            if(flagsOnly && refreshInProgress.get()) {
+            if(flagsOnly && stateData != null && stateData.refreshInProgress) {
                 flagsRefreshComplete(folder);
             }
             else {
