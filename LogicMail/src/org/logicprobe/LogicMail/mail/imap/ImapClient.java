@@ -240,16 +240,18 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.MailClient#close()
      */
     public void close() throws IOException, MailException {
-        if(connection.isConnected()) {
-            // Note: Active mailbox is not closed to avoid unintentionally
-            // expunging deleted messages.
-            try {
-                imapProtocol.executeLogout();
-            } catch (Exception exp) { }
+        if(connection != null) {
+            if(connection.isConnected()) {
+                // Note: Active mailbox is not closed to avoid unintentionally
+                // expunging deleted messages.
+                try {
+                    imapProtocol.executeLogout();
+                } catch (Exception exp) { }
+            }
+            activeMailbox = null;
+            connection.close();
+            connection = null;
         }
-        activeMailbox = null;
-        connection.close();
-        connection = null;
     }
 
     /* (non-Javadoc)
