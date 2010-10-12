@@ -40,9 +40,10 @@ import java.util.Vector;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
+import net.rim.device.api.collection.util.BigVector;
 import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.InvertedOrderComparator;
-import net.rim.device.api.util.SimpleSortingVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -257,20 +258,20 @@ public class MailFileManager {
     }
 
     private String[] getMessageFiles(MailboxNode mailboxNode) throws IOException {
-        SimpleSortingVector fileVector = new SimpleSortingVector();
+        BigVector fileVector = new BigVector();
+        Comparator comparator;
         if(mailSettings.getGlobalConfig().getDispOrder()) {
-            fileVector.setSortComparator(new MailFileComparator());
+            comparator = new MailFileComparator();
         }
         else {
-            fileVector.setSortComparator(new InvertedOrderComparator(new MailFileComparator()));
+            comparator = new InvertedOrderComparator(new MailFileComparator());
         }
-        fileVector.setSort(true);
         
         FileConnection fileConnection = getMailboxFileConnection(mailboxNode);
         String mailboxUrl = fileConnection.getURL();
         Enumeration e = fileConnection.list(MSG_FILTER, false);
         while(e.hasMoreElements()) {
-            fileVector.addElement(e.nextElement());
+            fileVector.insertElement(comparator, e.nextElement());
         }
         fileConnection.close();
 

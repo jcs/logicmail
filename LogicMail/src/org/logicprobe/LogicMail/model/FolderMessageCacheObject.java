@@ -67,11 +67,18 @@ public class FolderMessageCacheObject implements Persistable {
      * object is loaded from persistent storage.
      */
     public FolderMessageCacheObject() {
-        cachedFolders = new LongHashtable();
-        cachedMessages = new LongHashtable();
+        initializeIfNecessary();
+    }
+    
+    private void initializeIfNecessary() {
+        if(cachedFolders == null || cachedMessages == null) {
+            cachedFolders = new LongHashtable();
+            cachedMessages = new LongHashtable();
+        }
     }
     
     public FolderTreeItem[] getFolders() {
+        initializeIfNecessary();
         FolderTreeItem[] result;
         
         if(cachedFolders != null) {
@@ -153,5 +160,10 @@ public class FolderMessageCacheObject implements Persistable {
         if(messageTable != null && messageTable.containsKey(message.getUid())) {
             messageTable.put(message.getUid(), SerializationUtils.serializeClass(message));
         }
+    }
+    
+    public void clear() {
+        cachedFolders.clear();
+        cachedMessages.clear();
     }
 }

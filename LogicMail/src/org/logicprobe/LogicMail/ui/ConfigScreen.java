@@ -38,16 +38,20 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BasicEditField;
+import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
+import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.ObjectListField;
 import net.rim.device.api.ui.component.TextField;
+import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.text.TextFilter;
 
@@ -63,6 +67,7 @@ import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.model.MailManager;
 
 /**
  * This screen is the main entry point to all the
@@ -110,7 +115,10 @@ public class ConfigScreen extends AbstractConfigScreen {
     private CheckboxField connectionDebuggingCheckboxField;
     private CheckboxField unicodeNormalizationCheckboxField;
     private ObjectChoiceField languageChoiceField;
-
+    private ButtonField clearCacheButtonField;
+    
+    private volatile boolean clearingCache;
+    
     private MenuItem selectItem;
     private MenuItem moveUpItem;
     private MenuItem moveDownItem;
@@ -136,7 +144,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         initLanguageChoices();
         initFileSystemChoices();
 
-        separatorHeight = getFont().getHeight() / 2;
+        separatorHeight = getFont().getHeight() >> 1;
         
         initFields();
         initMenuItems();
@@ -294,7 +302,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         public void drawListRow(ListField listField, Graphics graphics, int index, int y, int width) {
             int fontHeight = graphics.getFont().getHeight();
             
-            int yPos = y + (fontHeight / 2) - 8;
+            int yPos = y + (fontHeight >> 1) - 8;
             if(isFocus && index == getSelectedIndex()) {
                 graphics.drawBitmap(width - 15, yPos, 10, 16, chevronIconHighlighted, 0, 0);
             }
@@ -452,18 +460,34 @@ public class ConfigScreen extends AbstractConfigScreen {
         connectionDebuggingCheckboxField = new CheckboxField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_CONNECTION_DEBUGGING),
                 existingGlobalConfig.getConnDebug());
+
+        LabelField clearCacheLabelField = new LabelField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_MAILBOX_CACHE) + ' ',
+                Field.FIELD_VCENTER);
+        clearCacheButtonField = new ButtonField(
+                resources.getString(LogicMailResource.MENUITEM_CLEAR),
+                ButtonField.CONSUME_CLICK | ButtonField.NEVER_DIRTY | Field.FIELD_VCENTER);
+        clearCacheButtonField.setChangeListener(new FieldChangeListener() {
+            public void fieldChanged(Field field, int context) {
+                clearCacheButtonFieldChanged(field, context);
+            }
+        });
+        HorizontalFieldManager clearCacheManager = new HorizontalFieldManager(Manager.NO_HORIZONTAL_SCROLL | Manager.FIELD_LEFT);
+        clearCacheManager.add(clearCacheLabelField);
+        clearCacheManager.add(clearCacheButtonField);
         
         otherFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_OTHER),
                 Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
         otherFieldManager.add(localDataLocationChoiceLabel);
+        otherFieldManager.add(clearCacheManager);
         otherFieldManager.add(languageChoiceField);
         otherFieldManager.add(unicodeNormalizationCheckboxField);
         otherFieldManager.add(connectionDebuggingCheckboxField);
         otherFieldManager.add(new BlankSeparatorField(separatorHeight));
         add(otherFieldManager);
     }
-    
+
     private void initMenuItems() {
         selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_EDIT, 300100, 1) {
             public void run() {
@@ -586,6 +610,25 @@ public class ConfigScreen extends AbstractConfigScreen {
             localHostnameEditField.setText((hostname != null) ? hostname
                     : "localhost");
             localHostnameEditField.setEditable(false);
+        }
+    }
+    
+    private void clearCacheButtonFieldChanged(Field field, int context) {
+        if(!clearingCache) {
+            clearingCache = true;
+            clearCacheButtonField.setEditable(false);
+            Thread clearCacheThread = new Thread() {
+                public void run() {
+                    MailManager.getInstance().clearFolderMessageCache();
+                    clearingCache = false;
+                    UiApplication.getUiApplication().invokeLater(new Runnable() {
+                        public void run() {
+                            clearCacheButtonField.setEditable(true);
+                        }
+                    });
+                }
+            };
+            clearCacheThread.start();
         }
     }
 
@@ -1023,7 +1066,7 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         int fsRootIndex = localDataLocationChoiceLabel.getSelectedIndex();
         String url;
-        if(fsRootIndex > fileSystemRoots.length) {
+        if(fsRootIndex >= fileSystemRoots.length) {
             url = null;
         }
         else {

@@ -191,6 +191,18 @@ public class FolderTreeItem implements Serializable {
         return uniqueId;
     }
     
+    /**
+     * Sets the unique ID for this folder tree item.
+     * This method should only be called in exceptional circumstances, such
+     * as during copy operations where the original item's ID needs to be
+     * retained.
+     *
+     * @param uniqueId the new unique ID
+     */
+    public void setUniqueId(long uniqueId) {
+        this.uniqueId = uniqueId;
+    }
+    
     public FolderTreeItem[] children() {
         return children;
     }

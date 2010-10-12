@@ -37,6 +37,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.collection.util.BigVector;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.SimpleSortingVector;
 
@@ -64,7 +65,7 @@ public class MailboxNode implements Node, Serializable {
 	private AccountNode parentAccount;
 	private MailboxNode parentMailbox;
 	private SimpleSortingVector mailboxes;
-	private SimpleSortingVector messages;
+	private BigVector messages;
 	private Hashtable messageMap;
 	private Hashtable messageTokenMap;
 	private Hashtable messageTokenUidSet;
@@ -129,9 +130,7 @@ public class MailboxNode implements Node, Serializable {
 		this.mailboxes = new SimpleSortingVector();
 		this.mailboxes.setSortComparator(MailboxNode.getComparator());
 		this.mailboxes.setSort(true);
-		this.messages = new SimpleSortingVector();
-		this.messages.setSortComparator(MessageNode.getComparator());
-		this.messages.setSort(true);
+		this.messages = new BigVector();
 		this.messageMap = new Hashtable();
 		this.messageTokenMap = new Hashtable();
 		this.messageTokenUidSet = new Hashtable();
@@ -291,7 +290,7 @@ public class MailboxNode implements Node, Serializable {
 		synchronized(messages) {
 			int size = messages.size();
 			result = new MessageNode[size];
-			messages.copyInto(result);
+			messages.copyInto(0, size, result, 0);
 		}
 		return result;
 	}
@@ -470,7 +469,7 @@ public class MailboxNode implements Node, Serializable {
 	private boolean addMessageImpl(MessageNode message) {
 		if(!messageMap.containsKey(message)) {
 			message.setParent(this);
-			messages.addElement(message);
+			messages.insertElement(MessageNode.getComparator(), message);
 			messageMap.put(message, message);
 			messageTokenMap.put(message.getMessageToken(), message);
 			messageTokenUidSet.put(message.getMessageToken().getMessageUid(), Boolean.TRUE);
@@ -492,7 +491,7 @@ public class MailboxNode implements Node, Serializable {
 	void removeMessage(MessageNode message) {
 		synchronized(messages) {
 			if(messageMap.containsKey(message)) {
-				messages.removeElement(message);
+				messages.removeElement(MessageNode.getComparator(), message);
 				message.setParent(null);
 				messageMap.remove(message);
 				messageTokenMap.remove(message.getMessageToken());
@@ -514,7 +513,7 @@ public class MailboxNode implements Node, Serializable {
 				((MessageNode)messages.elementAt(i)).setParent(null);
 			}
 			// Clear out the collections
-			messages.removeAllElements();
+			messages.removeAll();
 			messageMap.clear();
 			messageTokenMap.clear();
 			messageTokenUidSet.clear();

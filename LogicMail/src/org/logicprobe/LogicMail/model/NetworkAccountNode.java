@@ -64,7 +64,9 @@ public class NetworkAccountNode extends AccountNode {
                     -1);
 
             MailboxNode inboxNode = new MailboxNode(new FolderTreeItem(
-                    "INBOX", "INBOX", "", true), false, MailboxNode.TYPE_INBOX);
+                    "INBOX", "INBOX", "", true),
+                    false, MailboxNode.TYPE_INBOX);
+            inboxNode.getFolderTreeItem().setUniqueId(accountConfig.getUniqueId());
             rootMailbox.addMailbox(inboxNode);
             
             setRootMailbox(rootMailbox);

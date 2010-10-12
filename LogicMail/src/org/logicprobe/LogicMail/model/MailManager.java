@@ -159,6 +159,14 @@ public class MailManager {
 		return outboxMailboxNode;
 	}
 
+	/**
+	 * Clear the contents of the folder message cache.
+	 */
+	public void clearFolderMessageCache() {
+	    folderMessageCache.clear();
+	    System.gc();
+	}
+	
 	private void mailSettings_MailSettingsSaved(MailSettingsEvent e) {
         // This logic is rather crude, and will trigger a full refresh
         // under a wide variety of circumstances.  Its major intent is
