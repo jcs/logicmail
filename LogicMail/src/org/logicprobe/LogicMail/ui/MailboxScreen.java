@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -76,7 +77,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 	
 	private MailboxNode mailboxNode;
     private Vector knownMessages;
-    private Hashtable messageFieldMap;
+    private Hashtable messageNodeToFieldMap;
     private boolean firstDisplay = true;
     private MailSettings mailSettings;
     private GlobalConfig globalConfig;
@@ -97,7 +98,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     public MailboxScreen(MailboxNode mailboxNode) {
     	this.mailboxNode = mailboxNode;
     	this.knownMessages = new Vector();
-    	this.messageFieldMap = new Hashtable();
+    	this.messageNodeToFieldMap = new Hashtable();
     	this.mailSettings = MailSettings.getInstance();
     	this.globalConfig = this.mailSettings.getGlobalConfig();
     }
@@ -119,18 +120,24 @@ public class MailboxScreen extends AbstractScreenProvider {
         public void mailSettingsSaved(MailSettingsEvent e) {
             if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_OTHER) != 0) {
                 if(globalConfig.getDispOrder() != displayOrder) {
+                    final MessageNode[][] gaps = mailboxNode.findMessageNodeGaps();
                     invokeLater(new EventObjectRunnable(e) {
                         public void run() {
                             displayOrder = !displayOrder;
                             displayableChanged();
+                            if(gaps == null || gaps.length == 0) { return; }
+                            handleMessageNodeGaps(gaps);
                         }
                     });
                 }
                 if(globalConfig.getHideDeletedMsg() != hideDeleted) {
+                    final MessageNode[][] gaps = mailboxNode.findMessageNodeGaps();
                     invokeLater(new EventObjectRunnable(e) {
                         public void run() {
                             hideDeleted = !hideDeleted;
                             displayableChanged();
+                            if(gaps == null || gaps.length == 0) { return; }
+                            handleMessageNodeGaps(gaps);
                         }
                     });
                 }
@@ -140,13 +147,9 @@ public class MailboxScreen extends AbstractScreenProvider {
     
     /** The mailbox node listener. */
     private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
-		public void mailboxStatusChanged(MailboxNodeEvent e) {
-			invokeLater(new EventObjectRunnable(e) {
-				public void run() {
-					mailboxNode_MailboxStatusChanged((MailboxNodeEvent)getEvent());
-				}
-			});
-		}
+        public void mailboxStatusChanged(MailboxNodeEvent e) {
+            mailboxNode_MailboxStatusChanged(e);
+        }
     };
     
     /** The message node listener. */
@@ -196,9 +199,6 @@ public class MailboxScreen extends AbstractScreenProvider {
         composeEnabled = (mailboxNode.getParentAccount() instanceof NetworkAccountNode)
             && ((NetworkAccountNode)mailboxNode.getParentAccount()).hasMailSender();
         ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_COMPOSE, composeEnabled);
-        
-        // TODO: Support message list changes between display pushing
-        // TODO: Support updating when messages are deleted
     }
     
 	/* (non-Javadoc)
@@ -331,34 +331,132 @@ public class MailboxScreen extends AbstractScreenProvider {
      * 
      * @param e Event data.
      */
-    private void mailboxNode_MailboxStatusChanged(MailboxNodeEvent e) {
+    private void mailboxNode_MailboxStatusChanged(final MailboxNodeEvent e) {
         int type = e.getType();
-    	if(type == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
-    		MessageNode[] messageNodes = e.getAffectedMessages();
-    		for(int i=0; i<messageNodes.length; i++) {
-    			knownMessages.addElement(messageNodes[i]);
-    			
-    			if(isMessageDisplayable(messageNodes[i])) {
-    				// Insert the message
-	    			insertDisplayableMessage(messageNodes[i]);
-    			}
-    			
-    			if(screen != null && screen.isDisplayed()) {
-    				messageNodes[i].addMessageNodeListener(messageNodeListener);
-    			}
-    		}
-    	}
-    	else if(type == MailboxNodeEvent.TYPE_DELETED_MESSAGES) {
-            MessageNode[] messageNodes = e.getAffectedMessages();
-            for(int i=0; i<messageNodes.length; i++) {
-                if(screen != null && screen.isDisplayed()) {
-                    messageNodes[i].removeMessageNodeListener(messageNodeListener);
+        if(type == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
+            invokeLater(new Runnable() {
+                public void run() {
+                    handleMailboxNewMessages(e.getAffectedMessages());
                 }
-                removeDisplayableMessage(messageNodes[i]);
-                knownMessages.removeElement(messageNodes[i]);
+            });
+        }
+        else if(type == MailboxNodeEvent.TYPE_DELETED_MESSAGES) {
+            invokeLater(new Runnable() {
+                public void run() {
+                    handleMailboxDeletedMessages(e.getAffectedMessages());
+                }
+            });
+        }
+        else if(type == MailboxNodeEvent.TYPE_FETCH_COMPLETE) {
+            // Collect the gaps before scheduling the operation for the UI
+            // thread.  This is necessary because the gap-finding operation
+            // could be time consuming.
+            final MessageNode[][] gaps = mailboxNode.findMessageNodeGaps();
+            if(gaps == null || gaps.length == 0) { return; }
+            
+            invokeLater(new Runnable() {
+                public void run() {
+                    handleMessageNodeGaps(gaps);
+                }
+            });
+        }
+    }
+
+    private void handleMailboxNewMessages(MessageNode[] messageNodes) {
+        for(int i=0; i<messageNodes.length; i++) {
+        	knownMessages.addElement(messageNodes[i]);
+        	
+        	if(isMessageDisplayable(messageNodes[i])) {
+        		// Insert the message
+        		insertDisplayableMessage(messageNodes[i]);
+        	}
+        	
+        	if(screen != null && screen.isDisplayed()) {
+        		messageNodes[i].addMessageNodeListener(messageNodeListener);
+        	}
+        }
+    }
+
+    private void handleMailboxDeletedMessages(MessageNode[] messageNodes) {
+        for(int i=0; i<messageNodes.length; i++) {
+            if(screen != null && screen.isDisplayed()) {
+                messageNodes[i].removeMessageNodeListener(messageNodeListener);
             }
-    	}
-	}
+            removeDisplayableMessage(messageNodes[i]);
+            knownMessages.removeElement(messageNodes[i]);
+        }
+    }
+
+    private void handleMessageNodeGaps(MessageNode[][] gaps) {
+        // Build a set of all gap fields currently on the screen
+        Hashtable orphanedGapFieldSet = new Hashtable();
+        int size = messageFieldManager.getFieldCount();
+        for(int i=0; i<size; i++) {
+            Field fieldAtIndex = messageFieldManager.getField(i);
+            if(fieldAtIndex instanceof MailboxActionField) {
+                orphanedGapFieldSet.put(fieldAtIndex, Boolean.TRUE);
+            }
+        }
+
+        for(int i = 0; i < gaps.length; i++) {
+            MailboxActionField gapField = null;
+            int insertIndex;
+            if(displayOrder) {
+                // Ascending order
+
+                // Find the field for message after the gap
+                MailboxMessageField messageFieldAfter = (MailboxMessageField)messageNodeToFieldMap.get(gaps[i][1]);
+                if(messageFieldAfter == null) { continue; }
+                insertIndex = messageFieldAfter.getIndex();
+
+                // See if there is an existing field that can be taken over
+                if(insertIndex - 1 > 0) {
+                    Field fieldAtIndex = messageFieldManager.getField(insertIndex - 1);
+                    if(fieldAtIndex instanceof MailboxActionField) {
+                        // Take over an existing field and remove it from the
+                        // orphaned field set
+                        gapField = (MailboxActionField)fieldAtIndex;
+                        orphanedGapFieldSet.remove(gapField);
+                    }
+                }
+            }
+            else {
+                // Descending order
+
+                // Find the field for message before the gap
+                MailboxMessageField messageFieldBefore = (MailboxMessageField)messageNodeToFieldMap.get(gaps[i][1]);
+                if(messageFieldBefore == null) { continue; }
+                insertIndex = messageFieldBefore.getIndex() + 1;
+
+                // See if there is an existing field that can be taken over
+                if(insertIndex < messageFieldManager.getFieldCount()) {
+                    Field fieldAtIndex = messageFieldManager.getField(insertIndex);
+                    if(fieldAtIndex instanceof MailboxActionField) {
+                        // Take over an existing field and remove it from the
+                        // orphaned field set
+                        gapField = (MailboxActionField)fieldAtIndex;
+                        orphanedGapFieldSet.remove(gapField);
+                    }
+                }
+            }
+
+            // Create a new field, if necessary, and set field properties
+            if(gapField == null) {
+                gapField = new MailboxActionField(
+                        resources.getString(LogicMailResource.MAILBOX_LOAD_MORE_MESSAGES),
+                        Field.USE_ALL_WIDTH | Field.FOCUSABLE);
+                messageFieldManager.insert(gapField, insertIndex);
+            }
+            gapField.setEditable(true);
+            gapField.setTag(gaps[i]);
+        }
+
+        // Remove orphaned gap fields
+        Enumeration e = orphanedGapFieldSet.keys();
+        while(e.hasMoreElements()) {
+            messageFieldManager.delete((MailboxActionField)e.nextElement());
+        }
+    }
     
     /**
      * Determines whether a message should be displayed,
@@ -388,7 +486,7 @@ public class MailboxScreen extends AbstractScreenProvider {
         if(size == 0) { return; }
         
         // Clear out all the existing content from the field manager and map
-        messageFieldMap.clear();
+        messageNodeToFieldMap.clear();
         messageFieldManager.deleteAll();
         
         // Reset the flag that controls field focus behavior
@@ -434,13 +532,13 @@ public class MailboxScreen extends AbstractScreenProvider {
 			}
 			MailboxMessageField mailboxMessageField =
 				new MailboxMessageField(mailboxNode, messageNode, Field.USE_ALL_WIDTH | Field.FOCUSABLE);
-			messageFieldMap.put(messageNode, mailboxMessageField);
+			messageNodeToFieldMap.put(messageNode, mailboxMessageField);
             insertMessageField(mailboxMessageField, index);
 		}
 		else {
 			MailboxMessageField mailboxMessageField =
 				new MailboxMessageField(mailboxNode, messageNode, Field.USE_ALL_WIDTH | Field.FOCUSABLE);
-			messageFieldMap.put(messageNode, mailboxMessageField);
+			messageNodeToFieldMap.put(messageNode, mailboxMessageField);
 			insertMessageField(mailboxMessageField, 0);
 		}
 		
@@ -469,7 +567,7 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @param messageNode Message to insert.
      */
     private void removeDisplayableMessage(MessageNode messageNode) {
-        MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.remove(messageNode);
+        MailboxMessageField mailboxMessageField = (MailboxMessageField)messageNodeToFieldMap.remove(messageNode);
         if(mailboxMessageField == null) { return; }
 
         deleteMessageField(mailboxMessageField);
@@ -622,7 +720,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {
 		if(e.getType() == MessageNodeEvent.TYPE_FLAGS) {
 			MessageNode messageNode = (MessageNode)e.getSource();
-			boolean currentlyDisplayed = messageFieldMap.containsKey(messageNode);
+			boolean currentlyDisplayed = messageNodeToFieldMap.containsKey(messageNode);
 			boolean displayable = isMessageDisplayable(messageNode);
 			
 			if(currentlyDisplayed && !displayable) {
@@ -635,7 +733,7 @@ public class MailboxScreen extends AbstractScreenProvider {
 			}
 			else if(currentlyDisplayed) {
 				// Just a visual flag update, so find and invalidate the item
-				MailboxMessageField mailboxMessageField = (MailboxMessageField)messageFieldMap.get(messageNode);
+				MailboxMessageField mailboxMessageField = (MailboxMessageField)messageNodeToFieldMap.get(messageNode);
 				mailboxMessageField.invalidate();
 			}
 		}
@@ -656,6 +754,22 @@ public class MailboxScreen extends AbstractScreenProvider {
     	}
     }
     
+    /**
+     * Gets the selected message node gap, if available.
+     *
+     * @return the selected message gap range
+     */
+    private MailboxActionField getSelectedMessageGapField() {
+        Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
+        if(fieldWithFocus instanceof MailboxActionField) {
+            MailboxActionField field = (MailboxActionField)fieldWithFocus;
+            if(field.getTag() instanceof MessageNode[]) {
+                return field;
+            }
+        }
+        return null;
+    }
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
@@ -665,36 +779,51 @@ public class MailboxScreen extends AbstractScreenProvider {
     		messageActions.openMessage(messageNode);
     		return true;
     	}
-    	else {
-    		return false;
+    	MailboxActionField gapField = getSelectedMessageGapField();
+    	if(gapField != null) {
+    	    handleMessageGapAction(gapField);
+    	    return true;
     	}
+    	
+    	return false;
     }
-    
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */
     public boolean keyChar(char key, int status, int time) {
-        boolean retval = false;
         MessageNode messageNode;
         switch(key) {
             case Keypad.KEY_ENTER:
             	messageNode = getSelectedMessage();
             	if(messageNode != null) {
             		messageActions.openMessage(messageNode);
-            		retval = true;
+            		return true;
             	}
+                MailboxActionField gapField = getSelectedMessageGapField();
+                if(gapField != null) {
+                    handleMessageGapAction(gapField);
+                    return true;
+                }
                 break;
             case Keypad.KEY_BACKSPACE:
             	messageNode = getSelectedMessage();
             	if(messageNode != null) {
             		messageActions.deleteMessage(messageNode);
-            		retval = true;
+            		return true;
             	}
             	break;
         }
-        return retval;
+        return false;
     }
     
+    private void handleMessageGapAction(MailboxActionField gapField) {
+        MessageNode[] gap = (MessageNode[])gapField.getTag();
+        messageFieldManager.delete(gapField);
+        
+        mailboxNode.requestMoreMessages(gap[1]);
+    }
+
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#shortcutAction(org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem)
      */

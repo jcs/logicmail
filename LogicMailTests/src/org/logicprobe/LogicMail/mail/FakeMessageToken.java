@@ -50,4 +50,25 @@ public class FakeMessageToken implements MessageToken {
     public String getMessageUid() { return Long.toString(uniqueId); }
     public void updateToken(MessageToken messageToken) { }
     public boolean isLoadable() { return true; }
+    
+    public int hashCode() {
+        return 31 * 1 + (int) (uniqueId ^ (uniqueId >>> 32));
+    }
+    
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        FakeMessageToken other = (FakeMessageToken) obj;
+        if (uniqueId != other.uniqueId) {
+            return false;
+        }
+        return true;
+    }
 }

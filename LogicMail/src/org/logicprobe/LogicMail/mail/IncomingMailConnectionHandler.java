@@ -108,7 +108,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         case REQUEST_FOLDER_MESSAGES_RANGE:
             handleRequestFolderMessagesRange(
                     (FolderTreeItem)params[0],
-                    ((Integer)params[1]).intValue(),
+                    (MessageToken)params[1],
                     ((Integer)params[2]).intValue(),
                     tag);
             break;
@@ -344,13 +344,13 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     };
 
-    private void handleRequestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, Object tag) throws IOException, MailException {
+    private void handleRequestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, Object tag) throws IOException, MailException {
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
         showStatus(message + "...");
         checkActiveFolder(folder);
 
         incomingClient.getFolderMessages(
-                firstIndex, lastIndex,
+                firstToken, increment,
                 new GetFolderMessageCallback(
                         REQUEST_FOLDER_MESSAGES_RANGE,
                         folder,

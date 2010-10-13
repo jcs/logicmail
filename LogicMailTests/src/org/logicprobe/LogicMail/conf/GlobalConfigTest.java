@@ -102,7 +102,6 @@ public class GlobalConfigTest extends TestCase {
     public void testInitialization() {
         GlobalConfig instance = new GlobalConfig();
 
-        assertEquals(30, instance.getRetMsgCount());
         assertTrue(!instance.getDispOrder());
         assertEquals(ConnectionConfig.TRANSPORT_AUTO, instance.getTransportType());
         assertTrue(instance.getEnableWiFi());
@@ -113,7 +112,6 @@ public class GlobalConfigTest extends TestCase {
         try {
             // Initialize the configuration
             GlobalConfig instance = new GlobalConfig();
-            instance.setRetMsgCount(20);
             instance.setDispOrder(true);
             instance.setTransportType(ConnectionConfig.TRANSPORT_DIRECT_TCP);
             instance.setEnableWiFi(false);
@@ -129,7 +127,6 @@ public class GlobalConfigTest extends TestCase {
             instance.deserialize(new DataInputStream(testInput));
             
             // Verify results
-            assertEquals(20, instance.getRetMsgCount());
             assertTrue(instance.getDispOrder());
             assertEquals(ConnectionConfig.TRANSPORT_DIRECT_TCP, instance.getTransportType());
             assertTrue(!instance.getEnableWiFi());

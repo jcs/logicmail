@@ -295,6 +295,19 @@ public class PopClient extends AbstractIncomingMailClient {
     }
     
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken, int, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public void getFolderMessages(MessageToken firstToken, int increment, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
+        PopMessageToken imapToken = (PopMessageToken)firstToken;
+        int lastIndex = imapToken.getMessageIndex() - 1;
+        if(lastIndex <= 0) { return; }
+        int firstIndex = Math.max(1, lastIndex - (increment - 1));
+        if(firstIndex > lastIndex) { return; }
+        
+        getFolderMessages(firstIndex, lastIndex, false, callback, progressHandler);
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
@@ -390,7 +403,7 @@ public class PopClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
-    	int count = globalConfig.getRetMsgCount();
+    	int count = accountConfig.getInitialFolderMessages();
 		int msgCount = activeMailbox.getMsgCount();
         int firstIndex = Math.max(1, msgCount - count);
     	getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);

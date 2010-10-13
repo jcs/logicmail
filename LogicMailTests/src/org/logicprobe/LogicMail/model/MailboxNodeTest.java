@@ -30,10 +30,11 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import java.util.Date;
 
+import org.logicprobe.LogicMail.mail.FakeMessageToken;
+import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
+import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -64,10 +65,10 @@ public class MailboxNodeTest extends TestCase {
     }
     
     public void testAddMessage() {
-    	MessageNode message1 = new MessageNode(new FolderMessage(new FakeMessageToken(1), new MessageEnvelope(), 1, 11));
-    	MessageNode message2 = new MessageNode(new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 2, 12));
-    	MessageNode message3 = new MessageNode(new FolderMessage(new FakeMessageToken(3), new MessageEnvelope(), 3, 13));
-    	MessageNode message4 = new MessageNode(new FolderMessage(new FakeMessageToken(4), new MessageEnvelope(), 4, 14));
+    	MessageNode message1 = new MessageNode(createFolderMessage(1, 1, 1));
+    	MessageNode message2 = new MessageNode(createFolderMessage(2, 2, 2));
+    	MessageNode message3 = new MessageNode(createFolderMessage(3, 3, 3));
+    	MessageNode message4 = new MessageNode(createFolderMessage(4, 4, 4));
     	
     	// Add messages in-order
     	instance.addMessage(message1);
@@ -87,7 +88,6 @@ public class MailboxNodeTest extends TestCase {
     	messageNodes = instance.getMessages();
     	assertEquals(0, messageNodes.length);
     	
-    	
     	// Add messages out-of-order
     	instance.addMessage(message4);
     	instance.addMessage(message1);
@@ -102,24 +102,191 @@ public class MailboxNodeTest extends TestCase {
     	assertEquals(message4, messageNodes[3]);
     }
     
+    public void testAddMessagesFromEvent() {
+        FolderMessage message1 = createFolderMessage(1, 1, 1);
+        FolderMessage message2 = createFolderMessage(2, 2, 2);
+        FolderMessage message3 = createFolderMessage(3, 3, 3);
+        FolderMessage message4 = createFolderMessage(4, 4, 4);
+        
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+        
+        MessageNode[] messageNodes = instance.getMessages();
+        assertEquals(4, messageNodes.length);
+        assertEquals(message1.getMessageToken(), messageNodes[0].getMessageToken());
+        assertEquals(message2.getMessageToken(), messageNodes[1].getMessageToken());
+        assertEquals(message3.getMessageToken(), messageNodes[2].getMessageToken());
+        assertEquals(message4.getMessageToken(), messageNodes[3].getMessageToken());
+    }
+    
+    public void testHasMoreLoadableMessages() {
+        assertTrue("Empty mailbox", instance.hasMoreLoadableMessages());
+        
+        // Initial set of messages, assuming no more loadable
+        FolderMessage message1 = createFolderMessage(1, 1, 1);
+        FolderMessage message2 = createFolderMessage(2, 2, 2);
+        FolderMessage message3 = createFolderMessage(3, 3, 3);
+        FolderMessage message4 = createFolderMessage(4, 4, 4);
+
+        // Need to add from event, since this is the only place where the
+        // mailbox is able to directly read FolderMessage properties
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+
+        assertTrue("No more loadable", !instance.hasMoreLoadableMessages());
+
+        // Fake an event to remove the first message
+        instance.mailStoreFolderExpunged(new FolderExpungedEvent(
+                this, instance.getFolderTreeItem(), new MessageToken[] {
+                    new FakeMessageToken(1)
+                }));
+
+        assertTrue("Removed and has more loadable", instance.hasMoreLoadableMessages());
+        
+        instance.clearMessages();
+
+        // Set of messages, assuming more are loadable
+        message1 = createFolderMessage(1, 11, 1);
+        message2 = createFolderMessage(2, 12, 2);
+        message3 = createFolderMessage(3, 13, 3);
+        message4 = createFolderMessage(4, 14, 4);
+
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+
+        assertTrue("Has more loadable", instance.hasMoreLoadableMessages());
+    }
+
+    public void testFindMessageNodeGaps() {
+        // Empty mailbox test
+        MessageNode[][] result = instance.findMessageNodeGaps();
+        String msg = "Empty mailbox";
+        assertNotNull(msg, result);
+        assertEquals(msg, 0, result.length);
+        
+        // Initial set of messages, assuming no more loadable
+        FolderMessage message1 = createFolderMessage(1, 1, 1);
+        FolderMessage message2 = createFolderMessage(2, 2, 2);
+        FolderMessage message3 = createFolderMessage(3, 3, 3);
+        FolderMessage message4 = createFolderMessage(4, 4, 4);
+        
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+        
+        result = instance.findMessageNodeGaps();
+        msg = "No gaps";
+        assertNotNull(msg, result);
+        assertEquals(msg, 0, result.length);
+        
+        instance.clearMessages();
+        
+        message1 = createFolderMessage(1, 11, 1);
+        message2 = createFolderMessage(2, 12, 2);
+        message3 = createFolderMessage(3, 13, 3);
+        message4 = createFolderMessage(4, 14, 4);
+        
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+        
+        result = instance.findMessageNodeGaps();
+        msg = "Gap at start";
+        assertNotNull(msg, result);
+        assertEquals(msg, 1, result.length);
+        MessageNode[] gap = result[0];
+        assertNotNull(msg, gap);
+        assertEquals(msg, 2, gap.length);
+        assertNull(msg, gap[0]);
+        assertEquals(msg, new FakeMessageToken(1), gap[1].getMessageToken());
+        
+        instance.clearMessages();
+        
+        message1 = createFolderMessage(1, 1, 1);
+        message2 = createFolderMessage(2, 2, 2);
+        message3 = createFolderMessage(3, 5, 3);
+        message4 = createFolderMessage(4, 6, 4);
+        
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+        
+        result = instance.findMessageNodeGaps();
+        msg = "Gap in middle";
+        assertNotNull(msg, result);
+        assertEquals(msg, 1, result.length);
+        gap = result[0];
+        assertNotNull(msg, gap);
+        assertEquals(msg, 2, gap.length);
+        assertEquals(msg, new FakeMessageToken(2), gap[0].getMessageToken());
+        assertEquals(msg, new FakeMessageToken(3), gap[1].getMessageToken());
+    }
+    
+    public void testFindMessageNodeGapsMultiple() {
+        // Two gaps in the middle
+        FolderMessage message1 = createFolderMessage(10, 1, 1);
+        FolderMessage message2 = createFolderMessage(20, 5, 2);
+        FolderMessage message3 = createFolderMessage(30, 6, 3);
+        FolderMessage message4 = createFolderMessage(40, 10, 4);
+        
+        instance.mailStoreFolderMessagesAvailable(new FolderMessagesEvent(
+                this, instance.getFolderTreeItem(), new FolderMessage[] {
+                    message1, message2, message3, message4
+                }));
+        
+        MessageNode[][] result = instance.findMessageNodeGaps();
+        String msg = "Gaps between 10-20 and 30-40";
+        assertNotNull(msg, result);
+        assertEquals(msg, 2, result.length);
+        boolean found1 = false;
+        boolean found2 = false;
+        for(int i=0; i<result.length; i++) {
+            MessageNode[] gap = result[i];
+            assertNotNull(msg, gap);
+            assertNotNull(msg, gap[0]);
+            assertNotNull(msg, gap[1]);
+            if(gap[0].getMessageToken().getUniqueId() == 10
+                    && gap[1].getMessageToken().getUniqueId() == 20) {
+                found1 = true;
+            }
+            else if(gap[0].getMessageToken().getUniqueId() == 30
+                    && gap[1].getMessageToken().getUniqueId() == 40) {
+                found2 = true;
+            }
+        }
+        assertTrue(msg, found1 && found2);
+    }
+
+    private static FolderMessage createFolderMessage(int uid, int index, int sortOrder) {
+        MessageEnvelope envelope = new MessageEnvelope();
+        envelope.date = new Date(1286920000 + sortOrder);
+        FolderMessage message = new FolderMessage(new FakeMessageToken(uid), envelope, index, uid);
+        return message;
+    }
+    
     public Test suite() {
         TestSuite suite = new TestSuite("MailboxNode");
 
         suite.addTest(new MailboxNodeTest("addMessage", new TestMethod()
         { public void run(TestCase tc) {((MailboxNodeTest)tc).testAddMessage(); } }));
-
+        suite.addTest(new MailboxNodeTest("addMessagesFromEvent", new TestMethod()
+        { public void run(TestCase tc) {((MailboxNodeTest)tc).testAddMessagesFromEvent(); } }));
+        suite.addTest(new MailboxNodeTest("hasMoreLoadableMessages", new TestMethod()
+        { public void run(TestCase tc) {((MailboxNodeTest)tc).testHasMoreLoadableMessages(); } }));
+        suite.addTest(new MailboxNodeTest("findMessageNodeGaps", new TestMethod()
+        { public void run(TestCase tc) {((MailboxNodeTest)tc).testFindMessageNodeGaps(); } }));
+        suite.addTest(new MailboxNodeTest("findMessageNodeGapsMultiple", new TestMethod()
+        { public void run(TestCase tc) {((MailboxNodeTest)tc).testFindMessageNodeGapsMultiple(); } }));
+        
         return suite;
     }
-
-    private class FakeMessageToken implements MessageToken {
-		private long uniqueId;
-		public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
-		public long getUniqueId() { return uniqueId; }
-		public void deserialize(DataInput input) throws IOException { }
-		public void serialize(DataOutput output) throws IOException { }
-		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
-		public String getMessageUid() { return Long.toString(uniqueId); }
-        public void updateToken(MessageToken messageToken) { }
-        public boolean isLoadable() { return true; }
-	}
 }

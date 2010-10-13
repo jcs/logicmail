@@ -41,6 +41,7 @@ import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
+import net.rim.device.api.ui.component.NumericChoiceField;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.SeparatorField;
@@ -88,6 +89,9 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private LabelField draftFolderChoiceButtonLabel;
 
     // Advanced settings fields (both)
+    private NumericChoiceField initialFolderMessagesChoiceField;
+    private NumericChoiceField folderMessageIncrementChoiceField;
+    private NumericChoiceField maximumFolderMessagesChoiceField;
     private ObjectChoiceField networkTransportChoiceField;
     private CheckboxField enableWiFiCheckboxField;
 
@@ -305,6 +309,28 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private Manager initFieldsAdvanced() {
         Manager manager = new VerticalFieldManager();
         
+        initialFolderMessagesChoiceField = new NumericChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_MESSAGES_TO_LOAD),
+                5, 50, 5);
+        initialFolderMessagesChoiceField.setSelectedValue(accountConfig.getInitialFolderMessages());
+        initialFolderMessagesChoiceField.setChangeListener(fieldChangeListener);
+        
+        folderMessageIncrementChoiceField = new NumericChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_LOAD_INCREMENT),
+                1, 20, 1);
+        folderMessageIncrementChoiceField.setSelectedValue(accountConfig.getFolderMessageIncrement());
+        
+        maximumFolderMessagesChoiceField = new NumericChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_MESSAGES_TO_RETAIN),
+                20, 500, 20);
+        maximumFolderMessagesChoiceField.setSelectedValue(accountConfig.getMaximumFolderMessages());
+        maximumFolderMessagesChoiceField.setChangeListener(fieldChangeListener);
+        
+        manager.add(initialFolderMessagesChoiceField);
+        manager.add(folderMessageIncrementChoiceField);
+        manager.add(maximumFolderMessagesChoiceField);
+        manager.add(new SeparatorField());
+        
         String[] transportChoices = {
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_TRANSPORT_USE_GLOBAL),
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_TRANSPORT_AUTO),
@@ -329,7 +355,6 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         
         manager.add(networkTransportChoiceField);
         manager.add(enableWiFiCheckboxField);
-        
         manager.add(new SeparatorField());
         
         if(accountConfig instanceof ImapConfig) {
@@ -409,6 +434,26 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             else {
                 enableWiFiCheckboxField.setChecked(true);
                 enableWiFiCheckboxField.setEditable(true);
+            }
+        }
+        else if(field == initialFolderMessagesChoiceField) {
+            int value = initialFolderMessagesChoiceField.getSelectedValue();
+            if(maximumFolderMessagesChoiceField.getSelectedValue() < value) {
+                maximumFolderMessagesChoiceField.setSelectedValue(value);
+                
+                // If the closest value was lower than the changed-field value,
+                // pick the next item in the field to make sure we end up with
+                // a larger value selected.
+                if(maximumFolderMessagesChoiceField.getSelectedValue() < value) {
+                    maximumFolderMessagesChoiceField.setSelectedIndex(
+                            maximumFolderMessagesChoiceField.getSelectedIndex() + 1);
+                }
+            }
+        }
+        else if(field == maximumFolderMessagesChoiceField) {
+            int value = maximumFolderMessagesChoiceField.getSelectedValue();
+            if(initialFolderMessagesChoiceField.getSelectedValue() > value) {
+                initialFolderMessagesChoiceField.setSelectedValue(value);
             }
         }
     }
@@ -634,6 +679,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         this.accountConfig.setSentMailbox(selectedSentFolder);
         this.accountConfig.setDraftMailbox(selectedDraftFolder);
 
+        this.accountConfig.setInitialFolderMessages(initialFolderMessagesChoiceField.getSelectedValue());
+        this.accountConfig.setFolderMessageIncrement(folderMessageIncrementChoiceField.getSelectedValue());
+        this.accountConfig.setMaximumFolderMessages(maximumFolderMessagesChoiceField.getSelectedValue());
+        
         this.accountConfig.setTransportType(getTransportSetting(networkTransportChoiceField.getSelectedIndex()));
         this.accountConfig.setEnableWiFi(enableWiFiCheckboxField.getChecked());
         

@@ -73,8 +73,6 @@ public class GlobalConfig implements Serializable {
     private boolean unicodeNormalization;
     /** Preferred message display format */
     private int messageDisplayFormat;
-    /** Number of message headers to retrieve */
-    private int retMsgCount;
     /** True for ascending, false for descending */
     private boolean dispOrder;
     /** Root URL for local file storage */
@@ -124,7 +122,6 @@ public class GlobalConfig implements Serializable {
         this.languageCode = "";
         this.unicodeNormalization = false;
         this.messageDisplayFormat = GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT;
-        this.retMsgCount = 30;
         this.dispOrder = false;
         this.transportType = ConnectionConfig.TRANSPORT_AUTO;
         this.enableWiFi = true;
@@ -197,27 +194,6 @@ public class GlobalConfig implements Serializable {
      */
     public int getMessageDisplayFormat() {
         return messageDisplayFormat;
-    }
-
-    /**
-     * Set the number of message headers to retrieve.
-     * 
-     * @param retMsgCount The number of message headers to retrieve
-     */
-    public void setRetMsgCount(int retMsgCount) {
-        if(this.retMsgCount != retMsgCount) {
-            this.retMsgCount = retMsgCount;
-            changeType |= CHANGE_TYPE_OTHER;
-        }
-    }
-
-    /**
-     * Get the number of message headers to retrieve.
-     * 
-     * @return The number of message headers to retrieve
-     */
-    public int getRetMsgCount() {
-        return retMsgCount;
     }
 
     /**
@@ -434,7 +410,6 @@ public class GlobalConfig implements Serializable {
         table.put("global_languageCode", languageCode);
         table.put("global_unicodeNormalization", new Boolean(unicodeNormalization));
         table.put("global_messageDisplayFormat", new Integer(messageDisplayFormat));
-        table.put("global_retMsgCount", new Integer(retMsgCount));
         table.put("global_dispOrder", new Boolean(dispOrder));
         table.put("global_localDataLocation", localDataLocation);
         table.put("global_transportType", new Integer(transportType));
@@ -472,10 +447,6 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_messageDisplayFormat");
         if (value instanceof Integer) {
             messageDisplayFormat = ((Integer) value).intValue();
-        }
-        value = table.get("global_retMsgCount");
-        if (value instanceof Integer) {
-            retMsgCount = ((Integer) value).intValue();
         }
         value = table.get("global_dispOrder");
         if (value instanceof Boolean) {

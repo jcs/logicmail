@@ -37,9 +37,12 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.collection.util.BigIntVector;
 import net.rim.device.api.collection.util.BigVector;
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.util.SimpleSortingVector;
+import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
@@ -67,14 +70,24 @@ public class MailboxNode implements Node, Serializable {
 	private MailboxNode parentMailbox;
 	private SimpleSortingVector mailboxes;
 	private BigVector messages;
-	private Hashtable messageMap;
-	private Hashtable messageTokenMap;
-	private Hashtable messageTokenUidSet;
+	private Hashtable messageSet;
+	private Hashtable tokenToMessageMap;
+	private ToIntHashtable tokenToMessageIndexMap;
+	private IntHashtable messageIndexToTokenMap;
+	private BigIntVector messageIndexVector;
 	private EventListenerList listenerList = new EventListenerList();
 	private int type;
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
 	private int unseenMessageCount;
+	
+	/**
+	 * The message node with a mail store index of 1, if available.  This is
+	 * used to track whether more messages are loadable.  Actual load requests
+	 * are based off tokens, so more detail is unnecessary.
+	 */
+	private MessageNode firstMessageNode;
+	
     private final Hashtable pendingExpungeMessageSet = new Hashtable();
     
 	public final static int TYPE_NORMAL = 0;
@@ -132,9 +145,11 @@ public class MailboxNode implements Node, Serializable {
 		this.mailboxes.setSortComparator(MailboxNode.getComparator());
 		this.mailboxes.setSort(true);
 		this.messages = new BigVector();
-		this.messageMap = new Hashtable();
-		this.messageTokenMap = new Hashtable();
-		this.messageTokenUidSet = new Hashtable();
+		this.messageSet = new Hashtable();
+		this.tokenToMessageMap = new Hashtable();
+		this.tokenToMessageIndexMap = new ToIntHashtable();
+		this.messageIndexToTokenMap = new IntHashtable();
+		this.messageIndexVector = new BigIntVector();
 		if(folderTreeItem != null) {
 			this.setFolderTreeItem(new FolderTreeItem(folderTreeItem));
 		}
@@ -468,12 +483,11 @@ public class MailboxNode implements Node, Serializable {
 	 * @return True if the message was added, false otherwise
 	 */
 	private boolean addMessageImpl(MessageNode message) {
-		if(!messageMap.containsKey(message)) {
+		if(!messageSet.containsKey(message)) {
 			message.setParent(this);
 			messages.insertElement(MessageNode.getComparator(), message);
-			messageMap.put(message, message);
-			messageTokenMap.put(message.getMessageToken(), message);
-			messageTokenUidSet.put(message.getMessageToken().getMessageUid(), Boolean.TRUE);
+			messageSet.put(message, Boolean.TRUE);
+			tokenToMessageMap.put(message.getMessageToken(), message);
 			if(getParentAccount() instanceof NetworkAccountNode) {
 			    message.setCachedContent(MailFileManager.getInstance().messageNodeExists(this, message.getMessageToken()));
 			}
@@ -531,12 +545,13 @@ public class MailboxNode implements Node, Serializable {
 	 * @param message The message to remove
 	 */
 	private boolean removeMessageImpl(MessageNode message) {
-		if(messageMap.containsKey(message)) {
+		if(messageSet.containsKey(message)) {
 			messages.removeElement(MessageNode.getComparator(), message);
 			message.setParent(null);
-			messageMap.remove(message);
-			messageTokenMap.remove(message.getMessageToken());
-			messageTokenUidSet.remove(message.getMessageToken().getMessageUid());
+			messageSet.remove(message);
+			tokenToMessageMap.remove(message.getMessageToken());
+			removeTokenIndexMapping(message.getMessageToken());
+			if(firstMessageNode == message) { firstMessageNode = null; }
 			return true;
 		}
 		else {
@@ -556,9 +571,12 @@ public class MailboxNode implements Node, Serializable {
 			}
 			// Clear out the collections
 			messages.removeAll();
-			messageMap.clear();
-			messageTokenMap.clear();
-			messageTokenUidSet.clear();
+			messageSet.clear();
+			tokenToMessageMap.clear();
+			tokenToMessageIndexMap.clear();
+			messageIndexToTokenMap.clear();
+			messageIndexVector.removeAll();
+			firstMessageNode = null;
 		}
         updateUnseenMessages(false);
 		fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
@@ -572,7 +590,7 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	boolean containsMessage(MessageNode messageNode) {
 		synchronized(messages) {
-			return messageMap.containsKey(messageNode);
+			return messageSet.containsKey(messageNode);
 		}
 	}
 
@@ -582,9 +600,9 @@ public class MailboxNode implements Node, Serializable {
 	 * @param messageToken The message token to look for.
 	 * @return True if it exists, false otherwise.
 	 */
-	boolean containsMessageByTag(MessageToken messageToken) {
+	boolean containsMessageByToken(MessageToken messageToken) {
 		synchronized(messages) {
-			return messageTokenMap.containsKey(messageToken);
+			return tokenToMessageMap.containsKey(messageToken);
 		}
 	}
 	
@@ -596,7 +614,7 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	MessageNode getMessageByToken(MessageToken messageToken) {
 		synchronized(messages) {
-			MessageNode message = (MessageNode)messageTokenMap.get(messageToken);
+			MessageNode message = (MessageNode)tokenToMessageMap.get(messageToken);
 			return message;
 		}
 	}
@@ -758,6 +776,72 @@ public class MailboxNode implements Node, Serializable {
     }
 
     /**
+     * Checks if more messages from the mail store can be loaded for this
+     * mailbox.
+     *
+     * @return true, if more messages can be loaded from the mail store
+     */
+    public boolean hasMoreLoadableMessages() {
+        boolean result;
+        synchronized(messages) {
+            result = (firstMessageNode == null);
+        }
+        return result;
+    }
+    
+    /**
+     * Finds gaps between message nodes where more messages are loadable.
+     * Each gap is identified by a pair of message nodes that exclusively
+     * define the range of that gap.  These gaps do not include an unbounded
+     * range at the start of the mailbox, as its loading is automatically
+     * triggered by a refresh.  The gap at the end of the mailbox is indicated
+     * with a <code>null</code> value for the second parameter of the range.
+     * 
+     * @return an array of 2-dimensional message node arrays, with each if the
+     *         two elements exclusively defining the bounds of a loadable gap.
+     */
+    public MessageNode[][] findMessageNodeGaps() {
+        Vector gaps;
+        
+        synchronized(messages) {
+            if(messageIndexVector.size() == 0) { return new MessageNode[0][]; }
+            
+            messageIndexVector.optimize();
+            messageIndexVector.sort();
+            gaps = new Vector();
+            
+            // Handle the special case of a gap at the start of the list
+            int firstIndex = messageIndexVector.elementAt(0);
+            if(firstIndex > 1) {
+                MessageNode message = (MessageNode)tokenToMessageMap.get(
+                        (MessageToken)messageIndexToTokenMap.get(firstIndex));
+                if(message != null) {
+                    gaps.addElement(new MessageNode[] { null, message });
+                }
+            }
+            
+            int size = messageIndexVector.size();
+            for(int i = 0; i < size - 1; i++) {
+                int p = messageIndexVector.elementAt(i);
+                int q = messageIndexVector.elementAt(i + 1);
+                if(p < q - 1) {
+                    MessageNode message1 = (MessageNode)tokenToMessageMap.get(
+                            (MessageToken)messageIndexToTokenMap.get(p));
+                    MessageNode message2 = (MessageNode)tokenToMessageMap.get(
+                            (MessageToken)messageIndexToTokenMap.get(q));
+                    
+                    if(message1 != null && message2 != null) {
+                        gaps.addElement(new MessageNode[] { message1, message2 });
+                    }
+                }
+            }
+        }
+        MessageNode[][] result = new MessageNode[gaps.size()][];
+        gaps.copyInto(result);
+        return result;
+    }
+
+    /**
      * Update the folder status numbers due to a direct server request.
      * This updates the numbers stored for the purposes of user notification,
      * and has no effect on the actual contents of the mailbox.
@@ -791,6 +875,9 @@ public class MailboxNode implements Node, Serializable {
                 folderMessagesAvailable(folderMessages, e.isServer());
             }
         }
+        else {
+            fireMailboxStatusChanged(MailboxNodeEvent.TYPE_FETCH_COMPLETE, null);
+        }
     }
 
     private void folderMessagesAvailableFlagsOnly(FolderMessage[] folderMessages, boolean server) {
@@ -801,7 +888,8 @@ public class MailboxNode implements Node, Serializable {
             MessageFlags messageFlags = folderMessages[i].getFlags();
             
             synchronized(messages) {
-                MessageNode messageNode = (MessageNode)messageTokenMap.get(messageToken);
+                MessageNode messageNode = (MessageNode)tokenToMessageMap.get(messageToken);
+                // Only update if this message actually exists in the mailbox node
                 if(messageNode != null) {
                     // Message already exists in the mailbox, and just needs
                     // its flags updated.
@@ -814,6 +902,18 @@ public class MailboxNode implements Node, Serializable {
 
                     if(server && !messageNode.existsOnServer()) {
                         messageNode.setExistsOnServer(true);
+                    }
+                    
+                    int index = folderMessages[i].getIndex();
+                    
+                    if(index == 1) {
+                        firstMessageNode = messageNode;
+                    }
+                    
+                    // Only update the token-to-index mapping if the index
+                    // has changed.
+                    if(tokenToMessageIndexMap.get(messageToken) != index) {
+                        putTokenIndexMapping(messageToken, index);
                     }
                 }
             }
@@ -828,11 +928,47 @@ public class MailboxNode implements Node, Serializable {
             MessageNode messageNode = new MessageNode(folderMessages[i]);
             messageNode.setExistsOnServer(server);
             addedMessages.addElement(messageNode);
+            
+            synchronized(messages) {
+                int index = folderMessages[i].getIndex();
+                if(index == 1) {
+                    firstMessageNode = messageNode;
+                }
+                
+                putTokenIndexMapping(folderMessages[i].getMessageToken(), index);
+            }
         }
    
         MessageNode[] addedMessagesArray = new MessageNode[addedMessages.size()];
         addedMessages.copyInto(addedMessagesArray);
         addMessages(addedMessagesArray);
+    }
+    
+    private void putTokenIndexMapping(MessageToken messageToken, int index) {
+        // If there was an existing token mapped to the index of this
+        // message, first remove it to avoid duplicates.
+        MessageToken existingToken = (MessageToken)messageIndexToTokenMap.remove(index);
+        if(existingToken != null) {
+            tokenToMessageIndexMap.remove(existingToken);
+        }
+        else {
+            messageIndexVector.addElement(index);
+        }
+        
+        // Add the new token-to-index mapping
+        tokenToMessageIndexMap.put(messageToken, index);
+        messageIndexToTokenMap.put(index, messageToken);
+    }
+    
+    private void removeTokenIndexMapping(MessageToken token) {
+        int index = tokenToMessageIndexMap.remove(token);
+        if(index != -1) {
+            messageIndexToTokenMap.remove(index);
+            int p = messageIndexVector.firstIndexOf(index);
+            if(p != -1) {
+                messageIndexVector.removeElementAt(p);
+            }
+        }
     }
     
     /**
@@ -848,16 +984,16 @@ public class MailboxNode implements Node, Serializable {
             // request to remove certain messages from this mailbox.
             MessageNode[] messagesToRemove;
             synchronized(messages) {
-                Vector messages = new Vector();
+                Vector messagesToRemoveVector = new Vector();
                 for(int i=0; i<tokens.length; i++) {
-                    MessageNode message = (MessageNode)messageTokenMap.get(tokens[i]);
+                    MessageNode message = (MessageNode)tokenToMessageMap.get(tokens[i]);
                     if(message != null) {
-                        messages.addElement(message);
+                        messagesToRemoveVector.addElement(message);
                         pendingExpungeMessageSet.remove(tokens[i]);
                     }
                 }
-                messagesToRemove = new MessageNode[messages.size()];
-                messages.copyInto(messagesToRemove);
+                messagesToRemove = new MessageNode[messagesToRemoveVector.size()];
+                messagesToRemoveVector.copyInto(messagesToRemove);
             }
             removeMessages(messagesToRemove);
         }
@@ -919,6 +1055,18 @@ public class MailboxNode implements Node, Serializable {
      */
     public void refreshMessages() {
         parentAccount.getMailStoreServices().requestFolderRefresh(this.folderTreeItem);
+    }
+
+    /**
+     * Called to fetch additional messages after the supplied node.
+     *
+     * @param firstNode the existing message node to fetch messages after
+     */
+    public void requestMoreMessages(MessageNode firstNode) {
+        MessageToken firstToken = firstNode.getMessageToken();
+        
+        parentAccount.getMailStoreServices().requestMoreFolderMessages(
+                this.folderTreeItem, firstToken);
     }
     
 	/**

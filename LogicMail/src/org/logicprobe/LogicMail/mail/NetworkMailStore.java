@@ -130,10 +130,13 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS, new Object[] { folders }, callback);
 	}
 
-	public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, MailStoreRequestCallback callback) {
+	public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) {
+	    if(firstToken == null || increment <= 0) {
+	        throw new IllegalArgumentException();
+	    }
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE,
-				new Object[] { folder, new Integer(firstIndex), new Integer(lastIndex) },
+				new Object[] { folder, firstToken, new Integer(increment) },
 				callback);
 	}
 

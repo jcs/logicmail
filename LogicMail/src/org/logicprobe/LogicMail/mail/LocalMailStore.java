@@ -184,7 +184,7 @@ public class LocalMailStore extends AbstractMailStore {
         }
     }
 
-    public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, MailStoreRequestCallback callback) {
+    public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) {
     	throw new UnsupportedOperationException("Not yet implemented");
 	}
 

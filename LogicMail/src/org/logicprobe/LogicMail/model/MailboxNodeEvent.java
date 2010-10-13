@@ -58,6 +58,14 @@ public class MailboxNodeEvent extends EventObject {
      * a list of deleted messages.
      */
     public final static int TYPE_DELETED_MESSAGES = 2;
+    
+    /**
+     * A message fetch operation has completed, and the mailbox's message list
+     * is relatively stable.  This indicates that any mailbox-wide query
+     * operations should now be performed.
+     * The <tt>getAffectedMessages()</tt> method will return null;
+     */
+    public final static int TYPE_FETCH_COMPLETE = 3;
 	
 	/** Creates a new instance of MailboxNodeEvent */
 	public MailboxNodeEvent(Object source, int type, MessageNode[] affectedMessages) {

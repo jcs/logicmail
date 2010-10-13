@@ -675,6 +675,19 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken, int, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public void getFolderMessages(MessageToken firstToken, int increment, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
+        ImapMessageToken imapToken = (ImapMessageToken)firstToken;
+        int lastIndex = imapToken.getMessageIndex() - 1;
+        if(lastIndex <= 0) { return; }
+        int firstIndex = Math.max(1, lastIndex - (increment - 1));
+        if(firstIndex > lastIndex) { return; }
+        
+        getFolderMessages(firstIndex, lastIndex, false, callback, progressHandler);
+    }
+
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(int, int, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
@@ -780,7 +793,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
 
         if(!seenMailboxes.containsKey(activeMailbox)) {
-            int count = mailSettings.getGlobalConfig().getRetMsgCount();
+            int count = accountConfig.getInitialFolderMessages();
             int msgCount = activeMailbox.getMsgCount();
             int firstIndex = Math.max(1, msgCount - count);
             getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);
@@ -818,8 +831,10 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     private FolderMessage prepareFolderMessagesEnvelope(ImapProtocol.FetchEnvelopeResponse response) {
+        ImapMessageToken token = new ImapMessageToken(activeMailbox.getPath(), response.uid);
+        token.setMessageIndex(response.index);
         FolderMessage folderMessage = new FolderMessage(
-                new ImapMessageToken(activeMailbox.getPath(), response.uid),
+                token,
                 response.envelope,
                 response.index,
                 response.uid);
@@ -838,8 +853,10 @@ public class ImapClient extends AbstractIncomingMailClient {
     private FolderMessage[] prepareFolderMessagesFlags(ImapProtocol.FetchFlagsResponse[] response) {
         FolderMessage[] folderMessages = new FolderMessage[response.length];
         for(int i=0;i<response.length;i++) {
+            ImapMessageToken token = new ImapMessageToken(activeMailbox.getPath(), response[i].uid);
+            token.setMessageIndex(response[i].index);
             folderMessages[i] = new FolderMessage(
-                    new ImapMessageToken(activeMailbox.getPath(), response[i].uid),
+                    token,
                     null,
                     response[i].index,
                     response[i].uid);

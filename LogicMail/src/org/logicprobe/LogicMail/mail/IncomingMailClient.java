@@ -251,6 +251,22 @@ public interface IncomingMailClient extends MailClient {
         throws IOException, MailException;
     
     /**
+     * Get a list of the messages in the selected folder that appear after the
+     * provided message token.
+     * 
+     * @param firstToken Token for the first message in the range, which exists
+     * @param increment Maximum number of messages to load
+     * @param callback The callback to provide notifications as individual
+     *                 folder messages are loaded
+     * @param progressHandler the progress handler
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    void getFolderMessages(MessageToken firstToken, int increment, FolderMessageCallback callback, MailProgressHandler progressHandler)
+        throws IOException, MailException;
+    
+    /**
      * Get a list of the messages in the selected folder.
      * 
      * @param firstIndex Index of the first message

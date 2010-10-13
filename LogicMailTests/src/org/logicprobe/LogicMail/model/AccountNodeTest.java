@@ -221,6 +221,7 @@ public class AccountNodeTest extends TestCase {
         }
 
         public void requestFolderRefresh(FolderTreeItem folderTreeItem) { }
+        public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) { }
     }
     
     private class TestMailStore extends AbstractMailStore {
@@ -286,7 +287,7 @@ public class AccountNodeTest extends TestCase {
 		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
 		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
 		public void shutdown(boolean wait) { }
-		public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, MailStoreRequestCallback callback) { }
+		public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) { }
 		public void requestFolderMessagesRecent(FolderTreeItem folder, MailStoreRequestCallback callback) { }
 		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) { }
 		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, MailStoreRequestCallback callback) { }

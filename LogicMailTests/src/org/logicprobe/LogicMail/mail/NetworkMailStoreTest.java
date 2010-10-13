@@ -31,8 +31,6 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Vector;
 
@@ -209,7 +207,7 @@ public class NetworkMailStoreTest extends TestCase {
     	};
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	TestCallback callback = new TestCallback();
-    	instance.requestFolderMessagesRange(folder, 42, 43, callback);
+    	instance.requestFolderMessagesRange(folder, new FakeMessageToken(5), 5, callback);
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -339,7 +337,7 @@ public class NetworkMailStoreTest extends TestCase {
     	// sure the queue is working correctly.
     	instance.requestFolderTree();
     	instance.requestFolderStatus(new FolderTreeItem[] { folder });
-    	instance.requestFolderMessagesRange(folder, 42, 43);
+    	instance.requestFolderMessagesRange(folder, new FakeMessageToken(0), 5);
     	instance.requestMessage(messageToken1);
     	instance.shutdown(true);
     	
@@ -402,6 +400,13 @@ public class NetworkMailStoreTest extends TestCase {
 		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
 		public FolderTreeItem getInboxFolder() { return inboxFolder; }
 		public FolderTreeItem getActiveFolder() { return activeFolder; }
+        public void getFolderMessages(MessageToken firstToken, int increment, FolderMessageCallback callback, MailProgressHandler progressHandler)
+                throws IOException, MailException {
+            for(int i=0; i<folderMessages.length; i++) {
+                callback.folderMessageUpdate(folderMessages[i]);
+            }
+            callback.folderMessageUpdate(null);
+        }
 		public void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler)
 				throws IOException, MailException {
 		    for(int i=0; i<folderMessages.length; i++) {
@@ -429,18 +434,6 @@ public class NetworkMailStoreTest extends TestCase {
 		public ConnectionConfig getConnectionConfig() { return null; }
 		public boolean noop() throws IOException, MailException { return false; }
 	};
-	
-	private class FakeMessageToken implements MessageToken {
-		private long uniqueId;
-		public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
-		public long getUniqueId() { return uniqueId; }
-		public void deserialize(DataInput input) throws IOException { }
-		public void serialize(DataOutput output) throws IOException { }
-		public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
-		public String getMessageUid() {	return null; }
-        public void updateToken(MessageToken messageToken) { }
-        public boolean isLoadable() { return true; }
-	}
 	
 	private class TestCallback implements MailStoreRequestCallback {
 	    public boolean completed;

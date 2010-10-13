@@ -204,11 +204,11 @@ public abstract class AbstractMailStore {
      * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
-     * @param firstIndex The index of the first message to get headers for.
-     * @param lastIndex The index of the last message to get headers for.
-     * @param callback The callback to receive success or failure notifications about the request
+     * @param firstToken The token for the message that precedes the requested range.
+     * @param increment The maximum size of the requested range.
+     * @param callback The callback to receive success or failure notifications about the request.
      */
-    public abstract void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex, MailStoreRequestCallback callback);
+    public abstract void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback);
 
     /**
      * Requests the message listing from a particular folder.
@@ -217,11 +217,11 @@ public abstract class AbstractMailStore {
      * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
-     * @param firstIndex The index of the first message to get headers for.
-     * @param lastIndex The index of the last message to get headers for.
+     * @param firstToken The token for the message that precedes the requested range.
+     * @param increment The maximum size of the requested range.
      */
-    public void requestFolderMessagesRange(FolderTreeItem folder, int firstIndex, int lastIndex) {
-        requestFolderMessagesRange(folder, firstIndex, lastIndex, null);
+    public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment) {
+        requestFolderMessagesRange(folder, firstToken, increment, null);
     }
 
     /**

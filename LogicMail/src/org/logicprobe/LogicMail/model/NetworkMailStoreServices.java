@@ -232,14 +232,25 @@ public class NetworkMailStoreServices extends MailStoreServices {
                             }
                         }
                         folderMessageCache.commit();
+                        
+                        // Notify the end of the operation
+                        fireFolderMessagesAvailable(folderTreeItem, null, false, false);
                     }
                 });
             }
             else {
                 stateData.refreshInProgress = false;
                 folderMessageCache.commit();
+                
+                // Notify the end of the operation
+                fireFolderMessagesAvailable(folderTreeItem, null, false, false);
             }
         }}).start();
+    }
+    
+    public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) {
+        int increment = mailStore.getAccountConfig().getFolderMessageIncrement();
+        mailStore.requestFolderMessagesRange(folderTreeItem, firstToken, increment);
     }
     
     public void removeSavedData(FolderTreeItem[] folderTreeItems) {
@@ -286,8 +297,6 @@ public class NetworkMailStoreServices extends MailStoreServices {
                 super.fireFolderMessagesAvailable(folder, messages, flagsOnly);
             }
         }
-        
-        
     }
 
     protected void fireFolderExpunged(FolderTreeItem folder, int[] indices) {

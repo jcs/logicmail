@@ -162,6 +162,16 @@ public abstract class MailStoreServices {
      */
     public abstract void requestFolderRefresh(FolderTreeItem folderTreeItem);
     
+    /**
+     * Requests a folder fetch for more messages that may be available within
+     * the provided folder.
+     * 
+     * @param folderTreeItem the mail store folder to fetch messages for
+     * @param firstToken the token for the message preceeding the range to fetch
+     */
+    public abstract void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken);
+    
+    
     public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) {
         mailStore.requestFolderMessagesSet(folder, messageTokens);
     }

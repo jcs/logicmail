@@ -52,6 +52,12 @@ public class ImapMessageToken implements MessageToken {
     private int messageUid;
     
     /**
+     * Mutable message index.  This value is not serialized, and is only
+     * needed for incremental message fetching.
+     */
+    private int messageIndex = -1;
+    
+    /**
      * Instantiates a new IMAP message token for deserialization.
      */
     public ImapMessageToken() {
@@ -93,6 +99,24 @@ public class ImapMessageToken implements MessageToken {
      */
     int getImapMessageUid() {
     	return this.messageUid;
+    }
+    
+    /**
+     * Gets the index of the message within the mailbox.
+     * 
+     * @return the message index
+     */
+    int getMessageIndex() {
+        return this.messageIndex;
+    }
+
+    /**
+     * Sets the index of the message within the mailbox.
+     * 
+     * @param messageIndex the new message index
+     */
+    void setMessageIndex(int messageIndex) {
+        this.messageIndex = messageIndex;
     }
     
     /* (non-Javadoc)
@@ -171,7 +195,10 @@ public class ImapMessageToken implements MessageToken {
 	 * @see org.logicprobe.LogicMail.mail.MessageToken#updateToken(org.logicprobe.LogicMail.mail.MessageToken)
 	 */
 	public void updateToken(MessageToken messageToken) {
-	    // IMAP tokens are complete and only have immutable data
+        if(messageToken.equals(this)) {
+            ImapMessageToken rhs = (ImapMessageToken)messageToken;
+            this.messageIndex = rhs.messageIndex;
+        }
 	}
 
 	/* (non-Javadoc)

@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.LocalMailStore;
+import org.logicprobe.LogicMail.mail.MessageToken;
 
 public class LocalMailStoreServices extends MailStoreServices {
     private final LocalMailStore mailStore;
@@ -43,5 +44,9 @@ public class LocalMailStoreServices extends MailStoreServices {
 
     public void requestFolderRefresh(FolderTreeItem folderTreeItem) {
         mailStore.requestFolderMessagesRecent(folderTreeItem);
+    }
+    
+    public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) {
+        throw new UnsupportedOperationException();
     }
 }

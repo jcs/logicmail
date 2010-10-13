@@ -54,7 +54,10 @@ public abstract class AccountConfig extends ConnectionConfig {
     private long sentMailboxId;
     private MailboxNode draftMailbox;
     private long draftMailboxId;
-    
+    private int initialFolderMessages;
+    private int folderMessageIncrement;
+    private int maximumFolderMessages;
+
     /** Account identity configuration selection. */
     public static final int CHANGE_TYPE_IDENTITY = 0x0100;
     /** Account outgoing configuration selection. */
@@ -74,7 +77,7 @@ public abstract class AccountConfig extends ConnectionConfig {
     public AccountConfig() {
         super();
     }
-    
+
     /**
      * Instantiates a new connection configuration from serialized data.
      * 
@@ -100,6 +103,9 @@ public abstract class AccountConfig extends ConnectionConfig {
         sentMailboxId = -1L;
         draftMailbox = null;
         draftMailboxId = -1L;
+        initialFolderMessages = 20;
+        folderMessageIncrement = 5;
+        maximumFolderMessages = 40;
     }
 
     /* (non-Javadoc)
@@ -117,7 +123,7 @@ public abstract class AccountConfig extends ConnectionConfig {
     public String getServerUser() {
         return serverUser;
     }
-    
+
     /**
      * Sets the username to authenticate with.
      * 
@@ -129,7 +135,7 @@ public abstract class AccountConfig extends ConnectionConfig {
             changeType |= CHANGE_TYPE_CONNECTION;
         }
     }
-    
+
     /**
      * Gets the password to authenticate with.
      * 
@@ -138,7 +144,7 @@ public abstract class AccountConfig extends ConnectionConfig {
     public String getServerPass() {
         return serverPass;
     }
-    
+
     /**
      * Sets the password to authenticate with.
      * 
@@ -162,7 +168,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
         return identityConfig;
     }
-    
+
     /**
      * Sets the identity configuration.
      * 
@@ -195,7 +201,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
         return outgoingConfig;
     }
-    
+
     /**
      * Sets the outgoing connection configuration.
      * 
@@ -222,22 +228,22 @@ public abstract class AccountConfig extends ConnectionConfig {
      */
     public MailboxNode getSentMailbox() {
         if(sentMailbox == null && sentMailboxId != -1L) {
-        	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
-        	
-        	AccountNode[] accounts = rootNode.getAccounts();
-        	for(int i=0; i<accounts.length; i++) {
-        	    if(accounts[i].getRootMailbox() != null) {
-        	        sentMailbox = findMailboxNode(accounts[i].getRootMailbox(), sentMailboxId);
-        	        if(sentMailbox != null) {
-        	            break;
-        	        }
-        	    }
-        	}
+            MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+
+            AccountNode[] accounts = rootNode.getAccounts();
+            for(int i=0; i<accounts.length; i++) {
+                if(accounts[i].getRootMailbox() != null) {
+                    sentMailbox = findMailboxNode(accounts[i].getRootMailbox(), sentMailboxId);
+                    if(sentMailbox != null) {
+                        break;
+                    }
+                }
+            }
         }
         return sentMailbox;
     }
 
-    
+
     /**
      * Sets the sent message mailbox.
      * 
@@ -256,7 +262,7 @@ public abstract class AccountConfig extends ConnectionConfig {
             changeType |= CHANGE_TYPE_MAILBOXES;
         }
     }
-    
+
     /**
      * Gets the draft message mailbox.
      * 
@@ -264,22 +270,22 @@ public abstract class AccountConfig extends ConnectionConfig {
      */
     public MailboxNode getDraftMailbox() {
         if(draftMailbox == null && draftMailboxId != -1L) {
-        	MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
-        	
-        	AccountNode[] accounts = rootNode.getAccounts();
-        	for(int i=0; i<accounts.length; i++) {
-        	    if(accounts[i].getRootMailbox() != null) {
-        	        draftMailbox = findMailboxNode(accounts[i].getRootMailbox(), draftMailboxId);
-        	        if(draftMailbox != null) {
-        	            break;
-        	        }
-        	    }
-        	}
+            MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+
+            AccountNode[] accounts = rootNode.getAccounts();
+            for(int i=0; i<accounts.length; i++) {
+                if(accounts[i].getRootMailbox() != null) {
+                    draftMailbox = findMailboxNode(accounts[i].getRootMailbox(), draftMailboxId);
+                    if(draftMailbox != null) {
+                        break;
+                    }
+                }
+            }
         }
         return draftMailbox;
     }
 
-    
+
     /**
      * Sets the draft message mailbox.
      * 
@@ -298,7 +304,7 @@ public abstract class AccountConfig extends ConnectionConfig {
             changeType |= CHANGE_TYPE_MAILBOXES;
         }
     }
-    
+
     /**
      * Finds a mailbox node recursively in the mail model tree.
      * 
@@ -308,19 +314,86 @@ public abstract class AccountConfig extends ConnectionConfig {
      * @return The mailbox node
      */
     private static MailboxNode findMailboxNode(MailboxNode currentNode, long id) {
-    	if(currentNode.getUniqueId() == id) {
-    		return currentNode;
-    	}
-    	else {
-    		MailboxNode[] nodes = currentNode.getMailboxes();
-    		for(int i=0; i<nodes.length; i++) {
-    			MailboxNode result = findMailboxNode(nodes[i], id);
-    			if(result != null) {
-    				return result;
-    			}
-    		}
-    	}
-    	return null;
+        if(currentNode.getUniqueId() == id) {
+            return currentNode;
+        }
+        else {
+            MailboxNode[] nodes = currentNode.getMailboxes();
+            for(int i=0; i<nodes.length; i++) {
+                MailboxNode result = findMailboxNode(nodes[i], id);
+                if(result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets the number of folder messages to load when freshly selecting a
+     * mailbox.  This value should normally affect loading the first time a
+     * given mailbox is selected following application startup.
+     *
+     * @return the initial folder message count
+     */
+    public int getInitialFolderMessages() {
+        return initialFolderMessages;
+    }
+
+    /**
+     * Sets the number of initial folder messages.
+     *
+     * @param initialFolderMessages the new initial folder message count
+     */
+    public void setInitialFolderMessages(int initialFolderMessages) {
+        if(this.initialFolderMessages != initialFolderMessages) {
+            this.initialFolderMessages = initialFolderMessages;
+            changeType |= CHANGE_TYPE_LIMITS;
+        }
+    }
+
+    /**
+     * Gets the folder message load increment.  This value should affect the
+     * number of additional folder messages that are loaded for a mailbox,
+     * following a user request.
+     *
+     * @return the folder message load increment
+     */
+    public int getFolderMessageIncrement() {
+        return folderMessageIncrement;
+    }
+
+    /**
+     * Sets the folder message load increment.
+     *
+     * @param folderMessageIncrement the new folder message load increment
+     */
+    public void setFolderMessageIncrement(int folderMessageIncrement) {
+        if(this.folderMessageIncrement != folderMessageIncrement) {
+            this.folderMessageIncrement = folderMessageIncrement;
+            changeType |= CHANGE_TYPE_LIMITS;
+        }
+    }
+
+    /**
+     * Gets the maximum number folder messages to retain for a mailbox.
+     *
+     * @return the maximum number of folder messages
+     */
+    public int getMaximumFolderMessages() {
+        return maximumFolderMessages;
+    }
+
+    /**
+     * Sets the maximum number of folder messages.
+     *
+     * @param maximumFolderMessages the new maximum number of folder messages
+     */
+    public void setMaximumFolderMessages(int maximumFolderMessages) {
+        if(this.maximumFolderMessages != maximumFolderMessages) {
+            this.maximumFolderMessages = maximumFolderMessages;
+            changeType |= CHANGE_TYPE_LIMITS;
+        }
     }
 
     /* (non-Javadoc)
@@ -334,6 +407,9 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_outgoingConfigId", new Long(outgoingConfigId));
         table.put("account_sentMailboxId", new Long(sentMailboxId));
         table.put("account_draftMailboxId", new Long(draftMailboxId));
+        table.put("account_initialFolderMessages", new Integer(initialFolderMessages));
+        table.put("account_folderMessageIncrement", new Integer(folderMessageIncrement));
+        table.put("account_maximumFolderMessages", new Integer(maximumFolderMessages));
     }
 
     /* (non-Javadoc)
@@ -370,18 +446,33 @@ public abstract class AccountConfig extends ConnectionConfig {
 
         value = table.get("account_sentMailboxId");
         if(value instanceof Long) {
-        	sentMailboxId = ((Long)value).longValue();
+            sentMailboxId = ((Long)value).longValue();
         }
         else {
-        	sentMailboxId = -1L;
+            sentMailboxId = -1L;
         }
-        
+
         value = table.get("account_draftMailboxId");
         if(value instanceof Long) {
-        	draftMailboxId = ((Long)value).longValue();
+            draftMailboxId = ((Long)value).longValue();
         }
         else {
-        	draftMailboxId = -1L;
+            draftMailboxId = -1L;
+        }
+
+        value = table.get("account_initialFolderMessages");
+        if(value instanceof Integer) {
+            initialFolderMessages = ((Integer)value).intValue();
+        }
+
+        value = table.get("account_folderMessageIncrement");
+        if(value instanceof Integer) {
+            folderMessageIncrement = ((Integer)value).intValue();
+        }
+
+        value = table.get("account_maximumFolderMessages");
+        if(value instanceof Integer) {
+            maximumFolderMessages = ((Integer)value).intValue();
         }
     }
 }

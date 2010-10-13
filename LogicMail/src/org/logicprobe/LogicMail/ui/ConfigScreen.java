@@ -53,7 +53,6 @@ import net.rim.device.api.ui.component.ObjectListField;
 import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
-import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
@@ -96,7 +95,6 @@ public class ConfigScreen extends AbstractConfigScreen {
     // Message Display
     private VerticalFieldManager messageDisplayFieldManager;
     private ObjectChoiceField messageDisplayChoiceField;
-    private BasicEditField messageCountEditField;
     private ObjectChoiceField displayOrderChoiceField;
     private CheckboxField hideDeletedMessagesCheckboxField;
     private CheckboxField promptOnDeleteCheckboxField;
@@ -323,11 +321,6 @@ public class ConfigScreen extends AbstractConfigScreen {
                 "HTML" },
                 existingGlobalConfig.getMessageDisplayFormat());
 
-        messageCountEditField = new BasicEditField(
-                resources.getString(LogicMailResource.CONFIG_GLOBAL_MESSAGE_COUNT) + ' ',
-                Integer.toString(existingGlobalConfig.getRetMsgCount()), 16, TextField.NO_NEWLINE);
-        messageCountEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
-
         String[] orderTypes = {
                 resources.getString(LogicMailResource.MENUITEM_ORDER_ASCENDING),
                 resources.getString(LogicMailResource.MENUITEM_ORDER_DESCENDING)
@@ -364,7 +357,6 @@ public class ConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_MESSAGE_DISPLAY),
                 Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
         messageDisplayFieldManager.add(messageDisplayChoiceField);
-        messageDisplayFieldManager.add(messageCountEditField);
         messageDisplayFieldManager.add(displayOrderChoiceField);
         messageDisplayFieldManager.add(hideDeletedMessagesCheckboxField);
         messageDisplayFieldManager.add(promptOnDeleteCheckboxField);
@@ -1044,10 +1036,6 @@ public class ConfigScreen extends AbstractConfigScreen {
         config.setUnicodeNormalization(unicodeNormalizationCheckboxField.getChecked());
 
         config.setMessageDisplayFormat(messageDisplayChoiceField.getSelectedIndex());
-
-        try {
-            config.setRetMsgCount(Integer.parseInt(messageCountEditField.getText()));
-        } catch (Exception e) { }
 
         if (displayOrderChoiceField.getSelectedIndex() == 0) {
             config.setDispOrder(true);
