@@ -183,14 +183,12 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
             synchronized(invokeLock) {
                 currentInvokeItems = invokeItems;
                 invokeItems = new Vector();
+                invokeInProgress = false;
             }
             int size = currentInvokeItems.size();
             for(int i=0; i<size; i++) {
                 Runnable runnable = (Runnable)currentInvokeItems.elementAt(i);
                 runnable.run();
-            }
-            synchronized(invokeLock) {
-                invokeInProgress = false;
             }
         }
 	};
