@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.model;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
+import org.logicprobe.LogicMail.mail.FolderMessageIndexMapEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
@@ -101,6 +102,8 @@ public abstract class AccountNode implements Node {
                 MailboxNode mailboxNode = getMailboxNodeForEvent(e);
                 mailboxNode.mailStoreFolderExpunged(e);
             }
+
+            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) { }
         });
 
         this.mailStoreServices.addMessageListener(new MessageListener() {
@@ -204,7 +207,7 @@ public abstract class AccountNode implements Node {
     void setStatus(int status) {
         if (this.status != status) {
             this.status = status;
-
+            mailStoreServices.setConnected(status == AccountNode.STATUS_ONLINE);
             fireAccountStatusChanged(AccountNodeEvent.TYPE_CONNECTION);
         }
     }

@@ -34,6 +34,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.rim.device.api.util.Comparator;
+
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
@@ -58,6 +60,13 @@ public class OutgoingMessageToken implements MessageToken {
         this.messageUid = messageId;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#getComparator()
+     */
+    public Comparator getComparator() {
+        throw new UnsupportedOperationException();
+    }
+
     public boolean containedWithin(FolderTreeItem folderTreeItem) {
         return folderTreeItem.getPath().equals(folderPath);
     }
@@ -74,6 +83,10 @@ public class OutgoingMessageToken implements MessageToken {
         // Empty because this special token is not intended to be synchronized
     }
 
+    public void updateMessageIndex(int index) {
+        // Empty because it is not applicable to this token type
+    }
+    
     public boolean isLoadable() {
         return true;
     }

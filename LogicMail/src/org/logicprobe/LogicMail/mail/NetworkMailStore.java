@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import net.rim.device.api.system.UnsupportedOperationException;
+import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -50,8 +51,8 @@ public class NetworkMailStore extends AbstractMailStore {
 		this.accountConfig = accountConfig;
 		this.connectionHandler = new IncomingMailConnectionHandler(client);
 		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-			public void mailConnectionRequestComplete(int type, Object tag, Object result) {
-				connectionHandler_mailConnectionRequestComplete(type, tag, result);
+			public void mailConnectionRequestComplete(int type, Object tag, Object result, boolean isFinal) {
+				connectionHandler_mailConnectionRequestComplete(type, tag, result, isFinal);
 			}
             public void mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
                 connectionHandler_mailConnectionRequestFailed(type, tag, exception);
@@ -114,6 +115,27 @@ public class NetworkMailStore extends AbstractMailStore {
 	    return client.hasExpunge();
 	}
 	
+	/**
+	 * Returns whether the mail store supports retrieval of a full folder
+	 * message index-to-UID map.
+	 *
+	 * @return True if index-to-UID map retrieval is supported, false otherwise
+	 * @see #requestFolderMessageIndexMap(FolderTreeItem, MailStoreRequestCallback)
+	 */
+	public boolean hasFolderMessageIndexMap() {
+	    return client.hasFolderMessageIndexMap();
+	}
+	
+	/**
+	 * Returns whether the mail store has a locked folder view while connected.
+	 * If this method returns true, then an explicit refresh during an existing
+	 * connection will not return new data.
+	 * @return True if folder contents are locked while connected, false otherwise.
+	 */
+	public boolean hasLockedFolders() {
+	    return client.hasLockedFolders();
+	}
+	
 	public boolean isConnected() {
 		return client.isConnected();
 	}
@@ -140,11 +162,18 @@ public class NetworkMailStore extends AbstractMailStore {
 				callback);
 	}
 
-	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback) {
+	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback) {
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
-				new Object[] { folder, messageTokens },
+				new Object[] { folder, messageTokens, new Boolean(flagsOnly) },
 				callback);
+	}
+	
+	public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback) {
+        connectionHandler.addRequest(
+                IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
+                new Object[] { folder, messageIndices },
+                callback);
 	}
 	
 	public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) {
@@ -153,6 +182,36 @@ public class NetworkMailStore extends AbstractMailStore {
 				new Object[] { folder, new Boolean(flagsOnly) },
 				callback);
 	}
+	
+	/**
+	 * Requests the message UID-to-index map for a particular folder.
+     * <p>
+     * Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessageIndexMapAvailable(FolderMessageIndexMapEvent)}.
+     * </p>
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param callback The callback to receive success or failure notifications about the request
+	 */
+	public void requestFolderMessageIndexMap(FolderTreeItem folder, MailStoreRequestCallback callback) {
+        connectionHandler.addRequest(
+                IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGE_INDEX_MAP,
+                new Object[] { folder },
+                callback);
+	}
+
+    /**
+     * Requests the message index-to-UID map for a particular folder.
+     * <p>
+     * Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessageIndexMapAvailable(FolderMessageIndexMapEvent)}.
+     * </p>
+     * 
+     * @param folder The folder to request a message listing for.
+     */
+    public void requestFolderMessageIndexMap(FolderTreeItem folder) {
+        requestFolderMessageIndexMap(folder, null);
+    }
 	
 	public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken }, callback);
@@ -201,7 +260,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder }, callback);
 	}
 	
-	private void connectionHandler_mailConnectionRequestComplete(int type, Object result, Object tag) {
+	private void connectionHandler_mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal) {
         MailStoreRequestCallback callback;
         if(tag instanceof MailStoreRequestCallback) {
             callback = (MailStoreRequestCallback)tag;
@@ -213,74 +272,79 @@ public class NetworkMailStore extends AbstractMailStore {
 		Object[] results;
 		switch(type) {
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
-		    if(callback != null) { callback.mailStoreRequestComplete(); }
+		    if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			fireFolderTreeUpdated((FolderTreeItem)result);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
             results = (Object[])result;
 		    fireFolderExpunged((FolderTreeItem)results[0], (int[])results[1]);
 		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			FolderTreeItem[] folders = (FolderTreeItem[])result;
 			for(int i=0; i<folders.length; i++) {
 				fireFolderStatusChanged(folders[i]);
 			}
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
             results = (Object[])result;
             fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
 		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
-			break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], ((Boolean)results[2]).booleanValue());
 			break;
+		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT:
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
+			results = (Object[])result;
+			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], ((Boolean)results[2]).booleanValue());
+			break;
+		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGE_INDEX_MAP:
+		    if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
+		    results = (Object[])result;
+		    fireFolderMessageIndexMapAvailable((FolderTreeItem)results[0], (ToIntHashtable)results[1]);
+		    break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageAvailable((MessageToken)results[0], (MimeMessagePart)results[1], (MimeMessageContent[])results[2], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageContentAvailable((MessageToken)results[0], (MimeMessageContent[])results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageDeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageUndeleted((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
         case IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY:
-            if(callback != null) { callback.mailStoreRequestComplete(); }
+            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			break;
 		}
 	}
-	
-	private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
+
+    private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
         MailStoreRequestCallback callback;
         if(tag instanceof MailStoreRequestCallback) {
             callback = (MailStoreRequestCallback)tag;

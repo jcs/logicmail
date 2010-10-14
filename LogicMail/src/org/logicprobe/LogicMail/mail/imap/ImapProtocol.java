@@ -565,6 +565,55 @@ public class ImapProtocol {
         return resultArray;
     }
 
+    /**
+     * Execute the "UID FETCH (FLAGS UID)" command
+     * @param uids the set of UIDs to fetch flags for
+     * @param progressHandler the progress handler
+     * @return Array of FetchFlagsResponse objects
+     */
+    public FetchFlagsResponse[] executeFetchFlagsUid(int[] uids,
+        MailProgressHandler progressHandler) throws IOException, MailException {
+        
+        if (uids.length == 0) {
+            return new FetchFlagsResponse[0];
+        }
+
+        StringBuffer buf = new StringBuffer();
+
+        for (int i = 0; i < (uids.length - 1); i++) {
+            buf.append(uids[i]);
+            buf.append(',');
+        }
+
+        buf.append(uids[uids.length - 1]);
+
+        String uidList = buf.toString();
+        
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeFetchFlagsUid(" + uidList + ")").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
+        final Vector result = new Vector();
+        
+        executeResponse(UID_FETCH,
+                uidList + " (FLAGS UID)",
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
+                if(response != null) {
+                    result.addElement(response);
+                }
+            }
+            public void executeComplete() { }},
+            progressHandler);
+
+        FetchFlagsResponse[] resultArray = new FetchFlagsResponse[result.size()];
+        result.copyInto(resultArray);
+        return resultArray;
+    }
+
     private FetchFlagsResponse prepareFetchFlagsResponse(byte[] rawText) {
         if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
             return null;
@@ -680,6 +729,53 @@ public class ImapProtocol {
         executeResponse(UID_FETCH,
                 Integer.toString(uidNext) + CHAR_COLON_ASTERISK +
                 " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+                new ExecuteCallback() {
+            public void processResponse(byte[] rawLine) {
+                prepareFetchEnvelopeResponse(rawLine, callback);
+            }
+            public void executeComplete() {
+                if(callback != null) {
+                    callback.responseAvailable(null);
+                }
+            }
+        },
+        progressHandler);
+    }
+    
+    /**
+     * Execute the "FETCH (FLAGS UID ENVELOPE BODYSTRUCTURE)" command
+     * @param indices Set of index values for the messages to fetch
+     * @param callback Callback for asynchronous notification of new envelopes
+     * @param progressHandler the progress handler
+     */
+    public void executeFetchEnvelope(int[] indices,
+        final FetchEnvelopeCallback callback, MailProgressHandler progressHandler)
+        throws IOException, MailException {
+        if (indices.length == 0) {
+            callback.responseAvailable(null);
+
+            return;
+        }
+
+        StringBuffer buf = new StringBuffer();
+
+        for (int i = 0; i < (indices.length - 1); i++) {
+            buf.append(indices[i]);
+            buf.append(',');
+        }
+
+        buf.append(indices[indices.length - 1]);
+
+        String indexList = buf.toString();
+
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                ("ImapProtocol.executeFetchEnvelopeUid(" + indexList + ")").getBytes(),
+                EventLogger.DEBUG_INFO);
+        }
+
+        executeResponse(FETCH,
+                indexList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new ExecuteCallback() {
             public void processResponse(byte[] rawLine) {
                 prepareFetchEnvelopeResponse(rawLine, callback);

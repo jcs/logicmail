@@ -744,9 +744,9 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], boolean, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
+    public void getFolderMessages(MessageToken[] messageTokens, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
     throws IOException, MailException {
         // Sanity check
         if(activeMailbox == null) {
@@ -758,9 +758,33 @@ public class ImapClient extends AbstractIncomingMailClient {
             uids[i] = ((ImapMessageToken)messageTokens[i]).getImapMessageUid();
         }
 
-        imapProtocol.executeFetchEnvelopeUid(uids, new ImapFetchEnvelopeCallback(callback), progressHandler);
+        if(flagsOnly) {
+            ImapProtocol.FetchFlagsResponse[] flagsResponse =
+                imapProtocol.executeFetchFlagsUid(uids, progressHandler);
+            FolderMessage[] result = prepareFolderMessagesFlags(flagsResponse);
+            for(int i=0; i<result.length; i++) {
+                callback.folderMessageUpdate(result[i]);
+            }
+            callback.folderMessageUpdate(null);
+        }
+        else {
+            imapProtocol.executeFetchEnvelopeUid(uids, new ImapFetchEnvelopeCallback(callback), progressHandler);
+        }
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public void getFolderMessages(int[] messageIndices, FolderMessageCallback callback, MailProgressHandler progressHandler)
+    throws IOException, MailException {
+        // Sanity check
+        if(activeMailbox == null) {
+            throw new MailException("Mailbox not selected");
+        }
+
+        imapProtocol.executeFetchEnvelope(messageIndices, new ImapFetchEnvelopeCallback(callback), progressHandler);
+    }
+    
     private class ImapNewFetchEnvelopeCallback implements ImapProtocol.FetchEnvelopeCallback {
         private FolderMessageCallback callback;
         private FolderMessage lastFolderMessage;

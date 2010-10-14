@@ -817,11 +817,21 @@ public class MailboxScreen extends AbstractScreenProvider {
         return false;
     }
     
-    private void handleMessageGapAction(MailboxActionField gapField) {
-        MessageNode[] gap = (MessageNode[])gapField.getTag();
-        messageFieldManager.delete(gapField);
+    private void handleMessageGapAction(final MailboxActionField gapField) {
+        // This method inserts a short delay, where the gap action field is
+        // disabled, prior to starting the request.  This is done to provide
+        // feedback that the user has triggered an action before the field
+        // disappears from the screen.
         
-        mailboxNode.requestMoreMessages(gap[1]);
+        final MessageNode[] gap = (MessageNode[])gapField.getTag();
+        gapField.setEditable(false);
+        (new Thread() { public void run() {
+            try { Thread.sleep(200); } catch (InterruptedException e) { }
+            invokeLater(new Runnable() { public void run() {
+                messageFieldManager.delete(gapField);
+                mailboxNode.requestMoreMessages(gap[1]);
+            }});
+        }}).start();
     }
 
     /* (non-Javadoc)

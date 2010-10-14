@@ -30,10 +30,13 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import net.rim.device.api.util.ToIntHashtable;
+
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
+import org.logicprobe.LogicMail.mail.FolderMessageIndexMapEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
@@ -69,6 +72,9 @@ public abstract class MailStoreServices {
         mailStore.addFolderListener(new FolderListener() {
             public void folderMessagesAvailable(FolderMessagesEvent e) {
                 fireFolderMessagesAvailable(e.getFolder(), e.getMessages(), e.isFlagsOnly());
+            }
+            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) {
+                fireFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
             }
             public void folderStatusChanged(FolderEvent e) {
                 fireFolderStatusChanged(e.getFolder());
@@ -112,6 +118,17 @@ public abstract class MailStoreServices {
 
     public boolean isLocal() {
         return mailStore.isLocal();
+    }
+
+    /**
+     * Called to inform the mail store services of a change in connection
+     * status.  This is only necessary because of the roundabout way connection
+     * status notifications are currently implemented.
+     *
+     * @param connected true if connected, false if disconnected
+     */
+    public void setConnected(boolean connected) {
+        // Default empty implementation
     }
 
     // ---- Capabilities checking properties, should be eventually removed
@@ -170,19 +187,6 @@ public abstract class MailStoreServices {
      * @param firstToken the token for the message preceeding the range to fetch
      */
     public abstract void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken);
-    
-    
-    public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) {
-        mailStore.requestFolderMessagesSet(folder, messageTokens);
-    }
-    
-    public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) {
-        mailStore.requestFolderMessagesRecent(folder, flagsOnly, callback);
-    }
-    
-    public void requestFolderMessagesRecent(FolderTreeItem folder) {
-        mailStore.requestFolderMessagesRecent(folder);
-    }
     
     /**
      * Appends a message node to the provided mail store folder.
@@ -567,6 +571,24 @@ public abstract class MailStoreServices {
                 e = new FolderMessagesEvent(this, folder, messages, flagsOnly, server);
             }
             ((FolderListener)listeners[i]).folderMessagesAvailable(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>FolderListener</tt>s that
+     * the UID-to-index map for a folder has been loaded.
+     * 
+     * @param folder The folder which has available messages
+     * @param uidIndexMap The UID-to-index map for the folder's messages
+     */
+    protected void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
+        Object[] listeners = listenerList.getListeners(FolderListener.class);
+        FolderMessageIndexMapEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderMessageIndexMapEvent(this, folder, uidIndexMap);
+            }
+            ((FolderListener)listeners[i]).folderMessageIndexMapAvailable(e);
         }
     }
 

@@ -188,10 +188,14 @@ public class LocalMailStore extends AbstractMailStore {
     	throw new UnsupportedOperationException("Not yet implemented");
 	}
 
-	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback) {
+	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback) {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
+	public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback) {
+        throw new UnsupportedOperationException("Not yet implemented");
+	}
+	
     public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) {
     	// The flagsOnly parameter has no effect on local mail stores,
     	// and it is not likely to ever be called on them anyways.

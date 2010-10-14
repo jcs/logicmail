@@ -36,10 +36,13 @@ import java.util.Hashtable;
 
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.ToIntHashtable;
+
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.StringArrays;
 
 /**
  * This class implements the commands for the POP3 protocol
@@ -206,7 +209,7 @@ public class PopProtocol {
     }
     
     /**
-     * Execute the "UIDL" command
+     * Execute the "UIDL" command for a specific message index.
      * @param index Message index
      */
     public String executeUidl(int index) throws IOException, MailException {
@@ -224,6 +227,38 @@ public class PopProtocol {
         else {
         	return null;
         }
+    }
+    
+    /**
+     * Execute the "UIDL" command for the entire mailbox.
+     * 
+     * @param progressHandler progress handler
+     * @return Map of <code>String</code> message UIDs to index values
+     */
+    public ToIntHashtable executeUidl(MailProgressHandler progressHandler) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeUidl()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
+        byte[][] result = executeFollowBinary("UIDL", true, progressHandler);
+        ToIntHashtable uidIndexMap = new ToIntHashtable(result.length);
+        
+        for(int i=0; i<result.length; i++) {
+            byte[] line = result[i];
+            int p = Arrays.getIndex(line, (byte)' ');
+            int uidLen = line.length - p - 1;
+            if(p > 0 && uidLen > 0) {
+                try {
+                    int index = StringArrays.parseInt(line, 0, p);
+                    String uid = new String(line, p + 1, uidLen);
+                    uidIndexMap.put(uid, index);
+                } catch (Exception e) { }
+            }
+        }
+        return uidIndexMap;
     }
     
     /**
@@ -282,6 +317,38 @@ public class PopProtocol {
             Arrays.add(lines, buffer);
             preCount = postCount;
             buffer = new String(connection.receive());
+            postCount = connection.getBytesReceived();
+            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
+        }
+        return lines;
+    }
+    
+    /**
+     * Execute a POP3 command that returns multiple lines.
+     * This works by running the normal execute() and then
+     * receiving every new line until a lone "." is encountered.
+     *
+     * @param command The command to execute
+     * @param errorFatal If true, then an "-ERR" response to the command will
+     *                   generate an exception.
+     * @param progressHandler progress handler
+     * @return An array of lines containing the response, or <code>null</code>
+     *         if <code>errorFatal</code> is <code>false</code> and the
+     *         response was an error.
+     */
+    private byte[][] executeFollowBinary(String command, boolean errorFatal, MailProgressHandler progressHandler) throws IOException, MailException {
+        int preCount = connection.getBytesReceived();
+        if(execute(command, errorFatal) == null) { return null; }
+        
+        byte[] buffer = connection.receive();
+        int postCount = connection.getBytesReceived();
+        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
+
+        byte[][] lines = new byte[0][];
+        while(buffer != null && !(buffer.length == 1 && buffer[0] == (byte)'.')) {
+            Arrays.add(lines, buffer);
+            preCount = postCount;
+            buffer = connection.receive();
             postCount = connection.getBytesReceived();
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }

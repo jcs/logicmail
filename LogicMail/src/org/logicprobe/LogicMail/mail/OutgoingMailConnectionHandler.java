@@ -100,7 +100,7 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 		
 		MailConnectionHandlerListener listener = getListener();
 		if(messageSource != null && messageSource.length() > 0 && listener != null) {
-			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { envelope, message, messageSource }, tag);
+			listener.mailConnectionRequestComplete(REQUEST_SEND_MESSAGE, new Object[] { envelope, message, messageSource }, tag, true);
 		}
 	}
 }

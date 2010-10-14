@@ -34,6 +34,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.rim.device.api.util.Comparator;
+
 /**
  * Fake message token for test cases.
  * This is exposed as a public class to support test cases involving
@@ -50,6 +52,33 @@ public class FakeMessageToken implements MessageToken {
     public String getMessageUid() { return Long.toString(uniqueId); }
     public void updateToken(MessageToken messageToken) { }
     public boolean isLoadable() { return true; }
+    public void updateMessageIndex(int index) { }
+    
+    private static final Comparator comparator = new Comparator() {
+        public int compare(Object o1, Object o2) {
+            if(o1 instanceof FakeMessageToken && o2 instanceof FakeMessageToken) {
+                FakeMessageToken token1 = (FakeMessageToken)o1;
+                FakeMessageToken token2 = (FakeMessageToken)o2;
+                
+                if(token1.uniqueId < token2.uniqueId) {
+                    return -1;
+                }
+                else if(token1.uniqueId > token2.uniqueId) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }
+            else {
+                throw new ClassCastException("Cannot compare types");
+            }
+        }
+    };
+    
+    public Comparator getComparator() {
+        return comparator;
+    }
     
     public int hashCode() {
         return 31 * 1 + (int) (uniqueId ^ (uniqueId >>> 32));

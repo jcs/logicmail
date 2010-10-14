@@ -36,6 +36,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
@@ -245,6 +246,13 @@ public class PopClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasMessageIndexMap()
+     */
+    public boolean hasFolderMessageIndexMap() {
+        return true;
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#hasLockedFolders()
      */
     public boolean hasLockedFolders() {
@@ -298,8 +306,8 @@ public class PopClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken, int, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
     public void getFolderMessages(MessageToken firstToken, int increment, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
-        PopMessageToken imapToken = (PopMessageToken)firstToken;
-        int lastIndex = imapToken.getMessageIndex() - 1;
+        PopMessageToken popToken = (PopMessageToken)firstToken;
+        int lastIndex = popToken.getMessageIndex() - 1;
         if(lastIndex <= 0) { return; }
         int firstIndex = Math.max(1, lastIndex - (increment - 1));
         if(firstIndex > lastIndex) { return; }
@@ -349,9 +357,9 @@ public class PopClient extends AbstractIncomingMailClient {
     }
 
 	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
+	 * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getFolderMessages(org.logicprobe.LogicMail.mail.MessageToken[], boolean, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
 	 */
-	public void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
+	public void getFolderMessages(MessageToken[] messageTokens, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
 			throws IOException, MailException {
 		// Since POP servers typically lock the mailbox while a client is connected,
 		// and given the typical use case of this method, we will make the assumption
@@ -372,9 +380,24 @@ public class PopClient extends AbstractIncomingMailClient {
 		    indices = reverseIndices;
 		}
 		
-		getFolderMessagesImpl(indices, false, callback, progressHandler);
+		getFolderMessagesImpl(indices, flagsOnly, callback, progressHandler);
 	}
 
+	public void getFolderMessages(int[] messageIndices, FolderMessageCallback callback, MailProgressHandler progressHandler)
+	        throws IOException, MailException {
+	    
+	    int[] indices = messageIndices;
+        if(!globalConfig.getDispOrder()) {
+            int[] reverseIndices = new int[indices.length];
+            for(int i=0; i<indices.length; i++) {
+                reverseIndices[indices.length - i - 1] = indices[i];
+            }
+            indices = reverseIndices;
+        }
+        
+        getFolderMessagesImpl(indices, false, callback, progressHandler);
+	}
+	
     private void getFolderMessagesImpl(int[] indices, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
     		throws IOException, MailException {
         String[] headerText;
@@ -398,6 +421,14 @@ public class PopClient extends AbstractIncomingMailClient {
         }
         callback.folderMessageUpdate(null);
     }
+
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#getFolderMessageIndexMap(org.logicprobe.LogicMail.mail.MailProgressHandler)
+     */
+    public ToIntHashtable getFolderMessageIndexMap(MailProgressHandler progressHandler) throws IOException, MailException {
+        ToIntHashtable indexUidMap = popProtocol.executeUidl(progressHandler);
+        return indexUidMap;
+    }
     
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getNewFolderMessages(boolean, org.logicprobe.LogicMail.mail.FolderMessageCallback, org.logicprobe.LogicMail.mail.MailProgressHandler)
@@ -408,7 +439,7 @@ public class PopClient extends AbstractIncomingMailClient {
         int firstIndex = Math.max(1, msgCount - count);
     	getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);
     }
-
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */

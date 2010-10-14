@@ -52,6 +52,13 @@ public interface FolderListener extends EventListener {
 	public void folderMessagesAvailable(FolderMessagesEvent e);
 	
     /**
+     * Invoked when the message index-to-UID map for a folder has been loaded.
+     * 
+     * @param e Folder event data
+     */
+    public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e);
+    
+    /**
      * Invoked when a folder has been expunged.
      * 
      * @param e Folder event data

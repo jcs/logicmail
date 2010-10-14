@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,30 +28,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Interface between MailConnectionHandler implementations and
- * MailStore implementations.
- */
-public interface MailConnectionHandlerListener {
-	/**
-	 * Indicates that a request has been completed.
-	 * 
-	 * @param type The type of the request.
-	 * @param result The data returned from the request.
-     * @param tag Tag reference to pass along with the request
-     * @param isFinal true if this is the final or only callback of a request
-	 */
-	public void mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal);
-	
+import net.rim.device.api.util.ToIntHashtable;
+
+public class FolderMessageIndexMapEvent extends FolderEvent {
+    private final ToIntHashtable uidIndexMap;
+    
+    public FolderMessageIndexMapEvent(Object source, FolderTreeItem folder, ToIntHashtable uidIndexMap) {
+        super(source, folder);
+        this.uidIndexMap = uidIndexMap;
+    }
+    
     /**
-     * Indicates that a request has failed.
-     * 
-     * @param type The type of the request.
-     * @param tag Tag reference to pass along with the request
-     * @param exception The exception that caused the request to fail, if applicable.
+     * Gets the message UID-to-index map that was retrieved.
+     *
+     * @return the UID-to-index map, with UIDs in <code>String</code> form.
      */
-    public void mailConnectionRequestFailed(int type, Object tag, Throwable exception);
+    public ToIntHashtable getUidIndexMap() {
+        return uidIndexMap;
+    }
 }

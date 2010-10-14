@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import net.rim.device.api.util.Comparator;
+
 import org.logicprobe.LogicMail.util.Serializable;
 
 /**
@@ -75,6 +77,16 @@ public interface MessageToken extends Serializable {
     void updateToken(MessageToken messageToken);
     
     /**
+     * Update this message token with the provided index value, if applicable.
+     * Message index values are never persisted, but they are still needed
+     * at run time.  This method allows them to be updated from outside the
+     * mail store layer, as a necessary part of the folder refresh process.
+     * 
+     * @param index updated message index
+     */
+    void updateMessageIndex(int index);
+    
+    /**
      * Gets whether this token is sufficiently complete to load a message
      * from a mail store.  Messages not loadable from a mail store should
      * still be loadable from local cache.
@@ -82,4 +94,12 @@ public interface MessageToken extends Serializable {
      * @return True if loadable, false otherwise
      */
     boolean isLoadable();
+    
+    /**
+     * Gets a comparator that can be used to sort, in ascending order, a
+     * collection of message tokens of the same type.
+     * 
+     * @return comparator for two message tokens
+     */
+    Comparator getComparator();
 }

@@ -32,6 +32,9 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+
+import net.rim.device.api.util.ToIntHashtable;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -125,6 +128,17 @@ public interface IncomingMailClient extends MailClient {
      * @see #messageForwarded(MessageToken, MessageFlags)
      */
     boolean hasFlags();
+    
+    /**
+     * Return whether the underlying protocol supports an operation to retrieve
+     * the complete message UID to index map.  This feature should only be
+     * provided for protocols that do not support UID-based message references
+     * for other commands.
+     * 
+     * @return True if UID-to-index map retrieval is supported, false otherwise
+     * @see #getFolderMessageIndexMap(MailProgressHandler)
+     */
+    boolean hasFolderMessageIndexMap();
     
     /**
      * Return whether the underlying protocol supports an idle connection mode.
@@ -286,6 +300,7 @@ public interface IncomingMailClient extends MailClient {
      * which match the provided tokens.
      * 
      * @param messageTokens Tokens of the messages
+     * @param flagsOnly If true, only tokens and flags will be fetched
      * @param callback The callback to provide notifications as individual
      *                 folder messages are loaded
      * @param progressHandler the progress handler
@@ -293,7 +308,22 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
+    void getFolderMessages(MessageToken[] messageTokens, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
+        throws IOException, MailException;
+
+    /**
+     * Get a list of the messages in the selected folder for the provided
+     * index values.
+     * 
+     * @param messageIndices Index values for the messages to fetch
+     * @param callback The callback to provide notifications as individual
+     *                 folder messages are loaded
+     * @param progressHandler the progress handler
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    void getFolderMessages(int[] messageIndices, FolderMessageCallback callback, MailProgressHandler progressHandler)
         throws IOException, MailException;
     
     /**
@@ -316,6 +346,17 @@ public interface IncomingMailClient extends MailClient {
      * @throws MailException on protocol errors
      */
     void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException;
+    
+    /**
+     * Get a map of message UIDs to indices for the selected folder.
+     * 
+     * @param progressHandler the progress handler
+     * @return map of message UIDs, in <code>String</code> form, to index values
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    ToIntHashtable getFolderMessageIndexMap(MailProgressHandler progressHandler) throws IOException, MailException;
     
     /**
      * Get a particular message from the selected folder.

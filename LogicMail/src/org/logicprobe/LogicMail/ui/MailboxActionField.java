@@ -101,18 +101,25 @@ public class MailboxActionField extends Field {
     protected void paint(Graphics graphics) {
         int doubleLineHeight = lineHeight * 2;
         int width = this.getWidth();
+        int height = this.getHeight();
         int originalColor = graphics.getColor();
 
         // Draw the separator line
         graphics.setColor(Color.DARKGRAY);
         graphics.drawLine(0, doubleLineHeight - 1, width, doubleLineHeight - 1);
+        
+        if(!isFocus()) {
+            graphics.setColor(0xEFEFEF);
+            graphics.fillRect(0, 0, width, height - 1);
+        }
+        
         graphics.setColor(originalColor);
         
         Font font = getFont();
         int advance = font.getAdvance(text);
         
         int x = (width >>> 1) - (advance >>> 1);
-        int y = (getHeight() >>> 1) - (font.getHeight() >>> 1);
+        int y = (height >>> 1) - (font.getHeight() >>> 1);
         if(y % 2 == 0) { y--; }
 
         if(!isEditable()) {
@@ -121,5 +128,4 @@ public class MailboxActionField extends Field {
         graphics.drawText(text, x, y, DrawStyle.TOP, width);
         graphics.setColor(originalColor);
     }
-
 }

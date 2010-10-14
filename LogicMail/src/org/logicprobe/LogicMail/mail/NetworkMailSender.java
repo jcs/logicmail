@@ -46,8 +46,8 @@ public class NetworkMailSender extends AbstractMailSender {
 		this.outgoingConfig = outgoingConfig;
 		this.connectionHandler = new OutgoingMailConnectionHandler(client);
 		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-			public void mailConnectionRequestComplete(int type, Object result, Object tag) {
-				connectionHandler_mailConnectionRequestComplete(type, result, tag);
+			public void mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal) {
+				connectionHandler_mailConnectionRequestComplete(type, result, tag, isFinal);
 			}
 
             public void mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
@@ -90,7 +90,7 @@ public class NetworkMailSender extends AbstractMailSender {
 		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { envelope, message }, new Object[] { envelope, message });
 	}
 	
-	private void connectionHandler_mailConnectionRequestComplete(int type, Object result, Object tag) {
+	private void connectionHandler_mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal) {
 		Object[] results;
 		switch(type) {
 		case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:

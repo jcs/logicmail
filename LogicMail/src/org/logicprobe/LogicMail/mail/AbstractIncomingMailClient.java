@@ -32,6 +32,8 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 
+import net.rim.device.api.util.ToIntHashtable;
+
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -51,6 +53,17 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         return null;
     }
 
+    public boolean hasFolderMessageIndexMap() {
+        return false;
+    }
+    
+    public ToIntHashtable getFolderMessageIndexMap(
+            MailProgressHandler progressHandler)
+    throws IOException, MailException {
+        // Default empty implementation for unsupported feature
+        return null;
+    }
+    
     public boolean hasMessageParts() {
         return false;
     }

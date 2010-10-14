@@ -35,6 +35,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.rim.device.api.util.Comparator;
+
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -75,6 +77,35 @@ public class ImapMessageToken implements MessageToken {
     	this.folderPath = folderPath;
     	this.messageUid = messageUid;
     }
+
+    private static final Comparator comparator = new Comparator() {
+        public int compare(Object o1, Object o2) {
+            if(o1 instanceof ImapMessageToken && o2 instanceof ImapMessageToken) {
+                ImapMessageToken token1 = (ImapMessageToken)o1;
+                ImapMessageToken token2 = (ImapMessageToken)o2;
+                
+                if(token1.messageUid < token2.messageUid) {
+                    return -1;
+                }
+                else if(token1.messageUid > token2.messageUid) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }
+            else {
+                throw new ClassCastException("Cannot compare types");
+            }
+        }
+    };
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#getComparator()
+     */
+    public Comparator getComparator() {
+        return comparator;
+    };
     
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MessageToken#containedWithin(org.logicprobe.LogicMail.mail.FolderTreeItem)
@@ -197,9 +228,16 @@ public class ImapMessageToken implements MessageToken {
 	public void updateToken(MessageToken messageToken) {
         if(messageToken.equals(this)) {
             ImapMessageToken rhs = (ImapMessageToken)messageToken;
-            this.messageIndex = rhs.messageIndex;
+            updateMessageIndex(rhs.messageIndex);
         }
 	}
+	
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#updateMessageIndex(int)
+     */
+    public void updateMessageIndex(int index) {
+        this.messageIndex = index;
+    }
 
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.mail.MessageToken#isLoadable()

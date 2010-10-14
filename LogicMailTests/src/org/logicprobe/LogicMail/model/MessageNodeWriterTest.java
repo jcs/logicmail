@@ -32,14 +32,12 @@ package org.logicprobe.LogicMail.model;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
 
-import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.FakeMessageToken;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -68,7 +66,7 @@ public class MessageNodeWriterTest extends TestCase {
 
 	public void setUp() {
 		// Build a template message node only containing header data
-		messageNode = new MessageNode(new FakeMessageToken());
+		messageNode = new MessageNode(new FakeMessageToken(42));
 		messageNode.setFlags(Flag.SEEN);
 		messageNode.setDate(Calendar.getInstance().getTime());
 		messageNode.setSubject("The subject");
@@ -201,31 +199,6 @@ public class MessageNodeWriterTest extends TestCase {
     	for(int i=0; i<expected.length; i++) {
     		assertEquals(message, expected[i].toString(), actual[i].toString());
     	}
-    }
-    
-    public static class FakeMessageToken implements MessageToken {
-		public boolean containedWithin(FolderTreeItem folderTreeItem) {
-			return false;
-		}
-
-		public void serialize(DataOutput output) throws IOException {
-			output.writeInt(42);
-		}
-		
-		public void deserialize(DataInput input) throws IOException {
-			input.readInt();
-		}
-
-		public long getUniqueId() {
-			return 42;
-		}
-
-		public String getMessageUid() {
-			return "42";
-		}
-		
-        public void updateToken(MessageToken messageToken) { }
-        public boolean isLoadable() { return true; }
     }
     
     public Test suite() {

@@ -35,6 +35,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.rim.device.api.util.Comparator;
+
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -58,7 +60,7 @@ public class PopMessageToken implements MessageToken {
 
     /** POP unique ID that identifies the message */
     private String messageUid;
-
+    
     /**
      * Instantiates a new POP message token.
      */
@@ -78,6 +80,35 @@ public class PopMessageToken implements MessageToken {
         this.messageUid = messageUid;
     }
 
+    private static final Comparator comparator = new Comparator() {
+        public int compare(Object o1, Object o2) {
+            if(o1 instanceof PopMessageToken && o2 instanceof PopMessageToken) {
+                PopMessageToken token1 = (PopMessageToken)o1;
+                PopMessageToken token2 = (PopMessageToken)o2;
+                
+                if(token1.messageIndex < token2.messageIndex) {
+                    return -1;
+                }
+                else if(token1.messageIndex > token2.messageIndex) {
+                    return 1;
+                }
+                else {
+                    return 0;
+                }
+            }
+            else {
+                throw new ClassCastException("Cannot compare types");
+            }
+        }
+    };
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#getComparator()
+     */
+    public Comparator getComparator() {
+        return comparator;
+    };
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MessageToken#containedWithin(org.logicprobe.LogicMail.mail.FolderTreeItem)
      */
@@ -175,10 +206,14 @@ public class PopMessageToken implements MessageToken {
     public void updateToken(MessageToken messageToken) {
         if(messageToken.equals(this)) {
             PopMessageToken rhs = (PopMessageToken)messageToken;
-            this.messageIndex = rhs.messageIndex;
+            updateMessageIndex(rhs.messageIndex);
         }
     }
 
+    public void updateMessageIndex(int index) {
+        this.messageIndex = index;
+    }
+    
     public boolean isLoadable() {
         return messageIndex != -1;
     }

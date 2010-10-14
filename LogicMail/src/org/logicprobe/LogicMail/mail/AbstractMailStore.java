@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import net.rim.device.api.util.ToIntHashtable;
+
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -50,7 +52,7 @@ import org.logicprobe.LogicMail.util.EventListenerList;
  * and events.
  */
 public abstract class AbstractMailStore {
-    private EventListenerList listenerList = new EventListenerList();
+    private final EventListenerList listenerList = new EventListenerList();
 
     protected AbstractMailStore() {
     }
@@ -234,9 +236,42 @@ public abstract class AbstractMailStore {
      * 
      * @param folder The folder to request a message listing for.
      * @param messageTokens The set of tokens for the messages to get headers for.
+     * @param flagsOnly If true, only tokens and flags will be fetched
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback);
+    public abstract void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback);
+
+    /**
+     * Requests the message listing from a particular folder.
+     * All message tokens must refer to messages that exist within the provided
+     * folder item, or the results may be unexpected.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param messageTokens The set of tokens for the messages to get headers for.
+     * @param flagsOnly If true, only tokens and flags will be fetched
+     */
+    public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly) {
+        requestFolderMessagesSet(folder, messageTokens, flagsOnly, null);
+    }
+    
+    /**
+     * Requests the message listing from a particular folder.
+     * All message tokens must refer to messages that exist within the provided
+     * folder item, or the results may be unexpected.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param messageTokens The set of tokens for the messages to get headers for.
+     * @param callback The callback to receive success or failure notifications about the request
+     */
+    public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback) {
+        requestFolderMessagesSet(folder, messageTokens, false, null);
+    }
 
     /**
      * Requests the message listing from a particular folder.
@@ -250,7 +285,32 @@ public abstract class AbstractMailStore {
      * @param messageTokens The set of tokens for the messages to get headers for.
      */
     public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) {
-        requestFolderMessagesSet(folder, messageTokens, null);
+        requestFolderMessagesSet(folder, messageTokens, false, null);
+    }
+    
+    /**
+     * Requests the message listing from a particular folder.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param messageIndices The set of index values for the messages to get headers for.
+     * @param callback The callback to receive success or failure notifications about the request
+     */
+    public abstract void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback);
+
+    /**
+     * Requests the message listing from a particular folder.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
+     * 
+     * @param folder The folder to request a message listing for.
+     * @param messageIndices The set of index values for the messages to get headers for.
+     */
+    public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices) {
+        requestFolderMessagesSet(folder, messageIndices, null);
     }
 
     /**
@@ -712,6 +772,24 @@ public abstract class AbstractMailStore {
                 e = new FolderMessagesEvent(this, folder, messages, flagsOnly);
             }
             ((FolderListener)listeners[i]).folderMessagesAvailable(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>FolderListener</tt>s that
+     * the UID-to-message index map for a folder has been loaded.
+     * 
+     * @param folder The folder which has available messages
+     * @param uidIndexMap The UID-to-index map for the folder's messages
+     */
+    protected void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
+        Object[] listeners = listenerList.getListeners(FolderListener.class);
+        FolderMessageIndexMapEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderMessageIndexMapEvent(this, folder, uidIndexMap);
+            }
+            ((FolderListener)listeners[i]).folderMessageIndexMapAvailable(e);
         }
     }
 

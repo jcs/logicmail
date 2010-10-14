@@ -35,6 +35,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import net.rim.device.api.util.Comparator;
+
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
@@ -68,6 +70,13 @@ public class LocalMessageToken implements MessageToken {
     	this.messageUid = messageUid;
     }
 
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#getComparator()
+     */
+    public Comparator getComparator() {
+        throw new UnsupportedOperationException();
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MessageToken#containedWithin(org.logicprobe.LogicMail.mail.FolderTreeItem)
      */
@@ -164,6 +173,13 @@ public class LocalMessageToken implements MessageToken {
 	public void updateToken(MessageToken messageToken) {
 	    // Local tokens are complete and only have immutable data
 	}
+	
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#updateMessageIndex(int)
+     */
+    public void updateMessageIndex(int index) {
+        // Local tokens do not contain index information
+    }
 
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.mail.MessageToken#isLoadable()

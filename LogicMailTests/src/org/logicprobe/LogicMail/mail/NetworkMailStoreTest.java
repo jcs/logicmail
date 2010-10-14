@@ -93,8 +93,8 @@ public class NetworkMailStoreTest extends TestCase {
 			public void folderStatusChanged(FolderEvent e) {
 				eventFolderStatusChanged = e;
 			}
-            public void folderExpunged(FolderExpungedEvent e) {
-            }
+            public void folderExpunged(FolderExpungedEvent e) { }
+            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) { }
     	});
     	
     	instance.addMessageListener(new MessageListener() {
@@ -414,8 +414,10 @@ public class NetworkMailStoreTest extends TestCase {
 		    }
 		    callback.folderMessageUpdate(null);
 	    }
-		public void getFolderMessages(MessageToken[] messageTokens, FolderMessageCallback callback, MailProgressHandler progressHandler)
+		public void getFolderMessages(MessageToken[] messageTokens, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
 				throws IOException, MailException { }
+		public void getFolderMessages(int[] messageIndices, FolderMessageCallback callback, MailProgressHandler progressHandler)
+		        throws IOException, MailException { }
 		public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
 				throws IOException,	MailException { }
 		public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException { return this.folderTree; }
