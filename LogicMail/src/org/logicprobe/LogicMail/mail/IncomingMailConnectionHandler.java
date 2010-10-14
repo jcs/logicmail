@@ -399,7 +399,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 new GetFolderMessageCallback(
                         REQUEST_FOLDER_MESSAGES_SET,
                         folder,
-                        getListener(), tag),
+                        getListener(),
+                        Boolean.FALSE, tag),
                         getProgressHandler(message));
     }
     
