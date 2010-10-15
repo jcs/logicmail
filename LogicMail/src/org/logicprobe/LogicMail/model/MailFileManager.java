@@ -435,15 +435,17 @@ public class MailFileManager {
 		Vector content = new Vector();
 		try {
 			fileConnection = (FileConnection)Connector.open(fileUrl);
-			DataInputStream input = fileConnection.openDataInputStream();
-			MessageNodeReader reader = new MessageNodeReader(input);
-			MessageToken tempToken = reader.read();
-			if(messageToken.equals(tempToken)) {
-				while(reader.isContentAvailable()) {
-					content.addElement(reader.getNextContent());
-				}
+			if(fileConnection.exists()) {
+    			DataInputStream input = fileConnection.openDataInputStream();
+    			MessageNodeReader reader = new MessageNodeReader(input);
+    			MessageToken tempToken = reader.read();
+    			if(messageToken.equals(tempToken)) {
+    				while(reader.isContentAvailable()) {
+    					content.addElement(reader.getNextContent());
+    				}
+    			}
+    			input.close();
 			}
-			input.close();
 			fileConnection.close();
 		} catch (Exception e) {
 			EventLogger.logEvent(AppInfo.GUID,
