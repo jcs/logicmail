@@ -142,6 +142,12 @@ public class ConnectionTest extends TestCase {
         actual = connection.receive();
         assertTrue("Single line LF", Arrays.equals(expected, actual));
         connection.close();        
+
+        connection = new Connection(new StubSocketConnection("Hello\n\nWorld\r\n".getBytes()));
+        expected = "Hello\n\nWorld".getBytes();
+        actual = connection.receive();
+        assertTrue("Single line with LFLF in middle", Arrays.equals(expected, actual));
+        connection.close();        
         
         connection = new Connection(new StubSocketConnection("Hello\r\nWorld\r\n".getBytes()));
         expected = "Hello".getBytes();

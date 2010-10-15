@@ -398,20 +398,37 @@ public class Connection {
 
     private static ConnectionResponseTester lineResponseTester = new ConnectionResponseTester() {
         private int trimCount;
+        private int lastLength = 0;
         
         public int checkForCompleteResponse(byte[] buf, int len) {
             trimCount = 0;
-            int p = Arrays.getIndex(buf, LF);
+            int p = StringArrays.indexOf(buf, LF, lastLength);
+            
             if(p != -1 && p < len) {
+                // Specific test for responses that use a double LF in
+                // the middle, to separate things that look like separate
+                // responses but really are not.
+                while(p != -1 && p + 1 < len && buf[p + 1] == LF) {
+                    if(p + 2 == len) {
+                        lastLength = len;
+                        return -1;
+                    }
+                    else {
+                        p = StringArrays.indexOf(buf, LF, p + 2);
+                    }
+                }
+                
                 if(p > 0 && buf[p - 1] == CR) {
                     trimCount = 2;
                 }
                 else {
                     trimCount = 1;
                 }
+                lastLength = 0;
                 return ++p;
             }
             else {
+                lastLength = len;
                 return -1;
             }
         }
