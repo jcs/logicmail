@@ -99,6 +99,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      */
     protected void handleRequest(int type, Object[] params, Object tag) throws IOException, MailException {
         switch(type) {
+        case REQUEST_DISCONNECT:
+            handleRequestDisconnect(tag);
+            break;
         case REQUEST_FOLDER_TREE:
             handleRequestFolderTree(tag);
             break;
@@ -280,6 +283,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 }
             }
         }
+    }
+
+    private void handleRequestDisconnect(Object tag) throws IOException, MailException {
+        throw new MailException("", true, REQUEST_DISCONNECT);
     }
 
     private void handleRequestFolderTree(Object tag) throws IOException, MailException {

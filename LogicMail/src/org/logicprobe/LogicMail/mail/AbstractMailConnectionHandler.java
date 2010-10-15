@@ -58,6 +58,8 @@ public abstract class AbstractMailConnectionHandler {
 	private boolean shutdownInProgress;
 	private Object[] requestInProgress;
 	
+    public static final int REQUEST_DISCONNECT = 1;
+    
 	// The various states of a mail connection
 	public static final int STATE_CLOSED   = 0;
 	public static final int STATE_OPENING  = 1;
@@ -552,8 +554,12 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param e Exception data.
 	 */
 	private void handleMailException(MailException e) {
-		EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(), EventLogger.ERROR);
-
+	    boolean disconnect = (e.getCause() == REQUEST_DISCONNECT);
+	    
+	    if(!disconnect) { 
+	        EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(), EventLogger.ERROR);
+	    }
+	    
 		if(e.isFatal()) {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
@@ -561,7 +567,9 @@ public abstract class AbstractMailConnectionHandler {
 				clearRequestQueue(e);
 			}
 		}
-		showError(e.getMessage());
+		if(!disconnect) {
+		    showError(e.getMessage());
+		}
 
         // Notify failure of the current request-in-progress, if applicable
         if(requestInProgress != null) {

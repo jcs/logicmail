@@ -44,7 +44,6 @@ public class NetworkAccountNode extends AccountNode {
     private AccountConfig accountConfig;
     private NetworkMailStoreServices networkMailStore;
     private AbstractMailSender mailSender;
-    private boolean shutdown = false;
 
     NetworkAccountNode(NetworkMailStoreServices mailStore) {
         super(mailStore);
@@ -121,15 +120,6 @@ public class NetworkAccountNode extends AccountNode {
         return identityConfig;
     }
     
-    void setStatus(int status) {
-        if (this.status != status) {
-            if ((this.status == STATUS_OFFLINE) && !shutdown) {
-                networkMailStore.restart();
-            }
-        }
-        super.setStatus(status);
-    }
-
     /**
      * Gets the mail sender associated with this account.
      *
@@ -252,10 +242,19 @@ public class NetworkAccountNode extends AccountNode {
         }
     }
     
+    /**
+     * Request that the account disconnect from the mail server.
+     *
+     * @param shutdown true, if being called as part of application shutdown
+     */
     public void requestDisconnect(boolean shutdown) {
         if (status == STATUS_ONLINE) {
-            networkMailStore.shutdown(false);
-            this.shutdown = shutdown;
+            if(shutdown) {
+                networkMailStore.shutdown(false);
+            }
+            else {
+                networkMailStore.disconnect();
+            }
         }
     }
     

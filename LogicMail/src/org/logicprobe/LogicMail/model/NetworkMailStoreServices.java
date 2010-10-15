@@ -57,6 +57,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
     AccountConfig getAccountConfig() {
         return mailStore.getAccountConfig();
     }
+
+    public void disconnect() {
+        mailStore.requestDisconnect();
+    }
     
     public void restart() {
         mailStore.restart();

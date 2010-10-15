@@ -140,6 +140,18 @@ public class NetworkMailStore extends AbstractMailStore {
 		return client.isConnected();
 	}
 
+    /**
+     * Requests that the mail store disconnect from the mail server.
+     * <p>
+     * Unlike the <code>shutdown(boolean)</code> method, this does not cause
+     * the connection handler thread to terminate.  As such, any subsequent
+     * request may cause it to reconnect.
+     * </p>
+     */
+    public void requestDisconnect() {
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_DISCONNECT, new Object[] { }, null);
+    }
+
 	public void requestFolderTree(MailStoreRequestCallback callback) {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_TREE, new Object[] { }, callback);
 	}
