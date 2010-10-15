@@ -152,11 +152,8 @@ class FolderRequestHandler {
                         }});
                 }
     
-                if(!cacheLoaded) {
-                    // Fetch messages stored in cache
-                    loadCachedFolderMessages();
-                    cacheLoaded = true;
-                }
+                // Fetch messages stored in cache
+                loadCachedFolderMessages();
     
                 // If a message index map was requested (POP), execution will
                 // resume in indexMapFetchXXXX().
@@ -177,7 +174,13 @@ class FolderRequestHandler {
                 orphanedMessageSet.put(messages[i].getMessageToken().getMessageUid(), messages[i]);
             }
             
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, false, false);
+            // If the cached messages have already been loaded, then we can
+            // skip notifying mail store listeners.  However, we still have to
+            // add them to the orphan set, as seen above.
+            if(!cacheLoaded) {
+                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, false, false);
+                cacheLoaded = true;
+            }
         }
     }    
     

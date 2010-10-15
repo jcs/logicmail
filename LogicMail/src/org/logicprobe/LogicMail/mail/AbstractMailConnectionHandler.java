@@ -309,7 +309,7 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	protected void handleRequestFailed(int type, Object[] params, Object tag, Throwable exception) {
         if(this.listener != null) {
-            listener.mailConnectionRequestFailed(type, params, exception);
+            listener.mailConnectionRequestFailed(type, tag, exception);
         }
 	}
 	
