@@ -174,8 +174,8 @@ public class BorderedFieldManager extends Manager {
         for(int i=0; i<count; i++) {
     		y += 2;
             Field field = this.getField(i);
-            this.setPositionChild(field, borderMargin, y);
             this.layoutChild(field, maxWidth - (borderMargin * 2), getPreferredHeightOfChild(field));
+            this.setPositionChild(field, borderMargin, y);
             y += field.getHeight();
         }
         int height = getPreferredHeight();

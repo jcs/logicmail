@@ -37,6 +37,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Manager;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
@@ -46,7 +47,6 @@ import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TextField;
-import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.ui.text.TextFilter;
 
 import org.logicprobe.LogicMail.LogicMailResource;
@@ -70,7 +70,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BorderedFieldManager headerFieldManager;
     private BasicEditField accountNameField;
     private ObjectChoiceField pageField;
-    private BorderedFieldManager contentFieldManager;
+    private Manager contentFieldManager;
 
     // Basic settings fields
     private LabelField incomingServerLabelField;
@@ -217,8 +217,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         pageFieldManagers[2] = initFieldsAdvanced();
 
         // Container for the active settings page
-        contentFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
-        contentFieldManager.add(pageFieldManagers[0]);
+        contentFieldManager = pageFieldManagers[0];
 
         headerFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NONE);
         headerFieldManager.add(accountNameField);
@@ -233,7 +232,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private Manager initFieldsBasic() {
         Font boldFont = getFont().derive(Font.BOLD);
 
-        Manager manager = new VerticalFieldManager();
+        Manager manager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
         incomingServerLabelField = new LabelField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCOMING_SERVER),
                 Field.NON_FOCUSABLE);
@@ -287,7 +286,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * Initializes the UI fields for the folder settings page.
      */
     private Manager initFieldsFolder() {
-        Manager manager = new VerticalFieldManager();
+        Manager manager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
         selectedSentFolder = accountConfig.getSentMailbox();
         selectedDraftFolder = accountConfig.getDraftMailbox();
 
@@ -300,6 +299,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(sentFolderChoiceButtonLabel);
         manager.add(draftFolderChoiceLabel);
         manager.add(draftFolderChoiceButtonLabel);
+        manager.add(new LabelField());
+        
         return manager;
     }
 
@@ -307,7 +308,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * Initializes the UI fields for the advanced settings page.
      */
     private Manager initFieldsAdvanced() {
-        Manager manager = new VerticalFieldManager();
+        Manager manager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
         
         initialFolderMessagesChoiceField = new NumericChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_MESSAGES_TO_LOAD),
@@ -393,6 +394,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 
             manager.add(popMaxLinesEditField);
         }
+        manager.add(new LabelField());
+        
         return manager;
     }
 
@@ -416,11 +419,15 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             }
         }
         else if(field == pageField) {
-            int index = pageField.getSelectedIndex();
-            if(contentFieldManager.getField(0) != pageFieldManagers[index]) {
-                contentFieldManager.deleteAll();
-                contentFieldManager.add(pageFieldManagers[index]);
-            }
+            final int index = pageField.getSelectedIndex();
+            UiApplication.getUiApplication().invokeLater(new Runnable() {
+                public void run() {
+                    if(contentFieldManager != pageFieldManagers[index]) {
+                        replace(contentFieldManager, pageFieldManagers[index]);
+                        contentFieldManager = pageFieldManagers[index];
+                    }
+                }
+            });
         }
         else if(field == networkTransportChoiceField) {
             if(networkTransportChoiceField.getSelectedIndex() == 0) {
