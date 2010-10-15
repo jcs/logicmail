@@ -71,16 +71,16 @@ public abstract class MailStoreServices {
         });
         mailStore.addFolderListener(new FolderListener() {
             public void folderMessagesAvailable(FolderMessagesEvent e) {
-                fireFolderMessagesAvailable(e.getFolder(), e.getMessages(), e.isFlagsOnly());
+                handleFolderMessagesAvailable(e.getFolder(), e.getMessages(), e.isFlagsOnly());
             }
             public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) {
-                fireFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
+                handleFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
             }
             public void folderStatusChanged(FolderEvent e) {
-                fireFolderStatusChanged(e.getFolder());
+                handleFolderStatusChanged(e.getFolder());
             }
             public void folderExpunged(FolderExpungedEvent e) {
-                fireFolderExpunged(e.getFolder(), e.getExpungedIndices());
+                handleFolderExpunged(e.getFolder(), e.getExpungedIndices());
             }
         });
         mailStore.addMessageListener(new MessageListener() {
@@ -514,7 +514,7 @@ public abstract class MailStoreServices {
      * 
      * @param root The root node of the updated folder tree
      */
-    protected void fireFolderTreeUpdated(FolderTreeItem root) {
+    protected final void fireFolderTreeUpdated(FolderTreeItem root) {
         Object[] listeners = listenerList.getListeners(MailStoreListener.class);
         FolderEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -525,13 +525,17 @@ public abstract class MailStoreServices {
         }
     }
 
+    protected void handleFolderStatusChanged(FolderTreeItem root) {
+        fireFolderStatusChanged(root);
+    }
+    
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the status of a folder has changed.
      * 
      * @param root The root node of the updated folder tree
      */
-    protected void fireFolderStatusChanged(FolderTreeItem root) {
+    protected final void fireFolderStatusChanged(FolderTreeItem root) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -542,6 +546,10 @@ public abstract class MailStoreServices {
         }
     }
 
+    protected void handleFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
+        fireFolderMessagesAvailable(folder, messages, flagsOnly);
+    }
+    
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the message list for a folder has been loaded.
@@ -550,7 +558,7 @@ public abstract class MailStoreServices {
      * @param messages The messages that are now available
      * @param flagsOnly True if the message data only includes flags
      */
-    protected void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
+    protected final void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly) {
         fireFolderMessagesAvailable(folder, messages, flagsOnly, true);
     }
     
@@ -563,7 +571,7 @@ public abstract class MailStoreServices {
      * @param flagsOnly True if the message data only includes flags
      * @param server True if the message data came from the mail store
      */
-    protected void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly, boolean server) {
+    protected final void fireFolderMessagesAvailable(FolderTreeItem folder, FolderMessage[] messages, boolean flagsOnly, boolean server) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderMessagesEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -574,6 +582,10 @@ public abstract class MailStoreServices {
         }
     }
     
+    protected void handleFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
+        fireFolderMessageIndexMapAvailable(folder, uidIndexMap);
+    }
+    
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the UID-to-index map for a folder has been loaded.
@@ -581,7 +593,7 @@ public abstract class MailStoreServices {
      * @param folder The folder which has available messages
      * @param uidIndexMap The UID-to-index map for the folder's messages
      */
-    protected void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
+    protected final void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderMessageIndexMapEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -592,6 +604,10 @@ public abstract class MailStoreServices {
         }
     }
 
+    protected void handleFolderExpunged(FolderTreeItem folder, int[] indices) {
+        fireFolderExpunged(folder, indices);
+    }
+    
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the folder has been expunged.
@@ -599,7 +615,7 @@ public abstract class MailStoreServices {
      * @param indices an array of the indices of all expunged messages, or null if not provided
      * @param folder The folder which has had its deleted messages expunged
      */
-    protected void fireFolderExpunged(FolderTreeItem folder, int[] indices) {
+    protected final void fireFolderExpunged(FolderTreeItem folder, int[] indices) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -617,7 +633,7 @@ public abstract class MailStoreServices {
      * @param tokens an array of the tokens of all expunged messages, or null if not provided
      * @param folder The folder which has had its deleted messages expunged
      */
-    protected void fireFolderExpunged(FolderTreeItem folder, MessageToken[] tokens) {
+    protected final void fireFolderExpunged(FolderTreeItem folder, MessageToken[] tokens) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -637,7 +653,7 @@ public abstract class MailStoreServices {
      * @param messageContent The message content
      * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
+    protected final void fireMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -655,7 +671,7 @@ public abstract class MailStoreServices {
      * @param messageToken The token identifying the message
      * @param messageContent The message content
      */
-    protected void fireMessageContentAvailable(MessageToken messageToken, MimeMessageContent[] messageContent) {
+    protected final void fireMessageContentAvailable(MessageToken messageToken, MimeMessageContent[] messageContent) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -673,7 +689,7 @@ public abstract class MailStoreServices {
      * @param messageToken The token identifying the message
      * @param messageFlags The updated message flags
      */
-    protected void fireMessageFlagsChanged(MessageToken messageToken, MessageFlags messageFlags) {
+    protected final void fireMessageFlagsChanged(MessageToken messageToken, MessageFlags messageFlags) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -691,7 +707,7 @@ public abstract class MailStoreServices {
      * @param messageToken The token identifying the message
      * @param messageFlags The updated message flags
      */
-    protected void fireMessageDeleted(MessageToken messageToken, MessageFlags messageFlags) {
+    protected final void fireMessageDeleted(MessageToken messageToken, MessageFlags messageFlags) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
@@ -709,7 +725,7 @@ public abstract class MailStoreServices {
      * @param messageToken The token identifying the message
      * @param messageFlags The updated message flags
      */
-    protected void fireMessageUndeleted(MessageToken messageToken, MessageFlags messageFlags) {
+    protected final void fireMessageUndeleted(MessageToken messageToken, MessageFlags messageFlags) {
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
