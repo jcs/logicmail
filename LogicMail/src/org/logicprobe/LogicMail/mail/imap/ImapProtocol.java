@@ -1344,13 +1344,16 @@ public class ImapProtocol {
 
         String[] replyText = execute(NOOP, null, null);
 
-        if ((replyText == null) || (replyText.length < 1)) {
+        if (replyText == null) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("Unable to read NOOP response").getBytes(), EventLogger.WARNING);
 
             return false;
         }
-
+        else if(replyText.length < 1) {
+            return false;
+        }
+        
         for (int i = 0; i < replyText.length; i++) {
             if (replyText[i].startsWith(ASTERISK) &&
                     replyText[i].toLowerCase().endsWith("recent")) {
