@@ -270,7 +270,7 @@ public abstract class AbstractMailStore {
      * @param callback The callback to receive success or failure notifications about the request
      */
     public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback) {
-        requestFolderMessagesSet(folder, messageTokens, false, null);
+        requestFolderMessagesSet(folder, messageTokens, false, callback);
     }
 
     /**
