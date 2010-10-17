@@ -165,13 +165,16 @@ public class SmtpClient implements OutgoingMailClient {
     }
 
     public void close() throws IOException, MailException {
-        try {
-            smtpProtocol.executeQuit();
-        } catch (Exception exp) {
+        openStarted = false;
+        if(connection != null) {
+            if(connection.isConnected()) {
+                try {
+                    smtpProtocol.executeQuit();
+                } catch (Exception exp) { }
+            }
+            connection.close();
+            connection = null;
         }
-
-        connection.close();
-        connection = null;
     }
 
     public ConnectionConfig getConnectionConfig() {

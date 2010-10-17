@@ -199,6 +199,7 @@ public class PopClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.MailClient#close()
      */
     public void close() throws IOException, MailException {
+        openStarted = false;
         if(connection != null) {
             if(connection.isConnected()) {
                 try {
