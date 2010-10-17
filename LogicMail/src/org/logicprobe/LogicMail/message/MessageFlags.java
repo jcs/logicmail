@@ -37,14 +37,18 @@ package org.logicprobe.LogicMail.message;
  * they sometimes need to be represented independently.
  */
 public class MessageFlags {
-    private boolean seen;
-    private boolean answered;
-    private boolean flagged;
-    private boolean deleted;
-    private boolean draft;
-    private boolean recent;
-    private boolean forwarded;
-    private boolean junk;
+    public static interface Flag {
+        public static final int SEEN      = 1;
+        public static final int ANSWERED  = 2;
+        public static final int FLAGGED   = 4;
+        public static final int DELETED   = 8;
+        public static final int DRAFT     = 16;
+        public static final int RECENT    = 32;
+        public static final int JUNK      = 64;
+        public static final int FORWARDED = 128;
+    }
+    
+    private int flags;
     
 	public MessageFlags() {
 	}
@@ -58,125 +62,184 @@ public class MessageFlags {
 		    boolean recent,
 		    boolean forwarded,
 		    boolean junk) {
-		this.seen = seen;
-		this.answered = answered;
-		this.flagged = flagged;
-		this.deleted = deleted;
-		this.draft = draft;
-		this.recent = recent;
-		this.forwarded = forwarded;
-		this.junk = junk;
+	    
+        if(seen) { flags |= Flag.SEEN; }
+        if(answered) { flags |= Flag.ANSWERED; }
+        if(flagged) { flags |= Flag.FLAGGED; }
+        if(deleted) { flags |= Flag.DELETED; }
+        if(draft) { flags |= Flag.DRAFT; }
+        if(recent) { flags |= Flag.RECENT; }
+        if(forwarded) { flags |= Flag.FORWARDED; }
+        if(junk) { flags |= Flag.JUNK; }
 	}
+	
+	/**
+	 * Gets the message flags as a bit-field value.
+	 *
+	 * @return the flags as described by {@link Flag}
+	 */
+	public int getFlags() {
+        return flags;
+    }
+	
+	/**
+	 * Sets the message flags as a bit-field value.
+	 *
+	 * @param flags the new flags to set
+	 */
+	public void setFlags(int flags) {
+        this.flags = flags;
+    }
 	
     /**
      * Find out whether this message has been previously viewed
      */
     public boolean isSeen() {
-        return seen;
+        return (flags & Flag.SEEN) != 0;
     }
 
     /**
      * Set the flag indicating whether this message has been previously viewed
      */
     public void setSeen(boolean seen) {
-        this.seen = seen;
+        if(seen) {
+            this.flags |= Flag.SEEN;
+        }
+        else {
+            this.flags &= ~Flag.SEEN;
+        }
     }
 
     /**
      * Find out whether this message has been replied to
      */
     public boolean isAnswered() {
-        return answered;
+        return (flags & Flag.ANSWERED) != 0;
     }
 
     /**
      * Set the flag indicating whether this message has been replied to
      */
     public void setAnswered(boolean answered) {
-        this.answered = answered;
+        if(answered) {
+            this.flags |= Flag.ANSWERED;
+        }
+        else {
+            this.flags &= ~Flag.ANSWERED;
+        }
     }
 
     /**
      * Find out whether this message has been flagged
      */
     public boolean isFlagged() {
-        return flagged;
+        return (flags & Flag.FLAGGED) != 0;
     }
 
     /**
      * Set the flag indicating whether this message has been flagged
      */
     public void setFlagged(boolean flagged) {
-        this.flagged = flagged;
+        if(flagged) {
+            this.flags |= Flag.FLAGGED;
+        }
+        else {
+            this.flags &= ~Flag.FLAGGED;
+        }
     }
 
     /**
      * Find out whether this message has been marked as deleted
      */
     public boolean isDeleted() {
-        return deleted;
+        return (flags & Flag.DELETED) != 0;
     }
 
     /**
      * Set the flag indicating whether this message has been marked as deleted
      */
     public void setDeleted(boolean deleted) {
-        this.deleted = deleted;
+        if(deleted) {
+            this.flags |= Flag.DELETED;
+        }
+        else {
+            this.flags &= ~Flag.DELETED;
+        }
     }
 
     /**
      * Find out whether this message is a draft
      */
     public boolean isDraft() {
-        return draft;
+        return (flags & Flag.DRAFT) != 0;
     }
 
     /**
      * Set the flag indicating whether this message is a draft
      */
     public void setDraft(boolean draft) {
-        this.draft = draft;
+        if(draft) {
+            this.flags |= Flag.DRAFT;
+        }
+        else {
+            this.flags &= ~Flag.DRAFT;
+        }
     }
 
     /**
      * Find out whether this message has recently arrived
      */
     public boolean isRecent() {
-        return recent;
+        return (flags & Flag.RECENT) != 0;
     }
 
     /**
      * Set the flag indicating whether this message has recently arrived
      */
     public void setRecent(boolean recent) {
-        this.recent = recent;
+        if(recent) {
+            this.flags |= Flag.RECENT;
+        }
+        else {
+            this.flags &= ~Flag.RECENT;
+        }
     }
     
     /**
      * Find out whether this message has been forwarded
      */
     public boolean isForwarded() {
-        return forwarded;
+        return (flags & Flag.FORWARDED) != 0;
     }
     
     /**
      * Set the flag indicating whether this message has been forwarded
      */
     public void setForwarded(boolean forwarded) {
-        this.forwarded = forwarded;
+        if(forwarded) {
+            this.flags |= Flag.FORWARDED;
+        }
+        else {
+            this.flags &= ~Flag.FORWARDED;
+        }
     }
     
     /**
      * Find out whether this message has been flagged as junk
      */
     public boolean isJunk() {
-        return junk;
+        return (flags & Flag.JUNK) != 0;
     }
 
     /**
      * Set the flag indicating whether this message has been flagged as junk
      */
     public void setJunk(boolean junk) {
-        this.junk = junk;
+        if(junk) {
+            this.flags |= Flag.JUNK;
+        }
+        else {
+            this.flags &= ~Flag.JUNK;
+        }
     }
 }

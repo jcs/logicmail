@@ -1367,16 +1367,9 @@ public class MessageNode implements Node {
      * @return Bit-field message flags.
      */
     static int convertMessageFlags(MessageFlags messageFlags) {
-		int flags = 0;
-		if(messageFlags.isSeen()) { flags |= Flag.SEEN; }
-		if(messageFlags.isAnswered()) { flags |= Flag.ANSWERED; }
-		if(messageFlags.isFlagged()) { flags |= Flag.FLAGGED; }
-		if(messageFlags.isDeleted()) { flags |= Flag.DELETED; }
-		if(messageFlags.isDraft()) { flags |= Flag.DRAFT; }
-		if(messageFlags.isRecent()) { flags |= Flag.RECENT; }
-        if(messageFlags.isForwarded()) { flags |= Flag.FORWARDED; }
-		if(messageFlags.isJunk()) { flags |= Flag.JUNK; }
-		return flags;
+        // These two message flag representations are now identical in format.
+        // This fake conversion step remains to minimize code impact.
+		return messageFlags.getFlags();
 	}
 
     /**
@@ -1388,15 +1381,10 @@ public class MessageNode implements Node {
      * @return Message flags object.
      */
 	static MessageFlags createMessageFlags(int flags) {
+        // These two message flag representations are now identical in format.
+        // This fake conversion step remains to minimize code impact.
 		MessageFlags messageFlags = new MessageFlags();
-		messageFlags.setSeen((flags & Flag.SEEN) != 0);
-		messageFlags.setAnswered((flags & Flag.ANSWERED) != 0);
-		messageFlags.setFlagged((flags & Flag.FLAGGED) != 0);
-		messageFlags.setDeleted((flags & Flag.DELETED) != 0);
-		messageFlags.setDraft((flags & Flag.DRAFT) != 0);
-		messageFlags.setRecent((flags & Flag.RECENT) != 0);
-        messageFlags.setForwarded((flags & Flag.FORWARDED) != 0);
-		messageFlags.setJunk((flags & Flag.JUNK) != 0);
+		messageFlags.setFlags(flags);
 		return messageFlags;
 	}
 }

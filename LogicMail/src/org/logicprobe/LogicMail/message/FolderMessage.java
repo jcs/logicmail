@@ -294,15 +294,8 @@ public class FolderMessage implements Serializable {
 		
 		output.writeInt(index);
 		output.writeInt(uid);
+        output.writeInt(messageFlags.getFlags());
 		envelope.serialize(output);
-		output.writeBoolean(messageFlags.isSeen());
-		output.writeBoolean(messageFlags.isAnswered());
-		output.writeBoolean(messageFlags.isFlagged());
-		output.writeBoolean(messageFlags.isDeleted());
-		output.writeBoolean(messageFlags.isDraft());
-		output.writeBoolean(messageFlags.isRecent());
-        output.writeBoolean(messageFlags.isForwarded());
-		output.writeBoolean(messageFlags.isJunk());
 		
 		if(structure == null) {
 			output.writeBoolean(false);
@@ -323,15 +316,8 @@ public class FolderMessage implements Serializable {
 		
 		index = input.readInt();
 		uid = input.readInt();
+        messageFlags.setFlags(input.readInt());
 		envelope.deserialize(input);
-		messageFlags.setSeen(input.readBoolean());
-		messageFlags.setAnswered(input.readBoolean());
-		messageFlags.setFlagged(input.readBoolean());
-		messageFlags.setDeleted(input.readBoolean());
-		messageFlags.setDraft(input.readBoolean());
-		messageFlags.setRecent(input.readBoolean());
-        messageFlags.setForwarded(input.readBoolean());
-		messageFlags.setJunk(input.readBoolean());
 		
 		boolean hasStructure = input.readBoolean();
 		if(hasStructure) {
