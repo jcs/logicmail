@@ -152,8 +152,10 @@ class FolderRequestHandler {
                         }});
                 }
     
-                // Fetch messages stored in cache
-                loadCachedFolderMessages();
+                if(!initialRefreshComplete) {
+                    // Fetch messages stored in cache
+                    loadCachedFolderMessages();
+                }
     
                 // If a message index map was requested (POP), execution will
                 // resume in indexMapFetchXXXX().
@@ -452,11 +454,8 @@ class FolderRequestHandler {
             mailStore.requestFolderMessagesSet(folderTreeItem, fetchArray, finalFetchCallback);
         }
         else {
-            refreshInProgress.set(false);
-            folderMessageCache.commit();
-
-            // Notify the end of the operation
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
+            initialRefreshComplete = true;
+            finalFetchComplete();
         }
     }
     
