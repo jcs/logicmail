@@ -1319,7 +1319,9 @@ public class MessageNode implements Node {
 	 * @param l The <tt>MessageNodeListener</tt> to be added.
 	 */
     public void addMessageNodeListener(MessageNodeListener l) {
-        listenerList.add(MessageNodeListener.class, l);
+        synchronized(listenerList) {
+            listenerList.add(MessageNodeListener.class, l);
+        }
     }
 
     /**
@@ -1328,7 +1330,9 @@ public class MessageNode implements Node {
      * @param l The <tt>MessageNodeListener</tt> to be removed.
      */
     public void removeMessageNodeListener(MessageNodeListener l) {
-        listenerList.remove(MessageNodeListener.class, l);
+        synchronized(listenerList) {
+            listenerList.remove(MessageNodeListener.class, l);
+        }
     }
     
     /**
@@ -1339,7 +1343,9 @@ public class MessageNode implements Node {
      * or an empty array if no listeners have been added.
      */
     public MessageNodeListener[] getMessageNodeListeners() {
-        return (MessageNodeListener[])listenerList.getListeners(MessageNodeListener.class);
+        synchronized(listenerList) {
+            return (MessageNodeListener[])listenerList.getListeners(MessageNodeListener.class);
+        }
     }
     
     /**
@@ -1349,13 +1355,15 @@ public class MessageNode implements Node {
      * @param type The type of the status change.
      */
     protected void fireMessageStatusChanged(int type) {
-        Object[] listeners = listenerList.getListeners(MessageNodeListener.class);
-        MessageNodeEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MessageNodeEvent(this, type);
+        synchronized(listenerList) {
+            Object[] listeners = listenerList.getListeners(MessageNodeListener.class);
+            MessageNodeEvent e = null;
+            for(int i=0; i<listeners.length; i++) {
+                if(e == null) {
+                    e = new MessageNodeEvent(this, type);
+                }
+                ((MessageNodeListener)listeners[i]).messageStatusChanged(e);
             }
-            ((MessageNodeListener)listeners[i]).messageStatusChanged(e);
         }
     }
 

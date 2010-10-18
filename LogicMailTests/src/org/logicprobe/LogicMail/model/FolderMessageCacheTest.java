@@ -218,10 +218,6 @@ public class FolderMessageCacheTest extends TestCase {
         assertLacks("Remove two", message2b, messages);
         
         instance.removeFolderMessage(folder1, message1b);
-        messages = instance.getFolderMessages(folder1);
-        assertLacks("Remove whole folder", message1a, messages);
-        assertLacks("Remove whole folder", message1b, messages);
-        
         FolderTreeItem folders[] = instance.getFolders();
         assertLacks("Remove whole folder", folder1, folders);
         assertContains("Remove whole folder", folder2, folders);

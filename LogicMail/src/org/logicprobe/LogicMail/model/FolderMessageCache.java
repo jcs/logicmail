@@ -47,10 +47,10 @@ import org.logicprobe.LogicMail.message.FolderMessage;
  */
 public class FolderMessageCache {
     private final long cacheObjectKey;
-    private final Hashtable cachedFolderSet = new Hashtable();
-    private final Hashtable folderMessageListTable = new Hashtable();
-    private final Hashtable folderMessageMapTable = new Hashtable();
-    private final Hashtable updatedMessageListSet = new Hashtable();
+    
+    /** Map of FolderTreeItem -> CacheEntry */
+    private final Hashtable cachedFolderMap = new Hashtable();
+    
     private final Object lockObj = new Object();
     private final PersistentObject persistentObject;
     private FolderMessageCacheObject cacheObject;
@@ -87,9 +87,9 @@ public class FolderMessageCache {
     
     public FolderTreeItem[] getFolders() {
         synchronized(lockObj) {
-            int size = cachedFolderSet.size();
+            int size = cachedFolderMap.size();
             FolderTreeItem[] folders = new FolderTreeItem[size];
-            Enumeration e = cachedFolderSet.keys();
+            Enumeration e = cachedFolderMap.keys();
             for (int i = 0; i < size; i++) {
                 folders[i] = (FolderTreeItem)e.nextElement();
             }
@@ -100,64 +100,28 @@ public class FolderMessageCache {
     public FolderMessage[] getFolderMessages(FolderTreeItem folder) {
         FolderMessage[] result;
         synchronized(lockObj) {
-            checkAndLoadFolderCache(folder);
-            BigVector messageList = (BigVector)folderMessageListTable.get(folder);
-            if(messageList != null) {
-                int size = messageList.size();
-                result = new FolderMessage[size];
-                messageList.copyInto(0, size, result, 0);
-            }
-            else {
-                result = new FolderMessage[0];
-            }
+            CacheEntry cacheEntry = checkAndLoadFolderCache(folder);
+            result = cacheEntry.getFolderMessages();
         }
         return result;
     }
     
     public void addFolderMessage(FolderTreeItem folder, FolderMessage message) {
         synchronized(lockObj) {
-            checkAndLoadFolderCache(folder);
-            BigVector messageList;
-            IntHashtable messageMap;
-            boolean newFolder;
-            if(folderMessageListTable.containsKey(folder)) {
-                messageList = (BigVector)folderMessageListTable.get(folder);
-                messageMap = (IntHashtable)folderMessageMapTable.get(folder);
-                newFolder = false;
-            }
-            else {
-                messageList = new BigVector();
-                folderMessageListTable.put(folder, messageList);
-                messageMap = new IntHashtable();
-                folderMessageMapTable.put(folder, messageMap);
-                newFolder = true;
-            }
-            
-            if(!messageMap.containsKey(message.getUid())) {
-                messageList.insertElement(FolderMessage.getComparator(), message);
-                messageMap.put(message.getUid(), message);
-                
+            CacheEntry cacheEntry = checkAndLoadFolderCache(folder);
+            if(cacheEntry.addFolderMessage(message)) {
                 cacheObject.addFolderMessage(folder, message);
-                if(newFolder) {
-                    cachedFolderSet.put(folder, Boolean.TRUE);
-                }
             }
         }
     }
     
     public void removeFolderMessage(FolderTreeItem folder, FolderMessage message) {
         synchronized(lockObj) {
-            checkAndLoadFolderCache(folder);
-            if(folderMessageListTable.containsKey(folder)) {
-                BigVector messageList = (BigVector)folderMessageListTable.get(folder);
-                IntHashtable messageMap = (IntHashtable)folderMessageMapTable.get(folder);
-                messageList.removeElement(FolderMessage.getComparator(), message);
-                messageMap.remove(message.getUid());
-                
-                if(messageList.isEmpty()) {
+            CacheEntry cacheEntry = checkAndLoadFolderCache(folder);
+            if(cacheEntry.removeFolderMessage(message)) {
+                if(cacheEntry.isEmpty()) {
                     removeFolder(folder);
                     cacheObject.removeFolder(folder);
-                    cachedFolderSet.remove(folder);
                 }
                 else {
                     cacheObject.removeFolderMessage(folder, message);
@@ -167,55 +131,48 @@ public class FolderMessageCache {
     }
     
     public boolean updateFolderMessage(FolderTreeItem folder, FolderMessage message) {
-        boolean updated = false;
         synchronized(lockObj) {
-            checkAndLoadFolderCache(folder);
-            if(folderMessageListTable.containsKey(folder)) {
-                IntHashtable messageMap = (IntHashtable)folderMessageMapTable.get(folder);
-                FolderMessage existingMessage = (FolderMessage)messageMap.get(message.getUid());
-                if(existingMessage != null) {
-                    existingMessage.setIndex(message.getIndex());
-                    existingMessage.setFlags(message.getFlags());
-                    
-                    cacheObject.updateFolderMessage(folder, existingMessage);
-                    
-                    updatedMessageListSet.put(folderMessageListTable.get(folder), Boolean.TRUE);
-                    updated = true;
-                }
+            CacheEntry cacheEntry = checkAndLoadFolderCache(folder);
+            FolderMessage updatedMessage = cacheEntry.updateFolderMessage(message);
+            if(updatedMessage != null) {
+                cacheObject.updateFolderMessage(folder, updatedMessage);
+                return true;
+            }
+            else {
+                return false;
             }
         }
-        return updated;
     }
     
     public void removeFolder(FolderTreeItem folder) {
         synchronized(lockObj) {
-            folderMessageListTable.remove(folder);
-            folderMessageMapTable.remove(folder);
             cacheObject.removeFolder(folder);
-            cachedFolderSet.remove(folder);
+            cachedFolderMap.remove(folder);
         }
     }
-    
     
     /**
      * Check to see if the cache for a folder is available, and load if
      * necessary.
      *
      * @param folder the folder to check the cache for
+     * @return the cached data for the folder
      */
-    private void checkAndLoadFolderCache(FolderTreeItem folder) {
-        if(!folderMessageListTable.containsKey(folder) && cachedFolderSet.containsKey(folder)) {
-            BigVector messageList = new BigVector();
-            folderMessageListTable.put(folder, messageList);
-            IntHashtable messageMap = new IntHashtable();
-            folderMessageMapTable.put(folder, messageMap);
-            
+    private CacheEntry checkAndLoadFolderCache(FolderTreeItem folder) {
+        CacheEntry cacheEntry = (CacheEntry)cachedFolderMap.get(folder);
+        if(cacheEntry == null) {
+            cacheEntry = new CacheEntry();
+            cacheEntry.setLoaded(true);
+            cachedFolderMap.put(folder, cacheEntry);
+        }
+        else if(!cacheEntry.isLoaded()) {
             FolderMessage[] messages = cacheObject.getFolderMessages(folder);
             for(int i=0; i<messages.length; i++) {
-                messageList.insertElement(FolderMessage.getComparator(), messages[i]);
-                messageMap.put(messages[i].getUid(), messages[i]);
+                cacheEntry.addFolderMessage(messages[i]);
             }
+            cacheEntry.setLoaded(true);
         }
+        return cacheEntry;
     }
     
     /**
@@ -226,7 +183,7 @@ public class FolderMessageCache {
         synchronized(lockObj) {
             FolderTreeItem[] folders = cacheObject.getFolders();
             for(int i=0; i<folders.length; i++) {
-                cachedFolderSet.put(folders[i], Boolean.TRUE);
+                cachedFolderMap.put(folders[i], new CacheEntry());
             }
         }
     }
@@ -238,11 +195,10 @@ public class FolderMessageCache {
     public void commit() {
         synchronized(lockObj) {
             // Resort any message lists containing updated messages
-            Enumeration e = updatedMessageListSet.keys();
+            Enumeration e = cachedFolderMap.elements();
             while(e.hasMoreElements()) {
-                ((BigVector)e.nextElement()).sort(FolderMessage.getComparator());
+                ((CacheEntry)e.nextElement()).sortIfNecessary();
             }
-            updatedMessageListSet.clear();
             
             persistentObject.commit();
         }
@@ -255,9 +211,7 @@ public class FolderMessageCache {
      */
     public void clear() {
         synchronized(lockObj) {
-            cachedFolderSet.clear();
-            folderMessageListTable.clear();
-            folderMessageMapTable.clear();
+            cachedFolderMap.clear();
             cacheObject.clear();
             persistentObject.commit();
         }
@@ -271,10 +225,75 @@ public class FolderMessageCache {
      */
     public void destroy() {
         synchronized(lockObj) {
-            cachedFolderSet.clear();
-            folderMessageListTable.clear();
-            folderMessageMapTable.clear();
+            cachedFolderMap.clear();
             PersistentStore.destroyPersistentObject(cacheObjectKey);
+        }
+    }
+    
+    private static class CacheEntry {
+        private boolean loaded;
+        private boolean messagesUpdated;
+        private final BigVector messageList = new BigVector();
+        private final IntHashtable messageMap = new IntHashtable();
+        
+        public void setLoaded(boolean loaded) {
+            this.loaded = loaded;
+        }
+
+        public boolean isLoaded() {
+            return loaded;
+        }
+        
+        public FolderMessage[] getFolderMessages() {
+            int size = messageList.size();
+            FolderMessage[] result = new FolderMessage[size];
+            messageList.copyInto(0, size, result, 0);
+            return result;
+        }
+        
+        public boolean addFolderMessage(FolderMessage message) {
+            if(!messageMap.containsKey(message.getUid())) {
+                messageList.insertElement(FolderMessage.getComparator(), message);
+                messageMap.put(message.getUid(), message);
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        
+        public boolean removeFolderMessage(FolderMessage message) {
+            if(messageList.removeElement(FolderMessage.getComparator(), message)) {
+                messageMap.remove(message.getUid());
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        
+        public FolderMessage updateFolderMessage(FolderMessage message) {
+            FolderMessage existingMessage = (FolderMessage)messageMap.get(message.getUid());
+            if(existingMessage != null) {
+                existingMessage.setIndex(message.getIndex());
+                existingMessage.setFlags(message.getFlags());
+                messagesUpdated = true;
+                return existingMessage;
+            }
+            else {
+                return null;
+            }
+        }
+        
+        public void sortIfNecessary() {
+            if(messagesUpdated) {
+                messageList.sort(FolderMessage.getComparator());
+                messagesUpdated = false;
+            }
+        }
+        
+        public boolean isEmpty() {
+            return messageList.isEmpty();
         }
     }
 }
