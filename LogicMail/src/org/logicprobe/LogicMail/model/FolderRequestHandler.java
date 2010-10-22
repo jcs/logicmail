@@ -41,6 +41,7 @@ import net.rim.device.api.util.IntVector;
 import net.rim.device.api.util.SimpleSortingIntVector;
 import net.rim.device.api.util.ToIntHashtable;
 
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -167,6 +168,7 @@ class FolderRequestHandler {
     }
 
     private void loadCachedFolderMessages() {
+        boolean dispOrder = MailSettings.getInstance().getGlobalConfig().getDispOrder();
         FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
         if(messages.length > 0) {
             // Add all the messages that have been loaded from the
@@ -180,7 +182,26 @@ class FolderRequestHandler {
             // skip notifying mail store listeners.  However, we still have to
             // add them to the orphan set, as seen above.
             if(!cacheLoaded) {
-                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, false, false);
+                if(dispOrder) {
+                    for(int i=0; i<messages.length; i+=5) {
+                        int endIndex = Math.min(i + 5, messages.length);
+                        FolderMessage[] subset = new FolderMessage[endIndex - i];
+                        for(int j=0; j<subset.length; j++) {
+                            subset[j] = messages[i + j];
+                        }
+                        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, subset, false, false);
+                    }
+                }
+                else {
+                    for(int i=messages.length-1; i >= 0; i-=5) {
+                        int startIndex = Math.max(i - 5, 0);
+                        FolderMessage[] subset = new FolderMessage[i - startIndex];
+                        for(int j=0; j<subset.length; j++) {
+                            subset[j] = messages[i - j];
+                        }
+                        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, subset, false, false);
+                    }
+                }
                 cacheLoaded = true;
             }
         }

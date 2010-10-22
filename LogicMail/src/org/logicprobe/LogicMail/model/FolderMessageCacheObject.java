@@ -34,9 +34,11 @@ import java.util.Enumeration;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.PersistableFolderTreeItem;
 import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.util.SerializationUtils;
+import org.logicprobe.LogicMail.message.PersistableFolderMessage;
 
+import net.rim.device.api.system.ObjectGroup;
 import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.util.LongHashtable;
 import net.rim.device.api.util.Persistable;
@@ -83,21 +85,19 @@ public class FolderMessageCacheObject implements Persistable {
         
         if(cachedFolders != null) {
             int size = cachedFolders.size();
-            Vector deserializedFolders = new Vector(size);
+            Vector loadedFolders = new Vector(size);
             
             Enumeration e = cachedFolders.elements();
             while(e.hasMoreElements()) {
                 Object element = e.nextElement();
-                if(element instanceof byte[]) {
-                    byte[] data = (byte[])element;
-                    Object deserializedElement = SerializationUtils.deserializeClass(data);
-                    if(deserializedElement instanceof FolderTreeItem) {
-                        deserializedFolders.addElement(deserializedElement);
-                    }
+                if(element instanceof PersistableFolderTreeItem) {
+                    PersistableFolderTreeItem persistableFolder = (PersistableFolderTreeItem)element;
+                    FolderTreeItem folder = new FolderTreeItem(persistableFolder);
+                    loadedFolders.addElement(folder);
                 }
             }
-            result = new FolderTreeItem[deserializedFolders.size()];
-            deserializedFolders.copyInto(result);
+            result = new FolderTreeItem[loadedFolders.size()];
+            loadedFolders.copyInto(result);
         }
         else {
             result = new FolderTreeItem[0];
@@ -114,20 +114,18 @@ public class FolderMessageCacheObject implements Persistable {
         FolderMessage[] result;
         if(cachedMessages != null && cachedMessages.containsKey(folder.getUniqueId())) {
             IntHashtable messageTable = (IntHashtable)cachedMessages.get(folder.getUniqueId());
-            Vector deserializedMessages = new Vector(messageTable.size());
+            Vector loadedMessages = new Vector(messageTable.size());
             Enumeration e = messageTable.elements();
             while(e.hasMoreElements()) {
                 Object element = e.nextElement();
-                if(element instanceof byte[]) {
-                    byte[] data = (byte[])element;
-                    Object deserializedElement = SerializationUtils.deserializeClass(data);
-                    if(deserializedElement instanceof FolderMessage) {
-                        deserializedMessages.addElement(deserializedElement);
-                    }
+                if(element instanceof PersistableFolderMessage) {
+                    PersistableFolderMessage persistableMessage = (PersistableFolderMessage)element;
+                    FolderMessage message = new FolderMessage(persistableMessage);
+                    loadedMessages.addElement(message);
                 }
             }
-            result = new FolderMessage[deserializedMessages.size()];
-            deserializedMessages.copyInto(result);
+            result = new FolderMessage[loadedMessages.size()];
+            loadedMessages.copyInto(result);
         }
         else {
             result = new FolderMessage[0];
@@ -139,10 +137,14 @@ public class FolderMessageCacheObject implements Persistable {
         IntHashtable messageTable = (IntHashtable)cachedMessages.get(folder.getUniqueId());
         if(messageTable == null) {
             messageTable = new IntHashtable();
-            cachedFolders.put(folder.getUniqueId(), SerializationUtils.serializeClass(folder));
+            PersistableFolderTreeItem persistableFolder = folder.getPersistable();
+            ObjectGroup.createGroup(persistableFolder);
+            cachedFolders.put(folder.getUniqueId(), persistableFolder);
             cachedMessages.put(folder.getUniqueId(), messageTable);
         }
-        messageTable.put(message.getUid(), SerializationUtils.serializeClass(message));
+        PersistableFolderMessage persistableMessage = message.getPersistable();
+        ObjectGroup.createGroup(persistableMessage);
+        messageTable.put(message.getUid(), persistableMessage);
     }
 
     public void removeFolderMessage(FolderTreeItem folder, FolderMessage message) {
@@ -158,7 +160,9 @@ public class FolderMessageCacheObject implements Persistable {
     public void updateFolderMessage(FolderTreeItem folder, FolderMessage message) {
         IntHashtable messageTable = (IntHashtable)cachedMessages.get(folder.getUniqueId());
         if(messageTable != null && messageTable.containsKey(message.getUid())) {
-            messageTable.put(message.getUid(), SerializationUtils.serializeClass(message));
+            PersistableFolderMessage persistableMessage = message.getPersistable();
+            ObjectGroup.createGroup(persistableMessage);
+            messageTable.put(message.getUid(), persistableMessage);
         }
     }
     

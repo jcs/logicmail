@@ -187,4 +187,15 @@ public class LocalMessageToken implements MessageToken {
 	public boolean isLoadable() {
 	    return true;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.MessageToken#clone()
+	 */
+	public MessageToken clone() {
+	    LocalMessageToken result = new LocalMessageToken();
+	    result.uniqueId = uniqueId;
+	    result.folderPath = folderPath;
+	    result.messageUid = messageUid;
+	    return result;
+	}
 }

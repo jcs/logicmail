@@ -36,6 +36,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.Persistable;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -44,7 +45,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 /**
  * Token for messages stored on IMAP servers.
  */
-public class ImapMessageToken implements MessageToken {
+public class ImapMessageToken implements MessageToken, Persistable {
     private long uniqueId;
     private int hashCode = -1;
     
@@ -66,6 +67,14 @@ public class ImapMessageToken implements MessageToken {
     	this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
 	}
 	
+    /**
+     * Instantiates a new IMAP message token with a pre-generated unique ID
+     * for faster cloning.
+     */
+    private ImapMessageToken(long uniqueId) {
+        this.uniqueId = uniqueId;
+    }
+    
     /**
      * Instantiates a new IMAP message token.
      * 
@@ -244,5 +253,15 @@ public class ImapMessageToken implements MessageToken {
 	 */
 	public boolean isLoadable() {
 	    return true;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.logicprobe.LogicMail.mail.MessageToken#clone()
+	 */
+	public MessageToken clone() {
+	    ImapMessageToken result = new ImapMessageToken(uniqueId);
+	    result.messageUid = messageUid;
+	    result.folderPath = folderPath;
+	    return result;
 	}
 }

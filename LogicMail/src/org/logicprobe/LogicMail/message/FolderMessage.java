@@ -58,6 +58,7 @@ public class FolderMessage implements Serializable {
     private int uid;
     private MessageFlags messageFlags;
     private MimeMessagePart structure;
+    private byte[] serializedStructure;
 
     private static final FolderMessageComparator comparator = new FolderMessageComparator();
     
@@ -83,6 +84,16 @@ public class FolderMessage implements Serializable {
         this.uid = uid;
     }
 
+    /**
+     * Creates a new instance of FolderMessage, setting the contents from a
+     * persistable container.
+     *
+     * @param persistable the persistable container
+     */
+    public FolderMessage(PersistableFolderMessage persistable) {
+        setFromPersistable(persistable);
+    }
+    
     /**
      * Gets the comparator used to compare messages for insertion ordering.
      *
@@ -266,6 +277,12 @@ public class FolderMessage implements Serializable {
      * @return Root part of the message structure tree
      */
     public MimeMessagePart getStructure() {
+        synchronized(this) {
+            if(serializedStructure != null) {
+                this.structure = (MimeMessagePart)SerializationUtils.deserializeClass(serializedStructure);
+                serializedStructure = null;
+            }
+        }
     	return this.structure;
     }
 
@@ -284,6 +301,65 @@ public class FolderMessage implements Serializable {
 		return this.uniqueId;
 	}
 
+    /**
+     * Gets a persistable container populated with the contents of this object.
+     *
+     * @return the persistable container
+     */
+    public PersistableFolderMessage getPersistable() {
+        PersistableFolderMessage result = new PersistableFolderMessage();
+        result.setElement(PersistableFolderMessage.FIELD_UNIQUEID, new Long(uniqueId));
+        result.setElement(PersistableFolderMessage.FIELD_MESSAGETOKEN, messageToken.clone());
+        result.setElement(PersistableFolderMessage.FIELD_ENVELOPE, envelope.getPersistable());
+        result.setElement(PersistableFolderMessage.FIELD_INDEX, new Integer(index));
+        result.setElement(PersistableFolderMessage.FIELD_UID, new Integer(uid));
+        result.setElement(PersistableFolderMessage.FIELD_MESSAGEFLAGS, new Integer(messageFlags.getFlags()));
+        
+        MimeMessagePart structurePart = getStructure();
+        if(structurePart != null) {
+            result.setElement(PersistableFolderMessage.FIELD_STRUCTURE, SerializationUtils.serializeClass(structurePart));
+        }
+        return result;
+    }
+
+    private void setFromPersistable(PersistableFolderMessage persistable) {
+        Object value;
+        value = persistable.getElement(PersistableFolderMessage.FIELD_UNIQUEID);
+        if(value instanceof Long) { this.uniqueId = ((Long)value).longValue(); }
+        
+        value = persistable.getElement(PersistableFolderMessage.FIELD_MESSAGETOKEN);
+        if(value instanceof MessageToken) {
+            this.messageToken = ((MessageToken)value).clone();
+        }
+        
+        value = persistable.getElement(PersistableFolderMessage.FIELD_ENVELOPE);
+        if(value instanceof PersistableMessageEnvelope) {
+            this.envelope = new MessageEnvelope((PersistableMessageEnvelope)value);
+        }
+        else {
+            this.envelope = new MessageEnvelope();
+        }
+        
+        value = persistable.getElement(PersistableFolderMessage.FIELD_INDEX);
+        if(value instanceof Integer) { this.index = ((Integer)value).intValue(); }
+        
+        value = persistable.getElement(PersistableFolderMessage.FIELD_UID);
+        if(value instanceof Integer) { this.uid = ((Integer)value).intValue(); }
+        
+        value = persistable.getElement(PersistableFolderMessage.FIELD_MESSAGEFLAGS);
+        if(value instanceof Integer) {
+            this.messageFlags = new MessageFlags(((Integer)value).intValue());
+        }
+        else {
+            this.messageFlags = new MessageFlags();
+        }
+        
+        value = persistable.getElement(PersistableFolderMessage.FIELD_STRUCTURE);
+        if(value instanceof byte[]) {
+            this.serializedStructure = (byte[])value;
+        }
+    }
+    
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
 	 */

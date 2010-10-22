@@ -35,6 +35,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import net.rim.device.api.util.Arrays;
+
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
@@ -139,6 +140,53 @@ public class FolderTreeItem implements Serializable {
         // Possibly redundant, but we want to ensure that
         // this is created even if deserialization fails.
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+    }
+    
+    /**
+     * Create a folder tree item, setting the contents from a
+     * persistable container.
+     *
+     * @param persistable the persistable container
+     */
+    public FolderTreeItem(PersistableFolderTreeItem persistable) {
+        setFromPersistable(persistable);
+    }
+    
+    /**
+     * Gets a persistable container populated with the contents of this object.
+     *
+     * @return the persistable container
+     */
+    public PersistableFolderTreeItem getPersistable() {
+        PersistableFolderTreeItem result = new PersistableFolderTreeItem();
+        result.setElement(PersistableFolderTreeItem.FIELD_UNIQUEID, new Long(uniqueId));
+        result.setElement(PersistableFolderTreeItem.FIELD_NAME, name);
+        result.setElement(PersistableFolderTreeItem.FIELD_PATH, path);
+        result.setElement(PersistableFolderTreeItem.FIELD_DELIM, delim);
+        result.setElement(PersistableFolderTreeItem.FIELD_SELECTABLE, new Boolean(selectable));
+        result.setElement(PersistableFolderTreeItem.FIELD_APPENDABLE, new Boolean(appendable));
+        return result;
+    }
+    
+    private void setFromPersistable(PersistableFolderTreeItem persistable) {
+        Object value;
+        value = persistable.getElement(PersistableFolderTreeItem.FIELD_UNIQUEID);
+        if(value instanceof Long) { this.uniqueId = ((Long)value).longValue(); }
+        
+        value = persistable.getElement(PersistableFolderTreeItem.FIELD_NAME);
+        if(value instanceof String) { this.name = (String)value; }
+        
+        value = persistable.getElement(PersistableFolderTreeItem.FIELD_PATH);
+        if(value instanceof String) { this.path = (String)value; }
+        
+        value = persistable.getElement(PersistableFolderTreeItem.FIELD_DELIM);
+        if(value instanceof String) { this.delim = (String)value; }
+        
+        value = persistable.getElement(PersistableFolderTreeItem.FIELD_SELECTABLE);
+        if(value instanceof Boolean) { this.selectable = ((Boolean)value).booleanValue(); }
+        
+        value = persistable.getElement(PersistableFolderTreeItem.FIELD_APPENDABLE);
+        if(value instanceof Boolean) { this.appendable = ((Boolean)value).booleanValue(); }
     }
     
     /* (non-Javadoc)

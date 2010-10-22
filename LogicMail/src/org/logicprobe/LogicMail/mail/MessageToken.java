@@ -102,4 +102,14 @@ public interface MessageToken extends Serializable {
      * @return comparator for two message tokens
      */
     Comparator getComparator();
+    
+    /**
+     * Creates and returns a copy of this token.  While the implementation may
+     * vary depending on the specific token type, the intent is that the clone
+     * be fully substitutable for the original when making mail store calls.
+     *
+     * @return a clone of this message token
+     * @throws UnsupportedOperationException if cloning is not supported
+     */
+    MessageToken clone();
 }

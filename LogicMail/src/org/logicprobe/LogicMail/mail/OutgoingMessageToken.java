@@ -142,4 +142,14 @@ public class OutgoingMessageToken implements MessageToken {
         return "OutgoingMessageToken [folderPath=" + folderPath
                 + ", messageUid=" + messageUid + "]";
     }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#clone()
+     */
+    public MessageToken clone() {
+        OutgoingMessageToken result = new OutgoingMessageToken();
+        result.messageUid = messageUid;
+        result.folderPath = folderPath;
+        return result;
+    }
 }

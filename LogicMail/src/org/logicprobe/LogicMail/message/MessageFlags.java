@@ -52,7 +52,11 @@ public class MessageFlags {
     
 	public MessageFlags() {
 	}
-	
+    
+	public MessageFlags(int flags) {
+	    this.flags = flags;
+	}
+    
 	public MessageFlags(
 		    boolean seen,
 		    boolean answered,

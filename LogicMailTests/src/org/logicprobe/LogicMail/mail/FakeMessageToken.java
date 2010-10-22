@@ -35,13 +35,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.Persistable;
 
 /**
  * Fake message token for test cases.
  * This is exposed as a public class to support test cases involving
  * object serialization.
  */
-public class FakeMessageToken implements MessageToken {
+public class FakeMessageToken implements MessageToken, Persistable {
     private long uniqueId;
     public FakeMessageToken() { this.uniqueId = 0; }
     public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
@@ -99,5 +100,10 @@ public class FakeMessageToken implements MessageToken {
             return false;
         }
         return true;
+    }
+    
+    public MessageToken clone() {
+        FakeMessageToken result = new FakeMessageToken(uniqueId);
+        return result;
     }
 }

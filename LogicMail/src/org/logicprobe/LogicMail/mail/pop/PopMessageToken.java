@@ -36,6 +36,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.Persistable;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -51,7 +52,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  * is opened.
  * </p>
  */
-public class PopMessageToken implements MessageToken {
+public class PopMessageToken implements MessageToken, Persistable {
     private long uniqueId;
     private int hashCode = -1;
 
@@ -66,6 +67,14 @@ public class PopMessageToken implements MessageToken {
      */
     public PopMessageToken() {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
+    }
+    
+    /**
+     * Instantiates a new POP message token with a pre-generated unique ID
+     * for faster cloning.
+     */
+    private PopMessageToken(long uniqueId) {
+        this.uniqueId = uniqueId;
     }
 
     /**
@@ -216,5 +225,14 @@ public class PopMessageToken implements MessageToken {
     
     public boolean isLoadable() {
         return messageIndex != -1;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MessageToken#clone()
+     */
+    public MessageToken clone() {
+        PopMessageToken result = new PopMessageToken(uniqueId);
+        result.messageUid = messageUid;
+        return result;
     }
 }
