@@ -503,7 +503,7 @@ public class MailboxNode implements Node, Serializable {
      * 
      * @param message The message to remove
      */
-	void removeMessage(MessageNode message) {
+	void removeMessage(final MessageNode message) {
 	    boolean messageRemoved;
 	    synchronized(messages) {
 	        messageRemoved = removeMessageImpl(message);
@@ -511,6 +511,17 @@ public class MailboxNode implements Node, Serializable {
 	    if(messageRemoved) {
 	        updateUnseenMessages(false);
 	        fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
+	        
+	        if(this.parentAccount instanceof NetworkAccountNode) {
+                // Start a thread to clean out the message cache
+                (new Thread() { public void run() {
+                    try {
+                        MailFileManager.getInstance().removeMessageNode(MailboxNode.this, message.getMessageToken());
+                    } catch (IOException e) {
+                        // All meaningful errors already logged inside the method
+                    }
+                }}).start();
+	        }
 	    }
 	}
 	
@@ -519,23 +530,40 @@ public class MailboxNode implements Node, Serializable {
      * 
      * @param message The messages to remove
      */
-	void removeMessages(MessageNode[] messages) {
+	void removeMessages(final MessageNode[] messages) {
 	    Vector removedMessages = null;
+	    Vector removedTokens = null;
 	    synchronized(messages) {
             for(int i=0; i<messages.length; i++) {
                 if(removeMessageImpl(messages[i])) {
                     if(removedMessages == null) {
                         removedMessages = new Vector();
+                        removedTokens = new Vector();
                     }
                     removedMessages.addElement(messages[i]);
+                    removedTokens.addElement(messages[i].getMessageToken());
                 }
             }
 	    }
         if(removedMessages != null) {
-            MessageNode[] removedMessagesArray = new MessageNode[removedMessages.size()];
+            int size = removedMessages.size();
+            MessageNode[] removedMessagesArray = new MessageNode[size];
             removedMessages.copyInto(removedMessagesArray);
             updateUnseenMessages(false);
             fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessagesArray);
+            
+            if(this.parentAccount instanceof NetworkAccountNode) {
+                final MessageToken[] removedTokensArray = new MessageToken[size];
+                removedTokens.copyInto(removedTokensArray);
+                // Start a thread to clean out the message cache
+                (new Thread() { public void run() {
+                    try {
+                        MailFileManager.getInstance().removeMessageNodes(MailboxNode.this, removedTokensArray);
+                    } catch (IOException e) {
+                        // All meaningful errors already logged inside the method
+                    }
+                }}).start();
+            }
         }
 	}
 	
@@ -979,12 +1007,11 @@ public class MailboxNode implements Node, Serializable {
      */
     void mailStoreFolderExpunged(FolderExpungedEvent e) {
         MessageToken[] tokens = e.getExpungedTokens();
+        Vector messagesToRemoveVector = new Vector();
         if(tokens != null) {
             // If an array of tokens was provided, then this is an explicit
             // request to remove certain messages from this mailbox.
-            MessageNode[] messagesToRemove;
             synchronized(messages) {
-                Vector messagesToRemoveVector = new Vector();
                 for(int i=0; i<tokens.length; i++) {
                     MessageNode message = (MessageNode)tokenToMessageMap.get(tokens[i]);
                     if(message != null) {
@@ -992,10 +1019,7 @@ public class MailboxNode implements Node, Serializable {
                         pendingExpungeMessageSet.remove(tokens[i]);
                     }
                 }
-                messagesToRemove = new MessageNode[messagesToRemoveVector.size()];
-                messagesToRemoveVector.copyInto(messagesToRemove);
             }
-            removeMessages(messagesToRemove);
         }
         else {
             // Otherwise, the normal expunge behavior is to simply remove all
@@ -1004,10 +1028,18 @@ public class MailboxNode implements Node, Serializable {
             synchronized(messages) {
                 Enumeration en = pendingExpungeMessageSet.elements();
                 while(en.hasMoreElements()) {
-                    ((MessageNode)en.nextElement()).setExistsOnServer(false);
+                    MessageNode message = (MessageNode)en.nextElement();
+                    message.setExistsOnServer(false);
+                    messagesToRemoveVector.addElement(message);
                 }
                 pendingExpungeMessageSet.clear();
             }
+        }
+        
+        if(!messagesToRemoveVector.isEmpty()) {
+            MessageNode[] messagesToRemove = new MessageNode[messagesToRemoveVector.size()];
+            messagesToRemoveVector.copyInto(messagesToRemove);
+            removeMessages(messagesToRemove);
         }
     }
 
