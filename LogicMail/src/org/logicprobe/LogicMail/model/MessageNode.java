@@ -88,17 +88,6 @@ public class MessageNode implements Node {
 				MessageNode message1 = (MessageNode)o1;
 				MessageNode message2 = (MessageNode)o2;
 				int result;
-				//TODO: Add comparator for MessageToken objects
-				/*
-				if(message1.messageTag instanceof FolderMessage && message2.messageTag instanceof FolderMessage) {
-					// First try folder index comparison
-					int index1 = ((FolderMessage)message1.messageTag).getIndex();
-					int index2 = ((FolderMessage)message2.messageTag).getIndex();
-					if(index1 < index2) { result = -1; }
-					else if(index1 > index2) { result = 1; }
-					else { result = 0; }
-				}
-				*/
 				if(message1.date != null && message2.date != null) {
 					// Then try date comparison
 					long time1 = message1.date.getTime();
@@ -135,7 +124,7 @@ public class MessageNode implements Node {
 	/** True if the message has been verified to exist on a mail server */
 	private boolean existsOnServer;
 	/** Bit-field set of message flags. */
-	private int flags;
+	private volatile int flags;
 	/** Date that the message was sent. */
 	private Date date;
 	/** Message subject. */
@@ -1126,7 +1115,6 @@ public class MessageNode implements Node {
      * @return True if a refresh was triggered, false otherwise
      */
 	public boolean refreshMessage() {
-		// TODO: Add code to refresh message from cache first
 		boolean result = false;
 		if(!refreshInProgress) {
 			refreshInProgress = true;
@@ -1191,8 +1179,12 @@ public class MessageNode implements Node {
     		                EventLogger.ERROR);
     			}
 			}
-			if(!messageLoaded) {
-			    MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+			
+			if(messageLoaded) {
+                markCacheLoadedAsSeen();
+			}
+			else {
+	            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 				mailStore.requestMessage(messageToken);
 			}
 		}
@@ -1226,14 +1218,29 @@ public class MessageNode implements Node {
     			}
 			}
 			
-			if(!contentToLoad.isEmpty()) {
-				MimeMessagePart[] partsToLoad = new MimeMessagePart[contentToLoad.size()];
-				contentToLoad.copyInto(partsToLoad);
-				MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-				mailStore.requestMessageParts(messageToken, partsToLoad);
+			if(contentToLoad.isEmpty()) {
+                markCacheLoadedAsSeen();
+			}
+			else {
+	            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+			    MimeMessagePart[] partsToLoad = new MimeMessagePart[contentToLoad.size()];
+			    contentToLoad.copyInto(partsToLoad);
+			    mailStore.requestMessageParts(messageToken, partsToLoad);
 			}
 		}
 	}
+	
+    private void markCacheLoadedAsSeen() {
+        // If either the SEEN or RECENT flag is still set
+        int tempFlags = getFlags();
+        if((tempFlags & Flag.SEEN) == 0 || (tempFlags & Flag.RECENT) == 0) {
+            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+            mailStore.requestMessageSeen(messageToken);
+            tempFlags |= MessageNode.Flag.SEEN;
+            tempFlags &= ~MessageNode.Flag.RECENT;
+            setFlags(tempFlags);
+        }
+    }
 	
 	/**
 	 * Called to load a specific message part for this node.

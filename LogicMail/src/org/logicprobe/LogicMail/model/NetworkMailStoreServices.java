@@ -40,6 +40,8 @@ import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 
 public class NetworkMailStoreServices extends MailStoreServices {
     private final NetworkMailStore mailStore;
@@ -90,6 +92,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
         handler.requestMoreFolderMessages(firstToken, increment);
     }
     
+    public void requestMessageSeen(MessageToken messageToken) {
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        handler.setFolderMessageSeen(messageToken);
+    }
+    
     public void removeSavedData(FolderTreeItem[] folderTreeItems) {
         for(int i=0; i<folderTreeItems.length; i++) {
             folderMessageCache.removeFolder(folderTreeItems[i]);
@@ -121,6 +128,35 @@ public class NetworkMailStoreServices extends MailStoreServices {
         handler.handleFolderExpunged(indices);
     }
 
+    protected void handleMessageAvailable(
+            MessageToken messageToken,
+            MimeMessagePart messageStructure,
+            MimeMessageContent[] messageContent,
+            String messageSource) {
+        
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        handler.setFolderMessageSeen(messageToken);
+        
+        super.handleMessageAvailable(messageToken, messageStructure, messageContent, messageSource);
+    }
+    
+    protected void handleMessageContentAvailable(
+            MessageToken messageToken,
+            MimeMessageContent[] messageContent) {
+        
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        handler.setFolderMessageSeen(messageToken);
+        
+        super.handleMessageContentAvailable(messageToken, messageContent);
+    }
+    
+    /**
+     * Gets the folder request handler for the provided folder object.
+     * If a handler does not exist, then one is created.
+     *
+     * @param folder the folder to get a request handler for
+     * @return the folder request handler
+     */
     private FolderRequestHandler getFolderRequestHandler(FolderTreeItem folder) {
         FolderRequestHandler handler;
         synchronized(folderRequestHandlerMap) {
@@ -128,6 +164,29 @@ public class NetworkMailStoreServices extends MailStoreServices {
             if(handler == null) {
                 handler = new FolderRequestHandler(this, mailStore, folderMessageCache, folder);
                 folderRequestHandlerMap.put(folder, handler);
+            }
+        }
+        return handler;
+    }
+    
+    /**
+     * Gets the folder request handler for the folder that contains the provided
+     * message token.  If no such folder handler exists, then <code>null</code>
+     * is returned.
+     *
+     * @param messageToken the message token to find a folder handler for
+     * @return the folder request handler
+     */
+    private FolderRequestHandler getFolderRequestHandler(MessageToken messageToken) {
+        FolderRequestHandler handler = null;
+        synchronized(folderRequestHandlerMap) {
+            Enumeration en = folderRequestHandlerMap.keys();
+            while(en.hasMoreElements()) {
+                FolderTreeItem folder = (FolderTreeItem)en.nextElement();
+                if(messageToken.containedWithin(folder)) {
+                    handler = (FolderRequestHandler)folderRequestHandlerMap.get(folder);
+                    break;
+                }
             }
         }
         return handler;

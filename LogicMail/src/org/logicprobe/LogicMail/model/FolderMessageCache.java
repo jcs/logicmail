@@ -35,10 +35,10 @@ import java.util.Hashtable;
 
 import net.rim.device.api.system.PersistentObject;
 import net.rim.device.api.system.PersistentStore;
-import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.collection.util.BigVector;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.FolderMessage;
 
 /**
@@ -113,6 +113,15 @@ public class FolderMessageCache {
                 cacheObject.addFolderMessage(folder, message);
             }
         }
+    }
+
+    public FolderMessage getFolderMessage(FolderTreeItem folder, MessageToken messageToken) {
+        FolderMessage folderMessage = null;
+        synchronized(lockObj) {
+            CacheEntry cacheEntry = checkAndLoadFolderCache(folder);
+            folderMessage = cacheEntry.getFolderMessage(messageToken);
+        }
+        return folderMessage;
     }
     
     public void removeFolderMessage(FolderTreeItem folder, FolderMessage message) {
@@ -234,7 +243,7 @@ public class FolderMessageCache {
         private boolean loaded;
         private boolean messagesUpdated;
         private final BigVector messageList = new BigVector();
-        private final IntHashtable messageMap = new IntHashtable();
+        private final Hashtable messageMap = new Hashtable();
         
         public void setLoaded(boolean loaded) {
             this.loaded = loaded;
@@ -252,19 +261,25 @@ public class FolderMessageCache {
         }
         
         public boolean addFolderMessage(FolderMessage message) {
-            if(!messageMap.containsKey(message.getUid())) {
+            String messageUid = message.getMessageToken().getMessageUid();
+            if(!messageMap.containsKey(messageUid)) {
                 messageList.insertElement(FolderMessage.getComparator(), message);
-                messageMap.put(message.getUid(), message);
+                messageMap.put(messageUid, message);
                 return true;
             }
             else {
                 return false;
             }
         }
+
+        public FolderMessage getFolderMessage(MessageToken messageToken) {
+            String messageUid = messageToken.getMessageUid();
+            return (FolderMessage)messageMap.get(messageUid);
+        }
         
         public boolean removeFolderMessage(FolderMessage message) {
             if(messageList.removeElement(FolderMessage.getComparator(), message)) {
-                messageMap.remove(message.getUid());
+                messageMap.remove(message.getMessageToken().getMessageUid());
                 return true;
             }
             else {
@@ -273,7 +288,7 @@ public class FolderMessageCache {
         }
         
         public FolderMessage updateFolderMessage(FolderMessage message) {
-            FolderMessage existingMessage = (FolderMessage)messageMap.get(message.getUid());
+            FolderMessage existingMessage = (FolderMessage)messageMap.get(message.getMessageToken().getMessageUid());
             if(existingMessage != null) {
                 existingMessage.setIndex(message.getIndex());
                 existingMessage.setFlags(message.getFlags());

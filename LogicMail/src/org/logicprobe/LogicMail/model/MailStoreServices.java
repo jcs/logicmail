@@ -87,14 +87,14 @@ public abstract class MailStoreServices {
             public void messageAvailable(MessageEvent e) {
                 switch(e.getType()) {
                 case MessageEvent.TYPE_FULLY_LOADED:
-                    fireMessageAvailable(
+                    handleMessageAvailable(
                             e.getMessageToken(),
                             e.getMessageStructure(),
                             e.getMessageContent(),
                             e.getMessageSource());
                     break;
                 case MessageEvent.TYPE_CONTENT_LOADED:
-                    fireMessageContentAvailable(
+                    handleMessageContentAvailable(
                             e.getMessageToken(),
                             e.getMessageContent());
                     break;
@@ -397,6 +397,10 @@ public abstract class MailStoreServices {
     public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) {
         mailStore.requestMessageParts(messageToken, messageParts);
     }
+
+    public void requestMessageSeen(MessageToken messageToken) {
+        // Default empty implementation
+    }
     
     public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
         mailStore.requestMessageDelete(messageToken, messageFlags);
@@ -644,6 +648,10 @@ public abstract class MailStoreServices {
         }
     }
 
+    protected void handleMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
+        fireMessageAvailable(messageToken, messageStructure, messageContent, messageSource);
+    }
+    
     /**
      * Notifies all registered <tt>MessageListener</tt>s that
      * a message has been loaded.
@@ -664,6 +672,10 @@ public abstract class MailStoreServices {
         }
     }
 
+    protected void handleMessageContentAvailable(MessageToken messageToken, MimeMessageContent[] messageContent) {
+        fireMessageContentAvailable(messageToken, messageContent);
+    }
+    
     /**
      * Notifies all registered <tt>MessageListener</tt>s that
      * a message has been loaded.

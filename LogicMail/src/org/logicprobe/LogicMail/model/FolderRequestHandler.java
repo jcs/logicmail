@@ -47,6 +47,7 @@ import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.AtomicBoolean;
 
 /**
@@ -613,5 +614,17 @@ class FolderRequestHandler {
         }
         folderMessageCache.commit();
         mailStoreServices.fireFolderExpunged(folderTreeItem, indices);
+    }
+
+    void setFolderMessageSeen(MessageToken messageToken) {
+        FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+        MessageFlags messageFlags = message.getFlags();
+        if(!messageFlags.isSeen()) {
+            messageFlags.setSeen(true);
+            messageFlags.setRecent(false);
+            folderMessageCache.updateFolderMessage(folderTreeItem, message);
+            folderMessageCache.commit();
+            //TODO: Inform the server that the message is seen
+        }
     }
 }
