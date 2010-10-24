@@ -34,7 +34,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -66,6 +65,7 @@ public class MailFileManager {
 	private static String CACHE_PREFIX = "cache/";
 	private static String MSG_SUFFIX = ".msg";
 	private static String MSG_FILTER = "*.msg";
+    private static String ALL_FILTER = "*";
 	private static String LOCAL_ACCOUNT_UID = "local";
     private static String LOCAL_OUTBOX_UID = "Outbox";
 	
@@ -342,6 +342,29 @@ public class MailFileManager {
 		return messageContent;
 	}
 	
+    private FileConnection getAccountFileConnection(AccountNode accountNode) throws IOException {
+        // Build the account and mailbox UID strings
+        String accountUid;
+        if(accountNode instanceof LocalAccountNode) {
+            accountUid = LOCAL_ACCOUNT_UID;
+        }
+        else {
+            accountUid = StringParser.toHexString(
+                    ((NetworkAccountNode)accountNode).getUniqueId()).toLowerCase();
+        }
+        
+        StringBuffer buf = new StringBuffer(cacheUrl);
+        
+        // Open the account directory, creating if necessary
+        buf.append(accountUid); buf.append('/');
+        FileConnection fileConnection = (FileConnection)Connector.open(buf.toString());
+        if(!fileConnection.exists()) {
+            fileConnection.mkdir();
+        }
+        
+        return fileConnection;
+    }
+    
 	private FileConnection getMailboxFileConnection(MailboxNode mailboxNode) throws IOException {
 		// Build the account and mailbox UID strings
 	    String accountUid;
@@ -462,44 +485,6 @@ public class MailFileManager {
 		return result;
 	}
 	
-	public synchronized void removeStaleMessageNodes(MailboxNode mailboxNode, String[] uidsToRetain) throws IOException {
-	    if(cacheUrl == null) { return; }
-	    
-	    Hashtable retentionSet = new Hashtable();
-	    for(int i=0; i<uidsToRetain.length; i++) {
-	        retentionSet.put(FilenameEncoder.encode(uidsToRetain[i]), Boolean.TRUE);
-	    }
-	    
-        String[] fileUrls = getMessageFiles(mailboxNode);
-        Vector fileUrlsToDelete = new Vector();
-        for(int i=0; i<fileUrls.length; i++) {
-            int p = fileUrls[i].lastIndexOf('/');
-            int q = fileUrls[i].lastIndexOf('.');
-            if(p != -1 && q != -1 && p < q) {
-                String messageUid = fileUrls[i].substring(p + 1, q);
-                if(!retentionSet.containsKey(messageUid)) {
-                    fileUrlsToDelete.addElement(fileUrls[i]);
-                }
-            }
-        }
-        
-        int size = fileUrlsToDelete.size();
-        for(int i=0; i<size; i++) {
-            try {
-                FileConnection fc = (FileConnection)Connector.open((String)fileUrlsToDelete.elementAt(i));
-                if(fc.exists() && fc.canRead()) {
-                    fc.delete();
-                }
-            } catch (IOException exp) {
-                if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
-                    EventLogger.logEvent(AppInfo.GUID,
-                            ("Error deleting message from cache: " + exp.toString()).getBytes(),
-                            EventLogger.DEBUG_INFO);
-                }
-            }
-        }
-	}
-	
 	public synchronized void removeMessageNodes(MailboxNode mailboxNode, MessageToken[] messageTokens) throws IOException {
         if(cacheUrl == null) { return; }
 
@@ -548,6 +533,65 @@ public class MailFileManager {
         }
     }
 
+    public synchronized boolean removeAccountNode(AccountNode accountNode) {
+        if(cacheUrl == null) { return false; }
+
+        FileConnection fileConnection = null;
+        try {
+            fileConnection = getAccountFileConnection(accountNode);
+            deleteTree(fileConnection);
+            return true;
+        } catch (IOException exp) {
+            if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Error deleting account from cache: " + exp.toString()).getBytes(),
+                        EventLogger.DEBUG_INFO);
+            }
+            return false;
+        } finally {
+            if(fileConnection != null) {
+                try { fileConnection.close(); } catch (Exception e) { }
+            }
+        }
+    }
+    
+    public synchronized boolean removeMailboxNode(MailboxNode mailboxNode) {
+        if(cacheUrl == null) { return false; }
+
+        FileConnection fileConnection = null;
+        try {
+            fileConnection = getMailboxFileConnection(mailboxNode);
+            deleteTree(fileConnection);
+            return true;
+        } catch (IOException exp) {
+            if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("Error deleting mailbox from cache: " + exp.toString()).getBytes(),
+                        EventLogger.DEBUG_INFO);
+            }
+            return false;
+        } finally {
+            if(fileConnection != null) {
+                try { fileConnection.close(); } catch (Exception e) { }
+            }
+        }
+    }
+    
+    private static void deleteTree(FileConnection fileConnection) throws IOException {
+        if(!fileConnection.canWrite()) {
+            fileConnection.setWritable(true);
+        }
+        if(fileConnection.isDirectory()) {
+            String directoryUrl = fileConnection.getURL();
+            Enumeration en = fileConnection.list(ALL_FILTER, true);
+            while(en.hasMoreElements()) {
+                String fileUrl = directoryUrl + (String)en.nextElement();
+                deleteTree((FileConnection)Connector.open(fileUrl));
+            }
+        }
+        fileConnection.delete();
+    }
+    
     private static String getMessageFileUrl(String mailboxUrl, MessageToken messageToken) {
         return mailboxUrl + FilenameEncoder.encode(messageToken.getMessageUid()) + MSG_SUFFIX;
     }
