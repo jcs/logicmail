@@ -448,7 +448,7 @@ public class MailboxScreen extends AbstractScreenProvider {
                 messageFieldManager.insert(gapField, insertIndex);
             }
             gapField.setEditable(true);
-            gapField.setTag(gaps[i]);
+            gapField.setTagObject(gaps[i]);
         }
 
         // Remove orphaned gap fields
@@ -763,7 +763,7 @@ public class MailboxScreen extends AbstractScreenProvider {
         Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
         if(fieldWithFocus instanceof MailboxActionField) {
             MailboxActionField field = (MailboxActionField)fieldWithFocus;
-            if(field.getTag() instanceof MessageNode[]) {
+            if(field.getTagObject() instanceof MessageNode[]) {
                 return field;
             }
         }
@@ -823,7 +823,7 @@ public class MailboxScreen extends AbstractScreenProvider {
         // feedback that the user has triggered an action before the field
         // disappears from the screen.
         
-        final MessageNode[] gap = (MessageNode[])gapField.getTag();
+        final MessageNode[] gap = (MessageNode[])gapField.getTagObject();
         gapField.setEditable(false);
         (new Thread() { public void run() {
             try { Thread.sleep(200); } catch (InterruptedException e) { }

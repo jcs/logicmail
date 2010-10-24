@@ -73,7 +73,7 @@ public class MailboxActionField extends Field {
      *
      * @param tag the new tag object
      */
-    public void setTag(Object tag) {
+    public void setTagObject(Object tag) {
         this.tag = tag;
     }
     
@@ -82,7 +82,7 @@ public class MailboxActionField extends Field {
      *
      * @return the tag object
      */
-    public Object getTag() {
+    public Object getTagObject() {
         return tag;
     }
     
