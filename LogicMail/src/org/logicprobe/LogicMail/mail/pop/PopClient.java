@@ -186,7 +186,15 @@ public class PopClient extends AbstractIncomingMailClient {
             popProtocol.executeUser(username);
             popProtocol.executePass(password);
         } catch (MailException exp) {
-            return false;
+            // We assume that fatal exceptions are due to protocol errors or
+            // locked mailbox issues, while non-fatal exceptions are due to
+            // authentication problems.
+            if(exp.isFatal()) {
+                throw exp;
+            }
+            else {
+                return false;
+            }
         }
         // Update message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());

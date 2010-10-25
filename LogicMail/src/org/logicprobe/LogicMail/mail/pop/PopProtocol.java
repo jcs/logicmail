@@ -79,7 +79,7 @@ public class PopProtocol {
                 ("PopProtocol.executeCapa()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-        String[] replyText = executeFollow("CAPA", false, null);
+        String[] replyText = executeFollow(CAPA, false, null);
         
         if ((replyText == null) || (replyText.length < 1)) {
             return null;
@@ -114,7 +114,7 @@ public class PopProtocol {
                 ("PopProtocol.executeStartTLS()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-        return execute("STARTTLS", false) != null;
+        return execute(STARTTLS, false) != null;
 	}
 	
     /**
@@ -128,9 +128,11 @@ public class PopProtocol {
             ("PopProtocol.executeUser(\""+username+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        execute("USER " + username);
-        // Invalid users are caught by execute()
-        // and a MailException is thrown
+        try {
+            execute(USER_ + username, true);
+        } catch (MailException exp) {
+            handleAuthFailure(exp);
+        }
     }
     
     /**
@@ -144,9 +146,25 @@ public class PopProtocol {
             ("PopProtocol.executePass(\""+password+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        execute("PASS " + password);
-        // Invalid users are caught by execute()
-        // and a MailException is thrown
+        try {
+            execute(PASS_ + password, true);
+        } catch (MailException exp) {
+            handleAuthFailure(exp);
+        }
+    }
+
+    private void handleAuthFailure(MailException exp) throws MailException {
+        String response = exp.getMessage().toLowerCase();
+        // See if the error response contains one of the keywords we think
+        // indicates an authentication failure
+        for(int i=0; i<AUTH_FAILURES.length; i++) {
+            if(response.indexOf(AUTH_FAILURES[i]) != -1) {
+                throw new MailException(exp.getMessage(), false, -1);
+            }
+        }
+        
+        // Otherwise, assume the error is unrecoverable
+        throw new MailException(exp.getMessage(), true, -1);
     }
     
     /**
@@ -159,7 +177,7 @@ public class PopProtocol {
             ("PopProtocol.executeQuit()").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        execute("QUIT");
+        execute(QUIT);
     }
     
     /**
@@ -173,7 +191,7 @@ public class PopProtocol {
             ("PopProtocol.executeStat()").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result = execute("STAT");
+        String result = execute(STAT);
         int p = result.indexOf(' ');
         int q = result.indexOf(' ', p+1);
         try {
@@ -205,7 +223,7 @@ public class PopProtocol {
             ("PopProtocol.executeTop("+index+", "+lines+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        return executeFollow("TOP " + index + " " + lines, true, progressHandler);
+        return executeFollow(TOP_ + index + ' ' + lines, true, progressHandler);
     }
     
     /**
@@ -219,7 +237,7 @@ public class PopProtocol {
             ("PopProtocol.executeUidl("+index+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result = execute("UIDL " + index);
+        String result = execute(UIDL_ + index);
         int p = result.lastIndexOf(' ');
         if(p < result.length() - 2) {
         	return result.substring(p+1);
@@ -243,7 +261,7 @@ public class PopProtocol {
             EventLogger.DEBUG_INFO);
         }
         
-        byte[][] result = executeFollowBinary("UIDL", true, progressHandler);
+        byte[][] result = executeFollowBinary(UIDL, true, progressHandler);
         ToIntHashtable uidIndexMap = new ToIntHashtable(result.length);
         
         for(int i=0; i<result.length; i++) {
@@ -275,7 +293,7 @@ public class PopProtocol {
             ("PopProtocol.executeDele("+index+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        execute("DELE " + index);
+        execute(DELE_ + index);
     }
 
     /**
@@ -288,13 +306,13 @@ public class PopProtocol {
             ("PopProtocol.executeNoop()").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        execute("NOOP");
+        execute(NOOP);
     }
     
     /**
      * Execute a POP3 command that returns multiple lines.
-     * This works by running the normal execute() and then
-     * receiving every new line until a lone "." is encountered.
+     * This works by running the normal execute() and then receiving every new
+     * line until a lone "." is encountered.
      *
      * @param command The command to execute
      * @param errorFatal If true, then an "-ERR" response to the command will
@@ -325,8 +343,8 @@ public class PopProtocol {
     
     /**
      * Execute a POP3 command that returns multiple lines.
-     * This works by running the normal execute() and then
-     * receiving every new line until a lone "." is encountered.
+     * This works by running the normal execute() and then receiving every new
+     * line until a lone "." is encountered.
      *
      * @param command The command to execute
      * @param errorFatal If true, then an "-ERR" response to the command will
@@ -357,8 +375,8 @@ public class PopProtocol {
     
     /**
      * Execute a POP3 command, and return the result.
-     * If the command is null, we still wait for a result
-     * so we can receive a multi-line response.
+     * If the command is null, we still wait for a result so we can receive a
+     * multi-line response.
      *
      * @param command The command
      * @return The result
@@ -369,8 +387,8 @@ public class PopProtocol {
     
     /**
      * Execute a POP3 command, and return the result.
-     * If the command is null, we still wait for a result
-     * so we can receive a multi-line response.
+     * If the command is null, we still wait for a result so we can receive a
+     * multi-line response.
      *
      * @param command The command
      * @param errorFatal If true, then an "-ERR" response to the command will
@@ -386,6 +404,10 @@ public class PopProtocol {
         String result = new String(connection.receive());
         
         if((result.length() > 1) && (result.charAt(0) == '-')) {
+            int p = result.indexOf(' ');
+            if(p != -1 && p < result.length() - 1) {
+                result = result.substring(p + 1);
+            }
             if(errorFatal) {
                 throw new MailException(result);
             }
@@ -396,4 +418,25 @@ public class PopProtocol {
         
         return result;
     }
+    
+    // String constants
+    private static String NOOP = "NOOP";
+    private static String DELE_ = "DELE ";
+    private static String UIDL = "UIDL";
+    private static String UIDL_ = "UIDL ";
+    private static String TOP_ = "TOP ";
+    private static String STAT = "STAT";
+    private static String QUIT = "QUIT";
+    private static String PASS_ = "PASS ";
+    private static String USER_ = "USER ";
+    private static String STARTTLS = "STARTTLS";
+    private static String CAPA = "CAPA";
+    private static String[] AUTH_FAILURES = {
+        "[auth]",
+        "authentication",
+        "login",
+        "username",
+        "password",
+        "invalid"
+    };
 }
