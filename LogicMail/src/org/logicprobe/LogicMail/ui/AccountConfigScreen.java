@@ -104,6 +104,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BasicEditField popMaxLinesEditField;
 
     private Manager[] pageFieldManagers;
+    private static final int PAGE_BASIC    = 0;
+    private static final int PAGE_FOLDER   = 1;
+    private static final int PAGE_ADVANCED = 2;
+    
     private boolean accountSaved;
     private boolean createDefaultIdentity;
     private AccountConfig accountConfig;
@@ -212,12 +216,12 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         pageField.setChangeListener(fieldChangeListener);
 
         pageFieldManagers = new Manager[3];
-        pageFieldManagers[0] = initFieldsBasic();
-        pageFieldManagers[1] = initFieldsFolder();
-        pageFieldManagers[2] = initFieldsAdvanced();
+        pageFieldManagers[PAGE_BASIC] = initFieldsBasic();
+        pageFieldManagers[PAGE_FOLDER] = initFieldsFolder();
+        pageFieldManagers[PAGE_ADVANCED] = initFieldsAdvanced();
 
         // Container for the active settings page
-        contentFieldManager = pageFieldManagers[0];
+        contentFieldManager = pageFieldManagers[PAGE_BASIC];
 
         headerFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NONE);
         headerFieldManager.add(accountNameField);
@@ -469,12 +473,12 @@ public class AccountConfigScreen extends AbstractConfigScreen {
      * @see net.rim.device.api.ui.Screen#trackwheelUnclick(int, int)
      */
     protected boolean trackwheelUnclick(int status, int time) {
-        if(getFieldWithFocus() == contentFieldManager && contentFieldManager.getField(0) == pageFieldManagers[1]) {
-            if(pageFieldManagers[1].getFieldWithFocus() == sentFolderChoiceButtonLabel) {
+        if(getFieldWithFocus() == contentFieldManager && contentFieldManager == pageFieldManagers[PAGE_FOLDER]) {
+            if(contentFieldManager.getFieldWithFocus() == sentFolderChoiceButtonLabel) {
                 showFolderSelection(sentFolderChoiceButtonLabel);
                 return true;
             }
-            else if(pageFieldManagers[1].getFieldWithFocus() == draftFolderChoiceButtonLabel) {
+            else if(contentFieldManager.getFieldWithFocus() == draftFolderChoiceButtonLabel) {
                 showFolderSelection(draftFolderChoiceButtonLabel);
                 return true;
             }
