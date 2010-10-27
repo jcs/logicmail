@@ -338,6 +338,14 @@ public class Connection {
                         bytesAvailable = input.available();
                     }
                 }
+                
+                // Check for any final data
+                if(byteStream.size() > 0) {
+                    line = checkForLine(responseTester);
+                    if(line != null) {
+                        return line;
+                    }
+                }
             }
             else {
                 // If we got here, that means that the InputStream is either closed
@@ -355,6 +363,7 @@ public class Connection {
             }
         }
         // This should never normally happen
+        System.err.println("-->Blargh!");
         return null;
     }
     
