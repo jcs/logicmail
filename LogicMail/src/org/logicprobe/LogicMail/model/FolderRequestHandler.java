@@ -195,8 +195,8 @@ class FolderRequestHandler {
                 }
                 else {
                     for(int i=messages.length-1; i >= 0; i-=5) {
-                        int startIndex = Math.max(i - 5, 0);
-                        FolderMessage[] subset = new FolderMessage[i - startIndex];
+                        int startIndex = Math.max(i - 4, 0);
+                        FolderMessage[] subset = new FolderMessage[i - startIndex + 1];
                         for(int j=0; j<subset.length; j++) {
                             subset[j] = messages[i - j];
                         }
