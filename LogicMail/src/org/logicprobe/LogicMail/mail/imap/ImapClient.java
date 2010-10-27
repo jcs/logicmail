@@ -820,7 +820,7 @@ public class ImapClient extends AbstractIncomingMailClient {
         if(!seenMailboxes.containsKey(activeMailbox)) {
             int count = accountConfig.getInitialFolderMessages();
             int msgCount = activeMailbox.getMsgCount();
-            int firstIndex = Math.max(1, msgCount - count);
+            int firstIndex = Math.max(1, msgCount - count + 1);
             getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);
             seenMailboxes.put(activeMailbox, Boolean.TRUE);
         }

@@ -445,7 +445,7 @@ public class PopClient extends AbstractIncomingMailClient {
     public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler) throws IOException, MailException {
     	int count = accountConfig.getInitialFolderMessages();
 		int msgCount = activeMailbox.getMsgCount();
-        int firstIndex = Math.max(1, msgCount - count);
+        int firstIndex = Math.max(1, msgCount - count + 1);
     	getFolderMessages(firstIndex, activeMailbox.getMsgCount(), flagsOnly, callback, progressHandler);
     }
     
