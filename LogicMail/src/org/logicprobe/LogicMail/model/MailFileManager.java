@@ -34,6 +34,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.io.Connector;
@@ -69,6 +70,9 @@ public class MailFileManager {
 	private static String LOCAL_ACCOUNT_UID = "local";
     private static String LOCAL_OUTBOX_UID = "Outbox";
 	
+    /** Map of MailboxNodes to sets of known message UIDs within them. */
+    private static final Hashtable mailboxMessageUidCache = new Hashtable();
+    
 	/**
 	 * Instantiates a new mail file manager.
 	 */
@@ -165,6 +169,12 @@ public class MailFileManager {
 		// Close and cleanup
 		output.close();
 		fileConnection.close();
+		
+		// Update directory listing cache, if available
+        Hashtable messageUidSet = (Hashtable)mailboxMessageUidCache.get(messageNode.getParent());
+        if(messageUidSet != null) {
+            messageUidSet.put(messageNode.getMessageToken().getMessageUid(), Boolean.TRUE);
+        }
 	}
 	
 	/**
@@ -284,29 +294,21 @@ public class MailFileManager {
     }
 
     public synchronized boolean messageNodeExists(MailboxNode mailboxNode, MessageToken messageToken) {
-        if(cacheUrl == null) { return false; }
-        
-        FileConnection fileConnection = null;
-        try {
-            fileConnection = getMailboxFileConnection(mailboxNode);
-            if(!fileConnection.exists()) { return false; }
-            
-            String mailboxUrl = fileConnection.getURL();
-            fileConnection.close();
-            String fileUrl = getMessageFileUrl(mailboxUrl, messageToken);
-            fileConnection = (FileConnection)Connector.open(fileUrl);
-            if(fileConnection.exists() && fileConnection.canRead()) {
-                return true;
-            }
-            fileConnection.close();
-        } catch (IOException e) {
-            return false;
-        } finally {
-            if(fileConnection != null) {
-                try { fileConnection.close(); } catch (Exception e) { }
-            }
+        Hashtable messageUidSet = (Hashtable)mailboxMessageUidCache.get(mailboxNode);
+        if(messageUidSet == null) {
+            try {
+                String[] fileUrls = getMessageFiles(mailboxNode);
+                messageUidSet = new Hashtable(fileUrls.length);
+                for(int i=0; i<fileUrls.length; i++) {
+                    String messageUid = getMessageUidFromFileUrl(fileUrls[i]);
+                    if(messageUid != null) {
+                        messageUidSet.put(messageUid, Boolean.TRUE);
+                    }
+                }
+                mailboxMessageUidCache.put(mailboxNode, messageUidSet);
+            } catch (IOException e) { return false; }
         }
-        return false;
+        return messageUidSet.containsKey(messageToken.getMessageUid());
     }
     
 	public synchronized MessageNode readMessageNode(MailboxNode mailboxNode, MessageToken messageToken, boolean loadContent) throws IOException {
@@ -492,6 +494,7 @@ public class MailFileManager {
         String mailboxUrl = fileConnection.getURL();
         fileConnection.close();
         
+        Hashtable messageUidSet = (Hashtable)mailboxMessageUidCache.get(mailboxNode);
         for(int i=0; i<messageTokens.length; i++) {
             try {
                 FileConnection mailFileConnection =
@@ -500,6 +503,10 @@ public class MailFileManager {
                     mailFileConnection.delete();
                 }
                 mailFileConnection.close();
+                
+                if(messageUidSet != null) {
+                    messageUidSet.remove(messageTokens[i].getMessageUid());
+                }
             } catch (IOException exp) {
                 if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
                     EventLogger.logEvent(AppInfo.GUID,
@@ -524,6 +531,12 @@ public class MailFileManager {
                 mailFileConnection.delete();
             }
             mailFileConnection.close();
+            
+            // Update directory listing cache, if available
+            Hashtable messageUidSet = (Hashtable)mailboxMessageUidCache.get(mailboxNode);
+            if(messageUidSet != null) {
+                messageUidSet.remove(messageToken.getMessageUid());
+            }
         } catch (IOException exp) {
             if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
                 EventLogger.logEvent(AppInfo.GUID,
@@ -536,6 +549,9 @@ public class MailFileManager {
     public synchronized boolean removeAccountNode(AccountNode accountNode) {
         if(cacheUrl == null) { return false; }
 
+        // A bit excessive, but this is infrequent
+        mailboxMessageUidCache.clear();
+        
         FileConnection fileConnection = null;
         try {
             fileConnection = getAccountFileConnection(accountNode);
@@ -558,6 +574,8 @@ public class MailFileManager {
     public synchronized boolean removeMailboxNode(MailboxNode mailboxNode) {
         if(cacheUrl == null) { return false; }
 
+        mailboxMessageUidCache.remove(mailboxNode);
+        
         FileConnection fileConnection = null;
         try {
             fileConnection = getMailboxFileConnection(mailboxNode);
