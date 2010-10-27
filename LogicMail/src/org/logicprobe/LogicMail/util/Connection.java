@@ -362,8 +362,8 @@ public class Connection {
                 throw new IOException("Connection closed");
             }
         }
-        // This should never normally happen
-        System.err.println("-->Blargh!");
+        // We should never get here, unless there is a connection error or the
+        // line response tester has a bug.
         return null;
     }
     
