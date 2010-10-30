@@ -70,9 +70,9 @@
   
   <!-- Build the application -->
   <target name="build">
-    <if><isset property="jde421.home"/><then>
-      <fileset id="bb421_fileset" dir="src" />
-      <build-platform jdehome="${jde421.home}" platform="BB421" defines="BLACKBERRY_4_2_1" platformfileset="bb421_fileset"/>
+    <if><isset property="jde450.home"/><then>
+      <fileset id="bb450_fileset" dir="src" />
+      <build-platform jdehome="${jde450.home}" platform="BB450" defines="BLACKBERRY_4_5_0" platformfileset="bb450_fileset"/>
     </then></if>
     <if><isset property="jde460.home"/><then>
       <fileset id="bb460_fileset" dir="..">
@@ -118,11 +118,11 @@
 
   <!-- Sign the application -->
   <target name="sign" depends="build" if="sigtool.password">
-    <if><isset property="jde421.home"/><then>
-      <sigtool jdehome="${jde421.home}"
+    <if><isset property="jde450.home"/><then>
+      <sigtool jdehome="${jde450.home}"
                password="${sigtool.password}"
                forceclose="true"
-               codfile="${dist.dir}/BB421/${module.name}.cod"/>
+               codfile="${dist.dir}/BB450/${module.name}.cod"/>
     </then></if>
     <if><isset property="jde460.home"/><then>
       <sigtool jdehome="${jde460.home}"
@@ -164,8 +164,8 @@
         <include name="**/*.java"/>
       </fileset>
       <classpath>
-        <pathelement path="${jde421.home}/lib/net_rim_api.jar"/>
-        <pathelement path="${dist.dir}/BB421/${module.name}.jar"/>
+        <pathelement path="${jde450.home}/lib/net_rim_api.jar"/>
+        <pathelement path="${dist.dir}/BB450/${module.name}.jar"/>
       </classpath>
     </javadoc>
   </target>
@@ -186,8 +186,8 @@
           they will need to be manually edited if executing this task without
           all supported JDE versions defined.
       	-->
-        <codset dir="BB421" greaterthanequal="4.2.1" lessthan="4.7.0">
-          <fileset dir="${dist.dir}/BB421" includes="*.cod" />
+        <codset dir="BB450" greaterthanequal="4.5.0" lessthan="4.6.0">
+          <fileset dir="${dist.dir}/BB450" includes="*.cod" />
         </codset>
         <codset dir="BB460" greaterthanequal="4.6.0" lessthan="4.7.0">
           <fileset dir="${dist.dir}/BB460" includes="*.cod" />
@@ -237,9 +237,9 @@
         ]]> 
       </insert>
       
-      <insert if="jde421.home" path="/application">
+      <insert if="jde450.home" path="/application">
          <![CDATA[
-           <jad blackberryVersion="[4.2.1,4.7.0)" file="BB421/${module.name}.jad"/>
+           <jad blackberryVersion="[4.5.0,4.6.0)" file="BB450/${module.name}.jad"/>
          ]]>
       </insert>
       <insert if="jde460.home" path="/application">
@@ -263,8 +263,8 @@
          ]]>
         </insert>
     </xmltask>
-    <if><isset property="jde421.home"/><then>
-      <copy-ota-files src="${dist.dir}/BB421" dest="${dist.ota.dir}/${module.version}/BB421"/>
+    <if><isset property="jde450.home"/><then>
+      <copy-ota-files src="${dist.dir}/BB450" dest="${dist.ota.dir}/${module.version}/BB450"/>
     </then></if>
     <if><isset property="jde460.home"/><then>
       <copy-ota-files src="${dist.dir}/BB460" dest="${dist.ota.dir}/${module.version}/BB460"/>

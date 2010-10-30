@@ -7,15 +7,12 @@
     <property name="src.dir" location="src"/>
 	<property name="dist.dir" location="dist"/>
 	<property name="app.src.dir" location="../LogicMail/src"/>
+	<property name="res.src.dir" location="../LogicMail/res"/>
 	<property name="j2meunit.src.dir" location="../J2MEUnit/src"/>
 	<property file="../LogicMail/project.properties"/>
 
     <!-- Task definitions -->
-    <taskdef name="rapc" classname="ca.slashdev.bb.RapcTask">
-        <classpath>
-            <pathelement location="../lib/bb-ant-tools.jar"/>
-        </classpath>
-    </taskdef>
+    <typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
 
 	<!-- Build the application tests -->
 	<target name="build">
@@ -25,27 +22,28 @@
         <rapc output="${module.name}Tests"
               srcdir="${src.dir}"
               destdir="${dist.dir}"
-              jdehome="${jde.home}">
+              jdehome="${jde450.home}">
               <jdp title="${module.title}Tests"
                  vendor="${module.vendor}"
                  version="${module.version}"
                  type="cldc"
                  midletclass="org.logicprobe.LogicMail.LogicMailTests"/>
             <src>
-            	<fileset dir="${j2meunit.src.dir}">
-            		<include name="**/*.java"/>
-            	</fileset>
+                <fileset dir="${j2meunit.src.dir}">
+                    <include name="**/*.java"/>
+                </fileset>
                 <fileset dir="${src.dir}">
-					<include name="**/*.java"/>
-				</fileset>
-				<fileset dir="${app.src.dir}">
-					<include name="**/*.java"/>
-                	<include name="**/*.rrc"/>
-                	<include name="**/*.rrh"/>
-					<exclude name="**/*BB40.java"/>
-					<exclude name="org/logicprobe/LogicMail/LogicMail.java"/>
-				</fileset>
-			</src>
+                    <include name="**/*.java"/>
+                </fileset>
+                <fileset dir="${app.src.dir}">
+                    <include name="**/*.java"/>
+                    <exclude name="org/logicprobe/LogicMail/LogicMail.java"/>
+                </fileset>
+                <fileset dir="${res.src.dir}">
+                    <include name="**/*.rrc"/>
+                    <include name="**/*.rrh"/>
+                </fileset>
+            </src>
         </rapc>
 	</target>
 
