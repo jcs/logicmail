@@ -56,10 +56,10 @@ import net.rim.device.api.browser.field.RenderingApplication;
 import net.rim.device.api.browser.field.RenderingException;
 import net.rim.device.api.browser.field.RenderingSession;
 import net.rim.device.api.browser.field.RequestedResource;
+import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.Field;
-import net.rim.device.api.ui.Graphics;
 
 /**
  * Creates a browser field for displaying HTML.
@@ -136,14 +136,14 @@ public class BrowserFieldRenderer implements RenderingApplication {
 	 * @see net.rim.device.api.browser.field.RenderingApplication#getAvailableHeight(net.rim.device.api.browser.field.BrowserContent)
 	 */
 	public int getAvailableHeight(BrowserContent browserContent) {
-		return Graphics.getScreenHeight();
+		return Display.getHeight();
 	}
 
 	/* (non-Javadoc)
 	 * @see net.rim.device.api.browser.field.RenderingApplication#getAvailableWidth(net.rim.device.api.browser.field.BrowserContent)
 	 */
 	public int getAvailableWidth(BrowserContent browserContent) {
-		return Graphics.getScreenWidth();
+		return Display.getWidth();
 	}
 
 	/* (non-Javadoc)

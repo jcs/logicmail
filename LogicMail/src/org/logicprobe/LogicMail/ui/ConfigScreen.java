@@ -156,15 +156,15 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
     };
     
-    protected void onDisplay() {
-        super.onDisplay();
-        MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
-    }
-    
-    protected void onUndisplay() {
-        MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
-        super.onUndisplay();
-    }
+    protected void onUiEngineAttached(boolean attached) {
+        if(attached) {
+            MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+        }
+        else {
+            MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
+        }
+        super.onUiEngineAttached(attached);
+    };
     
     private void initFileSystemChoices() {
         // Populate fileSystemRoots with a list of all

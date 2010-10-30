@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.rim.device.api.system.Display;
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
@@ -117,7 +118,7 @@ public class StatusBarField extends Field {
      * @see net.rim.device.api.ui.Field#getPreferredWidth()
      */
     public int getPreferredWidth() {
-        return Graphics.getScreenWidth();
+        return Display.getWidth();
     }
 
     /* (non-Javadoc)

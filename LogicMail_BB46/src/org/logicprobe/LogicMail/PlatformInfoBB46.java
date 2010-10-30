@@ -30,21 +30,7 @@
  */
 package org.logicprobe.LogicMail;
 
-import net.rim.device.api.system.DeviceInfo;
-
 public class PlatformInfoBB46 extends PlatformInfoBB45 {
-
     public PlatformInfoBB46() {
-    }
-    
-    public String getPlatformVersion() {
-        if(platformVersion == null) {
-            platformVersion = DeviceInfo.getSoftwareVersion();
-        }
-        return platformVersion;
-    }
-    
-    public boolean hasTouchscreen() {
-        return false;
     }
 }

@@ -37,7 +37,7 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 import javax.microedition.io.file.FileSystemRegistry;
 
-import net.rim.device.api.system.CodeModuleManager;
+import net.rim.device.api.system.DeviceInfo;
 
 public class PlatformInfoBB45 extends PlatformInfo {
     protected String platformVersion;
@@ -50,16 +50,7 @@ public class PlatformInfoBB45 extends PlatformInfo {
     
     public String getPlatformVersion() {
         if(platformVersion == null) {
-            // Get the platform version
-            int[] handles = CodeModuleManager.getModuleHandles();
-            int size = handles.length;
-            //Check for a particular RIM module (Here, the ribbon app)
-            for (int i = size-1; i>=0;--i) {
-                    if (CodeModuleManager.getModuleName(handles[i]).equals("net_rim_bb_ribbon_app")) {
-                            platformVersion =
-                                    CodeModuleManager.getModuleVersion(handles[i]);
-                    }
-            }
+            platformVersion = DeviceInfo.getSoftwareVersion();
         }
         return platformVersion;
     }

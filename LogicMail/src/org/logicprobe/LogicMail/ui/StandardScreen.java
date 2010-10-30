@@ -146,24 +146,22 @@ public class StandardScreen extends MainScreen {
     }
 
     /* (non-Javadoc)
-     * @see net.rim.device.api.ui.Screen#onDisplay()
+     * @see net.rim.device.api.ui.Screen#onUiEngineAttached(boolean)
      */
-    protected void onDisplay() {
-        super.onDisplay();
-        updateStatus(navigationController.getCurrentStatus());
-        NotificationHandler.getInstance().cancelNotification();
-        screenProvider.onDisplay();
-    }
-
-    /* (non-Javadoc)
-     * @see net.rim.device.api.ui.Screen#onUndisplay()
-     */
-    protected void onUndisplay() {
-        screenProvider.onUndisplay();
-        superSetStatusImpl(originalStatusField);
-        statusBarField.setStatusText(null);
-        NotificationHandler.getInstance().cancelNotification();
-        super.onUndisplay();
+    protected void onUiEngineAttached(boolean attached) {
+        if(attached) {
+            super.onUiEngineAttached(true);
+            updateStatus(navigationController.getCurrentStatus());
+            NotificationHandler.getInstance().cancelNotification();
+            screenProvider.onDisplay();
+        }
+        else {
+            screenProvider.onUndisplay();
+            superSetStatusImpl(originalStatusField);
+            statusBarField.setStatusText(null);
+            NotificationHandler.getInstance().cancelNotification();
+            super.onUiEngineAttached(false);   
+        }
     }
 
     /* (non-Javadoc)

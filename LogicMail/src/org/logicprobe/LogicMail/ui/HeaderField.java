@@ -119,9 +119,6 @@ public class HeaderField extends Field {
             public void networkScanComplete(boolean success) {
                 onRadioStatusChanged();
             }
-            public void mobilityManagementEvent(int eventCode, int cause) {
-                onRadioStatusChanged();
-            }
             public void networkServiceChange(int networkId, int service) {
                 onRadioStatusChanged();
             }
