@@ -46,7 +46,7 @@ public abstract class FieldFactory {
         "org.logicprobe.LogicMail.ui.FieldFactoryBB50",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB46",
-        "org.logicprobe.LogicMail.ui.FieldFactoryBB42"
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB45"
     };
     
     public static synchronized FieldFactory getInstance() {

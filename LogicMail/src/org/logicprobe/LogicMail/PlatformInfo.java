@@ -50,7 +50,7 @@ public abstract class PlatformInfo {
         "org.logicprobe.LogicMail.PlatformInfoBB50",
         "org.logicprobe.LogicMail.PlatformInfoBB47",
         "org.logicprobe.LogicMail.PlatformInfoBB46",
-        "org.logicprobe.LogicMail.PlatformInfoBB42"
+        "org.logicprobe.LogicMail.PlatformInfoBB45"
     };
 
     /**

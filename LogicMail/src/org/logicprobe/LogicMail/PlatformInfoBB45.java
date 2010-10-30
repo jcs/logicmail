@@ -39,13 +39,13 @@ import javax.microedition.io.file.FileSystemRegistry;
 
 import net.rim.device.api.system.CodeModuleManager;
 
-public class PlatformInfoBB42 extends PlatformInfo {
+public class PlatformInfoBB45 extends PlatformInfo {
     protected String platformVersion;
     protected String[] filesystemRoots;
 
     private static String FILE_URL_PREFIX = "file:///";
     
-    public PlatformInfoBB42() {
+    public PlatformInfoBB45() {
     }
     
     public String getPlatformVersion() {

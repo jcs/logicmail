@@ -36,7 +36,7 @@ import net.rim.device.api.system.WLANInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class NetworkConnectorBB46 extends NetworkConnectorBB42 {
+public class NetworkConnectorBB46 extends NetworkConnectorBB45 {
 
     public NetworkConnectorBB46(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
         super(globalConfig, connectionConfig);

@@ -38,9 +38,9 @@ import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
-public class ScreenFactoryBB42 extends ScreenFactory {
+public class ScreenFactoryBB45 extends ScreenFactory {
 
-	public ScreenFactoryBB42() {
+	public ScreenFactoryBB45() {
 	}
 	
 	public void attachScreenTransition(Screen screen, int transitionType) {

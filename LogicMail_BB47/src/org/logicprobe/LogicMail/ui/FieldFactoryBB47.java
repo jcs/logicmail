@@ -40,7 +40,7 @@ public class FieldFactoryBB47 extends FieldFactoryBB46 {
     
     public FieldFactoryBB47() {
         hasTouchscreen = Touchscreen.isSupported();
-        oldFieldFactory = new FieldFactoryBB42();
+        oldFieldFactory = new FieldFactoryBB45();
     }
 
     public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {

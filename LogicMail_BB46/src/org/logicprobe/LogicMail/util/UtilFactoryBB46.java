@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail.util;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class UtilFactoryBB46 extends UtilFactoryBB42 {
+public class UtilFactoryBB46 extends UtilFactoryBB45 {
     public UtilFactoryBB46() {
         super();
     }

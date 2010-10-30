@@ -49,7 +49,7 @@ public abstract class ScreenFactory {
         "org.logicprobe.LogicMail.ui.ScreenFactoryBB60",
         "org.logicprobe.LogicMail.ui.ScreenFactoryBB50",
         "org.logicprobe.LogicMail.ui.ScreenFactoryBB47",
-        "org.logicprobe.LogicMail.ui.ScreenFactoryBB42"
+        "org.logicprobe.LogicMail.ui.ScreenFactoryBB45"
     };
 
     public static synchronized ScreenFactory getInstance() {

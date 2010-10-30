@@ -30,7 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-public class FieldFactoryBB46 extends FieldFactoryBB42 {
+public class FieldFactoryBB46 extends FieldFactoryBB45 {
     public FieldFactoryBB46() {
     }
 }

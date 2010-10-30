@@ -32,7 +32,7 @@ package org.logicprobe.LogicMail;
 
 import net.rim.device.api.system.DeviceInfo;
 
-public class PlatformInfoBB46 extends PlatformInfoBB42 {
+public class PlatformInfoBB46 extends PlatformInfoBB45 {
 
     public PlatformInfoBB46() {
     }

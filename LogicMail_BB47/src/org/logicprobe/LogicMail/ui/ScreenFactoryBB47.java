@@ -37,7 +37,7 @@ import net.rim.device.api.ui.Touchscreen;
 import net.rim.device.api.ui.VirtualKeyboard;
 import net.rim.device.api.ui.component.Dialog;
 
-public class ScreenFactoryBB47 extends ScreenFactoryBB42 {
+public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
     protected boolean hasTouchscreen;
     
     public ScreenFactoryBB47() {

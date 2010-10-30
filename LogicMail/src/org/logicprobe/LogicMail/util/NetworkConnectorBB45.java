@@ -45,14 +45,14 @@ import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class NetworkConnectorBB42 extends AbstractNetworkConnector {
+public class NetworkConnectorBB45 extends AbstractNetworkConnector {
     
     /** Stores transport ServiceBooks if found. Otherwise, null */
     private ServiceRecord srMDS, srWAP2, srWiFi;
     /** Flags indicating the coverage status of each transport */
     protected boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
     
-    public NetworkConnectorBB42(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
+    public NetworkConnectorBB45(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
         super(globalConfig, connectionConfig);
     }
     

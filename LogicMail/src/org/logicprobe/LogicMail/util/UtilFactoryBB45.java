@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *    notice, this list of conditions and the following disclaimer. 
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *    documentation and/or other materials provided with the distribution. 
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,28 +28,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.logicprobe.LogicMail.ui;
+package org.logicprobe.LogicMail.util;
 
-import net.rim.device.api.ui.component.TreeField;
-import net.rim.device.api.ui.component.TreeFieldCallback;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 
-public class FieldFactoryBB42 extends FieldFactory {
-	
-	public FieldFactoryBB42() {
-	}
-
-	public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {
-		TreeField treeField = new TreeField(callback, style);
-		treeField.setDefaultExpanded(true);
-		treeField.setIndentWidth(20);
-		return treeField;
-	}
-
-    public BorderedFieldManager getBorderedFieldManager() {
-        return new BorderedFieldManager();
+public class UtilFactoryBB45 extends UtilFactory {
+    public UtilFactoryBB45() {
+        super();
     }
-
-    public BorderedFieldManager getBorderedFieldManager(long style) {
-        return new BorderedFieldManager(style);
+    
+    public NetworkConnector getNetworkConnector(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
+        return new NetworkConnectorBB45(globalConfig, connectionConfig);
     }
 }

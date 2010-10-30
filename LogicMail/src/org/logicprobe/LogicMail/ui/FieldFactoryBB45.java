@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2009, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -7,10 +7,10 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution. 
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the project nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
@@ -28,17 +28,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.logicprobe.LogicMail.util;
+package org.logicprobe.LogicMail.ui;
 
-import org.logicprobe.LogicMail.conf.ConnectionConfig;
-import org.logicprobe.LogicMail.conf.GlobalConfig;
+import net.rim.device.api.ui.component.TreeField;
+import net.rim.device.api.ui.component.TreeFieldCallback;
 
-public class UtilFactoryBB42 extends UtilFactory {
-    public UtilFactoryBB42() {
-        super();
+public class FieldFactoryBB45 extends FieldFactory {
+	
+	public FieldFactoryBB45() {
+	}
+
+	public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {
+		TreeField treeField = new TreeField(callback, style);
+		treeField.setDefaultExpanded(true);
+		treeField.setIndentWidth(20);
+		return treeField;
+	}
+
+    public BorderedFieldManager getBorderedFieldManager() {
+        return new BorderedFieldManager();
     }
-    
-    public NetworkConnector getNetworkConnector(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
-        return new NetworkConnectorBB42(globalConfig, connectionConfig);
+
+    public BorderedFieldManager getBorderedFieldManager(long style) {
+        return new BorderedFieldManager(style);
     }
 }

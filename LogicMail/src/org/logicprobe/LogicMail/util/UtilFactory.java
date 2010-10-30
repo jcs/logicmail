@@ -47,7 +47,7 @@ public abstract class UtilFactory {
         "org.logicprobe.LogicMail.util.UtilFactoryBB50",
         "org.logicprobe.LogicMail.util.UtilFactoryBB47",
         "org.logicprobe.LogicMail.util.UtilFactoryBB46",
-        "org.logicprobe.LogicMail.util.UtilFactoryBB42"
+        "org.logicprobe.LogicMail.util.UtilFactoryBB45"
     };
 
     /**
