@@ -101,7 +101,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 		}
 		
 		if(field != null) {
-			BrowserFieldManager fieldManager = new BrowserFieldManager();
+		    ActiveFieldManager fieldManager = new ActiveFieldManager();
 			fieldManager.add(field);
 			field = fieldManager;
 		}

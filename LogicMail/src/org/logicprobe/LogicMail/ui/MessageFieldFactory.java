@@ -75,7 +75,7 @@ public class MessageFieldFactory {
     		return createBrowserField(messageNode, content);
     	}
     	else {
-            BrowserFieldManager fieldManager = new BrowserFieldManager();
+    	    ActiveFieldManager fieldManager = new ActiveFieldManager();
             fieldManager.add(new ActiveRichTextField(getNormalizedText(content)));
             return fieldManager;
     	}

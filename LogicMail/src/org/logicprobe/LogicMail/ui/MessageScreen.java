@@ -628,12 +628,12 @@ public class MessageScreen extends AbstractScreenProvider {
 	 * @see FieldChangeListener#fieldChanged(Field, int)
 	 */
     private void message_FieldChanged(Field field, int context) {
-    	if(field instanceof BrowserFieldManager) {
-    		if((context & BrowserFieldManager.ACTION_SEND_EMAIL) != 0) {
-    			String address = ((BrowserFieldManager)field).getSelectedToken();
+        if(field instanceof ActiveFieldManager) {
+            if((context & ActiveFieldManager.ACTION_SEND_EMAIL) != 0) {
+                String address = ((ActiveFieldManager)field).getSelectedToken();
                 navigationController.displayComposition((NetworkAccountNode)parentAccount, address);
-    		}
-    	}
+            }
+        }
 	}
 
 	/**
