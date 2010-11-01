@@ -102,28 +102,54 @@ public class ActiveFieldManager extends VerticalFieldManager {
                     && VERBMENUITEM_CLASS.equals(item.getClass().getName())) {
                 
                 Object cookie = ((CookieProvider)field).getCookieWithFocus();
-                if(EMAILCOOKIE_CLASS.equals(cookie.getClass().getName())) {
-                    
-                    String address = cookie.toString();
-                    if(address != null && address.indexOf('@') != -1) {
-                        MenuItem emailMenuItem =
-                            new EmailMenuItem(
+                if(cookie == null) { continue; }
+                
+                String address = getAddressFromCookie(cookie);
+                
+                if(address != null) {
+                    MenuItem emailMenuItem =
+                        new EmailMenuItem(
                                 item.toString(),
                                 item.getOrdinal(),
                                 item.getPriority(),
                                 address);
-                        menu.add(emailMenuItem);
-                        
-                        menu.deleteItem(i);
-                        i = 0;
-                        size = menu.getSize();
-                        
-                        menu.setDefault(emailMenuItem);
-                    }
+                    menu.add(emailMenuItem);
+
+                    menu.deleteItem(i);
+                    i = 0;
+                    size = menu.getSize();
+
+                    menu.setDefault(emailMenuItem);
                 }
             }
         }
         super.makeMenu(menu, instance);
+    }
+
+    private static String getAddressFromCookie(Object cookie) {
+        String address = null;
+        if(cookie instanceof Object[]) {
+            Object[] cookieArray = (Object[])cookie;
+            for(int j=0; j<cookieArray.length; j++) {
+                address = getAddressFromCookieItem(cookieArray[j]);
+                if(address != null) { break; }
+            }
+        }
+        else {
+            address = getAddressFromCookieItem(cookie);
+        }
+        return address;
+    }
+    
+    private static String getAddressFromCookieItem(Object cookie) {
+        String result = null;
+        if(EMAILCOOKIE_CLASS.equals(cookie.getClass().getName())) {
+            String address = cookie.toString();
+            if(address != null && address.indexOf('@') != -1) {
+                result = address;
+            }
+        }
+        return result;
     }
     
     /**
