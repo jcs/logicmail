@@ -333,9 +333,14 @@ public class Connection {
                     // another single-byte blocking read.
                     if(bytesAvailable == 0) {
                         firstByte = input.read();
-                        byteStream.write((byte)firstByte);
-                        bytesReceived++;
-                        bytesAvailable = input.available();
+                        if(firstByte != -1) {
+                            byteStream.write((byte)firstByte);
+                            bytesReceived++;
+                            bytesAvailable = input.available();
+                        }
+                        else {
+                            handleSocketReadError();
+                        }
                     }
                 }
                 
@@ -348,25 +353,30 @@ public class Connection {
                 }
             }
             else {
-                // If we got here, that means that the InputStream is either closed
-                // or we are in some otherwise unrecoverable state.  This means we
-                // will try to close the connection, ignore any errors from the
-                // close operation, and throw an IOException.
-                
-                EventLogger.logEvent(AppInfo.GUID,
-                        "Unable to read from socket, closing connection".getBytes(),
-                        EventLogger.INFORMATION);
-    
-                close();
-    
-                throw new IOException("Connection closed");
+                handleSocketReadError();
             }
         }
         // We should never get here, unless there is a connection error or the
         // line response tester has a bug.
+        handleSocketReadError();
         return null;
     }
     
+    private void handleSocketReadError() throws IOException {
+        // If we got here, that means that the InputStream is either closed
+        // or we are in some otherwise unrecoverable state.  This means we
+        // will try to close the connection, ignore any errors from the
+        // close operation, and throw an IOException.
+        
+        EventLogger.logEvent(AppInfo.GUID,
+                "Unable to read from socket, closing connection".getBytes(),
+                EventLogger.INFORMATION);
+
+        close();
+
+        throw new IOException("Connection closed");
+    }
+
     /**
      * Checks the byte stream buffer for a usable line of returnable data.
      * If a line is returned, the buffer will be updated to only contain data

@@ -183,16 +183,17 @@ public class ImapClient extends AbstractIncomingMailClient {
                 // Find out server capabilities
                 capabilities = imapProtocol.executeCapability();
 
+                // TLS initialization
+                int serverSecurity = accountConfig.getServerSecurity();
+                if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey(CAPABILITY_STARTTLS))
+                        || (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
+                    
+                    imapProtocol.executeStartTLS();
+                    connection = networkConnector.getConnectionAsTLS(connection);
+                    imapProtocol.setConnection(connection);
+                }
+                
                 openStarted = true;
-            }
-
-            // TLS initialization
-            int serverSecurity = accountConfig.getServerSecurity();
-            if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE && capabilities.containsKey(CAPABILITY_STARTTLS))
-                    || (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
-                imapProtocol.executeStartTLS();
-                connection = networkConnector.getConnectionAsTLS(connection);
-                imapProtocol.setConnection(connection);
             }
 
             // Authenticate with the server

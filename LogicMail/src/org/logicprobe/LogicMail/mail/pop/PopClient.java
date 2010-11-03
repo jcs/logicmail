@@ -155,30 +155,31 @@ public class PopClient extends AbstractIncomingMailClient {
             
             // Eat the initial server response
             connection.receive();
-            openStarted = true;
-        }
-        
-        // Find out server capabilities
-        capabilities = popProtocol.executeCapa();
-        
-        // TLS initialization
-        int serverSecurity = accountConfig.getServerSecurity();
-        if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE
-                && capabilities != null && capabilities.containsKey("STARTTLS"))
-        		|| (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
-        	if(popProtocol.executeStartTLS()) {
-        	    connection = networkConnector.getConnectionAsTLS(connection);
-        	    popProtocol.setConnection(connection);
-        	}
-        	else {
-        	    return false;
-        	}
-        }
-        else if(capabilities == null && serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE) {
-            if(popProtocol.executeStartTLS()) {
-                connection = networkConnector.getConnectionAsTLS(connection);
-                popProtocol.setConnection(connection);
+            
+            // Find out server capabilities
+            capabilities = popProtocol.executeCapa();
+            
+            // TLS initialization
+            int serverSecurity = accountConfig.getServerSecurity();
+            if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE
+                    && capabilities != null && capabilities.containsKey("STARTTLS"))
+                    || (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
+                if(popProtocol.executeStartTLS()) {
+                    connection = networkConnector.getConnectionAsTLS(connection);
+                    popProtocol.setConnection(connection);
+                }
+                else {
+                    return false;
+                }
             }
+            else if(capabilities == null && serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE) {
+                if(popProtocol.executeStartTLS()) {
+                    connection = networkConnector.getConnectionAsTLS(connection);
+                    popProtocol.setConnection(connection);
+                }
+            }
+            
+            openStarted = true;
         }
         
         try {
