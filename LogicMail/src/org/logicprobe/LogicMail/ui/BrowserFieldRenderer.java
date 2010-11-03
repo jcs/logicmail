@@ -70,6 +70,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 	
 	private RenderingSession renderingSession;
 	private BrowserContent browserContent;
+	private boolean loadingFinished;
 	
 	/**
 	 * Instantiates a new browser field renderer.
@@ -101,7 +102,13 @@ public class BrowserFieldRenderer implements RenderingApplication {
 		}
 		
 		if(field != null) {
-		    ActiveFieldManager fieldManager = new ActiveFieldManager();
+		    ActiveFieldManager fieldManager = new ActiveFieldManager() {
+		        protected void onDisplay() {
+		            (new Thread() { public void run() {
+		                BrowserFieldRenderer.this.finishLoading();
+		            }}).start();
+		        }
+		    };
 			fieldManager.add(field);
 			field = fieldManager;
 		}
@@ -114,10 +121,13 @@ public class BrowserFieldRenderer implements RenderingApplication {
 	 * by {@link #getBrowserField()} has been added to a manager
 	 * and rendered to the display.
 	 */
-	public void finishLoading() {
+	private void finishLoading() {
+	    if(loadingFinished) { return; }
+	    
 		if(browserContent != null) {
 			try {
 				browserContent.finishLoading();
+				loadingFinished = true;
 			} catch (RenderingException e) {
 				EventLogger.logEvent(AppInfo.GUID, ("RenderingException: " + e.toString()).getBytes(), EventLogger.ERROR);
 			}
@@ -348,7 +358,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 		}
 
 		public String getURL() {
-			return "";
+			return "http://localhost";
 		}
 
 		public void setRequestMethod(String method) throws IOException {

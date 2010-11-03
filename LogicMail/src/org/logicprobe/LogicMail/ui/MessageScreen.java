@@ -42,7 +42,6 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.i18n.DateFormat;
-import net.rim.device.api.system.Application;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.KeypadListener;
@@ -445,12 +444,12 @@ public class MessageScreen extends AbstractScreenProvider {
 		messageRendered = true;
     }
 
-	private void drawMessageFields(Vector messageFields) {
+	private void drawMessageFields(final Vector messageFields) {
         if(messageFields == null) {
             return;
         }
-    	int size = messageFields.size();
-        synchronized(Application.getEventLock()) {
+    	invokeLater(new Runnable() { public void run() {
+            int size = messageFields.size();
         	messageFieldManager.deleteAll();
         	
             for(int i=0;i<size;++i) {
@@ -466,7 +465,6 @@ public class MessageScreen extends AbstractScreenProvider {
             for(int i=0;i<size;++i) {
             	Field field = (Field)messageFields.elementAt(i);
             	if(field != null) {
-                	MessageFieldFactory.handleRenderedField(field);
             		field.setChangeListener(fieldChangeListener);
             	}
             }
@@ -495,7 +493,7 @@ public class MessageScreen extends AbstractScreenProvider {
             }
             
             padAndFocusScreen();
-        }
+        }});
     }
 
 	private void padAndFocusScreen() {

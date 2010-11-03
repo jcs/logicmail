@@ -30,6 +30,10 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.message.TextContent;
+import org.logicprobe.LogicMail.model.MessageNode;
+
+import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 
@@ -51,5 +55,12 @@ public class FieldFactoryBB45 extends FieldFactory {
 
     public BorderedFieldManager getBorderedFieldManager(long style) {
         return new BorderedFieldManager(style);
+    }
+    
+    public Field getHtmlMessageContentField(MessageNode messageNode, TextContent content) {
+        BrowserFieldRenderer fieldRenderer = new BrowserFieldRenderer(messageNode, content);
+        Field field = fieldRenderer.getBrowserField();
+        
+        return field;
     }
 }

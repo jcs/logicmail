@@ -30,8 +30,6 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import java.util.Hashtable;
-
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ImageContent;
@@ -55,6 +53,14 @@ import net.rim.device.api.ui.component.RichTextField;
 public class MessageFieldFactory {
 	private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	
+	/**
+	 * Creates a new {@link Field} instance to display the provided message
+	 * content.  The specific field class will depend on the content type.
+	 *
+	 * @param messageNode the message being displayed
+	 * @param content the content the field should represent
+	 * @return the field containing the content, or a placeholder if unsupported
+	 */
 	public static Field createMessageField(MessageNode messageNode, MimeMessageContent content) {
 		Field field;
 		if(content instanceof TextContent) {
@@ -72,7 +78,8 @@ public class MessageFieldFactory {
 	private static Field createTextMessageField(MessageNode messageNode, TextContent content) {
 		TextPart part = (TextPart)content.getMessagePart();
     	if(part.getMimeSubtype().equalsIgnoreCase("html")) {
-    		return createBrowserField(messageNode, content);
+    	    Field field = FieldFactory.getInstance().getHtmlMessageContentField(messageNode, content);
+    	    return field;
     	}
     	else {
     	    ActiveFieldManager fieldManager = new ActiveFieldManager();
@@ -121,27 +128,5 @@ public class MessageFieldFactory {
 				resources.getString(LogicMailResource.MESSAGERENDERER_UNSUPPORTED)
 				+ ' ' + part.getMimeType()
 				+ '/' + part.getMimeSubtype());
-	}
-
-	private static Hashtable createdBrowserFields = new Hashtable();
-	
-	private static Field createBrowserField(MessageNode messageNode, TextContent content) {
-		BrowserFieldRenderer fieldRenderer = new BrowserFieldRenderer(messageNode, content);
-
-		Field field = fieldRenderer.getBrowserField();
-		
-		if(field != null) {
-			createdBrowserFields.put(field, fieldRenderer);
-		}
-		
-		return field;
-	}
-
-	public static void handleRenderedField(Field field) {
-		BrowserFieldRenderer fieldRenderer = (BrowserFieldRenderer)createdBrowserFields.get(field);
-		if(fieldRenderer != null) {
-			fieldRenderer.finishLoading();
-			createdBrowserFields.remove(field);
-		}
 	}
 }

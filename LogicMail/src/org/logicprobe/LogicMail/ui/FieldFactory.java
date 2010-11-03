@@ -30,9 +30,12 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 
+import org.logicprobe.LogicMail.message.TextContent;
+import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
 public abstract class FieldFactory {
@@ -61,4 +64,16 @@ public abstract class FieldFactory {
     public abstract BorderedFieldManager getBorderedFieldManager();
     
     public abstract BorderedFieldManager getBorderedFieldManager(long style);
+    
+    /**
+     * Gets a new instance of a field for displaying HTML message content.
+     * This method needs a reference to the message node itself, since HTML
+     * content may reference embedded elements contained elsewhere in the
+     * message data.
+     *
+     * @param messageNode the message node being displayed
+     * @param content the specific content object containing the HTML text
+     * @return a field that displays the content.
+     */
+    public abstract Field getHtmlMessageContentField(MessageNode messageNode, TextContent content);
 }
