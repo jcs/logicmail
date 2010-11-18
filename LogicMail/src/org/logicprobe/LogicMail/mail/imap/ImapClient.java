@@ -421,7 +421,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             // If the subscriptions set does not contain the INBOX folder for
             // some reason, explicitly add it.  This prevents unusual behavior
             // where the user cannot find the INBOX in their folder tree.
-            if(!subscriptions.containsKey(inbox.getPath())) {
+            if(inbox != null && !subscriptions.containsKey(inbox.getPath())) {
                 subscriptions.put(inbox.getPath(), Boolean.TRUE);
             }
             FolderTreeItem prunedTree = pruneFolderTree(rootItem, subscriptions);
@@ -544,7 +544,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @return INBOX folder
      */
     private FolderTreeItem findInboxFolder(FolderTreeItem mailbox) {
-        if(mailbox.getName().equals(INBOX)) {
+        if(mailbox.getName().equalsIgnoreCase(INBOX)) {
             return mailbox;
         }
         else if(mailbox.hasChildren()) {
