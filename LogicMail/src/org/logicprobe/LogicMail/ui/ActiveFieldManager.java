@@ -66,7 +66,7 @@ public class ActiveFieldManager extends VerticalFieldManager {
      *
      * @param style Styles(s) for this manager.
      */
-    public ActiveFieldManager(int style) {
+    public ActiveFieldManager(long style) {
         super(style);
     }
 
