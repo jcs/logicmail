@@ -312,7 +312,8 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     public void makeMenu(Menu menu, int instance) {
-    	if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
+    	if(attachmentsFieldManager != null
+    	        && messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
     		if(attachmentsFieldManager.getFieldWithFocus() instanceof AttachmentField) {
                 menu.add(saveAttachmentItem);
     		}
