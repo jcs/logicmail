@@ -575,7 +575,7 @@ public class StringParserTest extends TestCase {
     public void testDecodeQuotedPrintable1() {
         String text = "=A1Hol=E1 Se=F1or!";
         String expectedResult = "¡Holá Señor!";
-        String result = StringParser.decodeQuotedPrintable(text.getBytes());
+        String result = StringParser.decodeQuotedPrintable(text.getBytes(), "ISO-8859-1");
         assertEquals(expectedResult, result);
     }
 
@@ -587,7 +587,7 @@ public class StringParserTest extends TestCase {
         String text = "=A1Hol=E1 Se=F1or!=20=20H=\n" +
             "ow=20are=20you=20today?";
         String expectedResult = "¡Holá Señor!  How are you today?";
-        String result = StringParser.decodeQuotedPrintable(text.getBytes());
+        String result = StringParser.decodeQuotedPrintable(text.getBytes(), "ISO-8859-1");
         assertEquals(expectedResult, result);
     }
 

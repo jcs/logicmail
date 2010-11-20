@@ -738,14 +738,8 @@ public class StringParser {
         String result;
 
         if (encoding.charAt(0) == 'Q') {
-            try {
-                // Quoted-Printable
-                result = new String(
-                        decodeQuotedPrintable(encodedText.getBytes()).getBytes(),
-                        charset);
-            } catch (UnsupportedEncodingException ex) {
-                result = "";
-            }
+            // Quoted-Printable
+            result = decodeQuotedPrintable(encodedText.getBytes(), charset);
         } else if (encoding.charAt(0) == 'B') {
             // Base64
             try {
@@ -1198,9 +1192,15 @@ public class StringParser {
 
     /**
      * Decode a quoted-printable string
+     * 
+     * @param text The raw input text (as a byte array) to decode
+     * @param charset The character set to use for the decoded String
+     * @return String created with the specified character set, falling back
+     *         to the platform default character set if it is invalid.
      */
-    public static String decodeQuotedPrintable(byte[] text) {
-        StringBuffer buffer = new StringBuffer();
+    public static String decodeQuotedPrintable(byte[] text, String charset) {
+        DataBuffer buf = new DataBuffer();
+        
         int index = 0;
         int length = text.length;
 
@@ -1219,22 +1219,28 @@ public class StringParser {
                     } else {
                         try {
                             int charVal = StringArrays.parseHexInt(text, index + 1, 2);
-                            buffer.append((char) charVal);
+                            buf.write((byte)charVal);
                         } catch (NumberFormatException exp) { }
 
                         index += 3;
                     }
                 }
             } else if (text[index] == (byte)'_') {
-                buffer.append(' ');
+                buf.write((byte)' ');
                 index++;
             } else {
-                buffer.append((char)text[index]);
+                buf.write((byte)text[index]);
                 index++;
             }
         }
 
-        return buffer.toString();
+        String result;
+        try {
+            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength(), charset);
+        } catch (UnsupportedEncodingException e) {
+            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+        }
+        return result;
     }
 
     /**

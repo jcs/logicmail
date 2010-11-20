@@ -63,7 +63,7 @@ public class TextContent extends MimeMessageContent {
         
         // Check for any encodings that need to be handled
         if (encoding.equalsIgnoreCase("quoted-printable")) {
-            this.text = StringParser.decodeQuotedPrintable(data);
+            this.text = StringParser.decodeQuotedPrintable(data, charset);
         }
         else if (encoding.equalsIgnoreCase(ENCODING_BASE64)) {
         	byte[] textBytes;
