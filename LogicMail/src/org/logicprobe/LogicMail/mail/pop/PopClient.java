@@ -31,11 +31,14 @@
 
 package org.logicprobe.LogicMail.mail.pop;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -60,7 +63,6 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.MailMessageParser;
-import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * 
@@ -77,6 +79,8 @@ public class PopClient extends AbstractIncomingMailClient {
     private String username;
     private String password;
     private boolean openStarted;
+    
+    private static final byte[] CRLF = new byte[] { (byte)'\r', (byte)'\n' };
     
     /**
      * Table of supported server capabilities
@@ -415,7 +419,12 @@ public class PopClient extends AbstractIncomingMailClient {
         MessageEnvelope env;
         for(int i=0; i<indices.length; i++) {
             if(!flagsOnly) {
-                headerText = popProtocol.executeTop(indices[i], 0);
+                byte[][] topResult = popProtocol.executeTop(indices[i], 0);
+                headerText = new String[topResult.length];
+                for(int j=0; j<topResult.length; j++) {
+                    headerText[j] = new String(topResult[j]);
+                }
+                
                 env = MailMessageParser.parseMessageEnvelope(headerText);
             }
             else {
@@ -460,19 +469,80 @@ public class PopClient extends AbstractIncomingMailClient {
         int maxLines = accountConfig.getMaxMessageLines();
 
         // Download the message text
-        String[] message = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines, progressHandler);
+        byte[][] topResult = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines, progressHandler);
+        
+        InputStream inputStream = convertMessageResultToStream(topResult);
         
         Hashtable contentMap = new Hashtable();
-        MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, StringParser.createInputStream(message));
-        Message msg = new Message(rootPart);
-        Enumeration e = contentMap.keys();
-        while(e.hasMoreElements()) {
-        	MimeMessagePart part = (MimeMessagePart)e.nextElement();
-        	msg.putContent(part, (MimeMessageContent)contentMap.get(part));
+        MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, inputStream);
+        if(rootPart != null) {
+            Message msg = new Message(rootPart);
+            Enumeration e = contentMap.keys();
+            while(e.hasMoreElements()) {
+            	MimeMessagePart part = (MimeMessagePart)e.nextElement();
+            	msg.putContent(part, (MimeMessageContent)contentMap.get(part));
+            }
+            return msg;
         }
-        return msg;
+        else {
+            return null;
+        }
     }
 
+    /**
+     * Convert the server result to an InputStream wrapping a byte[] buffer
+     * that includes the CRLF markers that were stripped out by the socket
+     * reading code, and has any other necessary pre-processing applied.
+     *
+     * @param resultLines the lines of message data returned by the server
+     * @return the input stream to be passed to the parser code
+     */
+    private static InputStream convertMessageResultToStream(byte[][] resultLines) {
+        DataBuffer buf = new DataBuffer();
+        
+        boolean inHeaders = true;
+        for(int i=0; i<resultLines.length; i++) {
+            if(inHeaders) {
+                // Special logic to unfold message headers and replace HTAB
+                // indentations in folded headers with spaces.
+                // This is a workaround for a bug in MIMEInputStream that
+                // causes it to fail to parse certain messages with folded
+                // headers.  (The bug appears to be fixed in OS 6.0, but the
+                // workaround is always invoked because it should not have
+                // any harmful side-effects.)
+                if(resultLines[i].length == 0) {
+                    inHeaders = false;
+                    if(i > 0) {
+                        buf.write(CRLF);
+                    }
+                    buf.write(CRLF);
+                }
+                else if(resultLines[i][0] == (byte)'\t') {
+                    resultLines[i][0] = (byte)' ';
+                    buf.write(resultLines[i]);
+                }
+                else if(resultLines[i][0] == (byte)' ') {
+                    buf.write(resultLines[i]);
+                }
+                else {
+                    if(i > 0) {
+                        buf.write(CRLF);
+                    }
+                    buf.write(resultLines[i]);
+                }
+            }
+            else {
+                buf.write(resultLines[i]);
+                buf.write(CRLF);
+            }
+        }
+        
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(
+                buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+        
+        return inputStream;
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
      */

@@ -38,7 +38,6 @@ import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.DateTimeUtilities;
 import net.rim.device.api.util.NumberUtilities;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -339,37 +338,24 @@ public class StringParser {
         switch (cal.get(Calendar.DAY_OF_WEEK)) {
         case Calendar.SUNDAY:
             buf.append("Sun, ");
-
             break;
-
         case Calendar.MONDAY:
             buf.append("Mon, ");
-
             break;
-
         case Calendar.TUESDAY:
             buf.append("Tue, ");
-
             break;
-
         case Calendar.WEDNESDAY:
             buf.append("Wed, ");
-
             break;
-
         case Calendar.THURSDAY:
             buf.append("Thu, ");
-
             break;
-
         case Calendar.FRIDAY:
             buf.append("Fri, ");
-
             break;
-
         case Calendar.SATURDAY:
             buf.append("Sat, ");
-
             break;
         }
 
@@ -379,62 +365,39 @@ public class StringParser {
         switch (cal.get(Calendar.MONTH)) {
         case Calendar.JANUARY:
             buf.append("Jan ");
-
             break;
-
         case Calendar.FEBRUARY:
             buf.append("Feb ");
-
             break;
-
         case Calendar.MARCH:
             buf.append("Mar ");
-
             break;
-
         case Calendar.APRIL:
             buf.append("Apr ");
-
             break;
-
         case Calendar.MAY:
             buf.append("May ");
-
             break;
-
         case Calendar.JUNE:
             buf.append("Jun ");
-
             break;
-
         case Calendar.JULY:
             buf.append("Jul ");
-
             break;
-
         case Calendar.AUGUST:
             buf.append("Aug ");
-
             break;
-
         case Calendar.SEPTEMBER:
             buf.append("Sep ");
-
             break;
-
         case Calendar.OCTOBER:
             buf.append("Oct ");
-
             break;
-
         case Calendar.NOVEMBER:
             buf.append("Nov ");
-
             break;
-
         case Calendar.DECEMBER:
             buf.append("Dec ");
-
             break;
         }
 
@@ -599,12 +562,15 @@ public class StringParser {
         int size = text.length();
         int index = 0;
 
+        boolean unfolded;
         while (index < size) {
+            unfolded = false;
             if((index + 2 < size)
                     && (text.charAt(index) == '\r')
                     && (text.charAt(index + 1) == '\n')
-                    && (text.charAt(index + 2) == ' ')) {
+                    && (text.charAt(index + 2) == ' ' || text.charAt(index + 2) == '\t')) {
                 index += 3;
+                unfolded = true;
                 if(index == size) { break; }
             }
             
@@ -626,7 +592,14 @@ public class StringParser {
             }
             else {
                 // Plain text found
-                buf.append(text.charAt(index));
+                if(unfolded) { buf.append(' '); }
+                char ch = text.charAt(index);
+                if(ch == '\t') {
+                    buf.append(' ');
+                }
+                else {
+                    buf.append(ch);
+                }
                 index++;
             }
         }
@@ -1200,20 +1173,6 @@ public class StringParser {
         } else {
             return "ISO-8859-1";
         }
-    }
-
-    /**
-     * Convert an array of lines into a usable InputStream
-     */
-    public static InputStream createInputStream(String[] rawLines) {
-        StringBuffer buf = new StringBuffer();
-
-        for (int i = 0; i < rawLines.length; i++) {
-            buf.append(rawLines[i]);
-            buf.append(strCRLF);
-        }
-
-        return new ByteArrayInputStream(buf.toString().getBytes());
     }
 
     /**

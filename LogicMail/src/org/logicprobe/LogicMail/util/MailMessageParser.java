@@ -195,6 +195,9 @@ public class MailMessageParser {
         try {
             mimeInputStream = new MIMEInputStream(inputStream);
         } catch (MIMEParsingException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to parse MIME encoded message: " + e.getMessage()).getBytes(),
+                    EventLogger.WARNING);
             return null;
         }
 

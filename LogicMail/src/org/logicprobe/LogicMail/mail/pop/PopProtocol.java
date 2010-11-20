@@ -206,7 +206,7 @@ public class PopProtocol {
      * @param index Message index
      * @param lines Number of lines to retrieve
      */
-    public String[] executeTop(int index, int lines) throws IOException, MailException {
+    public byte[][] executeTop(int index, int lines) throws IOException, MailException {
     	return executeTop(index, lines, null);
     }
     
@@ -216,14 +216,14 @@ public class PopProtocol {
      * @param lines Number of lines to retrieve
      * @param progressHandler progress handler
      */
-    public String[] executeTop(int index, int lines, MailProgressHandler progressHandler) throws IOException, MailException {
+    public byte[][] executeTop(int index, int lines, MailProgressHandler progressHandler) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
             ("PopProtocol.executeTop("+index+", "+lines+")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        return executeFollow(TOP_ + index + ' ' + lines, true, progressHandler);
+        return executeFollowBinary(TOP_ + index + ' ' + lines, true, progressHandler);
     }
     
     /**
