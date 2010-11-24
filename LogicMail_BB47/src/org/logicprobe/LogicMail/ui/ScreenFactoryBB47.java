@@ -49,7 +49,7 @@ public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
             return getStandardTouchScreen(navigationController, new TouchMailHomeScreen(mailRootNode));
         }
         else {
-            return new StandardScreen(navigationController, new MailHomeScreen(mailRootNode));
+            return getStandardScreen(navigationController, new MailHomeScreen(mailRootNode));
         }
     }
 
@@ -58,7 +58,7 @@ public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
             return getStandardTouchScreen(navigationController, new MailboxScreen(mailboxNode));
         }
         else {
-            return new StandardScreen(navigationController, new MailboxScreen(mailboxNode));
+            return getStandardScreen(navigationController, new MailboxScreen(mailboxNode));
         }
     }
     

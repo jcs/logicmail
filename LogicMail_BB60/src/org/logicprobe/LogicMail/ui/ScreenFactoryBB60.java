@@ -35,4 +35,8 @@ public class ScreenFactoryBB60 extends ScreenFactoryBB50 {
     protected StandardScreen getStandardTouchScreen(NavigationController navigationController, ScreenProvider screenProvider) {
         return new StandardTouchScreenBB60(navigationController, screenProvider);
     }
+    
+    protected StandardScreen getStandardScreen(NavigationController navigationController, ScreenProvider screenProvider) {
+        return new StandardScreenBB60(navigationController, screenProvider);
+    }
 }

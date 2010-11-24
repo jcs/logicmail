@@ -52,41 +52,41 @@ public class ScreenFactoryBB45 extends ScreenFactory {
 	}
 	
 	public StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {
-		return new StandardScreen(navigationController, new MailHomeScreen(mailRootNode));
+		return getStandardScreen(navigationController, new MailHomeScreen(mailRootNode));
 	}
 
 	public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-		return new StandardScreen(navigationController, new MailboxScreen(mailboxNode));
+		return getStandardScreen(navigationController, new MailboxScreen(mailboxNode));
 	}
 	
 	public StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode) {
-		return new StandardScreen(navigationController, new MessageScreen(messageNode));
+		return getStandardScreen(navigationController, new MessageScreen(messageNode));
 	}
 
 	public StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode) {
-		return new StandardScreen(navigationController, new CompositionScreen(accountNode));
+		return getStandardScreen(navigationController, new CompositionScreen(accountNode));
 	}
 	
 	public StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode) {
-		return new StandardScreen(navigationController, new CompositionScreen(
+		return getStandardScreen(navigationController, new CompositionScreen(
 				accountNode,
 				messageNode,
 				CompositionScreen.COMPOSE_NORMAL));
 	}
 	
 	public StandardScreen getCompositionScreen(NavigationController navigationController, NetworkAccountNode accountNode, String address) {
-		return new StandardScreen(navigationController, new CompositionScreen(accountNode, address));
+		return getStandardScreen(navigationController, new CompositionScreen(accountNode, address));
 	}
 	
 	public StandardScreen getCompositionReplyScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode, boolean replyAll) {
-		return new StandardScreen(navigationController, new CompositionScreen(
+		return getStandardScreen(navigationController, new CompositionScreen(
 				accountNode,
 				messageNode,
 				replyAll ? CompositionScreen.COMPOSE_REPLY_ALL : CompositionScreen.COMPOSE_REPLY));
 	}
 	
 	public StandardScreen getCompositionForwardScreen(NavigationController navigationController, NetworkAccountNode accountNode, MessageNode messageNode) {
-		return new StandardScreen(navigationController, new CompositionScreen(
+		return getStandardScreen(navigationController, new CompositionScreen(
 				accountNode,
 				messageNode,
 				CompositionScreen.COMPOSE_FORWARD));
@@ -100,5 +100,9 @@ public class ScreenFactoryBB45 extends ScreenFactory {
 	    else {
 	        return null;
 	    }
+	}
+	
+	protected StandardScreen getStandardScreen(NavigationController navigationController, ScreenProvider screenProvider) {
+	    return new StandardScreen(navigationController, screenProvider);
 	}
 }
