@@ -215,6 +215,7 @@ public class ConfigScreen extends AbstractConfigScreen {
                 "Fran\u00e7ais",// French: fr
                 "Italiano",     // Italian: it
                 "Nederlands",   // Dutch: nl
+                "\ufeff\u0420\u0443\u0441\u0441\u043a\u0438\u0439", // Russian: ru
                 "Ti\u00ea\u0301ng Vi\u00ea\u0323t", // Vietnamese: vi
                 "\u4E2D\u6587", // Chinese: zh
         };
@@ -227,6 +228,7 @@ public class ConfigScreen extends AbstractConfigScreen {
                 "fr", // French
                 "it", // Italian
                 "nl", // Dutch
+                "ru", // Russian
                 "vi", // Vietnamese
                 "zh", // Chinese
         };
