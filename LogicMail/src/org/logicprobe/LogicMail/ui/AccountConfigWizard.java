@@ -255,7 +255,7 @@ public class AccountConfigWizard extends WizardController {
                         ConnectionConfig.SECURITY_NONE);
             securityChoiceField.setChangeListener(fieldChangeListener);
 
-            portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(143));
+            portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', "143");
             portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
             portEditField.setChangeListener(fieldChangeListener);
 
@@ -265,6 +265,15 @@ public class AccountConfigWizard extends WizardController {
             add(portEditField);
         }
 
+        public void onPageEnter() {
+            if(accountType == ACCOUNT_TYPE_POP) {
+                portEditField.setText("110");
+            }
+            else if(accountType == ACCOUNT_TYPE_IMAP) {
+                portEditField.setText("143");
+            }
+        };
+        
         private void mailServerWizardScreen_fieldChanged(Field field, int context) {
             if(field == securityChoiceField) {
                 if(accountType == ACCOUNT_TYPE_POP) {
