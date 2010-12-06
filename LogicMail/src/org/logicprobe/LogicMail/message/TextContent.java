@@ -37,10 +37,12 @@ import org.logicprobe.LogicMail.util.StringFactory;
 import org.logicprobe.LogicMail.util.StringParser;
 
 /**
- * Represents message content of the text type
+ * Represents message content of the text type.
+ * It is assumed that the raw (byte[]) form of text content is UTF-8.
  */
 public class TextContent extends MimeMessageContent {
 	private String text;
+	private byte[] rawData;
 	
 	public TextContent(TextPart textPart, String text) {
 		super(textPart);
@@ -105,7 +107,7 @@ public class TextContent extends MimeMessageContent {
     
     public TextContent(TextPart textPart, byte[] rawData) {
         super(textPart);
-        this.text = new String(rawData);
+        this.rawData = rawData;
     }
 	
     /**
@@ -139,13 +141,29 @@ public class TextContent extends MimeMessageContent {
 	 * @see org.logicprobe.LogicMail.message.MessageContent#getRawData()
 	 */
 	public byte[] getRawData() {
-		return this.text.getBytes();
+	    byte[] result;
+	    if(rawData != null) {
+	        result = this.rawData;
+	    }
+	    else {
+	        try {
+	            result = this.text.getBytes("UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                result = this.text.getBytes();
+            }
+	    }
+	    return result;
 	}
 
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.message.MimeMessageContent#putRawData(byte[])
 	 */
 	protected void putRawData(byte[] rawData) {
-		this.text = new String(rawData);
+	    this.rawData = rawData;
+		try {
+            this.text = new String(rawData, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            this.text = new String(rawData);
+        }
 	}
 }

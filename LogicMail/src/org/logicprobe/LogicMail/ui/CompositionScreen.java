@@ -641,14 +641,8 @@ public class CompositionScreen extends AbstractScreenProvider {
         synchronized(generateLock) {
         	String contentText = messageEditField.getText();
             MimeMessagePart bodyPart = MimeMessagePartFactory.createMimeMessagePart(
-            		"text", "plain", null, "7bit", "us-ascii", "", "", contentText.length());
-            MimeMessageContent bodyContent;
-            try {
-    			bodyContent = MimeMessageContentFactory.createContentEncoded(
-    					bodyPart, contentText.getBytes());
-    		} catch (UnsupportedContentException e) {
-    			bodyContent = null;
-    		}
+            		"text", "plain", null, null, null, "", "", contentText.length());
+            MimeMessageContent bodyContent = new TextContent((TextPart)bodyPart, contentText);
             
     		if(attachmentsFieldManager != null) {
     		    MultiPart multiPart = new MultiPart(MultiPart.MIXED);
