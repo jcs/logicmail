@@ -34,6 +34,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -186,7 +187,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return contentFileManager.messageContentExists(folder, messageToken);
     }
     
-    public boolean requestMessageRefresh(final MessageToken messageToken) {
+    public boolean requestMessageRefresh(final MessageToken messageToken, final MimeMessagePart[] partsToSkip) {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         if(handler == null) { return false; }
         
@@ -202,10 +203,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
         // Start a thread for the remaining logic, which includes file I/O
         (new Thread() { public void run() {
             if(mailStore.hasMessageParts()) {
-                requestMessageRefreshParts(folder, messageToken, structure, cacheOnly);
+                requestMessageRefreshParts(folder, messageToken, structure, partsToSkip, cacheOnly);
             }
             else {
-                requestMessageRefreshWhole(folder, messageToken, structure, cacheOnly);
+                requestMessageRefreshWhole(folder, messageToken, structure, partsToSkip, cacheOnly);
             }
         }}).start();
         return true;
@@ -215,10 +216,20 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final FolderTreeItem folder,
             final MessageToken messageToken,
             final MimeMessagePart structure,
+            final MimeMessagePart[] partsToSkip,
             final boolean cacheOnly) {
         
         // Determine which parts are displayable
         MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure);
+
+        // Prune the displayable parts array, so it doesn't contain anything
+        // we want to skip.  This method is pretty inefficient, but the arrays
+        // it operates on should be very small.
+        for(int i=0; i<partsToSkip.length; i++) {
+            if(Arrays.contains(displayableParts, partsToSkip[i])) {
+                Arrays.remove(displayableParts, partsToSkip[i]);
+            }
+        }
         
         // Load displayable parts from cache
         Hashtable loadedPartSet = loadMessagePartsFromCache(folder, messageToken, displayableParts);
@@ -266,7 +277,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
     }
     
-    private Hashtable loadMessagePartsFromCache(final FolderTreeItem folder, final MessageToken messageToken, MimeMessagePart[] partsToLoad) {
+    private Hashtable loadMessagePartsFromCache(
+            final FolderTreeItem folder,
+            final MessageToken messageToken,
+            final MimeMessagePart[] partsToLoad) {
+        
         Hashtable loadedPartSet = new Hashtable(partsToLoad.length);
    
         if(contentFileManager.messageContentExists(folder, messageToken)) {
@@ -302,6 +317,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final FolderTreeItem folder,
             final MessageToken messageToken,
             final MimeMessagePart structure,
+            final MimeMessagePart[] partsToSkip,
             final boolean cacheOnly) {
         
         //TODO: Implement more robust POP behavior

@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.model;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.LocalMailStore;
 import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 
 public class LocalMailStoreServices extends MailStoreServices {
     private final LocalMailStore mailStore;
@@ -50,8 +51,16 @@ public class LocalMailStoreServices extends MailStoreServices {
         throw new UnsupportedOperationException();
     }
     
-    public boolean requestMessageRefresh(MessageToken messageToken) {
-        mailStore.requestMessage(messageToken);
-        return true;
+    public boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip) {
+        if(partsToSkip != null && partsToSkip.length > 0) {
+            // The current local mail store implementation only loads complete
+            // message content, so the presence of anything in the parts-to-skip
+            // collection means we can ignore the refresh request.
+            return false;
+        }
+        else {
+            mailStore.requestMessage(messageToken);
+            return true;
+        }
     }
 }

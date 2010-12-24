@@ -398,9 +398,10 @@ public abstract class MailStoreServices {
      * use configuration settings to determine what actually gets loaded.
      * 
      * @param messageToken the message token
+     * @param partsToSkip parts to skip in the refresh, because they are already loaded
      * @return true, if a refresh was initiated
      */
-    public abstract boolean requestMessageRefresh(MessageToken messageToken);
+    public abstract boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip);
     
     /**
      * Explicitly request message parts to be loaded.  This method will attempt

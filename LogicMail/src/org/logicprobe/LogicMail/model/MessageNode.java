@@ -586,7 +586,7 @@ public class MessageNode implements Node {
 	 * @param mimeMessageContent The content to add.
 	 */
 	void putMessageContent(MimeMessageContent mimeMessageContent) {
-		synchronized(mimeMessageContent) {
+		synchronized(messageContent) {
 			cached = false;
 			this.messageContent.put(mimeMessageContent.getMessagePart(), mimeMessageContent);
 		}
@@ -603,14 +603,30 @@ public class MessageNode implements Node {
 	 * @param messageContent The content sections to add.
 	 */
 	void putMessageContent(MimeMessageContent[] messageContent) {
-		synchronized(messageContent) {
-			cached = false;
-			for(int i=0; i<messageContent.length; i++) {
-				this.messageContent.put(messageContent[i].getMessagePart(), messageContent[i]);
-			}
-		}
-		fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
+	    putMessageContent(messageContent, true);
 	}
+	
+    /**
+     * Adds content to this message node.
+     * <p>
+     * This method provides for a batch addition of content, causing a
+     * single event to be fired afterwards.
+     * </p>
+     * 
+     * @param messageContent The content sections to add.
+     * @param notify True, if a change event should be fired
+     */
+    void putMessageContent(MimeMessageContent[] messageContent, boolean notify) {
+        synchronized(messageContent) {
+            cached = false;
+            for(int i=0; i<messageContent.length; i++) {
+                this.messageContent.put(messageContent[i].getMessagePart(), messageContent[i]);
+            }
+        }
+        if(notify) {
+            fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
+        }
+    }
 	
 	/**
 	 * Gets the message structure for this node.
@@ -1078,8 +1094,19 @@ public class MessageNode implements Node {
      */
     public boolean refreshMessage() {
         if(refreshInProgress.compareAndSet(false, true)) {
+            // Build a list of all message parts that have already been loaded
+            MimeMessagePart[] loadedParts;
+            synchronized(messageContent) {
+                loadedParts = new MimeMessagePart[messageContent.size()];
+                int i=0;
+                Enumeration e = messageContent.keys();
+                while(e.hasMoreElements()) {
+                    loadedParts[i++] = (MimeMessagePart)e.nextElement();
+                }
+            }
+            
             MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-            return mailStore.requestMessageRefresh(messageToken);
+            return mailStore.requestMessageRefresh(messageToken, loadedParts);
         }
         else {
             return false;
@@ -1147,7 +1174,7 @@ public class MessageNode implements Node {
         case MessageEvent.TYPE_FULLY_LOADED:
             setMessageStructure(e.getMessageStructure());
             setMessageSource(e.getMessageSource());
-            putMessageContent(content);
+            putMessageContent(content, false);
             contentLoadComplete();
             break;
         case MessageEvent.TYPE_CONTENT_LOADED:
@@ -1155,7 +1182,7 @@ public class MessageNode implements Node {
                 contentLoadComplete();
             }
             else {
-                putMessageContent(content);
+                putMessageContent(content, false);
             }
             break;
         }
@@ -1163,6 +1190,7 @@ public class MessageNode implements Node {
     
     private void contentLoadComplete() {
         refreshInProgress.set(false);
+        fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
     }
 
     /**

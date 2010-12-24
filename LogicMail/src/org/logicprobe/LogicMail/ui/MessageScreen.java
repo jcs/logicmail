@@ -413,7 +413,7 @@ public class MessageScreen extends AbstractScreenProvider {
 		Vector messageFields = new Vector();
     	
     	// Add fields to display the message body
-    	MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());    	
+    	MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());
     	for(int i=0; i<displayableParts.length; i++) {
     		MimeMessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {
