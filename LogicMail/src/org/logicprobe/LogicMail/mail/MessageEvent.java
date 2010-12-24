@@ -46,9 +46,12 @@ public class MessageEvent extends MailStoreEvent {
 	private MimeMessageContent[] mimeMessageContent;
 	private String messageSource;
 	
+	/** The entire message has been loaded. */
 	public final static int TYPE_FULLY_LOADED = 0;
+	/** Only message content has been loaded. */
 	public final static int TYPE_CONTENT_LOADED = 1;
-	public final static int TYPE_FLAGS_CHANGED = 2;
+	/** Message flags have changed. */
+	public final static int TYPE_FLAGS_CHANGED = 3;
 	
 	/**
 	 * Creates a new instance of MessageEvent.

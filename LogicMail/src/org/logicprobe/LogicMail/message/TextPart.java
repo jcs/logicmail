@@ -39,11 +39,15 @@ import java.io.IOException;
  * Text message part (MIME type: "text/????")
  */
 public class TextPart extends ContentPart {
-	private String charset;
+    public static String TYPE = "text";
+    public static String SUBTYPE_HTML = "html";
+    public static String SUBTYPE_PLAIN = "plain";
+    
+    private String charset;
     
     /** Creates a new instance of TextPart */
     public TextPart(String mimeSubtype, String name, String encoding, String charset, String disposition, String contentId, int size, String tag) {
-        super("text", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+        super(TYPE, mimeSubtype, name, encoding, disposition, contentId, size, tag);
         this.charset = charset;
     }
 

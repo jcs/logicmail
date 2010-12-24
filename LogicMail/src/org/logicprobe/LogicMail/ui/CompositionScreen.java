@@ -744,7 +744,7 @@ public class CompositionScreen extends AbstractScreenProvider {
                 if(data != null && data.length > 0) {
                     try {
                         MimeMessageContent attachmentContent =
-                            MimeMessageContentFactory.createContentRaw(attachmentPart, data);
+                            MimeMessageContentFactory.createContentRaw(attachmentPart, data, false);
                         MultiPart multiPart = (MultiPart)pendingMessage.getStructure();
                         multiPart.addPart(attachmentPart);
                         pendingMessage.putContent(attachmentPart, attachmentContent);

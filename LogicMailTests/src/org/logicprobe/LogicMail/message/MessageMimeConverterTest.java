@@ -215,7 +215,7 @@ public class MessageMimeConverterTest extends TestCase {
         TextPart textPart = new TextPart("plain", "", "7bit", "us-ascii", "", "", 0);
         TextContent textContent = new TextContent(textPart, "Hello World");
         ImagePart imagePart = new ImagePart("png", "test.png", "base64", "", "", RAW_PNG_DATA.length);
-        ImageContent imageContent = new ImageContent(imagePart, RAW_PNG_DATA);
+        ImageContent imageContent = new ImageContent(imagePart, RAW_PNG_DATA, false);
         
         MultiPart multiPart = new MultiPart("mixed");
         multiPart.addPart(textPart);
@@ -264,7 +264,7 @@ public class MessageMimeConverterTest extends TestCase {
         TextPart textPart = new TextPart("plain", "", "7bit", "us-ascii", "", "", 0);
         TextContent textContent = new TextContent(textPart, "Hello World");
         ImagePart imagePart = new ImagePart("png", "test.png", "base64", "", "", RAW_PNG_DATA.length);
-        ImageContent imageContent = new ImageContent(imagePart, RAW_PNG_DATA);
+        ImageContent imageContent = new ImageContent(imagePart, RAW_PNG_DATA, false);
         ApplicationPart applicationPart = new ApplicationPart("octet-stream", "test.dat", "base64", "", "", RAW_MISC_DATA.length, "");
         ApplicationContent applicationContent = new ApplicationContent(applicationPart, RAW_MISC_DATA);
         AudioPart audioPart = new AudioPart("mp3", "test.mp3", "base64", "", "", RAW_MISC_DATA.length, "");

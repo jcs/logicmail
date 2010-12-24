@@ -62,8 +62,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     public static final int REQUEST_MESSAGE_UNDELETE         = 23;
     public static final int REQUEST_MESSAGE_ANSWERED         = 24;
     public static final int REQUEST_MESSAGE_FORWARDED        = 25;
-    public static final int REQUEST_MESSAGE_APPEND           = 26;
-    public static final int REQUEST_MESSAGE_COPY             = 27;
+    public static final int REQUEST_MESSAGE_SEEN             = 26;
+    public static final int REQUEST_MESSAGE_UNSEEN           = 27;
+    public static final int REQUEST_MESSAGE_APPEND           = 28;
+    public static final int REQUEST_MESSAGE_COPY             = 29;
 
     /**
      * Maximum amount of time to spend in the idle state.
@@ -157,6 +159,12 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             break;
         case REQUEST_MESSAGE_FORWARDED:
             handleRequestMessageForwarded((MessageToken)params[0], (MessageFlags)params[1], tag);
+            break;
+        case REQUEST_MESSAGE_SEEN:
+            handleRequestMessageSeen((MessageToken)params[0], (MessageFlags)params[1], tag);
+            break;
+        case REQUEST_MESSAGE_UNSEEN:
+            handleRequestMessageUnseen((MessageToken)params[0], (MessageFlags)params[1], tag);
             break;
         case REQUEST_MESSAGE_APPEND:
             handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2], tag);
@@ -531,6 +539,32 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
             listener.mailConnectionRequestComplete(REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken, messageFlags }, tag, true);
+        }
+    }
+    
+    private void handleRequestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
+        if(incomingClient.hasFlags()) {
+            incomingClient.messageSeen(messageToken, messageFlags);
+        }
+        messageFlags.setSeen(true);
+
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_SEEN, new Object[] { messageToken, messageFlags }, tag, true);
+        }
+    }
+    
+    private void handleRequestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
+        if(incomingClient.hasFlags()) {
+            incomingClient.messageUnseen(messageToken, messageFlags);
+        }
+        messageFlags.setSeen(false);
+
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken, messageFlags }, tag, true);
         }
     }
     

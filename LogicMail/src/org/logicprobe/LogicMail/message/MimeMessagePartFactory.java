@@ -68,7 +68,7 @@ public class MimeMessagePartFactory {
     	MimeMessagePart part;
         if (mimeType.equalsIgnoreCase("multipart")) {
             part = new MultiPart(mimeSubtype, tag);
-        } else if (mimeType.equalsIgnoreCase("text")) {
+        } else if (mimeType.equalsIgnoreCase(TextPart.TYPE)) {
         	part = new TextPart(mimeSubtype, name, encoding, param, disposition, contentId, size, tag);
         } else if (mimeType.equalsIgnoreCase("image")) {
         	part = new ImagePart(mimeSubtype, name, encoding, disposition, contentId, size, tag);
@@ -126,7 +126,7 @@ public class MimeMessagePartFactory {
         String mimeSubtype) {
         if (mimeType.equalsIgnoreCase("multipart")) {
             return isMultiPartSupported(mimeSubtype);
-        } else if (mimeType.equalsIgnoreCase("text")) {
+        } else if (mimeType.equalsIgnoreCase(TextPart.TYPE)) {
             return isTextPartSupported(mimeSubtype);
         } else if (mimeType.equalsIgnoreCase("image")) {
             return isImagePartSupported(mimeSubtype);
@@ -144,8 +144,8 @@ public class MimeMessagePartFactory {
 
     private static boolean isTextPartSupported(String mimeSubtype) {
         // TODO: Add logic to only load plain or html, not both
-        return (mimeSubtype.equalsIgnoreCase("plain") ||
-        mimeSubtype.equalsIgnoreCase("html"));
+        return (mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_PLAIN) ||
+        mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_HTML));
     }
 
     private static boolean isImagePartSupported(String mimeSubtype) {

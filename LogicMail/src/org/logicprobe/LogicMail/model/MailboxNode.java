@@ -489,7 +489,11 @@ public class MailboxNode implements Node, Serializable {
 			messageSet.put(message, Boolean.TRUE);
 			tokenToMessageMap.put(message.getMessageToken(), message);
 			if(getParentAccount() instanceof NetworkAccountNode) {
-			    message.setCachedContent(MailFileManager.getInstance().messageNodeExists(this, message.getMessageToken()));
+			    NetworkAccountNode accountNode = (NetworkAccountNode)getParentAccount();
+			    NetworkMailStoreServices mailStoreServices = (NetworkMailStoreServices)accountNode.getMailStoreServices();
+			    boolean isCached = mailStoreServices.hasCachedMessageContent(
+			            this.folderTreeItem, message.getMessageToken());
+			    message.setCachedContent(isCached);
 			}
 			return true;
 		}
@@ -511,17 +515,6 @@ public class MailboxNode implements Node, Serializable {
 	    if(messageRemoved) {
 	        updateUnseenMessages(false);
 	        fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, new MessageNode[] { message });
-	        
-	        if(this.parentAccount instanceof NetworkAccountNode) {
-                // Start a thread to clean out the message cache
-                (new Thread() { public void run() {
-                    try {
-                        MailFileManager.getInstance().removeMessageNode(MailboxNode.this, message.getMessageToken());
-                    } catch (IOException e) {
-                        // All meaningful errors already logged inside the method
-                    }
-                }}).start();
-	        }
 	    }
 	}
 	
@@ -551,19 +544,6 @@ public class MailboxNode implements Node, Serializable {
             removedMessages.copyInto(removedMessagesArray);
             updateUnseenMessages(false);
             fireMailboxStatusChanged(MailboxNodeEvent.TYPE_DELETED_MESSAGES, removedMessagesArray);
-            
-            if(this.parentAccount instanceof NetworkAccountNode) {
-                final MessageToken[] removedTokensArray = new MessageToken[size];
-                removedTokens.copyInto(removedTokensArray);
-                // Start a thread to clean out the message cache
-                (new Thread() { public void run() {
-                    try {
-                        MailFileManager.getInstance().removeMessageNodes(MailboxNode.this, removedTokensArray);
-                    } catch (IOException e) {
-                        // All meaningful errors already logged inside the method
-                    }
-                }}).start();
-            }
         }
 	}
 	

@@ -1080,14 +1080,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
      */
     public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
-        if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
-            throw new MailException("Invalid mailbox for message");
-        }
-
-        ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { ImapParser.FLAG_DELETED });
-        refreshMessageFlags(updatedFlags, messageFlags);
+        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_DELETED);
     }
 
 
@@ -1095,41 +1088,51 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#undeleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
      */
     public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
-        if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
-            throw new MailException("Invalid mailbox for message");
-        }
-
-        ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), false, new String[] { ImapParser.FLAG_DELETED });
-        refreshMessageFlags(updatedFlags, messageFlags);
+        changeMessageFlag(messageToken, messageFlags, false, ImapParser.FLAG_DELETED);
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageAnswered(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
      */
     public void messageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
-        if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
-            throw new MailException("Invalid mailbox for message");
-        }
-
-        ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { ImapParser.FLAG_ANSWERED });
-        refreshMessageFlags(updatedFlags, messageFlags);
+        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_ANSWERED);
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageForwarded(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
      */
     public void messageForwarded(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_FORWARDED);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#messageSeen(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
+    public void messageSeen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_SEEN);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#messageUnseen(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     */
+    public void messageUnseen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+        changeMessageFlag(messageToken, messageFlags, false, ImapParser.FLAG_SEEN);
+    }
+
+    private void changeMessageFlag(
+            MessageToken messageToken,
+            MessageFlags messageFlags,
+            boolean addOrRemove,
+            String flag)
+    throws MailException, IOException {
+        
         ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
         if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
             throw new MailException("Invalid mailbox for message");
         }
 
         ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), true, new String[] { ImapParser.FLAG_FORWARDED });
+            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), addOrRemove, new String[] { flag });
         refreshMessageFlags(updatedFlags, messageFlags);
     }
     

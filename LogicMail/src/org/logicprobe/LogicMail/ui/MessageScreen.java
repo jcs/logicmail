@@ -97,6 +97,7 @@ public class MessageScreen extends AbstractScreenProvider {
     private MenuItem saveAttachmentItem;
     private MenuItem compositionItem;
 	
+    private boolean firstDisplay = true;
     private MessageNode messageNode;
     private AccountNode parentAccount;
     private boolean isSentFolder;
@@ -275,10 +276,11 @@ public class MessageScreen extends AbstractScreenProvider {
         padAndFocusScreen();
         
     	messageNode.addMessageNodeListener(messageNodeListener);
-    	if(!messageNode.hasMessageContent()) {
-    		if(!messageNode.refreshMessage()) {
-    			renderMessage();
-    		}
+    	if(firstDisplay) {
+            if(!messageNode.refreshMessage()) {
+                renderMessage();
+            }
+    	    firstDisplay = false;
     	}
     	else if(!messageRendered) {
     		renderMessage();

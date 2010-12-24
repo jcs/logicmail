@@ -390,10 +390,26 @@ public abstract class MailStoreServices {
     
     // ---- Message level request methods
     
-    public void requestMessage(MessageToken messageToken) {
-        mailStore.requestMessage(messageToken);
-    }
+    /**
+     * Requests a message refresh, which is the first operation that should be
+     * performed to populate the contents of a message node being displayed.
+     * The result of this operation will be a series of events that indicate the
+     * availability of message content.  The implementation of this method will
+     * use configuration settings to determine what actually gets loaded.
+     * 
+     * @param messageToken the message token
+     * @return true, if a refresh was initiated
+     */
+    public abstract boolean requestMessageRefresh(MessageToken messageToken);
     
+    /**
+     * Explicitly request message parts to be loaded.  This method will attempt
+     * to load whatever is requested, regardless of any configuration settings
+     * that may otherwise exclude the parts during a normal refresh.
+     *
+     * @param messageToken the message token
+     * @param messageParts the message parts to fetch
+     */
     public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) {
         mailStore.requestMessageParts(messageToken, messageParts);
     }

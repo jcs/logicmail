@@ -38,7 +38,7 @@ import net.rim.device.api.system.EncodedImage;
  * Represents message content of the image type
  */
 public class ImageContent extends MimeMessageContent {
-	private EncodedImage image;
+    private EncodedImage image;
 	private byte[] rawData;
 	
 	public ImageContent(ImagePart imagePart, EncodedImage image) {
@@ -55,14 +55,12 @@ public class ImageContent extends MimeMessageContent {
         // Decode the binary data, and create an image
         if (encoding.equalsIgnoreCase(ENCODING_BASE64) && data != null && data.length > 0) {
         	try {
-	        	String mimeSubtype = imagePart.getMimeSubtype();
-		        
 	        	byte[] imgBytes = decodeBase64(data);
 	        	
+	        	String mimeType = imagePart.getMimeType() + '/' + imagePart.getMimeSubtype().toLowerCase();
 		        this.image = EncodedImage.createEncodedImage(
 		        		imgBytes,
-		                0, imgBytes.length, "image/" +
-		                mimeSubtype.toLowerCase());
+		                0, imgBytes.length, mimeType);
 		        this.rawData = imgBytes;
         	} catch (IOException e) {
         		throw new UnsupportedContentException("Unable to decode");
@@ -72,10 +70,20 @@ public class ImageContent extends MimeMessageContent {
         }
 	}
 	
-	public ImageContent(ImagePart imagePart, byte[] rawData) {
+	public ImageContent(ImagePart imagePart, byte[] rawData, boolean decode) throws UnsupportedContentException {
         super(imagePart);
         imagePart.setEncoding(ENCODING_BASE64);
         this.rawData = rawData;
+        
+        if(decode) {
+            try {
+                String mimeType = imagePart.getMimeType() + '/' + imagePart.getMimeSubtype().toLowerCase();
+                this.image = EncodedImage.createEncodedImage(
+                        this.rawData, 0, this.rawData.length, mimeType);
+            } catch (Exception e) {
+                throw new UnsupportedContentException("Unable create image from data");
+            }
+        }
 	}
 	
 	/**
@@ -93,14 +101,14 @@ public class ImageContent extends MimeMessageContent {
 	 */
 	public static boolean isPartSupported(ImagePart imagePart) {
 		String mimeSubtype = imagePart.getMimeSubtype();
-        return (mimeSubtype.equalsIgnoreCase("gif") ||
-                mimeSubtype.equalsIgnoreCase("png") ||
-                mimeSubtype.equalsIgnoreCase("vnd.wap.wbmp") ||
-                mimeSubtype.equalsIgnoreCase("jpeg") ||
-                mimeSubtype.equalsIgnoreCase("jpg") ||
-                mimeSubtype.equalsIgnoreCase("pjpeg") ||
-                mimeSubtype.equalsIgnoreCase("bmp") ||
-                mimeSubtype.equalsIgnoreCase("tiff"));
+        return (mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_GIF) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_PNG) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_VND_WAP_WBMP) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_JPEG) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_JPG) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_PJPEG) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_BMP) ||
+                mimeSubtype.equalsIgnoreCase(ImagePart.SUBTYPE_TIFF));
 	}
 
 	public void accept(MimeMessageContentVisitor visitor) {

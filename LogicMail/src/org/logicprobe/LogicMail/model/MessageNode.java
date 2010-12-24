@@ -30,20 +30,15 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.Vector;
 
-import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.AppInfo;
-import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
@@ -58,9 +53,9 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
+import org.logicprobe.LogicMail.util.AtomicBoolean;
 import org.logicprobe.LogicMail.util.EventListenerList;
 import org.logicprobe.LogicMail.util.StringParser;
-import org.logicprobe.LogicMail.util.ThreadQueue;
 
 /**
  * Message node for the mail data model.
@@ -152,10 +147,7 @@ public class MessageNode implements Node {
 	private MimeMessagePart[] attachmentParts;
 	private String messageSource;
 	private final EventListenerList listenerList = new EventListenerList();
-	private boolean refreshInProgress;
-
-	/** Thread queue for calls to MailFileManager. */
-	private static final ThreadQueue threadQueue = new ThreadQueue();
+	private final AtomicBoolean refreshInProgress = new AtomicBoolean();
 	
 	/**
 	 * Instantiates a new message node.
@@ -575,7 +567,6 @@ public class MessageNode implements Node {
 			cached = false;
 			this.messageStructure = messageStructure;
 			if(this.messageStructure != null) {
-				refreshInProgress = false;
 				this.flags &= ~Flag.RECENT; // RECENT = false
 				this.attachmentParts = MimeMessagePartTransformer.getAttachmentParts(this.messageStructure);
 				fireEvent = true;
@@ -619,35 +610,6 @@ public class MessageNode implements Node {
 			}
 		}
 		fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
-	}
-	
-	/**
-	 * Commits the current state of the message to the cache, if applicable.
-	 */
-	void commitMessage() {
-	    boolean writeToCache;
-		synchronized(messageContent) {
-		    writeToCache = !isCached() && isCachable();
-		}
-		if(!writeToCache) { return; }
-		
-	    synchronized (threadQueue) {
-	        threadQueue.invokeLater(new Runnable() {
-	            public void run() {
-	                synchronized(messageContent) {
-	                    try {
-	                        MailFileManager.getInstance().writeMessage(MessageNode.this);
-	                        setCached(true);
-	                    } catch (Throwable t) {
-	                        EventLogger.logEvent(AppInfo.GUID,
-	                                ("Unable to write message to cache\r\n"
-	                                        + t.getMessage()).getBytes(),
-	                                        EventLogger.ERROR);
-	                    }
-	                }
-	            }
-	        });
-	    }
 	}
 	
 	/**
@@ -1114,131 +1076,13 @@ public class MessageNode implements Node {
      * 
      * @return True if a refresh was triggered, false otherwise
      */
-	public boolean refreshMessage() {
-		boolean result = false;
-		if(!refreshInProgress) {
-			refreshInProgress = true;
-			MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-			if(mailStore.hasMessageParts()) {
-				int maxSize = Integer.MAX_VALUE;
-				MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(this.messageStructure);
-				if(parent.getParentAccount() instanceof NetworkAccountNode) {
-    				AccountConfig accountConfig = ((NetworkAccountNode)parent.getParentAccount()).getAccountConfig();
-    				if(accountConfig instanceof ImapConfig) {
-    					maxSize = ((ImapConfig)accountConfig).getMaxMessageSize();
-    				}
-				}
-				Vector partsToFetch = new Vector();
-				int sizeRequested = 0;
-				for(int i=0; i<displayableParts.length; i++) {
-					sizeRequested += displayableParts[i].getSize();
-					if(sizeRequested <= maxSize) {
-						partsToFetch.addElement(displayableParts[i]);
-					}
-					else {
-						break;
-					}
-				}
-				
-				if(partsToFetch.size() > 0) {
-					displayableParts = new MimeMessagePart[partsToFetch.size()];
-					partsToFetch.copyInto(displayableParts);
-					(new Thread(new RefreshMessagePartsRunnable(displayableParts))).start();
-					result = true;
-				}
-			}
-			else {
-				(new Thread(new RefreshMessageWholeRunnable())).start();
-				result = true;
-			}
-		}
-		return result;
-	}
-
-	private class RefreshMessageWholeRunnable implements Runnable {
-		public void run() {
-			boolean messageLoaded = false;
-			if(parent.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
-    			try {
-    				MessageNode tempNode = MailFileManager.getInstance().readMessageNode(parent, messageToken, true);
-    				if(tempNode != null) {
-    				    MimeMessagePart messageStructure = tempNode.getMessageStructure();
-    				    MimeMessageContent[] messageContent = tempNode.getAllMessageContent();
-    				    
-    				    if(messageStructure != null && messageContent != null && messageContent.length > 0) {
-        					setMessageStructure(messageStructure);
-        					setMessageSource(tempNode.getMessageSource());
-        					putMessageContent(messageContent);
-        					messageLoaded = true;
-    				    }
-    				}
-    			} catch (IOException e) {
-    				EventLogger.logEvent(AppInfo.GUID,
-    		                ("Unable to read message from cache\r\n"
-    	                		+ e.getMessage()).getBytes(),
-    		                EventLogger.ERROR);
-    			}
-			}
-			
-			if(messageLoaded) {
-                markCacheLoadedAsSeen();
-			}
-			else {
-	            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-				mailStore.requestMessage(messageToken);
-			}
-		}
-	};
-
-	private class RefreshMessagePartsRunnable implements Runnable {
-		private MimeMessagePart[] displayableParts;
-		RefreshMessagePartsRunnable(MimeMessagePart[] displayableParts) {
-			this.displayableParts = displayableParts;
-		}
-		public void run() {
-			Vector contentToLoad = new Vector(displayableParts.length);
-			for(int i=0; i<displayableParts.length; i++) {
-				contentToLoad.addElement(displayableParts[i]);
-			}
-			
-			if(parent.getParentAccount().getStatus() != AccountNode.STATUS_LOCAL) {
-    			try {
-    				MimeMessageContent[] content = MailFileManager.getInstance().readMessageContent(parent, messageToken);
-    				if(content != null && content.length > 0) {
-    					putMessageContent(content);
-    					for(int i=0; i<content.length; i++) {
-    						contentToLoad.removeElement(content[i].getMessagePart());
-    					}
-    				}
-    			} catch (IOException e) {
-    				EventLogger.logEvent(AppInfo.GUID,
-    		                ("Unable to read message from cache\r\n"
-    	                		+ e.getMessage()).getBytes(),
-    		                EventLogger.ERROR);
-    			}
-			}
-			
-			if(contentToLoad.isEmpty()) {
-                markCacheLoadedAsSeen();
-			}
-			else {
-	            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-			    MimeMessagePart[] partsToLoad = new MimeMessagePart[contentToLoad.size()];
-			    contentToLoad.copyInto(partsToLoad);
-			    mailStore.requestMessageParts(messageToken, partsToLoad);
-			}
-		}
-	}
-	
-    private void markCacheLoadedAsSeen() {
-        // If either the SEEN or RECENT flag is still set
-        int tempFlags = getFlags();
-        if((tempFlags & Flag.SEEN) == 0 || (tempFlags & Flag.RECENT) == 0) {
+    public boolean refreshMessage() {
+        if(refreshInProgress.compareAndSet(false, true)) {
             MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-            mailStore.requestMessageSeen(messageToken);
-            tempFlags |= MessageNode.Flag.SEEN;
-            tempFlags &= ~MessageNode.Flag.RECENT;
-            setFlags(tempFlags);
+            return mailStore.requestMessageRefresh(messageToken);
+        }
+        else {
+            return false;
         }
     }
 	
@@ -1296,21 +1140,31 @@ public class MessageNode implements Node {
         flags &= ~MessageNode.Flag.RECENT;
 
         setFlags(flags);
+        
+        MimeMessageContent[] content = e.getMessageContent();
 
         switch(e.getType()) {
         case MessageEvent.TYPE_FULLY_LOADED:
             setMessageStructure(e.getMessageStructure());
             setMessageSource(e.getMessageSource());
-            putMessageContent(e.getMessageContent());
-            commitMessage();
+            putMessageContent(content);
+            contentLoadComplete();
             break;
         case MessageEvent.TYPE_CONTENT_LOADED:
-            putMessageContent(e.getMessageContent());
-            commitMessage();
+            if(content == null) {
+                contentLoadComplete();
+            }
+            else {
+                putMessageContent(content);
+            }
             break;
         }
     }
     
+    private void contentLoadComplete() {
+        refreshInProgress.set(false);
+    }
+
     /**
      * Called when the mail store notifies that message flags have changed.
      *

@@ -258,6 +258,20 @@ public class NetworkMailStore extends AbstractMailStore {
         connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken, messageFlags }, callback);
     }
 
+    public void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+        if(!this.hasFlags()) {
+            throw new UnsupportedOperationException();
+        }
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN, new Object[] { messageToken, messageFlags }, callback);
+    }
+    
+    public void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+        if(!this.hasFlags()) {
+            throw new UnsupportedOperationException();
+        }
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken, messageFlags }, callback);
+    }
+
 	public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) {
 		if(!this.hasAppend()) {
 			throw new UnsupportedOperationException();
@@ -341,6 +355,8 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
         case IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED:
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN:
+        case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
 			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);

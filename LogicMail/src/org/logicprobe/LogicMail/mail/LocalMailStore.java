@@ -350,6 +350,34 @@ public class LocalMailStore extends AbstractMailStore {
             if(callback != null) { callback.mailStoreRequestFailed(null); }
         }
     }
+    
+    public void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+        
+        if(requestFolder != null && !messageFlags.isSeen()) {
+            MessageFlags newFlags = copyMessageFlags(messageFlags);
+            newFlags.setSeen(true);
+            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, newFlags, callback));
+        }
+        else {
+            if(callback != null) { callback.mailStoreRequestFailed(null); }
+        }
+    }
+    
+    public void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
+        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+        
+        if(requestFolder != null && messageFlags.isSeen()) {
+            MessageFlags newFlags = copyMessageFlags(messageFlags);
+            newFlags.setSeen(false);
+            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, newFlags, callback));
+        }
+        else {
+            if(callback != null) { callback.mailStoreRequestFailed(null); }
+        }
+    }
 
     private class UpdateMessageFlagsRunnable extends MaildirRunnable {
         private LocalMessageToken localMessageToken;

@@ -49,4 +49,9 @@ public class LocalMailStoreServices extends MailStoreServices {
     public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) {
         throw new UnsupportedOperationException();
     }
+    
+    public boolean requestMessageRefresh(MessageToken messageToken) {
+        mailStore.requestMessage(messageToken);
+        return true;
+    }
 }

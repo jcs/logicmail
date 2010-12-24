@@ -41,7 +41,9 @@ import org.logicprobe.LogicMail.util.StringParser;
  * It is assumed that the raw (byte[]) form of text content is UTF-8.
  */
 public class TextContent extends MimeMessageContent {
-	private String text;
+    private static String UTF_8 = "UTF-8";
+    private static String ISO_8859_1 = "ISO-8859-1";
+    private String text;
 	private byte[] rawData;
 	
 	public TextContent(TextPart textPart, String text) {
@@ -58,8 +60,8 @@ public class TextContent extends MimeMessageContent {
     	String mimeSubtype = textPart.getMimeSubtype();
     	
         // Check for a supported text sub-type
-        if (!mimeSubtype.equalsIgnoreCase("plain") &&
-                !mimeSubtype.equalsIgnoreCase("html")) {
+        if (!mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_PLAIN) &&
+                !mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_HTML)) {
             throw new UnsupportedContentException("Unsupported subtype");
         }
         
@@ -79,7 +81,7 @@ public class TextContent extends MimeMessageContent {
             try {
                 // If a charset is not provided, ISO-8859-1 is assumed
                 if (charset == null) {
-                    charset = "ISO-8859-1";
+                    charset = ISO_8859_1;
                 }
 
                 this.text = StringFactory.create(textBytes, charset);
@@ -105,9 +107,14 @@ public class TextContent extends MimeMessageContent {
         }
     }
     
-    public TextContent(TextPart textPart, byte[] rawData) {
+    public TextContent(TextPart textPart, byte[] rawData, boolean decode) {
         super(textPart);
-        this.rawData = rawData;
+        if(decode) {
+            putRawData(rawData);
+        }
+        else {
+            this.rawData = rawData;
+        }
     }
 	
     /**
@@ -125,8 +132,8 @@ public class TextContent extends MimeMessageContent {
 	 */
 	public static boolean isPartSupported(TextPart textPart) {
 		String mimeSubtype = textPart.getMimeSubtype();
-        return (mimeSubtype.equalsIgnoreCase("plain") ||
-                mimeSubtype.equalsIgnoreCase("html"));
+        return (mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_PLAIN) ||
+                mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_HTML));
 	}
 	
 	public void accept(MimeMessageContentVisitor visitor) {
@@ -147,7 +154,7 @@ public class TextContent extends MimeMessageContent {
 	    }
 	    else {
 	        try {
-	            result = this.text.getBytes("UTF-8");
+	            result = this.text.getBytes(UTF_8);
             } catch (UnsupportedEncodingException e) {
                 result = this.text.getBytes();
             }
@@ -161,7 +168,7 @@ public class TextContent extends MimeMessageContent {
 	protected void putRawData(byte[] rawData) {
 	    this.rawData = rawData;
 		try {
-            this.text = new String(rawData, "UTF-8");
+            this.text = new String(rawData, UTF_8);
         } catch (UnsupportedEncodingException e) {
             this.text = new String(rawData);
         }

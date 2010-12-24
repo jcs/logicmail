@@ -129,6 +129,20 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         // Default empty implementation for unsupported feature
     }
     
+    public void messageSeen(
+            MessageToken messageToken,
+            MessageFlags messageFlags)
+    throws IOException, MailException {
+        // Default empty implementation for unsupported feature
+    }
+    
+    public void messageUnseen(
+            MessageToken messageToken,
+            MessageFlags messageFlags)
+    throws IOException, MailException {
+        // Default empty implementation for unsupported feature
+    }
+    
     public boolean hasExpunge() {
         return false;
     }

@@ -39,10 +39,19 @@ import java.io.IOException;
  * Text message part (MIME type: "image/????")
  */
 public class ImagePart extends ContentPart {
+    public static String TYPE = "image";
+    public static String SUBTYPE_TIFF = "tiff";
+    public static String SUBTYPE_BMP = "bmp";
+    public static String SUBTYPE_PJPEG = "pjpeg";
+    public static String SUBTYPE_JPG = "jpg";
+    public static String SUBTYPE_JPEG = "jpeg";
+    public static String SUBTYPE_VND_WAP_WBMP = "vnd.wap.wbmp";
+    public static String SUBTYPE_PNG = "png";
+    public static String SUBTYPE_GIF = "gif";
     
     /** Creates a new instance of ImagePart */
     public ImagePart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
-        super("image", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+        super(TYPE, mimeSubtype, name, encoding, disposition, contentId, size, tag);
     }
 
     public ImagePart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {

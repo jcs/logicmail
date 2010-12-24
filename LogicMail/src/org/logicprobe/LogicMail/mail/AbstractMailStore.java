@@ -554,6 +554,72 @@ public abstract class AbstractMailStore {
     }
     
     /**
+     * Requests a particular message to be marked as seen.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
+     * @param callback The callback to receive success or failure notifications about the request
+     */
+    public abstract void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+
+    /**
+     * Requests a particular message to be marked as seen.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
+     */
+    public void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags) {
+        requestMessageSeen(messageToken, messageFlags, null);
+    }
+    
+    /**
+     * Requests a particular message to be marked as unseen.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
+     * @param callback The callback to receive success or failure notifications about the request
+     */
+    public abstract void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+
+    /**
+     * Requests a particular message to be marked as unseen.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
+     * then this method should throw an
+     * <tt>UnsupportedOperationException</tt>.
+     * 
+     * @param messageToken The token used to identify the message
+     * @param messageFlags The flags currently associated with the message
+     */
+    public void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags) {
+        requestMessageUnseen(messageToken, messageFlags, null);
+    }
+    
+    /**
      * Requests a message to be appended to a folder.
      * 
      * <p>Unlike other methods, this method requires the raw source of a message

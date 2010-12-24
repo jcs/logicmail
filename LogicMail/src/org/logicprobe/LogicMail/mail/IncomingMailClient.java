@@ -480,6 +480,37 @@ public interface IncomingMailClient extends MailClient {
     void messageForwarded(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
     
     /**
+     * Sets the flags on a message so that the server marks it as seen.
+     * Since this automatically happens during normal message retrieval, this
+     * should only be necessary if a state change is needed without a
+     * corresponding fetch request.
+     * This should do nothing if the underlying protocol does not support
+     * changing the seen state of a message.
+     *
+     * @param messageToken Token identifying the message being modified
+     * @param messageFlags Existing message flags, to be updated with new flags
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     * @see #hasFlags()
+     */
+    void messageSeen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    
+    /**
+     * Sets the flags on a message so that the server marks it as unseen.
+     * This should do nothing if the underlying protocol does not support
+     * changing the seen state of a message.
+     *
+     * @param messageToken Token identifying the message being modified
+     * @param messageFlags Existing message flags, to be updated with new flags
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     * @see #hasFlags()
+     */
+    void messageUnseen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    
+    /**
      * Sends the underlying protocol's no-operation command.
      * <p>
      * On some protocols, this can be an explicit way of checking

@@ -77,7 +77,7 @@ public class MimeMessageContentFactory {
     }
 
     /**
-     * Creates a new MessageContent object.
+     * Creates a new MessageContent object from raw data.
      * 
      * @param mimeMessagePart The message part describing the MIME properties for the content.
      * @param rawData The raw data from which to encode the content.
@@ -86,15 +86,32 @@ public class MimeMessageContentFactory {
      * 
      * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
      */
-	public static MimeMessageContent createContentRaw(MimeMessagePart mimeMessagePart, byte[] rawData) throws UnsupportedContentException {
+    public static MimeMessageContent createContentRaw(MimeMessagePart mimeMessagePart, byte[] rawData) throws UnsupportedContentException {
+        return createContentRaw(mimeMessagePart, rawData, true);
+    }
+    
+    /**
+     * Creates a new MessageContent object from raw data.
+     * 
+     * @param mimeMessagePart The message part describing the MIME properties for the content.
+     * @param rawData The raw data from which to encode the content.
+     * @param decode True, if the data should be decoded into a form usable for
+     *   display.  This should always be the case, unless the content is being
+     *   created solely for the purposes of serialization.
+     * 
+     * @return The message content object.
+     * 
+     * @throws UnsupportedContentException Thrown if the content type was not supported or the data could not be decoded.
+     */
+	public static MimeMessageContent createContentRaw(MimeMessagePart mimeMessagePart, byte[] rawData, boolean decode) throws UnsupportedContentException {
 	    MimeMessageContent content;
         if(mimeMessagePart instanceof TextPart) {
             TextPart textPart = (TextPart)mimeMessagePart;
-            content = new TextContent(textPart, rawData);
+            content = new TextContent(textPart, rawData, decode);
         }
         else if(mimeMessagePart instanceof ImagePart) {
             ImagePart imagePart = (ImagePart)mimeMessagePart;
-            content = new ImageContent(imagePart, rawData);
+            content = new ImageContent(imagePart, rawData, decode);
         }
         else if(mimeMessagePart instanceof ApplicationPart) {
             ApplicationPart applicationPart = (ApplicationPart)mimeMessagePart;

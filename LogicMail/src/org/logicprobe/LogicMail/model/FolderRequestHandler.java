@@ -48,6 +48,7 @@ import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.AtomicBoolean;
 
 /**
@@ -109,6 +110,10 @@ class FolderRequestHandler {
         this.mailStore = mailStore;
         this.folderMessageCache = folderMessageCache;
         this.folderTreeItem = folderTreeItem;
+    }
+
+    public FolderTreeItem getFolder() {
+        return folderTreeItem;
     }
 
     public void handleDisconnect() {
@@ -549,6 +554,17 @@ class FolderRequestHandler {
         });
     }
     
+    /**
+     * Checks if is initial refresh is complete.
+     * This flag should be checked prior to any operations that may depend on
+     * valid knowledge of server-side message state.
+     *
+     * @return true, if is the initial refresh is complete
+     */
+    public boolean isInitialRefreshComplete() {
+        return initialRefreshComplete;
+    }
+    
     void handleFolderMessageFlagsAvailable(FolderMessage[] messages) {
         if(refreshInProgress.get()) {
             handleFolderMessageFlagsAvailableDuringRefresh(messages);
@@ -616,15 +632,60 @@ class FolderRequestHandler {
         mailStoreServices.fireFolderExpunged(folderTreeItem, indices);
     }
 
-    void setFolderMessageSeen(MessageToken messageToken) {
+    public void handleMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure) {
+        // TODO Consider blocking if a refresh is in progress
         FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+        if(message == null) { return; }
+        
+        boolean updated = false;
         MessageFlags messageFlags = message.getFlags();
         if(!messageFlags.isSeen()) {
+            MessageFlags originalFlags = new MessageFlags(messageFlags.getFlags());
+            messageFlags.setSeen(true);
+            messageFlags.setRecent(false);
+            if(mailStore.hasFlags()) {
+                mailStore.requestMessageSeen(messageToken, originalFlags);
+            }
+            updated = true;
+        }
+
+        if(messageStructure != null) {
+            message.setStructure(messageStructure);
+            updated = true;
+        }
+        
+        if(updated) {
+            folderMessageCache.updateFolderMessage(folderTreeItem, message);
+            folderMessageCache.commit();
+        }
+    }
+    
+    void setFolderMessageSeen(MessageToken messageToken) {
+        // TODO Consider blocking if a refresh is in progress
+        if(messageToken == null) { return; }
+        FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+        if(message == null) { return; }
+        MessageFlags messageFlags = message.getFlags();
+        if(!messageFlags.isSeen()) {
+            MessageFlags originalFlags = new MessageFlags(messageFlags.getFlags());
             messageFlags.setSeen(true);
             messageFlags.setRecent(false);
             folderMessageCache.updateFolderMessage(folderTreeItem, message);
             folderMessageCache.commit();
-            //TODO: Inform the server that the message is seen
+            if(mailStore.hasFlags()) {
+                mailStore.requestMessageSeen(messageToken, originalFlags);
+            }
+        }
+    }
+
+    MimeMessagePart getCachedMessageStructure(MessageToken messageToken) {
+        // TODO Consider blocking if a refresh is in progress
+        FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+        if(message != null) {
+            return message.getStructure();
+        }
+        else {
+            return null;
         }
     }
 }
