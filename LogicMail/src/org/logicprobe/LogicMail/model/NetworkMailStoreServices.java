@@ -229,8 +229,6 @@ public class NetworkMailStoreServices extends MailStoreServices {
             // Determine the max size to fetch
             int maxSize = getMaxSizeToFetch();
             
-            //FIXME: This seems to reload cached parts if there are more displayable parts than fit within the size limit
-            
             // Filter the displayable parts list based on the size
             Vector partsToFetch = new Vector();
             int sizeTotal = 0;

@@ -226,6 +226,14 @@ public class MessageContentFileManager {
             }
             
             writer.close();
+
+            // Make sure we add the existence of this message to the UID cache
+            Hashtable messageUidSet = (Hashtable)folderMessageUidCache.get(folder);
+            if(messageUidSet == null) {
+                messageUidSet = new Hashtable();
+                folderMessageUidCache.put(folder, messageUidSet);
+            }
+            messageUidSet.put(messageToken.getMessageUid(), Boolean.TRUE);
         } catch (Exception e) {
             if(fileUrl != null) {
                 EventLogger.logEvent(AppInfo.GUID,
