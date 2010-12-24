@@ -38,9 +38,10 @@ import java.io.IOException;
  * Message message part (MIME type: "message/????")
  */
 public class MessagePart extends ContentPart {
+    public static String TYPE = "message";
 
 	public MessagePart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
-		super("message", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+		super(TYPE, mimeSubtype, name, encoding, disposition, contentId, size, tag);
 	}
 	
 	public MessagePart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {

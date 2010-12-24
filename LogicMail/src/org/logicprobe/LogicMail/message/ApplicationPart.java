@@ -38,9 +38,10 @@ import java.io.IOException;
  * Application message part (MIME type: "application/????")
  */
 public class ApplicationPart extends ContentPart {
+    public static String TYPE = "application";
 
 	public ApplicationPart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
-		super("application", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+		super(TYPE, mimeSubtype, name, encoding, disposition, contentId, size, tag);
 	}
 	
 	public ApplicationPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {

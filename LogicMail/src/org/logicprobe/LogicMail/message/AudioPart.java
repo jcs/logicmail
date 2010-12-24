@@ -38,9 +38,10 @@ import java.io.IOException;
  * Audio message part (MIME type: "audio/????")
  */
 public class AudioPart extends ContentPart {
+    public static String TYPE = "audio";
 
 	public AudioPart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
-		super("audio", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+		super(TYPE, mimeSubtype, name, encoding, disposition, contentId, size, tag);
 	}
 	
 	public AudioPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {

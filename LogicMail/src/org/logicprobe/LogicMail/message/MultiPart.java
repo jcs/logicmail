@@ -49,6 +49,7 @@ public class MultiPart extends MimeMessagePart {
     private boolean partRelated;
     private boolean partSigned;
     
+    public static String TYPE = "multipart";
     public static String MIXED = "mixed";
     public static String ALTERNATIVE = "alternative";
     public static String RELATED = "related";
@@ -56,7 +57,7 @@ public class MultiPart extends MimeMessagePart {
     
     /** Creates a new instance of MultiPart */
     public MultiPart(String mimeSubtype, String tag) {
-        super("multipart", mimeSubtype, -1, tag);
+        super(TYPE, mimeSubtype, -1, tag);
         partMixed = false;
         partAlternative = false;
         partRelated = false;

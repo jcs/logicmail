@@ -38,9 +38,10 @@ import java.io.IOException;
  * Video message part (MIME type: "video/????")
  */
 public class VideoPart extends ContentPart {
+    public static String TYPE = "video";
 
 	public VideoPart(String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
-		super("video", mimeSubtype, name, encoding, disposition, contentId, size, tag);
+		super(TYPE, mimeSubtype, name, encoding, disposition, contentId, size, tag);
 	}
 	
 	public VideoPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size) {
