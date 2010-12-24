@@ -163,13 +163,15 @@ public class MailboxMessageField extends Field {
                 messageIcon.getWidth(),
                 messageIcon.getHeight(),
                 messageIcon, 0, 0);
+        
+        // Draw a box around the message icon, if we haven't reconciled it
         if(!messageNode.existsOnServer()) {
             graphics.setColor(Color.DARKGRAY);
             graphics.drawRect(1, iconY, messageIcon.getWidth(), messageIcon.getHeight());
             graphics.setColor(originalColor);
         }
         
-        // Draw the message icon, if applicable
+        // Draw the attachment icon, if applicable
         if(attachmentIcon != null) {
             graphics.drawBitmap(1,
                     doubleLineHeight - halfLineHeight - (attachmentIcon.getHeight() >>> 1),

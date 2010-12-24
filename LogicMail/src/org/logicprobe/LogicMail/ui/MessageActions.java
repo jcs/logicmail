@@ -183,7 +183,7 @@ public class MessageActions {
         }
         
         
-        if(!isOpen) {
+        if(!isOpen && (messageNode.existsOnServer() || messageNode.hasCachedContent())) {
             menu.add(selectItem);
         }
         
@@ -248,6 +248,10 @@ public class MessageActions {
      */
     public void openMessage(MessageNode messageNode)
     {
+        if(!messageNode.existsOnServer() && !messageNode.hasCachedContent()) {
+            return;
+        }
+        
 		MailboxNode mailboxNode = messageNode.getParent();
 		if(mailboxNode != null && mailboxNode.getType() == MailboxNode.TYPE_DRAFTS) {
 			openDraftMessage(messageNode);

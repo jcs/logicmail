@@ -188,10 +188,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
     
     public boolean requestMessageRefresh(final MessageToken messageToken) {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
-        if(handler == null || !handler.isInitialRefreshComplete()) { return false; }
-        //TODO: Support cache-only loading if the initial refresh is not complete
+        if(handler == null) { return false; }
         
         // Get the message folder and structure from the folder request handler
+        final boolean cacheOnly = !handler.isInitialRefreshComplete();
         final MimeMessagePart structure = handler.getCachedMessageStructure(messageToken);
         final FolderTreeItem folder = handler.getFolder();
 
@@ -202,16 +202,21 @@ public class NetworkMailStoreServices extends MailStoreServices {
         // Start a thread for the remaining logic, which includes file I/O
         (new Thread() { public void run() {
             if(mailStore.hasMessageParts()) {
-                requestMessageRefreshParts(folder, messageToken, structure);
+                requestMessageRefreshParts(folder, messageToken, structure, cacheOnly);
             }
             else {
-                requestMessageRefreshWhole(folder, messageToken, structure);
+                requestMessageRefreshWhole(folder, messageToken, structure, cacheOnly);
             }
         }}).start();
         return true;
     }
     
-    private void requestMessageRefreshParts(final FolderTreeItem folder, final MessageToken messageToken, final MimeMessagePart structure) {
+    private void requestMessageRefreshParts(
+            final FolderTreeItem folder,
+            final MessageToken messageToken,
+            final MimeMessagePart structure,
+            final boolean cacheOnly) {
+        
         // Determine which parts are displayable
         MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure);
         
@@ -220,9 +225,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
    
         // If there are parts we couldn't load from the cache, then see if
         // we should load them.
-        if(loadedPartSet.size() < displayableParts.length) {
+        if(loadedPartSet.size() < displayableParts.length && !cacheOnly) {
             // Determine the max size to fetch
             int maxSize = getMaxSizeToFetch();
+            
+            //FIXME: This seems to reload cached parts if there are more displayable parts than fit within the size limit
             
             // Filter the displayable parts list based on the size
             Vector partsToFetch = new Vector();
@@ -293,7 +300,12 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return maxSize;
     }
 
-    private void requestMessageRefreshWhole(final FolderTreeItem folder, final MessageToken messageToken, final MimeMessagePart structure) {
+    private void requestMessageRefreshWhole(
+            final FolderTreeItem folder,
+            final MessageToken messageToken,
+            final MimeMessagePart structure,
+            final boolean cacheOnly) {
+        
         //TODO: Implement more robust POP behavior
         if(structure != null && contentFileManager.messageContentExists(folder, messageToken)) {
             // If the store does not support parts, then take a simplified
@@ -311,13 +323,16 @@ public class NetworkMailStoreServices extends MailStoreServices {
                 messageRefreshComplete(messageToken);
             }
         }
-        else {
+        else if(!cacheOnly) {
             mailStore.requestMessage(messageToken, new MailStoreRequestCallback() {
                 public void mailStoreRequestComplete() { }
                 public void mailStoreRequestFailed(Throwable exception) {
                     messageRefreshFailed(messageToken);
                 }
             });
+        }
+        else {
+            messageRefreshComplete(messageToken);
         }
     }
 

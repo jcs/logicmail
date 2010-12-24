@@ -662,6 +662,7 @@ class FolderRequestHandler {
     
     void setFolderMessageSeen(MessageToken messageToken) {
         // TODO Consider blocking if a refresh is in progress
+        // TODO Need to handle the case where this is called while offline or not yet refreshed (cache-only load)
         if(messageToken == null) { return; }
         FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
         if(message == null) { return; }
