@@ -132,6 +132,13 @@ public class MessageContentFileManager {
         }
     }
     
+    /**
+     * Check whether cached message content exists.
+     *
+     * @param folder the folder that the message is stored within
+     * @param messageToken the token for the message to check for
+     * @return true, if the message exists in the cache
+     */
     public synchronized boolean messageContentExists(FolderTreeItem folder, MessageToken messageToken) {
         Hashtable messageUidSet = (Hashtable)folderMessageUidCache.get(folder);
         if(messageUidSet == null) {
@@ -150,6 +157,14 @@ public class MessageContentFileManager {
         return messageUidSet.containsKey(messageToken.getMessageUid());
     }
     
+    /**
+     * Gets the cached content for a particular message.
+     *
+     * @param folder the folder that the message is stored within
+     * @param messageToken the token for the message
+     * @param messageParts the message parts to try loading content for
+     * @return the loaded message content
+     */
     public synchronized MimeMessageContent[] getMessageContent(FolderTreeItem folder, MessageToken messageToken, MimeMessagePart[] messageParts) {
         if(cacheUrl == null) { return new MimeMessageContent[0]; }
 
@@ -202,7 +217,51 @@ public class MessageContentFileManager {
         return result;
     }
     
-    public synchronized void putMessageContent(FolderTreeItem folder, MessageToken messageToken, MimeMessageContent[] content) {
+    /**
+     * Put complete message content into the cache.
+     * This method will create a new file if one does not exist, or replace an
+     * existing file if it does.  This method also allows the caller to set
+     * header fields on file creation.
+     *
+     * @param folder the folder that the message is stored within
+     * @param messageToken the token for the message
+     * @param content the content to be added to the cache
+     * @param customValues array of 4 <code>int</code> values for the file header
+     */
+    public synchronized void putCompleteMessageContent(
+            FolderTreeItem folder,
+            MessageToken messageToken,
+            MimeMessageContent[] content,
+            int[] customValues) {
+        if(customValues == null || customValues.length != 4) {
+            throw new IllegalArgumentException();
+        }
+        putMessageContentImpl(folder, messageToken, content, false, customValues);
+    }
+    
+    /**
+     * Put message content into the cache.
+     * This method will create a new file if one does not exist, or append to
+     * an existing file if it does.
+     *
+     * @param folder the folder that the message is stored within
+     * @param messageToken the token for the message
+     * @param content the content to be added to the cache
+     */
+    public synchronized void putMessageContent(
+            FolderTreeItem folder,
+            MessageToken messageToken,
+            MimeMessageContent[] content) {
+        putMessageContentImpl(folder, messageToken, content, true, null);
+    }
+    
+    private void putMessageContentImpl(
+            FolderTreeItem folder,
+            MessageToken messageToken,
+            MimeMessageContent[] content,
+            boolean append,
+            int[] customValues) {
+        
         if(cacheUrl == null) { return; }
 
         FileConnection fileConnection = null;
@@ -216,7 +275,14 @@ public class MessageContentFileManager {
             fileUrl = getMessageFileUrl(folderUrl, messageToken);
             
             fileConnection = (FileConnection)Connector.open(fileUrl);
+            
+            // Delete existing file if append behavior is undesired
+            if(!append && fileConnection.exists()) { fileConnection.delete(); }
+            
             MessageContentFileWriter writer = new MessageContentFileWriter(fileConnection, messageToken.getMessageUid());
+            if(customValues != null) {
+                writer.setCustomValues(customValues);
+            }
             writer.open();
             
             //TODO: Make sure we're not appending content that already exists
@@ -296,6 +362,13 @@ public class MessageContentFileManager {
         return fileConnection;
     }
     
+    /**
+     * Removes a set of messages from the cache.
+     *
+     * @param folder the folder that the messages are stored within
+     * @param messageTokens the tokens for the messages to remove
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
     public synchronized void removeMessages(FolderTreeItem folder, MessageToken[] messageTokens) throws IOException {
         if(cacheUrl == null) { return; }
 
@@ -326,6 +399,13 @@ public class MessageContentFileManager {
         }
     }
 
+    /**
+     * Removes an individual message from the cache.
+     *
+     * @param folder the folder that the message is stored within
+     * @param messageToken the token for the message to remove
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
     public synchronized void removeMessage(FolderTreeItem folder, MessageToken messageToken) throws IOException {
         if(cacheUrl == null) { return; }
 
@@ -355,6 +435,12 @@ public class MessageContentFileManager {
         }
     }
     
+    /**
+     * Removes an entire folder from the cache.
+     *
+     * @param folder the folder to remove
+     * @return true, if successful
+     */
     public synchronized boolean removeFolder(FolderTreeItem folder) {
         if(cacheUrl == null) { return false; }
 

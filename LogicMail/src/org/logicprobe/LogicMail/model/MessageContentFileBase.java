@@ -52,7 +52,7 @@ import net.rim.device.api.util.DataBuffer;
  *  0                   1                   2                   3
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |L M - M S G|0|1|   A   |   0   |   0   |   0   |   0   |   0   |
+ * |L M - M S G|0|1|  Off  |   A   |   B   |   C   |   D   |   0   |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * | Message token UID (UTF)                               |  CRC  |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-----------------------+-------+
@@ -68,7 +68,11 @@ import net.rim.device.api.util.DataBuffer;
  * </pre>
  * <table border=1>
  * <tr><td><b>Field</b></td><td><b>Type</b></td><td><b>Description</b></td></tr>
- * <tr><td>A</td><td>int</td><td>Offset of the message content array</td></tr>
+ * <tr><td>Off</td><td>int</td><td>Offset of the message content array</td></tr>
+ * <tr><td>A</td><td>int</td><td>Optional data</td></tr>
+ * <tr><td>B</td><td>int</td><td>Optional data</td></tr>
+ * <tr><td>C</td><td>int</td><td>Optional data</td></tr>
+ * <tr><td>D</td><td>int</td><td>Optional data</td></tr>
  * <tr><td>CRC</td><td>int</td><td>CRC-32 checksum of the entire header</td></tr>
  * <tr><td>Part UID</td><td>long</td><td><code>MimeMessagePart.getUniqueId()</code></td></tr>
  * <tr><td>Tag</td><td>int</td><td>
@@ -138,7 +142,7 @@ abstract class MessageContentFileBase {
         }
     }
     
-    protected void validateHeader(InputStream input) throws IOException {
+    protected int[] validateHeader(InputStream input) throws IOException {
         DataInputStream dataInput = new DataInputStream(input);
         
         byte[] fileHeader = new byte[32];
@@ -148,6 +152,11 @@ abstract class MessageContentFileBase {
         }
         
         int fileContentOffset = byteArrayToInt(fileHeader, 8);
+        int[] customValues = new int[4];
+        for(int i=0; i<4; i++) {
+            customValues[i] = byteArrayToInt(fileHeader, 12 + (i * 4));
+        }
+        
         String fileMessageUid = dataInput.readUTF();
         int fileChecksum = dataInput.readInt();
         
@@ -164,6 +173,7 @@ abstract class MessageContentFileBase {
         }
         
         this.contentStartOffset = fileContentOffset;
+        return customValues;
     }
     
     protected static final byte[] intToByteArray(int value) {

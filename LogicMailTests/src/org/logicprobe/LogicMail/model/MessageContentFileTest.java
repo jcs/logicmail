@@ -102,6 +102,26 @@ public class MessageContentFileTest extends TestCase {
         reader.close();
     }
     
+    public void testOpenNewFileWithHeaderValues() throws Throwable {
+        MessageContentFileWriter writer = new MessageContentFileWriter(fileConnection, "12340000");
+        writer.setCustomValues(new int[] { 10, 20, 30, 40 });
+        writer.open();
+        assertTrue(writer.isOpen());
+        writer.close();
+        
+        MessageContentFileReader reader = new MessageContentFileReader(fileConnection, "12340000");
+        reader.open();
+        assertTrue(reader.isOpen());
+        int[] customValues = reader.getCustomValues();
+        assertNotNull(customValues);
+        assertEquals(4, customValues.length);
+        assertEquals(10, customValues[0]);
+        assertEquals(20, customValues[1]);
+        assertEquals(30, customValues[2]);
+        assertEquals(40, customValues[3]);
+        reader.close();
+    }
+    
     public void testAddContentToNewFile() throws Throwable {
         TextPart part = new TextPart("plain", "", "", "", "", "", -1, "1");
         TextContent content = new TextContent(part, "Hello World");
@@ -207,6 +227,8 @@ public class MessageContentFileTest extends TestCase {
         { public void run(TestCase tc) throws Throwable {((MessageContentFileTest)tc).testOpenNewFile(); } }));
         suite.addTest(new MessageContentFileTest("openExistingFile", new TestMethod()
         { public void run(TestCase tc) throws Throwable {((MessageContentFileTest)tc).testOpenExistingFile(); } }));
+        suite.addTest(new MessageContentFileTest("openNewFileWithHeaderValues", new TestMethod()
+        { public void run(TestCase tc) throws Throwable {((MessageContentFileTest)tc).testOpenNewFileWithHeaderValues(); } }));
         suite.addTest(new MessageContentFileTest("addContentToNewFile", new TestMethod()
         { public void run(TestCase tc) throws Throwable {((MessageContentFileTest)tc).testAddContentToNewFile(); } }));
         suite.addTest(new MessageContentFileTest("addMultipleContentToNewFile", new TestMethod()

@@ -51,6 +51,7 @@ import net.rim.device.api.util.DataBuffer;
  */
 public class MessageContentFileWriter extends MessageContentFileBase {
     private int contentEndOffset;
+    private int[] customValues;
     
     /**
      * Instantiates a new message content file wrapper.
@@ -60,6 +61,21 @@ public class MessageContentFileWriter extends MessageContentFileBase {
      */
     public MessageContentFileWriter(FileConnection fileConnection, String messageUid) {
         super(fileConnection, messageUid);
+    }
+    
+    /**
+     * Sets the custom values for the content file header.
+     * This method must be called before calling {@link #open()}, and will have
+     * no effect when appending to an existing file.
+     *
+     * @param values array of 4 integers representing the custom values
+     */
+    public void setCustomValues(int[] values) {
+        if(values == null || values.length != 4) {
+            throw new IllegalArgumentException();
+        }
+        checkFileNotOpen();
+        this.customValues = values;
     }
     
     /**
@@ -126,6 +142,14 @@ public class MessageContentFileWriter extends MessageContentFileBase {
         // Insert the content offset into the header
         byte[] contentOffsetBytes = intToByteArray(buf.getLength() + 4);
         insertBytes(buf.getArray(), contentOffsetBytes, buf.getArrayStart() + 8, 4);
+        
+        // Insert the custom values into the header
+        if(customValues != null) {
+            for(int i=0; i<4; i++) {
+                byte[] customBytes = intToByteArray(customValues[i]);
+                insertBytes(buf.getArray(), customBytes, buf.getArrayStart() + 12 + (i * 4), 4);
+            }
+        }
         
         // Calculate and insert the checksum
         int checksum = CRC32.update(CRC32.INITIAL_VALUE, buf.getArray(), buf.getArrayStart(), buf.getLength());

@@ -55,7 +55,8 @@ import org.logicprobe.LogicMail.message.UnsupportedContentException;
 public class MessageContentFileReader extends MessageContentFileBase {
     private final LongIntHashtable contentUidMap = new LongIntHashtable();
     private final IntIntHashtable contentTagMap = new IntIntHashtable();
-    
+    private int[] customValues;
+
     /**
      * Instantiates a new message content file wrapper.
      *
@@ -78,7 +79,7 @@ public class MessageContentFileReader extends MessageContentFileBase {
         InputStream input = fileConnection.openInputStream();
         
         // Read and validate the header
-        validateHeader(input);
+        customValues = validateHeader(input);
         
         // Iterate over the file to build a map of content sections
         buildContentMap(input, fileConnection.fileSize());
@@ -138,7 +139,19 @@ public class MessageContentFileReader extends MessageContentFileBase {
             return false;
         }
     }
-    
+
+    /**
+     * Gets the custom values from the content file header.
+     * If values were not set during file creation, then they will all default
+     * to zero.
+     *
+     * @return the array of 4 custom <code>int</code>values
+     */
+    public int[] getCustomValues() {
+        checkFileOpened();
+        return customValues;
+    }
+
     /**
      * Gets the content for the provided message part.
      *
