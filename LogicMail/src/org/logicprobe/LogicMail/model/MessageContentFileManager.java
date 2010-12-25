@@ -166,6 +166,23 @@ public class MessageContentFileManager {
      * @return the loaded message content
      */
     public synchronized MimeMessageContent[] getMessageContent(FolderTreeItem folder, MessageToken messageToken, MimeMessagePart[] messageParts) {
+        return getMessageContent(folder, messageToken, messageParts, new int[4]);
+    }
+    
+    /**
+     * Gets the cached content for a particular message.
+     *
+     * @param folder the folder that the message is stored within
+     * @param messageToken the token for the message
+     * @param messageParts the message parts to try loading content for
+     * @param customValues an existing 4-element array to be populated with the
+     *     custom values from the message header
+     * @return the loaded message content
+     */
+    public synchronized MimeMessageContent[] getMessageContent(FolderTreeItem folder, MessageToken messageToken, MimeMessagePart[] messageParts, int[] customValues) {
+        if(customValues == null || customValues.length != 4) {
+            throw new IllegalArgumentException();
+        }
         if(cacheUrl == null) { return new MimeMessageContent[0]; }
 
         FileConnection fileConnection = null;
@@ -183,6 +200,12 @@ public class MessageContentFileManager {
             if(fileConnection.exists()) {
                 MessageContentFileReader reader = new MessageContentFileReader(fileConnection, messageToken.getMessageUid());
                 reader.open();
+                
+                // Read out the custom values from the header
+                int[] fileCustomValues = reader.getCustomValues();
+                for(int i=0; i<4; i++) {
+                    customValues[i] = fileCustomValues[i];
+                }
                 
                 for(int i=0; i<messageParts.length; i++) {
                     MimeMessageContent content = reader.getContent(messageParts[i]);

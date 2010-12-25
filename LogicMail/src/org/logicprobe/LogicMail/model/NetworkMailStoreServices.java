@@ -321,7 +321,6 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final MimeMessagePart[] partsToSkip,
             final boolean cacheOnly) {
         
-        //TODO: Implement more robust POP behavior
         if(structure != null && contentFileManager.messageContentExists(folder, messageToken)) {
             // If the store does not support parts, then take a simplified
             // approach that assumes the cache can only contain complete
@@ -329,13 +328,38 @@ public class NetworkMailStoreServices extends MailStoreServices {
             
             // Determine which parts are displayable
             MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure);
-            MimeMessageContent[] loadedContent =
-                contentFileManager.getMessageContent(folder, messageToken, displayableParts);
+            int[] customValues = new int[4];
+            final MimeMessageContent[] loadedContent =
+                contentFileManager.getMessageContent(folder, messageToken, displayableParts, customValues);
             
-            // Notify listeners that content was loaded
-            if(loadedContent.length > 0) {
-                fireMessageContentAvailable(messageToken, loadedContent);
-                messageRefreshComplete(messageToken);
+            // Determine if a fresh request makes sense, or if the cached data
+            // should be returned as-is.
+            boolean messageComplete = (customValues[0] == 1);
+            int previousMaxLines = customValues[1];
+            // If the cached message is not complete, and we are using POP,
+            // and the user-configured max lines has been increased since this
+            // message was originally fetched, then trigger a fresh request.
+            if(!messageComplete
+                    && mailStore.getAccountConfig() instanceof PopConfig
+                    && previousMaxLines < ((PopConfig)mailStore.getAccountConfig()).getMaxMessageLines()) {
+                mailStore.requestMessage(messageToken, new MailStoreRequestCallback() {
+                    public void mailStoreRequestComplete() { }
+                    public void mailStoreRequestFailed(Throwable exception) {
+                        // In this specific case, a failure will cause us to
+                        // revert to cached data instead of giving up.
+                        if(loadedContent.length > 0) {
+                            fireMessageContentAvailable(messageToken, loadedContent);
+                            messageRefreshComplete(messageToken);
+                        }
+                    }
+                });
+            }
+            else {
+                // Notify listeners that content was loaded
+                if(loadedContent.length > 0) {
+                    fireMessageContentAvailable(messageToken, loadedContent);
+                    messageRefreshComplete(messageToken);
+                }
             }
         }
         else if(!cacheOnly) {
