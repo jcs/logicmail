@@ -103,6 +103,7 @@ public class MessageContentFileReader extends MessageContentFileBase {
         while(offset < fileSize) {
             long partUid = dataInput.readLong();
             int partTagHash = dataInput.readInt();
+            dataInput.skip(4); // Ignore the partComplete value here
             int contentLen = dataInput.readInt();
 
             // 12 = UID(8) + Tag(4)
@@ -115,8 +116,8 @@ public class MessageContentFileReader extends MessageContentFileBase {
                 contentTagMap.put(partTagHash, dataOffset);
             }
             
-            // UID(8) + Tag(4) + Len(4) + contentLen + CRC(4)
-            offset += 16 + contentLen + 4;
+            // UID(8) + Tag(4) + Cmp(4) + Len(4) + contentLen + CRC(4)
+            offset += 20 + contentLen + 4;
         }
     }
     
@@ -176,6 +177,9 @@ public class MessageContentFileReader extends MessageContentFileBase {
         DataInputStream dataInput = fileConnection.openDataInputStream();
         dataInput.skip(contentOffset);
         
+        int partComplete = dataInput.readInt();
+        if(partComplete < -1 || partComplete > 1) { partComplete = 1; }
+        
         int contentLen = dataInput.readInt();
         byte[] data = new byte[contentLen];
         dataInput.read(data);
@@ -190,7 +194,7 @@ public class MessageContentFileReader extends MessageContentFileBase {
         }
         
         MimeMessageContent content = MimeMessageContentFactory.createContentRaw(part, data);
-        
+        content.setPartComplete(partComplete);
         return content;
     }
 }

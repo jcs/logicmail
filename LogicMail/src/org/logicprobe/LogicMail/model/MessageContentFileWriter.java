@@ -168,6 +168,9 @@ public class MessageContentFileWriter extends MessageContentFileBase {
         buf.writeLong(part.getUniqueId());
         buf.writeInt(createPartTagHash(part));
         
+        // Append the part-complete value
+        buf.writeInt(content.isPartComplete());
+        
         // Append the raw content data
         byte[] contentData = content.getRawData();
         buf.writeInt(contentData.length);

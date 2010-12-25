@@ -56,7 +56,7 @@ import net.rim.device.api.util.DataBuffer;
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * | Message token UID (UTF)                               |  CRC  |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-----------------------+-------+
- * | Part UID      |  Tag  |  Len  | Content data (byte[]) |  CRC  |
+ * | Part UID      |  Tag  |  Cmp  |  Len  | Content data  |  CRC  |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-----------------------+-------+
  * |                            .  .  .                            |      
  * +---------------------------------------------------------------+
@@ -79,6 +79,7 @@ import net.rim.device.api.util.DataBuffer;
  *  Hash of the part tag, MIME type, and MIME subtype, for matching when the
  *  part UID has changed or is unavailable.  This is set to <code>0</code> if
  *  the part tag is unset.</td></tr>
+ * <tr><td>Cmp</td><td>int</td><td>Is the part complete? (-1, 0, or 1)</td></tr>
  * <tr><td>Len</td><td>int</td><td>Length of the raw data array</td></tr>
  * <tr><td>Content data</td><td>byte[]</td><td>Raw content data</td></tr>
  * <tr><td>CRC</td><td>int</td><td>CRC-32 checksum of just the content data array</td></tr>
