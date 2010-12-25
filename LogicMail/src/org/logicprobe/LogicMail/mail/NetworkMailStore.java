@@ -336,7 +336,11 @@ public class NetworkMailStore extends AbstractMailStore {
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
-			fireMessageAvailable((MessageToken)results[0], (MimeMessagePart)results[1], (MimeMessageContent[])results[2], null);
+			fireMessageAvailable(
+			        (MessageToken)results[0],
+			        ((Boolean)results[1]).booleanValue(),
+			        (MimeMessagePart)results[2],
+			        (MimeMessageContent[])results[3], null);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }

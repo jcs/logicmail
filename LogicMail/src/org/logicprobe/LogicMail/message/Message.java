@@ -37,23 +37,42 @@ import java.util.Hashtable;
 /**
  * This class encapsulates all the data to represent an E-Mail message.
  * <p>
- * Note: This class remains only as a shim to support refactoring,
- * and should be removed as soon as the new structure/content model
- * is in place and functional.
+ * It is intended for use as a short lived lightweight container for moving
+ * data between the protocol layer and the rest of the application.
  * </p>
  */
 public class Message {
-    private MimeMessagePart structure;
-    private Hashtable content = new Hashtable();
+    private final MimeMessagePart structure;
+    private final Hashtable content = new Hashtable();
+    private final boolean complete;
     
     /**
      * Creates a new instance of Message
-     * @param envelope The envelope for the message
-     * @param body The structured message body tree
+     * @param structure The structured message body tree
+     * @param true, if the message data is complete
+     */
+    public Message(MimeMessagePart structure, boolean complete) {
+        this.structure = structure;
+        this.complete = complete;
+    }
+    
+    /**
+     * Creates a new instance of Message
+     * @param structure The structured message body tree
      */
     public Message(MimeMessagePart structure) {
-    	// TODO: Consider removing the Message object completely
-        this.structure = structure;
+        this(structure, true);
+    }
+    
+    /**
+     * Checks if the message complete flag was set.
+     * This should always be true, unless this message was created by parsing
+     * incomplete MIME source.
+     *
+     * @return true, if the message is complete
+     */
+    public boolean isComplete() {
+        return complete;
     }
     
     /**

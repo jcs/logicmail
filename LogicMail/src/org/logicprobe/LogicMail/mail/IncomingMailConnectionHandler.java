@@ -458,7 +458,12 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
 
         MailConnectionHandlerListener listener = getListener();
         if(message != null && listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] { messageToken, message.getStructure(), message.getAllContent() }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE, new Object[] {
+                    messageToken,
+                    new Boolean(message.isComplete()),
+                    message.getStructure(),
+                    message.getAllContent() },
+                    tag, true);
         }
     }
     

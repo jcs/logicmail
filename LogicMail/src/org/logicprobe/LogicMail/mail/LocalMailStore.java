@@ -271,7 +271,9 @@ public class LocalMailStore extends AbstractMailStore {
                 message = new Message(rootPart);
                 Enumeration e = contentMap.keys();
                 while(e.hasMoreElements()) {
-                	MimeMessagePart part = (MimeMessagePart)e.nextElement();
+                    Object element = e.nextElement();
+                    if(!(element instanceof MimeMessagePart)) { continue; }
+                	MimeMessagePart part = (MimeMessagePart)element;
                 	message.putContent(part, (MimeMessageContent)contentMap.get(part));
                 }
         	} catch (IOException e) {
@@ -283,7 +285,7 @@ public class LocalMailStore extends AbstractMailStore {
         	
         	if(message != null && messageSource != null) {
                 if(callback != null) { callback.mailStoreRequestComplete(); }
-        		fireMessageAvailable(localMessageToken, message.getStructure(), message.getAllContent(), messageSource);
+        		fireMessageAvailable(localMessageToken, true, message.getStructure(), message.getAllContent(), messageSource);
         	}
         	else {
                 if(callback != null) { callback.mailStoreRequestFailed(throwable); }

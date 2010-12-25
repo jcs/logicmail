@@ -471,17 +471,48 @@ public class PopClient extends AbstractIncomingMailClient {
         // Download the message text
         byte[][] topResult = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines, progressHandler);
         
+        // Find how many lines were actually returned
+        int retrievedLines = 0;
+        for(int i=0; i<topResult.length; i++) {
+            int lineLength = topResult[i].length;
+            if(lineLength == 0
+                    || (lineLength == 1 && topResult[i][0] == '\n')
+                    || (lineLength == 2 && topResult[i][0] == '\r' && topResult[i][1] == '\n')) {
+                retrievedLines = topResult.length - i - 1;
+                break;
+            }
+        }
+        
+        // Note: The "are we complete?" logic may return confusing results in
+        // the special case where maxLines == retrievedLines and we are
+        // downloading a single-part message with no separators.
+
         InputStream inputStream = convertMessageResultToStream(topResult);
         
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, inputStream);
         if(rootPart != null) {
-            Message msg = new Message(rootPart);
+            int partComplete = ((Integer)contentMap.get(Boolean.TRUE)).intValue();
+            boolean complete = (retrievedLines < maxLines) || partComplete == 1;
+            
+            Message msg = new Message(rootPart, complete);
             Enumeration e = contentMap.keys();
             while(e.hasMoreElements()) {
-            	MimeMessagePart part = (MimeMessagePart)e.nextElement();
-            	msg.putContent(part, (MimeMessageContent)contentMap.get(part));
+                Object element = e.nextElement();
+                if(!(element instanceof MimeMessagePart)) { continue; }
+                MimeMessagePart part = (MimeMessagePart)element;
+                MimeMessageContent content = (MimeMessageContent)contentMap.get(part);
+                if(content.getRawData().length == 0) { continue; }
+                
+                // Avoid confusing results if we have a single-part message with
+                // no section separators, and we think we got all of it.
+                if(part == rootPart && retrievedLines < maxLines) {
+                    content.setPartComplete(MimeMessageContent.PART_COMPLETE);
+                }
+                
+                msg.putContent(part, content);
             }
+            
             return msg;
         }
         else {

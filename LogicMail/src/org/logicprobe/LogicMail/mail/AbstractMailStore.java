@@ -882,16 +882,28 @@ public abstract class AbstractMailStore {
      * a message has been loaded.
      * 
      * @param messageToken The token identifying the message
+     * @param messageComplete True, if the message is complete
      * @param messageStructure The message structure
      * @param messageContent The message content
      * @param messageSource The raw message source, if available
      */
-    protected void fireMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
+    protected void fireMessageAvailable(
+            MessageToken messageToken,
+            boolean messageComplete,
+            MimeMessagePart messageStructure,
+            MimeMessageContent[] messageContent,
+            String messageSource) {
+        
         Object[] listeners = listenerList.getListeners(MessageListener.class);
         MessageEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageEvent(this, messageToken, messageStructure, messageContent, messageSource);
+                e = new MessageEvent(this,
+                        messageToken,
+                        messageComplete,
+                        messageStructure,
+                        messageContent,
+                        messageSource);
             }
             ((MessageListener)listeners[i]).messageAvailable(e);
         }

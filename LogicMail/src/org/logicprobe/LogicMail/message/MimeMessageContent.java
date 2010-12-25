@@ -48,9 +48,15 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  * major MIME type that is supported.
  */
 public abstract class MimeMessageContent implements Serializable {
+    //TODO: Make this non-serializable as soon as the old message node writer is removed
     private long uniqueId;
     private ContentPart messagePart;
+    private int partComplete;
     protected static String ENCODING_BASE64 = "base64";
+
+    public static final int PART_COMPLETE = 1;
+    public static final int PART_INCOMPLETE = 0;
+    public static final int PART_UNKNOWN = -1;
 
     /**
      * Instantiates a new message content object
@@ -60,8 +66,27 @@ public abstract class MimeMessageContent implements Serializable {
     protected MimeMessageContent(ContentPart messagePart) {
         this.uniqueId = UniqueIdGenerator.getInstance().getUniqueId();
         this.messagePart = messagePart;
+        this.partComplete = PART_COMPLETE;
     }
 
+    /**
+     * Sets whether the part is complete, or has been truncated.
+     *
+     * @param partComplete the completeness of the message content
+     */
+    public void setPartComplete(int partComplete) {
+        this.partComplete = partComplete;
+    }
+    
+    /**
+     * Gets whether the part is complete, or has been truncated.
+     *
+     * @return the completeness of the message content
+     */
+    public int isPartComplete() {
+        return partComplete;
+    }
+    
     /**
      * Gets the message part representing the placement of
      * this content within the message structure.

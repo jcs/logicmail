@@ -39,12 +39,13 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
  * Object for message events.
  */
 public class MessageEvent extends MailStoreEvent {
-	private int type;
-	private MessageToken messageToken;
-	private MessageFlags messageFlags;
-	private MimeMessagePart messageStructure;
-	private MimeMessageContent[] mimeMessageContent;
-	private String messageSource;
+	private final int type;
+	private final MessageToken messageToken;
+	private final boolean messageComplete;
+	private final MessageFlags messageFlags;
+	private final MimeMessagePart messageStructure;
+	private final MimeMessageContent[] mimeMessageContent;
+	private final String messageSource;
 	
 	/** The entire message has been loaded. */
 	public final static int TYPE_FULLY_LOADED = 0;
@@ -64,10 +65,11 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageContent the message content
 	 * @param messageSource the message source
 	 */
-	public MessageEvent(Object source, int type, MessageToken messageToken, MessageFlags messageFlags, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
+	public MessageEvent(Object source, int type, MessageToken messageToken, boolean messageComplete, MessageFlags messageFlags, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
 		super(source);
 		this.type = type;
 		this.messageToken = messageToken;
+		this.messageComplete = messageComplete;
 		this.messageFlags = messageFlags;
 		this.messageStructure = messageStructure;
 		this.mimeMessageContent = messageContent;
@@ -83,7 +85,7 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageContent the loaded message content
 	 */
 	public MessageEvent(Object source, MessageToken messageToken, MimeMessageContent[] messageContent) {
-		this(source, TYPE_CONTENT_LOADED, messageToken, null, null, messageContent, null);
+		this(source, TYPE_CONTENT_LOADED, messageToken, true, null, null, messageContent, null);
 	}
 
 	/**
@@ -92,12 +94,13 @@ public class MessageEvent extends MailStoreEvent {
 	 * 
 	 * @param source the source of the event
 	 * @param messageToken the message token
+	 * @param messageComplete true, if the message is complete
 	 * @param messageStructure the message structure
 	 * @param messageContent the message content
 	 * @param messageSource the message source
 	 */
-	public MessageEvent(Object source, MessageToken messageToken, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
-		this(source, TYPE_FULLY_LOADED, messageToken, null, messageStructure, messageContent, messageSource);
+	public MessageEvent(Object source, MessageToken messageToken, boolean messageComplete, MimeMessagePart messageStructure, MimeMessageContent[] messageContent, String messageSource) {
+		this(source, TYPE_FULLY_LOADED, messageToken, messageComplete, null, messageStructure, messageContent, messageSource);
 	}
 
 	/**
@@ -109,7 +112,7 @@ public class MessageEvent extends MailStoreEvent {
 	 * @param messageFlags the message flags
 	 */
 	public MessageEvent(Object source, MessageToken messageToken, MessageFlags messageFlags) {
-		this(source, TYPE_FLAGS_CHANGED, messageToken, messageFlags, null, null, null);
+		this(source, TYPE_FLAGS_CHANGED, messageToken, true, messageFlags, null, null, null);
 	}
 	
 	/**
@@ -128,6 +131,17 @@ public class MessageEvent extends MailStoreEvent {
 		return messageToken;
 	}
 
+	/**
+	 * Checks if is message is complete.
+	 * This value is only relevant for <code>TYPE_FULLY_LOADED</code> events
+	 * where the underlying fetch was truncated.
+	 *
+	 * @return true, if the message is complete
+	 */
+	public boolean isMessageComplete() {
+        return messageComplete;
+    }
+	
 	/**
 	 * Gets the updated message flags, if they are available for this particular event.
 	 */

@@ -39,6 +39,7 @@ import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
+import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -387,18 +388,30 @@ public class NetworkMailStoreServices extends MailStoreServices {
     
     protected void handleMessageAvailable(
             MessageToken messageToken,
+            boolean messageComplete,
             MimeMessagePart messageStructure,
             MimeMessageContent[] messageContent,
             String messageSource) {
+        // Note: This method should only be called by the events triggered by
+        // the completion of the request made in requestMessageRefreshWhole().
         
         // Update the status and structure in the folder cache for this message
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         handler.handleMessageAvailable(messageToken, messageStructure);
         
-        // Update the message content cache
-        contentFileManager.putMessageContent(handler.getFolder(), messageToken, messageContent);
+        int[] customValues = new int[] {
+                (messageComplete ? 1 : 0), 0, 0, 0
+        };
         
-        fireMessageAvailable(messageToken, messageStructure, messageContent, messageSource);
+        if(mailStore.getAccountConfig() instanceof PopConfig) {
+            customValues[1] = ((PopConfig)mailStore.getAccountConfig()).getMaxMessageLines();
+        }
+        
+        // Update the message content cache
+        contentFileManager.putCompleteMessageContent(
+                handler.getFolder(), messageToken, messageContent, customValues);
+        
+        fireMessageAvailable(messageToken, messageComplete, messageStructure, messageContent, messageSource);
     }
     
     protected void handleMessageContentAvailable(

@@ -37,6 +37,7 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessageContentFactory;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
@@ -182,6 +183,10 @@ public class MailMessageParser {
 
     /**
      * Parses the raw message body.
+     * There will be a single entry in the content map that does not match the
+     * type information described below.  This entry will have a key of
+     * <code>Boolean.TRUE</code>, and an <code>Integer</code> value representing
+     * the result of {@link MIMEInputStream#isPartComplete()} for the message.
      *
      * @param contentMap Map to populate with MessagePart-to-MessageContent data.
      * @param inputStream The stream to read the raw message from
@@ -201,6 +206,8 @@ public class MailMessageParser {
             return null;
         }
 
+        contentMap.put(Boolean.TRUE, new Integer(mimeInputStream.isPartComplete()));
+        
         MimeMessagePart rootPart = getMessagePart(contentMap, mimeInputStream);
 
         return rootPart;
@@ -283,7 +290,9 @@ public class MailMessageParser {
                 MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
                 		type, subtype, name, encoding, charset, disposition, contentId, size);
                 try {
-					contentMap.put(part, MimeMessageContentFactory.createContentEncoded(part, data));
+                    MimeMessageContent content = MimeMessageContentFactory.createContentEncoded(part, data);
+                    content.setPartComplete(mimeInputStream.isPartComplete());
+					contentMap.put(part, content);
 				} catch (UnsupportedContentException e) {
 	                EventLogger.logEvent(AppInfo.GUID,
 	                        ("UnsupportedContentException: " + e.getMessage()).getBytes(),
@@ -296,7 +305,9 @@ public class MailMessageParser {
                 MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
                 		type, subtype, name, encoding, charset, disposition, contentId, buffer.length);
                 try {
-					contentMap.put(part, MimeMessageContentFactory.createContentEncoded(part, buffer));
+                    MimeMessageContent content = MimeMessageContentFactory.createContentEncoded(part, buffer);
+                    content.setPartComplete(mimeInputStream.isPartComplete());
+					contentMap.put(part, content);
 				} catch (UnsupportedContentException e) {
 	                EventLogger.logEvent(AppInfo.GUID,
 	                        ("UnsupportedContentException: " + e.getMessage()).getBytes(),
