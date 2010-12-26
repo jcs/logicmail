@@ -380,9 +380,10 @@ public abstract class AbstractMailStore {
      * {@link MessageListener#messageAvailable(MessageEvent)}.
      * 
      * @param messageToken The token used to identify the message
+     * @param useLimits True, if user-configured download limits should be used
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback);
+    public abstract void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be loaded.
@@ -391,9 +392,10 @@ public abstract class AbstractMailStore {
      * {@link MessageListener#messageAvailable(MessageEvent)}.
      * 
      * @param messageToken The token used to identify the message
+     * @param useLimits True, if user-configured download limits should be used
      */
-    public void requestMessage(MessageToken messageToken) {
-        requestMessage(messageToken, null);
+    public void requestMessage(MessageToken messageToken, boolean useLimits) {
+        requestMessage(messageToken, useLimits, null);
     }
 
     /**

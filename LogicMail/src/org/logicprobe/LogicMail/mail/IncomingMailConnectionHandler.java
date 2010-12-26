@@ -143,7 +143,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             handleRequestFolderMessagesIndexMap((FolderTreeItem)params[0], tag);
             break;
         case REQUEST_MESSAGE:
-            handleRequestMessage((MessageToken)params[0], tag);
+            handleRequestMessage((MessageToken)params[0], ((Boolean)params[1]).booleanValue(), tag);
             break;
         case REQUEST_MESSAGE_PARTS:
             handleRequestMessageParts((MessageToken)params[0], (MimeMessagePart[])params[1], tag);
@@ -449,12 +449,12 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
 
-    private void handleRequestMessage(MessageToken messageToken, Object tag) throws IOException, MailException {
+    private void handleRequestMessage(MessageToken messageToken, boolean useLimits, Object tag) throws IOException, MailException {
         String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
         showStatus(statusMessage);
         checkActiveFolder(messageToken);
 
-        Message message = incomingClient.getMessage(messageToken, getProgressHandler(statusMessage));
+        Message message = incomingClient.getMessage(messageToken, useLimits, getProgressHandler(statusMessage));
 
         MailConnectionHandlerListener listener = getListener();
         if(message != null && listener != null) {

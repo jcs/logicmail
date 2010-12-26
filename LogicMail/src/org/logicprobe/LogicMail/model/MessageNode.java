@@ -1155,8 +1155,13 @@ public class MessageNode implements Node {
      * @return True if a refresh was triggered, false otherwise
      */
     public boolean refreshEntireMessage() {
-        // TODO Auto-generated method stub
-        return false;
+        if(refreshInProgress.compareAndSet(false, true)) {
+            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+            return mailStore.requestEntireMessageRefresh(messageToken);
+        }
+        else {
+            return false;
+        }
     }
 	
 	/**

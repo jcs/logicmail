@@ -461,40 +461,50 @@ public class PopClient extends AbstractIncomingMailClient {
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, boolean, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {
+    public Message getMessage(MessageToken messageToken, boolean useLimits, MailProgressHandler progressHandler) throws IOException, MailException {
     	PopMessageToken popMessageToken = (PopMessageToken)messageToken;
     	
-        // Figure out the max number of lines
-        int maxLines = accountConfig.getMaxMessageLines();
+    	byte[][] retrResult;
+    	boolean messageNotTruncated; 
+    	if(useLimits) {
+            // Figure out the max number of lines
+            int maxLines = accountConfig.getMaxMessageLines();
 
-        // Download the message text
-        byte[][] topResult = popProtocol.executeTop((popMessageToken.getMessageIndex()), maxLines, progressHandler);
-        
-        // Find how many lines were actually returned
-        int retrievedLines = 0;
-        for(int i=0; i<topResult.length; i++) {
-            int lineLength = topResult[i].length;
-            if(lineLength == 0
-                    || (lineLength == 1 && topResult[i][0] == '\n')
-                    || (lineLength == 2 && topResult[i][0] == '\r' && topResult[i][1] == '\n')) {
-                retrievedLines = topResult.length - i - 1;
-                break;
+            // Download the message text
+            retrResult = popProtocol.executeTop(popMessageToken.getMessageIndex(), maxLines, progressHandler);
+    	    
+            // Find how many lines were actually returned
+            int retrievedLines = 0;
+            for(int i=0; i<retrResult.length; i++) {
+                int lineLength = retrResult[i].length;
+                if(lineLength == 0
+                        || (lineLength == 1 && retrResult[i][0] == '\n')
+                        || (lineLength == 2 && retrResult[i][0] == '\r' && retrResult[i][1] == '\n')) {
+                    retrievedLines = retrResult.length - i - 1;
+                    break;
+                }
             }
-        }
+            
+            messageNotTruncated = retrievedLines < maxLines;
+    	}
+    	else {
+    	    messageNotTruncated = true;
+    	    retrResult = popProtocol.executeRetr(popMessageToken.getMessageIndex(), progressHandler);
+    	}
         
         // Note: The "are we complete?" logic may return confusing results in
         // the special case where maxLines == retrievedLines and we are
         // downloading a single-part message with no separators.
 
-        InputStream inputStream = convertMessageResultToStream(topResult);
+        InputStream inputStream = convertMessageResultToStream(retrResult);
         
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, inputStream);
         if(rootPart != null) {
             int partComplete = ((Integer)contentMap.get(Boolean.TRUE)).intValue();
-            boolean complete = (retrievedLines < maxLines) || partComplete == 1;
+            boolean complete = messageNotTruncated || partComplete == 1;
             
             Message msg = new Message(rootPart, complete);
             Enumeration e = contentMap.keys();
@@ -507,7 +517,7 @@ public class PopClient extends AbstractIncomingMailClient {
                 
                 // Avoid confusing results if we have a single-part message with
                 // no section separators, and we think we got all of it.
-                if(part == rootPart && retrievedLines < maxLines) {
+                if(part == rootPart && messageNotTruncated) {
                     content.setPartComplete(MimeMessageContent.PART_COMPLETE);
                 }
                 

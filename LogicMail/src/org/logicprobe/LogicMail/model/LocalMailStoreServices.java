@@ -59,8 +59,13 @@ public class LocalMailStoreServices extends MailStoreServices {
             return false;
         }
         else {
-            mailStore.requestMessage(messageToken);
+            mailStore.requestMessage(messageToken, true);
             return true;
         }
+    }
+    
+    public boolean requestEntireMessageRefresh(MessageToken messageToken) {
+        // Not supported
+        return false;
     }
 }

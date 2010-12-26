@@ -405,6 +405,17 @@ public abstract class MailStoreServices {
     public abstract boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip);
     
     /**
+     * Requests a message refresh, similar to {@link #requestMessageRefresh(MessageToken, MimeMessagePart[])},
+     * except any user-configured limits will be ignored and mail store will
+     * attempt to load the entire message content.  This method will return
+     * <code>false</code> if it is not supported by the mail store.
+     * 
+     * @param messageToken the message token
+     * @return true, if a refresh was initiated
+     */
+    public abstract boolean requestEntireMessageRefresh(MessageToken messageToken);
+    
+    /**
      * Explicitly request message parts to be loaded.  This method will attempt
      * to load whatever is requested, regardless of any configuration settings
      * that may otherwise exclude the parts during a normal refresh.

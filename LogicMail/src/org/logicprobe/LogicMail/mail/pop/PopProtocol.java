@@ -249,6 +249,21 @@ public class PopProtocol {
     }
     
     /**
+     * Execute the "RETR" command
+     * @param index Message index
+     * @param progressHandler progress handler
+     */
+    public byte[][] executeRetr(int index, MailProgressHandler progressHandler) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeRetr("+index+")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        return executeFollowBinary(RETR_ + index, true, progressHandler);
+    }
+    
+    /**
      * Execute the "UIDL" command for a specific message index.
      * @param index Message index
      */
@@ -448,6 +463,7 @@ public class PopProtocol {
     private static String UIDL_ = "UIDL ";
     private static String LIST_ = "LIST ";
     private static String TOP_ = "TOP ";
+    private static String RETR_ = "RETR ";
     private static String STAT = "STAT";
     private static String QUIT = "QUIT";
     private static String PASS_ = "PASS ";

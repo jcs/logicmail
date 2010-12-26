@@ -367,13 +367,14 @@ public interface IncomingMailClient extends MailClient {
      * </p>
      * 
      * @param messageToken the message token
+     * @param useLimits true, if user-configured download limits should be used
      * @param progressHandler the progress handler
      * @return the message
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException;
+    Message getMessage(MessageToken messageToken, boolean useLimits, MailProgressHandler progressHandler) throws IOException, MailException;
 
     /**
      * Get a particular message part from a message in the selected folder.

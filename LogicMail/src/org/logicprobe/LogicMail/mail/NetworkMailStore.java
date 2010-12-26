@@ -225,8 +225,8 @@ public class NetworkMailStore extends AbstractMailStore {
         requestFolderMessageIndexMap(folder, null);
     }
 	
-	public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) {
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken }, callback);
+	public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken, new Boolean(useLimits) }, callback);
 	}
 
 	public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) {

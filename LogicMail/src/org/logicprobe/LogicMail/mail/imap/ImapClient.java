@@ -901,9 +901,9 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.MailProgressHandler)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#getMessage(org.logicprobe.LogicMail.mail.MessageToken, boolean, org.logicprobe.LogicMail.mail.MailProgressHandler)
      */
-    public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler) throws IOException, MailException {
+    public Message getMessage(MessageToken messageToken, boolean useLimits, MailProgressHandler progressHandler) throws IOException, MailException {
         ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
         if(!imapMessageToken.getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
             throw new MailException("Invalid mailbox for message");
@@ -913,7 +913,8 @@ public class ImapClient extends AbstractIncomingMailClient {
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart =
             getMessagePart(contentMap, imapMessageToken.getImapMessageUid(),
-                    structure, accountConfig.getMaxMessageSize(),
+                    structure,
+                    useLimits ? accountConfig.getMaxMessageSize() : Integer.MAX_VALUE,
                     progressHandler);
         Message msg = new Message(rootPart);
         Enumeration e = contentMap.keys();

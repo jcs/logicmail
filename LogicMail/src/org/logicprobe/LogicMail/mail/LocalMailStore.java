@@ -236,7 +236,7 @@ public class LocalMailStore extends AbstractMailStore {
 		}
     }
     
-    public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) {
+    public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) {
     	LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
         FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
         

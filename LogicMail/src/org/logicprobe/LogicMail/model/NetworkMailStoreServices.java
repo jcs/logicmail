@@ -213,6 +213,24 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return true;
     }
     
+    public boolean requestEntireMessageRefresh(final MessageToken messageToken) {
+        if(mailStore.hasMessageParts()) {
+            // Not supported for mail stores that support part-download
+            return false;
+        }
+        
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        if(handler == null || !handler.isInitialRefreshComplete()) { return false; }
+        
+        mailStore.requestMessage(messageToken, false, new MailStoreRequestCallback() {
+            public void mailStoreRequestComplete() { }
+            public void mailStoreRequestFailed(Throwable exception) {
+                messageRefreshFailed(messageToken);
+            }
+        });
+        return true;
+    }
+    
     private void requestMessageRefreshParts(
             final FolderTreeItem folder,
             final MessageToken messageToken,
@@ -342,7 +360,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             if(!messageComplete
                     && mailStore.getAccountConfig() instanceof PopConfig
                     && previousMaxLines < ((PopConfig)mailStore.getAccountConfig()).getMaxMessageLines()) {
-                mailStore.requestMessage(messageToken, new MailStoreRequestCallback() {
+                mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() { }
                     public void mailStoreRequestFailed(Throwable exception) {
                         // In this specific case, a failure will cause us to
@@ -363,7 +381,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             }
         }
         else if(!cacheOnly) {
-            mailStore.requestMessage(messageToken, new MailStoreRequestCallback() {
+            mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
                 public void mailStoreRequestComplete() { }
                 public void mailStoreRequestFailed(Throwable exception) {
                     messageRefreshFailed(messageToken);
