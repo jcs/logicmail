@@ -42,6 +42,7 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
 import net.rim.device.api.i18n.DateFormat;
+import net.rim.device.api.i18n.MessageFormat;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.KeypadListener;
@@ -95,7 +96,7 @@ public class MessageScreen extends AbstractScreenProvider {
 	private LabelField attachmentsLabelField;
 	private BorderedFieldManager attachmentsFieldManager;
 	private VerticalFieldManager messageFieldManager;
-	private ButtonField moreContentButton;
+	private ButtonField loadEntireMessageButton;
     private MessageActions messageActions;
     
     private MenuItem saveAttachmentItem;
@@ -427,13 +428,13 @@ public class MessageScreen extends AbstractScreenProvider {
         addAttachmentFields(messageFields);
     	
         if(!messageNode.isMessageComplete() && messageNode.getMessageSize() > 0) {
-            moreContentButton = new ButtonField(
-                    resources.getString(LogicMailResource.MENUITEM_LOAD_MORE),
+            loadEntireMessageButton = new ButtonField(
+                    resources.getString(LogicMailResource.MENUITEM_LOAD_ENTIRE_MESSAGE),
                     ButtonField.CONSUME_CLICK | Field.FIELD_HCENTER);
-            moreContentButton.setChangeListener(fieldChangeListener);
+            loadEntireMessageButton.setChangeListener(fieldChangeListener);
         }
         else {
-            moreContentButton = null;
+            loadEntireMessageButton = null;
         }
         
 		drawMessageFields(messageFields);
@@ -528,8 +529,8 @@ public class MessageScreen extends AbstractScreenProvider {
                 }
             }
             
-            if(moreContentButton != null) {
-                messageFieldManager.add(moreContentButton);
+            if(loadEntireMessageButton != null) {
+                messageFieldManager.add(loadEntireMessageButton);
             }
             
             padAndFocusScreen();
@@ -672,9 +673,15 @@ public class MessageScreen extends AbstractScreenProvider {
                 navigationController.displayComposition((NetworkAccountNode)parentAccount, address);
             }
         }
-        else if(field == moreContentButton) {
-            //TODO: add load-more-content functionality
-            Dialog.ask(Dialog.D_OK, "Not yet implemented, but this would let you load " + StringParser.toDataSizeString(messageNode.getMessageSize()));
+        else if(field == loadEntireMessageButton) {
+            String dialogText =
+                MessageFormat.format(resources.getString(LogicMailResource.MESSAGE_LOAD_ALL_PROMPT),
+                        new Object[] { StringParser.toDataSizeString(messageNode.getMessageSize()) });
+            if(Dialog.ask(Dialog.D_YES_NO, dialogText, Dialog.NO) == Dialog.YES) {
+                if(messageNode.refreshEntireMessage()) {
+                    loadEntireMessageButton.setEditable(false);
+                }
+            }
         }
 	}
 

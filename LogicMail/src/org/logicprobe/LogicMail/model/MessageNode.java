@@ -1142,6 +1142,22 @@ public class MessageNode implements Node {
             return false;
         }
     }
+
+    /**
+     * Called to load the complete message data for this node.
+     * <p>
+     * This loads the entire message, regardless of size, and is only supported
+     * for mail stores that do not support retrieval of individual message
+     * parts.  It should be called with extreme caution, and only after checking
+     * {@link #getMessageSize()} and prompting the user for confirmation.
+     * </p>
+     * 
+     * @return True if a refresh was triggered, false otherwise
+     */
+    public boolean refreshEntireMessage() {
+        // TODO Auto-generated method stub
+        return false;
+    }
 	
 	/**
 	 * Called to load a specific message part for this node.
