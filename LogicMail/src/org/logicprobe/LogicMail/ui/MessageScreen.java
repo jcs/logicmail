@@ -56,6 +56,7 @@ import net.rim.device.api.ui.MenuItem;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BasicEditField;
+import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.Menu;
@@ -80,18 +81,21 @@ import org.logicprobe.LogicMail.model.MessageNodeEvent;
 import org.logicprobe.LogicMail.model.MessageNodeListener;
 import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.model.OutgoingMessageNode;
+import org.logicprobe.LogicMail.util.StringParser;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
 /**
  * Display an E-Mail message
  */
 public class MessageScreen extends AbstractScreenProvider {
+    private static String TRIPLE_CENTER_DOT = "\u00B7 \u00B7 \u00B7";
     private VerticalFieldManager screenFieldManager;
     private BorderedFieldManager propertiesFieldManager;
 	private BorderedFieldManager headerFieldManager;
 	private LabelField attachmentsLabelField;
 	private BorderedFieldManager attachmentsFieldManager;
 	private VerticalFieldManager messageFieldManager;
+	private ButtonField moreContentButton;
     private MessageActions messageActions;
     
     private MenuItem saveAttachmentItem;
@@ -413,21 +417,52 @@ public class MessageScreen extends AbstractScreenProvider {
 		Vector messageFields = new Vector();
     	
     	// Add fields to display the message body
-    	MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());
+    	addMessageBodyFields(messageFields);
+    	
+    	if(messageFields.size() == 0) {
+			addEmptyPlaceholderField(messageFields);
+    	}
+    	
+    	// Add the attachments list at the bottom of the message
+        addAttachmentFields(messageFields);
+    	
+        if(!messageNode.isMessageComplete() && messageNode.getMessageSize() > 0) {
+            moreContentButton = new ButtonField(
+                    resources.getString(LogicMailResource.MENUITEM_LOAD_MORE),
+                    ButtonField.CONSUME_CLICK | Field.FIELD_HCENTER);
+            moreContentButton.setChangeListener(fieldChangeListener);
+        }
+        else {
+            moreContentButton = null;
+        }
+        
+		drawMessageFields(messageFields);
+		messageRendered = true;
+    }
+
+    private void addMessageBodyFields(Vector messageFields) {
+        MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());
     	for(int i=0; i<displayableParts.length; i++) {
     		MimeMessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {
     			Field field = MessageFieldFactory.createMessageField(messageNode, content);
     			messageFields.addElement(field);
+                
+                if(content.isPartComplete() != MimeMessageContent.PART_COMPLETE) {
+                    LabeledSeparatorField cutOffField = new LabeledSeparatorField(TRIPLE_CENTER_DOT, 0);
+                    cutOffField.setFont(Font.getDefault().derive(Font.BOLD));
+                    messageFields.addElement(cutOffField);
+                }
     		}
     	}
-    	
-    	if(messageFields.size() == 0) {
-			messageFields.addElement(
-					new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
-    	}
-    	
-    	// Add the attachments list at the bottom of the message
+    }
+
+    private void addEmptyPlaceholderField(Vector messageFields) {
+        messageFields.addElement(
+                new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
+    }
+
+    private void addAttachmentFields(Vector messageFields) {
         MimeMessagePart[] attachmentParts = messageNode.getAttachmentParts();
         if(attachmentParts != null && attachmentParts.length > 0) {
             attachmentsFieldManager =
@@ -442,9 +477,6 @@ public class MessageScreen extends AbstractScreenProvider {
         else {
             attachmentsFieldManager = null;
         }
-    	
-		drawMessageFields(messageFields);
-		messageRendered = true;
     }
 
 	private void drawMessageFields(final Vector messageFields) {
@@ -456,10 +488,11 @@ public class MessageScreen extends AbstractScreenProvider {
         	messageFieldManager.deleteAll();
         	
             for(int i=0;i<size;++i) {
-                if(messageFields.elementAt(i) != null) {
-                    messageFieldManager.add((Field)messageFields.elementAt(i));
+                Field field = (Field)messageFields.elementAt(i);
+                if(field != null) {
+                    messageFieldManager.add(field);
                 }
-                if(i != size-1) {
+                if(i != size-1 && !(messageFields.elementAt(i+1) instanceof LabeledSeparatorField)) {
                 	messageFieldManager.add(new SeparatorField());
                 }
             }
@@ -493,6 +526,10 @@ public class MessageScreen extends AbstractScreenProvider {
                             Field.FOCUSABLE);
                     headerFieldManager.add(attachmentsLabelField);
                 }
+            }
+            
+            if(moreContentButton != null) {
+                messageFieldManager.add(moreContentButton);
             }
             
             padAndFocusScreen();
@@ -634,6 +671,10 @@ public class MessageScreen extends AbstractScreenProvider {
                 String address = ((ActiveFieldManager)field).getSelectedToken();
                 navigationController.displayComposition((NetworkAccountNode)parentAccount, address);
             }
+        }
+        else if(field == moreContentButton) {
+            //TODO: add load-more-content functionality
+            Dialog.ask(Dialog.D_OK, "Not yet implemented, but this would let you load " + StringParser.toDataSizeString(messageNode.getMessageSize()));
         }
 	}
 

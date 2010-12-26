@@ -249,7 +249,8 @@ public class MaildirFolder {
                         }
                         FolderMessage folderMessage = new FolderMessage(
                                 new LocalMessageToken(folderPath, uniqueId),
-                                envelope, nextIndex++, uniqueId.hashCode());
+                                envelope, nextIndex++, uniqueId.hashCode(),
+                                (int)mailFileConnection.fileSize());
 
                         // Check for flags
                         p += 3;
@@ -407,6 +408,7 @@ public class MaildirFolder {
         }
 
         MessageEnvelope envelope = null;
+        int fileSize = -1;
         try {
             // Create a file connection for the new message
             FileConnection mailFileConnection = (FileConnection)Connector.open(
@@ -424,7 +426,7 @@ public class MaildirFolder {
             envelope = getMessageEnvelope(inputStream);
             inputStream.close();
             mailFileConnection.close();
-
+            fileSize = (int)mailFileConnection.fileSize();
             messageEnvelopeMap.put(uniqueId, envelope);
             messageEnvelopeMapDirty = true;
         } catch (IOException exp) {
@@ -440,7 +442,7 @@ public class MaildirFolder {
         if(envelope != null) {
             result = new FolderMessage(
                     new LocalMessageToken(folderPath, uniqueId),
-                    envelope, nextIndex++, uniqueId.hashCode());
+                    envelope, nextIndex++, uniqueId.hashCode(), fileSize);
             result.setAnswered(initialFlags.isAnswered());
             result.setDeleted(initialFlags.isDeleted());
             result.setDraft(initialFlags.isDraft());

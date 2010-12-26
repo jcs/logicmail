@@ -118,6 +118,10 @@ public class MessageNode implements Node {
 	private boolean hasCachedContent;
 	/** True if the message has been verified to exist on a mail server */
 	private boolean existsOnServer;
+	/** The RFC822 size of the message, if available. */
+    private int messageSize = -1;
+	/** True if the mail store lacks parts, and the message was not truncated. */
+	private boolean messageComplete = true;
 	/** Bit-field set of message flags. */
 	private volatile int flags;
 	/** Date that the message was sent. */
@@ -157,6 +161,7 @@ public class MessageNode implements Node {
 	MessageNode(FolderMessage folderMessage) {
 		// Populate fields corresponding to FolderMessage members
 		this.messageToken = folderMessage.getMessageToken();
+		this.messageSize = folderMessage.getSize();
 		this.flags = convertMessageFlags(folderMessage.getFlags());
 		
 		// Populate fields corresponding to MessageEnvelope members
@@ -295,6 +300,31 @@ public class MessageNode implements Node {
 	public boolean existsOnServer() {
 	    return existsOnServer;
 	}
+	
+	/**
+	 * Gets the RFC822 message size, as reported by the server.
+	 * This value does not reflect the size of the downloaded content, and is
+	 * primarily intended for user notification.
+	 *
+	 * @return the message size, or <code>-1</code> if not available
+	 */
+	public int getMessageSize() {
+        return messageSize;
+    }
+	
+	/**
+	 * Checks if is message data is complete.
+	 * This flag is only relevant on mail stores without selective message
+	 * part download.  It indicates that the message was completely downloaded
+	 * and has not been truncated by a size limit.  On messages from local
+	 * mail stores, or mail stores supporting selective part download, this
+	 * flag is completely irrelevant and will always return true.
+	 *
+	 * @return true, if the message is complete
+	 */
+	public boolean isMessageComplete() {
+        return messageComplete;
+    }
 	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.model.Node#accept(org.logicprobe.LogicMail.model.NodeVisitor)
@@ -1172,6 +1202,7 @@ public class MessageNode implements Node {
 
         switch(e.getType()) {
         case MessageEvent.TYPE_FULLY_LOADED:
+            messageComplete = e.isMessageComplete();
             setMessageStructure(e.getMessageStructure());
             setMessageSource(e.getMessageSource());
             putMessageContent(content, false);

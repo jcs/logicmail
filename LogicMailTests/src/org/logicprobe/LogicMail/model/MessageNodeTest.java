@@ -77,7 +77,7 @@ public class MessageNodeTest extends TestCase {
 		env.sender[0] = "\"John Doe\" <jdoe@generic.org>";
 		env.date = Calendar.getInstance().getTime();
 
-    	instance = new MessageNode(new FolderMessage(null, env, 0, 0));
+    	instance = new MessageNode(new FolderMessage(null, env, 0, 0, -1));
 		instance.setMessageStructure(part);
 		instance.putMessageContent(content);
 		
@@ -117,7 +117,7 @@ public class MessageNodeTest extends TestCase {
 	    env.date = Calendar.getInstance().getTime();
 	    env.subject = "The Subject";
 
-	    instance = new MessageNode(new FolderMessage(null, env, 0, 0));
+	    instance = new MessageNode(new FolderMessage(null, env, 0, 0, -1));
 		instance.setMessageStructure(part);
 		instance.putMessageContent(content);
 	    

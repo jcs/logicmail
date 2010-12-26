@@ -45,8 +45,9 @@ public class PersistableFolderMessage extends PersistableContainer implements Pe
     public static final int FIELD_UID          = 4;
     public static final int FIELD_MESSAGEFLAGS = 5;
     public static final int FIELD_STRUCTURE    = 6;
+    public static final int FIELD_SIZE         = 7;
     
     public PersistableFolderMessage() {
-        super(7);
+        super(8);
     }
 }

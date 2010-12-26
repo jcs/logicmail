@@ -414,13 +414,11 @@ public class PopClient extends AbstractIncomingMailClient {
 	
     private void getFolderMessagesImpl(int[] indices, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
     		throws IOException, MailException {
-        String[] headerText;
-        String uid;
-        MessageEnvelope env;
         for(int i=0; i<indices.length; i++) {
+            MessageEnvelope env;
             if(!flagsOnly) {
                 byte[][] topResult = popProtocol.executeTop(indices[i], 0);
-                headerText = new String[topResult.length];
+                String[] headerText = new String[topResult.length];
                 for(int j=0; j<topResult.length; j++) {
                     headerText[j] = new String(topResult[j]);
                 }
@@ -430,10 +428,13 @@ public class PopClient extends AbstractIncomingMailClient {
             else {
                 env = null;
             }
-            uid = popProtocol.executeUidl(indices[i]);
+            String uid = popProtocol.executeUidl(indices[i]);
+            int messageSize = popProtocol.executeList(indices[i]);
+            
             FolderMessage folderMessage = new FolderMessage(
                     new PopMessageToken(indices[i], uid),
-                    env, indices[i], uid.hashCode());
+                    env, indices[i], uid.hashCode(), messageSize);
+            
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_PROCESSING, i + 1, indices.length); }
 
             callback.folderMessageUpdate(folderMessage);

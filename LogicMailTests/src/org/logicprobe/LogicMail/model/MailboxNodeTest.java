@@ -269,7 +269,7 @@ public class MailboxNodeTest extends TestCase {
     private static FolderMessage createFolderMessage(int uid, int index, int sortOrder) {
         MessageEnvelope envelope = new MessageEnvelope();
         envelope.date = new Date(1286920000 + sortOrder);
-        FolderMessage message = new FolderMessage(new FakeMessageToken(uid), envelope, index, uid);
+        FolderMessage message = new FolderMessage(new FakeMessageToken(uid), envelope, index, uid, -1);
         return message;
     }
     

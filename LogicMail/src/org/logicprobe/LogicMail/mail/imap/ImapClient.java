@@ -863,7 +863,8 @@ public class ImapClient extends AbstractIncomingMailClient {
                 token,
                 response.envelope,
                 response.index,
-                response.uid);
+                response.uid,
+                -1);
         folderMessage.setSeen(response.flags.seen);
         folderMessage.setAnswered(response.flags.answered);
         folderMessage.setDeleted(response.flags.deleted);
@@ -885,7 +886,8 @@ public class ImapClient extends AbstractIncomingMailClient {
                     token,
                     null,
                     response[i].index,
-                    response[i].uid);
+                    response[i].uid,
+                    -1);
             folderMessages[i].setSeen(response[i].flags.seen);
             folderMessages[i].setAnswered(response[i].flags.answered);
             folderMessages[i].setDeleted(response[i].flags.deleted);

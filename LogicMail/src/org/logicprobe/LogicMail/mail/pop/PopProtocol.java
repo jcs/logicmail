@@ -202,6 +202,28 @@ public class PopProtocol {
     }
     
     /**
+     * Execute the "LIST" command on a single message
+     *
+     * @param index Message index
+     * @return Message size, in bytes
+     */
+    public int executeList(int index) throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("PopProtocol.executeList(" + index + ")").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        String result = execute(LIST_ + index);
+        int p = result.lastIndexOf(' ');
+        try {
+            return Integer.parseInt(result.substring(p+1));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+    
+    /**
      * Execute the "TOP" command
      * @param index Message index
      * @param lines Number of lines to retrieve
@@ -424,6 +446,7 @@ public class PopProtocol {
     private static String DELE_ = "DELE ";
     private static String UIDL = "UIDL";
     private static String UIDL_ = "UIDL ";
+    private static String LIST_ = "LIST ";
     private static String TOP_ = "TOP ";
     private static String STAT = "STAT";
     private static String QUIT = "QUIT";

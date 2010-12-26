@@ -185,7 +185,7 @@ public class NetworkAccountNode extends AccountNode {
     public void sendMessage(MessageEnvelope envelope, Message message) {
         if (mailSender != null) {
             // Construct an outgoing message node
-            FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
+            FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1, -1);
             outgoingFolderMessage.setSeen(false);
             outgoingFolderMessage.setRecent(true);
             OutgoingMessageNode outgoingMessage =
@@ -229,7 +229,7 @@ public class NetworkAccountNode extends AccountNode {
         MessageNode originalMessageNode, int replyType) {
         if (mailSender != null) {
             // Construct an outgoing message node
-            FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1);
+            FolderMessage outgoingFolderMessage = new FolderMessage(null, envelope, -1, -1, -1);
             outgoingFolderMessage.setSeen(false);
             outgoingFolderMessage.setRecent(true);
             OutgoingMessageNode outgoingMessage =

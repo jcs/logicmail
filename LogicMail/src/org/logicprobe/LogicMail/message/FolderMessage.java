@@ -31,14 +31,9 @@
 
 package org.logicprobe.LogicMail.message;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import net.rim.device.api.util.Comparator;
 
 import org.logicprobe.LogicMail.mail.MessageToken;
-import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializationUtils;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
@@ -50,12 +45,13 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  * use with protocols that support independent retrieval
  * of the structure from the content.
  */
-public class FolderMessage implements Serializable {
+public class FolderMessage {
     private long uniqueId;
     private MessageToken messageToken;
     private MessageEnvelope envelope;
     private int index;
     private int uid;
+    private int size;
     private MessageFlags messageFlags;
     private MimeMessagePart structure;
     private byte[] serializedStructure;
@@ -73,15 +69,19 @@ public class FolderMessage implements Serializable {
     
     /**
      * Creates a new instance of FolderMessage.
-     * @param envelope The message's envelope
-     * @param index The index of the message within the folder
+     * @param messageToken the token representing the message within the store
+     * @param envelope the message's envelope
+     * @param index the index of the message within the folder
+     * @param uid the unique ID of the message
+     * @param size the size of the message, in bytes, or <code>-1</code> if unavailable
      */
-    public FolderMessage(MessageToken messageToken, MessageEnvelope envelope, int index, int uid) {
+    public FolderMessage(MessageToken messageToken, MessageEnvelope envelope, int index, int uid, int size) {
     	this();
     	this.messageToken = messageToken;
         this.envelope = envelope;
         this.index = index;
         this.uid = uid;
+        this.size = size;
     }
 
     /**
@@ -142,6 +142,16 @@ public class FolderMessage implements Serializable {
      */
     public int getUid() {
     	return uid;
+    }
+    
+    /**
+     * Gets the size of this message.
+     * This is intended to be the total size of the RFC822 source from which
+     * the message is parsed. 
+     * @return the size, in bytes, or <code>-1</code> if not available
+     */
+    public int getSize() {
+        return size;
     }
     
     /**
@@ -294,9 +304,6 @@ public class FolderMessage implements Serializable {
     	this.structure = structure;
     }
     
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#getUniqueId()
-	 */
 	public long getUniqueId() {
 		return this.uniqueId;
 	}
@@ -313,6 +320,7 @@ public class FolderMessage implements Serializable {
         result.setElement(PersistableFolderMessage.FIELD_ENVELOPE, envelope.getPersistable());
         result.setElement(PersistableFolderMessage.FIELD_INDEX, new Integer(index));
         result.setElement(PersistableFolderMessage.FIELD_UID, new Integer(uid));
+        result.setElement(PersistableFolderMessage.FIELD_SIZE, new Integer(size));
         result.setElement(PersistableFolderMessage.FIELD_MESSAGEFLAGS, new Integer(messageFlags.getFlags()));
         
         MimeMessagePart structurePart = getStructure();
@@ -346,6 +354,9 @@ public class FolderMessage implements Serializable {
         value = persistable.getElement(PersistableFolderMessage.FIELD_UID);
         if(value instanceof Integer) { this.uid = ((Integer)value).intValue(); }
         
+        value = persistable.getElement(PersistableFolderMessage.FIELD_SIZE);
+        if(value instanceof Integer) { this.size = ((Integer)value).intValue(); }
+        
         value = persistable.getElement(PersistableFolderMessage.FIELD_MESSAGEFLAGS);
         if(value instanceof Integer) {
             this.messageFlags = new MessageFlags(((Integer)value).intValue());
@@ -360,47 +371,6 @@ public class FolderMessage implements Serializable {
         }
     }
     
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
-	 */
-	public void serialize(DataOutput output) throws IOException {
-		output.writeLong(uniqueId);
-		
-		SerializationUtils.serializeClass(messageToken, output);
-		
-		output.writeInt(index);
-		output.writeInt(uid);
-        output.writeInt(messageFlags.getFlags());
-		envelope.serialize(output);
-		
-		if(structure == null) {
-			output.writeBoolean(false);
-		}
-		else {
-			output.writeBoolean(true);
-			SerializationUtils.serializeClass(structure, output);
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see org.logicprobe.LogicMail.util.Serializable#deserialize(java.io.DataInput)
-	 */
-	public void deserialize(DataInput input) throws IOException {
-		uniqueId = input.readLong();
-
-		messageToken = (MessageToken)SerializationUtils.deserializeClass(input);
-		
-		index = input.readInt();
-		uid = input.readInt();
-        messageFlags.setFlags(input.readInt());
-		envelope.deserialize(input);
-		
-		boolean hasStructure = input.readBoolean();
-		if(hasStructure) {
-			structure = (MimeMessagePart)SerializationUtils.deserializeClass(input);
-		}
-	}
-	
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */

@@ -62,12 +62,12 @@ public class FolderMessageCacheTest extends TestCase {
         instance.destroy();
         
         folder1 = new FolderTreeItem("INBOX", "INBOX", ".");
-        message1a = new FolderMessage(new FakeMessageToken(1), createEnvelope(), 1, 11);
-        message1b = new FolderMessage(new FakeMessageToken(2), createEnvelope(), 2, 12);
+        message1a = new FolderMessage(new FakeMessageToken(1), createEnvelope(), 1, 11, -1);
+        message1b = new FolderMessage(new FakeMessageToken(2), createEnvelope(), 2, 12, -1);
         
         folder2 = new FolderTreeItem("Misc", "INBOX.Misc", ".");
-        message2a = new FolderMessage(new FakeMessageToken(3), createEnvelope(), 1, 21);
-        message2b = new FolderMessage(new FakeMessageToken(4), createEnvelope(), 2, 22);
+        message2a = new FolderMessage(new FakeMessageToken(3), createEnvelope(), 1, 21, -1);
+        message2b = new FolderMessage(new FakeMessageToken(4), createEnvelope(), 2, 22, -1);
     }
 
     private static MessageEnvelope createEnvelope() {
@@ -265,7 +265,7 @@ public class FolderMessageCacheTest extends TestCase {
         instance.addFolderMessage(folder2, message2a);
         instance.addFolderMessage(folder2, message2b);
         
-        FolderMessage updatedMessage1b = new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 10, 12);
+        FolderMessage updatedMessage1b = new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 10, 12, -1);
         updatedMessage1b.setFlagged(true);
         instance.updateFolderMessage(folder1, updatedMessage1b);
         
@@ -291,7 +291,7 @@ public class FolderMessageCacheTest extends TestCase {
         instance = new TestFolderMessageCache();
         instance.restore();
         
-        FolderMessage updatedMessage1b = new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 10, 12);
+        FolderMessage updatedMessage1b = new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 10, 12, -1);
         updatedMessage1b.setFlagged(true);
         instance.updateFolderMessage(folder1, updatedMessage1b);
         

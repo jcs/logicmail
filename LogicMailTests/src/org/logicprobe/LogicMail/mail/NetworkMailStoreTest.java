@@ -202,8 +202,8 @@ public class NetworkMailStoreTest extends TestCase {
     
     public void testRequestFolderMessages() {
     	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-    		new FolderMessage(new FakeMessageToken(1), new MessageEnvelope(), 42, 52),
-    		new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 43, 53),
+    		new FolderMessage(new FakeMessageToken(1), new MessageEnvelope(), 42, 52, -1),
+    		new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 43, 53, -1),
     	};
     	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
     	TestCallback callback = new TestCallback();
@@ -329,8 +329,8 @@ public class NetworkMailStoreTest extends TestCase {
     	FakeMessageToken messageToken1 = new FakeMessageToken(1);
     	FakeMessageToken messageToken2 = new FakeMessageToken(2);
     	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-        		new FolderMessage(messageToken1, new MessageEnvelope(), 42, 52),
-        		new FolderMessage(messageToken2, new MessageEnvelope(), 43, 53),
+        		new FolderMessage(messageToken1, new MessageEnvelope(), 42, 52, -1),
+        		new FolderMessage(messageToken2, new MessageEnvelope(), 43, 53, -1),
         };
 
     	// Do a whole batch of non-conflicting requests to make

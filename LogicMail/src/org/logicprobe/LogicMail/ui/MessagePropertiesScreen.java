@@ -171,6 +171,14 @@ public class MessagePropertiesScreen extends MainScreen {
 	
 	private void initStructureFields() {
 		structurePageManager = new VerticalFieldManager();
+		
+		if(messageNode.getMessageSize() > 0) {
+		    LabelField sizeField = new LabelField(
+		            resources.getString(LogicMailResource.MESSAGEPROPERTIES_MESSAGE_SIZE) + ' '
+		            + StringParser.toDataSizeString(messageNode.getMessageSize()));
+		    structurePageManager.add(sizeField);
+		}
+		
 		structureTreeField = new TreeField(new TreeFieldCallback() {
 			public void drawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
 				structureTreeField_DrawTreeItem(treeField, graphics, node, y, width, indent);

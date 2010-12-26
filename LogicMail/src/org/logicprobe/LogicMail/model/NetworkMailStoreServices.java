@@ -334,7 +334,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             
             // Determine if a fresh request makes sense, or if the cached data
             // should be returned as-is.
-            boolean messageComplete = (customValues[0] == 1);
+            final boolean messageComplete = (customValues[0] == 1);
             int previousMaxLines = customValues[1];
             // If the cached message is not complete, and we are using POP,
             // and the user-configured max lines has been increased since this
@@ -348,8 +348,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
                         // In this specific case, a failure will cause us to
                         // revert to cached data instead of giving up.
                         if(loadedContent.length > 0) {
-                            fireMessageContentAvailable(messageToken, loadedContent);
-                            messageRefreshComplete(messageToken);
+                            fireMessageAvailable(messageToken, messageComplete, structure, loadedContent, null);
+                            requestMessageSeen(messageToken);
                         }
                     }
                 });
@@ -357,8 +357,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
             else {
                 // Notify listeners that content was loaded
                 if(loadedContent.length > 0) {
-                    fireMessageContentAvailable(messageToken, loadedContent);
-                    messageRefreshComplete(messageToken);
+                    fireMessageAvailable(messageToken, messageComplete, structure, loadedContent, null);
+                    requestMessageSeen(messageToken);
                 }
             }
         }
