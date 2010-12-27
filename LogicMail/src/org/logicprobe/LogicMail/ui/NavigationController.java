@@ -187,6 +187,7 @@ public final class NavigationController {
 	        synchronized(lockObj) {
 	            this.event = event;
 	            if(!onQueue) {
+	                onQueue = true;
 	                UiApplication.getUiApplication().invokeLater(this);
 	            }
 	        }
