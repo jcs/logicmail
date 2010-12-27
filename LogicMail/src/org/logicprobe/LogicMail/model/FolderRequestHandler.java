@@ -138,6 +138,9 @@ class FolderRequestHandler {
             if(mailStore.hasLockedFolders() && initialRefreshComplete) {
                 // Subsequent refresh is pointless on locked-folder mail stores
                 refreshInProgress.set(false);
+                
+                // Fire an event so the caller knows we're no longer processing
+                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
                 return;
             }
             
