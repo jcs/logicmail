@@ -35,10 +35,14 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+import net.rim.device.api.i18n.MessageFormat;
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.StringUtilities;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
@@ -63,6 +67,8 @@ import org.logicprobe.LogicMail.util.StringParser;
  * not contain any other nodes as children.
  */
 public class MessageNode implements Node {
+    protected static final ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    
 	/**
 	 * Defines the flags supported by the {@link MessageNode} class.
 	 */
@@ -104,6 +110,9 @@ public class MessageNode implements Node {
 	}
 	
 	private static String strCRLF = "\r\n";
+    private static String QUOTE_PREFIX = "> ";
+    private static String DASH_SEGMENT = "----";
+    private static String DASH_LINE = "------------------------";
 	
 	/** Static comparator used to compare message nodes for insertion ordering */
 	private static MessageNodeComparator comparator = new MessageNodeComparator();
@@ -890,15 +899,14 @@ public class MessageNode implements Node {
 	        StringBuffer buf = new StringBuffer();
 	        
 	        // Create the first line of the reply text
-	        buf.append("\r\n");
-	        buf.append("On ");
-	        buf.append(StringParser.createDateString(date));
-	        buf.append(", ");
-	        buf.append(senderName);
-	        buf.append(" wrote:\r\n");
+	        buf.append(strCRLF);
+	        buf.append(MessageFormat.format(
+	                resources.getString(LogicMailResource.MESSAGE_REPLY_CONTENT_PREFIX),
+	                new Object[] { StringParser.createDateString(date), senderName }));
+	        buf.append(strCRLF);
 	        
 	        // Generate the quoted message text
-	        buf.append("> ");
+	        buf.append(QUOTE_PREFIX);
 	        if(originalTextContent != null) {
 	            String originalText = originalTextContent.getText();
 	            int size = originalText.length();
@@ -907,14 +915,14 @@ public class MessageNode implements Node {
 	                ch = originalText.charAt(i);
 	                buf.append(ch);
 	                if(ch == '\n' && i < size - 1) {
-	                    buf.append("> ");
+	                    buf.append(QUOTE_PREFIX);
 	                }
 	            }
 	        }
 	        
 	        MessageNode replyNode = new MessageNode();
 	        String contentText = buf.toString();
-	        TextPart replyPart = new TextPart("plain", "", "", "", "", "", contentText.length());
+	        TextPart replyPart = new TextPart(TextPart.SUBTYPE_PLAIN, "", "", "", "", "", contentText.length());
 	        replyNode.messageStructure = replyPart;
 	        replyNode.putMessageContent(new TextContent(replyPart, contentText));
 	        
@@ -991,61 +999,69 @@ public class MessageNode implements Node {
 	        StringBuffer buf = new StringBuffer();
 	
 	        // Create the first line of the reply text
-	        buf.append("\r\n");
-	        buf.append("----Original Message----\r\n");
+	        buf.append(strCRLF);
+	        buf.append(DASH_SEGMENT);
+	        buf.append(resources.getString(LogicMailResource.MESSAGE_FORWARD_CONTENT_PREFIX));
+            buf.append(DASH_SEGMENT);
+            buf.append(strCRLF);
 	        
 	        // Add the subject
-	        buf.append("Subject: ");
+	        buf.append(resources.getString(LogicMailResource.MESSAGEPROPERTIES_SUBJECT));
+	        buf.append(' ');
 	        buf.append(subject);
-	        buf.append("\r\n");
+	        buf.append(strCRLF);
 	
 	        // Add the date
-	        buf.append("Date: ");
+            buf.append(resources.getString(LogicMailResource.MESSAGEPROPERTIES_DATE));
+            buf.append(' ');
 	        buf.append(StringParser.createDateString(date));
-	        buf.append("\r\n");
+	        buf.append(strCRLF);
 	        
 	        // Add the from field
 	        if(fromString != null && fromString.length() > 0) {
-		        buf.append("From: ");
+	            buf.append(resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM));
+	            buf.append(' ');
 		        buf.append(fromString);
-		        buf.append("\r\n");
+		        buf.append(strCRLF);
 	        }
 	        
 	        // Add the from field
 	        if(toString != null && toString.length() > 0) {
-		        buf.append("To: ");
+	            buf.append(resources.getString(LogicMailResource.MESSAGEPROPERTIES_TO));
+	            buf.append(' ');
 		        buf.append(toString);
-		        buf.append("\r\n");
+		        buf.append(strCRLF);
 	        }
 	        
 	        // Add the CC field
 	        if(ccString != null && ccString.length() > 0) {
-	            buf.append("Cc: ");
+	            buf.append(resources.getString(LogicMailResource.MESSAGEPROPERTIES_CC));
+	            buf.append(' ');
 	            buf.append(ccString);
-	            buf.append("\r\n");
+	            buf.append(strCRLF);
 	        }
 	
 	        // Add a blank like
-	        buf.append("\r\n");
+	        buf.append(strCRLF);
 	        
 	        // Add the original text
 	        if(originalTextContent != null) {
 	            buf.append(originalTextContent.getText());
-	            buf.append("\r\n");
+	            buf.append(strCRLF);
 	        }
 	        
 	        // Add the footer
-	        buf.append("------------------------");
+	        buf.append(DASH_LINE);
 	
 	        // Build the forward node
 	        MessageNode forwardNode = new MessageNode();
 	        String contentText = buf.toString();
-	        TextPart forwardPart = new TextPart("plain", "", "", "", "", "", contentText.length());
+	        TextPart forwardPart = new TextPart(TextPart.SUBTYPE_PLAIN, "", "", "", "", "", contentText.length());
 	        forwardNode.messageStructure = forwardPart;
 	        forwardNode.putMessageContent(new TextContent(forwardPart, contentText));
 	
 	        // Set the forward subject
-	        if(subject.toLowerCase().startsWith("fwd:")) {
+	        if(StringUtilities.startsWithIgnoreCase(subject, "Fwd:")) {
 	        	forwardNode.subject = subject;
 	        }
 	        else {
@@ -1075,7 +1091,7 @@ public class MessageNode implements Node {
      */
     private void populateReplyEnvelope(MessageNode replyNode) {
         // Set the reply subject
-        if(subject.startsWith("Re:") || subject.startsWith("re:")) {
+        if(StringUtilities.startsWithIgnoreCase(subject, "Re:")) {
         	replyNode.subject = subject;
         }
         else {
