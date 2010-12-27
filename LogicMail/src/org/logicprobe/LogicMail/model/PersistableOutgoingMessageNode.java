@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,30 +30,23 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import net.rim.device.api.util.Persistable;
+
+import org.logicprobe.LogicMail.util.PersistableContainer;
+
 /**
- * Classes implement this interface to be notified of {@link MessageNode}
- * updates during the execution of methods that create or update a collection
- * of them.
+ * Persistable container for <code>OutgoingMessageNode</code> objects.
  */
-public interface MessageNodeCallback {
-    /**
-     * Called when a <code>MessageNode</code> is about to be loaded, to check
-     * whether or not to proceed with the load operation.
-     * Since this is expected to be called from <code>MailFileManager</code>
-     * prior to actually loading message data, only the filename-based UID can
-     * be provided.
-     * 
-     * @param messageUid the string-form UID for the message to be loaded
-     * @return true, if the message should be loaded
-     */
-    boolean messageNodeAvailable(String messageUid);
-    
-    /**
-     * Called when a <code>MessageNode</code> is created or updated,
-     * depending on the purpose of the method that invoked the this
-     * callback.
-     * 
-     * @param messageNode The message node that was created or updated
-     */
-    void messageNodeUpdated(MessageNode messageNode);
+public class PersistableOutgoingMessageNode extends PersistableContainer implements Persistable {
+    public static final int FIELD_FOLDERMESSAGE   = 0;
+    public static final int FIELD_CONTENT_ARRAY   = 1;
+    public static final int FIELD_SENDING_ACCOUNT = 2;
+    public static final int FIELD_MAIL_SENDER     = 3;
+    public static final int FIELD_REPLYTO_ACCOUNT = 4;
+    public static final int FIELD_REPLYTO_TOKEN   = 5;
+    public static final int FIELD_REPLY_TYPE      = 6;
+
+    public PersistableOutgoingMessageNode() {
+        super(7);
+    }
 }

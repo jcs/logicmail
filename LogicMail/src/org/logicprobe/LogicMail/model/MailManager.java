@@ -164,6 +164,9 @@ public class MailManager {
 	 */
 	public void clearFolderMessageCache() {
 	    folderMessageCache.clear();
+	    if(outboxMailboxNode != null) {
+	        outboxMailboxNode.clearMessages();
+	    }
 	    System.gc();
 	}
 	

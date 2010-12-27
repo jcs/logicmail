@@ -44,6 +44,10 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
  */
 public abstract class AbstractIncomingMailClient implements IncomingMailClient {
 
+    public boolean isLoginRequired() {
+        return true;
+    }
+    
     public boolean hasFolders() {
         return false;
     }

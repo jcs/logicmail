@@ -490,7 +490,6 @@ public abstract class AccountNode implements Node {
     protected void removeSavedData() {
         FolderTreeItem[] folderTreeItems = this.getFolderTreeItems();
         mailStoreServices.removeSavedData(folderTreeItems);
-        MailFileManager.getInstance().removeAccountNode(this);
     }
 
     /**

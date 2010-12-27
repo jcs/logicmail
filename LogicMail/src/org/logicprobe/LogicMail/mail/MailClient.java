@@ -78,6 +78,12 @@ public interface MailClient {
     public abstract boolean isConnected();
 
     /**
+     * Checks if a valid username and password are required for this client.
+     * @return true, if login is required
+     */
+    public abstract boolean isLoginRequired();
+
+    /**
      * Get the configured username for this client.
      * @return Configured username, empty if none, null if n/a
      */

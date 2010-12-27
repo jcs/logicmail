@@ -316,7 +316,9 @@ public class FolderMessage {
     public PersistableFolderMessage getPersistable() {
         PersistableFolderMessage result = new PersistableFolderMessage();
         result.setElement(PersistableFolderMessage.FIELD_UNIQUEID, new Long(uniqueId));
-        result.setElement(PersistableFolderMessage.FIELD_MESSAGETOKEN, messageToken.clone());
+        if(messageToken != null) {
+            result.setElement(PersistableFolderMessage.FIELD_MESSAGETOKEN, messageToken.clone());
+        }
         result.setElement(PersistableFolderMessage.FIELD_ENVELOPE, envelope.getPersistable());
         result.setElement(PersistableFolderMessage.FIELD_INDEX, new Integer(index));
         result.setElement(PersistableFolderMessage.FIELD_UID, new Integer(uid));

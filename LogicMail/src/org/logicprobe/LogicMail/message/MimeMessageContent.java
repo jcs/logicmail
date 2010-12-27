@@ -48,7 +48,6 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  * major MIME type that is supported.
  */
 public abstract class MimeMessageContent implements Serializable {
-    //TODO: Make this non-serializable as soon as the old message node writer is removed
     private long uniqueId;
     private ContentPart messagePart;
     private int partComplete;

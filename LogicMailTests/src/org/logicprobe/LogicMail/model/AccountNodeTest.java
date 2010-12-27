@@ -223,6 +223,7 @@ public class AccountNodeTest extends TestCase {
         public void requestFolderRefresh(FolderTreeItem folderTreeItem) { }
         public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) { }
         public boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip) { return false; }
+        public boolean requestEntireMessageRefresh(MessageToken messageToken) { return false; }
     }
     
     private class TestMailStore extends AbstractMailStore {
@@ -281,7 +282,7 @@ public class AccountNodeTest extends TestCase {
 		    }
 		}
 		
-		public void requestMessage(MessageToken messageToken, MailStoreRequestCallback callback) { }
+		public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) { }
 		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) { }
 		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
         public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }

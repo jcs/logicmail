@@ -256,7 +256,7 @@ public class NetworkMailStoreTest extends TestCase {
     	fakeIncomingMailClient.message.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
     	TestCallback callback = new TestCallback();
-    	instance.requestMessage(messageToken, callback);
+    	instance.requestMessage(messageToken, true, callback);
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -338,7 +338,7 @@ public class NetworkMailStoreTest extends TestCase {
     	instance.requestFolderTree();
     	instance.requestFolderStatus(new FolderTreeItem[] { folder });
     	instance.requestFolderMessagesRange(folder, new FakeMessageToken(0), 5);
-    	instance.requestMessage(messageToken1);
+    	instance.requestMessage(messageToken1, true);
     	instance.shutdown(true);
     	
     	// We know the requests work individually, so lets just
@@ -421,7 +421,7 @@ public class NetworkMailStoreTest extends TestCase {
 		public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
 				throws IOException,	MailException { }
 		public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException { return this.folderTree; }
-		public Message getMessage(MessageToken messageToken, MailProgressHandler progressHandler)
+		public Message getMessage(MessageToken messageToken, boolean useLimits, MailProgressHandler progressHandler)
 				throws IOException, MailException { this.messageToken = messageToken; return this.message; }
 		public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler)
 				throws IOException, MailException { folders[0].setMsgCount(refreshedMsgCount); }

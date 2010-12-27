@@ -30,10 +30,12 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 
 import net.rim.device.api.system.EventLogger;
+import net.rim.device.api.system.PersistentObject;
+import net.rim.device.api.system.PersistentStore;
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
@@ -52,9 +54,14 @@ import org.logicprobe.LogicMail.util.AtomicBoolean;
 import org.logicprobe.LogicMail.util.StringParser;
 
 public class OutboxMailboxNode extends MailboxNode {
+    //"org.logicprobe.LogicMail.model.PersistableOutboxMailboxNode"
+    private static final long persistentObjectKey = 0x1f5b6187e941e162L;
+    
+    private final PersistentObject persistentObject;
+    private PersistableOutboxMailboxNode persistentContainer;
+    
     /** Track the refresh so it only happens once */
     private boolean hasRefreshed;
-
     /** Set of loaded messages, to prevent redundant saving. */
     private Hashtable savedMessageSet = new Hashtable();
 
@@ -77,6 +84,16 @@ public class OutboxMailboxNode extends MailboxNode {
 
     OutboxMailboxNode(FolderTreeItem folderTreeItem) {
         super(folderTreeItem, false, MailboxNode.TYPE_OUTBOX);
+        persistentObject = PersistentStore.getPersistentObject(persistentObjectKey);
+        Object persisted = persistentObject.getContents();
+        if(persisted instanceof PersistableOutboxMailboxNode) {
+            persistentContainer = (PersistableOutboxMailboxNode)persisted;
+        }
+        else {
+            persistentContainer = new PersistableOutboxMailboxNode();
+            persistentObject.setContents(persistentContainer);
+            persistentObject.commit();
+        }
     }
 
     void addMessage(MessageNode message) {
@@ -172,7 +189,7 @@ public class OutboxMailboxNode extends MailboxNode {
     public void refreshMessages() {
         // Fetch messages stored in the cache
         if(refreshInProgress.compareAndSet(false, true)) {
-            if(!hasRefreshed && fetchThread == null || !fetchThread.isAlive()) {
+            if(!hasRefreshed && (fetchThread == null || !fetchThread.isAlive())) {
                 hasRefreshed = true;
                 fetchThread = new RefreshMessagesThread();
                 fetchThread.start();
@@ -183,35 +200,39 @@ public class OutboxMailboxNode extends MailboxNode {
         }
     }
 
-    private class RefreshMessagesThread extends Thread implements MessageNodeCallback {
-
-        public RefreshMessagesThread() {
-        }
-
+    private class RefreshMessagesThread extends Thread {
         public void run() {
             try {
-                MailFileManager.getInstance().readMessageNodes(OutboxMailboxNode.this, true, this);
-            } catch (IOException e) {
+                synchronized(persistentObject) {
+                    Object value = persistentContainer.getElement(PersistableOutboxMailboxNode.FIELD_OUTGOING_MESSAGE_MAP);
+                    if(value instanceof Hashtable) {
+                        Hashtable outgoingNodeMap = (Hashtable)value;
+                        Enumeration e = outgoingNodeMap.elements();
+                        while(e.hasMoreElements()) {
+                            Object element = e.nextElement();
+                            if(element instanceof PersistableOutgoingMessageNode) {
+                                addMessageNode((PersistableOutgoingMessageNode)element);
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable exp) {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to read outgoing messages\r\n"
-                                + e.getMessage()).getBytes(),
+                                + exp.getMessage()).getBytes(),
                                 EventLogger.ERROR);
             }
             refreshInProgress.set(false);
         }
 
-        public boolean messageNodeAvailable(String messageUid) {
-            return true;
-        }
-        
-        public void messageNodeUpdated(MessageNode messageNode) {
-            if(messageNode instanceof OutgoingMessageNode) {
-                OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
-                // Loaded messages were always send-attempted at least once
-                outgoingMessage.setSendAttempted(true);
-                savedMessageSet.put(messageNode, Boolean.TRUE);
-                OutboxMailboxNode.this.addMessage(messageNode);
-            }
+        private void addMessageNode(PersistableOutgoingMessageNode persistableElement) {
+            OutgoingMessageNode outgoingMessage = new OutgoingMessageNode(persistableElement);
+            
+            // Loaded messages were always send-attempted at least once
+            outgoingMessage.setSendAttempted(true);
+            
+            savedMessageSet.put(outgoingMessage, Boolean.TRUE);
+            OutboxMailboxNode.this.addMessage(outgoingMessage);
         }
     }
 
@@ -256,13 +277,28 @@ public class OutboxMailboxNode extends MailboxNode {
     private void handleNewMessage(OutgoingMessageNode outgoingMessageNode) {
         outgoingMessageNode.setSendAttempted(true);
 
-        // Serialize the message node and store it to a file with a key-able name
+        // Persist the message node
         if(!savedMessageSet.containsKey(outgoingMessageNode)) {
             try {
-                MailFileManager.getInstance().writeMessage(outgoingMessageNode);
+                synchronized(persistentObject) {
+                    Object value = persistentContainer.getElement(PersistableOutboxMailboxNode.FIELD_OUTGOING_MESSAGE_MAP);
+                    if(value instanceof Hashtable) {
+                        ((Hashtable)value).put(
+                                outgoingMessageNode.getMessageToken().clone(),
+                                outgoingMessageNode.getPersistable());
+                    }
+                    else {
+                        Hashtable outgoingNodeMap = new Hashtable();
+                        outgoingNodeMap.put(
+                                outgoingMessageNode.getMessageToken().clone(),
+                                outgoingMessageNode.getPersistable());
+                        persistentContainer.setElement(PersistableOutboxMailboxNode.FIELD_OUTGOING_MESSAGE_MAP, outgoingNodeMap);
+                    }
+                }
+                
                 outgoingMessageNode.setCached(true);
                 savedMessageSet.put(outgoingMessageNode, Boolean.TRUE);
-            } catch (IOException exp) {
+            } catch (Throwable exp) {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to store outgoing message: " + exp.toString()).getBytes(),
                         EventLogger.ERROR);
@@ -332,14 +368,8 @@ public class OutboxMailboxNode extends MailboxNode {
             outboundMessageNodeMap.remove(outgoingMessageNode);
             outgoingMessageNode.setSending(false);
 
-            // Remove the local file for this message
-            try {
-                MailFileManager.getInstance().removeMessageNode(this, outgoingMessageNode.getMessageToken());
-            } catch (IOException exp) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("Unable to delete sent message: " + exp.toString()).getBytes(),
-                        EventLogger.ERROR);
-            }
+            // Remove the persisted version of this message
+            removePersistedMessage(outgoingMessageNode);
 
             // Store to the Sent folder
             if(outgoingMessageNode.getSendingAccount() != null) {
@@ -378,6 +408,34 @@ public class OutboxMailboxNode extends MailboxNode {
         }
     }
 
+    void removePersistedMessage(OutgoingMessageNode outgoingMessageNode) {
+        try {
+            synchronized(persistentObject) {
+                Object value = persistentContainer.getElement(PersistableOutboxMailboxNode.FIELD_OUTGOING_MESSAGE_MAP);
+                if(value instanceof Hashtable) {
+                    ((Hashtable)value).remove(outgoingMessageNode.getMessageToken());
+                }
+            }
+        } catch (Throwable exp) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to delete sent message: " + exp.toString()).getBytes(),
+                    EventLogger.ERROR);
+        }
+    }
+    
+    void clearMessages() {
+        super.clearMessages();
+        savedMessageSet.clear();
+        outboundMessageMap.clear();
+        outboundMessageNodeMap.clear();
+        synchronized(persistentObject) {
+            Object value = persistentContainer.getElement(PersistableOutboxMailboxNode.FIELD_OUTGOING_MESSAGE_MAP);
+            if(value instanceof Hashtable) {
+                ((Hashtable)value).clear();
+            }
+        }
+    }
+    
     private void mailSender_MessageSendFailed(MessageSentEvent e) {
         // Find out whether we know about this message
         Message message = e.getMessage();

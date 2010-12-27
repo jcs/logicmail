@@ -36,13 +36,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.Persistable;
 
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
 
 /**
  * Token for messages stored locally.
  */
-public class LocalMessageToken implements MessageToken {
+public class LocalMessageToken implements MessageToken, Persistable {
     private long uniqueId;
     private int hashCode = -1;
     

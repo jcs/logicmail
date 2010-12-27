@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2008, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,27 +30,22 @@
  */
 package org.logicprobe.LogicMail.model;
 
-import j2meunit.framework.Test;
-import j2meunit.framework.TestCase;
-import j2meunit.framework.TestSuite;
+import net.rim.device.api.util.Persistable;
+
+import org.logicprobe.LogicMail.util.PersistableContainer;
 
 /**
- * Unit test suite for the LogicMail.model classes
+ * Persistable container for <code>OutboxMailboxNode</code> objects.
+ * Unlike most persistable containers, this one is not intended to be used for
+ * recreating an <code>OutboxMailboxNode</code> instance.  Instead, it is
+ * intended to be used internally by the outbox to store any information
+ * it needs to persist.
  */
-public class ModelTests extends TestCase {
-
-	public ModelTests() {
-		super();
-	}
-
-    public Test suite() {
-        TestSuite testSuite = new TestSuite("LogicMail.model");
-        testSuite.addTest(new AccountNodeTest().suite());
-        testSuite.addTest(new MailboxNodeTest().suite());
-        testSuite.addTest(new MessageNodeTest().suite());
-        testSuite.addTest(new MessageContentFileTest().suite());
-        testSuite.addTest(new MailFileComparatorTest().suite());
-        testSuite.addTest(new FolderMessageCacheTest().suite());
-        return testSuite;
+public class PersistableOutboxMailboxNode extends PersistableContainer implements Persistable {
+    /** <code>Hashtable</code> of <code>MessageToken</code> to <code>PersistableOutgoingMessageNode</code> mappings.*/
+    public static final int FIELD_OUTGOING_MESSAGE_MAP = 0;
+    
+    public PersistableOutboxMailboxNode() {
+        super(1);
     }
 }

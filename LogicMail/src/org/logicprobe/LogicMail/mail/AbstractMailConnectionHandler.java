@@ -476,6 +476,8 @@ public abstract class AbstractMailConnectionHandler {
 	 * @return True if the information was validated, false otherwise.
 	 */
 	private boolean checkLogin(MailClient client) {
+	    if(!client.isLoginRequired()) { return true; }
+	    
         String username = client.getUsername();
         String password = client.getPassword();
         // If the username and password are not null,
