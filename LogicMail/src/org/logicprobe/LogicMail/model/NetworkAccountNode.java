@@ -177,6 +177,27 @@ public class NetworkAccountNode extends AccountNode {
     }
     
     /**
+     * @see AccountConfig#isReplySignatureIncluded()
+     */
+    public boolean isReplySignatureIncluded() {
+        return this.accountConfig.isReplySignatureIncluded();
+    }
+    
+    /**
+     * @see AccountConfig#isForwardSignatureIncluded()
+     */
+    public boolean isForwardSignatureIncluded() {
+        return this.accountConfig.isForwardSignatureIncluded();
+    }
+    
+    /**
+     * @see AccountConfig#isSignatureAbove()
+     */
+    public boolean isSignatureAbove() {
+        return this.accountConfig.isSignatureAbove();
+    }
+    
+    /**
      * Sends a message from this account.
      *
      * @param envelope Envelope of the message to send

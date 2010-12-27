@@ -88,6 +88,11 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private LabelField draftFolderChoiceLabel;
     private LabelField draftFolderChoiceButtonLabel;
 
+    // Composition settings fields
+    private CheckboxField sigForwardCheckboxField;
+    private CheckboxField sigReplyCheckboxField;
+    private ObjectChoiceField sigPlacementChoiceField;
+    
     // Advanced settings fields (both)
     private NumericChoiceField initialFolderMessagesChoiceField;
     private NumericChoiceField folderMessageIncrementChoiceField;
@@ -104,9 +109,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BasicEditField popMaxLinesEditField;
 
     private Manager[] pageFieldManagers;
-    private static final int PAGE_BASIC    = 0;
-    private static final int PAGE_FOLDER   = 1;
-    private static final int PAGE_ADVANCED = 2;
+    private static final int PAGE_BASIC       = 0;
+    private static final int PAGE_FOLDER      = 1;
+    private static final int PAGE_COMPOSITION = 2;
+    private static final int PAGE_ADVANCED    = 3;
     
     private boolean accountSaved;
     private boolean createDefaultIdentity;
@@ -164,7 +170,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
 
         fieldChangeListener = new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
-                AcctCfgScreen_fieldChanged(field, context);
+                screenFieldChanged(field, context);
             }};
 
         initFields();
@@ -210,14 +216,16 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 new String[] {
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_BASIC),
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_FOLDER),
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_COMPOSITION),
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_PAGE_ADVANCED)
                 });
 
         pageField.setChangeListener(fieldChangeListener);
 
-        pageFieldManagers = new Manager[3];
+        pageFieldManagers = new Manager[4];
         pageFieldManagers[PAGE_BASIC] = initFieldsBasic();
         pageFieldManagers[PAGE_FOLDER] = initFieldsFolder();
+        pageFieldManagers[PAGE_COMPOSITION] = initFieldsComposition();
         pageFieldManagers[PAGE_ADVANCED] = initFieldsAdvanced();
 
         // Container for the active settings page
@@ -305,6 +313,39 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(draftFolderChoiceButtonLabel);
         manager.add(new LabelField());
         
+        return manager;
+    }
+
+    /**
+     * Initializes the UI fields for the composition settings page.
+     */
+    private Manager initFieldsComposition() {
+        Manager manager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
+        
+        sigReplyCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCLUDE_SIGNATURE_FOR_REPLIES),
+                accountConfig.isReplySignatureIncluded());
+        sigReplyCheckboxField.setChangeListener(fieldChangeListener);
+        
+        sigForwardCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_INCLUDE_SIGNATURE_FOR_FORWARDS),
+                accountConfig.isForwardSignatureIncluded());
+        sigForwardCheckboxField.setChangeListener(fieldChangeListener);
+        
+        sigPlacementChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_SIGNATURE_PLACEMENT),
+                new Object[] {
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_BELOW_THE_QUOTE),
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_ABOVE_THE_QUOTE)
+                },
+                accountConfig.isSignatureAbove() ? 1 : 0);
+        if(!accountConfig.isReplySignatureIncluded() && !accountConfig.isForwardSignatureIncluded()) {
+            sigPlacementChoiceField.setEditable(false);
+        }
+        
+        manager.add(sigReplyCheckboxField);
+        manager.add(sigForwardCheckboxField);
+        manager.add(sigPlacementChoiceField);
         return manager;
     }
 
@@ -403,7 +444,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         return manager;
     }
 
-    public void AcctCfgScreen_fieldChanged(Field field, int context) {
+    public void screenFieldChanged(Field field, int context) {
         if(field == serverSecurityField) {
             if(accountConfig instanceof PopConfig) {
                 if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
@@ -460,6 +501,11 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                             maximumFolderMessagesChoiceField.getSelectedIndex() + 1);
                 }
             }
+        }
+        else if(field == sigReplyCheckboxField || field == sigForwardCheckboxField) {
+            sigPlacementChoiceField.setEditable(
+                    sigReplyCheckboxField.getChecked()
+                    || sigForwardCheckboxField.getChecked());
         }
         else if(field == maximumFolderMessagesChoiceField) {
             int value = maximumFolderMessagesChoiceField.getSelectedValue();
@@ -690,6 +736,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         this.accountConfig.setSentMailbox(selectedSentFolder);
         this.accountConfig.setDraftMailbox(selectedDraftFolder);
 
+        this.accountConfig.setReplySignatureIncluded(sigReplyCheckboxField.getChecked());
+        this.accountConfig.setForwardSignatureIncluded(sigForwardCheckboxField.getChecked());
+        this.accountConfig.setSignatureAbove(sigPlacementChoiceField.getSelectedIndex() == 1);
+        
         this.accountConfig.setInitialFolderMessages(initialFolderMessagesChoiceField.getSelectedValue());
         this.accountConfig.setFolderMessageIncrement(folderMessageIncrementChoiceField.getSelectedValue());
         this.accountConfig.setMaximumFolderMessages(maximumFolderMessagesChoiceField.getSelectedValue());

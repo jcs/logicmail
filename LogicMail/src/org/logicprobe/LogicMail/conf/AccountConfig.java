@@ -54,6 +54,10 @@ public abstract class AccountConfig extends ConnectionConfig {
     private long sentMailboxId;
     private MailboxNode draftMailbox;
     private long draftMailboxId;
+    private boolean replySignatureIncluded;
+    private boolean forwardSignatureIncluded;
+    private boolean signatureAbove;
+    
     private int initialFolderMessages;
     private int folderMessageIncrement;
     private int maximumFolderMessages;
@@ -103,6 +107,9 @@ public abstract class AccountConfig extends ConnectionConfig {
         sentMailboxId = -1L;
         draftMailbox = null;
         draftMailboxId = -1L;
+        replySignatureIncluded = true;
+        forwardSignatureIncluded = false;
+        signatureAbove = false;
         initialFolderMessages = 20;
         folderMessageIncrement = 5;
         maximumFolderMessages = 40;
@@ -330,6 +337,52 @@ public abstract class AccountConfig extends ConnectionConfig {
     }
 
     /**
+     * Gets whether a signature is included on reply messages.
+     */
+    public boolean isReplySignatureIncluded() {
+        return replySignatureIncluded;
+    }
+    
+    /**
+     * Sets whether a signature is included on reply messages.
+     */
+    public void setReplySignatureIncluded(boolean replySignatureIncluded) {
+        this.replySignatureIncluded = replySignatureIncluded;
+    }
+    
+    /**
+     * Gets whether a signature is included on forwarded messages.
+     */
+    public boolean isForwardSignatureIncluded() {
+        return forwardSignatureIncluded;
+    }
+    
+    /**
+     * Sets whether a signature is included on forwarded messages.
+     */
+    public void setForwardSignatureIncluded(boolean forwardSignatureIncluded) {
+        this.forwardSignatureIncluded = forwardSignatureIncluded;
+    }
+    
+    /**
+     * Gets whether the signature is above the quoted content.
+     * 
+     * @return true if above, false if below
+     */
+    public boolean isSignatureAbove() {
+        return signatureAbove;
+    }
+    
+    /**
+     * Sets whether the signature is above the quoted content.
+     * 
+     * @param signatureAbove true if above, false if below
+     */
+    public void setSignatureAbove(boolean signatureAbove) {
+        this.signatureAbove = signatureAbove;
+    }
+    
+    /**
      * Gets the number of folder messages to load when freshly selecting a
      * mailbox.  This value should normally affect loading the first time a
      * given mailbox is selected following application startup.
@@ -407,6 +460,9 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_outgoingConfigId", new Long(outgoingConfigId));
         table.put("account_sentMailboxId", new Long(sentMailboxId));
         table.put("account_draftMailboxId", new Long(draftMailboxId));
+        table.put("account_replySignatureIncluded", new Boolean(replySignatureIncluded));
+        table.put("account_forwardSignatureIncluded", new Boolean(forwardSignatureIncluded));
+        table.put("account_signatureAbove", new Boolean(signatureAbove));
         table.put("account_initialFolderMessages", new Integer(initialFolderMessages));
         table.put("account_folderMessageIncrement", new Integer(folderMessageIncrement));
         table.put("account_maximumFolderMessages", new Integer(maximumFolderMessages));
@@ -460,6 +516,21 @@ public abstract class AccountConfig extends ConnectionConfig {
             draftMailboxId = -1L;
         }
 
+        value = table.get("account_replySignatureIncluded");
+        if(value instanceof Boolean) {
+            replySignatureIncluded = ((Boolean)value).booleanValue();
+        }
+        
+        value = table.get("account_forwardSignatureIncluded");
+        if(value instanceof Boolean) {
+            forwardSignatureIncluded = ((Boolean)value).booleanValue();
+        }
+        
+        value = table.get("account_signatureAbove");
+        if(value instanceof Boolean) {
+            signatureAbove = ((Boolean)value).booleanValue();
+        }
+        
         value = table.get("account_initialFolderMessages");
         if(value instanceof Integer) {
             initialFolderMessages = ((Integer)value).intValue();

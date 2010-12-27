@@ -89,6 +89,7 @@ import org.logicprobe.LogicMail.util.UnicodeNormalizer;
  * This is the message composition screen.
  */
 public class CompositionScreen extends AbstractScreenProvider {
+    private static String SIGNATURE_PREFIX = "\r\n-- \r\n";
     public final static int COMPOSE_NORMAL = 0;
     public final static int COMPOSE_REPLY = 1;
     public final static int COMPOSE_REPLY_ALL = 2;
@@ -334,8 +335,38 @@ public class CompositionScreen extends AbstractScreenProvider {
             String sig = identityConfig.getMsgSignature();
 
             if ((sig != null) && (sig.length() > 0)) {
-                messageEditField.insert("\r\n-- \r\n" + sig);
-                messageEditField.setCursorPosition(0);
+                boolean shouldAppend;
+                
+                switch(composeType) {
+                case COMPOSE_NORMAL:
+                    shouldAppend = true;
+                    break;
+                case COMPOSE_REPLY:
+                case COMPOSE_REPLY_ALL:
+                    shouldAppend = accountNode.isReplySignatureIncluded();
+                    break;
+                case COMPOSE_FORWARD:
+                    shouldAppend = accountNode.isForwardSignatureIncluded();
+                    break;
+                default:
+                    shouldAppend = true;
+                    break;
+                }
+                
+                if(shouldAppend) {
+                    if(composeType == COMPOSE_NORMAL || accountNode.isSignatureAbove()) {
+                        messageEditField.insert(SIGNATURE_PREFIX + sig);
+                        if(composeType != COMPOSE_NORMAL) {
+                            messageEditField.insert("\r\n");
+                        }
+                        messageEditField.setCursorPosition(0);
+                    }
+                    else {
+                        messageEditField.setCursorPosition(messageEditField.getTextLength());
+                        messageEditField.insert(SIGNATURE_PREFIX + sig);
+                        messageEditField.setCursorPosition(0);
+                    }
+                }
             }
         }
     }
