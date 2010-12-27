@@ -62,7 +62,6 @@ public final class NavigationController {
 	
 	private UiApplication uiApplication;
 	private StandardScreen mailHomeScreen;
-	private String currentStatus;
 	
 	private MessageActions messageActions;
 	
@@ -102,8 +101,6 @@ public final class NavigationController {
 			}
 		});
 	}
-	
-	//TODO: Figure out where/when/how to clear screen transitions
 	
 	public synchronized void displayMailbox(MailboxNode mailboxNode) {
 		StandardScreen screen = screenFactory.getMailboxScreen(this, mailboxNode);
@@ -172,23 +169,57 @@ public final class NavigationController {
 	 * @return the current status text
 	 */
 	public String getCurrentStatus() {
-		return currentStatus;
+		return statusRunnable.getCurrentStatus();
 	}
 	
 	private void handleMailConnectionStatus(MailConnectionStatusEvent e) {
-		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
-			public void run() {
-		    	currentStatus = ((MailConnectionStatusEvent)getEvent()).getMessage();
-                Screen activeScreen =
-                    UiApplication.getUiApplication().getActiveScreen();
-		    	if(activeScreen instanceof StandardScreen) {
-		    		StandardScreen screen = (StandardScreen)activeScreen;
-		    		screen.updateStatus(currentStatus);
-		    	}
-			}
-		});
+	    statusRunnable.updateStatus(e);
 	}
 
+	private final MailConnectionStatusRunnable statusRunnable = new MailConnectionStatusRunnable();
+	
+	private static class MailConnectionStatusRunnable implements Runnable {
+        private final Object lockObj = new Object();
+	    private MailConnectionStatusEvent event;
+	    private boolean onQueue;
+	    
+	    public void updateStatus(MailConnectionStatusEvent event) {
+	        synchronized(lockObj) {
+	            this.event = event;
+	            if(!onQueue) {
+	                UiApplication.getUiApplication().invokeLater(this);
+	            }
+	        }
+        }
+	    
+	    public String getCurrentStatus() {
+	        String currentStatus;
+	        synchronized(lockObj) {
+	            if(event != null) {
+	                currentStatus = event.getMessage();
+	            }
+	            else {
+	                currentStatus = "";
+	            }
+	        }
+	        return currentStatus;
+	    }
+	    
+	    public void run() {
+	        synchronized(lockObj) {
+	            if(event != null) {
+	                Screen activeScreen =
+	                    UiApplication.getUiApplication().getActiveScreen();
+	                if(activeScreen instanceof StandardScreen) {
+	                    StandardScreen screen = (StandardScreen)activeScreen;
+	                    screen.updateStatus(event.getMessage());
+	                }
+	            }
+	            onQueue = false;
+	        }
+	    }
+	}
+	
 	private void handleMailConnectionError(MailConnectionStatusEvent e) {
 		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
 			public void run() {
