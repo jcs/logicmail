@@ -1175,18 +1175,14 @@ public class StringParser {
     public static byte[] readWholeStream(InputStream is)
         throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        byte[] tmpBuf;
-
-        while (is.available() > 0) {
-            tmpBuf = new byte[is.available()];
-
-            if (is.read(tmpBuf) < 0) {
-                break;
-            }
-
-            bos.write(tmpBuf);
+        byte[] tmpBuf = new byte[1024];
+        
+        while(true) {
+            int len = is.read(tmpBuf);
+            if(len < 0) { break; }
+            bos.write(tmpBuf, 0, len);
         }
-
+        
         return bos.toByteArray();
     }
 
