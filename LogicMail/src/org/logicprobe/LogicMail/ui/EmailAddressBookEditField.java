@@ -197,6 +197,8 @@ public class EmailAddressBookEditField extends EditField {
      * @see net.rim.device.api.ui.component.BasicEditField#makeContextMenu(net.rim.device.api.ui.ContextMenu)
      */
     protected void makeContextMenu(ContextMenu contextMenu) {
+        super.makeContextMenu(contextMenu);
+        
     	if (addressMode == MODE_NAME) {
             contextMenu.addItem(addressPropertiesMenuItem);
         }
