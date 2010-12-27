@@ -322,7 +322,9 @@ public class MessageScreen extends AbstractScreenProvider {
     	if(attachmentsFieldManager != null
     	        && messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
     		if(attachmentsFieldManager.getFieldWithFocus() instanceof AttachmentField) {
-                menu.add(saveAttachmentItem);
+    		    if(isAttachmentSaveable((AttachmentField)attachmentsFieldManager.getFieldWithFocus())) {
+    		        menu.add(saveAttachmentItem);
+    		    }
     		}
     	}
     	
@@ -347,7 +349,9 @@ public class MessageScreen extends AbstractScreenProvider {
             return true;
         }
         else if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
-            saveAttachmentItem.run();
+            if(isAttachmentSaveable((AttachmentField)attachmentsFieldManager.getFieldWithFocus())) {
+                saveAttachmentItem.run();
+            }
             return true;
         }
         else {
@@ -373,8 +377,10 @@ public class MessageScreen extends AbstractScreenProvider {
                 retval = true;
             }
             else if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
-                saveAttachmentItem.run();
-                retval = true;
+                if(isAttachmentSaveable((AttachmentField)attachmentsFieldManager.getFieldWithFocus())) {
+                    saveAttachmentItem.run();
+                    retval = true;
+                }
             }
             break;
         case Keypad.KEY_SPACE:
@@ -389,6 +395,18 @@ public class MessageScreen extends AbstractScreenProvider {
             break;
         }
         return retval;
+    }
+
+    private boolean isAttachmentSaveable(AttachmentField attachmentField) {
+        if(attachmentField == null) { return false; }
+        
+        if(parentAccount.hasMessageParts()) {
+            return true;
+        }
+        else {
+            MimeMessageContent content = messageNode.getMessageContent(attachmentField.getMessagePart());
+            return content != null && content.isPartComplete() != MimeMessageContent.PART_INCOMPLETE;
+        }
     }
     
 	private void messageNode_MessageStatusChanged(MessageNodeEvent e) {

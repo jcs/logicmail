@@ -71,7 +71,10 @@ public class MessageIcons {
 
 	public static Bitmap getIcon(String mimeType) {
 	    Bitmap icon;
-	    if(mimeType.startsWith(MIME_IMAGE)) {
+	    if(mimeType == null) {
+	        icon = mimeApplicationBitmap;
+	    }
+	    else if(mimeType.startsWith(MIME_IMAGE)) {
 	        icon = mimeImageBitmap;
 	    }
 	    else if(mimeType.startsWith(MIME_TEXT)) {

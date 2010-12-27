@@ -48,6 +48,7 @@ public class AttachmentField extends Field {
     private Bitmap icon;
     private String attachmentName;
     private String attachmentSize;
+    private boolean hasMessageParts;
     private int maxWidth;
     
     private static boolean hasTouchscreen = PlatformInfo.getInstance().hasTouchscreen();
@@ -65,6 +66,11 @@ public class AttachmentField extends Field {
         this.icon = MessageIcons.getIcon(messagePart);
         this.attachmentName = buildMessageName(messagePart);
         this.attachmentSize = buildMessageSizeText(messagePart);
+        
+        this.hasMessageParts =
+            (messageNode != null)
+            && (messageNode.getParent() != null)
+            && messageNode.getParent().getParentAccount().hasMessageParts();
     }
     
     /**
@@ -144,10 +150,17 @@ public class AttachmentField extends Field {
      */
     protected void paint(Graphics graphics) {
         int halfHeight = getHeight() >>> 1;
-        Font font = graphics.getFont();
-        if(messageNode != null && messageNode.getMessageContent(messagePart) != null) {
-            font = font.derive(Font.BOLD);
+        Font originalFont = graphics.getFont();
+        Font font = originalFont;
+        if(messageNode != null) {
+            if(messageNode.getMessageContent(messagePart) != null) {
+                font = originalFont.derive(Font.BOLD);
+            }
+            else if(!hasMessageParts) {
+                font = originalFont.derive(Font.ITALIC);
+            }
         }
+        graphics.setFont(font);
         
         int indent = 2;
         
@@ -171,5 +184,6 @@ public class AttachmentField extends Field {
         
         graphics.drawText(attachmentName, indent, textPos, Graphics.ELLIPSIS,
                 maxWidth - indent - sizeWidth);
+        graphics.setFont(originalFont);
     }
 }

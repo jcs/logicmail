@@ -234,6 +234,15 @@ public abstract class AccountNode implements Node {
     }
 
     /**
+     * Gets whether this account supports retrieval of individual message parts.
+     *
+     * @return True if supported, false otherwise.
+     */
+    public boolean hasMessageParts() {
+        return this.mailStoreServices.hasMessageParts();
+    }
+    
+    /**
      * Gets whether this account supports undelete.
      *
      * @return True if supported, false otherwise.
