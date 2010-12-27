@@ -1042,7 +1042,7 @@ public class ImapProtocol {
         String[] rawList = execute(UID_STORE, buf.toString(), null);
 
         if (rawList.length < 1) {
-            throw new MailException("Unable to set message flags");
+            return null;
         }
 
         MessageFlags result;

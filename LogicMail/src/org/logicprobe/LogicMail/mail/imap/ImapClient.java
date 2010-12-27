@@ -1113,6 +1113,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      */
     public void messageSeen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
         changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_SEEN);
+        messageFlags.setSeen(true);
     }
     
     /* (non-Javadoc)
@@ -1120,6 +1121,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      */
     public void messageUnseen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
         changeMessageFlag(messageToken, messageFlags, false, ImapParser.FLAG_SEEN);
+        messageFlags.setSeen(false);
     }
 
     private void changeMessageFlag(
