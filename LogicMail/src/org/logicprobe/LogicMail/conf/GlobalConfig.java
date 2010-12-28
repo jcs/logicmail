@@ -100,6 +100,7 @@ public class GlobalConfig implements Serializable {
      */
     public GlobalConfig() {
         setDefaults();
+        ensureValidFilesystemRoot();
     }
 
     /**
@@ -112,6 +113,7 @@ public class GlobalConfig implements Serializable {
             deserialize(input);
         } catch (IOException ex) {
             setDefaults();
+            ensureValidFilesystemRoot();
         }
     }
 
@@ -498,6 +500,12 @@ public class GlobalConfig implements Serializable {
             expungeMode = ((Integer)value).intValue();
         }
         
+        ensureValidFilesystemRoot();
+        
+        changeType = 0;
+    }
+
+    private void ensureValidFilesystemRoot() {
         if(filesystemRoot == null || filesystemRoot.length() == 0) {
             // Filesystem not set, and not disabled either, so we default to
             // picking the first usable filesystem.  If none is available, then
@@ -510,8 +518,6 @@ public class GlobalConfig implements Serializable {
                 filesystemRoot = FILESYSTEM_DISABLED;
             }
         }
-        
-        changeType = 0;
     }
 
     /* (non-Javadoc)
