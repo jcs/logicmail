@@ -662,10 +662,17 @@ class FolderRequestHandler {
             folderMessageCache.commit();
         }
     }
-    
+
     void setFolderMessageSeen(MessageToken messageToken) {
+        setFolderMessageSeenImpl(messageToken, false);
+    }    
+    
+    void setFolderMessageSeenCacheOnly(MessageToken messageToken) {
+        setFolderMessageSeenImpl(messageToken, true);
+    }
+    
+    private void setFolderMessageSeenImpl(MessageToken messageToken, boolean cacheOnly) {
         // TODO Consider blocking if a refresh is in progress
-        // TODO Need to handle the case where this is called while offline or not yet refreshed (cache-only load)
         if(messageToken == null) { return; }
         FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
         if(message == null) { return; }
@@ -676,7 +683,7 @@ class FolderRequestHandler {
             messageFlags.setRecent(false);
             folderMessageCache.updateFolderMessage(folderTreeItem, message);
             folderMessageCache.commit();
-            if(mailStore.hasFlags()) {
+            if(!cacheOnly && mailStore.hasFlags()) {
                 mailStore.requestMessageSeen(messageToken, originalFlags);
             }
         }

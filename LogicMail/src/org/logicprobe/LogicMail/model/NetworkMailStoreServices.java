@@ -233,12 +233,12 @@ public class NetworkMailStoreServices extends MailStoreServices {
         mailStore.requestMessage(messageToken, false, new MailStoreRequestCallback() {
             public void mailStoreRequestComplete() { }
             public void mailStoreRequestFailed(Throwable exception) {
-                messageRefreshFailed(messageToken);
+                messageRefreshFailed(messageToken, false);
             }
         });
         return true;
     }
-    
+
     private void requestMessageRefreshParts(
             final FolderTreeItem folder,
             final MessageToken messageToken,
@@ -260,10 +260,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
         // Load displayable parts from cache
         Hashtable loadedPartSet = loadMessagePartsFromCache(folder, messageToken, displayableParts);
-   
+        final int loadedItems = loadedPartSet.size();
+        
         // If there are parts we couldn't load from the cache, then see if
         // we should load them.
-        if(loadedPartSet.size() < displayableParts.length && !cacheOnly) {
+        if(loadedItems < displayableParts.length && !cacheOnly) {
             // Determine the max size to fetch
             int maxSize = getMaxSizeToFetch();
             
@@ -289,7 +290,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
                 mailStore.requestMessageParts(messageToken, partsArray, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() { }
                     public void mailStoreRequestFailed(Throwable exception) {
-                        messageRefreshFailed(messageToken);
+                        messageRefreshFailed(messageToken, loadedItems > 0);
                     }
                 });
             }
@@ -375,7 +376,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
                         // revert to cached data instead of giving up.
                         if(loadedContent.length > 0) {
                             fireMessageAvailable(messageToken, messageComplete, structure, loadedContent, null);
-                            requestMessageSeen(messageToken);
+                            FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+                            handler.setFolderMessageSeenCacheOnly(messageToken);
                         }
                     }
                 });
@@ -392,7 +394,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
                 public void mailStoreRequestComplete() { }
                 public void mailStoreRequestFailed(Throwable exception) {
-                    messageRefreshFailed(messageToken);
+                    messageRefreshFailed(messageToken, false);
                 }
             });
         }
@@ -406,8 +408,14 @@ public class NetworkMailStoreServices extends MailStoreServices {
         requestMessageSeen(messageToken);
     }
     
-    private void messageRefreshFailed(MessageToken messageToken) {
-        requestMessageSeen(messageToken);
+    private void messageRefreshFailed(MessageToken messageToken, boolean contentLoaded) {
+        if(contentLoaded) {
+            FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+            handler.setFolderMessageSeenCacheOnly(messageToken);
+        }
+        // In all cases, this event is handled by simply marking the load
+        // operation as being completed.
+        fireMessageContentAvailable(messageToken, null);
     }
     
     public void requestMessageParts(final MessageToken messageToken, final MimeMessagePart[] messageParts) {
