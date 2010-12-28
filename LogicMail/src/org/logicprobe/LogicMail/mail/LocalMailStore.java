@@ -274,7 +274,10 @@ public class LocalMailStore extends AbstractMailStore {
                     Object element = e.nextElement();
                     if(!(element instanceof MimeMessagePart)) { continue; }
                 	MimeMessagePart part = (MimeMessagePart)element;
-                	message.putContent(part, (MimeMessageContent)contentMap.get(part));
+                	MimeMessageContent content = (MimeMessageContent)contentMap.get(part);
+                	// Local parts are always complete, regardless of what the parser thinks
+                	content.setPartComplete(MimeMessageContent.PART_COMPLETE);
+                	message.putContent(part, content);
                 }
         	} catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID, ("Unable to read message: " + e.toString()).getBytes(), EventLogger.ERROR);
