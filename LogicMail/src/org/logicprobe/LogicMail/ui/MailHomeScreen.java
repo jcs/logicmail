@@ -521,18 +521,57 @@ public class MailHomeScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#keyChar(char, int, int)
      */
     public boolean keyChar(char key, int status, int time) {
-        boolean retval = false;
         switch (key) {
         case Keypad.KEY_ENTER:
             selectFolderItem.run();
-            retval = true;
-            break;
+            return true;
         case Keypad.KEY_SPACE:
             toggleSelectedNode();
-            retval = true;
-            break;
+            return true;
         }
-        return retval;
+        
+        switch(KeyHandler.keyCharShortcut(key, status)) {
+        case KeyHandler.SCROLL_TOP:
+            screen.scroll(Manager.TOPMOST);
+            return true;
+        case KeyHandler.SCROLL_BOTTOM:
+            screen.scroll(Manager.BOTTOMMOST);
+            return true;
+        case KeyHandler.SCROLL_NEXT_DATE:
+            scrollNextAccount(true);
+            return true;
+        case KeyHandler.SCROLL_PREV_DATE:
+            scrollNextAccount(false);
+            return true;
+        case KeyHandler.MESSAGE_COMPOSE:
+            MailHomeTreeNode treeNode = (MailHomeTreeNode)treeField.getCookie(treeField.getCurrentNode());
+            AccountNode parentAccount = getAccountForTreeNode(treeNode);
+            if(parentAccount instanceof NetworkAccountNode && ((NetworkAccountNode)parentAccount).hasMailSender()) {
+                compositionItem.run();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void scrollNextAccount(boolean direction) {
+        int node = treeField.getCurrentNode();
+        if(node == -1) { return; }
+        
+        while(treeField.getParent(node) > 0) {
+            node = treeField.getParent(node);
+        }
+        if(node == -1) { return; }
+
+        if(direction) {
+            node = treeField.getNextSibling(node);
+        }
+        else {
+            node = treeField.getPreviousSibling(node);
+        }
+        if(node == -1) { return; }
+
+        treeField.setCurrentNode(node);
     }
 
     /* (non-Javadoc)

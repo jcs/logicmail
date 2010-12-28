@@ -182,7 +182,6 @@ public class MessageActions {
             }
         }
         
-        
         if(!isOpen && (messageNode.existsOnServer() || messageNode.hasCachedContent())) {
             menu.add(selectItem);
         }
@@ -235,6 +234,53 @@ public class MessageActions {
         }
         
         this.activeMessageNode = messageNode;
+    }
+
+    public boolean keyCharShortcut(MessageNode messageNode, int shortcut) {
+        // Get all the message properties necessary to determine whether or
+        // not to various shortcuts are valid.
+        MailboxNode mailboxNode = messageNode.getParent();
+        AccountNode accountNode;
+        if(mailboxNode != null) {
+            accountNode = mailboxNode.getParentAccount();
+        }
+        else { accountNode = null; }
+        boolean unloaded =
+            !messageNode.hasCachedContent()
+            && !messageNode.hasMessageContent()
+            && messageNode.isCachable();
+
+        switch(shortcut) {
+        case KeyHandler.MESSAGE_REPLY:
+            if(!unloaded && accountNode instanceof NetworkAccountNode) {
+                NetworkAccountNode networkAccount = (NetworkAccountNode)accountNode;
+                if(networkAccount.hasMailSender()) {
+                    this.activeMessageNode = messageNode;
+                    replyItem.run();
+                    return true;
+                }
+            }
+        case KeyHandler.MESSAGE_REPLY_ALL:
+            if(!unloaded && accountNode instanceof NetworkAccountNode) {
+                NetworkAccountNode networkAccount = (NetworkAccountNode)accountNode;
+                if(networkAccount.hasMailSender() && networkAccount.hasIdentity()) {
+                    this.activeMessageNode = messageNode;
+                    replyAllItem.run();
+                    return true;
+                }
+            }
+        case KeyHandler.MESSAGE_FORWARD:
+            if(!unloaded && accountNode instanceof NetworkAccountNode) {
+                NetworkAccountNode networkAccount = (NetworkAccountNode)accountNode;
+                if(networkAccount.hasMailSender()) {
+                    this.activeMessageNode = messageNode;
+                    forwardItem.run();
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
     
     /**

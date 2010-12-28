@@ -362,11 +362,8 @@ public class MessageScreen extends AbstractScreenProvider {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#keyChar(char, int, int)
      */
-    public boolean keyChar(
-            char key,
-            int status,
-            int time) {
-        boolean retval = false;
+    public boolean keyChar(char key, int status, int time) {
+        // First, check and see if any hard-coded shortcuts are applicable
         switch(key) {
         case Keypad.KEY_ENTER:
             if(attachmentsLabelField.isFocus()
@@ -374,27 +371,49 @@ public class MessageScreen extends AbstractScreenProvider {
                     && attachmentsFieldManager.getFieldCount() > 0) {
                 attachmentsFieldManager.setFocus();
                 attachmentsFieldManager.getField(0).setFocus();
-                retval = true;
+                return true;
             }
             else if(messageFieldManager.getFieldWithFocus() == attachmentsFieldManager) {
                 if(isAttachmentSaveable((AttachmentField)attachmentsFieldManager.getFieldWithFocus())) {
                     saveAttachmentItem.run();
-                    retval = true;
+                    return true;
                 }
             }
             break;
         case Keypad.KEY_SPACE:
             if(status == 0) {
                 screen.scroll(Manager.DOWNWARD);
-                retval = true;
+                return true;
             }
             else if(status == KeypadListener.STATUS_ALT) {
                 screen.scroll(Manager.UPWARD);
-                retval = true;
+                return true;
             }
             break;
         }
-        return retval;
+        
+        // Now check the keypad/locale-specific shortcuts
+        int shortcut = KeyHandler.keyCharShortcut(key, status);
+        switch(shortcut) {
+        case KeyHandler.SCROLL_TOP:
+            screen.scroll(Manager.TOPMOST);
+            return true;
+        case KeyHandler.SCROLL_BOTTOM:
+            screen.scroll(Manager.BOTTOMMOST);
+            return true;
+        case KeyHandler.MESSAGE_COMPOSE:
+            if(parentAccount instanceof NetworkAccountNode
+                    && ((NetworkAccountNode)parentAccount).hasMailSender()) {
+                compositionItem.run();
+                return true;
+            }
+        default:
+            if(messageActions.keyCharShortcut(messageNode, shortcut)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     private boolean isAttachmentSaveable(AttachmentField attachmentField) {

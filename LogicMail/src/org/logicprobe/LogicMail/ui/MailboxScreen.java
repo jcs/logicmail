@@ -39,6 +39,7 @@ import java.util.Vector;
 
 import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
@@ -793,30 +794,141 @@ public class MailboxScreen extends AbstractScreenProvider {
      */
     public boolean keyChar(char key, int status, int time) {
         MessageNode messageNode;
+        
+        // First, check and see if any hard-coded shortcuts are applicable
         switch(key) {
-            case Keypad.KEY_ENTER:
-            	messageNode = getSelectedMessage();
-            	if(messageNode != null) {
-            		messageActions.openMessage(messageNode);
-            		return true;
-            	}
-                MailboxActionField gapField = getSelectedMessageGapField();
-                if(gapField != null) {
-                    handleMessageGapAction(gapField);
+        case Keypad.KEY_ENTER:
+            messageNode = getSelectedMessage();
+            if(messageNode != null) {
+                messageActions.openMessage(messageNode);
+                return true;
+            }
+            MailboxActionField gapField = getSelectedMessageGapField();
+            if(gapField != null) {
+                handleMessageGapAction(gapField);
+                return true;
+            }
+            break;
+        case Keypad.KEY_BACKSPACE:
+            messageNode = getSelectedMessage();
+            if(messageNode != null) {
+                messageActions.deleteMessage(messageNode);
+                return true;
+            }
+            break;
+        case Keypad.KEY_SPACE:
+            if(status == 0) {
+                screen.scroll(Manager.DOWNWARD);
+                return true;
+            }
+            else if(status == KeypadListener.STATUS_ALT) {
+                screen.scroll(Manager.UPWARD);
+                return true;
+            }
+            break;
+        }
+        
+        // Now check the keypad/locale-specific shortcuts
+        int shortcut = KeyHandler.keyCharShortcut(key, status);
+        switch(shortcut) {
+        case KeyHandler.SCROLL_TOP:
+            screen.scroll(Manager.TOPMOST);
+            return true;
+        case KeyHandler.SCROLL_BOTTOM:
+            screen.scroll(Manager.BOTTOMMOST);
+            return true;
+        case KeyHandler.SCROLL_NEXT_DATE:
+            scrollNextDate(displayOrder);
+            return true;
+        case KeyHandler.SCROLL_PREV_DATE:
+            scrollNextDate(!displayOrder);
+            return true;
+        case KeyHandler.SCROLL_NEXT_UNOPENED:
+            scrollNextUnopened();
+            return true;
+        case KeyHandler.MESSAGE_COMPOSE:
+            if(composeEnabled) {
+                compositionItem.run();
+                return true;
+            }
+        default:
+            messageNode = getSelectedMessage();
+            if(messageNode != null) {
+                if(messageActions.keyCharShortcut(messageNode, shortcut)) {
                     return true;
                 }
-                break;
-            case Keypad.KEY_BACKSPACE:
-            	messageNode = getSelectedMessage();
-            	if(messageNode != null) {
-            		messageActions.deleteMessage(messageNode);
-            		return true;
-            	}
-            	break;
+            }
         }
+        
         return false;
     }
     
+    private void scrollNextDate(boolean direction) {
+        int index = messageFieldManager.getFieldWithFocusIndex();
+        int count = messageFieldManager.getFieldCount();
+        
+        if(direction) {
+            // Upward
+            index--;
+            while(index >= 0) {
+                if(messageFieldManager.getField(index) instanceof MessageSeparatorField) {
+                    messageFieldManager.setFocus();
+                    messageFieldManager.getField(index).setFocus();
+                    break;
+                }
+                index--;
+            }
+        }
+        else {
+            // Downward
+            index++;
+            while(index < count) {
+                if(messageFieldManager.getField(index) instanceof MessageSeparatorField) {
+                    messageFieldManager.setFocus();
+                    messageFieldManager.getField(index).setFocus();
+                    break;
+                }
+                index++;
+            }
+        }
+    }
+
+    private void scrollNextUnopened() {
+        int index = messageFieldManager.getFieldWithFocusIndex();
+        int count = messageFieldManager.getFieldCount();
+        
+        if(displayOrder) {
+            // Ascending
+            index--;
+            while(index >= 0) {
+                if(messageFieldManager.getField(index) instanceof MailboxMessageField) {
+                    MailboxMessageField field = (MailboxMessageField)messageFieldManager.getField(index);
+                    if((field.getMessageNode().getFlags() & MessageNode.Flag.SEEN) == 0) {
+                        messageFieldManager.setFocus();
+                        field.setFocus();
+                        break;
+                    }
+                }
+                index--;
+            }
+        }
+        else {
+            // Descending
+            index++;
+            while(index < count) {
+                if(messageFieldManager.getField(index) instanceof MailboxMessageField) {
+                    MailboxMessageField field = (MailboxMessageField)messageFieldManager.getField(index);
+                    if((field.getMessageNode().getFlags() & MessageNode.Flag.SEEN) == 0) {
+                        messageFieldManager.setFocus();
+                        field.setFocus();
+                        break;
+                    }
+                }
+                index++;
+            }
+        }
+    }
+
     private void handleMessageGapAction(final MailboxActionField gapField) {
         // This method inserts a short delay, where the gap action field is
         // disabled, prior to starting the request.  This is done to provide
