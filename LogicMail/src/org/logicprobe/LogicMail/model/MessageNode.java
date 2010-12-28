@@ -705,7 +705,7 @@ public class MessageNode implements Node {
 	/**
 	 * Sets whether this message has cached content available.
 	 * This method should only be called by code which is creating
-	 * a message note instance from local cache data.
+	 * a message node instance from local cache data.
 	 * 
 	 * @param hasCachedContent True if cached content is available for loading
 	 */

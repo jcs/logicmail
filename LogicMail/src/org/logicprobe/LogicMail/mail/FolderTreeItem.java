@@ -281,6 +281,12 @@ public class FolderTreeItem implements Serializable {
         }
     }
 
+    public void removeAllChildren() {
+        if(children != null) {
+            children = null;
+        }
+    }
+    
     public String getName() {
         return name;
     }

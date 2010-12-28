@@ -82,7 +82,10 @@ public class FileSaveDialog extends Dialog {
 
 		if(folderUrl == null || folderUrl.length() == 0 || !folderUrl.startsWith(ROOT_URL)) {
 			String localDataLocation = MailSettings.getInstance().getGlobalConfig().getLocalDataLocation();
-			if(localDataLocation.startsWith("file:///store")) {
+			if(localDataLocation == null) {
+                setFolderUrl(null);
+			}
+			else if(localDataLocation.startsWith("file:///store")) {
 				setFolderUrl("file:///store/home/user/");
 			}
 			else if(localDataLocation.startsWith("file:///SDCard")) {

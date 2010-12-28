@@ -47,6 +47,9 @@ public class MimeMessagePartTransformer {
 	 * @return The displayable parts.
 	 */
 	public static MimeMessagePart[] getDisplayableParts(MimeMessagePart rootPart) {
+	    if(rootPart == null) {
+	        return new MimeMessagePart[0];
+	    }
 		DisplayablePartVisitor visitor = new DisplayablePartVisitor();
 		rootPart.accept(visitor);
 		Vector parts = visitor.getDisplayableParts();

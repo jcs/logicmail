@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail.conf;
 
 import java.util.Vector;
 
+import javax.microedition.io.file.FileSystemListener;
+
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 import org.logicprobe.LogicMail.util.EventListenerList;
@@ -53,6 +55,9 @@ public class MailSettings {
     private boolean isIdentityListDirty;
     private boolean isAccountListDirty;
     private boolean isOutgoingListDirty;
+    
+    /** Keeps track of configured filesystem root if temporarily removed. */
+    private String removedFilesystemRoot;
     
     private static String GLOBAL_CONFIG = "global_config";
     private static String IDENTITY_CONFIGS = "identity_configs";
@@ -341,6 +346,7 @@ public class MailSettings {
         isIdentityListDirty = false;
         isAccountListDirty = false;
         isOutgoingListDirty = false;
+        removedFilesystemRoot = null;
     }
         
     private void removeExistingSettings(String key) {
@@ -423,6 +429,40 @@ public class MailSettings {
         isIdentityListDirty = false;
         isAccountListDirty = false;
         isOutgoingListDirty = false;
+        removedFilesystemRoot = null;
+    }
+    
+    private FileSystemListener fileSystemListener = new FileSystemListener() {
+        public void rootChanged(int state, String rootName) {
+            if(state == FileSystemListener.ROOT_REMOVED
+                    && globalConfig.getFilesystemRoot().indexOf(rootName) != -1) {
+                removedFilesystemRoot = globalConfig.getFilesystemRoot();
+                globalConfig.setFilesystemRoot(GlobalConfig.FILESYSTEM_DISABLED);
+                MailSettingsEvent e = new MailSettingsEvent(this);
+                e.setGlobalChange(globalConfig.getChangeType());
+                fireMailSettingsSaved(e);
+            }
+            else if(state == FileSystemListener.ROOT_ADDED
+                    && removedFilesystemRoot != null
+                    && removedFilesystemRoot.indexOf(rootName) != -1) {
+                globalConfig.setFilesystemRoot(removedFilesystemRoot);
+                removedFilesystemRoot = null;
+                MailSettingsEvent e = new MailSettingsEvent(this);
+                e.setGlobalChange(globalConfig.getChangeType());
+                fireMailSettingsSaved(e);
+            }
+        }
+    };
+    
+    /**
+     * Gets the file system listener, to be subscribed to the
+     * <code>FileSystemRegistry</code> at application startup and unsubscribed
+     * at shutdown.
+     *
+     * @return the file system listener
+     */
+    public FileSystemListener getFileSystemListener() {
+        return fileSystemListener;
     }
     
 	/**

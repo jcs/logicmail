@@ -60,7 +60,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class MessageContentFileManager {
     private static MessageContentFileManager instance;
-    private MailSettings mailSettings;
+    private final MailSettings mailSettings;
     private String cacheUrl;
     
     private static String CACHE_PREFIX = "cache/";
@@ -69,7 +69,7 @@ public class MessageContentFileManager {
     private static String ALL_FILTER = "*";
     
     /** Map of FolderTreeItems to sets of known message UIDs within them. */
-    private static final Hashtable folderMessageUidCache = new Hashtable();
+    private final Hashtable folderMessageUidCache = new Hashtable();
     
     /**
      * Instantiates a new mail file manager.
@@ -106,6 +106,10 @@ public class MessageContentFileManager {
      */
     private synchronized void refreshConfiguration() {
         String localDataLocation = mailSettings.getGlobalConfig().getLocalDataLocation();
+        if(localDataLocation == null) {
+            cacheUrl = null;
+            return;
+        }
         String newCacheUrl = localDataLocation + CACHE_PREFIX;
         if(!newCacheUrl.equals(cacheUrl)) {
             FileConnection fileConnection;
@@ -130,6 +134,9 @@ public class MessageContentFileManager {
                 cacheUrl = null;
             }
         }
+        if(cacheUrl == null) {
+            folderMessageUidCache.clear();
+        }
     }
     
     /**
@@ -140,6 +147,7 @@ public class MessageContentFileManager {
      * @return true, if the message exists in the cache
      */
     public synchronized boolean messageContentExists(FolderTreeItem folder, MessageToken messageToken) {
+        if(cacheUrl == null) { return false; }
         Hashtable messageUidSet = (Hashtable)folderMessageUidCache.get(folder);
         if(messageUidSet == null) {
             try {

@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail;
 
 import java.util.Calendar;
 
+import javax.microedition.io.file.FileSystemRegistry;
+
 import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.notification.NotificationsConstants;
@@ -136,6 +138,9 @@ public final class LogicMail extends UiApplication {
                     // Initialize the navigation controller
                     navigationController = new NavigationController(LogicMail.this);
 
+                    // Add the filesystem listener
+                    FileSystemRegistry.addFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+                    
                     invokeLater(new Runnable() {
                         public void run() {
                             // Push the mail home screen and pop
@@ -196,6 +201,16 @@ public final class LogicMail extends UiApplication {
         loadingScreen.add(new ThrobberField(throbberSize, Field.FIELD_HCENTER));
         loadingScreen.add(new BlankSeparatorField(fieldSpacerSize));
         loadingScreen.add(new LabelField("Version " + AppInfo.getVersion(), Field.FIELD_HCENTER));
+    }
+    
+    /**
+     * Complete the application shutdown process by unregistering any static
+     * listeners and exiting the application process.
+     */
+    public static void shutdownApplication() {
+        NotificationHandler.getInstance().shutdown();
+        FileSystemRegistry.removeFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+        System.exit(0);
     }
     
     private class StartupSystemListener implements SystemListener {

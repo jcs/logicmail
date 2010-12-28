@@ -75,8 +75,8 @@ public class GlobalConfig implements Serializable {
     private int messageDisplayFormat;
     /** True for ascending, false for descending */
     private boolean dispOrder;
-    /** Root URL for local file storage */
-    private String localDataLocation = "";
+    /** Filesystem for local file storage */
+    private String filesystemRoot = "";
     /** Preferred network transport type */
     private int transportType;
     /** Whether WiFi should be used if available */
@@ -93,6 +93,7 @@ public class GlobalConfig implements Serializable {
     private int expungeMode;
 
     public static String FILE_URL_PREFIX = "file:///";
+    public static String FILESYSTEM_DISABLED = "<NONE>";
 
     /**
      * Instantiates a new global configuration.
@@ -127,7 +128,7 @@ public class GlobalConfig implements Serializable {
         this.enableWiFi = true;
         this.hideDeletedMsg = true;
         this.localHostname = "";
-        this.localDataLocation = "";
+        this.filesystemRoot = "";
         this.promptOnDelete = true;
         this.expungeMode = GlobalConfig.EXPUNGE_PROMPT;
         changeType = 0;
@@ -218,38 +219,50 @@ public class GlobalConfig implements Serializable {
     }
 
     /**
-     * Get the root URL for local file storage.
+     * Get the root filesystem URL for local file storage.
      * 
-     * @param localDataLocation The local data URL
+     * @param filesystemRoot The root URL of the local filesystem, or {@link #FILESYSTEM_DISABLED}.
      */
-    public void setLocalDataLocation(String localDataLocation) {
-        if(!this.localDataLocation.equals(localDataLocation)) {
-            String validLocation = validateLocalDataLocation(localDataLocation);
-
-            if(validLocation != null) {
-                this.localDataLocation = validLocation;
-            }
-            else {
-                this.localDataLocation = "";
-            }
-            
+    public void setFilesystemRoot(String filesystemRoot) {
+        if(filesystemRoot == null ||
+                !(filesystemRoot.startsWith(FILE_URL_PREFIX)
+                || filesystemRoot.equals(FILESYSTEM_DISABLED))) {
+            throw new IllegalArgumentException();
+        }
+        if(this.filesystemRoot == null || !this.filesystemRoot.equals(filesystemRoot)) {
+            this.filesystemRoot = filesystemRoot;
             changeType |= CHANGE_TYPE_DATA;
         }
     }
-
+    
+    /**
+     * Set the root filesystem URL for local file storage.
+     * 
+     * @return The root URL of the local filesystem, or {@link #FILESYSTEM_DISABLED}.
+     */
+    public String getFilesystemRoot() {
+        return filesystemRoot;
+    }
+    
     /**
      * Set the root URL for local file storage.
      * 
-     * @return The local data URL
+     * @return The valid local data URL, or <code>null</code>.
      */
     public String getLocalDataLocation() {
-        if(localDataLocation == null || localDataLocation.length() == 0) {
-            String[] fsRoots = PlatformInfo.getInstance().getFilesystemRoots();
-            if(fsRoots.length > 0) {
-                setLocalDataLocation(fsRoots[0]);
+        if(filesystemRoot == null || filesystemRoot.length() == 0
+                || filesystemRoot.equals(FILESYSTEM_DISABLED)) {
+            return null;
+        }
+        else {
+            String validLocation = validateLocalDataLocation(filesystemRoot);
+            if(validLocation != null && validLocation.length() > 0) {
+                return validLocation;
+            }
+            else {
+                return null;
             }
         }
-        return localDataLocation;
     }
 
     /**
@@ -351,7 +364,7 @@ public class GlobalConfig implements Serializable {
      * @param localHostname The local hostname
      */
     public void setLocalHostname(String localHostname) {
-        if(!this.localDataLocation.equals(localHostname)) {
+        if(!this.localHostname.equals(localHostname)) {
             this.localHostname = localHostname;
             changeType |= CHANGE_TYPE_OTHER;
         }
@@ -411,7 +424,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_unicodeNormalization", new Boolean(unicodeNormalization));
         table.put("global_messageDisplayFormat", new Integer(messageDisplayFormat));
         table.put("global_dispOrder", new Boolean(dispOrder));
-        table.put("global_localDataLocation", localDataLocation);
+        table.put("global_filesystemRoot", filesystemRoot);
         table.put("global_transportType", new Integer(transportType));
         table.put("global_enableWiFi", new Boolean(enableWiFi));
         table.put("global_connDebug", new Boolean(connDebug));
@@ -452,15 +465,9 @@ public class GlobalConfig implements Serializable {
         if (value instanceof Boolean) {
             dispOrder = ((Boolean) value).booleanValue();
         }
-        value = table.get("global_localDataLocation");
+        value = table.get("global_filesystemRoot");
         if (value instanceof String) {
-            setLocalDataLocation((String)value);
-        }
-        else {
-            String[] fsRoots = PlatformInfo.getInstance().getFilesystemRoots();
-            if(fsRoots.length > 0) {
-                setLocalDataLocation(fsRoots[0]);
-            }
+            this.filesystemRoot = (String)value;
         }
         value = table.get("global_transportType");
         if(value instanceof Integer) {
@@ -490,6 +497,20 @@ public class GlobalConfig implements Serializable {
         if(value instanceof Integer) {
             expungeMode = ((Integer)value).intValue();
         }
+        
+        if(filesystemRoot == null || filesystemRoot.length() == 0) {
+            // Filesystem not set, and not disabled either, so we default to
+            // picking the first usable filesystem.  If none is available, then
+            // we mark file support as disabled.
+            String[] fsRoots = PlatformInfo.getInstance().getFilesystemRoots();
+            if(fsRoots.length > 0) {
+                filesystemRoot = fsRoots[0];
+            }
+            else {
+                filesystemRoot = FILESYSTEM_DISABLED;
+            }
+        }
+        
         changeType = 0;
     }
 

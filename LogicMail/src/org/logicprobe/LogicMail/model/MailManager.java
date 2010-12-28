@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.model;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
@@ -184,6 +185,10 @@ public class MailManager {
         if(shouldRefreshAccounts) {
             updateMailModelAccountList();
             refreshMailboxTypes();
+        }
+        
+        if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_DATA) != 0) {
+            mailRootNode.getLocalAccount().refreshMailboxes();
         }
 	}
 

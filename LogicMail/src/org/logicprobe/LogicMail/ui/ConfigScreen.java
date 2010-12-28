@@ -169,7 +169,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     private void initFileSystemChoices() {
         // Populate fileSystemRoots with a list of all
         // available and writable storage devices
-        String selectedFileSystemRoot = existingGlobalConfig.getLocalDataLocation();
+        String selectedFileSystemRoot = existingGlobalConfig.getFilesystemRoot();
         selectedFileSystemRootIndex = 0;
         
         fileSystemRoots = PlatformInfo.getInstance().getFilesystemRoots();
@@ -200,7 +200,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         fileSystemRootChoices[fileSystemRootChoices.length - 1] =
             resources.getString(LogicMailResource.CONFIG_GLOBAL_LOCAL_DATA_DISABLED);
-        if(selectedFileSystemRoot == null) {
+        if(selectedFileSystemRoot.equals(GlobalConfig.FILESYSTEM_DISABLED)) {
             selectedFileSystemRootIndex = fileSystemRootChoices.length - 1;
         }
     }
@@ -1055,14 +1055,12 @@ public class ConfigScreen extends AbstractConfigScreen {
         config.setEnableWiFi(enableWiFiCheckboxField.getChecked());
 
         int fsRootIndex = localDataLocationChoiceLabel.getSelectedIndex();
-        String url;
         if(fsRootIndex >= fileSystemRoots.length) {
-            url = null;
+            config.setFilesystemRoot(GlobalConfig.FILESYSTEM_DISABLED);
         }
         else {
-            url = fileSystemRoots[fsRootIndex];
+            config.setFilesystemRoot(fileSystemRoots[fsRootIndex]);
         }
-        config.setLocalDataLocation(url);
 
         if (overrideHostnameCheckboxField.getChecked()) {
             config.setLocalHostname(localHostnameEditField.getText().trim());

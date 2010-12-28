@@ -60,6 +60,8 @@ import org.logicprobe.LogicMail.util.ThreadQueue;
 public class LocalMailStore extends AbstractMailStore {
     private GlobalConfig globalConfig;
     private FolderTreeItem rootFolder;
+    private FolderTreeItem outboxFolder;
+    private FolderTreeItem[] localFolders;
     private ThreadQueue threadQueue;
     private Hashtable folderMaildirMap;
     
@@ -75,11 +77,15 @@ public class LocalMailStore extends AbstractMailStore {
         // The "Outbox" folder is marked to prevent the user from being able
         // to append messages to it.  However, it is a special mailbox, and the
         // object model can and does append messages to it as a spool.
+        
+        outboxFolder = new FolderTreeItem(rootFolder, "Outbox", "Outbox", "/", true, false);
+        localFolders = new FolderTreeItem[] {
+                new FolderTreeItem(rootFolder, "Drafts", "Drafts", "/", true, true),
+                new FolderTreeItem(rootFolder, "Sent", "Sent", "/", true, true),
+                new FolderTreeItem(rootFolder, "Trash", "Trash", "/", true, true)
+        };
+        
         rootFolder = new FolderTreeItem("", "", "");
-        rootFolder.addChild(new FolderTreeItem(rootFolder, "Outbox", "Outbox", "/", true, false));
-        rootFolder.addChild(new FolderTreeItem(rootFolder, "Drafts", "Drafts", "/", true, true));
-        rootFolder.addChild(new FolderTreeItem(rootFolder, "Sent", "Sent", "/", true, true));
-        rootFolder.addChild(new FolderTreeItem(rootFolder, "Trash", "Trash", "/", true, true));
     }
 
     public void shutdown(boolean wait) {
@@ -119,6 +125,18 @@ public class LocalMailStore extends AbstractMailStore {
     }
     
     public void requestFolderTree(MailStoreRequestCallback callback) {
+        if(globalConfig.getLocalDataLocation() == null) {
+            rootFolder.removeAllChildren();
+            rootFolder.addChild(outboxFolder);
+        }
+        else {
+            rootFolder.removeAllChildren();
+            rootFolder.addChild(outboxFolder);
+            for(int i=0; i<localFolders.length; i++) {
+                rootFolder.addChild(localFolders[i]);
+            }
+        }
+        
         if(callback != null) { callback.mailStoreRequestComplete(); }
         fireFolderTreeUpdated(rootFolder);
     }

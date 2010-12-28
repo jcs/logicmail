@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.LogicMail;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
@@ -249,14 +250,12 @@ public class StandardScreen extends MainScreen {
                     }
                 }
                 cleanupTitleField(titleField);
-                NotificationHandler.getInstance().shutdown();
-                System.exit(0);
+                LogicMail.shutdownApplication();
             }
         }
         else {
             cleanupTitleField(titleField);
-            NotificationHandler.getInstance().shutdown();
-            System.exit(0);
+            LogicMail.shutdownApplication();
         }
     }
 
