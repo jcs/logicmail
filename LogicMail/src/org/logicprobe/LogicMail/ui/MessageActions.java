@@ -366,16 +366,43 @@ public class MessageActions {
     public void undeleteMessage(MessageNode messageNode) {
 		messageNode.undeleteMessage();
     }
+
+    /**
+     * Make sure the message node has loaded content, then run the provided
+     * runnable on the UI thread.
+     */
+    private static void refreshMessageAndRun(final MessageNode messageNode, final Runnable runnable) {
+        if(messageNode.hasMessageContent()) {
+            runnable.run();
+        }
+        else if(messageNode.hasCachedContent()) {
+            final MessageNodeListener listener =
+                new MessageNodeListener() {
+                public void messageStatusChanged(MessageNodeEvent e) {
+                    if(e.getType() == MessageNodeEvent.TYPE_CONTENT_LOADED) {
+                        messageNode.removeMessageNodeListener(this);
+                        UiApplication.getUiApplication().invokeLater(runnable);
+                    }
+                }};
+            messageNode.addMessageNodeListener(listener);
+            if(!messageNode.refreshMessageCacheOnly()) {
+                messageNode.removeMessageNodeListener(listener);
+            }
+        }
+    }
     
     /**
      * Compose a reply to the message.
      * 
      * @param messageNode the message node
      */
-    public void replyMessage(MessageNode messageNode) {
-        if(messageNode.hasMessageContent()) {
-            navigationController.displayCompositionReply((NetworkAccountNode)messageNode.getParent().getParentAccount(), messageNode, false);
-        }
+    public void replyMessage(final MessageNode messageNode) {
+        refreshMessageAndRun(messageNode, new Runnable() {
+            public void run() {
+                navigationController.displayCompositionReply(
+                        (NetworkAccountNode)messageNode.getParent().getParentAccount(),
+                        messageNode, false);
+            }});
     }
     
     /**
@@ -383,10 +410,13 @@ public class MessageActions {
      * 
      * @param messageNode the message node
      */
-    public void replyAllMessage(MessageNode messageNode) {
-        if(messageNode.hasMessageContent()) {
-            navigationController.displayCompositionReply((NetworkAccountNode)messageNode.getParent().getParentAccount(), messageNode, true);
-        }
+    public void replyAllMessage(final MessageNode messageNode) {
+        refreshMessageAndRun(messageNode, new Runnable() {
+            public void run() {
+                navigationController.displayCompositionReply(
+                        (NetworkAccountNode)messageNode.getParent().getParentAccount(),
+                        messageNode, true);
+            }});
     }
     
     /**
@@ -394,10 +424,13 @@ public class MessageActions {
      * 
      * @param messageNode the message node
      */
-    public void forwardMessage(MessageNode messageNode) {
-        if(messageNode.hasMessageContent()) {
-            navigationController.displayCompositionForward((NetworkAccountNode)messageNode.getParent().getParentAccount(), messageNode);
-        }
+    public void forwardMessage(final MessageNode messageNode) {
+        refreshMessageAndRun(messageNode, new Runnable() {
+            public void run() {
+                navigationController.displayCompositionForward(
+                        (NetworkAccountNode)messageNode.getParent().getParentAccount(),
+                        messageNode);
+            }});
     }
     
     /**

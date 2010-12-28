@@ -64,6 +64,10 @@ public class LocalMailStoreServices extends MailStoreServices {
         }
     }
     
+    public boolean requestMessageRefreshCacheOnly(MessageToken messageToken) {
+        return requestMessageRefresh(messageToken, null);
+    }
+    
     public boolean requestEntireMessageRefresh(MessageToken messageToken) {
         // Not supported
         return false;

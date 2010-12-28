@@ -189,11 +189,19 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     public boolean requestMessageRefresh(final MessageToken messageToken, final MimeMessagePart[] partsToSkip) {
+        return requestMessageRefreshImpl(messageToken, partsToSkip, false);
+    }
+    
+    public boolean requestMessageRefreshCacheOnly(MessageToken messageToken) {
+        return requestMessageRefreshImpl(messageToken, new MimeMessagePart[0], true);
+    }
+    
+    private boolean requestMessageRefreshImpl(final MessageToken messageToken, final MimeMessagePart[] partsToSkip, final boolean forceCacheOnly) {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         if(handler == null) { return false; }
         
         // Get the message folder and structure from the folder request handler
-        final boolean cacheOnly = !handler.isInitialRefreshComplete();
+        final boolean cacheOnly = forceCacheOnly || !handler.isInitialRefreshComplete();
         final MimeMessagePart structure = handler.getCachedMessageStructure(messageToken);
         final FolderTreeItem folder = handler.getFolder();
 

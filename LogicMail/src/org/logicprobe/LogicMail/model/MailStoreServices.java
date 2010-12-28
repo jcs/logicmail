@@ -405,6 +405,14 @@ public abstract class MailStoreServices {
     public abstract boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip);
     
     /**
+     * Requests a message refresh, loading only from local data.
+     * 
+     * @param messageToken the message token
+     * @return true, if a refresh was initiated
+     */
+    public abstract boolean requestMessageRefreshCacheOnly(MessageToken messageToken);
+    
+    /**
      * Requests a message refresh, similar to {@link #requestMessageRefresh(MessageToken, MimeMessagePart[])},
      * except any user-configured limits will be ignored and mail store will
      * attempt to load the entire message content.  This method will return

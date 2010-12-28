@@ -1160,6 +1160,19 @@ public class MessageNode implements Node {
     }
 
     /**
+     * Called to load only cached message data for this node.
+     */
+    public boolean refreshMessageCacheOnly() {
+        if(refreshInProgress.compareAndSet(false, true)) {
+            MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+            return mailStore.requestMessageRefreshCacheOnly(messageToken);
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
      * Called to load the complete message data for this node.
      * <p>
      * This loads the entire message, regardless of size, and is only supported
