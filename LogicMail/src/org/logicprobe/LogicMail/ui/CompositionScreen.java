@@ -42,6 +42,7 @@ import net.rim.device.api.io.MIMETypeAssociations;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
@@ -50,6 +51,7 @@ import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.component.AutoTextEditField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
+import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.DataBuffer;
 
@@ -89,7 +91,9 @@ import org.logicprobe.LogicMail.util.UnicodeNormalizer;
  * This is the message composition screen.
  */
 public class CompositionScreen extends AbstractScreenProvider {
-    private static String SIGNATURE_PREFIX = "\r\n-- \r\n";
+    // The edit field may replace "\r\n" with "\n" in some cases, so we only
+    // use "\n" in places where this could occur.
+    private static String SIGNATURE_PREFIX = "\n-- \r\n";
     public final static int COMPOSE_NORMAL = 0;
     public final static int COMPOSE_REPLY = 1;
     public final static int COMPOSE_REPLY_ALL = 2;
@@ -99,8 +103,12 @@ public class CompositionScreen extends AbstractScreenProvider {
     private String initialRecipient;
     private MessageNode sourceMessageNode;
     private NetworkAccountNode accountNode;
+    private boolean selectableIdentity;
+    private String signatureBlock;
+    private int signatureStartOffset;
     private UnicodeNormalizer unicodeNormalizer;
     
+    private ObjectChoiceField identityChoiceField;
     private BorderedFieldManager recipientsFieldManager;
 	private BorderedFieldManager subjectFieldManager;
 	private BorderedFieldManager messageFieldManager;
@@ -170,6 +178,9 @@ public class CompositionScreen extends AbstractScreenProvider {
     public CompositionScreen(NetworkAccountNode accountNode) {
         this.accountNode = accountNode;
         this.identityConfig = accountNode.getIdentityConfig();
+        this.selectableIdentity =
+            accountNode.isSelectableIdentityEnabled()
+            && (MailSettings.getInstance().getNumIdentities() > 1);
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
         }
@@ -201,6 +212,9 @@ public class CompositionScreen extends AbstractScreenProvider {
     		int composeType) {
         this.accountNode = accountNode;
         this.identityConfig = accountNode.getIdentityConfig();
+        this.selectableIdentity =
+            accountNode.isSelectableIdentityEnabled()
+            && (MailSettings.getInstance().getNumIdentities() > 1);
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
             unicodeNormalizer = UnicodeNormalizer.getInstance();
         }
@@ -328,9 +342,11 @@ public class CompositionScreen extends AbstractScreenProvider {
             attachmentParts.addElement(part);
         }
     };
-    
+
     private void appendSignature() {
         // Add the signature if available
+        signatureBlock = null;
+        signatureStartOffset = -1;
         if (identityConfig != null) {
             String sig = identityConfig.getMsgSignature();
 
@@ -354,21 +370,67 @@ public class CompositionScreen extends AbstractScreenProvider {
                 }
                 
                 if(shouldAppend) {
+                    signatureBlock = SIGNATURE_PREFIX + sig;
                     if(composeType == COMPOSE_NORMAL || accountNode.isSignatureAbove()) {
-                        messageEditField.insert(SIGNATURE_PREFIX + sig);
+                        int start = messageEditField.getCursorPosition();
+                        messageEditField.insert(signatureBlock);
                         if(composeType != COMPOSE_NORMAL) {
                             messageEditField.insert("\r\n");
                         }
                         messageEditField.setCursorPosition(0);
+                        int length = messageEditField.getTextLength();
+                        this.signatureStartOffset = length - start;
                     }
                     else {
                         messageEditField.setCursorPosition(messageEditField.getTextLength());
-                        messageEditField.insert(SIGNATURE_PREFIX + sig);
+                        int start = messageEditField.getCursorPosition();
+                        messageEditField.insert(signatureBlock);
                         messageEditField.setCursorPosition(0);
+                        int length = messageEditField.getTextLength();
+                        this.signatureStartOffset = length - start;
                     }
                 }
             }
         }
+    }
+    
+    protected void identityChoiceFieldChanged(int context) {
+        // Change the identity value, returning immediately if it hasn't changed
+        if(identityChoiceField.getSelectedIndex() != -1) {
+            IdentityConfig selectedIdentity =
+                (IdentityConfig)identityChoiceField.getChoice(identityChoiceField.getSelectedIndex());
+            if(selectedIdentity == identityConfig) { return; }
+            identityConfig = selectedIdentity;
+        }
+      
+        // Determine if the signature can be removed and re-added.
+        // Offsets are from the end of the text, to be more edit-resistant
+        if(signatureBlock != null && signatureStartOffset != -1) {
+            int textLength = messageEditField.getTextLength();
+            int sigLength = signatureBlock.length();
+            int start = textLength - signatureStartOffset;
+            if(start < 0 || sigLength <= 0 || (start + sigLength) > textLength) { return; }
+            
+            String oldText = messageEditField.getText(start, sigLength);
+            if(oldText.equals(signatureBlock)) {
+                // Check if the new identity has a signature
+                String newSignature = identityConfig.getMsgSignature();
+                if(newSignature == null || newSignature.length() == 0) { return; }
+                
+                // Replace the old signature with the new one
+                signatureBlock = SIGNATURE_PREFIX + newSignature;
+                messageEditField.select(false);
+                int oldCursor = messageEditField.getCursorPosition();
+                messageEditField.setCursorPosition(start + sigLength);
+                messageEditField.backspace(sigLength);
+                messageEditField.insert(signatureBlock);
+                messageEditField.setCursorPosition(oldCursor);
+                
+                // Update the start offset
+                signatureStartOffset = messageEditField.getTextLength() - start;
+            }
+        }
+        
     }
     
     public void initFields(Screen screen) {
@@ -379,6 +441,21 @@ public class CompositionScreen extends AbstractScreenProvider {
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
         		| BorderedFieldManager.BOTTOM_BORDER_NONE);
+    	
+    	if(selectableIdentity) {
+    	    IdentityConfig[] identityList = buildIdentityList();
+    	    
+            identityChoiceField = new ObjectChoiceField(
+                    resources.getString(LogicMailResource.MESSAGEPROPERTIES_FROM) + ' ',
+                    identityList, 0, Field.FIELD_LEFT);
+            identityChoiceField.setChangeListener(new FieldChangeListener() {
+                public void fieldChanged(Field field, int context) {
+                    identityChoiceFieldChanged(context);
+                }
+            });
+            recipientsFieldManager.add(identityChoiceField);
+    	}
+    	
         recipientsFieldManager.add(new EmailAddressBookEditField(
                 EmailAddressBookEditField.ADDRESS_TO, ""));
         recipientsFieldManager.add(new EmailAddressBookEditField(
@@ -410,7 +487,7 @@ public class CompositionScreen extends AbstractScreenProvider {
 
     		if(initialRecipient != null) {
     		    EmailAddressBookEditField toAddressField =
-    		        (EmailAddressBookEditField)recipientsFieldManager.getField(0);
+    		        (EmailAddressBookEditField)recipientsFieldManager.getField(selectableIdentity ? 1 : 0);
     		    toAddressField.setText(initialRecipient);
     		}
         }
@@ -449,6 +526,26 @@ public class CompositionScreen extends AbstractScreenProvider {
 	        appendSignature();
     		messageEditField.setEditable(true);
         }
+    }
+
+    private IdentityConfig[] buildIdentityList() {
+        // Populate an array with the available identity configurations
+        MailSettings mailSettings = MailSettings.getInstance();
+        int num = mailSettings.getNumIdentities();
+        IdentityConfig[] identityList = new IdentityConfig[num];
+        for(int i=0; i<num; i++) {
+            identityList[i] = mailSettings.getIdentityConfig(i);
+        }
+        // Make sure this account's identity is first in the array
+        for(int i=1; i<num; i++) {
+            if(identityList[i] == identityConfig) {
+                IdentityConfig temp = identityList[0];
+                identityList[0] = identityConfig;
+                identityList[i] = temp;
+                break;
+            }
+        }
+        return identityList;
     }
 
     public boolean onClose() {
@@ -496,7 +593,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     }
 
     public void makeMenu(Menu menu, int instance) {
-        if (((EmailAddressBookEditField) recipientsFieldManager.getField(0))
+        if (((EmailAddressBookEditField) recipientsFieldManager.getField(selectableIdentity ? 1 : 0))
                 .getText().length() > 0) {
             menu.add(sendMenuItem);
         }
@@ -516,7 +613,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         // not the only recipient field, or if the focus is on an attachment
         // field.
         if((recipientsFieldManager.getFieldWithFocus() != null
-                && recipientsFieldManager.getFieldWithFocusIndex() > 0)
+                && recipientsFieldManager.getFieldWithFocusIndex() > (selectableIdentity ? 1 : 0))
                 || (attachmentsFieldManager != null
                         && attachmentsFieldManager.getFieldWithFocus() != null
                         && attachmentsFieldManager.getFieldCount() > 0)) {
@@ -546,7 +643,7 @@ public class CompositionScreen extends AbstractScreenProvider {
      */
     private boolean deleteField(boolean onlyEmpty) {
         if(recipientsFieldManager.getFieldWithFocus() != null
-                && recipientsFieldManager.getFieldWithFocusIndex() > 0) {
+                && recipientsFieldManager.getFieldWithFocusIndex() > (selectableIdentity ? 1 : 0)) {
             EmailAddressBookEditField currentField =
                 (EmailAddressBookEditField) recipientsFieldManager.getFieldWithFocus();
             
@@ -610,6 +707,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         int size = recipientsFieldManager.getFieldCount();
 
         for (int i = 0; i < size; i++) {
+            if(!(recipientsFieldManager.getField(i) instanceof EmailAddressBookEditField)) { continue; }
             currentField = (EmailAddressBookEditField) recipientsFieldManager.getField(i);
 
             if ((currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO) &&
@@ -864,6 +962,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         // If a field of this type already exists, and is empty, move
         // focus there instead of adding a new field
         for (i = 0; i < size; i++) {
+            if(!(recipientsFieldManager.getField(i) instanceof EmailAddressBookEditField)) { continue; }
             currentField = (EmailAddressBookEditField) recipientsFieldManager.getField(i);
 
             if ((currentField.getAddressType() == addressType) &&
@@ -878,6 +977,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         // and add a new field, and give it focus
         if (addressType == EmailAddressBookEditField.ADDRESS_TO) {
             for (i = 0; i < size; i++) {
+                if(!(recipientsFieldManager.getField(i) instanceof EmailAddressBookEditField)) { continue; }
                 currentField = (EmailAddressBookEditField) recipientsFieldManager.getField(i);
 
                 if (currentField.getAddressType() != EmailAddressBookEditField.ADDRESS_TO) {
@@ -893,6 +993,7 @@ public class CompositionScreen extends AbstractScreenProvider {
             i = 0;
 
             while (i < size) {
+                if(!(recipientsFieldManager.getField(i) instanceof EmailAddressBookEditField)) { continue; }
                 currentField = (EmailAddressBookEditField) recipientsFieldManager.getField(i);
 
                 if ((currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO) ||

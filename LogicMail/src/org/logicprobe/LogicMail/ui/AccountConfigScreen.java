@@ -92,6 +92,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private CheckboxField sigForwardCheckboxField;
     private CheckboxField sigReplyCheckboxField;
     private ObjectChoiceField sigPlacementChoiceField;
+    private CheckboxField selectableIdentityCheckboxField;
     
     // Advanced settings fields (both)
     private NumericChoiceField initialFolderMessagesChoiceField;
@@ -343,9 +344,14 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             sigPlacementChoiceField.setEditable(false);
         }
         
+        selectableIdentityCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_SELECTABLE_IDENTITY),
+                accountConfig.isSelectableIdentityEnabled());
+        
         manager.add(sigReplyCheckboxField);
         manager.add(sigForwardCheckboxField);
         manager.add(sigPlacementChoiceField);
+        manager.add(selectableIdentityCheckboxField);
         return manager;
     }
 
@@ -739,6 +745,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         this.accountConfig.setReplySignatureIncluded(sigReplyCheckboxField.getChecked());
         this.accountConfig.setForwardSignatureIncluded(sigForwardCheckboxField.getChecked());
         this.accountConfig.setSignatureAbove(sigPlacementChoiceField.getSelectedIndex() == 1);
+        this.accountConfig.setSelectableIdentityEnabled(selectableIdentityCheckboxField.getChecked());
         
         this.accountConfig.setInitialFolderMessages(initialFolderMessagesChoiceField.getSelectedValue());
         this.accountConfig.setFolderMessageIncrement(folderMessageIncrementChoiceField.getSelectedValue());

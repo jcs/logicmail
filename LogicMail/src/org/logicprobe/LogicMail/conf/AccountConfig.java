@@ -57,6 +57,7 @@ public abstract class AccountConfig extends ConnectionConfig {
     private boolean replySignatureIncluded;
     private boolean forwardSignatureIncluded;
     private boolean signatureAbove;
+    private boolean selectableIdentityEnabled;
     
     private int initialFolderMessages;
     private int folderMessageIncrement;
@@ -110,6 +111,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         replySignatureIncluded = true;
         forwardSignatureIncluded = false;
         signatureAbove = false;
+        selectableIdentityEnabled = false;
         initialFolderMessages = 20;
         folderMessageIncrement = 5;
         maximumFolderMessages = 40;
@@ -383,6 +385,26 @@ public abstract class AccountConfig extends ConnectionConfig {
     }
     
     /**
+     * Gets whether selectable identity support is enabled.
+     * This option allows the user to select an identity other than the account
+     * default when composing a new message.
+     *
+     * @return true, if selectable identity support is enabled
+     */
+    public boolean isSelectableIdentityEnabled() {
+        return selectableIdentityEnabled;
+    }
+    
+    /**
+     * Sets whether selectable identity support is enabled.
+     *
+     * @param selectableIdentityEnabled the new selectable identity setting
+     */
+    public void setSelectableIdentityEnabled(boolean selectableIdentityEnabled) {
+        this.selectableIdentityEnabled = selectableIdentityEnabled;
+    }
+    
+    /**
      * Gets the number of folder messages to load when freshly selecting a
      * mailbox.  This value should normally affect loading the first time a
      * given mailbox is selected following application startup.
@@ -463,6 +485,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_replySignatureIncluded", new Boolean(replySignatureIncluded));
         table.put("account_forwardSignatureIncluded", new Boolean(forwardSignatureIncluded));
         table.put("account_signatureAbove", new Boolean(signatureAbove));
+        table.put("account_selectableIdentityEnabled", new Boolean(selectableIdentityEnabled));
         table.put("account_initialFolderMessages", new Integer(initialFolderMessages));
         table.put("account_folderMessageIncrement", new Integer(folderMessageIncrement));
         table.put("account_maximumFolderMessages", new Integer(maximumFolderMessages));
@@ -476,13 +499,11 @@ public abstract class AccountConfig extends ConnectionConfig {
         Object value;
 
         value = table.get("account_serverUser");
-        if(value instanceof String) {
-            serverUser = (String)value;
-        }
+        if(value instanceof String) { serverUser = (String)value; }
+        
         value = table.get("account_serverPass");
-        if(value instanceof String) {
-            serverPass = (String)value;
-        }
+        if(value instanceof String) { serverPass = (String)value; }
+        
         value = table.get("account_identityConfigId");
         if(value instanceof Long) {
             identityConfigId = ((Long)value).longValue();
@@ -517,33 +538,24 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
 
         value = table.get("account_replySignatureIncluded");
-        if(value instanceof Boolean) {
-            replySignatureIncluded = ((Boolean)value).booleanValue();
-        }
+        if(value instanceof Boolean) { replySignatureIncluded = ((Boolean)value).booleanValue(); }
         
         value = table.get("account_forwardSignatureIncluded");
-        if(value instanceof Boolean) {
-            forwardSignatureIncluded = ((Boolean)value).booleanValue();
-        }
+        if(value instanceof Boolean) { forwardSignatureIncluded = ((Boolean)value).booleanValue(); }
         
         value = table.get("account_signatureAbove");
-        if(value instanceof Boolean) {
-            signatureAbove = ((Boolean)value).booleanValue();
-        }
+        if(value instanceof Boolean) { signatureAbove = ((Boolean)value).booleanValue(); }
+        
+        value = table.get("account_selectableIdentityEnabled");
+        if(value instanceof Boolean) { selectableIdentityEnabled = ((Boolean)value).booleanValue(); }
         
         value = table.get("account_initialFolderMessages");
-        if(value instanceof Integer) {
-            initialFolderMessages = ((Integer)value).intValue();
-        }
+        if(value instanceof Integer) { initialFolderMessages = ((Integer)value).intValue(); }
 
         value = table.get("account_folderMessageIncrement");
-        if(value instanceof Integer) {
-            folderMessageIncrement = ((Integer)value).intValue();
-        }
+        if(value instanceof Integer) { folderMessageIncrement = ((Integer)value).intValue(); }
 
         value = table.get("account_maximumFolderMessages");
-        if(value instanceof Integer) {
-            maximumFolderMessages = ((Integer)value).intValue();
-        }
+        if(value instanceof Integer) { maximumFolderMessages = ((Integer)value).intValue(); }
     }
 }

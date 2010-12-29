@@ -121,6 +121,13 @@ public class NetworkAccountNode extends AccountNode {
     }
     
     /**
+     * @see AccountConfig#isSelectableIdentityEnabled()
+     */
+    public boolean isSelectableIdentityEnabled() {
+        return accountConfig.isSelectableIdentityEnabled();
+    }
+    
+    /**
      * Gets the mail sender associated with this account.
      *
      * @return The mail sender.
