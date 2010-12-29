@@ -347,14 +347,15 @@ public class AccountConfigWizard extends WizardController {
         private BasicEditField portEditField;
 
         protected void initFields() {
-            // Populate the list of existing identities
+            // Populate the list of existing server configurations
             MailSettings mailSettings = MailSettings.getInstance();
             int numOutgoing = mailSettings.getNumOutgoing();
-            Object[] outgoingChoices = new Object[numOutgoing + 1];
+            Object[] outgoingChoices = new Object[numOutgoing + 2];
             for(int i=0; i<numOutgoing; i++) {
                 outgoingChoices[i] = mailSettings.getOutgoingConfig(i);
             }
-            outgoingChoices[outgoingChoices.length - 1] = resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_CREATE_NEW);
+            outgoingChoices[outgoingChoices.length - 2] = resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_CREATE_NEW);
+            outgoingChoices[outgoingChoices.length - 1] = resources.getString(LogicMailResource.MENUITEM_DISABLED);
 
             fieldChangeListener = new FieldChangeListener() {
                 public void fieldChanged(Field field, int context) {
@@ -411,6 +412,9 @@ public class AccountConfigWizard extends WizardController {
             if(nameEditField.getText().trim().length() > 0 && portEditField.getText().trim().length() > 0) {
                 setInputValid(true);
             }
+            else if(outgoingChoiceField.getSelectedIndex() == outgoingChoiceField.getSize() - 1) {
+                setInputValid(true);
+            }
             else {
                 setInputValid(false);
             }
@@ -428,6 +432,14 @@ public class AccountConfigWizard extends WizardController {
                 securityChoiceField.setEditable(false);
                 portEditField.setEditable(false);
             }
+            else if(index == outgoingChoiceField.getSize() - 1) {
+                nameEditField.setText("");
+                securityChoiceField.setSelectedIndex(0);
+                portEditField.setText("");
+                nameEditField.setEditable(false);
+                securityChoiceField.setEditable(false);
+                portEditField.setEditable(false);
+            }
             else {
                 nameEditField.setText("");
                 securityChoiceField.setSelectedIndex(ConnectionConfig.SECURITY_NONE);
@@ -441,7 +453,8 @@ public class AccountConfigWizard extends WizardController {
         protected void onPageFlip() {
             int index = outgoingChoiceField.getSelectedIndex();
             Object item = outgoingChoiceField.getChoice(index);
-            if(item instanceof OutgoingConfig) {
+            if(item instanceof OutgoingConfig
+                    || index == outgoingChoiceField.getSize() - 1) {
                 outgoingAuthenticationWizardScreen.setEnabled(false);
             }
             else {
@@ -453,6 +466,10 @@ public class AccountConfigWizard extends WizardController {
             Object item = outgoingChoiceField.getChoice(index);
             if(item instanceof OutgoingConfig) {
                 outgoingConfig = (OutgoingConfig)item;
+                outgoingCreated = false;
+            }
+            else if(index == outgoingChoiceField.getSize() - 1) {
+                outgoingConfig = null;
                 outgoingCreated = false;
             }
             else {
@@ -524,6 +541,7 @@ public class AccountConfigWizard extends WizardController {
             }
         }
         public void gatherResults() {
+            if(outgoingConfig == null) { return; }
             int index = authChoiceField.getSelectedIndex();
             outgoingConfig.setUseAuth(index);
             if(index > 0) {
