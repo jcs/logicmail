@@ -677,13 +677,13 @@ class FolderRequestHandler {
         FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
         if(message == null) { return; }
         MessageFlags messageFlags = message.getFlags();
-        if(!messageFlags.isSeen()) {
+        if(!messageFlags.isSeen() || messageFlags.isRecent()) {
             MessageFlags originalFlags = new MessageFlags(messageFlags.getFlags());
             messageFlags.setSeen(true);
             messageFlags.setRecent(false);
             folderMessageCache.updateFolderMessage(folderTreeItem, message);
             folderMessageCache.commit();
-            if(!cacheOnly && mailStore.hasFlags()) {
+            if(!cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen()) {
                 mailStore.requestMessageSeen(messageToken, originalFlags);
             }
         }

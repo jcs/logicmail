@@ -127,6 +127,7 @@ public class OutgoingMessageNode extends MessageNode {
         if(this.getParent() instanceof OutboxMailboxNode) {
             OutboxMailboxNode parentMailbox = (OutboxMailboxNode)this.getParent();
             parentMailbox.removePersistedMessage(this);
+            parentMailbox.removeMessage(this);
         }
     }
     

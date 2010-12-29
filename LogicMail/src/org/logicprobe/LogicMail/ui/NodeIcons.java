@@ -271,11 +271,11 @@ public class NodeIcons {
                 else if((flags & MessageNode.Flag.FORWARDED) != 0) {
                     this.icon = unloaded ? forwardedUnloadedMessageIcon: forwardedMessageIcon;
                 }
-                else if((flags & MessageNode.Flag.RECENT) != 0) {
-                    this.icon = unloaded ? unopenedUnloadedMessageIcon: unopenedMessageIcon;
-                }
                 else if((flags & MessageNode.Flag.SEEN) != 0) {
                     this.icon = unloaded ? openedUnloadedMessageIcon : openedMessageIcon;
+                }
+                else if((flags & MessageNode.Flag.RECENT) != 0) {
+                    this.icon = unloaded ? unopenedUnloadedMessageIcon: unopenedMessageIcon;
                 }
                 else {
                     this.icon = unloaded ? unknownUnloadedMessageIcon: unknownMessageIcon;
