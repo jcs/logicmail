@@ -130,10 +130,12 @@ public class PersistentObjectDataStore implements DataStore {
             } catch (Exception exp) { }
         }
 
-        Object[] storeData = { nameMap, objectData };
+        PersistentObjectDataStoreContainer container = new PersistentObjectDataStoreContainer();
+        container.setElement(PersistentObjectDataStoreContainer.FIELD_NAME_MAP, nameMap);
+        container.setElement(PersistentObjectDataStoreContainer.FIELD_OBJECT_DATA, objectData);
 
         synchronized(store) {
-            store.setContents(storeData);
+            store.setContents(container);
             store.commit();
         }
     }
@@ -142,12 +144,24 @@ public class PersistentObjectDataStore implements DataStore {
         ToLongHashtable newNameMap = null;
         Vector newObjects = null;
         synchronized(store) {
-            Object[] storeData = (Object[])store.getContents();
-            if(storeData != null && storeData.length == 2
-                    && storeData[0] instanceof ToLongHashtable
-                    && storeData[1] instanceof Vector) {
-                newNameMap = (ToLongHashtable)storeData[0];
-                newObjects = (Vector)storeData[1];
+            Object storeData = store.getContents();
+            if(storeData instanceof PersistentObjectDataStoreContainer) {
+                PersistentObjectDataStoreContainer container = (PersistentObjectDataStoreContainer)storeData;
+                Object nameMapValue = container.getElement(PersistentObjectDataStoreContainer.FIELD_NAME_MAP);
+                Object objectDataValue = container.getElement(PersistentObjectDataStoreContainer.FIELD_OBJECT_DATA);
+                if(nameMapValue instanceof ToLongHashtable && objectDataValue instanceof Vector) {
+                    newNameMap = (ToLongHashtable)nameMapValue;
+                    newObjects = (Vector)objectDataValue;
+                }
+            }
+            else if(storeData instanceof Object[]) {
+                Object[] storeArray = (Object[])storeData;
+                if(storeArray != null && storeArray.length == 2
+                        && storeArray[0] instanceof ToLongHashtable
+                        && storeArray[1] instanceof Vector) {
+                    newNameMap = (ToLongHashtable)storeArray[0];
+                    newObjects = (Vector)storeArray[1];
+                }
             }
         }
         if(newNameMap != null && newObjects != null) {
@@ -177,12 +191,33 @@ public class PersistentObjectDataStore implements DataStore {
     
     public DataStoreSyncObject getSyncObject() {
         DataStoreSyncObject syncObject = new DataStoreSyncObject((int)storeUid);
-        Object[] storeData = (Object[])store.getContents();
-        if(storeData != null && storeData.length == 2
-                && storeData[0] instanceof ToLongHashtable
-                && storeData[1] instanceof Vector) {
-            syncObject.setNameMap((ToLongHashtable)storeData[0]);
-            syncObject.setObjectData((Vector)storeData[1]);
+        
+        Object storeData = store.getContents();
+        if(storeData instanceof PersistentObjectDataStoreContainer) {
+            PersistentObjectDataStoreContainer container = (PersistentObjectDataStoreContainer)storeData;
+            Object nameMapValue = container.getElement(PersistentObjectDataStoreContainer.FIELD_NAME_MAP);
+            Object objectDataValue = container.getElement(PersistentObjectDataStoreContainer.FIELD_OBJECT_DATA);
+            if(nameMapValue instanceof ToLongHashtable && objectDataValue instanceof Vector) {
+                syncObject.setNameMap((ToLongHashtable)nameMapValue);
+                syncObject.setObjectData((Vector)objectDataValue);
+            }
+            else {
+                syncObject.setNameMap(new ToLongHashtable());
+                syncObject.setObjectData(new Vector());
+            }
+        }
+        else if(storeData instanceof Object[]) {
+            Object[] storeArray = (Object[])storeData;
+            if(storeArray != null && storeArray.length == 2
+                    && storeArray[0] instanceof ToLongHashtable
+                    && storeArray[1] instanceof Vector) {
+                syncObject.setNameMap((ToLongHashtable)storeArray[0]);
+                syncObject.setObjectData((Vector)storeArray[1]);
+            }
+            else {
+                syncObject.setNameMap(new ToLongHashtable());
+                syncObject.setObjectData(new Vector());
+            }
         }
         else {
             syncObject.setNameMap(new ToLongHashtable());
@@ -200,11 +235,11 @@ public class PersistentObjectDataStore implements DataStore {
             return false;
         }
         
-        Object[] storeData = {
-                syncObject.getNameMap(),
-                syncObject.getObjectData() };
+        PersistentObjectDataStoreContainer container = new PersistentObjectDataStoreContainer();
+        container.setElement(PersistentObjectDataStoreContainer.FIELD_NAME_MAP, syncObject.getNameMap());
+        container.setElement(PersistentObjectDataStoreContainer.FIELD_OBJECT_DATA, syncObject.getObjectData());
         
-        store.setContents(storeData);
+        store.setContents(container);
         store.commit();
         return true;
     }
