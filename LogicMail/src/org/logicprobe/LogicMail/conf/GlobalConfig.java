@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.conf;
 
+import net.rim.device.api.system.ControlledAccessException;
+
 import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
@@ -570,6 +572,8 @@ public class GlobalConfig implements Serializable {
                     url = conn.getURL(); conn.close();
                 } catch (IOException e) {
                     url = null;
+                } catch (ControlledAccessException e) {
+                    url = null;
                 }
             }
             else if(url.indexOf("store/") != -1) {
@@ -587,6 +591,8 @@ public class GlobalConfig implements Serializable {
                     url = conn.getURL(); conn.close();
                 } catch (IOException e) {
                     url = null;
+                } catch (ControlledAccessException e) {
+                    url = null;
                 }
             }
             else {
@@ -595,6 +601,8 @@ public class GlobalConfig implements Serializable {
                     if(!conn.exists()) { conn.mkdir(); }
                     url = conn.getURL(); conn.close();
                 } catch (IOException e) {
+                    url = null;
+                } catch (ControlledAccessException e) {
                     url = null;
                 }
             }

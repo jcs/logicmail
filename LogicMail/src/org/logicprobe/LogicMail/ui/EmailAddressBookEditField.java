@@ -34,6 +34,7 @@ import net.rim.blackberry.api.pdap.BlackBerryContactGroup;
 import net.rim.blackberry.api.pdap.BlackBerryContactList;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.ui.ContextMenu;
 import net.rim.device.api.ui.Keypad;
@@ -312,6 +313,11 @@ public class EmailAddressBookEditField extends EditField {
                 ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
                 EventLogger.ERROR);
 			return;
+		} catch (ControlledAccessException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
+                    EventLogger.ERROR);
+                return;
 		}
     	
 		if(contact != null) {

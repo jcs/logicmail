@@ -42,6 +42,7 @@ import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.synchronization.SyncManager;
 import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.RuntimeStore;
@@ -104,6 +105,7 @@ public final class LogicMail extends UiApplication {
      * Run the application.
      */
     public void run() {
+        PermissionsHandler.registerReasonProvider();
         if(autoStart) {
             if(ApplicationManager.getApplicationManager().inStartup()) {
                 systemListener = new StartupSystemListener();
@@ -142,7 +144,11 @@ public final class LogicMail extends UiApplication {
                     navigationController = new NavigationController(LogicMail.this);
 
                     // Add the filesystem listener
-                    FileSystemRegistry.addFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+                    try {
+                        FileSystemRegistry.addFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+                    } catch (ControlledAccessException e) {
+                        // Don't fail if file permissions are denied
+                    }
                     
                     invokeLater(new Runnable() {
                         public void run() {
@@ -156,12 +162,13 @@ public final class LogicMail extends UiApplication {
                 }
             };
 
-            if(!AppInfo.getLastVersion().equals(AppInfo.getLastVersion())) {
+            if(!AppInfo.getVersion().equals(AppInfo.getLastVersion())) {
                 AppInfo.setLicenseAccepted(false);
             }
             
             if(AppInfo.isLicenceAccepted()) {
                 foreground = true;
+                PermissionsHandler.checkStartupPermissions(false);
                 requestForeground();
                 pushScreen(loadingScreen);
                 loadingThread.start();
@@ -174,12 +181,13 @@ public final class LogicMail extends UiApplication {
                         pushGlobalScreen(popupDialog, 1, UiEngine.GLOBAL_MODAL);
 
                         if(!popupDialog.isAccepted()) {
-                            AppInfo.setLicenseAccepted(false);
+                            PermissionsHandler.unregisterReasonProvider();
                             System.exit(0);
                         }
                         else {
                             AppInfo.updateLastVersion();
                             AppInfo.setLicenseAccepted(true);
+                            PermissionsHandler.checkStartupPermissions(true);
                             foreground = true;
                             LogicMail.this.requestForeground();
                             pushScreen(loadingScreen);
@@ -246,7 +254,13 @@ public final class LogicMail extends UiApplication {
      */
     public static void shutdownApplication() {
         NotificationHandler.getInstance().shutdown();
-        FileSystemRegistry.removeFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+        try {
+            FileSystemRegistry.removeFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+        } catch (ControlledAccessException e) {
+            // Don't fail if file permissions are denied
+        }
+        
+        PermissionsHandler.unregisterReasonProvider();
         System.exit(0);
     }
     
@@ -273,35 +287,40 @@ public final class LogicMail extends UiApplication {
     private void startupInitialization() {
         // The BlackBerry has finished its startup process
 
-        if(RuntimeStore.getRuntimeStore().remove(AppInfo.GUID) == null) {
-            // Configure the rollover icons
-            HomeScreen.updateIcon(AppInfo.getIcon(), 0);
-            HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
-            
-            // Register for synchronization
-            SyncManager.getInstance().enableSynchronization(LogicMailSyncCollection.getInstance());
+        try {
+            if(RuntimeStore.getRuntimeStore().remove(AppInfo.GUID) == null) {
+                // Configure the rollover icons
+                HomeScreen.updateIcon(AppInfo.getIcon(), 0);
+                HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
+                
+                // Register for synchronization
+                SyncManager.getInstance().enableSynchronization(LogicMailSyncCollection.getInstance());
+            }
+    
+            // Configure a notification source for each account
+            MailSettings mailSettings = MailSettings.getInstance();
+            mailSettings.loadSettings();
+            int numAccounts = mailSettings.getNumAccounts();
+            LongHashtable eventSourceMap = new LongHashtable(numAccounts);
+            for(int i=0; i<numAccounts; i++) {
+                AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+                LogicMailEventSource eventSource =
+                    new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+                NotificationsManager.registerSource(
+                        eventSource.getEventSourceId(),
+                        eventSource,
+                        NotificationsConstants.CASUAL);
+                eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
+            }
+    
+            // Save the registered event sources in the runtime store
+            RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
+        } catch (ControlledAccessException e) {
+            // If permissions have not been granted, we may get here
         }
-
-        // Configure a notification source for each account
-        MailSettings mailSettings = MailSettings.getInstance();
-        mailSettings.loadSettings();
-        int numAccounts = mailSettings.getNumAccounts();
-        LongHashtable eventSourceMap = new LongHashtable(numAccounts);
-        for(int i=0; i<numAccounts; i++) {
-            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-            LogicMailEventSource eventSource =
-                new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
-            NotificationsManager.registerSource(
-                    eventSource.getEventSourceId(),
-                    eventSource,
-                    NotificationsConstants.CASUAL);
-            eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
-        }
-
-        // Save the registered event sources in the runtime store
-        RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
         
         //Exit the application.
+        PermissionsHandler.unregisterReasonProvider();
         System.exit(0);
     }
 } 

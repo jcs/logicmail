@@ -39,7 +39,7 @@ import net.rim.device.api.servicebook.ServiceBook;
 import net.rim.device.api.servicebook.ServiceRecord;
 import net.rim.device.api.system.CoverageInfo;
 import net.rim.device.api.system.EventLogger;
-import net.rim.device.api.system.RadioInfo;
+import net.rim.device.api.system.WLANInfo;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
@@ -114,19 +114,14 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
      * exists to allow subclasses to override as necessary.
      */
     protected void initializeCoverage() {
-        // CoverageInfo.COVERAGE_CARRIER does not exist on newer API versions,
-        // which would have prevented this method from compiling.  However,
-        // since its value and the newer constant are both 1, we will just
-        // use the value directly.
-        int COVERAGE_CARRIER = 1;
-        if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER)) {
+        if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_DIRECT)) {
             coverageTCP=true;
             coverageWAP2=true;
         }
         if(CoverageInfo.isCoverageSufficient(CoverageInfo.COVERAGE_MDS)) {           
             coverageMDS=true;
         }   
-        if(CoverageInfo.isCoverageSufficient(COVERAGE_CARRIER, RadioInfo.WAF_WLAN, false)) {
+        if(WLANInfo.getWLANState()==WLANInfo.WLAN_STATE_CONNECTED) {
             coverageWiFi = true;
         }
     }

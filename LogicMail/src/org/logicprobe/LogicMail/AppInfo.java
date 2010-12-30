@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail;
 
 import net.rim.device.api.system.ApplicationDescriptor;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.system.PersistentObject;
 import net.rim.device.api.system.PersistentStore;
 
@@ -56,15 +57,29 @@ public final class AppInfo {
     private static PlatformInfo platformInfo;
     
     static {
-        //"org.logicprobe.LogicMail.PersistableAppInfo"
-        store = PersistentStore.getPersistentObject(0x6f8bfd06eca43499L);
-        synchronized(store) {
-            if (!(store.getContents() instanceof PersistableAppInfo)) {
-                store.setContents(new PersistableAppInfo());
-                store.commit();
+        if(tryInitializeStore()) {
+            synchronized(store) {
+                if (!(store.getContents() instanceof PersistableAppInfo)) {
+                    store.setContents(new PersistableAppInfo());
+                    store.commit();
+                }
             }
+            persistableInfo = (PersistableAppInfo)store.getContents();
         }
-        persistableInfo = (PersistableAppInfo)store.getContents();
+        else {
+            persistableInfo = new PersistableAppInfo();
+        }
+    }
+    
+    private static boolean tryInitializeStore() {
+        if(store != null) { return true; }
+        try {
+            //"org.logicprobe.LogicMail.PersistableAppInfo"
+            store = PersistentStore.getPersistentObject(0x6f8bfd06eca43499L);
+            return true;
+        } catch (ControlledAccessException e) {
+            return false;
+        }
     }
     
     /**
@@ -121,9 +136,11 @@ public final class AppInfo {
     
     public static void updateLastVersion() {
         persistableInfo.setElement(PersistableAppInfo.FIELD_LAST_APP_VERSION, appVersion);
-        synchronized(store) {
-            store.setContents(persistableInfo);
-            store.commit();
+        if(tryInitializeStore()) {
+            synchronized(store) {
+                store.setContents(persistableInfo);
+                store.commit();
+            }
         }
     }
     
@@ -139,9 +156,12 @@ public final class AppInfo {
     
     public static void setLicenseAccepted(boolean accepted) {
         persistableInfo.setElement(PersistableAppInfo.FIELD_LICENSE_ACCEPTED, new Boolean(accepted));
-        synchronized(store) {
-            store.setContents(persistableInfo);
-            store.commit();
+        
+        if(tryInitializeStore()) {
+            synchronized(store) {
+                store.setContents(persistableInfo);
+                store.commit();
+            }
         }
     }
 }
