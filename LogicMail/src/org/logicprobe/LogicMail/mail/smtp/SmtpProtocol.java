@@ -34,6 +34,7 @@ package org.logicprobe.LogicMail.mail.smtp;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import net.rim.device.api.crypto.MD5Digest;
 import net.rim.device.api.io.Base64InputStream;
 import net.rim.device.api.io.Base64OutputStream;
 import net.rim.device.api.system.EventLogger;
@@ -41,7 +42,6 @@ import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
-import org.logicprobe.LogicMail.util.MD5;
 
 /**
  * This class implements the commands for the SMTP protocol
@@ -358,7 +358,7 @@ public class SmtpProtocol {
         byte[] k_opad = new byte[64];
         byte[] digest;
         
-        MD5 md5 = new MD5();
+        MD5Digest md5 = new MD5Digest();
         // if key is longer than 64 bytes reset it to key=MD5(key)
         if (key.length>64) {
             md5.update(key);
