@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009, Derek Konigsberg
+ * Copyright (c) 2010, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.logicprobe.LogicMail.ui;
+package org.logicprobe.LogicMail.util;
 
-import net.rim.device.api.ui.Font;
-import net.rim.device.api.ui.Graphics;
-import net.rim.device.api.ui.component.SeparatorField;
+import java.io.IOException;
 
-/**
- * Horizontal separator field that is used to provide spacing
- * between other fields.
- */
-public class BlankSeparatorField extends SeparatorField {
-    private int size;
+public class WrappedIOException extends IOException {
+    private final Throwable innerException;
     
-    public BlankSeparatorField(int size) {
+    public WrappedIOException(Throwable innerException) {
         super();
-        this.size = size;
+        this.innerException = innerException;
     }
     
-    /**
-     * Convenience method for creating a new blank separator that is half
-     * the height of the default font.
-     */
-    public static BlankSeparatorField createHalfHeightSeparator() {
-        return new BlankSeparatorField(Font.getDefault().getAscent() >>> 1);
+    public WrappedIOException(String message, Throwable innerException) {
+        super(message);
+        this.innerException = innerException;
     }
     
-    public int getPreferredHeight() {
-        return size;
-    }
-
-    protected void layout(int width, int height) {
-        setExtent(width, size);
-    }
-    
-    protected void paint(Graphics graphics) {
-        // Field should be empty
+    public Throwable getInnerException() {
+        return innerException;
     }
 }

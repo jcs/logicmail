@@ -52,31 +52,46 @@ public class MailClientFactory {
     private static final Hashtable outgoingClientTable = new Hashtable();
     
     private MailClientFactory() { }
+
+    /**
+     * Get a concrete mail client instance for connection testing purposes.
+     * A new client instance will always be provided.
+     *
+     * @param accountConfig User account configuration
+     * @return Usable mail client instance
+     */
+    public static IncomingMailClient createTemporaryMailClient(AccountConfig accountConfig) {
+        return createMailClientImpl(accountConfig, false);
+    }
     
     /**
      * Get a concrete mail client instance.
      * If a client already exists for the provided configuration,
      * it will be provided instead of a new one.
      *
-     * @param acctConfig User account configuration
+     * @param accountConfig User account configuration
      * @return Usable mail client instance
      */
-    public static IncomingMailClient createMailClient(AccountConfig acctConfig) {
-        IncomingMailClient client = (IncomingMailClient)incomingClientTable.get(acctConfig);
+    public static IncomingMailClient createMailClient(AccountConfig accountConfig) {
+        return createMailClientImpl(accountConfig, true);
+    }
+    
+    private static IncomingMailClient createMailClientImpl(AccountConfig accountConfig, boolean useTable) {
+        IncomingMailClient client = useTable ? (IncomingMailClient)incomingClientTable.get(accountConfig) : null;
         
         if(client == null) {
             GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
-            if(acctConfig instanceof PopConfig) {
+            if(accountConfig instanceof PopConfig) {
                 client = new PopClient(
-                        UtilFactory.getInstance().getNetworkConnector(globalConfig, acctConfig),
-                        globalConfig, (PopConfig)acctConfig);
-                incomingClientTable.put(acctConfig, client);
+                        UtilFactory.getInstance().getNetworkConnector(globalConfig, accountConfig),
+                        globalConfig, (PopConfig)accountConfig);
+                if(useTable) { incomingClientTable.put(accountConfig, client); }
             }
-            else if(acctConfig instanceof ImapConfig) {
+            else if(accountConfig instanceof ImapConfig) {
                 client = new ImapClient(
-                        UtilFactory.getInstance().getNetworkConnector(globalConfig, acctConfig),
-                        globalConfig, (ImapConfig)acctConfig);
-                incomingClientTable.put(acctConfig, client);
+                        UtilFactory.getInstance().getNetworkConnector(globalConfig, accountConfig),
+                        globalConfig, (ImapConfig)accountConfig);
+                if(useTable) { incomingClientTable.put(accountConfig, client); }
             }
         }
         return client;
@@ -95,6 +110,17 @@ public class MailClientFactory {
     }
     
     /**
+     * Get a concrete outgoing mail client instance for connection testing purposes.
+     * A new client instance will always be provided.
+     *
+     * @param outgoingConfig Outgoing configuration
+     * @return Usable outgoing mail client instance
+     */
+    public static OutgoingMailClient createTemporaryOutgoingMailClient(OutgoingConfig outgoingConfig) {
+        return createOutgoingMailClientImpl(outgoingConfig, false);
+    }
+    
+    /**
      * Get a concrete outgoing mail client instance.
      * If a client already exists for the provided configuration,
      * it will be provided instead of a new one.
@@ -103,16 +129,20 @@ public class MailClientFactory {
      * @return Usable outgoing mail client instance
      */
     public static OutgoingMailClient createOutgoingMailClient(OutgoingConfig outgoingConfig) {
+        return createOutgoingMailClientImpl(outgoingConfig, true);
+    }
+    
+    private static OutgoingMailClient createOutgoingMailClientImpl(OutgoingConfig outgoingConfig, boolean useTable) {
         OutgoingMailClient client = null;
         if(outgoingConfig != null) {
-            client = (OutgoingMailClient)outgoingClientTable.get(outgoingConfig);
+            client = useTable ? (OutgoingMailClient)outgoingClientTable.get(outgoingConfig) : null;
 
             if(client == null) {
                 GlobalConfig globalConfig = MailSettings.getInstance().getGlobalConfig();
                 client = new SmtpClient(
                         UtilFactory.getInstance().getNetworkConnector(globalConfig, outgoingConfig),
                         globalConfig, outgoingConfig);
-                outgoingClientTable.put(outgoingConfig, client);
+                if(useTable) { outgoingClientTable.put(outgoingConfig, client); }
             }
         }
         return client;

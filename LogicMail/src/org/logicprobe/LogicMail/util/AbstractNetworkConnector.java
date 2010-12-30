@@ -91,7 +91,7 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
             socket = openSocketConnection();
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, e.getMessage().getBytes(), EventLogger.ERROR);
-            throw new IOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION));
+            throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION), e);
         }
         
         logOpenConnection();
@@ -199,11 +199,11 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID,
                     ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
-            throw new IOException("Unable to switch to TLS mode");
+            throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_SWITCH_TO_TLS_MODE), e);
         } catch (TLSException e) {
             EventLogger.logEvent(AppInfo.GUID,
                     ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
-            throw new IOException("Unable to switch to TLS mode");
+            throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_SWITCH_TO_TLS_MODE), e);
         }
     }
     

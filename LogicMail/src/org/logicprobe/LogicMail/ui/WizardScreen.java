@@ -33,9 +33,12 @@ package org.logicprobe.LogicMail.ui;
 import org.logicprobe.LogicMail.LogicMailResource;
 
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
+import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
+import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
@@ -50,8 +53,11 @@ import net.rim.device.api.ui.container.HorizontalFieldManager;
  */
 public abstract class WizardScreen extends MainScreen {
     protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    private static String NEXT_SUFFIX = " >";
+    private static String PREV_PREFIX = "< ";
     private WizardController controller;
     private LabelField titleLabel;
+    private BorderedFieldManager contentFieldManager;
     private HorizontalFieldManager statusFieldManager;
     private ButtonField cancelButton;
     private ButtonField prevButton;
@@ -77,6 +83,10 @@ public abstract class WizardScreen extends MainScreen {
         this.title = title;
         this.pageType = pageType;
         this.pageResult = RESULT_CANCEL;
+        this.contentFieldManager = FieldFactory.getInstance().getBorderedFieldManager(
+                BorderedFieldManager.BOTTOM_BORDER_NONE
+                | BorderedFieldManager.FILL_NONE);
+        super.add(this.contentFieldManager);
         initBaseFields();
         initFields();
         nextButton.setEditable(isInputValid);
@@ -86,26 +96,26 @@ public abstract class WizardScreen extends MainScreen {
         titleLabel = new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleLabel);
 
-        cancelButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_CANCEL));
+        cancelButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_CANCEL), ButtonField.CONSUME_CLICK);
         cancelButton.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
                 cancelButton_fieldChanged(field, context);
             }
         });
-        prevButton = new ButtonField("< " + resources.getString(LogicMailResource.WIZARD_PREV));
+        prevButton = new ButtonField(PREV_PREFIX + resources.getString(LogicMailResource.WIZARD_PREV), ButtonField.CONSUME_CLICK);
         prevButton.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
                 prevButton_fieldChanged(field, context);
             }
         });
-        nextButton = new ButtonField(resources.getString(LogicMailResource.WIZARD_NEXT) + " >");
+        nextButton = new ButtonField(resources.getString(LogicMailResource.WIZARD_NEXT) + NEXT_SUFFIX, ButtonField.CONSUME_CLICK);
         nextButton.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
                 nextButton_fieldChanged(field, context);
             }
         });
 
-        statusFieldManager = new HorizontalFieldManager() {
+        statusFieldManager = new HorizontalFieldManager(Manager.USE_ALL_WIDTH) {
             protected void onFocus(int direction) {
                 if(direction == 1) {
                     // Force focus to the last button on field entry
@@ -119,6 +129,11 @@ public abstract class WizardScreen extends MainScreen {
                 else {
                     super.onFocus(direction);
                 }
+            }
+            protected void paint(Graphics graphics) {
+                graphics.setBackgroundColor(Color.BLACK);
+                graphics.clear();
+                super.paint(graphics);
             }
         };
 
@@ -139,6 +154,46 @@ public abstract class WizardScreen extends MainScreen {
         setStatus(statusFieldManager);
     }
 
+    public void add(Field field) {
+        contentFieldManager.add(field);
+    }
+    
+    public void delete(Field field) {
+        contentFieldManager.delete(field);
+    }
+    
+    public void deleteRange(int start, int count) {
+        contentFieldManager.deleteRange(start, count);
+    }
+    
+    public void insert(Field field, int index) {
+        contentFieldManager.insert(field, index);
+    }
+    
+    public void replace(Field oldField, Field newField) {
+        contentFieldManager.replace(oldField, newField);
+    }
+    
+    public int getFieldCount() {
+        return contentFieldManager.getFieldCount();
+    }
+    
+    public Field getField(int index) {
+        return contentFieldManager.getField(index);
+    }
+    
+    public Field getFieldWithFocus() {
+        return contentFieldManager.getFieldWithFocus();
+    }
+    
+    public int getFieldWithFocusIndex() {
+        return contentFieldManager.getFieldWithFocusIndex();
+    }
+    
+    public Field getLeafFieldWithFocus() {
+        return contentFieldManager.getLeafFieldWithFocus();
+    }
+    
     /**
      * Creates the page-specific input fields.
      */

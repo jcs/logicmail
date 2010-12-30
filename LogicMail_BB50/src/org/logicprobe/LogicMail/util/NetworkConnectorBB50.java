@@ -34,13 +34,16 @@ import java.io.IOException;
 
 import javax.microedition.io.SocketConnection;
 
+import net.rim.device.api.io.transport.ConnectionAttemptListener;
 import net.rim.device.api.io.transport.ConnectionDescriptor;
 import net.rim.device.api.io.transport.ConnectionFactory;
+import net.rim.device.api.io.transport.TransportDescriptor;
 import net.rim.device.api.io.transport.TransportInfo;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.IntVector;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 
@@ -49,6 +52,8 @@ public class NetworkConnectorBB50 extends AbstractNetworkConnector {
     public NetworkConnectorBB50(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
         super(globalConfig, connectionConfig);
     }
+    
+    private Exception connectionException;
     
     protected SocketConnection openSocketConnection() throws IOException {
         // Create a new connection factory instance
@@ -60,6 +65,23 @@ public class NetworkConnectorBB50 extends AbstractNetworkConnector {
         // Build the simple connection string
         String url = buildSimpleConnectionString();
 
+        connectionException = null;
+        connectionFactory.setConnectionAttemptListener(new ConnectionAttemptListener() {
+            public boolean attempting(TransportDescriptor transport, int attemptNumber, String url) {
+                connectionException = null;
+                return true;
+            }
+            public void attemptSucceeded(int attemptNumber, ConnectionDescriptor connection) {
+                connectionException = null;
+            }
+            public void attemptAborted(String url, Exception exception) {
+                connectionException = exception;
+            }
+            public void attemptFailed(TransportDescriptor transport, int attemptNumber, String url, Exception exception) {
+                connectionException = exception;
+            }
+        });
+        
         // Get the connection through the connection factory
         ConnectionDescriptor descriptor = connectionFactory.getConnection(url);
         
@@ -70,7 +92,7 @@ public class NetworkConnectorBB50 extends AbstractNetworkConnector {
             return connection;
         }
         else {
-            throw new IOException("Unable to open connection");
+            throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION), connectionException);
         }
     }
 
