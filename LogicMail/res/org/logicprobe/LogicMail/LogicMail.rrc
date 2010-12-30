@@ -1,3 +1,19 @@
+ABOUT_LICENSE#0={
+    "LogicMail is Copyright (c) 2006-2010, Derek Konigsberg.  All rights reserved.",
+    "",
+    "Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:",
+    "1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.",
+    "2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.",
+    "3. Neither the name of the project nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.",
+    "",
+    "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.",
+    "",
+    "Icons used in this project are from the \"Tango Desktop Project\" (http://tango.freedesktop.org/) unless otherwise noted, and are either used directly or with minor modifications.",
+    "",
+    "Note: Using LogicMail to connect to E-Mail servers can incur data usage charges.  For more information, please contact your service provider.",
+    "",
+    "Click \"Accept\" to accept the terms of the license agreement, or \"Decline\" to decline the agreement and exit LogicMail.",
+};
 ABOUT_TITLE#0="About";
 APPNAME#0="LogicMail";
 BASE_CLOSEANDEXIT#0="Close active connections and exit?";
@@ -120,6 +136,7 @@ MAILCONNECTION_REQUEST_SEND_MESSAGE#0="Sending message...";
 MAILHOME_NOACCOUNTS#0="No accounts";
 MAILHOME_TITLE#0="Home";
 MENUITEM_ABOUT#0="About";
+MENUITEM_ACCEPT#0="Accept";
 MENUITEM_ADD_ACCOUNT#0="Add account";
 MENUITEM_ADD_BCC#0="Add Bcc:";
 MENUITEM_ADD_CC#0="Add Cc:";
@@ -134,6 +151,7 @@ MENUITEM_CLOSE#0="Close";
 MENUITEM_COMPOSE_EMAIL#0="Compose E-Mail";
 MENUITEM_CONFIGURATION#0="Configuration";
 MENUITEM_COPY_TO#0="Copy to...";
+MENUITEM_DECLINE#0="Decline";
 MENUITEM_DELETE#0="Delete";
 MENUITEM_DELETE_ACCOUNT#0="Delete account";
 MENUITEM_DELETE_FIELD#0="Delete field";

@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail;
 
 import net.rim.device.api.system.ApplicationDescriptor;
 import net.rim.device.api.system.Bitmap;
+import net.rim.device.api.system.PersistentObject;
+import net.rim.device.api.system.PersistentStore;
 
 /**
  * Class to provide information about the application
@@ -42,6 +44,8 @@ import net.rim.device.api.system.Bitmap;
 public final class AppInfo {
     /** System event log GUID */
     public static final long GUID = 0x6bc611e33074e780L;
+    private static PersistentObject store;
+    private static PersistableAppInfo persistableInfo;
     
     private static final Bitmap icon = Bitmap.getBitmapResource("logicmail.png");
     private static final Bitmap rolloverIcon = Bitmap.getBitmapResource("logicmail-rollover.png");
@@ -50,6 +54,18 @@ public final class AppInfo {
     private static String appName;
     private static String appVersion;
     private static PlatformInfo platformInfo;
+    
+    static {
+        //"org.logicprobe.LogicMail.PersistableAppInfo"
+        store = PersistentStore.getPersistentObject(0x6f8bfd06eca43499L);
+        synchronized(store) {
+            if (!(store.getContents() instanceof PersistableAppInfo)) {
+                store.setContents(new PersistableAppInfo());
+                store.commit();
+            }
+        }
+        persistableInfo = (PersistableAppInfo)store.getContents();
+    }
     
     /**
      * Initializes the application information from the descriptor and the
@@ -91,5 +107,41 @@ public final class AppInfo {
     
     public static Bitmap getNewMessagesRolloverIcon() {
     	return newMessagesRolloverIcon;
+    }
+    
+    public static String getLastVersion() {
+        Object value = persistableInfo.getElement(PersistableAppInfo.FIELD_LAST_APP_VERSION);
+        if(value instanceof String) {
+            return (String)value;
+        }
+        else {
+            return "";
+        }
+    }
+    
+    public static void updateLastVersion() {
+        persistableInfo.setElement(PersistableAppInfo.FIELD_LAST_APP_VERSION, appVersion);
+        synchronized(store) {
+            store.setContents(persistableInfo);
+            store.commit();
+        }
+    }
+    
+    public static boolean isLicenceAccepted() {
+        Object value = persistableInfo.getElement(PersistableAppInfo.FIELD_LICENSE_ACCEPTED);
+        if(value instanceof Boolean) {
+            return ((Boolean)value).booleanValue();
+        }
+        else {
+            return false;
+        }
+    }
+    
+    public static void setLicenseAccepted(boolean accepted) {
+        persistableInfo.setElement(PersistableAppInfo.FIELD_LICENSE_ACCEPTED, new Boolean(accepted));
+        synchronized(store) {
+            store.setContents(persistableInfo);
+            store.commit();
+        }
     }
 }

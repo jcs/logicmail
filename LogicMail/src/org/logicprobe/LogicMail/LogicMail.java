@@ -50,6 +50,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
+import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
@@ -57,6 +58,7 @@ import net.rim.device.api.util.LongHashtable;
 
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.ui.BlankSeparatorField;
+import org.logicprobe.LogicMail.ui.HomeScreenPopup;
 import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.ui.ThrobberField;
@@ -82,6 +84,7 @@ public final class LogicMail extends UiApplication {
     private StartupSystemListener systemListener;
     private NavigationController navigationController;
     private Screen loadingScreen;
+    private volatile boolean foreground;
 
     /**
      * Instantiates a new instance of the application.
@@ -115,7 +118,7 @@ public final class LogicMail extends UiApplication {
 
             createLoadingScreen();
 
-            Thread loadingThread = new Thread() {
+            final Thread loadingThread = new Thread() {
                 public void run() {
                     // Load the configuration
                     DataStoreFactory.getConnectionCacheStore().load();
@@ -153,12 +156,46 @@ public final class LogicMail extends UiApplication {
                 }
             };
 
-            pushScreen(loadingScreen);
-            loadingThread.start();
+            if(!AppInfo.getLastVersion().equals(AppInfo.getLastVersion())) {
+                AppInfo.setLicenseAccepted(false);
+            }
+            
+            if(AppInfo.isLicenceAccepted()) {
+                foreground = true;
+                requestForeground();
+                pushScreen(loadingScreen);
+                loadingThread.start();
+            }
+            else {
+                foreground = false;
+                invokeLater(new Runnable() {
+                    public void run() {
+                        HomeScreenPopup popupDialog = new HomeScreenPopup();
+                        pushGlobalScreen(popupDialog, 1, UiEngine.GLOBAL_MODAL);
+
+                        if(!popupDialog.isAccepted()) {
+                            AppInfo.setLicenseAccepted(false);
+                            System.exit(0);
+                        }
+                        else {
+                            AppInfo.updateLastVersion();
+                            AppInfo.setLicenseAccepted(true);
+                            foreground = true;
+                            LogicMail.this.requestForeground();
+                            pushScreen(loadingScreen);
+                            loadingThread.start();
+                        }
+                    }
+                });
+            }
         }
         enterEventDispatcher();
     }
 
+    protected boolean acceptsForeground() {
+        return foreground;
+    }
+    
     private void logStartupAppInfo() {
         // Log application startup information
         if(EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
