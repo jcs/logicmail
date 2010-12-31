@@ -43,6 +43,7 @@ import net.rim.device.api.synchronization.SyncManager;
 import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.ControlledAccessException;
+import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.RuntimeStore;
@@ -125,13 +126,17 @@ public final class LogicMail extends UiApplication {
                     // Load the configuration
                     DataStoreFactory.getConnectionCacheStore().load();
                     MailSettings.getInstance().loadSettings();
-                    // Set the language, if configured
-                    String languageCode =
-                        MailSettings.getInstance().getGlobalConfig().getLanguageCode();
-                    if(languageCode != null && languageCode.length() > 0) {
-                        try {
-                            Locale.setDefault(Locale.get(languageCode));
-                        } catch (Exception e) { }
+                    
+                    // Locale override is not used in release builds
+                    if(!AppInfo.isRelease()) {
+                        // Set the language, if configured
+                        String languageCode =
+                            MailSettings.getInstance().getGlobalConfig().getLanguageCode();
+                        if(languageCode != null && languageCode.length() > 0) {
+                            try {
+                                Locale.setDefault(Locale.get(languageCode));
+                            } catch (Exception e) { }
+                        }
                     }
 
                     // Initialize the data model explicitly
@@ -217,8 +222,21 @@ public final class LogicMail extends UiApplication {
             buf.append("\r\n");
             buf.append("Version: ");
             buf.append(AppInfo.getVersion());
+            if(AppInfo.isRelease()) {
+                String moniker = AppInfo.getVersionMoniker();
+                if(moniker != null && moniker.length() > 0) {
+                    buf.append(" (");
+                    buf.append(moniker);
+                    buf.append(')');
+                }
+            }
+            else {
+                buf.append(" (dev)");
+            }
             buf.append("\r\n");
             buf.append("Platform: ");
+            buf.append(DeviceInfo.getDeviceName());
+            buf.append(' ');
             buf.append(AppInfo.getPlatformVersion());
             if(PlatformInfo.getInstance().hasTouchscreen()) {
                 buf.append(' ');
@@ -245,7 +263,22 @@ public final class LogicMail extends UiApplication {
         loadingScreen.add(new BlankSeparatorField(fieldSpacerSize));
         loadingScreen.add(new ThrobberField(throbberSize, Field.FIELD_HCENTER));
         loadingScreen.add(new BlankSeparatorField(fieldSpacerSize));
-        loadingScreen.add(new LabelField("Version " + AppInfo.getVersion(), Field.FIELD_HCENTER));
+        
+        StringBuffer buf = new StringBuffer();
+        buf.append("Version ");
+        buf.append(AppInfo.getVersion());
+        if(AppInfo.isRelease()) {
+            String moniker = AppInfo.getVersionMoniker();
+            if(moniker != null && moniker.length() > 0) {
+                buf.append(" (");
+                buf.append(moniker);
+                buf.append(')');
+            }
+        }
+        else {
+            buf.append(" (dev)");
+        }
+        loadingScreen.add(new LabelField(buf.toString(), Field.FIELD_HCENTER));
     }
     
     /**

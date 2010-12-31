@@ -37,6 +37,8 @@ import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
+import net.rim.device.api.ui.Ui;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.SeparatorField;
@@ -57,13 +59,33 @@ public class AboutDialog extends Dialog {
     }
 
     private void initFields() {
-        LabelField nameLabelField = new LabelField(AppInfo.getName() + ' ' + AppInfo.getVersion(), Field.FIELD_HCENTER);
-        LabelField urlLabelField = new LabelField("http://logicmail.sf.net/", Field.FIELD_HCENTER);
+        StringBuffer buf = new StringBuffer();
+        buf.append(AppInfo.getName());
+        buf.append(' ');
+        buf.append(AppInfo.getVersion());
+        if(AppInfo.isRelease()) {
+            String moniker = AppInfo.getVersionMoniker();
+            if(moniker != null && moniker.length() > 0) {
+                buf.append(" (");
+                buf.append(moniker);
+                buf.append(')');
+            }
+        }
+        else {
+            buf.append(" (dev)");
+        }
+        
+        LabelField nameLabelField = new LabelField(buf.toString(), Field.FIELD_HCENTER);
+        LabelField urlLabelField = new LabelField(resources.getString(LogicMailResource.ABOUT_URL), Field.FIELD_HCENTER);
 
+        LabelField licenseLabelField = new LabelField(resources.getStringArray(LogicMailResource.ABOUT_LICENSE)[0]);
+        licenseLabelField.setFont(Font.getDefault().derive(Font.PLAIN, 6, Ui.UNITS_pt));
+        
         add(new SeparatorField());
         add(nameLabelField);
         add(urlLabelField);
-        add(new LabelField());
+        add(licenseLabelField);
+        add(new SeparatorField());
     }
     
     protected boolean openDevelopmentBackdoor(int backdoorCode) {

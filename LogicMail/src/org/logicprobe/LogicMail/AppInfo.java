@@ -52,8 +52,11 @@ public final class AppInfo {
     private static final Bitmap rolloverIcon = Bitmap.getBitmapResource("logicmail-rollover.png");
     private static final Bitmap newMessagesIcon = Bitmap.getBitmapResource("logicmail-new.png");
     private static final Bitmap newMessagesRolloverIcon = Bitmap.getBitmapResource("logicmail-new-rollover.png");
+    private static String PARAM_RELEASE = "-release";
     private static String appName;
     private static String appVersion;
+    private static boolean release;
+    private static String appVersionMoniker;
     private static PlatformInfo platformInfo;
     
     static {
@@ -94,6 +97,17 @@ public final class AppInfo {
         appName = appDesc.getName();
         appVersion = appDesc.getVersion();
         platformInfo = PlatformInfo.getInstance();
+        
+        // Parse the command-line argument list
+        for(int i=0; i<args.length; i++) {
+            if(args[i].startsWith(PARAM_RELEASE)) {
+                release = true;
+                int p = args[i].indexOf(':', PARAM_RELEASE.length());
+                if(p != -1 && p < args[i].length() - 1) {
+                    appVersionMoniker = args[i].substring(p + 1);
+                }
+            }
+        }
     }
     
     public static String getName() {
@@ -104,8 +118,16 @@ public final class AppInfo {
     	return appVersion;
     }
     
+    public static String getVersionMoniker() {
+        return appVersionMoniker;
+    }
+    
     public static String getPlatformVersion() {
     	return platformInfo.getPlatformVersion();
+    }
+    
+    public static boolean isRelease() {
+        return release;
     }
     
     public static Bitmap getIcon() {

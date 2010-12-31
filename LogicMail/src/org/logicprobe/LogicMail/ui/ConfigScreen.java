@@ -54,6 +54,7 @@ import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -475,7 +476,11 @@ public class ConfigScreen extends AbstractConfigScreen {
                 Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
         otherFieldManager.add(localDataLocationChoiceLabel);
         otherFieldManager.add(clearCacheManager);
-        otherFieldManager.add(languageChoiceField);
+        
+        // Locale override is not used in release builds
+        if(!AppInfo.isRelease()) {
+            otherFieldManager.add(languageChoiceField);
+        }
         otherFieldManager.add(unicodeNormalizationCheckboxField);
         otherFieldManager.add(connectionDebuggingCheckboxField);
         otherFieldManager.add(new BlankSeparatorField(separatorHeight));
