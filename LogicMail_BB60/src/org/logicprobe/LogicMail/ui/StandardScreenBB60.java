@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import org.logicprobe.LogicMail.LogicMailResource;
 
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.component.StandardTitleBar;
 
 public class StandardScreenBB60 extends StandardScreen {
@@ -51,6 +52,7 @@ public class StandardScreenBB60 extends StandardScreen {
         titlebarField.setPropertyValue(
                 StandardTitleBar.PROPERTY_BATTERY_VISIBILITY,
                 StandardTitleBar.BATTERY_VISIBLE_ALWAYS);
+        titlebarField.setFont(Font.getDefault());
         return titlebarField;
     }
     
