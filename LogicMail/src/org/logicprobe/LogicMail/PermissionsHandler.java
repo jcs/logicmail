@@ -92,12 +92,15 @@ public class PermissionsHandler {
         ApplicationPermissionsManager permissionsManager = ApplicationPermissionsManager.getInstance();
         ApplicationPermissions originalPermissions = permissionsManager.getApplicationPermissions();
         
-        if(checkExtended && hasMinimumPermissions(originalPermissions) && hasExtendedPermissions(originalPermissions)) {
-            return true;
+        boolean permissionsUsable;
+        if(checkExtended) {
+            permissionsUsable = hasMinimumPermissions(originalPermissions) && hasExtendedPermissions(originalPermissions);
         }
-        else if(hasMinimumPermissions(originalPermissions)) {
-            return true;
+        else {
+            permissionsUsable = hasMinimumPermissions(originalPermissions);
         }
+        
+        if(permissionsUsable) { return true; }
         
         // Create a permissions request containing a generous set of things we can use
         ApplicationPermissions permRequest = new ApplicationPermissions();
