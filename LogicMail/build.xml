@@ -24,12 +24,30 @@
     </classpath>
   </taskdef>
   
+  <!-- Prepare the resource file list -->
+  <propertyregex property="rrc.files"
+      input="${module.locales}"
+      regexp="([^,]+)"
+      global="true"
+      replace="LogicMail_\1.rrc"
+  />
+  
   <macrodef name="build-platform">
     <attribute name="jdehome"/>
     <attribute name="platform"/>
     <attribute name="defines"/>
   	<attribute name="platformfileset"/>
     <sequential>
+      <if><istrue value="${module.release}"/><then>
+        <if><isset property="module.release.param"/><then>
+          <property name="argument.release" value="-release:${module.release.param}"/>
+        </then><else>
+          <property name="argument.release" value="-release"/>
+        </else></if>
+      </then><else>
+        <property name="argument.release" value=""/>
+      </else></if>
+      
       <mkdir dir="${dist.dir}/@{platform}"/>
       <copy file="res/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
       <rapc output="${module.name}"
@@ -43,8 +61,8 @@
              type="cldc"
              midletclass="org.logicprobe.LogicMail.LogicMail"
              icon="logicmail.png"
-             arguments="-build:${module.build}">
-          <entry arguments="-build:${module.build} autostartup"
+             arguments="-build:${module.build} ${argument.release}">
+          <entry arguments="-build:${module.build} ${argument.release} autostartup"
                  systemmodule="true"
                  runonstartup="true"
                  startuptier="7"/>
@@ -54,10 +72,10 @@
             <include name="**/*.java"/>
           </fileset>
           <fileset dir="res">
-            <include name="**/*.rrc"/>
-            <include name="**/*.rrh"/>
             <include name="**/*.png"/>
           </fileset>
+          <fileset dir="res/org/logicprobe/LogicMail"
+              includes="LogicMail.rrc,LogicMail.rrh,${rrc.files} "/>
           <fileset dir="${startup.src.dir}">
             <include name="**/*.java"/>
           </fileset>
