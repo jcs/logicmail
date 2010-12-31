@@ -37,11 +37,13 @@ import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.component.SeparatorField;
 
 public class AboutDialog extends Dialog {
     private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    private static final int BACKDOOR_RST = ('R' << 16) | ('S' << 8) | ('T');
 
     public AboutDialog() {
         super(
@@ -62,5 +64,32 @@ public class AboutDialog extends Dialog {
         add(nameLabelField);
         add(urlLabelField);
         add(new LabelField());
+    }
+    
+    protected boolean openDevelopmentBackdoor(int backdoorCode) {
+        switch( backdoorCode ) {
+        case BACKDOOR_RST:
+            backdoorRST();
+            return true;
+        }
+        return super.openDevelopmentBackdoor(backdoorCode);
+    }
+
+    protected boolean openProductionBackdoor(int backdoorCode) {
+        switch( backdoorCode ) {
+        case BACKDOOR_RST:
+            backdoorRST();
+            return true;
+        }
+        return super.openProductionBackdoor(backdoorCode);
+    }
+    
+    private void backdoorRST() {
+        AppInfo.resetPersistableInfo();
+        UiApplication.getUiApplication().invokeLater(new Runnable() {
+            public void run() {
+                Dialog.inform("Persisted application startup properties have been reset");
+            }
+        });
     }
 }

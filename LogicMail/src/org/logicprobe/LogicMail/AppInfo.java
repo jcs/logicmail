@@ -136,12 +136,7 @@ public final class AppInfo {
     
     public static void updateLastVersion() {
         persistableInfo.setElement(PersistableAppInfo.FIELD_LAST_APP_VERSION, appVersion);
-        if(tryInitializeStore()) {
-            synchronized(store) {
-                store.setContents(persistableInfo);
-                store.commit();
-            }
-        }
+        commitPersistableInfo();
     }
     
     public static boolean isLicenceAccepted() {
@@ -156,7 +151,16 @@ public final class AppInfo {
     
     public static void setLicenseAccepted(boolean accepted) {
         persistableInfo.setElement(PersistableAppInfo.FIELD_LICENSE_ACCEPTED, new Boolean(accepted));
-        
+        commitPersistableInfo();
+    }
+    
+    public static void resetPersistableInfo() {
+        persistableInfo.setElement(PersistableAppInfo.FIELD_LAST_APP_VERSION, "");
+        persistableInfo.setElement(PersistableAppInfo.FIELD_LICENSE_ACCEPTED, Boolean.FALSE);
+        commitPersistableInfo();
+    }
+
+    private static void commitPersistableInfo() {
         if(tryInitializeStore()) {
             synchronized(store) {
                 store.setContents(persistableInfo);
