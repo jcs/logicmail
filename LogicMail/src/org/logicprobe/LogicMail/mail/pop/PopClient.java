@@ -301,19 +301,21 @@ public class PopClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.FolderTreeItem)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.FolderTreeItem, boolean)
      */
-    public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
+    public boolean setActiveFolder(FolderTreeItem mailbox, boolean notifyAvailable) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
+        return true;
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.MessageToken)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.MessageToken, boolean)
      */
-    public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
+    public FolderTreeItem setActiveFolder(MessageToken messageToken, boolean notifyAvailable) throws IOException, MailException {
         // Mailbox cannot be changed, so we just pull the message counts
         activeMailbox.setMsgCount(popProtocol.executeStat());
+        return null;
     }
     
     /* (non-Javadoc)
@@ -586,20 +588,26 @@ public class PopClient extends AbstractIncomingMailClient {
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken)
      */
-    public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
+    public void deleteMessage(MessageToken messageToken) throws IOException, MailException {
     	PopMessageToken popMessageToken = (PopMessageToken)messageToken;
     	
         popProtocol.executeDele(popMessageToken.getMessageIndex());
+        
+        MessageFlags messageFlags = new MessageFlags();
+        messageFlags.setSeen(true);
         messageFlags.setDeleted(true);
+        
+        if(clientListener != null) {
+            clientListener.folderMessageFlagsChanged(popMessageToken, messageFlags);
+        }
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
      */
-    public boolean noop() throws IOException, MailException {
+    public void noop() throws IOException, MailException {
     	popProtocol.executeNoop();
-		return false;
 	}
 }

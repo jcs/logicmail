@@ -570,25 +570,37 @@ public class StringParserTest extends TestCase {
 
     /**
      * Test of decodeQuotedPrintable method, of class org.logicprobe.LogicMail.util.StringParser.
-     * Basic test.
      */
-    public void testDecodeQuotedPrintable1() {
+    public void testDecodeQuotedPrintable() {
+        String msg = "Basic test";
         String text = "=A1Hol=E1 Se=F1or!";
         String expectedResult = "¡Holá Señor!";
         String result = StringParser.decodeQuotedPrintable(text.getBytes(), "ISO-8859-1");
-        assertEquals(expectedResult, result);
-    }
+        assertEquals(msg, expectedResult, result);
 
+        msg = "Soft line-break test";
+        text = "=A1Hol=E1 Se=F1or!=20=20H=\n"
+            + "ow=20are=20you=20today?";
+        expectedResult = "¡Holá Señor!  How are you today?";
+        result = StringParser.decodeQuotedPrintable(text.getBytes(), "ISO-8859-1");
+        assertEquals(msg, expectedResult, result);
+
+        msg = "Underscore test (regular)";
+        text = "=A1Hol=E1_Se=F1or!";
+        expectedResult = "¡Holá_Señor!";
+        result = StringParser.decodeQuotedPrintable(text.getBytes(), "ISO-8859-1");
+        assertEquals(msg, expectedResult, result);
+    }
+    
     /**
      * Test of decodeQuotedPrintable method, of class org.logicprobe.LogicMail.util.StringParser.
-     * Soft line-break test.
      */
-    public void testDecodeQuotedPrintable2() {
-        String text = "=A1Hol=E1 Se=F1or!=20=20H=\n" +
-            "ow=20are=20you=20today?";
-        String expectedResult = "¡Holá Señor!  How are you today?";
-        String result = StringParser.decodeQuotedPrintable(text.getBytes(), "ISO-8859-1");
-        assertEquals(expectedResult, result);
+    public void testDecodeQuotedPrintableHeader() {
+        String msg = "Underscore test (header)";
+        String text = "=A1Hol=E1_Se=F1or!";
+        String expectedResult = "¡Holá Señor!";
+        String result = StringParser.decodeQuotedPrintableHeader(text.getBytes(), "ISO-8859-1");
+        assertEquals(msg, expectedResult, result);
     }
 
     /**
@@ -721,15 +733,13 @@ public class StringParserTest extends TestCase {
         testSuite.addTest(new StringParserTest("parseValidCharsetString", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testParseValidCharsetString(); }}));
         
-        testSuite.addTest(new StringParserTest("decodeQuotedPrintable1", new TestMethod()
-        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintable1(); }}));
-        
-        testSuite.addTest(new StringParserTest("decodeQuotedPrintable2", new TestMethod()
-        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintable2(); }}));
+        testSuite.addTest(new StringParserTest("decodeQuotedPrintable", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintable(); }}));
+        testSuite.addTest(new StringParserTest("decodeQuotedPrintableHeader", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintableHeader(); }}));
         
         testSuite.addTest(new StringParserTest("encodeQuotedPrintable1", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testEncodeQuotedPrintable1(); }}));
-        
         testSuite.addTest(new StringParserTest("encodeQuotedPrintable2", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testEncodeQuotedPrintable2(); }}));
         

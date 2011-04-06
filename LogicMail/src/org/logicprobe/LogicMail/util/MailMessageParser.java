@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.util;
 
+import net.rim.device.api.io.IOUtilities;
 import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
@@ -43,6 +44,7 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartFactory;
 import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 
 import java.io.IOException;
@@ -204,6 +206,11 @@ public class MailMessageParser {
                     ("Unable to parse MIME encoded message: " + e.getMessage()).getBytes(),
                     EventLogger.WARNING);
             return null;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to parse MIME encoded message: " + e.getMessage()).getBytes(),
+                    EventLogger.WARNING);
+            return null;
         }
 
         contentMap.put(Boolean.TRUE, new Integer(mimeInputStream.isPartComplete()));
@@ -266,55 +273,56 @@ public class MailMessageParser {
         }
         // Handle the single-part case
         else {
+            // Decode the data if the part is complete or indeterminate (as is
+            // common if this is the message's only part), or is a text part
+            // where partial decoding still yields usable output.
             byte[] buffer;
+            if(mimeInputStream.isPartComplete() != 0
+                    || type.equalsIgnoreCase(TextPart.TYPE)) {
+                buffer = readRawData(mimeInputStream);
+            }
+            else {
+                buffer = null;
+            }
+            
+            MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
+                    type, subtype, name, encoding, charset, disposition, contentId,
+                    (buffer != null) ? buffer.length : 0);
 
-            // Handle encoded binary data (should be more encoding-agnostic)
-            if (encoding.equalsIgnoreCase("base64") &&
-                    (mimeInputStream.isPartComplete() != 0)) {
-                SharedInputStream sis = mimeInputStream.getRawMIMEInputStream();
-                buffer = StringParser.readWholeStream(sis);
-
-                int offset = 0;
-
-                while (((offset + 3) < buffer.length) &&
-                        !((buffer[offset] == '\r') &&
-                        (buffer[offset + 1] == '\n') &&
-                        (buffer[offset + 2] == '\r') &&
-                        (buffer[offset + 3] == '\n'))) {
-                    offset++;
-                }
-
-                int size = buffer.length - offset;
-
-                byte[] data = Arrays.copy(buffer, offset, size);
-                MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
-                		type, subtype, name, encoding, charset, disposition, contentId, size);
-                try {
-                    MimeMessageContent content = MimeMessageContentFactory.createContentEncoded(part, data);
-                    content.setPartComplete(mimeInputStream.isPartComplete());
-					contentMap.put(part, content);
-				} catch (UnsupportedContentException e) {
-	                EventLogger.logEvent(AppInfo.GUID,
-	                        ("UnsupportedContentException: " + e.getMessage()).getBytes(),
-	                        EventLogger.WARNING);
-				}
-                return part;
-            } else {
-                buffer = StringParser.readWholeStream(mimeInputStream);
-
-                MimeMessagePart part = MimeMessagePartFactory.createMimeMessagePart(
-                		type, subtype, name, encoding, charset, disposition, contentId, buffer.length);
+            if(buffer != null && buffer.length > 0) {
                 try {
                     MimeMessageContent content = MimeMessageContentFactory.createContentEncoded(part, buffer);
                     content.setPartComplete(mimeInputStream.isPartComplete());
-					contentMap.put(part, content);
-				} catch (UnsupportedContentException e) {
-	                EventLogger.logEvent(AppInfo.GUID,
-	                        ("UnsupportedContentException: " + e.getMessage()).getBytes(),
-	                        EventLogger.WARNING);
-				}
-                return part;
+                    contentMap.put(part, content);
+                } catch (UnsupportedContentException e) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("UnsupportedContentException: " + e.getMessage()).getBytes(),
+                            EventLogger.WARNING);
+                }
             }
+            return part;
         }
     }
+    
+    private static byte[] readRawData(MIMEInputStream mimeInputStream) throws IOException {
+        byte[] buffer;
+        SharedInputStream sis = mimeInputStream.getRawMIMEInputStream();
+        buffer = IOUtilities.streamToBytes(sis);
+
+        int offset = 0;
+        while (((offset + 3) < buffer.length) &&
+                !((buffer[offset] == '\r') &&
+                        (buffer[offset + 1] == '\n') &&
+                        (buffer[offset + 2] == '\r') &&
+                        (buffer[offset + 3] == '\n'))) {
+            offset++;
+        }
+        offset += 4;
+
+        try {
+            return Arrays.copy(buffer, offset, buffer.length - offset);
+        } catch (IndexOutOfBoundsException e) {
+            return new byte[0];
+        }
+    }    
 }

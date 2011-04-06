@@ -499,6 +499,77 @@ public class MaildirFolder {
     }
 
     /**
+     * Sets a flag on an existing message.
+     * 
+     * @param localMessageToken The token for the message to set flags for
+     * @param addOrRemove true to add the flag, false to remove it
+     * @param flag the flag to be added or removed
+     * @return Updated flags for the message
+     */
+    public MessageFlags setMessageFlag(LocalMessageToken localMessageToken, boolean addOrRemove, int flag) throws IOException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("MaildirFolder.setMessageFlag(");
+            buf.append(localMessageToken.getMessageUid());
+            buf.append(", ");
+            buf.append(addOrRemove ? "add" : "remove");
+            buf.append(", ");
+            buf.append(flag);
+            buf.append(")");
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(),
+                    EventLogger.DEBUG_INFO);
+        }
+        if(fileConnection == null) {
+            throw new IOException("Maildir not open");
+        }
+
+        // Get the current filename
+        String messageFilename = getFileForToken(localMessageToken);
+        if(messageFilename == null) { return null; }
+
+        // Populate the existing flags from the filename
+        MessageFlags messageFlags = new MessageFlags();
+        int p = messageFilename.indexOf("_2,");
+        if(p != -1) {
+            p += 3;
+            messageFlags.setAnswered(messageFilename.indexOf('R', p) != -1);
+            messageFlags.setDeleted(messageFilename.indexOf('T', p) != -1);
+            messageFlags.setDraft(messageFilename.indexOf('D', p) != -1);
+            messageFlags.setFlagged(messageFilename.indexOf('F', p) != -1);
+            messageFlags.setSeen(messageFilename.indexOf('S', p) != -1);
+            messageFlags.setForwarded(messageFilename.indexOf('P', p) != -1);
+        }
+        
+        // Modify the message flags to reflect the requested change
+        if(addOrRemove) {
+            messageFlags.setFlags(messageFlags.getFlags() | flag);
+        }
+        else {
+            messageFlags.setFlags(messageFlags.getFlags() & ~flag);
+        }
+        
+        // Create the new filename, and verify that it is different
+        StringBuffer buf = new StringBuffer();
+        buf.append(localMessageToken.getMessageUid());
+        appendFlagsToBuffer(buf, messageFlags);
+        String updatedFilename = buf.toString();
+        if(messageFilename.equals(updatedFilename)) { return messageFlags; }
+
+        FileConnection mailFileConnection =
+            (FileConnection)Connector.open(
+                    StringParser.mergePaths(fileConnection.getURL(), messageFilename));
+        if(mailFileConnection.exists() && !mailFileConnection.isDirectory() && mailFileConnection.canRead()) {
+            mailFileConnection.rename(updatedFilename);
+            mailFileConnection.close();
+            return messageFlags;
+        }
+        else {
+            mailFileConnection.close();
+            return null;
+        }
+    }
+
+    /**
      * Remove all deleted messages from this folder.
      */
     public void expunge() throws IOException {

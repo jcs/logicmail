@@ -76,15 +76,17 @@ public class NetworkMailStoreServices extends MailStoreServices {
         mailStore.restart();
     }
 
-    public void setConnected(boolean connected) {
-        // Only handle disconnects
-        if(connected) { return; }
-        
+    public void setConnected(final boolean connected) {
         synchronized(folderRequestHandlerMap) {
             Enumeration e = folderRequestHandlerMap.elements();
             while(e.hasMoreElements()) {
                 FolderRequestHandler handler = (FolderRequestHandler)e.nextElement();
-                handler.handleDisconnect();
+                if(connected) {
+                    handler.handleConnect();
+                }
+                else {
+                    handler.cleanBeforeNextUse();
+                }
             }
         }
     }
@@ -136,10 +138,22 @@ public class NetworkMailStoreServices extends MailStoreServices {
         handler.handleFolderMessageIndexMapAvailable(uidIndexMap);
     }
 
-    protected void handleFolderExpunged(FolderTreeItem folder, int[] indices) {
+    protected void handleFolderRefreshRequired(FolderTreeItem folder) {
         FolderRequestHandler handler = getFolderRequestHandler(folder);
         
-        handler.handleFolderExpunged(indices);
+        handler.requestFolderRefreshRequired();
+    }
+    
+    protected void handleFolderExpunged(FolderTreeItem folder, int[] indices, MessageToken[] updatedTokens) {
+        FolderRequestHandler handler = getFolderRequestHandler(folder);
+        
+        handler.handleFolderExpunged(indices, updatedTokens);
+    }
+    
+    protected void handleFolderExpunged(FolderTreeItem folder, MessageToken[] expungedTokens, MessageToken[] updatedTokens) {
+        FolderRequestHandler handler = getFolderRequestHandler(folder);
+        
+        handler.handleFolderExpunged(expungedTokens, updatedTokens);
     }
 
     /**
@@ -189,7 +203,18 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     public boolean requestMessageRefresh(final MessageToken messageToken, final MimeMessagePart[] partsToSkip) {
-        return requestMessageRefreshImpl(messageToken, partsToSkip, false);
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        if(handler == null) { return false; }
+
+        //TODO: Figure out how to deal with error conditions from requestMessageRefreshImpl
+        
+        handler.invokeAfterRefresh(new Runnable() {
+            public void run() {
+                requestMessageRefreshImpl(messageToken, partsToSkip, false);
+            }
+        }, true);
+        
+        return true;
     }
     
     public boolean requestMessageRefreshCacheOnly(MessageToken messageToken) {
@@ -232,7 +257,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
         mailStore.requestMessage(messageToken, false, new MailStoreRequestCallback() {
             public void mailStoreRequestComplete() { }
-            public void mailStoreRequestFailed(Throwable exception) {
+            public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
                 messageRefreshFailed(messageToken, false);
             }
         });
@@ -289,8 +314,13 @@ public class NetworkMailStoreServices extends MailStoreServices {
                 partsToFetch.copyInto(partsArray);
                 mailStore.requestMessageParts(messageToken, partsArray, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception) {
-                        messageRefreshFailed(messageToken, loadedItems > 0);
+                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+                        if(isFinal || cacheOnly) {
+                            messageRefreshFailed(messageToken, loadedItems > 0);
+                        }
+                        else {
+                            requestMessageRefresh(messageToken, partsToSkip);
+                        }
                     }
                 });
             }
@@ -371,7 +401,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
                     && previousMaxLines < ((PopConfig)mailStore.getAccountConfig()).getMaxMessageLines()) {
                 mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception) {
+                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
                         // In this specific case, a failure will cause us to
                         // revert to cached data instead of giving up.
                         if(loadedContent.length > 0) {
@@ -393,8 +423,13 @@ public class NetworkMailStoreServices extends MailStoreServices {
         else if(!cacheOnly) {
             mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
                 public void mailStoreRequestComplete() { }
-                public void mailStoreRequestFailed(Throwable exception) {
-                    messageRefreshFailed(messageToken, false);
+                public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+                    if(isFinal || cacheOnly) {
+                        messageRefreshFailed(messageToken, false);
+                    }
+                    else {
+                        requestMessageRefresh(messageToken, partsToSkip);
+                    }
                 }
             });
         }

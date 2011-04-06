@@ -42,15 +42,15 @@ public class ImapResponseLineTester extends ConnectionResponseTester {
     private static final byte LF = (byte) 0x0A;
     private int trimCount;
     private int lastLength = 0;
-    private int literalLength = 0;
+    private int literalLength = -1;
 
     public int checkForCompleteResponse(byte[] buf, int len) {
         trimCount = 0;
 
-        if (literalLength > 0) {
+        if (literalLength >= 0) {
             if ((lastLength + literalLength) < len) {
                 lastLength += literalLength;
-                literalLength = 0;
+                literalLength = -1;
             } else {
                 literalLength -= (len - lastLength);
                 lastLength = len;
@@ -69,12 +69,14 @@ public class ImapResponseLineTester extends ConnectionResponseTester {
                     while (i >= 0) {
                         if ((buf[i] >= '0') && (buf[i] <= '9')) {
                             i--;
-                        } else if (buf[i] == '{') {
+                        }
+                        else if (buf[i] == '{' && (p - i - 3) > 0) {
                             try {
                                 literalLength = StringArrays.parseInt(buf, i + 1, p - i - 3);
                                 break;
                             } catch (NumberFormatException e) { }
-                        } else {
+                        }
+                        else {
                             // Not actually a literal
                             break;
                         }
@@ -88,19 +90,21 @@ public class ImapResponseLineTester extends ConnectionResponseTester {
 
             p++;
 
-            if (literalLength > 0) {
+            if (literalLength >= 0) {
                 if ((len - p) >= literalLength) {
                     p += literalLength;
-                    literalLength = 0;
-                } else {
+                    literalLength = -1;
+                }
+                else {
                     literalLength -= (len - p);
                     lastLength = len;
 
                     return -1;
                 }
-            } else {
+            }
+            else {
                 lastLength = 0;
-                literalLength = 0;
+                literalLength = -1;
 
                 return p;
             }

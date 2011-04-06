@@ -382,8 +382,9 @@ public class MessageActions {
      * Delete message.
      * 
      * @param messageNode the message node
+     * @return true, if the operation proceeded
      */
-    public void deleteMessage(MessageNode messageNode) {
+    public boolean deleteMessage(MessageNode messageNode) {
         MailSettings mailSettings = MailSettings.getInstance();
         if(mailSettings.getGlobalConfig().getPromptOnDelete()) {
             Dialog dialog = new Dialog(
@@ -397,10 +398,15 @@ public class MessageActions {
                     mailSettings.getGlobalConfig().setPromptOnDelete(false);
                     mailSettings.saveSettings();
                 }
+                return true;
+            }
+            else {
+                return false;
             }
         }
         else {
             messageNode.deleteMessage();
+            return true;
         }
     }
     

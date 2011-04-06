@@ -50,13 +50,6 @@ public interface FolderListener extends EventListener {
 	 * @param e Folder event data
 	 */
 	public void folderMessagesAvailable(FolderMessagesEvent e);
-	
-    /**
-     * Invoked when the message index-to-UID map for a folder has been loaded.
-     * 
-     * @param e Folder event data
-     */
-    public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e);
     
     /**
      * Invoked when a folder has been expunged.
@@ -64,4 +57,27 @@ public interface FolderListener extends EventListener {
      * @param e Folder event data
      */
     public void folderExpunged(FolderExpungedEvent e);
+    
+    /**
+     * Invoked when the message index-to-UID map for a folder has been loaded.
+     * <p>
+     * This listener method exists to support the <code>MailStoreServices</code>
+     * layer, and should be cleaned up in a future refactoring.
+     * </p>
+     * 
+     * @param e Folder event data
+     */
+    public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e);
+    
+    /**
+     * Invoked when the folder state has changed significantly enough that a
+     * refresh operation is required to reliably maintain the folder selection.
+     * <p>
+     * This listener method exists to support the <code>MailStoreServices</code>
+     * layer, and should be cleaned up in a future refactoring.
+     * </p>
+     * 
+     * @param e Folder event data
+     */
+    public void folderRefreshRequired(FolderEvent e);
 }

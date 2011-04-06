@@ -182,6 +182,11 @@ public class LocalMessageToken implements MessageToken, Persistable {
         // Local tokens do not contain index information
     }
 
+    public int getMessageIndex() {
+        // Local tokens do not contain index information
+        return -1;
+    }
+    
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.mail.MessageToken#isLoadable()
 	 */

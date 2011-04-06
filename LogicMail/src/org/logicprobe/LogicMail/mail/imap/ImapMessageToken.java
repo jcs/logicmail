@@ -146,7 +146,7 @@ public class ImapMessageToken implements MessageToken, Persistable {
      * 
      * @return the message index
      */
-    int getMessageIndex() {
+    public int getMessageIndex() {
         return this.messageIndex;
     }
 

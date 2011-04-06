@@ -115,6 +115,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      * Seen mailboxes, used to track whether fetching new
      * messages should be based on a limited range, or
      * the UIDNEXT parameter.
+     * (<code>FolderTreeItem</code> to <code>Boolean</code>)
      */
     private final Hashtable seenMailboxes = new Hashtable();
 
@@ -122,6 +123,7 @@ public class ImapClient extends AbstractIncomingMailClient {
      * Known mailboxes, used to track protocol-specific
      * information on mailboxes that is not exposed
      * to other classes.
+     * (<code>FolderTreeItem</code> to <code>MailboxState</code>)
      */
     private final Hashtable knownMailboxes = new Hashtable();
 
@@ -132,16 +134,21 @@ public class ImapClient extends AbstractIncomingMailClient {
     private static String CAPABILITY_IDLE = "IDLE";
     
     public ImapClient(NetworkConnector networkConnector, GlobalConfig globalConfig, ImapConfig accountConfig) {
+        this(networkConnector, globalConfig, accountConfig, new ImapProtocol());
+    }
+    
+    protected ImapClient(NetworkConnector networkConnector, GlobalConfig globalConfig, ImapConfig accountConfig, ImapProtocol imapProtocol) {
         this.networkConnector = networkConnector;
         this.accountConfig = accountConfig;
         this.mailSettings = MailSettings.getInstance();
-        imapProtocol = new ImapProtocol();
+        this.imapProtocol = imapProtocol;
+        this.imapProtocol.setUntaggedResponseListener(untaggedResponseListener);
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
         openStarted = false;
         mailSettings.addMailSettingsListener(mailSettingsListener);
     }
-
+    
     private MailSettingsListener mailSettingsListener = new MailSettingsListener() {
         public void mailSettingsSaved(MailSettingsEvent e) {
             mailSettings_MailSettingsSaved(e);
@@ -165,7 +172,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             password = accountConfig.getServerPass();
         }
     }
-
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.MailClient#open()
      */
@@ -461,6 +468,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             respList = imapProtocol.executeList(baseFolder.getPath(), "%", progressHandler);
         }
         else {
+            if(baseFolder.getDelim().length() == 0) { return; }
             respList = imapProtocol.executeList(baseFolder.getPath() + baseFolder.getDelim(), "%", progressHandler);
         }
 
@@ -603,14 +611,39 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.FolderTreeItem)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.FolderTreeItem, boolean)
      */
-    public void setActiveFolder(FolderTreeItem mailbox) throws IOException, MailException {
+    public boolean setActiveFolder(FolderTreeItem mailbox, boolean notifyAvailable) throws IOException, MailException {
+        String folderPath = mailbox.getPath();
+        
         // Shortcut out if a folder change is not necessary
-        if(activeMailbox != null && activeMailbox.getPath().equals(mailbox.getPath())) {
-            return;
+        if(activeMailbox != null && activeMailbox.getPath().equals(folderPath)) {
+            return true;
         }
 
+        return setActiveFolderImpl(mailbox, notifyAvailable);
+    }
+
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.MessageToken, boolean)
+     */
+    public FolderTreeItem setActiveFolder(MessageToken messageToken, boolean notifyAvailable) throws IOException, MailException {
+        ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
+        String folderPath = imapMessageToken.getFolderPath();
+
+        // Shortcut out if a folder change is not necessary
+        if(activeMailbox != null && activeMailbox.getPath().equals(folderPath)) {
+            return null;
+        }
+
+        FolderTreeItem mailbox = getFolderForPath(folderPath);
+        
+        boolean mapValid = setActiveFolderImpl(mailbox, notifyAvailable);
+        
+        return (mapValid ? null : mailbox);
+    }
+
+    private boolean setActiveFolderImpl(FolderTreeItem mailbox, boolean notifyAvailable) throws IOException, MailException {
         // Change active mailbox
         ImapProtocol.SelectResponse response = imapProtocol.executeSelect(mailbox.getPath());
 
@@ -619,31 +652,32 @@ public class ImapClient extends AbstractIncomingMailClient {
         
         // If the response lacked a valid UIDNEXT value, then copy it over from
         // the previous SELECT of this mailbox
-        ImapProtocol.SelectResponse oldResponse = (ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox);
-        if(oldResponse != null && response.uidNext == -1) {
-            response.uidNext = oldResponse.uidNext;
+        MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
+        if(mailboxState == null) {
+            mailboxState = new MailboxState();
+            knownMailboxes.put(activeMailbox, mailboxState);
         }
-        knownMailboxes.put(activeMailbox, response);
+        else if(response.uidNext == -1) {
+            response.uidNext = mailboxState.getUidNext();
+        }
+        
+        int previousExists = mailboxState.getExists();
+        
+        boolean mapValid = mailboxState.mailboxSelected(response);
 
+        if(mapValid && notifyAvailable && mailboxState.getExists() > previousExists) {
+            if(clientListener != null) {
+                clientListener.recentFolderMessagesAvailable();
+            }
+        }
+        
         // Ideally, this should parse out the message counts
         // and populate the appropriate fields of the activeMailbox FolderItem
+        
+        return mapValid;
     }
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#setActiveFolder(org.logicprobe.LogicMail.mail.MessageToken)
-     */
-    public void setActiveFolder(MessageToken messageToken) throws IOException, MailException {
-        ImapMessageToken imapMessageToken = (ImapMessageToken)messageToken;
-        String folderPath = imapMessageToken.getFolderPath();
-
-        // Shortcut out if a folder change is not necessary
-        if(activeMailbox != null && activeMailbox.getPath().equals(imapMessageToken.getFolderPath())) {
-            return;
-        }
-
-        // change active mailbox
-        ImapProtocol.SelectResponse response = imapProtocol.executeSelect(folderPath);
-
+    
+    private FolderTreeItem getFolderForPath(String folderPath) {
         FolderTreeItem mailbox = null;
         Enumeration e = knownMailboxes.keys();
         while(e.hasMoreElements()) {
@@ -654,26 +688,27 @@ public class ImapClient extends AbstractIncomingMailClient {
             }
         }
         if(mailbox == null) {
-            int p = folderPath.lastIndexOf(folderDelim.charAt(0));
-            if(p != -1 && p < folderPath.length() - 1) {
-                mailbox = new FolderTreeItem(folderPath.substring(p + 1), folderPath, folderDelim);
+            if(folderDelim.length() > 0) {
+                int p = folderPath.lastIndexOf(folderDelim.charAt(0));
+                if(p != -1 && p < folderPath.length() - 1) {
+                    mailbox = new FolderTreeItem(folderPath.substring(p + 1), folderPath, folderDelim);
+                }
+                else {
+                    mailbox = new FolderTreeItem("", folderPath, folderDelim);
+                }
             }
             else {
-                mailbox = new FolderTreeItem("", folderPath, folderDelim);
+                mailbox = new FolderTreeItem("", folderPath, "");
             }
         }
-
-        this.activeMailbox = mailbox;
-        activeMailbox.setMsgCount(response.exists);
-        knownMailboxes.put(activeMailbox, response);
+        return mailbox;
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#expungeActiveFolder()
      */
-    public int[] expungeActiveFolder() throws IOException, MailException {
-        int[] indices = imapProtocol.executeExpunge();
-        return indices;
+    public void expungeActiveFolder() throws IOException, MailException {
+        imapProtocol.executeExpunge();
     }
 
     /* (non-Javadoc)
@@ -703,7 +738,9 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
         public void responseAvailable(FetchEnvelopeResponse response) {
             if(response != null) {
-                callback.folderMessageUpdate(ImapClient.this.prepareFolderMessagesEnvelope(response));
+                FolderMessage folderMessage = ImapClient.this.prepareFolderMessagesEnvelope(response);
+                ((MailboxState)knownMailboxes.get(activeMailbox)).messageFetched(folderMessage.getMessageToken());
+                callback.folderMessageUpdate(folderMessage);
             }
             else {
                 callback.folderMessageUpdate(null);
@@ -727,16 +764,17 @@ public class ImapClient extends AbstractIncomingMailClient {
             ImapProtocol.FetchFlagsResponse[] flagsResponse =
                 imapProtocol.executeFetchFlags(firstIndex, lastIndex, progressHandler);
             FolderMessage[] result = prepareFolderMessagesFlags(flagsResponse);
+            MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
             for(int i=0; i<result.length; i++) {
+                mailboxState.messageFetched(result[i].getMessageToken());
                 callback.folderMessageUpdate(result[i]);
             }
             
             // If the folder's UIDNEXT parameter was not set when it was
             // selected, fake it based on the last item returned by the
             // first FETCH.
-            ImapProtocol.SelectResponse selectResponse = (ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox);
-            if(selectResponse.uidNext == -1 && result.length > 0) {
-                selectResponse.uidNext = result[result.length - 1].getUid() + 1;
+            if(mailboxState.getUidNext() == -1 && result.length > 0) {
+                mailboxState.setUidNext(result[result.length - 1].getUid() + 1);
             }
             callback.folderMessageUpdate(null);
         }
@@ -764,7 +802,9 @@ public class ImapClient extends AbstractIncomingMailClient {
             ImapProtocol.FetchFlagsResponse[] flagsResponse =
                 imapProtocol.executeFetchFlagsUid(uids, progressHandler);
             FolderMessage[] result = prepareFolderMessagesFlags(flagsResponse);
+            MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
             for(int i=0; i<result.length; i++) {
+                mailboxState.messageFetched(result[i].getMessageToken());
                 callback.folderMessageUpdate(result[i]);
             }
             callback.folderMessageUpdate(null);
@@ -796,13 +836,14 @@ public class ImapClient extends AbstractIncomingMailClient {
         public void responseAvailable(FetchEnvelopeResponse response) {
             if(response != null) {
                 FolderMessage folderMessage = ImapClient.this.prepareFolderMessagesEnvelope(response);
+                ((MailboxState)knownMailboxes.get(activeMailbox)).messageFetched(folderMessage.getMessageToken());
                 callback.folderMessageUpdate(folderMessage);
                 lastFolderMessage = folderMessage;
             }
             else {
                 if(lastFolderMessage != null) {
                     int uidNext = lastFolderMessage.getUid() + 1;
-                    ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext = uidNext;
+                    ((MailboxState)knownMailboxes.get(activeMailbox)).setUidNext(uidNext);
                 }
                 callback.folderMessageUpdate(null);
             }
@@ -827,7 +868,8 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
         else {
             FolderMessage[] result;
-            int uidNext = ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext;
+            MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
+            int uidNext = mailboxState.getUidNext();
             
             if(uidNext == -1) {
                 // This condition should never be possible, since something
@@ -843,9 +885,10 @@ public class ImapClient extends AbstractIncomingMailClient {
                 result = prepareFolderMessagesFlags(flagsResponse);
                 if(result.length > 0) {
                     uidNext = result[result.length-1].getUid() + 1;
-                    ((ImapProtocol.SelectResponse)knownMailboxes.get(activeMailbox)).uidNext = uidNext;
+                    mailboxState.setUidNext(uidNext);
                 }
                 for(int i=0; i<result.length; i++) {
+                    mailboxState.messageFetched(result[i].getMessageToken());
                     callback.folderMessageUpdate(result[i]);
                 }
                 callback.folderMessageUpdate(null);
@@ -1061,12 +1104,19 @@ public class ImapClient extends AbstractIncomingMailClient {
      * @return Folder item object
      */
     private FolderTreeItem getFolderItem(FolderTreeItem parent, String folderPath, boolean canSelect) throws IOException, MailException {
-        int pos = 0;
-        int i = 0;
-        while((i = folderPath.indexOf(folderDelim, i)) != -1) {
-            if(i != -1) { pos = i+1; i++; }
+        String decodedName;
+        if(folderDelim.length() > 0)
+        {
+            int pos = 0;
+            int i = 0;
+            while((i = folderPath.indexOf(folderDelim, i)) != -1) {
+                if(i != -1) { pos = i+1; i++; }
+            }
+            decodedName = ImapParser.parseFolderName(folderPath.substring(pos));
         }
-        String decodedName = ImapParser.parseFolderName(folderPath.substring(pos));
+        else {
+            decodedName = ImapParser.parseFolderName(folderPath);
+        }
         FolderTreeItem item = new FolderTreeItem(parent, decodedName, folderPath, folderDelim, canSelect, canSelect);
         item.setMsgCount(0);
         return item;
@@ -1080,53 +1130,49 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken)
      */
-    public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_DELETED);
-    }
-
-
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#undeleteMessage(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
-     */
-    public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        changeMessageFlag(messageToken, messageFlags, false, ImapParser.FLAG_DELETED);
+    public void deleteMessage(MessageToken messageToken) throws IOException, MailException {
+        changeMessageFlag(messageToken, true, ImapParser.FLAG_DELETED);
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageAnswered(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#undeleteMessage(org.logicprobe.LogicMail.mail.MessageToken)
      */
-    public void messageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_ANSWERED);
+    public void undeleteMessage(MessageToken messageToken) throws IOException, MailException {
+        changeMessageFlag(messageToken, false, ImapParser.FLAG_DELETED);
     }
 
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageForwarded(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageAnswered(org.logicprobe.LogicMail.mail.MessageToken)
      */
-    public void messageForwarded(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_FORWARDED);
+    public void messageAnswered(MessageToken messageToken) throws IOException, MailException {
+        changeMessageFlag(messageToken, true, ImapParser.FLAG_ANSWERED);
+    }
+
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageForwarded(org.logicprobe.LogicMail.mail.MessageToken)
+     */
+    public void messageForwarded(MessageToken messageToken) throws IOException, MailException {
+        changeMessageFlag(messageToken, true, ImapParser.FLAG_FORWARDED);
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#messageSeen(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageSeen(org.logicprobe.LogicMail.mail.MessageToken)
      */
-    public void messageSeen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        changeMessageFlag(messageToken, messageFlags, true, ImapParser.FLAG_SEEN);
-        messageFlags.setSeen(true);
+    public void messageSeen(MessageToken messageToken) throws IOException, MailException {
+        changeMessageFlag(messageToken, true, ImapParser.FLAG_SEEN);
     }
     
     /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#messageUnseen(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.message.MessageFlags)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageUnseen(org.logicprobe.LogicMail.mail.MessageToken)
      */
-    public void messageUnseen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException {
-        changeMessageFlag(messageToken, messageFlags, false, ImapParser.FLAG_SEEN);
-        messageFlags.setSeen(false);
+    public void messageUnseen(MessageToken messageToken) throws IOException, MailException {
+        changeMessageFlag(messageToken, false, ImapParser.FLAG_SEEN);
     }
 
     private void changeMessageFlag(
             MessageToken messageToken,
-            MessageFlags messageFlags,
             boolean addOrRemove,
             String flag)
     throws MailException, IOException {
@@ -1136,9 +1182,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             throw new MailException("Invalid mailbox for message");
         }
 
-        ImapProtocol.MessageFlags updatedFlags =
-            imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), addOrRemove, new String[] { flag });
-        refreshMessageFlags(updatedFlags, messageFlags);
+        imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), addOrRemove, new String[] { flag });
     }
     
     private static void refreshMessageFlags(ImapProtocol.MessageFlags updatedFlags, MessageFlags messageFlags) {
@@ -1185,16 +1229,15 @@ public class ImapClient extends AbstractIncomingMailClient {
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#noop()
      */
-    public boolean noop() throws IOException, MailException {
-        boolean result = imapProtocol.executeNoop();
-        return result;
+    public void noop() throws IOException, MailException {
+        imapProtocol.executeNoop();
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModeBegin()
      */
     public void idleModeBegin() throws IOException, MailException {
-        imapProtocol.executeIdle();
+        imapProtocol.executeIdle(idleListener);
     }
 
     /* (non-Javadoc)
@@ -1203,11 +1246,63 @@ public class ImapClient extends AbstractIncomingMailClient {
     public void idleModeEnd() throws IOException, MailException {
         imapProtocol.executeIdleDone();
     }
+    
+    private ImapProtocol.UntaggedResponseListener untaggedResponseListener = new ImapProtocol.UntaggedResponseListener() {
+        public void existsResponse(int value) {
+            MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
+            if(mailboxState == null) { return; }
+            
+            if(mailboxState.getExists() < value) {
+                mailboxState.setExists(value);
+                if(clientListener != null) {
+                    clientListener.recentFolderMessagesAvailable();
+                }
+            }
+        }
+        public void recentResponse(int value) {
+            if(clientListener != null) {
+                clientListener.recentFolderMessagesAvailable();
+            }
+        }
+        public void expungeResponse(int value) {
+            MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
+            if(mailboxState == null) { return; }
+            
+            Vector updatedTokenVector = new Vector();
+            ImapMessageToken token = mailboxState.messageExpunged(value, updatedTokenVector);
+            
+            if(clientListener != null) {
+                MessageToken[] updatedTokens = new MessageToken[updatedTokenVector.size()];
+                updatedTokenVector.copyInto(updatedTokens);
+                clientListener.folderMessageExpunged(token, updatedTokens);
+            }
+        }
+        public void fetchResponse(ImapProtocol.FetchFlagsResponse value) {
+            MailboxState mailboxState = (MailboxState)knownMailboxes.get(activeMailbox);
+            if(mailboxState == null) { return; }
 
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#idleModePoll()
-     */
-    public boolean idleModePoll() throws IOException, MailException {
-        return imapProtocol.executeIdlePoll();
-    }
+            // Handle a UID FETCH response
+            if(value.uid != -1) {
+                ImapMessageToken token = new ImapMessageToken(activeMailbox.getPath(), value.uid);
+                token.setMessageIndex(value.index);
+                mailboxState.messageFetched(token);
+            }
+            
+            ImapMessageToken token = mailboxState.getMessageToken(value.index);
+            MessageFlags messageFlags = new MessageFlags();
+            refreshMessageFlags(value.flags, messageFlags);            
+            
+            if(clientListener != null) {
+                clientListener.folderMessageFlagsChanged(token, messageFlags);
+            }
+        }
+    };
+    
+    private ImapProtocol.IdleListener idleListener = new ImapProtocol.IdleListener() {
+        public void pendingException() {
+            if(clientListener != null) {
+                clientListener.idleModeError();
+            }
+        }
+    };
 }

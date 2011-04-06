@@ -120,8 +120,8 @@ public class SmtpClient implements OutgoingMailClient {
             connection = networkConnector.open(outgoingConfig);
             smtpProtocol.setConnection(connection);
 
-            // Eat the initial server response
-            connection.receive();
+            // Receive the initial server greeting
+            smtpProtocol.receiveGreeting();
 
             hostname = globalConfig.getLocalHostname();
 

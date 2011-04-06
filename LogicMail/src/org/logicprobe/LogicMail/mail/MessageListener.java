@@ -50,18 +50,4 @@ public interface MessageListener extends EventListener {
 	 * @param e Message event data
 	 */
 	public void messageFlagsChanged(MessageEvent e);
-
-	/**
-	 * Invoked when a message has been deleted.
-	 * 
-	 * @param e Message event data
-	 */
-	public void messageDeleted(MessageEvent e);
-
-	/**
-	 * Invoked when a message has been undeleted.
-	 * 
-	 * @param e Message event data
-	 */
-	public void messageUndeleted(MessageEvent e);
 }

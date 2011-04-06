@@ -91,71 +91,145 @@ public class MessageMimeConverter {
 	    }
 	
 	    public void visitTextPart(TextPart part) {
-	        String charset;
-	        boolean isBinary;
-	        boolean isQP;
-	        String encoding;
 	        MimeMessageContent content = message.getContent(part);
 	        if(!(content instanceof TextContent)) { return; }
-	        String text = ((TextContent)content).getText();
-	
+
+	        if(((TextContent)content).getText() != null) {
+	            addTextPartFromString(part, (TextContent)content);
+	        }
+	        else {
+                addTextPartFromRawData(part, (TextContent)content);
+	        }
+	    }
+
+	    private void addTextPartFromString(TextPart part, TextContent content) {
+            String charset;
+            boolean isBinary;
+            boolean isQP;
+            String encoding;
+            String text = content.getText();
+            
             // Determine the charset and encoding from the characteristics of the
             // text, instead of the properties of the TextPart.  We do it this way
             // because the TextPart already contains decoded text that could be
             // encoded in a variety of ways, and because there is no way to
             // easily create a TextPart from a local decoded String that has the
             // charset and encoding properties set correctly.
-	        switch(StringParser.getOptimalEncoding(text)) {
-	        case StringParser.ENCODING_QUOTED_PRINTABLE:
+            switch(StringParser.getOptimalEncoding(text)) {
+            case StringParser.ENCODING_QUOTED_PRINTABLE:
                 charset = "ISO-8859-1";
                 isBinary = false;
                 isQP = true;
                 encoding = "quoted-printable";
-	            break;
-	        case StringParser.ENCODING_BASE64:
+                break;
+            case StringParser.ENCODING_BASE64:
                 charset = "UTF-8";
                 isBinary = true;
                 isQP = false;
                 encoding = "base64";
-	            break;
-	        case StringParser.ENCODING_7BIT:
-	        default:
+                break;
+            case StringParser.ENCODING_7BIT:
+            default:
                 charset = "US-ASCII";
                 isBinary = false;
                 isQP = false;
                 encoding = "7bit";
-	            break;
-	        }
-	
-	        MIMEOutputStream currentStream = startCurrentStream(part, encoding);
-	
-	        currentStream.setContentType(part.getMimeType() + '/' +
-	            part.getMimeSubtype());
-	        currentStream.addContentTypeParameter("charset", charset.toLowerCase());
-	
-	        // Add the content, encoding as necessary
-	        try {
-	            if (!isBinary) {
-	                if (isQP) {
-	                    currentStream.write(StringParser.encodeQuotedPrintable(text)
-	                                                    .getBytes(charset));
-	                } else {
-	                    currentStream.write(text.getBytes(charset));
-	                }
-	            } else {
-	                byte[] data = text.getBytes(charset);
-	                currentStream.write(Base64OutputStream.encode(data, 0, data.length, true, true));
-	            }
-	        } catch (IOException e) {
+                break;
+            }
+    
+            MIMEOutputStream currentStream = startCurrentStream(part, encoding);
+    
+            currentStream.setContentType(part.getMimeType() + '/' +
+                part.getMimeSubtype());
+            currentStream.addContentTypeParameter("charset", charset.toLowerCase());
+    
+            // Add the content, encoding as necessary
+            try {
+                if (!isBinary) {
+                    if (isQP) {
+                        currentStream.write(StringParser.encodeQuotedPrintable(text)
+                                                        .getBytes(charset));
+                    } else {
+                        currentStream.write(text.getBytes(charset));
+                    }
+                } else {
+                    byte[] data = text.getBytes(charset);
+                    currentStream.write(Base64OutputStream.encode(data, 0, data.length, true, true));
+                }
+            } catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
-	        }
-	        
-	        finishCurrentStream(currentStream);
-	    }
+            }
+            
+            finishCurrentStream(currentStream);
+        }
 
-	    public void visitImagePart(ImagePart part) {
+        private void addTextPartFromRawData(TextPart part, TextContent content) {
+            String encoding;
+            boolean isBinary;
+            byte[] rawData = content.getRawData();
+            if(rawData == null) { return; }
+
+            switch(StringParser.getOptimalEncoding(rawData)) {
+            case StringParser.ENCODING_BASE64:
+                isBinary = true;
+                encoding = "base64";
+                break;
+            case StringParser.ENCODING_7BIT:
+            default:
+                isBinary = false;
+                encoding = "7bit";
+                break;
+            }
+            
+            MIMEOutputStream currentStream = startCurrentStream(part, encoding);
+            
+            currentStream.setContentType(part.getMimeType() + '/' +
+                part.getMimeSubtype());
+            
+            // Attempt to add a charset parameter based on the file's
+            // byte-order-mark and other information as described at:
+            // http://codesnipers.com/?q=node/68
+            if(isBinary) {
+                String charset = null;
+                if(rawData.length > 2) {
+                    if((rawData[0] == (byte)0xFF && rawData[1] == (byte)0xFE)
+                            || (rawData[0] == (byte)0x3C && rawData[1] == (byte)0x00)) {
+                        charset = "utf-16le";
+                    }
+                    else if((rawData[0] == (byte)0xFE && rawData[1] == (byte)0xFF)
+                            || (rawData[0] == (byte)0x00 && rawData[1] == (byte)0x3C)) {
+                        charset = "utf-16be";
+                    }
+                    else if((rawData[0] == (byte)0xEF && rawData[1] == (byte)0xBB && rawData[2] == (byte)0xBF)
+                            || (rawData[0] == (byte)0x3C && rawData[1] > (byte)0x00)) {
+                        charset = "utf-8";
+                    }
+                }
+                
+                if(charset != null) {
+                    currentStream.addContentTypeParameter("charset", charset);
+                }
+            }
+
+            try {
+                if(!isBinary) {
+                    currentStream.write(rawData);
+                }
+                else {
+                    currentStream.write(Base64OutputStream.encode(rawData, 0, rawData.length, true, true));
+                }
+            } catch (IOException e) {
+                EventLogger.logEvent(AppInfo.GUID,
+                        ("MIME conversion error: " + e.toString()).getBytes(),
+                        EventLogger.ERROR);
+            }
+            
+            finishCurrentStream(currentStream);
+        }
+
+        public void visitImagePart(ImagePart part) {
 	        MimeMessageContent content = message.getContent(part);
 	        if(!(content instanceof ImageContent)) { return; }
 	        
@@ -262,7 +336,7 @@ public class MessageMimeConverter {
                 if(name.length() > 0) {
                     mimeStream.addContentTypeParameter("name", name);
                     if(contentPart.getDisposition().equalsIgnoreCase("attachment")) {
-                        mimeStream.addHeaderField("Content-Disposition: attachment; filename\"" + name + "\"");
+                        mimeStream.addHeaderField("Content-Disposition: attachment; filename=\"" + name + "\"");
                     }
                 }
             }

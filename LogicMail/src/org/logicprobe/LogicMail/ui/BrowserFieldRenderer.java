@@ -50,12 +50,15 @@ import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
+import net.rim.blackberry.api.browser.Browser;
+import net.rim.blackberry.api.browser.BrowserSession;
 import net.rim.device.api.browser.field.BrowserContent;
 import net.rim.device.api.browser.field.Event;
 import net.rim.device.api.browser.field.RenderingApplication;
 import net.rim.device.api.browser.field.RenderingException;
 import net.rim.device.api.browser.field.RenderingSession;
 import net.rim.device.api.browser.field.RequestedResource;
+import net.rim.device.api.browser.field.UrlRequestedEvent;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.system.EventLogger;
@@ -138,7 +141,16 @@ public class BrowserFieldRenderer implements RenderingApplication {
 	 * @see net.rim.device.api.browser.field.RenderingApplication#eventOccurred(net.rim.device.api.browser.field.Event)
 	 */
 	public Object eventOccurred(Event event) {
-		// no event handling
+	    if(event instanceof UrlRequestedEvent) {
+	        UrlRequestedEvent urlEvent = (UrlRequestedEvent)event;
+	        String url = urlEvent.getURL();
+	        // Make sure this event is a user-triggered HTTP GET
+	        if(!urlEvent.isProgrammatic() && urlEvent.getPostData() == null
+	                && url != null && url.length() > 0) {
+	            BrowserSession browserSession = Browser.getDefaultSession();
+	            browserSession.displayPage(url);
+	        }
+	    }
 		return null;
 	}
 

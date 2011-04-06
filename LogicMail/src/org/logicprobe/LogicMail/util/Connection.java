@@ -68,6 +68,7 @@ public class Connection {
     private int bytesSent = 0;
     private int bytesReceived = 0;
     private final Object socketLock = new Object();
+    private final Object socketReadLock = new Object();
     
     /**
      * Byte stream used to hold received data before it is passed back to
@@ -87,7 +88,7 @@ public class Connection {
      * @param socket Socket representing the connection
      * @throws IOException Thrown if an I/O error occurs
      */
-    protected Connection(SocketConnection socket) throws IOException {
+    public Connection(SocketConnection socket) throws IOException {
         this.globalConfig = MailSettings.getInstance().getGlobalConfig();
         
         this.socket = socket;
@@ -259,7 +260,8 @@ public class Connection {
      * @see InputStream#available()
      */
     public int available() throws IOException {
-        synchronized(socketLock) {
+        //FIXME: This may cause issues if checked during a blocking read
+        synchronized(socketReadLock) {
             if (fakeAvailable == -1) {
                 return input.available();
             } else {
@@ -267,7 +269,7 @@ public class Connection {
             }
         }
     }
-
+    
     /**
      * Receives a string from the server. This method is used internally for
      * incoming communication from the server. The main thing it does is
@@ -302,7 +304,7 @@ public class Connection {
     }
     
     private byte[] receiveImpl(ConnectionResponseTester responseTester) throws IOException {
-        synchronized(socketLock) {
+        synchronized(socketReadLock) {
             // Check existing data for a usable line
             byte[] line = checkForLine(responseTester);
             if(line != null) {

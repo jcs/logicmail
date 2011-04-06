@@ -43,7 +43,12 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
  * default implementations of several optional methods.
  */
 public abstract class AbstractIncomingMailClient implements IncomingMailClient {
+    protected IncomingMailClientListener clientListener;
 
+    public void setListener(IncomingMailClientListener listener) {
+        this.clientListener = listener;
+    }
+    
     public boolean isLoginRequired() {
         return true;
     }
@@ -108,9 +113,7 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         return false;
     }
     
-    public void undeleteMessage(
-            MessageToken messageToken,
-            MessageFlags messageFlags)
+    public void undeleteMessage(MessageToken messageToken)
     throws IOException, MailException {
         // Default empty implementation for unsupported feature
     }
@@ -119,30 +122,22 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         return false;
     }
 
-    public void messageAnswered(
-            MessageToken messageToken,
-            MessageFlags messageFlags)
+    public void messageAnswered(MessageToken messageToken)
     throws IOException, MailException {
         // Default empty implementation for unsupported feature
     }
     
-    public void messageForwarded(
-            MessageToken messageToken,
-            MessageFlags messageFlags)
+    public void messageForwarded(MessageToken messageToken)
     throws IOException, MailException {
         // Default empty implementation for unsupported feature
     }
     
-    public void messageSeen(
-            MessageToken messageToken,
-            MessageFlags messageFlags)
+    public void messageSeen(MessageToken messageToken)
     throws IOException, MailException {
         // Default empty implementation for unsupported feature
     }
     
-    public void messageUnseen(
-            MessageToken messageToken,
-            MessageFlags messageFlags)
+    public void messageUnseen(MessageToken messageToken)
     throws IOException, MailException {
         // Default empty implementation for unsupported feature
     }
@@ -151,9 +146,8 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         return false;
     }
 
-    public int[] expungeActiveFolder() throws IOException, MailException {
+    public void expungeActiveFolder() throws IOException, MailException {
         // Default empty implementation for unsupported feature
-        return new int[0];
     }
     
     public boolean hasIdle() {
@@ -166,10 +160,5 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
 
     public void idleModeEnd() throws IOException, MailException {
         // Default empty implementation for unsupported feature
-    }
-
-    public boolean idleModePoll() throws IOException, MailException {
-        // Default empty implementation for unsupported feature
-        return false;
     }
 }

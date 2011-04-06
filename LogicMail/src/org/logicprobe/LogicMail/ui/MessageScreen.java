@@ -69,6 +69,7 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -89,6 +90,13 @@ import org.logicprobe.LogicMail.util.UnicodeNormalizer;
  * Display an E-Mail message
  */
 public class MessageScreen extends AbstractScreenProvider {
+    private static final boolean hasTouchscreen = PlatformInfo.getInstance().hasTouchscreen();
+    private static final int SHORTCUT_REPLY   = 0;
+    private static final int SHORTCUT_FORWARD = 1;
+    private static final int SHORTCUT_DELETE  = 2;
+    private static final int SHORTCUT_UP      = 3;
+    private static final int SHORTCUT_DOWN    = 4;
+    
     private static String TRIPLE_CENTER_DOT = "\u00B7 \u00B7 \u00B7";
     private VerticalFieldManager screenFieldManager;
     private BorderedFieldManager propertiesFieldManager;
@@ -290,6 +298,22 @@ public class MessageScreen extends AbstractScreenProvider {
     	else if(!messageRendered) {
     		renderMessage();
     	}
+    	
+    	if(hasTouchscreen) {
+    	    StandardScreen standardScreen = (StandardScreen)screen;
+    	    if(messageNode.getParent() != null
+    	            && messageNode.getParent().getParentAccount() instanceof NetworkAccountNode
+    	            && ((NetworkAccountNode)messageNode.getParent().getParentAccount()).hasMailSender()) {
+                standardScreen.setShortcutEnabled(SHORTCUT_REPLY, true);
+                standardScreen.setShortcutEnabled(SHORTCUT_FORWARD, true);
+    	    }
+    	    else {
+        	    standardScreen.setShortcutEnabled(SHORTCUT_REPLY, false);
+        	    standardScreen.setShortcutEnabled(SHORTCUT_FORWARD, false);
+    	    }
+            standardScreen.setShortcutEnabled(SHORTCUT_DELETE,
+                    (messageNode.getFlags() & MessageNode.Flag.DELETED) == 0);
+    	}
     }
 
 	/* (non-Javadoc)
@@ -297,6 +321,43 @@ public class MessageScreen extends AbstractScreenProvider {
      */
     public void onUndisplay() {
     	messageNode.removeMessageNodeListener(messageNodeListener);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#hasShortcuts()
+     */
+    public boolean hasShortcuts() {
+        return true;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#getShortcuts()
+     */
+    public ShortcutItem[] getShortcuts() {
+        // Note: This method is only called once, during initialization of the screen,
+        // and only on devices that have touchscreen support.
+        return new ShortcutItem[] {
+            new ShortcutItem(
+                    SHORTCUT_REPLY,
+                    resources.getString(LogicMailResource.MENUITEM_REPLY),
+                    "shortcut-message-reply.png", "shortcut-message-reply-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_FORWARD,
+                    resources.getString(LogicMailResource.MENUITEM_FORWARD),
+                    "shortcut-message-forward.png", "shortcut-message-forward-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_DELETE,
+                    resources.getString(LogicMailResource.MENUITEM_DELETE),
+                    "shortcut-message-delete.png", "shortcut-message-delete-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_UP,
+                    resources.getString(LogicMailResource.MENUITEM_SCROLL_UP),
+                    "shortcut-up.png", "shortcut-up-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_DOWN,
+                    resources.getString(LogicMailResource.MENUITEM_SCROLL_DOWN),
+                    "shortcut-down.png", "shortcut-down-d.png")
+        };
     }
     
     private void initMenuItems() {
@@ -366,7 +427,8 @@ public class MessageScreen extends AbstractScreenProvider {
         // First, check and see if any hard-coded shortcuts are applicable
         switch(key) {
         case Keypad.KEY_ENTER:
-            if(attachmentsLabelField.isFocus()
+            if(attachmentsLabelField != null
+                    && attachmentsLabelField.isFocus()
                     && attachmentsFieldManager != null
                     && attachmentsFieldManager.getFieldCount() > 0) {
                 attachmentsFieldManager.setFocus();
@@ -378,6 +440,11 @@ public class MessageScreen extends AbstractScreenProvider {
                     saveAttachmentItem.run();
                     return true;
                 }
+            }
+            break;
+        case Keypad.KEY_BACKSPACE:
+            if(messageActions.deleteMessage(messageNode)) {
+                this.screen.close();
             }
             break;
         case Keypad.KEY_SPACE:
@@ -416,6 +483,26 @@ public class MessageScreen extends AbstractScreenProvider {
         return false;
     }
 
+    public void shortcutAction(ShortcutItem item) {
+        switch(item.getId()) {
+        case SHORTCUT_REPLY:
+            messageActions.replyMessage(messageNode);
+            break;
+        case SHORTCUT_FORWARD:
+            messageActions.forwardMessage(messageNode);
+            break;
+        case SHORTCUT_DELETE:
+            messageActions.deleteMessage(messageNode);
+            break;
+        case SHORTCUT_UP:
+            screen.scroll(Manager.UPWARD);
+            break;
+        case SHORTCUT_DOWN:
+            screen.scroll(Manager.DOWNWARD);
+            break;
+        }
+    }
+    
     private boolean isAttachmentSaveable(AttachmentField attachmentField) {
         if(attachmentField == null) { return false; }
         
@@ -448,6 +535,10 @@ public class MessageScreen extends AbstractScreenProvider {
     		if(!contentSaved) {
     			renderMessage();
     		}
+    	}
+    	else if(e.getType() == MessageNodeEvent.TYPE_FLAGS && hasTouchscreen) {
+            ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_DELETE,
+                    (messageNode.getFlags() & MessageNode.Flag.DELETED) == 0);
     	}
     }
 
@@ -484,6 +575,8 @@ public class MessageScreen extends AbstractScreenProvider {
     		MimeMessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {
     			Field field = MessageFieldFactory.createMessageField(messageNode, content);
+    			if(field == null) { continue; }
+    			
     			messageFields.addElement(field);
                 
                 if(content.isPartComplete() != MimeMessageContent.PART_COMPLETE) {

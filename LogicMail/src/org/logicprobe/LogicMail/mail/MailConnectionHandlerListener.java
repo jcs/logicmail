@@ -52,6 +52,7 @@ public interface MailConnectionHandlerListener {
      * @param type The type of the request.
      * @param tag Tag reference to pass along with the request
      * @param exception The exception that caused the request to fail, if applicable.
+     * @param isFinal true if the connection will be closed, false if it is being reopened
      */
-    public void mailConnectionRequestFailed(int type, Object tag, Throwable exception);
+    public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal);
 }

@@ -41,6 +41,7 @@ import net.rim.device.api.i18n.DateFormat;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.KeypadListener;
 import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.FocusChangeListener;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.MenuItem;
@@ -52,6 +53,7 @@ import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.DateTimeUtilities;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
@@ -72,9 +74,12 @@ import org.logicprobe.LogicMail.util.EventObjectRunnable;
  * adjusted accordingly.
  */
 public class MailboxScreen extends AbstractScreenProvider {
+    private static final boolean hasTouchscreen = PlatformInfo.getInstance().hasTouchscreen();
 	private static final int SHORTCUT_COMPOSE = 0;
-	private static final int SHORTCUT_UP = 3;
-	private static final int SHORTCUT_DOWN = 4;
+    private static final int SHORTCUT_OPEN    = 1;
+    private static final int SHORTCUT_DELETE  = 2;
+	private static final int SHORTCUT_UP      = 3;
+	private static final int SHORTCUT_DOWN    = 4;
 	
 	private MailboxNode mailboxNode;
     private Vector knownMessages;
@@ -90,7 +95,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     private boolean composeEnabled;
 
 	private MenuItem compositionItem;
-    
+	
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
      * 
@@ -199,7 +204,11 @@ public class MailboxScreen extends AbstractScreenProvider {
         
         composeEnabled = (mailboxNode.getParentAccount() instanceof NetworkAccountNode)
             && ((NetworkAccountNode)mailboxNode.getParentAccount()).hasMailSender();
-        ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_COMPOSE, composeEnabled);
+        
+        if(hasTouchscreen) {
+            ((StandardScreen)screen).setShortcutEnabled(SHORTCUT_COMPOSE, composeEnabled);
+            updateShortcuts();
+        }
     }
     
 	/* (non-Javadoc)
@@ -226,17 +235,20 @@ public class MailboxScreen extends AbstractScreenProvider {
 	 */
 	public ShortcutItem[] getShortcuts() {
 		// Note: This method is only called once, during initialization of the screen,
-		// and only on devices that have touchscreen support.  The strings for the
-		// shortcuts are contained within the main application library's resources.
-		// However, the icons are contained within the platform support library
-		// containing actual touchscreen API support.
+		// and only on devices that have touchscreen support.
 		return new ShortcutItem[] {
 			new ShortcutItem(
 					SHORTCUT_COMPOSE,
 					resources.getString(LogicMailResource.MENUITEM_COMPOSE_EMAIL),
 					"shortcut-compose.png", "shortcut-compose-d.png"),
-			null,
-			null,
+			new ShortcutItem(
+			        SHORTCUT_OPEN,
+			        resources.getString(LogicMailResource.MENUITEM_SELECT),
+			        "shortcut-message-open.png", "shortcut-message-open-d.png"),
+            new ShortcutItem(
+                    SHORTCUT_DELETE,
+                    resources.getString(LogicMailResource.MENUITEM_DELETE),
+                    "shortcut-message-delete.png", "shortcut-message-delete-d.png"),
 			new ShortcutItem(
 					SHORTCUT_UP,
 					resources.getString(LogicMailResource.MENUITEM_SCROLL_UP),
@@ -247,6 +259,19 @@ public class MailboxScreen extends AbstractScreenProvider {
 					"shortcut-down.png", "shortcut-down-d.png")
 		};
 	}
+    
+	/**
+	 * Listener to be added to all fields in the message field manager, so that
+	 * focus changes can be detected to update the shortcut bar.  This is
+	 * unfortunately the only reliable way to handle this situation.
+	 */
+    private FocusChangeListener messageFieldFocusChangeListener = new FocusChangeListener() {
+        public void focusChanged(Field field, int eventType) {
+            if(hasTouchscreen) {
+                updateShortcuts();
+            }
+        }
+    };
 	
 	/**
 	 * Initializes the fields.
@@ -259,13 +284,72 @@ public class MailboxScreen extends AbstractScreenProvider {
 		        navigationMoved = true;
 		        return super.navigationMovement(dx, dy, status, time);
 		    }
+		    public void add(Field field) {
+		        field.setFocusListener(messageFieldFocusChangeListener);
+		        super.add(field);
+		    }
+		    public void insert(Field field, int index) {
+                field.setFocusListener(messageFieldFocusChangeListener);
+		        super.insert(field, index);
+		    }
+		    public void delete(Field field) {
+		        field.setFocusListener(null);
+		        super.delete(field);
+		        updateShortcuts();
+		    }
+		    public void deleteRange(int start, int count) {
+                for(int i=start; i < start + count; i++) {
+                    getField(start).setFocusListener(null);
+                }
+		        super.deleteRange(start, count);
+		        updateShortcuts();
+		    }
 		};
+		
         screen.add(messageFieldManager);
     	this.messageActions = navigationController.getMessageActions();
         initMenuItems();
 	}    
 	
-	private void initMenuItems() {
+	private void updateShortcuts() {
+	    int fieldCount = messageFieldManager.getFieldCount();
+	    StandardScreen standardScreen = (StandardScreen)screen;
+	    
+	    if(fieldCount <= 1) {
+	        standardScreen.setShortcutEnabled(SHORTCUT_UP, false);
+	        standardScreen.setShortcutEnabled(SHORTCUT_DOWN, false);
+	        standardScreen.setShortcutEnabled(SHORTCUT_OPEN, false);
+	        standardScreen.setShortcutEnabled(SHORTCUT_DELETE, false);
+            return;
+	    }
+
+	    boolean openEnabled = false;
+	    boolean deleteEnabled = false;
+        Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
+        if(fieldWithFocus instanceof MailboxMessageField) {
+            MessageNode messageNode = ((MailboxMessageField)fieldWithFocus).getMessageNode();
+            openEnabled = messageNode.existsOnServer() || messageNode.hasCachedContent();
+            deleteEnabled = (messageNode.getFlags() & MessageNode.Flag.DELETED) == 0;
+        }
+        int focusIndex = messageFieldManager.getFieldWithFocusIndex();
+        if(focusIndex == 0) {
+            standardScreen.setShortcutEnabled(SHORTCUT_UP, false);
+            standardScreen.setShortcutEnabled(SHORTCUT_DOWN, true);
+        }
+        else if(focusIndex == fieldCount - 1) {
+            standardScreen.setShortcutEnabled(SHORTCUT_UP, true);
+            standardScreen.setShortcutEnabled(SHORTCUT_DOWN, false);
+        }
+        else {
+            standardScreen.setShortcutEnabled(SHORTCUT_UP, true);
+            standardScreen.setShortcutEnabled(SHORTCUT_DOWN, true);
+        }
+        
+        standardScreen.setShortcutEnabled(SHORTCUT_OPEN, openEnabled);
+        standardScreen.setShortcutEnabled(SHORTCUT_DELETE, deleteEnabled);
+    }
+
+    private void initMenuItems() {
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
 	        	navigationController.displayComposition((NetworkAccountNode)mailboxNode.getParentAccount());
@@ -950,10 +1034,24 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.AbstractScreenProvider#shortcutAction(org.logicprobe.LogicMail.ui.ScreenProvider.ShortcutItem)
      */
     public void shortcutAction(ShortcutItem item) {
+        MessageNode messageNode;
+        
     	switch(item.getId()) {
     	case SHORTCUT_COMPOSE:
     		compositionItem.run();
     		break;
+    	case SHORTCUT_OPEN:
+            messageNode = getSelectedMessage();
+            if(messageNode != null) {
+                messageActions.openMessage(messageNode);
+            }
+    	    break;
+    	case SHORTCUT_DELETE:
+            messageNode = getSelectedMessage();
+            if(messageNode != null) {
+                messageActions.deleteMessage(messageNode);
+            }
+    	    break;
     	case SHORTCUT_UP:
     		screen.scroll(Manager.UPWARD);
     		break;

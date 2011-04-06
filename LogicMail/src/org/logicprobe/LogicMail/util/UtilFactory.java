@@ -44,6 +44,7 @@ public abstract class UtilFactory {
      * API version to the lowest.
      */
     private static String[] factoryClasses = {
+        "org.logicprobe.LogicMail.util.UtilFactoryBB60",
         "org.logicprobe.LogicMail.util.UtilFactoryBB50",
         "org.logicprobe.LogicMail.util.UtilFactoryBB47",
         "org.logicprobe.LogicMail.util.UtilFactoryBB46",
@@ -71,4 +72,14 @@ public abstract class UtilFactory {
      * @return platform-specific connector instance
      */
     public abstract NetworkConnector getNetworkConnector(GlobalConfig globalConfig, ConnectionConfig connectionConfig);
+
+    /**
+     * Called at application startup to register any sensor listeners.
+     */
+    public void addSensorListeners() { }
+    
+    /**
+     * Called at application startup to unregister any sensor listeners.
+     */
+    public void removeSensorListeners() { }
 }

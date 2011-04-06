@@ -44,6 +44,7 @@ import net.rim.device.api.util.Persistable;
  */
 public class FakeMessageToken implements MessageToken, Persistable {
     private long uniqueId;
+    private int index;
     public FakeMessageToken() { this.uniqueId = 0; }
     public FakeMessageToken(long uniqueId) { this.uniqueId = uniqueId; }
     public long getUniqueId() { return uniqueId; }
@@ -51,9 +52,21 @@ public class FakeMessageToken implements MessageToken, Persistable {
     public void serialize(DataOutput output) throws IOException { output.writeLong(uniqueId); }
     public boolean containedWithin(FolderTreeItem folderTreeItem) { return true; }
     public String getMessageUid() { return Long.toString(uniqueId); }
-    public void updateToken(MessageToken messageToken) { }
     public boolean isLoadable() { return true; }
-    public void updateMessageIndex(int index) { }
+
+    public void updateToken(MessageToken messageToken) {
+        if(messageToken instanceof FakeMessageToken) {
+            this.index = ((FakeMessageToken)messageToken).index;
+        }
+    }
+    
+    public void updateMessageIndex(int index) {
+        this.index = index;
+    }
+    
+    public int getMessageIndex() {
+        return index;
+    }
     
     private static final Comparator comparator = new Comparator() {
         public int compare(Object o1, Object o2) {
@@ -104,6 +117,11 @@ public class FakeMessageToken implements MessageToken, Persistable {
     
     public MessageToken clone() {
         FakeMessageToken result = new FakeMessageToken(uniqueId);
+        result.index = index;
         return result;
+    }
+    
+    public String toString() {
+        return "Token " + uniqueId;
     }
 }

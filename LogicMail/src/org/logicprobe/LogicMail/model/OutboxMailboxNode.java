@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -85,14 +86,16 @@ public class OutboxMailboxNode extends MailboxNode {
     OutboxMailboxNode(FolderTreeItem folderTreeItem) {
         super(folderTreeItem, false, MailboxNode.TYPE_OUTBOX);
         persistentObject = PersistentStore.getPersistentObject(persistentObjectKey);
-        Object persisted = persistentObject.getContents();
-        if(persisted instanceof PersistableOutboxMailboxNode) {
-            persistentContainer = (PersistableOutboxMailboxNode)persisted;
-        }
-        else {
-            persistentContainer = new PersistableOutboxMailboxNode();
-            persistentObject.setContents(persistentContainer);
-            persistentObject.commit();
+        synchronized(persistentObject) {
+            Object persisted = persistentObject.getContents();
+            if(persisted instanceof PersistableOutboxMailboxNode) {
+                persistentContainer = (PersistableOutboxMailboxNode)persisted;
+            }
+            else {
+                persistentContainer = new PersistableOutboxMailboxNode();
+                persistentObject.setContents(persistentContainer);
+                persistentObject.commit();
+            }
         }
     }
 
@@ -294,6 +297,7 @@ public class OutboxMailboxNode extends MailboxNode {
                                 outgoingMessageNode.getPersistable());
                         persistentContainer.setElement(PersistableOutboxMailboxNode.FIELD_OUTGOING_MESSAGE_MAP, outgoingNodeMap);
                     }
+                    persistentObject.commit();
                 }
                 
                 outgoingMessageNode.setCached(true);
@@ -391,14 +395,10 @@ public class OutboxMailboxNode extends MailboxNode {
                 MailStoreServices sendingMailStore = replyToMessageAccount.getMailStoreServices();
                 if(sendingMailStore.hasFlags()) {
                     if(outgoingMessageNode.getReplyType() == OutgoingMessageNode.REPLY_FORWARDED) {
-                        sendingMailStore.requestMessageForwarded(
-                                replyToMessageToken,
-                                new MessageFlags());
+                        sendingMailStore.requestMessageForwarded(replyToMessageToken);
                     }
                     else {
-                        sendingMailStore.requestMessageAnswered(
-                                replyToMessageToken,
-                                new MessageFlags());
+                        sendingMailStore.requestMessageAnswered(replyToMessageToken);
                     }
                 }
             }
@@ -415,6 +415,7 @@ public class OutboxMailboxNode extends MailboxNode {
                 if(value instanceof Hashtable) {
                     ((Hashtable)value).remove(outgoingMessageNode.getMessageToken());
                 }
+                persistentObject.commit();
             }
         } catch (Throwable exp) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -433,14 +434,23 @@ public class OutboxMailboxNode extends MailboxNode {
             if(value instanceof Hashtable) {
                 ((Hashtable)value).clear();
             }
+            persistentObject.commit();
         }
     }
     
     private void mailSender_MessageSendFailed(MessageSentEvent e) {
         // Find out whether we know about this message
         Message message = e.getMessage();
+        
         if(outboundMessageMap.get(message) instanceof OutgoingMessageNode) {
             OutgoingMessageNode outgoingMessageNode = (OutgoingMessageNode)outboundMessageMap.get(message);
+
+            // Handle the specific case of a failed server connection being retried
+            if(!e.isFinal() && e.getException() instanceof IOException) {
+                AbstractMailSender mailSender = outgoingMessageNode.getMailSender();
+                mailSender.requestSendMessage(e.getEnvelope(), message);
+                return;
+            }
 
             removeMailSenderListener(outgoingMessageNode.getMailSender());
 

@@ -30,7 +30,6 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.ScreenUiEngineAttachedListener;
 import net.rim.device.api.ui.TransitionContext;
@@ -111,12 +110,15 @@ public class ScreenFactoryBB50 extends ScreenFactoryBB47 {
         String fileUrl;
         try {
             fileUrl = FilePicker.getInstance().show();
-        } catch (ControlledAccessException e) {
+        } catch (Throwable t) {
             // There is a bug (JAVAAPI-830) in certain BlackBerry OS 5.0
-            // releases that causes this exception to be thrown if the new
-            // FilePicker API is used on an actual device.  To avoid having to
-            // know specifically when the FilePicker will work, we catch this
-            // exception and fall back to our own implementation.
+            // releases that causes a ControlledAccessException to be thrown if
+            // the FilePicker API is used on an actual device.  There have been
+            // other bugs seen on BlackBerry OS 6.0 that cause an Error or a
+            // NoClassDefFoundError to be thrown if the FilePicker API is used.
+            // To avoid having to know specifically when the FilePicker will
+            // work, and to retain the ability to use it when it isn't buggy,
+            // we catch these exceptions and fall back to our own implementation.
             FilePickerDialog dialog = new FilePickerDialog();
             if(hasTouchscreen) {
                 dialog.getVirtualKeyboard().setVisibility(VirtualKeyboard.HIDE_FORCE);

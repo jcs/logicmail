@@ -50,8 +50,8 @@ public class NetworkMailSender extends AbstractMailSender {
 				connectionHandler_mailConnectionRequestComplete(type, result, tag, isFinal);
 			}
 
-            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
-                connectionHandler_mailConnectionRequestFailed(type, tag, exception);
+            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
+                connectionHandler_mailConnectionRequestFailed(type, tag, exception, isFinal);
             }
 		});
 		this.connectionHandler.start();
@@ -100,11 +100,11 @@ public class NetworkMailSender extends AbstractMailSender {
         }
 	}
 	
-	private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
+	private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
         switch(type) {
         case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
             Object[] params = (Object[])tag;
-            fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1], exception);
+            fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1], exception, isFinal);
             break;
         }
     }

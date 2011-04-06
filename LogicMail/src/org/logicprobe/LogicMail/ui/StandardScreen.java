@@ -349,4 +349,11 @@ public class StandardScreen extends MainScreen {
     public void setShortcutEnabled(int id, boolean enabled) {
         // Shortcuts not supported by the base screen class
     }
+    
+    /**
+     * Shows the virtual keyboard, if applicable to this device
+     */
+    public void showVirtualKeyboard() {
+        // Virtual keyboard not supported by the base screen class
+    }
 }

@@ -58,6 +58,13 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
  */
 public interface IncomingMailClient extends MailClient {
     /**
+     * Set the listener used to handle asynchronous events from the mail client.
+     * 
+     * @param listener the listener to set
+     */
+    void setListener(IncomingMailClientListener listener);
+    
+    /**
      * Get the account configuration.
      * Should probably find a way to remove the need for this.
      */
@@ -219,6 +226,10 @@ public interface IncomingMailClient extends MailClient {
     
     /**
      * Select a new active mail folder.
+     * If new messages have arrived in this folder since it was previously
+     * selected, and the client's state information for the folder is still
+     * valid, a {@link IncomingMailClientListener#recentFolderMessagesAvailable()}
+     * event will be fired.  
      * <p>
      * This method is only useful if the protocol supports
      * folders, and should otherwise be ignored or limited
@@ -226,16 +237,26 @@ public interface IncomingMailClient extends MailClient {
      * </p>
      * 
      * @param folderItem The FolderTreeItem object describing the new active
-     *                   folderItem
+     *     folderItem
+     * @param notifyAvailable Whether a notification should be generated if the
+     *     client's state information for the folder is still valid and news
+     *     messages have arrived
+     * @return True, if the mail client's state information for the folder is
+     *         still valid.  False if the folder needs to be refreshed.
+     *
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    void setActiveFolder(FolderTreeItem folderItem)
+    boolean setActiveFolder(FolderTreeItem folderItem, boolean notifyAvailable)
         throws IOException, MailException;
 
     /**
      * Select a new active mail folder based on where a particular message is
      * stored.
+     * If new messages have arrived in this folder since it was previously
+     * selected, and the client's state information for the folder is still
+     * valid, a {@link IncomingMailClientListener#recentFolderMessagesAvailable()}
+     * event will be fired.  
      * <p>
      * This method is only useful if the protocol supports
      * folders, and should otherwise be ignored or limited
@@ -243,26 +264,34 @@ public interface IncomingMailClient extends MailClient {
      * </p>
      * 
      * @param messageToken The message token object for the message whose
-     *                     folder we want to switch to
+     *     folder we want to switch to
+     * @param notifyAvailable Whether a notification should be generated if the
+     *     client's state information for the folder is still valid and news
+     *     messages have arrived
+     * @return <code>null</code>, if the mail client's state information for the
+     *     message's folder is still valid.  If the folder needs to be
+     *     refreshed, then the <code>FolderTreeItem</code> for the folder is
+     *     returned.  
      *
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    void setActiveFolder(MessageToken messageToken)
+    FolderTreeItem setActiveFolder(MessageToken messageToken, boolean notifyAvailable)
         throws IOException, MailException;
     
     /**
      * Expunges deleted messages from the currently active mail folder.
      * This should do nothing if the underlying protocol does not support
      * expunge.
-     *
-     * @return an array of the indices of all expunged messages
+     * <p>
+     * The list of expunged messages will be provided asynchronously via
+     * {@link IncomingMailClientListener#folderMessageExpunged(MessageToken)}.
+     * </p>
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    int[] expungeActiveFolder()
-        throws IOException, MailException;
+    void expungeActiveFolder() throws IOException, MailException;
     
     /**
      * Get a list of the messages in the selected folder that appear after the
@@ -408,7 +437,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    void deleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void deleteMessage(MessageToken messageToken) throws IOException, MailException;
     
     /**
      * Undeletes a particular message from the selected folder.
@@ -419,7 +448,7 @@ public interface IncomingMailClient extends MailClient {
      * @throws MailException on protocol errors
      * @see #hasUndelete()
      */
-    void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void undeleteMessage(MessageToken messageToken) throws IOException, MailException;
 
     /**
      * Appends a message to the specified folder, and flags it as seen.
@@ -456,29 +485,35 @@ public interface IncomingMailClient extends MailClient {
      * Sets the flags on a message so the server knows it was answered.
      * This should do nothing if the underlying protocol does not support
      * setting an answered state on a message.
-     *
+     * <p>
+     * The actual flag updates will be provided asynchronously via
+     * {@link IncomingMailClientListener#folderMessageFlagsChanged(MessageToken, MessageFlags)}.
+     * </p>
+     * 
      * @param messageToken Token identifying the message being modified
-     * @param messageFlags Existing message flags, to be updated with new flags
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      * @see #hasFlags()
      */
-    void messageAnswered(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void messageAnswered(MessageToken messageToken) throws IOException, MailException;
     
     /**
      * Sets the flags on a message so the server knows it was forwarded.
      * This should do nothing if the underlying protocol does not support
      * setting a forwarded state on a message.
+     * <p>
+     * The actual flag updates will be provided asynchronously via
+     * {@link IncomingMailClientListener#folderMessageFlagsChanged(MessageToken, MessageFlags)}.
+     * </p>
      *
      * @param messageToken Token identifying the message being modified
-     * @param messageFlags Existing message flags, to be updated with new flags
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      * @see #hasFlags()
      */
-    void messageForwarded(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void messageForwarded(MessageToken messageToken) throws IOException, MailException;
     
     /**
      * Sets the flags on a message so that the server marks it as seen.
@@ -487,45 +522,49 @@ public interface IncomingMailClient extends MailClient {
      * corresponding fetch request.
      * This should do nothing if the underlying protocol does not support
      * changing the seen state of a message.
+     * <p>
+     * The actual flag updates will be provided asynchronously via
+     * {@link IncomingMailClientListener#folderMessageFlagsChanged(MessageToken, MessageFlags)}.
+     * </p>
      *
      * @param messageToken Token identifying the message being modified
-     * @param messageFlags Existing message flags, to be updated with new flags
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      * @see #hasFlags()
      */
-    void messageSeen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void messageSeen(MessageToken messageToken) throws IOException, MailException;
     
     /**
      * Sets the flags on a message so that the server marks it as unseen.
      * This should do nothing if the underlying protocol does not support
      * changing the seen state of a message.
+     * <p>
+     * The actual flag updates will be provided asynchronously via
+     * {@link IncomingMailClientListener#folderMessageFlagsChanged(MessageToken, MessageFlags)}.
+     * </p>
      *
      * @param messageToken Token identifying the message being modified
-     * @param messageFlags Existing message flags, to be updated with new flags
      * 
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      * @see #hasFlags()
      */
-    void messageUnseen(MessageToken messageToken, MessageFlags messageFlags) throws IOException, MailException;
+    void messageUnseen(MessageToken messageToken) throws IOException, MailException;
     
     /**
      * Sends the underlying protocol's no-operation command.
      * <p>
-     * On some protocols, this can be an explicit way of checking
-     * for the availability of new messages, so the return value
-     * is used to indicate the result of that check.
-     * If no such command is supported by the underlying protocol,
-     * then a false should be immediately returned.
+     * On some protocols, this can be an explicit way of checking for the
+     * availability of new messages, so it will be called periodically as part
+     * of the idle processing routine.  However, any actual notifications will
+     * be sent through the same asynchronous mechanism as idle processing.
      * </p>
      * 
-     * @return True if the mailbox has new data, false otherwise.
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    boolean noop() throws IOException, MailException;
+    void noop() throws IOException, MailException;
     
     /**
      * Begins the idle mode for the underlying protocol.
@@ -548,16 +587,4 @@ public interface IncomingMailClient extends MailClient {
      * @see #hasIdle()
      */
     void idleModeEnd() throws IOException, MailException;
-
-    /**
-     * Polls the connection during the idle mode for the underlying protocol.
-     * This should do nothing if the underlying protocol does not support
-     * idling.
-     * 
-     * @return True if the mailbox has new data, false otherwise.
-     * @throws IOException on I/O errors
-     * @throws MailException on protocol errors
-     * @see #hasIdle()
-     */
-    boolean idleModePoll() throws IOException, MailException;
 }

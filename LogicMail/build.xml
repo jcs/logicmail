@@ -54,7 +54,8 @@
             srcdir="src"
             destdir="${dist.dir}/@{platform}"
             jdehome="@{jdehome}"
-            defines="@{preprocessor}">
+            defines="@{preprocessor}"
+            generatesourcelist="true">
         <jdp title="${module.title}"
              vendor="${module.vendor}"
              version="${module.version}.${module.build}"

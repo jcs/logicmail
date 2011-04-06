@@ -119,7 +119,12 @@ public class MessageFieldFactory {
     }
 	
 	private static Field createImageMessageField(ImageContent content) {
-		return new BitmapField(content.getImage().getBitmap());
+	    if(content.getImage() != null) {
+	        return new BitmapField(content.getImage().getBitmap());
+	    }
+	    else {
+	        return null;
+	    }
 	}
 
 	private static Field createUnsupportedMessageField(MimeMessageContent content) {

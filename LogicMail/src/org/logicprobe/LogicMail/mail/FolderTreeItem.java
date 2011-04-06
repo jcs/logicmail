@@ -357,4 +357,22 @@ public class FolderTreeItem implements Serializable {
         }
         return true;
     }
+
+    public String toString() {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("FolderTreeItem [uniqueId=");
+        buffer.append(uniqueId);
+        buffer.append(", path=");
+        buffer.append(path);
+        buffer.append(", selectable=");
+        buffer.append(selectable);
+        buffer.append(", appendable=");
+        buffer.append(appendable);
+        buffer.append(", msgCount=");
+        buffer.append(msgCount);
+        buffer.append(", unseenCount=");
+        buffer.append(unseenCount);
+        buffer.append("]");
+        return buffer.toString();
+    }
 }

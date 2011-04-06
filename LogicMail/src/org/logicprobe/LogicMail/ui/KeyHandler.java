@@ -46,7 +46,7 @@ import net.rim.device.api.util.LongIntHashtable;
  * can only be changed on the simulator prior to startup.
  */
 public class KeyHandler {
-    private static LongIntHashtable table;
+    private static final LongIntHashtable table = new LongIntHashtable();
     private static boolean isReduced;
 
     public final static int MESSAGE_REPLY        = 10;
@@ -88,31 +88,38 @@ public class KeyHandler {
         }
     }
 
-    private static void buildTable() {
-        table = new LongIntHashtable();
-        switch(Keypad.getHardwareLayout()) {
-        case Keypad.HW_LAYOUT_39:
-        case Keypad.HW_LAYOUT_32:
-            buildTable_39_32();
-            break;
-        case Keypad.HW_LAYOUT_REDUCED_24:
-            buildTable_REDUCED_24();
-            isReduced = true;
-            break;
-        case 1230263636: // HW_LAYOUT_ITUT
-            buildTable_ITUT();
-            isReduced = true;
-            break;
-        default:
-            if(!PlatformInfo.getInstance().hasTouchscreen()) {
+    /**
+     * Causes the key mapping table to be constructed.
+     * Normally this method is automatically called on the first use of this
+     * class, but it can also be explicitly called to rebuild the table if
+     * the device's hardware layout changes.
+     */
+    public static void buildTable() {
+        synchronized(table) {
+            table.clear();
+            switch(Keypad.getHardwareLayout()) {
+            case Keypad.HW_LAYOUT_39:
+            case Keypad.HW_LAYOUT_32:
                 buildTable_39_32();
+                break;
+            case Keypad.HW_LAYOUT_REDUCED_24:
+                buildTable_REDUCED_24();
+                isReduced = true;
+                break;
+            case 1230263636: // HW_LAYOUT_ITUT
+                buildTable_ITUT();
+                isReduced = true;
+                break;
+            default:
+                if(!PlatformInfo.getInstance().hasTouchscreen()) {
+                    buildTable_39_32();
+                }
+                break;
             }
-            break;
         }
     }
 
     private static void buildTable_39_32() {
-        table.clear();
         switch(Keypad.getLocale().getCode()) {
         case Locale.LOCALE_en:
         case Locale.LOCALE_en_US:

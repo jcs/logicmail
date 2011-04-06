@@ -240,6 +240,7 @@ public class FilePickerDialog extends Dialog {
      */
     private void selectFolder() {
         int index = folderListField.getSelectedIndex();
+        if(index == -1 || index >= folderList.size()) { return; }
         String selectedItem = (String)folderList.elementAt(index);
         if(selectedItem.equals(PREV_FOLDER)) {
             folderUrl = folderUrl.substring(0, folderUrl.lastIndexOf('/', folderUrl.length() - 2) + 1);
@@ -256,6 +257,7 @@ public class FilePickerDialog extends Dialog {
      */
     private void selectFile() {
         int index = fileListField.getSelectedIndex();
+        if(index == -1 || index >= fileList.size()) { return; }
         String selectedItem = (String)fileList.elementAt(index);
         try {
             FileConnection fileConnection = (FileConnection)Connector.open(

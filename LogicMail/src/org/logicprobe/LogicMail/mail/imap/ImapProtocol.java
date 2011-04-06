@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.mail.imap;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.IntIntHashtable;
-import net.rim.device.api.util.IntVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -53,9 +52,10 @@ import java.util.Vector;
  * This class implements the commands for the IMAP protocol
  */
 public class ImapProtocol {
-    private Connection connection;
-    private String idleCommandTag;
     private static final ConnectionResponseTester executeResponseTester = new ImapResponseLineTester();    
+    private Connection connection;
+    private IdleThread idleThread;
+    private UntaggedResponseListener untaggedResponseListener;
 
     /**
      * Counts the commands executed so far in this session. Every command of an
@@ -76,6 +76,15 @@ public class ImapProtocol {
      */
     public void setConnection(Connection connection) {
         this.connection = connection;
+    }
+    
+    /**
+     * Sets the listener that receives untagged response notifications.
+     *
+     * @param untaggedResponseListener the new untagged response listener
+     */
+    public void setUntaggedResponseListener(UntaggedResponseListener untaggedResponseListener) {
+        this.untaggedResponseListener = untaggedResponseListener;
     }
     
     /**
@@ -386,38 +395,19 @@ public class ImapProtocol {
 
     /**
      * Execute the "EXPUNGE" command.
-     *
-     * @return an array of the indices of all expunged messages
      */
-    public int[] executeExpunge() throws IOException, MailException {
+    public void executeExpunge() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("ImapProtocol.executeExpunge()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-
-        String[] replyText = execute("EXPUNGE", null, null);
         
-        IntVector indexVector = new IntVector();
-        
-        for (int i = 0; i < replyText.length; i++) {
-            String rowText = replyText[i].toUpperCase();
-            int p;
-            int q;
-            if ((p = rowText.indexOf(" EXPUNGE")) != -1) {
-                q = p;
-                p = rowText.indexOf(' ');
+        byte[][] responses = executeResponse(EXPUNGE, null, null);
 
-                if ((q != -1) && (p != -1) && (q > p)) {
-                    try {
-                        indexVector.addElement(
-                                Integer.parseInt(rowText.substring(p + 1, q)));
-                    } catch (NumberFormatException e) { }
-                }
-            }
+        for (int i = 0; i < responses.length; i++) {
+            checkForUntaggedValue(responses[i]);
         }
-        
-        return indexVector.toArray();
     }
 
     public StatusResponse[] executeStatus(String[] mboxpaths,
@@ -522,6 +512,9 @@ public class ImapProtocol {
                 if(response != null) {
                     result.addElement(response);
                 }
+                else {
+                    checkForUntaggedValue(rawLine);
+                }
             }
             public void executeComplete() { }},
             progressHandler);
@@ -546,7 +539,6 @@ public class ImapProtocol {
         }
 
         final Vector result = new Vector();
-        
         executeResponse(UID_FETCH,
                 Integer.toString(uidNext) + CHAR_COLON_ASTERISK +
                 " (FLAGS UID)",
@@ -555,6 +547,9 @@ public class ImapProtocol {
                 FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
                 if(response != null) {
                     result.addElement(response);
+                }
+                else {
+                    checkForUntaggedValue(rawLine);
                 }
             }
             public void executeComplete() { }},
@@ -596,7 +591,6 @@ public class ImapProtocol {
         }
 
         final Vector result = new Vector();
-        
         executeResponse(UID_FETCH,
                 uidList + " (FLAGS UID)",
                 new ExecuteCallback() {
@@ -604,6 +598,9 @@ public class ImapProtocol {
                 FetchFlagsResponse response = prepareFetchFlagsResponse(rawLine);
                 if(response != null) {
                     result.addElement(response);
+                }
+                else {
+                    checkForUntaggedValue(rawLine);
                 }
             }
             public void executeComplete() { }},
@@ -618,7 +615,7 @@ public class ImapProtocol {
         if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
             return null;
         }
-        
+
         FetchFlagsResponse flagRespItem = new FetchFlagsResponse();
         
         try {
@@ -700,7 +697,9 @@ public class ImapProtocol {
                 " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new ExecuteCallback() {
             public void processResponse(byte[] rawLine) {
-                prepareFetchEnvelopeResponse(rawLine, callback);
+                if(!prepareFetchEnvelopeResponse(rawLine, callback)) {
+                    checkForUntaggedValue(rawLine);
+                }
             }
             public void executeComplete() {
                 if(callback != null) {
@@ -731,7 +730,9 @@ public class ImapProtocol {
                 " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new ExecuteCallback() {
             public void processResponse(byte[] rawLine) {
-                prepareFetchEnvelopeResponse(rawLine, callback);
+                if(!prepareFetchEnvelopeResponse(rawLine, callback)) {
+                    checkForUntaggedValue(rawLine);
+                }
             }
             public void executeComplete() {
                 if(callback != null) {
@@ -778,7 +779,9 @@ public class ImapProtocol {
                 indexList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new ExecuteCallback() {
             public void processResponse(byte[] rawLine) {
-                prepareFetchEnvelopeResponse(rawLine, callback);
+                if(!prepareFetchEnvelopeResponse(rawLine, callback)) {
+                    checkForUntaggedValue(rawLine);
+                }
             }
             public void executeComplete() {
                 if(callback != null) {
@@ -825,7 +828,9 @@ public class ImapProtocol {
                 uidList + " (FLAGS UID ENVELOPE BODYSTRUCTURE)",
                 new ExecuteCallback() {
             public void processResponse(byte[] rawLine) {
-                prepareFetchEnvelopeResponse(rawLine, callback);
+                if(!prepareFetchEnvelopeResponse(rawLine, callback)) {
+                    checkForUntaggedValue(rawLine);
+                }
             }
             public void executeComplete() {
                 if(callback != null) {
@@ -836,10 +841,12 @@ public class ImapProtocol {
         progressHandler);
     }
 
-    private void prepareFetchEnvelopeResponse(byte[] rawText, FetchEnvelopeCallback callback) {
+    private boolean prepareFetchEnvelopeResponse(byte[] rawText, FetchEnvelopeCallback callback) {
         if(rawText == null || rawText.length == 0 || rawText[0] != CHAR_ASTERISK) {
-            return;
+            return false;
         }
+        
+        boolean hasEnvelopeOrStructure = false;
         
         FetchEnvelopeResponse envRespItem = null;
         try {
@@ -851,7 +858,7 @@ public class ImapProtocol {
                 int offset = Arrays.getIndex(rawText, (byte)'(');
                 parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
             } catch (Exception exp) {
-                return;
+                return false;
             }
 
             envRespItem = new FetchEnvelopeResponse();
@@ -880,14 +887,18 @@ public class ImapProtocol {
                         && (parsedSize > (j + 1))
                         && parsedText.elementAt(j + 1) instanceof Vector) {
                     env = ImapParser.parseMessageEnvelope((Vector) parsedText.elementAt(j + 1));
+                    hasEnvelopeOrStructure = true;
                 }
                 else if (BODYSTRUCTURE.equals(parsedText.elementAt(j))
                         && (parsedSize > (j + 1))
                         && parsedText.elementAt(j + 1) instanceof Vector) {
                     structure = ImapParser.parseMessageStructureParameter((Vector) parsedText.elementAt(j + 1));
+                    hasEnvelopeOrStructure = true;
                 }
             }
 
+            if(!hasEnvelopeOrStructure) { return false; }
+            
             // If either of the above sections were not found, then populate
             // the reply with the relevant dummy data.
             if (env == null) {
@@ -915,6 +926,8 @@ public class ImapProtocol {
         if (envRespItem != null) {
             callback.responseAvailable(envRespItem);
         }
+        
+        return true;
     }
 
     /**
@@ -946,6 +959,9 @@ public class ImapProtocol {
                 EventLogger.logEvent(AppInfo.GUID,
                     ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
             }
+            if(msgStructure == null) {
+                checkForUntaggedValue(rawText);
+            }
         }
 
         return msgStructure;
@@ -958,8 +974,7 @@ public class ImapProtocol {
      * @param progressHandler the progress handler
      * @return Body text as a string
      */
-    public byte[] executeFetchBody(int uid, String address,
-        MailProgressHandler progressHandler) throws IOException, MailException {
+    public byte[] executeFetchBody(int uid, String address, MailProgressHandler progressHandler) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("ImapProtocol.executeFetchBody(" + uid + ", \"" + address +
@@ -973,40 +988,62 @@ public class ImapProtocol {
             return new byte[0];
         }
 
-        int offset = Arrays.getIndex(rawList[0], (byte)'(');
-        Vector parsedList = ImapParser.parenListParser(rawList[0], offset, rawList[0].length - offset);
-        int size = parsedList.size();
-        
         byte[] rawMessage = null;
-        for(int i=0; i<(size - 1); i++) {
-            Object element = parsedList.elementAt(i);
-            if(element instanceof String
-                    && ((String)element).startsWith(BODY)
-                    && parsedList.elementAt(i + 1) instanceof byte[]) {
-                rawMessage = (byte[])parsedList.elementAt(i + 1);
+        
+        for(int i=0; i<rawList.length; i++) {
+            if(rawMessage == null) {
+                // If we don't yet have the raw message body, try to find it in
+                // the current response line
+                int offset = Arrays.getIndex(rawList[i], (byte)'(');
+                Vector parsedList = ImapParser.parenListParser(rawList[i], offset, rawList[i].length - offset);
+                int size = parsedList.size();
+
+                for(int j=0; j<(size - 1); j++) {
+                    Object element = parsedList.elementAt(j);
+                    if(element instanceof String
+                            && ((String)element).startsWith(BODY)
+                            && parsedList.elementAt(j + 1) instanceof byte[]) {
+                        rawMessage = (byte[])parsedList.elementAt(j + 1);
+                    }
+                }
+
+                // If it wasn't in the current response line, then check for
+                // an untagged response instead
+                if(rawMessage == null) {
+                    checkForUntaggedValue(rawList[i]);
+                }
+            }
+            else {
+                // If we already have the expected raw message body, then just
+                // check for an untagged response
+                checkForUntaggedValue(rawList[i]);
             }
         }
 
+        // Make sure we return an empty body instead of a null value
         if(rawMessage == null) {
             rawMessage = new byte[0];
         }
-
 
         return rawMessage;
     }
 
     /**
      * Execute the "STORE" command to update message flags.
+     * Updated flags will be returned through the untagged response listener.
+     * 
      * @param uid The message unique ID to modify.
      * @param addOrRemove True to add flags, false to remove them.
      * @param flags Array of flags to change.  (i.e. "\Seen", "\Answered")
-     * @return Updated standard message flags, or null if there was a parse error.
      */
-    public MessageFlags executeStore(int uid, boolean addOrRemove,
-        String[] flags) throws IOException, MailException {
+    public void executeStore(int uid, boolean addOrRemove, String[] flags) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             StringBuffer buf = new StringBuffer();
-
+            buf.append("ImapProtocol.executeStore(");
+            buf.append(uid);
+            buf.append(", ");
+            buf.append(addOrRemove ? "add" : "remove");
+            buf.append(", {");
             for (int i = 0; i < flags.length; i++) {
                 buf.append('\"');
                 buf.append(flags[i]);
@@ -1016,11 +1053,8 @@ public class ImapProtocol {
                     buf.append(", ");
                 }
             }
-
-            EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeStore(" + uid + ", " +
-                (addOrRemove ? "add" : "remove") + ", {" + buf.toString() +
-                "})").getBytes(), EventLogger.DEBUG_INFO);
+            buf.append("})");
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.DEBUG_INFO);
         }
 
         StringBuffer buf = new StringBuffer();
@@ -1038,52 +1072,16 @@ public class ImapProtocol {
         }
 
         buf.append(')');
-
-        String[] rawList = execute(UID_STORE, buf.toString(), null);
+        
+        byte[][] rawList = executeResponse(UID_STORE, buf.toString(), null);
 
         if (rawList.length < 1) {
-            return null;
+            return;
         }
-
-        MessageFlags result;
-
-        try {
-            int p = rawList[0].indexOf('(');
-            int q = rawList[0].lastIndexOf(')');
-            Vector tokenVec = null;
-
-            if ((p != -1) && (q != -1) && (p < q)) {
-                Vector parsedText = ImapParser.parenListParser(
-                        rawList[0].substring(p, q + 1).getBytes());
-                int size = parsedText.size();
-
-                for (int i = 0; i < size; i++) {
-                    Object element = parsedText.elementAt(i);
-
-                    if (element instanceof String && element.equals(FLAGS) &&
-                            (i < (size - 1)) &&
-                            parsedText.elementAt(i + 1) instanceof Vector) {
-                        tokenVec = (Vector) parsedText.elementAt(i + 1);
-
-                        break;
-                    }
-                }
-            }
-
-            if (tokenVec != null) {
-                result = ImapParser.parseMessageFlags(tokenVec);
-            } else {
-                result = null;
-            }
-        } catch (Exception e) {
-            EventLogger.logEvent(AppInfo.GUID,
-                ("Unable to parse STORE response: " + e.toString()).getBytes(),
-                EventLogger.ERROR);
-
-            result = null;
+        
+        for(int i=0; i<rawList.length; i++) {
+            checkForUntaggedValue(rawList[i]);
         }
-
-        return result;
     }
 
     /**
@@ -1332,51 +1330,199 @@ public class ImapProtocol {
 
     /**
      * Execute the "NOOP" command.
-     * The parsing of the result is currently very simple, and just looks
-     * for the presence of a "* ?? recent" untagged response.
+     * This command does not return anything directly, but the untagged
+     * response listener will be notified of any untagged responses that are
+     * received during its execution.
      */
-    public boolean executeNoop() throws IOException, MailException {
+    public void executeNoop() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("ImapProtocol.executeNoop()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
 
-        String[] replyText = execute(NOOP, null, null);
+        byte[][] responses = executeResponse(NOOP, null, null);
 
-        if (replyText == null) {
-            EventLogger.logEvent(AppInfo.GUID,
-                ("Unable to read NOOP response").getBytes(), EventLogger.WARNING);
-
-            return false;
+        for (int i = 0; i < responses.length; i++) {
+            checkForUntaggedValue(responses[i]);
         }
-        else if(replyText.length < 1) {
-            return false;
-        }
-        
-        for (int i = 0; i < replyText.length; i++) {
-            if (replyText[i].startsWith(ASTERISK) &&
-                    replyText[i].toLowerCase().endsWith("recent")) {
-                return true;
-            }
-        }
-
-        return false;
     }
-
+    
     /**
      * Execute the "IDLE" command.
+     * @param idleListener the listener to receive notifications during idle
+     * @throws IllegalStateException if the idle thread is still active
      */
-    public void executeIdle() throws IOException, MailException {
+    public void executeIdle(IdleListener idleListener) throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("ImapProtocol.executeIdle()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
 
-        idleCommandTag = executeNoReply(IDLE, null);
+        if(idleThread != null && idleThread.isAlive()) {
+            throw new IllegalStateException();
+        }
+        
+        // Send the IDLE command
+        String idleCommandTag = executeNoReply(IDLE, null);
+        byte[] tagBytes = idleCommandTag.getBytes();
+        
+        // Start the idle thread
+        idleThread = new IdleThread(tagBytes, idleListener);
+        idleThread.start();
     }
 
+    private class IdleThread extends Thread {
+        private final byte[] idleCommandTag;
+        private final IdleListener idleListener;
+        private IOException pendingIOException;
+        private MailException pendingMailException;
+        
+        public IdleThread(byte[] idleCommandTag, IdleListener idleListener) {
+            this.idleCommandTag = idleCommandTag;
+            this.idleListener = idleListener;
+        }
+        
+        public void run() {
+            try {
+                byte[] response = blockingReadIgnoringTimeout();
+    
+                // Keep looping until we receive a tagged response
+                while (!StringArrays.startsWith(response, idleCommandTag)) {
+                    // Check the current response for a supported untagged value
+                    checkForUntaggedValue(response);
+                    
+                    response = blockingReadIgnoringTimeout();
+                }
+    
+                if(Arrays.equals(response, idleCommandTag.length, BAD_PREFIX, 0, BAD_PREFIX.length)
+                        || Arrays.equals(response, idleCommandTag.length, NO_PREFIX, 0, NO_PREFIX.length)) {
+                    throw new MailException(new String(response));
+                }
+            } catch (IOException e) {
+                this.pendingIOException = e;
+                idleListener.pendingException();
+            } catch (MailException e) {
+                this.pendingMailException = e;
+                idleListener.pendingException();
+            }
+        }
+        
+        private byte[] blockingReadIgnoringTimeout() throws IOException {
+            byte[] response;
+            while(true) {
+                try {
+                    response = connection.receive();
+                    break;
+                } catch (IOException e) {
+                    String message = e.getMessage();
+                    if(message == null || message.toLowerCase().indexOf(TIME) == -1) {
+                        throw e;
+                    }
+                }
+            }
+            return response;
+        }
+        
+        public void throwPendingExceptions() throws IOException, MailException {
+            if(pendingIOException != null) {
+                throw pendingIOException;
+            }
+            else if(pendingMailException != null) {
+                throw pendingMailException;
+            }
+        }
+    }
+    
+    /**
+     * Checks the provided server response for an untagged value, and calls the
+     * appropriate listener method.
+     *
+     * @param response the response to parse
+     * @param listener the listener to notify
+     * @return true, if a value was handled
+     */
+    private boolean checkForUntaggedValue(byte[] response) {
+        boolean result = false;
+        if(response.length > 2 && response[0] == CHAR_ASTERISK && response[1] == (byte)' ') {
+            int p = StringArrays.indexOf(response, (byte)' ', 2);
+            
+            if(p > 2 && Character.isDigit((char)response[2])) {
+                int value;
+                try {
+                    value = StringArrays.parseInt(response, 2, p - 2);
+                } catch (NumberFormatException e) {
+                    // Ignore values that cannot be parsed as numbers
+                    return false;
+                }
+                
+                if(Arrays.equals(response, p + 1, RECENT_SUFFIX, 0, RECENT_SUFFIX.length)) {
+                    if(untaggedResponseListener != null) {
+                        untaggedResponseListener.recentResponse(value);
+                    }
+                    result = true;
+                }
+                else if(Arrays.equals(response, p + 1, EXISTS_SUFFIX, 0, EXISTS_SUFFIX.length)) {
+                    if(untaggedResponseListener != null) {
+                        untaggedResponseListener.existsResponse(value);
+                    }
+                    result = true;
+                }
+                else if(Arrays.equals(response, p + 1, EXPUNGE_SUFFIX, 0, EXPUNGE_SUFFIX.length)) {
+                    if(untaggedResponseListener != null) {
+                        untaggedResponseListener.expungeResponse(value);
+                    }
+                    result = true;
+                }
+                else if(Arrays.equals(response, p + 1, FETCH_B, 0, FETCH_B.length)) {
+                    FetchFlagsResponse fetchResponse = new FetchFlagsResponse();
+                    fetchResponse.index = value;
+                    fetchResponse.uid = -1;
+                    try {
+                        int offset = Arrays.getIndex(response, (byte)'(');
+                        Vector parsedText = ImapParser.parenListParser(response, offset, response.length - offset);
+                        int parsedSize = parsedText.size();
+                        for (int i = 0; i < parsedSize; i++) {
+                            if(!(parsedText.elementAt(i) instanceof String)) { continue; }
+                            String element = (String)parsedText.elementAt(i);
+                            if(element.equals(FLAGS)
+                                    && (parsedSize > (i + 1))
+                                    && parsedText.elementAt(i + 1) instanceof Vector) {
+                                fetchResponse.flags =
+                                    ImapParser.parseMessageFlags((Vector)parsedText.elementAt(i + 1));
+                            }
+                            else if(element.equals(UID)
+                                    && (parsedSize > (i + 1))
+                                    && parsedText.elementAt(i + 1) instanceof String) {
+                                try {
+                                    fetchResponse.uid = Integer.parseInt((String)parsedText.elementAt(i + 1));
+                                } catch (NumberFormatException e) { }
+                            }
+                        }
+                    } catch (Exception exp) {
+                        EventLogger.logEvent(AppInfo.GUID,
+                                ("Error parsing untagged FETCH: " + exp.toString()).getBytes(),
+                                EventLogger.ERROR);
+                    }
+                    if(fetchResponse.flags != null) {
+                        if(untaggedResponseListener != null) {
+                            untaggedResponseListener.fetchResponse(fetchResponse);
+                        }
+                    }
+                    result = true;
+                }
+                
+                if(result && EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                    EventLogger.logEvent(AppInfo.GUID,
+                            ("Untagged: " + (new String(response, 2, response.length - 2))).getBytes(),
+                            EventLogger.DEBUG_INFO);
+                }
+            }
+        }
+        return result;
+    }
+    
     /**
      * Execute the "DONE" command.
      */
@@ -1387,25 +1533,29 @@ public class ImapProtocol {
                 EventLogger.DEBUG_INFO);
         }
 
-        executeUntagged(DONE, null, idleCommandTag);
-        idleCommandTag = null;
-    }
-
-    /**
-     * Polls the connection during the IDLE state.
-     * For now, this is a simple implementation.  It just checks for
-     * the presence of a "* ?? recent" untagged response, and returns
-     * true if one is found.
-     */
-    public boolean executeIdlePoll() throws IOException, MailException {
-        String result = receive();
-
-        if ((result != null) && result.startsWith(ASTERISK) &&
-                result.toLowerCase().endsWith("recent")) {
-            return true;
-        } else {
-            return false;
+        if(idleThread == null) {
+            throw new IllegalStateException();
         }
+        
+        // Send the command that ends the idle state.
+        // If the idle thread is not currently alive, it is because some
+        // exception caused it to terminate prematurely.  In that case, there
+        // is no point in trying to further communicate with the server here.
+        if(idleThread.isAlive()) {
+            connection.sendCommand(DONE);
+        }
+        
+        // Wait for the idle thread to terminate
+        try {
+            idleThread.join();
+        } catch (InterruptedException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    e.toString().getBytes(), EventLogger.ERROR);
+        }
+        
+        IdleThread temp = idleThread;
+        idleThread = null;
+        temp.throwPendingExceptions();
     }
 
     /**
@@ -1430,9 +1580,8 @@ public class ImapProtocol {
             commandBuf.append(tag);
             commandBuf.append(' ');
             commandBuf.append(command);
-            commandBuf.append(((arguments[i] == null) ? ""
-                                                      : (CHAR_SP +
-                arguments[i])));
+            commandBuf.append(
+                    ((arguments[i] == null) ? "" : (CHAR_SP + arguments[i])));
             commandBuf.append(CRLF);
         }
 
@@ -1462,8 +1611,8 @@ public class ImapProtocol {
 
             p = Arrays.getIndex(temp, (byte) ' ');
 
-            if ((StringArrays.indexOf(temp, BAD_PREFIX, p + 1) != -1) ||
-                    (StringArrays.indexOf(temp, NO_PREFIX, p + 1) != -1)) {
+            if(Arrays.equals(temp, p + 1, BAD_PREFIX, 0, BAD_PREFIX.length)
+                    || Arrays.equals(temp, p + 1, NO_PREFIX, 0, NO_PREFIX.length)) {
                 throw new MailException(new String(temp));
             }
 
@@ -1520,9 +1669,8 @@ public class ImapProtocol {
             }
         }
 
-        if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
-                StringArrays.startsWith(temp, NO_PREFIX,
-                    tagBytes.length)) {
+        if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
+                || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
         }
 
@@ -1585,9 +1733,8 @@ public class ImapProtocol {
                     EventLogger.ERROR);
         }
         
-        if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
-                StringArrays.startsWith(temp, NO_PREFIX,
-                    tagBytes.length)) {
+        if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
+                || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
         }
     }
@@ -1599,7 +1746,7 @@ public class ImapProtocol {
         void processResponse(byte[] rawLine);
         void executeComplete();
     }
-    
+
     /**
      * Executes an IMAP command, and returns the reply as an
      * array of strings.
@@ -1639,9 +1786,8 @@ public class ImapProtocol {
             }
         }
 
-        if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
-                StringArrays.startsWith(temp, NO_PREFIX,
-                    tagBytes.length)) {
+        if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
+                || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
         }
 
@@ -1684,9 +1830,8 @@ public class ImapProtocol {
             temp = connection.receive();
         }
 
-        if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
-                StringArrays.startsWith(temp, NO_PREFIX,
-                    tagBytes.length)) {
+        if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
+                || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
         }
 
@@ -1748,9 +1893,8 @@ public class ImapProtocol {
             temp = connection.receive();
         }
 
-        if (StringArrays.startsWith(temp, BAD_PREFIX, tagBytes.length) ||
-                StringArrays.startsWith(temp, NO_PREFIX,
-                    tagBytes.length)) {
+        if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
+                || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
         }
 
@@ -1870,6 +2014,23 @@ public class ImapProtocol {
         public String delim;
         public String name;
     }
+
+    /**
+     * Listener for untagged responses sent during other commands.
+     */
+    public interface UntaggedResponseListener {
+        void existsResponse(int value);
+        void recentResponse(int value);
+        void expungeResponse(int value);
+        void fetchResponse(FetchFlagsResponse value);
+    }
+    
+    /**
+     * Listener for any special cases during IDLE mode.
+     */
+    public interface IdleListener {
+        void pendingException();
+    }
     
     // String constants
     private static String UID_COPY = "UID COPY";
@@ -1891,6 +2052,7 @@ public class ImapProtocol {
     private static String MESSAGES = "MESSAGES";
     private static String NAMESPACE = "NAMESPACE";
     private static String CAPABILITY = "CAPABILITY";
+    private static String EXPUNGE = "EXPUNGE";
     private static String APPEND = "APPEND";
     private static String STATUS = "STATUS";
     private static String SELECT = "SELECT";
@@ -1905,12 +2067,16 @@ public class ImapProtocol {
     private static String TAG_PREFIX = "A";
     private static final byte[] NO_PREFIX = "NO ".getBytes();
     private static final byte[] BAD_PREFIX = "BAD ".getBytes();
+    private static final byte[] RECENT_SUFFIX = "RECENT".getBytes();
+    private static final byte[] EXISTS_SUFFIX = "EXISTS".getBytes();
+    private static final byte[] EXPUNGE_SUFFIX = "EXPUNGE".getBytes();
+    private static final byte[] FETCH_B = "FETCH".getBytes();
     private static String CHAR_SP = " ";
-    private static final byte CHAR_PLUS = (byte) '+';
+    private static final byte CHAR_PLUS = (byte)'+';
     private static String CHAR_COLON = ":";
     private static final byte CHAR_ASTERISK = (byte)'*';
-    private static String ASTERISK = "*";
     private static String CHAR_QUOTE = "\"";
     private static String CHAR_COLON_ASTERISK = ":*";
     private static String CRLF = "\r\n";
+    private static String TIME = "time";
 }

@@ -35,6 +35,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import net.rim.device.api.util.Comparator;
+import net.rim.device.api.util.Persistable;
 
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -45,7 +46,7 @@ import org.logicprobe.LogicMail.util.StringParser;
  * normally exist within any real mail store unless
  * they fail to transmit.
  */
-public class OutgoingMessageToken implements MessageToken {
+public class OutgoingMessageToken implements MessageToken, Persistable {
     private int hashCode = -1;
     private long messageUid;
     private String folderPath;
@@ -85,6 +86,11 @@ public class OutgoingMessageToken implements MessageToken {
 
     public void updateMessageIndex(int index) {
         // Empty because it is not applicable to this token type
+    }
+    
+    public int getMessageIndex() {
+        // Not applicable to this token type
+        return -1;
     }
     
     public boolean isLoadable() {

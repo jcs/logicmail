@@ -31,17 +31,19 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import java.io.IOException;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.TextContent;
 import org.logicprobe.LogicMail.message.TextPart;
+
+import com.hammingweight.hammock.DefaultArgumentMatcher;
+import com.hammingweight.hammock.Hammock;
+import com.hammingweight.hammock.IArgumentMatcher;
 
 import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
@@ -55,17 +57,19 @@ import j2meunit.framework.TestSuite;
  * a fake implementation of IncomingMailClient.
  */
 public class NetworkMailStoreTest extends TestCase {
+    private Hammock hammock;
 	private NetworkMailStore instance;
 	
 	private AccountConfig fakeAccountConfig;
-	private FakeIncomingMailClient fakeIncomingMailClient;
+	private MockIncomingMailClient mockIncomingMailClient;
+	private IncomingMailClientListener clientListener;
+    private FolderTreeItem inboxFolder;
 
 	private FolderEvent eventFolderTreeUpdated;
 	private Vector eventFolderMessagesAvailable = new Vector();
 	private FolderEvent eventFolderStatusChanged;
 	private MessageEvent eventMessageAvailable;
-	private MessageEvent eventMessageDeleted;
-	private MessageEvent eventMessageUndeleted;
+	private MessageEvent eventMessageFlagsChanged;
 	
     public NetworkMailStoreTest() {
     }
@@ -75,9 +79,11 @@ public class NetworkMailStoreTest extends TestCase {
     }
     
     public void setUp() {
+        hammock = new Hammock();
     	fakeAccountConfig = new AccountConfig() { };
-    	fakeIncomingMailClient = new FakeIncomingMailClient();
-    	MailClientFactory.setIncomingMailClient(fakeAccountConfig, fakeIncomingMailClient);
+    	inboxFolder = new FolderTreeItem("INBOX", "INBOX", ".");
+    	createMockMailClient();
+    	MailClientFactory.setIncomingMailClient(fakeAccountConfig, mockIncomingMailClient);
     	instance = new NetworkMailStore(fakeAccountConfig);
 
     	instance.addMailStoreListener(new MailStoreListener() {
@@ -95,32 +101,57 @@ public class NetworkMailStoreTest extends TestCase {
 			}
             public void folderExpunged(FolderExpungedEvent e) { }
             public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) { }
+            public void folderRefreshRequired(FolderEvent e) { }
     	});
     	
     	instance.addMessageListener(new MessageListener() {
 			public void messageAvailable(MessageEvent e) {
 				eventMessageAvailable = e;
 			}
-			public void messageDeleted(MessageEvent e) {
-				eventMessageDeleted = e;
-			}
-			public void messageUndeleted(MessageEvent e) {
-				eventMessageUndeleted = e;
-			}
 			public void messageFlagsChanged(MessageEvent e) {
+			    eventMessageFlagsChanged = e;
 			}
     	});
+    }
+    
+    private void createMockMailClient() {
+        mockIncomingMailClient = new MockIncomingMailClient(hammock);
+        
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_IS_CONNECTED).setReturnValue(Boolean.TRUE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_IS_LOGIN_REQUIRED).setReturnValue(Boolean.TRUE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_USERNAME).setReturnValue(fakeAccountConfig.getServerUser());
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_SET_USERNAME_$_STRING, new Object[] { fakeAccountConfig.getServerUser() });
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_PASSWORD).setReturnValue(fakeAccountConfig.getServerPass());
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_SET_PASSWORD_$_STRING, new Object[] { fakeAccountConfig.getServerPass() });
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_FOLDERS).setReturnValue(Boolean.TRUE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_UNDELETE).setReturnValue(Boolean.TRUE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_LOCKED_FOLDERS).setReturnValue(Boolean.TRUE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_IDLE).setReturnValue(Boolean.FALSE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_ACCT_CONFIG).setReturnValue(fakeAccountConfig);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_CONNECTION_CONFIG).setReturnValue(fakeAccountConfig);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_SET_LISTENER_$_INCOMINGMAILCLIENTLISTENER, new Object[1])
+        .setArgumentMatcher(0, new IArgumentMatcher() {
+            public boolean areArgumentsEqual(Object argumentExpected, Object argumentActual) {
+                NetworkMailStoreTest.this.clientListener = (IncomingMailClientListener)argumentActual;
+                return true;
+            }
+        });
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_INBOX_FOLDER).setReturnValue(inboxFolder);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_ACTIVE_FOLDER).setReturnValue(inboxFolder);
     }
     
     public void tearDown() {
     	instance.shutdown(true);
     	instance = null;
     	fakeAccountConfig = null;
-    	fakeIncomingMailClient = null;
+    	mockIncomingMailClient = null;
     }
 
     public void testProperties() {
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+        instance.shutdown(true);
     	assertTrue(!instance.isLocal());
+        hammock.verify();
     }
 
     /**
@@ -128,15 +159,18 @@ public class NetworkMailStoreTest extends TestCase {
      */
     public void testShutdown() {
     	// Make a fake request, then call for shutdown
-    	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_TREE_$_MAILPROGRESSHANDLER,
+                new Object[] { null }).ignoreArgument(0).setReturnValue(new FolderTreeItem("INBOX", "INBOX", "."));
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+        
     	instance.requestFolderTree();
     	instance.shutdown(true);
     	
     	// Assert that both open and close were really called, and that
     	// the request was processed.
-    	assertTrue("open", fakeIncomingMailClient.openCalled);
     	assertNotNull("request", eventFolderTreeUpdated);
-    	assertTrue("close", fakeIncomingMailClient.closeCalled);
+        hammock.verify();
 	}
     
     /**
@@ -144,33 +178,41 @@ public class NetworkMailStoreTest extends TestCase {
      */
     public void testRestart() {
     	// Make a fake request, then call for shutdown
-    	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_TREE_$_MAILPROGRESSHANDLER,
+                new Object[] { null }).ignoreArgument(0).setReturnValue(new FolderTreeItem("INBOX", "INBOX", "."));
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+        
     	instance.requestFolderTree();
     	instance.shutdown(true);
     	
     	// Assert that both open and close were really called, and that
     	// the request was processed.
-    	assertTrue("open", fakeIncomingMailClient.openCalled);
     	assertNotNull("request", eventFolderTreeUpdated);
-    	assertTrue("close", fakeIncomingMailClient.closeCalled);
     	
-    	// Reset the sense flags
-    	fakeIncomingMailClient.openCalled = false;
+    	// Reset the sense flags and add more expectations
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_TREE_$_MAILPROGRESSHANDLER,
+                new Object[] { null }).ignoreArgument(0).setReturnValue(new FolderTreeItem("INBOX", "INBOX", "."));
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
     	eventFolderTreeUpdated = null;
-    	fakeIncomingMailClient.closeCalled = false;
     	
     	// Restart the thread and try again
     	instance.restart();
     	instance.requestFolderTree();
     	instance.shutdown(true);
     	
-    	assertTrue("restart open", fakeIncomingMailClient.openCalled);
     	assertNotNull("restart request", eventFolderTreeUpdated);
-    	assertTrue("restart close", fakeIncomingMailClient.closeCalled);
+        hammock.verify();
 	}
     
     public void testRequestFolderTree() {
-    	fakeIncomingMailClient.folderTree = new FolderTreeItem("INBOX", "INBOX", ".");
+        FolderTreeItem testFolderTree = new FolderTreeItem("INBOX", "INBOX", ".");
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_TREE_$_MAILPROGRESSHANDLER,
+                new Object[] { null }).ignoreArgument(0).setReturnValue(testFolderTree);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+        
     	TestCallback callback = new TestCallback();
     	instance.requestFolderTree(callback);
     	instance.shutdown(true);
@@ -180,15 +222,28 @@ public class NetworkMailStoreTest extends TestCase {
     	assertNull(callback.exception);
         
     	assertNotNull(eventFolderTreeUpdated);
-    	assertEquals(fakeIncomingMailClient.folderTree, eventFolderTreeUpdated.getFolder());
+    	assertEquals(testFolderTree, eventFolderTreeUpdated.getFolder());
+        hammock.verify();
     }
     
     public void testRequestFolderStatus() {
-    	fakeIncomingMailClient.refreshedMsgCount = 42;
-    	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	folder.setMsgCount(0);
-    	TestCallback callback = new TestCallback();
-    	instance.requestFolderStatus(new FolderTreeItem[] { folder }, callback);
+        inboxFolder.setMsgCount(0);
+        FolderTreeItem[] folderArray = new FolderTreeItem[] { inboxFolder };
+    	
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_REFRESH_FOLDER_STATUS_$_ARRAY_FOLDERTREEITEM_MAILPROGRESSHANDLER,
+                new Object[] { folderArray, null }).setArgumentMatcher(0, new DefaultArgumentMatcher() {
+                    public boolean areArgumentsEqual(Object argumentExpected, Object argumentActual) {
+                        if(!super.areArgumentsEqual(argumentExpected, argumentActual)) { return false; }
+                        
+                        ((FolderTreeItem[])argumentActual)[0].setMsgCount(42);
+                        return true;
+                    }
+                }).ignoreArgument(1);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+    	
+        TestCallback callback = new TestCallback();
+    	instance.requestFolderStatus(folderArray, callback);
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -198,16 +253,35 @@ public class NetworkMailStoreTest extends TestCase {
     	assertNotNull(eventFolderStatusChanged);
     	assertEquals("INBOX", eventFolderStatusChanged.getFolder().getName());
     	assertEquals(42, eventFolderStatusChanged.getFolder().getMsgCount());
+        hammock.verify();
     }
     
     public void testRequestFolderMessages() {
-    	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
+        final FolderMessage[] folderMessageArray = new FolderMessage[] {
     		new FolderMessage(new FakeMessageToken(1), new MessageEnvelope(), 42, 52, -1),
     		new FolderMessage(new FakeMessageToken(2), new MessageEnvelope(), 43, 53, -1),
     	};
-    	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
+    	FakeMessageToken token = new FakeMessageToken(5);
+    	
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+    	hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_MESSAGES_$_MESSAGETOKEN_INT_FOLDERMESSAGECALLBACK_MAILPROGRESSHANDLER,
+    	        new Object[] { token, new Integer(5), null, null })
+    	        .setArgumentMatcher(2, new IArgumentMatcher() {
+                    public boolean areArgumentsEqual(Object argumentExpected, Object argumentActual) {
+                        if(!(argumentActual instanceof FolderMessageCallback)) { return false; }
+                        FolderMessageCallback messageCallback = (FolderMessageCallback)argumentActual;
+                        for(int i=0; i<folderMessageArray.length; i++) {
+                            messageCallback.folderMessageUpdate(folderMessageArray[i]);
+                        }
+                        messageCallback.folderMessageUpdate(null);
+                        return true;
+                    }
+    	            
+    	        }).ignoreArgument(3);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+    	
     	TestCallback callback = new TestCallback();
-    	instance.requestFolderMessagesRange(folder, new FakeMessageToken(5), 5, callback);
+    	instance.requestFolderMessagesRange(inboxFolder, token, 5, callback);
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -247,14 +321,24 @@ public class NetworkMailStoreTest extends TestCase {
         
         FolderMessage folderMessage2 = (FolderMessage)folderMessagesAvailable.elementAt(1);
         assertEquals(53, folderMessage2.getUid());
+        hammock.verify();
     }
     
     public void testRequestMessage() {
     	TextPart part = new TextPart("plain", "", "", "", "", "", -1);
     	TextContent content = new TextContent(part, "Hello World");
-    	fakeIncomingMailClient.message = new Message(part);
-    	fakeIncomingMailClient.message.putContent(part, content);
+    	Message testMessage = new Message(part);
+    	testMessage.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
+    	
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_SET_ACTIVE_FOLDER_$_MESSAGETOKEN_BOOLEAN,
+                new Object[] { messageToken, Boolean.TRUE }).setReturnValue(null);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_MESSAGE_$_MESSAGETOKEN_BOOLEAN_MAILPROGRESSHANDLER,
+                new Object[] { messageToken, Boolean.TRUE, null }).ignoreArgument(2)
+                .setReturnValue(testMessage);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+    	
     	TestCallback callback = new TestCallback();
     	instance.requestMessage(messageToken, true, callback);
     	instance.shutdown(true);
@@ -267,77 +351,114 @@ public class NetworkMailStoreTest extends TestCase {
     	assertEquals(MessageEvent.TYPE_FULLY_LOADED, eventMessageAvailable.getType());
     	assertNotNull(eventMessageAvailable.getMessageStructure());
     	assertNotNull(eventMessageAvailable.getMessageContent());
-    	assertEquals(fakeIncomingMailClient.message.getStructure(), eventMessageAvailable.getMessageStructure());
-    	assertEquals(fakeIncomingMailClient.message.getContent(part), eventMessageAvailable.getMessageContent()[0]);
+    	assertEquals(testMessage.getStructure(), eventMessageAvailable.getMessageStructure());
+    	assertEquals(testMessage.getContent(part), eventMessageAvailable.getMessageContent()[0]);
     	assertNotNull(eventMessageAvailable.getMessageToken());
-    	assertEquals(fakeIncomingMailClient.messageToken, eventMessageAvailable.getMessageToken());
+    	assertEquals(messageToken, eventMessageAvailable.getMessageToken());
+        hammock.verify();
     }
     
     public void testRequestMessageDelete() {
-    	TextPart part = new TextPart("plain", "", "", "", "", "", -1);
-    	TextContent content = new TextContent(part, "Hello World");
-    	fakeIncomingMailClient.message = new Message(part);
-    	fakeIncomingMailClient.message.putContent(part, content);
     	FakeMessageToken messageToken = new FakeMessageToken(1);
-    	MessageFlags messageFlags = new MessageFlags();
-    	messageFlags.setDeleted(false);
+    	
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_SET_ACTIVE_FOLDER_$_MESSAGETOKEN_BOOLEAN,
+                new Object[] { messageToken, Boolean.TRUE }).setReturnValue(null);
+    	hammock.setExpectation(MockIncomingMailClient.MTHD_DELETE_MESSAGE_$_MESSAGETOKEN,
+    	        new Object[] { messageToken }).setArgumentMatcher(0, new DefaultArgumentMatcher() {
+    	            public boolean areArgumentsEqual(Object argumentExpected, Object argumentActual) {
+    	                if(!super.areArgumentsEqual(argumentExpected, argumentActual)) { return false; }
+	                    clientListener.folderMessageFlagsChanged(
+	                            (FakeMessageToken)argumentActual,
+	                            new MessageFlags(MessageFlags.Flag.DELETED | MessageFlags.Flag.SEEN));
+	                    return true;
+    	            }
+    	        });
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+    	
     	TestCallback callback = new TestCallback();
-    	instance.requestMessageDelete(messageToken, messageFlags, callback);
+    	instance.requestMessageDelete(messageToken, callback);
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
         assertTrue(!callback.failed);
         assertNull(callback.exception);
         
-    	assertNotNull(eventMessageDeleted);
-    	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageDeleted.getType());
-    	assertNotNull(eventMessageDeleted.getMessageToken());
-    	assertEquals(fakeIncomingMailClient.messageToken, eventMessageDeleted.getMessageToken());
-    	assertTrue(eventMessageDeleted.getMessageFlags().isDeleted());
+    	assertNotNull(eventMessageFlagsChanged);
+    	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageFlagsChanged.getType());
+    	assertNotNull(eventMessageFlagsChanged.getMessageToken());
+    	assertEquals(messageToken, eventMessageFlagsChanged.getMessageToken());
+    	assertTrue(eventMessageFlagsChanged.getMessageFlags().isDeleted());
+        hammock.verify();
     }
     
     public void testRequestMessageUndelete() {
-    	TextPart part = new TextPart("plain", "", "", "", "", "", -1);
-    	TextContent content = new TextContent(part, "Hello World");
-    	fakeIncomingMailClient.message = new Message(part);
-    	fakeIncomingMailClient.message.putContent(part, content);
-    	FakeMessageToken messageToken = new FakeMessageToken(1);
-    	MessageFlags messageFlags = new MessageFlags();
-    	messageFlags.setDeleted(true);
+        FakeMessageToken messageToken = new FakeMessageToken(1);
+        
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_SET_ACTIVE_FOLDER_$_MESSAGETOKEN_BOOLEAN,
+                new Object[] { messageToken, Boolean.TRUE }).setReturnValue(null);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_UNDELETE_MESSAGE_$_MESSAGETOKEN,
+                new Object[] { messageToken }).setArgumentMatcher(0, new DefaultArgumentMatcher() {
+                    public boolean areArgumentsEqual(Object argumentExpected, Object argumentActual) {
+                        if(!super.areArgumentsEqual(argumentExpected, argumentActual)) { return false; }
+                        clientListener.folderMessageFlagsChanged(
+                                (FakeMessageToken)argumentActual,
+                                new MessageFlags(MessageFlags.Flag.SEEN));
+                        return true;
+                    }
+                });
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+    	
     	TestCallback callback = new TestCallback();
-    	instance.requestMessageUndelete(messageToken, messageFlags, callback);
+    	instance.requestMessageUndelete(messageToken, callback);
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
         assertTrue(!callback.failed);
         assertNull(callback.exception);
         
-    	assertNotNull(eventMessageUndeleted);
-    	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageUndeleted.getType());
-    	assertNotNull(eventMessageUndeleted.getMessageToken());
-    	assertEquals(fakeIncomingMailClient.messageToken, eventMessageUndeleted.getMessageToken());
-    	assertTrue(!eventMessageUndeleted.getMessageFlags().isDeleted());
+    	assertNotNull(eventMessageFlagsChanged);
+    	assertEquals(MessageEvent.TYPE_FLAGS_CHANGED, eventMessageFlagsChanged.getType());
+    	assertNotNull(eventMessageFlagsChanged.getMessageToken());
+    	assertEquals(messageToken, eventMessageFlagsChanged.getMessageToken());
+    	assertTrue(!eventMessageFlagsChanged.getMessageFlags().isDeleted());
+        hammock.verify();
     }
     
     public void testRequestBatch() {
     	TextPart part = new TextPart("plain", "", "", "", "", "", -1);
     	TextContent content = new TextContent(part, "Hello World");
-    	fakeIncomingMailClient.message = new Message(part);
-    	fakeIncomingMailClient.message.putContent(part, content);
-    	FolderTreeItem folder = new FolderTreeItem("INBOX", "INBOX", ".");
-    	fakeIncomingMailClient.folderTree = folder;
+    	Message testMessage = new Message(part);
+    	testMessage.putContent(part, content);
+    	FolderTreeItem[] folderArray = new FolderTreeItem[] { inboxFolder };
+        FakeMessageToken messageToken = new FakeMessageToken(0);
     	FakeMessageToken messageToken1 = new FakeMessageToken(1);
-    	FakeMessageToken messageToken2 = new FakeMessageToken(2);
-    	fakeIncomingMailClient.folderMessages = new FolderMessage[] {
-        		new FolderMessage(messageToken1, new MessageEnvelope(), 42, 52, -1),
-        		new FolderMessage(messageToken2, new MessageEnvelope(), 43, 53, -1),
-        };
-
+    	
+    	// Since we are testing for execution, not processing, these mock
+    	// expectations don't care to populate any return data unless
+    	// absolutely necessary.
+        hammock.setExpectation(MockIncomingMailClient.MTHD_OPEN).setReturnValue(Boolean.TRUE);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_TREE_$_MAILPROGRESSHANDLER,
+                new Object[] { null }).ignoreArgument(0).setReturnValue(inboxFolder);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_REFRESH_FOLDER_STATUS_$_ARRAY_FOLDERTREEITEM_MAILPROGRESSHANDLER,
+                new Object[] { folderArray, null }).ignoreArgument(1);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_FOLDER_MESSAGES_$_MESSAGETOKEN_INT_FOLDERMESSAGECALLBACK_MAILPROGRESSHANDLER,
+                new Object[] { messageToken, new Integer(5), null, null })
+                .ignoreArgument(2).ignoreArgument(3);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_SET_ACTIVE_FOLDER_$_MESSAGETOKEN_BOOLEAN,
+                new Object[] { messageToken1, Boolean.TRUE }).setReturnValue(null);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_GET_MESSAGE_$_MESSAGETOKEN_BOOLEAN_MAILPROGRESSHANDLER,
+                new Object[] { messageToken1, Boolean.TRUE, null }).ignoreArgument(2)
+                .setReturnValue(testMessage);
+        hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
+    	
+    	
     	// Do a whole batch of non-conflicting requests to make
     	// sure the queue is working correctly.
     	instance.requestFolderTree();
-    	instance.requestFolderStatus(new FolderTreeItem[] { folder });
-    	instance.requestFolderMessagesRange(folder, new FakeMessageToken(0), 5);
+    	instance.requestFolderStatus(folderArray);
+    	instance.requestFolderMessagesRange(inboxFolder, messageToken, 5);
     	instance.requestMessage(messageToken1, true);
     	instance.shutdown(true);
     	
@@ -347,6 +468,7 @@ public class NetworkMailStoreTest extends TestCase {
     	assertNotNull("requestFolderStatus", eventFolderStatusChanged);
     	assertNotNull("requestFolderMessages", eventFolderMessagesAvailable);
     	assertNotNull("requestMessage", eventMessageAvailable);
+        hammock.verify();
     }
     
     public Test suite() {
@@ -375,67 +497,6 @@ public class NetworkMailStoreTest extends TestCase {
 
         return suite;
     }
-
-	private class FakeIncomingMailClient extends AbstractIncomingMailClient {
-		public boolean openCalled = false;
-		public boolean closeCalled = false;
-		public FolderTreeItem activeFolder;
-		public FolderTreeItem inboxFolder;
-		public FolderMessage[] folderMessages;
-		public FolderTreeItem folderTree;
-		public Message message;
-		public MessageToken messageToken;
-		public int refreshedMsgCount;
-		
-		public boolean isConnected() { return true; }
-		public boolean open() throws IOException, MailException { openCalled = true; return true; }
-		public void close() throws IOException, MailException { closeCalled = true; }
-		public String getPassword() { return fakeAccountConfig.getServerPass(); }
-		public String getUsername() { return fakeAccountConfig.getServerUser(); }
-		public void setPassword(String password) { fakeAccountConfig.setServerPass(password); }
-		public void setUsername(String username) { fakeAccountConfig.setServerUser(username); }
-		public boolean hasFolders() { return true; }
-		public boolean hasUndelete() { return true; }
-		public boolean hasLockedFolders() { return true; }
-		public AccountConfig getAcctConfig() { return fakeAccountConfig; }
-		public FolderTreeItem getInboxFolder() { return inboxFolder; }
-		public FolderTreeItem getActiveFolder() { return activeFolder; }
-        public void getFolderMessages(MessageToken firstToken, int increment, FolderMessageCallback callback, MailProgressHandler progressHandler)
-                throws IOException, MailException {
-            for(int i=0; i<folderMessages.length; i++) {
-                callback.folderMessageUpdate(folderMessages[i]);
-            }
-            callback.folderMessageUpdate(null);
-        }
-		public void getFolderMessages(int firstIndex, int lastIndex, FolderMessageCallback callback, MailProgressHandler progressHandler)
-				throws IOException, MailException {
-		    for(int i=0; i<folderMessages.length; i++) {
-		        callback.folderMessageUpdate(folderMessages[i]);
-		    }
-		    callback.folderMessageUpdate(null);
-	    }
-		public void getFolderMessages(MessageToken[] messageTokens, boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
-				throws IOException, MailException { }
-		public void getFolderMessages(int[] messageIndices, FolderMessageCallback callback, MailProgressHandler progressHandler)
-		        throws IOException, MailException { }
-		public void getNewFolderMessages(boolean flagsOnly, FolderMessageCallback callback, MailProgressHandler progressHandler)
-				throws IOException,	MailException { }
-		public FolderTreeItem getFolderTree(MailProgressHandler progressHandler) throws IOException, MailException { return this.folderTree; }
-		public Message getMessage(MessageToken messageToken, boolean useLimits, MailProgressHandler progressHandler)
-				throws IOException, MailException { this.messageToken = messageToken; return this.message; }
-		public void refreshFolderStatus(FolderTreeItem[] folders, MailProgressHandler progressHandler)
-				throws IOException, MailException { folders[0].setMsgCount(refreshedMsgCount); }
-		public void setActiveFolder(FolderTreeItem folderItem)
-		throws IOException, MailException { this.activeFolder = folderItem; }
-		public void setActiveFolder(MessageToken messageToken)
-				throws IOException, MailException { this.messageToken = messageToken; }
-		public void deleteMessage(MessageToken messageToken, MessageFlags messageFlags)
-		throws IOException, MailException { messageFlags.setDeleted(true); this.messageToken = messageToken;  }
-		public void undeleteMessage(MessageToken messageToken, MessageFlags messageFlags)
-				throws IOException, MailException { messageFlags.setDeleted(false); this.messageToken = messageToken;  }
-		public ConnectionConfig getConnectionConfig() { return null; }
-		public boolean noop() throws IOException, MailException { return false; }
-	};
 	
 	private class TestCallback implements MailStoreRequestCallback {
 	    public boolean completed;
@@ -446,7 +507,7 @@ public class NetworkMailStoreTest extends TestCase {
             this.completed = true;
         }
 
-        public void mailStoreRequestFailed(Throwable exception) {
+        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
             this.failed = true;
             this.exception = exception;
         }

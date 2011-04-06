@@ -73,14 +73,22 @@ public abstract class MailStoreServices {
             public void folderMessagesAvailable(FolderMessagesEvent e) {
                 handleFolderMessagesAvailable(e.getFolder(), e.getMessages(), e.isFlagsOnly());
             }
-            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) {
-                handleFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
-            }
             public void folderStatusChanged(FolderEvent e) {
                 handleFolderStatusChanged(e.getFolder());
             }
             public void folderExpunged(FolderExpungedEvent e) {
-                handleFolderExpunged(e.getFolder(), e.getExpungedIndices());
+                if(e.getExpungedTokens() != null) {
+                    handleFolderExpunged(e.getFolder(), e.getExpungedTokens(), e.getUpdatedTokens());
+                }
+                else {
+                    handleFolderExpunged(e.getFolder(), e.getExpungedIndices(), e.getUpdatedTokens());
+                }
+            }
+            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) {
+                handleFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
+            }
+            public void folderRefreshRequired(FolderEvent e) {
+                handleFolderRefreshRequired(e.getFolder());
             }
         });
         mailStore.addMessageListener(new MessageListener() {
@@ -103,12 +111,6 @@ public abstract class MailStoreServices {
             }
             public void messageFlagsChanged(MessageEvent e) {
                 fireMessageFlagsChanged(e.getMessageToken(), e.getMessageFlags());
-            }
-            public void messageDeleted(MessageEvent e) {
-                fireMessageDeleted(e.getMessageToken(), e.getMessageFlags());
-            }
-            public void messageUndeleted(MessageEvent e) {
-                fireMessageUndeleted(e.getMessageToken(), e.getMessageFlags());
             }
         });
     }
@@ -225,7 +227,7 @@ public abstract class MailStoreServices {
         messageFlags.setJunk((flags & MessageNode.Flag.JUNK) != 0);
         
         // Append the message to the folder
-        mailStore.requestMessageAppend(
+        requestMessageAppendRawImpl(
                 folderTreeItem,
                 rawMessage,
                 messageFlags);
@@ -258,7 +260,7 @@ public abstract class MailStoreServices {
         String rawMessage = generateRawMessage(envelope, message);
 
         // Append the message to the folder
-        mailStore.requestMessageAppend(
+        requestMessageAppendRawImpl(
                 folderTreeItem,
                 rawMessage,
                 messageFlags);
@@ -300,7 +302,26 @@ public abstract class MailStoreServices {
         if(!mailStore.hasAppend()) {
             return;
         }
-        mailStore.requestMessageAppend(folderTreeItem, rawMessage, initialFlags);
+        requestMessageAppendRawImpl(folderTreeItem, rawMessage, initialFlags);
+    }
+    
+    private void requestMessageAppendRawImpl(
+            final FolderTreeItem folderTreeItem,
+            final String rawMessage,
+            final MessageFlags messageFlags) {
+        
+        mailStore.requestMessageAppend(
+                folderTreeItem,
+                rawMessage,
+                messageFlags,
+                new MailStoreRequestCallback() {
+                    public void mailStoreRequestComplete() { }
+                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+                        if(!isFinal) {
+                            requestMessageAppendRawImpl(folderTreeItem, rawMessage, messageFlags);
+                        }
+                    }
+                });
     }
     
     /**
@@ -316,14 +337,22 @@ public abstract class MailStoreServices {
      * @param folderTreeItem the mail store folder to copy into
      * @param messageNode Message to copy into this mailbox
      */
-    public void requestMessageCopy(FolderTreeItem folderTreeItem, MessageNode messageNode) {
+    public void requestMessageCopy(final FolderTreeItem folderTreeItem, final MessageNode messageNode) {
         // Sanity check
         if(!(mailStore.hasAppend()
                 && mailStore.hasCopy()
                 && messageNode.getParent().getParentAccount().getMailStoreServices() == this)) {
             return;
         }
-        mailStore.requestMessageCopy(messageNode.getMessageToken(), folderTreeItem);
+        mailStore.requestMessageCopy(messageNode.getMessageToken(), folderTreeItem,
+                new MailStoreRequestCallback() {
+                    public void mailStoreRequestComplete() { }
+                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+                        if(!isFinal) {
+                            requestMessageCopy(folderTreeItem, messageNode);
+                        }
+                    }
+                });
     }
     
     /**
@@ -350,7 +379,7 @@ public abstract class MailStoreServices {
         mailStore.requestMessageCopy(
                 messageNode.getMessageToken(),
                 folderTreeItem,
-                new MoveMessageIntoCallback(messageNode));
+                new MoveMessageIntoCallback(folderTreeItem, messageNode));
     }
     
     /**
@@ -360,7 +389,8 @@ public abstract class MailStoreServices {
      * as deleted.  If it fails, then nothing happens.
      */
     private class MoveMessageIntoCallback implements MailStoreRequestCallback {
-        private MessageNode messageNode;
+        private final FolderTreeItem folderTreeItem;
+        private final MessageNode messageNode;
         
         /**
          * Instantiates a new callback for handling the result
@@ -368,19 +398,21 @@ public abstract class MailStoreServices {
          * 
          * @param messageNode the source message node
          */
-        public MoveMessageIntoCallback(MessageNode messageNode) {
+        public MoveMessageIntoCallback(FolderTreeItem folderTreeItem, MessageNode messageNode) {
+            this.folderTreeItem = folderTreeItem;
             this.messageNode = messageNode;
         }
         
         public void mailStoreRequestComplete() {
             // If the move request succeeded, then dispatch a request
             // to have the original message marked as deleted.
-            mailStore.requestMessageDelete(
-                    messageNode.getMessageToken(),
-                    MessageNode.createMessageFlags(messageNode.getFlags()));
+            mailStore.requestMessageDelete(messageNode.getMessageToken());
         }
 
-        public void mailStoreRequestFailed(Throwable exception) {
+        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+            if(!isFinal) {
+                requestMessageMove(folderTreeItem, messageNode);
+            }
             // Do nothing if the request failed
         }
     }
@@ -439,20 +471,20 @@ public abstract class MailStoreServices {
         // Default empty implementation
     }
     
-    public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
-        mailStore.requestMessageDelete(messageToken, messageFlags);
+    public void requestMessageDelete(MessageToken messageToken) {
+        mailStore.requestMessageDelete(messageToken);
     }
     
-    public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) {
-        mailStore.requestMessageUndelete(messageToken, messageFlags);
+    public void requestMessageUndelete(MessageToken messageToken) {
+        mailStore.requestMessageUndelete(messageToken);
     }
     
-    public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) {
-        mailStore.requestMessageAnswered(messageToken, messageFlags);
+    public void requestMessageAnswered(MessageToken messageToken) {
+        mailStore.requestMessageAnswered(messageToken);
     }
     
-    public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags) {
-        mailStore.requestMessageForwarded(messageToken, messageFlags);
+    public void requestMessageForwarded(MessageToken messageToken) {
+        mailStore.requestMessageForwarded(messageToken);
     }
 
     /**
@@ -645,23 +677,30 @@ public abstract class MailStoreServices {
         }
     }
 
-    protected void handleFolderExpunged(FolderTreeItem folder, int[] indices) {
-        fireFolderExpunged(folder, indices);
+    protected void handleFolderRefreshRequired(FolderTreeItem folder) { }
+    
+    protected void handleFolderExpunged(FolderTreeItem folder, int[] indices, MessageToken[] updatedTokens) {
+        fireFolderExpunged(folder, indices, updatedTokens);
+    }
+    
+    protected void handleFolderExpunged(FolderTreeItem folder, MessageToken[] expungedTokens, MessageToken[] updatedTokens) {
+        fireFolderExpunged(folder, expungedTokens, updatedTokens);
     }
     
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the folder has been expunged.
      *
-     * @param indices an array of the indices of all expunged messages, or null if not provided
      * @param folder The folder which has had its deleted messages expunged
+     * @param indices an array of the indices of all expunged messages, or empty if not provided
+     * @param updatedTokens an array of the tokens updated as a result of the expunge
      */
-    protected final void fireFolderExpunged(FolderTreeItem folder, int[] indices) {
+    protected final void fireFolderExpunged(FolderTreeItem folder, int[] indices, MessageToken[] updatedTokens) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderExpungedEvent(this, folder, indices);
+                e = new FolderExpungedEvent(this, folder, indices, updatedTokens);
             }
             ((FolderListener)listeners[i]).folderExpunged(e);
         }
@@ -671,15 +710,16 @@ public abstract class MailStoreServices {
      * Notifies all registered <tt>FolderListener</tt>s that
      * the folder has been expunged.
      *
-     * @param tokens an array of the tokens of all expunged messages, or null if not provided
      * @param folder The folder which has had its deleted messages expunged
+     * @param expungedTokens an array of the tokens of all expunged messages
+     * @param updatedTokens an array of the tokens updated as a result of the expunge
      */
-    protected final void fireFolderExpunged(FolderTreeItem folder, MessageToken[] tokens) {
+    protected final void fireFolderExpunged(FolderTreeItem folder, MessageToken[] expungedTokens, MessageToken[] updatedTokens) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderExpungedEvent(this, folder, tokens);
+                e = new FolderExpungedEvent(this, folder, expungedTokens, updatedTokens);
             }
             ((FolderListener)listeners[i]).folderExpunged(e);
         }
@@ -747,42 +787,6 @@ public abstract class MailStoreServices {
                 e = new MessageEvent(this, messageToken, messageFlags);
             }
             ((MessageListener)listeners[i]).messageFlagsChanged(e);
-        }
-    }
-
-    /**
-     * Notifies all registered <tt>MessageListener</tt>s that
-     * a message has been deleted.
-     * 
-     * @param messageToken The token identifying the message
-     * @param messageFlags The updated message flags
-     */
-    protected final void fireMessageDeleted(MessageToken messageToken, MessageFlags messageFlags) {
-        Object[] listeners = listenerList.getListeners(MessageListener.class);
-        MessageEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MessageEvent(this, messageToken, messageFlags);
-            }
-            ((MessageListener)listeners[i]).messageDeleted(e);
-        }
-    }
-
-    /**
-     * Notifies all registered <tt>MessageListener</tt>s that
-     * a message has been undeleted.
-     * 
-     * @param messageToken The token identifying the message
-     * @param messageFlags The updated message flags
-     */
-    protected final void fireMessageUndeleted(MessageToken messageToken, MessageFlags messageFlags) {
-        Object[] listeners = listenerList.getListeners(MessageListener.class);
-        MessageEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MessageEvent(this, messageToken, messageFlags);
-            }
-            ((MessageListener)listeners[i]).messageUndeleted(e);
         }
     }
 }

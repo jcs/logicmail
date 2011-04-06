@@ -100,11 +100,14 @@ public final class AppInfo {
         
         // Parse the command-line argument list
         for(int i=0; i<args.length; i++) {
-            if(args[i].startsWith(PARAM_RELEASE)) {
+            int p = args[i].indexOf(PARAM_RELEASE);
+            if(p != -1) {
                 release = true;
-                int p = args[i].indexOf(':', PARAM_RELEASE.length());
+                p = args[i].indexOf(':', p + PARAM_RELEASE.length());
                 if(p != -1 && p < args[i].length() - 1) {
-                    appVersionMoniker = args[i].substring(p + 1);
+                    int q = args[i].indexOf(' ', p);
+                    if(q == -1) { q = args[i].length(); }
+                    appVersionMoniker = args[i].substring(p + 1, q);
                 }
             }
         }

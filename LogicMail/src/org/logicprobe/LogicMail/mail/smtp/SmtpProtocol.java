@@ -74,6 +74,38 @@ public class SmtpProtocol {
     }
     
     /**
+     * Receive the initial greeting from the server, and ensure it is valid.
+     * This method returns nothing, and throws a <code>MailException</code> if
+     * the received text is not a valid greeting.
+     */
+    public void receiveGreeting() throws IOException, MailException {
+        if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(
+            AppInfo.GUID,
+            ("SmtpProtocol.receiveGreeting()").getBytes(),
+            EventLogger.DEBUG_INFO);
+        }
+        
+        byte[] buffer = connection.receive();
+        while(buffer != null && buffer.length > 0) {
+            if(buffer.length >=4 && buffer[3] == (byte)' ') {
+                break;
+            }
+            else {
+                buffer = connection.receive();
+            }
+        }
+        
+        // Make sure the last line of the greeting had the status code "220"
+        if(!(buffer != null && buffer.length >= 3
+                && buffer[0] == (byte)'2'
+                && buffer[1] == (byte)'2'
+                && buffer[2] == (byte)'0')) {
+            throw new MailException("Invalid server greeting");
+        }
+    }
+    
+    /**
      * Execute the "AUTH" command.
      * @param mech Authentication mechanism to use
      * @param username Username

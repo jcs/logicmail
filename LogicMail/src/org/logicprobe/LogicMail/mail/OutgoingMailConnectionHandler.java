@@ -70,18 +70,10 @@ public class OutgoingMailConnectionHandler extends AbstractMailConnectionHandler
 		}
 		connectionTimerTask = new ConnectionTimerTask();
 		connectionTimer.schedule(connectionTimerTask, CONNECTION_TIMEOUT);
-		
-		Queue requestQueue = getRequestQueue();
-		synchronized(requestQueue) {
-			if(requestQueue.element() != null) {
-				return;
-			}
-			else {
-				try {
-					requestQueue.wait();
-				} catch (InterruptedException e) { }
-			}
-		}
+	}
+	
+	protected void handleEndIdle() throws IOException, MailException {
+	    // No specific commands necessary here
 	}
 	
 	/**

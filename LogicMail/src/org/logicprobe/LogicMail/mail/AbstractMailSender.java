@@ -127,14 +127,15 @@ public abstract class AbstractMailSender {
      * 
      * @param envelope The envelope of the message that could not be sent.
      * @param message The message that could not be sent.
-     * @param exception 
+     * @param exception The exception that caused the operation to fail, if applicable.
+     * @param isFinal true if the connection will be closed, false if it is being reopened
      */
-    protected void fireMessageSendFailed(MessageEnvelope envelope, Message message, Throwable exception) {
+    protected void fireMessageSendFailed(MessageEnvelope envelope, Message message, Throwable exception, boolean isFinal) {
         Object[] listeners = listenerList.getListeners(MailSenderListener.class);
         MessageSentEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MessageSentEvent(this, envelope, message, exception);
+                e = new MessageSentEvent(this, envelope, message, exception, isFinal);
             }
             ((MailSenderListener)listeners[i]).messageSendFailed(e);
         }

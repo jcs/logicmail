@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.MessageNode;
 
 import net.rim.device.api.ui.Touchscreen;
 import net.rim.device.api.ui.VirtualKeyboard;
@@ -59,6 +60,15 @@ public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
         }
         else {
             return getStandardScreen(navigationController, new MailboxScreen(mailboxNode));
+        }
+    }
+    
+    public StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode) {
+        if(hasTouchscreen) {
+            return getStandardTouchScreen(navigationController, new MessageScreen(messageNode));
+        }
+        else {
+            return getStandardScreen(navigationController, new MessageScreen(messageNode));
         }
     }
     

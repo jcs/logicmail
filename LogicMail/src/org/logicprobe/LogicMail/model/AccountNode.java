@@ -104,6 +104,7 @@ public abstract class AccountNode implements Node {
             }
 
             public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) { }
+            public void folderRefreshRequired(FolderEvent e) { }
         });
 
         this.mailStoreServices.addMessageListener(new MessageListener() {
@@ -120,20 +121,6 @@ public abstract class AccountNode implements Node {
                     mailboxNode.mailStoreMessageFlagsChanged(e);
                 }
             }
-
-            public void messageDeleted(MessageEvent e) {
-                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
-                if(mailboxNode != null) {
-                    mailboxNode.mailStoreMessageFlagsChanged(e);
-                }
-            }
-
-            public void messageUndeleted(MessageEvent e) {
-                MailboxNode mailboxNode = getMailboxNodeForEvent(e);
-                if(mailboxNode != null) {
-                    mailboxNode.mailStoreMessageFlagsChanged(e);
-                }
-            }
         });
     }
     
@@ -144,6 +131,7 @@ public abstract class AccountNode implements Node {
     
     private MailboxNode getMailboxNodeForEvent(MessageEvent e) {
         MessageToken messageToken = e.getMessageToken();
+        if(messageToken == null) { return null; }
         Enumeration en = pathMailboxMap.elements();
         while(en.hasMoreElements()) {
             MailboxNode currentMailbox = (MailboxNode)en.nextElement();
@@ -322,16 +310,41 @@ public abstract class AccountNode implements Node {
                 Hashtable folderPathMap = new Hashtable();
                 populateFolderPathMap(folderPathMap, rootFolder);
 
+                Vector removedFolders = null;
                 int size = flatMailboxes.size();
-
                 for (int i = 0; i < size; i++) {
                     MailboxNode mailboxNode = (MailboxNode) flatMailboxes.elementAt(i);
-                    String path = mailboxNode.getFolderTreeItem().getPath();
+                    FolderTreeItem oldFolderItem = mailboxNode.getFolderTreeItem();
+                    String path = oldFolderItem.getPath();
 
                     if (folderPathMap.containsKey(path)) {
-                        mailboxNode.setFolderTreeItem((FolderTreeItem) folderPathMap.get(path));
+                        // We found a duplicate item in the new folder tree
+                        FolderTreeItem newFolderItem = (FolderTreeItem) folderPathMap.get(path);
+                        mailboxNode.setFolderTreeItem(newFolderItem);
+
+                        // Need to copy over the UID to preserve cache validity.
+                        // This needs to be done after setting it on the
+                        // mailbox, since the setter copies the item before
+                        // adding it.
+                        mailboxNode.getFolderTreeItem().setUniqueId(
+                                oldFolderItem.getUniqueId());
+                        
                         remainingMailboxMap.put(path, mailboxNode);
                     }
+                    else {
+                        // This mailbox was removed
+                        if(removedFolders == null) {
+                            removedFolders = new Vector();
+                        }
+                        removedFolders.addElement(oldFolderItem);
+                    }
+                }
+
+                // Clear the saved data for any orphaned folders
+                if(removedFolders != null) {
+                    FolderTreeItem[] orphanedItems = new FolderTreeItem[removedFolders.size()];
+                    removedFolders.copyInto(orphanedItems);
+                    mailStoreServices.removeSavedData(orphanedItems);
                 }
             }
 

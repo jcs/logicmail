@@ -285,12 +285,12 @@ public class AccountNodeTest extends TestCase {
 		
 		public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) { }
 		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) { }
-		public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
-        public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
-        public void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
-        public void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
-		public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
-		public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) { }
+		public void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback) { }
+        public void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback) { }
+        public void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback) { }
+        public void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback) { }
+		public void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback) { }
+		public void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback) { }
 		public void shutdown(boolean wait) { }
 		public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) { }
 		public void requestFolderMessagesRecent(FolderTreeItem folder, MailStoreRequestCallback callback) { }

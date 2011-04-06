@@ -32,18 +32,21 @@ package org.logicprobe.LogicMail.mail;
 
 public class FolderExpungedEvent extends FolderEvent {
     private final int[] indices;
-    private final MessageToken[] tokens;
+    private final MessageToken[] expungedTokens;
+    private final MessageToken[] updatedTokens;
     
-    public FolderExpungedEvent(Object source, FolderTreeItem folder, int[] indices) {
+    public FolderExpungedEvent(Object source, FolderTreeItem folder, int[] indices, MessageToken[] updatedTokens) {
         super(source, folder);
         this.indices = indices;
-        this.tokens = null;
+        this.expungedTokens = null;
+        this.updatedTokens = updatedTokens;
     }
     
-    public FolderExpungedEvent(Object source, FolderTreeItem folder, MessageToken[] tokens) {
+    public FolderExpungedEvent(Object source, FolderTreeItem folder, MessageToken[] expungedTokens, MessageToken[] updatedTokens) {
         super(source, folder);
         this.indices = null;
-        this.tokens = tokens;
+        this.expungedTokens = expungedTokens;
+        this.updatedTokens = updatedTokens;
     }
 
     /**
@@ -61,6 +64,15 @@ public class FolderExpungedEvent extends FolderEvent {
      * @return the expunged tokens, or null if none available
      */
     public MessageToken[] getExpungedTokens() {
-        return tokens;
+        return expungedTokens;
+    }
+    
+    /**
+     * Gets the non-expunged tokens updated as a result of the expunge operation.
+     *
+     * @return the updated tokens, or an empty array if none available
+     */
+    public MessageToken[] getUpdatedTokens() {
+        return updatedTokens;
     }
 }

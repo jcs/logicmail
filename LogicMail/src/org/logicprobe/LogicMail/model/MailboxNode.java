@@ -101,31 +101,42 @@ public class MailboxNode implements Node, Serializable {
 		public int compare(Object o1, Object o2) {
 			if(o1 instanceof MailboxNode && o2 instanceof MailboxNode) {
 				MailboxNode mailbox1 = (MailboxNode)o1;
-				int mailboxType1 = mailbox1.getType();
+				int mailboxRank1 = getMailboxTypeRank(mailbox1.getType());
 				MailboxNode mailbox2 = (MailboxNode)o2;
-				int mailboxType2 = mailbox2.getType();
+				int mailboxRank2 = getMailboxTypeRank(mailbox2.getType());
 				int result = 0;
-				
-				if(mailboxType1 == MailboxNode.TYPE_INBOX) {
-					result = -1;
+
+				if(mailboxRank1 < mailboxRank2) {
+				    result = -1;
 				}
-				else if(mailboxType2 == MailboxNode.TYPE_INBOX) {
-					result = 1;
-				}
-				else if(mailboxType1 != MailboxNode.TYPE_NORMAL && mailboxType2 == MailboxNode.TYPE_NORMAL) {
-					result = -1;
-				}
-				else if(mailboxType1 == MailboxNode.TYPE_NORMAL && mailboxType2 != MailboxNode.TYPE_NORMAL) {
-					result = 1;
+				else if(mailboxRank1 > mailboxRank2) {
+				    result = 1;
 				}
 				else {
-					result = mailbox1.toString().compareTo(mailbox2.toString());
+				    result = mailbox1.toString().compareTo(mailbox2.toString());
 				}
 				return result;
 			}
 			else {
 				throw new ClassCastException("Cannot compare types");
 			}
+		}
+		
+		private static int getMailboxTypeRank(int mailboxType) {
+		    switch(mailboxType) {
+		    case TYPE_INBOX:
+		        return 0;
+            case TYPE_DRAFTS:
+                return 1;
+            case TYPE_OUTBOX:
+                return 2;
+            case TYPE_SENT:
+                return 3;
+            case TYPE_TRASH:
+                return 4;
+            default:
+                return 10;
+		    }
 		}
 	}
 
@@ -198,6 +209,14 @@ public class MailboxNode implements Node, Serializable {
 	 */
 	public static Comparator getComparator() {
 		return MailboxNode.comparator;
+	}
+	
+	/**
+	 * Re-sort the mailbox list, if properties have changed that would affect
+	 * the sort order.
+	 */
+	void reSort() {
+	    mailboxes.reSort();
 	}
 	
 	/**
@@ -893,6 +912,7 @@ public class MailboxNode implements Node, Serializable {
         // be checked and additional actions requested accordingly.
         for (int i = 0; i < folderMessages.length; i++) {
             MessageToken messageToken = folderMessages[i].getMessageToken();
+            if(messageToken == null) { continue; }
             MessageFlags messageFlags = folderMessages[i].getFlags();
             
             synchronized(messages) {
@@ -933,6 +953,9 @@ public class MailboxNode implements Node, Serializable {
         Vector addedMessages = new Vector();
    
         for (int i = 0; i < folderMessages.length; i++) {
+            MessageToken messageToken = folderMessages[i].getMessageToken();
+            if(messageToken == null) { continue; }
+            
             MessageNode messageNode = new MessageNode(folderMessages[i]);
             messageNode.setExistsOnServer(server);
             addedMessages.addElement(messageNode);
@@ -943,7 +966,7 @@ public class MailboxNode implements Node, Serializable {
                     firstMessageNode = messageNode;
                 }
                 
-                putTokenIndexMapping(folderMessages[i].getMessageToken(), index);
+                putTokenIndexMapping(messageToken, index);
             }
         }
    
@@ -986,19 +1009,23 @@ public class MailboxNode implements Node, Serializable {
      * @param e the event from the mail store
      */
     void mailStoreFolderExpunged(FolderExpungedEvent e) {
-        MessageToken[] tokens = e.getExpungedTokens();
+        MessageToken[] expungedTokens = e.getExpungedTokens();
+        MessageToken[] updatedTokens = e.getUpdatedTokens();
         Vector messagesToRemoveVector = new Vector();
-        if(tokens != null) {
+        if(expungedTokens != null) {
             // If an array of tokens was provided, then this is an explicit
             // request to remove certain messages from this mailbox.
             synchronized(messages) {
-                for(int i=0; i<tokens.length; i++) {
-                    MessageNode message = (MessageNode)tokenToMessageMap.get(tokens[i]);
+                for(int i=0; i<expungedTokens.length; i++) {
+                    if(expungedTokens[i] == null) { continue; }
+                    MessageNode message = (MessageNode)tokenToMessageMap.get(expungedTokens[i]);
                     if(message != null) {
                         messagesToRemoveVector.addElement(message);
-                        pendingExpungeMessageSet.remove(tokens[i]);
+                        pendingExpungeMessageSet.remove(expungedTokens[i]);
                     }
                 }
+                
+                processExpungeTokenUpdates(updatedTokens);
             }
         }
         else {
@@ -1013,6 +1040,8 @@ public class MailboxNode implements Node, Serializable {
                     messagesToRemoveVector.addElement(message);
                 }
                 pendingExpungeMessageSet.clear();
+
+                processExpungeTokenUpdates(updatedTokens);
             }
         }
         
@@ -1023,12 +1052,26 @@ public class MailboxNode implements Node, Serializable {
         }
     }
 
+    private void processExpungeTokenUpdates(MessageToken[] updatedTokens) {
+        for(int i=0; i<updatedTokens.length; i++) {
+            MessageNode message = (MessageNode)tokenToMessageMap.get(updatedTokens[i]);
+            if(message == null) { continue; }
+            MessageToken messageToken = message.getMessageToken();
+            
+            messageToken.updateToken(updatedTokens[i]);
+            if(messageToken.getMessageIndex() != -1) {
+                putTokenIndexMapping(messageToken, messageToken.getMessageIndex());
+            }
+        }
+    }
+
     /**
      * Called when the mail store has new message data available.
      *
      * @param e the event from the mail store
      */
     void mailStoreMessageAvailable(MessageEvent e) {
+        if(e.getMessageToken() == null) { return; }
         MessageNode messageNode = getMessageByToken(e.getMessageToken());
         if(messageNode != null) {
             messageNode.mailStoreMessageAvailable(e);
@@ -1041,6 +1084,7 @@ public class MailboxNode implements Node, Serializable {
      * @param e the event from the mail store
      */
     void mailStoreMessageFlagsChanged(MessageEvent e) {
+        if(e.getMessageToken() == null) { return; }
         MessageNode messageNode = getMessageByToken(e.getMessageToken());
         if(messageNode != null) {
             messageNode.mailStoreMessageFlagsChanged(e);

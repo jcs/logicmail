@@ -73,6 +73,7 @@ public class MailManager {
 
 		// Make sure the initial configuration is loaded
 		updateMailModelAccountList();
+        fireMailConfigurationChanged();
 		
 		// Register a listener for configuration changes
 		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
@@ -108,6 +109,13 @@ public class MailManager {
 	}
 	
 	private void refreshMailboxTypes() {
+        AccountNode[] accounts = mailRootNode.getAccounts();
+        for(int i=0; i<accounts.length; i++) {
+            if(accounts[i] instanceof NetworkAccountNode) {
+                clearMailboxTypes(accounts[i].getRootMailbox());
+            }
+        }
+	    
 		int num = mailSettings.getNumAccounts();
 		for(int i=0; i<num; i++) {
 			AccountConfig accountConfig = mailSettings.getAccountConfig(i);
@@ -117,7 +125,35 @@ public class MailManager {
 			mailbox = accountConfig.getSentMailbox();
 			if(mailbox != null) { mailbox.setType(MailboxNode.TYPE_SENT); }
 		}
+
+        for(int i=0; i<accounts.length; i++) {
+            reSortMailboxes(accounts[i].getRootMailbox());
+        }
 	}
+
+    private static void clearMailboxTypes(MailboxNode currentNode) {
+        if(currentNode == null) { return; }
+        if(currentNode.getType() != MailboxNode.TYPE_INBOX) {
+            currentNode.setType(MailboxNode.TYPE_NORMAL);
+        }
+        MailboxNode[] children = currentNode.getMailboxes();
+        if(children != null && children.length > 0) {
+            for(int i=0; i<children.length; i++) {
+                clearMailboxTypes(children[i]);
+            }
+        }
+    }
+    
+    private static void reSortMailboxes(MailboxNode currentNode) {
+        if(currentNode == null) { return; }
+        currentNode.reSort();
+        MailboxNode[] children = currentNode.getMailboxes();
+        if(children != null && children.length > 0) {
+            for(int i=0; i<children.length; i++) {
+                reSortMailboxes(children[i]);
+            }
+        }
+    }
 	
 	/**
 	 * First time initialization sequence, should only be invoked on
@@ -185,6 +221,9 @@ public class MailManager {
         if(shouldRefreshAccounts) {
             updateMailModelAccountList();
             refreshMailboxTypes();
+            
+            // Notify any listeners
+            fireMailConfigurationChanged();
         }
         
         if((e.getGlobalChange() & GlobalConfig.CHANGE_TYPE_DATA) != 0) {
@@ -247,12 +286,9 @@ public class MailManager {
         updateAccountMailSenders(updatedAccounts);
 
         //TODO: Clear deleted senders from the MailFactory
-
-        // Notify any listeners
-        fireMailConfigurationChanged();
     }
 
-	private NetworkAccountNode[] getNewNetworkAccountNodes() {
+    private NetworkAccountNode[] getNewNetworkAccountNodes() {
 	    Vector newAccounts = new Vector();
 
 	    int num = mailSettings.getNumAccounts();

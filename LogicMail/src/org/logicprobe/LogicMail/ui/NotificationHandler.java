@@ -52,6 +52,7 @@ import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.Application;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.HolsterListener;
 import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.util.LongHashtable;
@@ -74,7 +75,15 @@ public class NotificationHandler {
 				MailManager_mailConfigurationChanged(e);
 			}
 		});
-		updateAccountSubscriptions();
+		
+		try {
+		    updateAccountSubscriptions();
+		} catch (Throwable t) {
+		    EventLogger.logEvent(AppInfo.GUID,
+		            ("Unable to update notification sources:\r\n"
+		                    + t.toString()).toString().getBytes(),
+		                    EventLogger.ERROR);
+		}
 	}
 
 	private AccountNodeListener accountNodeListener = new AccountNodeListener() {
@@ -165,36 +174,55 @@ public class NotificationHandler {
 	 */
 	private void updateAccountSubscriptions() {
 		// Get the registered event sources from the runtime store
-		LongHashtable eventSourceMap = (LongHashtable)RuntimeStore.getRuntimeStore().get(AppInfo.GUID);
-		if(eventSourceMap == null) {
-			eventSourceMap = new LongHashtable();
-			RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
-		}
+		LongHashtable eventSourceMap = getEventSourceMap();
 		
 		// Subscribe to any new accounts
-		NetworkAccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
-		for(int i=0; i<accountNodes.length; i++) {
-			updateAccountMap(accountNodes[i]);
-			
-			accountNodes[i].addAccountNodeListener(accountNodeListener);
-			
-			// Register the notification source, if necessary
-			long accountUniqueId = ((NetworkAccountNode)accountNodes[i]).getUniqueId();
-			String accountName = accountNodes[i].toString();
-			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountUniqueId);
-			if(eventSource == null || !eventSource.getAccountName().equals(accountName)) {
-				eventSource =
-					new LogicMailEventSource(accountName, accountUniqueId);
-            	NotificationsManager.registerSource(
-        			eventSource.getEventSourceId(),
-        			eventSource,
-        			NotificationsConstants.CASUAL);
-            	eventSourceMap.put(accountUniqueId, eventSource);
-			}
-		}
+		NetworkAccountNode[] accountNodes = subscribeToNewAccounts(eventSourceMap);
 
 		// Unsubscribe from any deleted accounts
-		Vector deletedAccounts = new Vector();
+		unsubscribeFromDeletedAccounts(eventSourceMap, accountNodes);
+	}
+	
+    private LongHashtable getEventSourceMap() {
+        LongHashtable eventSourceMap = (LongHashtable)RuntimeStore.getRuntimeStore().get(AppInfo.GUID);
+        if(eventSourceMap == null) {
+            eventSourceMap = new LongHashtable();
+            RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
+        }
+        return eventSourceMap;
+    }
+	
+    /**
+     * Check account subscriptions, registering notification sources as necessary.
+     * 
+     * @param eventSourceMap Map of account IDs to event source objects
+     * @return Configured network account nodes
+     */
+    private NetworkAccountNode[] subscribeToNewAccounts(LongHashtable eventSourceMap) {
+        NetworkAccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
+        for(int i=0; i<accountNodes.length; i++) {
+            updateAccountMap(accountNodes[i]);
+            
+            accountNodes[i].addAccountNodeListener(accountNodeListener);
+            
+            // Register the notification source, if necessary
+            long accountUniqueId = ((NetworkAccountNode)accountNodes[i]).getUniqueId();
+            String accountName = accountNodes[i].toString();
+            LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountUniqueId);
+            if(eventSource == null || !eventSource.getAccountName().equals(accountName)) {
+                eventSource = new LogicMailEventSource(accountName, accountUniqueId);
+                NotificationsManager.registerSource(
+                    eventSource.getEventSourceId(),
+                    eventSource,
+                    NotificationsConstants.CASUAL);
+                eventSourceMap.put(accountUniqueId, eventSource);
+            }
+        }
+        return accountNodes;
+    }
+
+    private void unsubscribeFromDeletedAccounts(LongHashtable eventSourceMap, NetworkAccountNode[] accountNodes) {
+        Vector deletedAccounts = new Vector();
 		Enumeration e = accountMap.keys();
 		while(e.hasMoreElements()) {
 			AccountNode accountNode = (AccountNode)e.nextElement();
@@ -225,7 +253,7 @@ public class NotificationHandler {
 				eventSourceMap.remove(eventSourceKey);
 			}
 		}
-	}
+    }
 	
 	/**
 	 * Update the INBOX subscription for the provided account node.

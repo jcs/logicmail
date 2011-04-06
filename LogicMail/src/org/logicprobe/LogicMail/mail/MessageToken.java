@@ -87,6 +87,15 @@ public interface MessageToken extends Serializable {
     void updateMessageIndex(int index);
     
     /**
+     * Get the message index contained within this token object.  Message index
+     * values are never persisted, and not required, so this method should
+     * return </code>-1</code> if an index value is not available.
+     * 
+     * @return message index value, of <code>-1</code> if not available
+     */
+    int getMessageIndex();
+    
+    /**
      * Gets whether this token is sufficiently complete to load a message
      * from a mail store.  Messages not loadable from a mail store should
      * still be loadable from local cache.

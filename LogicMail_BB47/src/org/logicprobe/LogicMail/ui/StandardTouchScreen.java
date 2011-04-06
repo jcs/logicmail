@@ -37,6 +37,7 @@ import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.ui.VirtualKeyboard;
 import net.rim.device.api.ui.XYRect;
 import net.rim.device.api.util.IntHashtable;
 
@@ -129,6 +130,13 @@ public class StandardTouchScreen extends StandardScreen {
 				((ShortcutBarButtonField)value).setEditable(enabled);
 			}
 		}
+	}
+	
+	public void showVirtualKeyboard() {
+	    VirtualKeyboard keyboard = getVirtualKeyboard();
+	    if(keyboard != null) {
+	        keyboard.setVisibility(VirtualKeyboard.SHOW);
+	    }
 	}
 	
 	/* (non-Javadoc)

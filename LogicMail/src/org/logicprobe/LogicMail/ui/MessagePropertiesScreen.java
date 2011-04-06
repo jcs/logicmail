@@ -198,8 +198,10 @@ public class MessagePropertiesScreen extends MainScreen {
 		if(part instanceof MultiPart) {
 			MultiPart multiPart = (MultiPart)part;
 			MimeMessagePart[] children = multiPart.getParts();
-			for(int i=children.length - 1; i>=0; --i) {
-				populateStructureTreeField(newId, children[i]);
+			if(children != null) {
+    			for(int i=children.length - 1; i>=0; --i) {
+    				populateStructureTreeField(newId, children[i]);
+    			}
 			}
 		}
 	}

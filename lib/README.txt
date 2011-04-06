@@ -10,8 +10,10 @@ external sources.  These files are laid out as follow:
      lib/                |
          net_rim_api.jar | BlackBerry Java API
  xmltask.jar             | XMLTask
- bb-ant-tools.jar        | BlackBerry Ant Tools (trunk, r53, built with patch)
+ bb-ant-tools.jar        | BlackBerry Ant Tools (trunk, r62, built with patch)
  bb-ant-tools.patch      | Patch to BlackBerry Ant Tools
+ ant-contrib-1.0b3.jar   | Ant-Contrib Tasks
+ hammockmaker-2.1.0.jar  | HammockMaker tool (from the Hammock distribution)
 
 Sources:
 --------
@@ -23,4 +25,7 @@ XMLTask
     http://www.oopsconsultancy.com/software/xmltask/
 BlackBerry Ant Tools
     http://bb-ant-tools.sourceforge.net/
-
+Ant-Contrib Tasks
+    http://ant-contrib.sourceforge.net/
+Hammock
+    http://hammingweight.com/modules/hammock/

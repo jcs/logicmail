@@ -35,12 +35,14 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import net.rim.device.api.collection.util.BigVector;
+import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.util.IntVector;
 import net.rim.device.api.util.SimpleSortingIntVector;
 import net.rim.device.api.util.ToIntHashtable;
 
+import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
@@ -74,9 +76,21 @@ class FolderRequestHandler {
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
     
     /**
+     * Collection of <code>Runnable</code> tasks to execute following a
+     * refresh operation.
+     */
+    private final Vector postRefreshTasks = new Vector();
+    
+    /**
      * Indicates that the initial refresh has completed.
      */
-    private boolean initialRefreshComplete;
+    private volatile boolean initialRefreshComplete;
+    
+    /**
+     * Flag that is set during an existing refresh to force a check of
+     * all tokens.
+     */
+    private volatile boolean checkAllTokens;
     
     /** Indicates that cached messages have been loaded. */
     private boolean cacheLoaded;
@@ -116,8 +130,16 @@ class FolderRequestHandler {
         return folderTreeItem;
     }
 
-    public void handleDisconnect() {
-        cleanPriorToUse = true;
+    public void handleConnect() {
+        synchronized(postRefreshTasks) {
+            prepareForUse();
+        }
+    }
+    
+    public void cleanBeforeNextUse() {
+        synchronized(postRefreshTasks) {
+            cleanPriorToUse = true;
+        }
     }
     
     private void prepareForUse() {
@@ -132,6 +154,15 @@ class FolderRequestHandler {
         }
     }
     
+    public void requestFolderRefreshRequired() {
+        if(refreshInProgress.get()) {
+            checkAllTokens = true;
+        }
+        else {
+            cleanBeforeNextUse();
+        }
+    }
+    
     public void requestFolderRefresh() {
         if(refreshInProgress.compareAndSet(false, true)) {
             prepareForUse();
@@ -141,6 +172,8 @@ class FolderRequestHandler {
                 
                 // Fire an event so the caller knows we're no longer processing
                 mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
+                
+                invokePostRefreshTasks();
                 return;
             }
             
@@ -148,7 +181,7 @@ class FolderRequestHandler {
                 if(mailStore.hasFolderMessageIndexMap()) {
                     mailStore.requestFolderMessageIndexMap(folderTreeItem, new MailStoreRequestCallback() {
                         public void mailStoreRequestComplete() { }
-                        public void mailStoreRequestFailed(Throwable exception) {
+                        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
                             indexMapFetchFailed();
                         }});
                 }
@@ -156,8 +189,15 @@ class FolderRequestHandler {
                     // Queue a request for new folder messages from the mail store
                     pendingFlagUpdates = new Vector();
                     mailStore.requestFolderMessagesRecent(folderTreeItem, true, new MailStoreRequestCallback() {
-                        public void mailStoreRequestComplete() { }
-                        public void mailStoreRequestFailed(Throwable exception) {
+                        public void mailStoreRequestComplete() {
+                            // If this initial operation reported invalid
+                            // folder state data, then make sure we verify all
+                            // cached tokens.
+                            if(checkAllTokens) {
+                                loadCachedFolderMessages();
+                            }
+                        }
+                        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
                             initialFlagsRefreshFailed();
                         }});
                 }
@@ -228,6 +268,8 @@ class FolderRequestHandler {
             orphanedMessageSet.clear();
             
             refreshInProgress.set(false);
+            
+            invokePostRefreshTasks();
         }}).start();
     }
     
@@ -326,6 +368,8 @@ class FolderRequestHandler {
             orphanedMessageSet.clear();
             
             refreshInProgress.set(false);
+            
+            invokePostRefreshTasks();
         }}).start();
     }
     
@@ -379,11 +423,13 @@ class FolderRequestHandler {
                 Enumeration e = orphanedMessageSet.elements();
                 while(e.hasMoreElements()) {
                     MessageToken token = ((FolderMessage)e.nextElement()).getMessageToken();
-                    if(tokenComparator.compare(token, oldestFetchedToken) < 0) {
+                    if(checkAllTokens || tokenComparator.compare(token, oldestFetchedToken) < 0) {
                         cachedTokensToCheck.addElement(token);
                     }
                 }
             }
+            
+            checkAllTokens = false;
             
             if(cachedTokensToCheck.size() > 0) {
                 // Perform a second flags fetch
@@ -392,7 +438,7 @@ class FolderRequestHandler {
                 secondaryFlagsRefresh = true;
                 mailStore.requestFolderMessagesSet(folderTreeItem, tokens, true, new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception) {
+                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
                         secondaryFlagsRefreshFailed();
                     }});
             }
@@ -422,6 +468,8 @@ class FolderRequestHandler {
         orphanedMessageSet.clear();
 
         refreshInProgress.set(false);
+        
+        invokePostRefreshTasks();
     }
     
     private void secondaryFlagsRefreshComplete() {
@@ -494,7 +542,7 @@ class FolderRequestHandler {
             initialRefreshComplete = true;
             finalFetchComplete();
         }
-        public void mailStoreRequestFailed(Throwable exception) {
+        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
             finalFetchComplete();
         }
     };
@@ -511,6 +559,8 @@ class FolderRequestHandler {
         
         // Notify the end of the operation
         mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
+        
+        invokePostRefreshTasks();
     }
     
     /**
@@ -542,13 +592,13 @@ class FolderRequestHandler {
             orphanedTokens[index++] = message.getMessageToken();
         }
         orphanedMessageSet.clear();
-        mailStoreServices.fireFolderExpunged(folderTreeItem, orphanedTokens);
+        mailStoreServices.fireFolderExpunged(folderTreeItem, orphanedTokens, new MessageToken[0]);
     }
     
     public void requestMoreFolderMessages(MessageToken firstToken, int increment) {
         mailStore.requestFolderMessagesRange(folderTreeItem, firstToken, increment, new MailStoreRequestCallback() {
             public void mailStoreRequestComplete() { }
-            public void mailStoreRequestFailed(Throwable exception) {
+            public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
                 // Commit and notify even in cases of failure, to ensure that
                 // post-request operations can occur.
                 folderMessageCache.commit();
@@ -624,7 +674,7 @@ class FolderRequestHandler {
         indexMapFetchComplete(uidIndexMap);
     }
     
-    void handleFolderExpunged(int[] indices) {
+    void handleFolderExpunged(int[] indices, MessageToken[] updatedTokens) {
         FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
         for(int i=0; i<messages.length; i++) {
             if(messages[i].isDeleted()) {
@@ -632,36 +682,118 @@ class FolderRequestHandler {
             }
         }
         folderMessageCache.commit();
-        mailStoreServices.fireFolderExpunged(folderTreeItem, indices);
+        mailStoreServices.fireFolderExpunged(folderTreeItem, indices, updatedTokens);
     }
-
-    public void handleMessageAvailable(MessageToken messageToken, MimeMessagePart messageStructure) {
-        // TODO Consider blocking if a refresh is in progress
-        FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
-        if(message == null) { return; }
-        
-        boolean updated = false;
-        MessageFlags messageFlags = message.getFlags();
-        if(!messageFlags.isSeen()) {
-            MessageFlags originalFlags = new MessageFlags(messageFlags.getFlags());
-            messageFlags.setSeen(true);
-            messageFlags.setRecent(false);
-            if(mailStore.hasFlags()) {
-                mailStore.requestMessageSeen(messageToken, originalFlags);
+    
+    void handleFolderExpunged(MessageToken[] expungedTokens, MessageToken[] updatedTokens) {
+        for(int i=0; i<expungedTokens.length; i++) {
+            FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, expungedTokens[i]);
+            if(message != null) {
+                folderMessageCache.removeFolderMessage(folderTreeItem, message);
             }
-            updated = true;
         }
-
-        if(messageStructure != null) {
-            message.setStructure(messageStructure);
-            updated = true;
+        folderMessageCache.commit();
+        mailStoreServices.fireFolderExpunged(folderTreeItem, expungedTokens, updatedTokens);
+    }
+    
+    private void invokePostRefreshTasks() {
+        Runnable[] tasksToRun = null;
+        synchronized(postRefreshTasks) {
+            int size = postRefreshTasks.size();
+            if(size > 0) {
+                tasksToRun = new Runnable[size];
+                postRefreshTasks.copyInto(tasksToRun);
+                postRefreshTasks.removeAllElements();
+            }
         }
         
-        if(updated) {
-            folderMessageCache.updateFolderMessage(folderTreeItem, message);
-            folderMessageCache.commit();
+        if(tasksToRun != null) {
+            for(int i=0; i<tasksToRun.length; i++) {
+                try {
+                    tasksToRun[i].run();
+                } catch (Throwable t) {
+                    EventLogger.logEvent(AppInfo.GUID, t.toString().getBytes(), EventLogger.ERROR);
+                }
+            }
         }
     }
+    
+    /**
+     * Invoke the provided <code>Runnable</code> after the refresh for this
+     * handler's folder has completed, successfully or unsuccessfully.
+     * If the refresh has not yet occurred, and <code>triggerRefresh</code>
+     * is set, this method will trigger it.
+     * If the refresh has already completed, the <code>Runnable</code> will be
+     * executed immediately.
+     *
+     * @param runnable the runnable to execute following a refresh
+     * @param triggerRefresh true, if a refresh should be triggered
+     */
+    public void invokeAfterRefresh(Runnable runnable, boolean triggerRefresh) {
+        boolean runImmediately = false;
+        
+        synchronized(postRefreshTasks) {
+            if(refreshInProgress.get()) {
+                // A refresh is currently in progress, so add this task to the
+                // list of post-refresh tasks
+                postRefreshTasks.addElement(runnable);
+            }
+            else {
+                // A refresh is not in progress
+                if(postRefreshTasks.size() > 0) {
+                    // The refresh completed, but the post-refresh tasks have
+                    // not yet been executed.  This means we should add our
+                    // task to the end of that list.
+                    postRefreshTasks.addElement(runnable);
+                }
+                else if((!initialRefreshComplete || cleanPriorToUse) && triggerRefresh) {
+                    // The refresh has not yet begun, but is necessary.  This
+                    // means we should add our task to the list, and trigger
+                    // the refresh operation
+                    postRefreshTasks.addElement(runnable);
+                    requestFolderRefresh();
+                }
+                else {
+                    // We are okay to execute this task normally
+                    runImmediately = true;
+                }
+            }
+        }
+        
+        if(runImmediately) {
+            runnable.run();
+        }
+    }
+
+    public void handleMessageAvailable(final MessageToken messageToken, final MimeMessagePart messageStructure) {
+        invokeAfterRefresh(new Runnable() {
+            public void run() {
+                FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+                if(message == null) { return; }
+                
+                boolean updated = false;
+                MessageFlags messageFlags = message.getFlags();
+                if(!messageFlags.isSeen()) {
+                    messageFlags.setSeen(true);
+                    messageFlags.setRecent(false);
+                    if(mailStore.hasFlags()) {
+                        mailStore.requestMessageSeen(messageToken);
+                    }
+                    updated = true;
+                }
+
+                if(messageStructure != null) {
+                    message.setStructure(messageStructure);
+                    updated = true;
+                }
+                
+                if(updated) {
+                    folderMessageCache.updateFolderMessage(folderTreeItem, message);
+                    folderMessageCache.commit();
+                }
+            }
+        }, false);
+     }
 
     void setFolderMessageSeen(MessageToken messageToken) {
         setFolderMessageSeenImpl(messageToken, false);
@@ -671,22 +803,24 @@ class FolderRequestHandler {
         setFolderMessageSeenImpl(messageToken, true);
     }
     
-    private void setFolderMessageSeenImpl(MessageToken messageToken, boolean cacheOnly) {
-        // TODO Consider blocking if a refresh is in progress
-        if(messageToken == null) { return; }
-        FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
-        if(message == null) { return; }
-        MessageFlags messageFlags = message.getFlags();
-        if(!messageFlags.isSeen() || messageFlags.isRecent()) {
-            MessageFlags originalFlags = new MessageFlags(messageFlags.getFlags());
-            messageFlags.setSeen(true);
-            messageFlags.setRecent(false);
-            folderMessageCache.updateFolderMessage(folderTreeItem, message);
-            folderMessageCache.commit();
-            if(!cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen()) {
-                mailStore.requestMessageSeen(messageToken, originalFlags);
+    private void setFolderMessageSeenImpl(final MessageToken messageToken, final boolean cacheOnly) {
+        invokeAfterRefresh(new Runnable() {
+            public void run() {
+                if(messageToken == null) { return; }
+                FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+                if(message == null) { return; }
+                MessageFlags messageFlags = message.getFlags();
+                if(!messageFlags.isSeen() || messageFlags.isRecent()) {
+                    messageFlags.setSeen(true);
+                    messageFlags.setRecent(false);
+                    folderMessageCache.updateFolderMessage(folderTreeItem, message);
+                    folderMessageCache.commit();
+                    if(!cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen()) {
+                        mailStore.requestMessageSeen(messageToken);
+                    }
+                }
             }
-        }
+        }, false);
     }
 
     MimeMessagePart getCachedMessageStructure(MessageToken messageToken) {

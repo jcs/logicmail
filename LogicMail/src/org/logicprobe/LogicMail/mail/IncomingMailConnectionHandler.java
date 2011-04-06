@@ -32,6 +32,8 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.Vector;
 
 import net.rim.device.api.util.ToIntHashtable;
@@ -46,6 +48,7 @@ import org.logicprobe.LogicMail.util.Queue;
 
 public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler {
     private IncomingMailClient incomingClient;
+    private FolderTreeItem previousActiveFolder;
 
     // The various mail store requests, mirroring the
     // "requestXXXX()" methods from AbstractMailStore
@@ -56,6 +59,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     public static final int REQUEST_FOLDER_MESSAGES_SET      = 14;
     public static final int REQUEST_FOLDER_MESSAGES_RECENT   = 15;
     public static final int REQUEST_FOLDER_MESSAGE_INDEX_MAP = 16;
+    public static final int REQUEST_FOLDER_REFRESH_REQUIRED  = 17;
     public static final int REQUEST_MESSAGE                  = 20;
     public static final int REQUEST_MESSAGE_PARTS            = 21;
     public static final int REQUEST_MESSAGE_DELETE           = 22;
@@ -74,20 +78,38 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private static final int IDLE_TIMEOUT = 300000;
 
     /**
-     * Interval to poll the connection in the idle state.
-     * Currently set to 500ms.
-     */
-    private static final int IDLE_POLL_INTERVAL = 500;
-
-    /**
      * Interval to do explicit NOOP-based polling when the idle state is
      * not available.  Currently set to 5 minutes.
      */
     private static final int NOOP_TIMEOUT = 300000;
     
+    private final Timer idleTimer = new Timer();
+    private TimerTask idleTimerTask;
+    private boolean idleTimeout;
+    private boolean idleRecentMessagesRequested;
+    
+    /**
+     * Listener to handle asynchronous notifications from the mail client.
+     */
+    private IncomingMailClientListener mailClientListener = new IncomingMailClientListener() {
+        public void recentFolderMessagesAvailable() {
+            handleRecentFolderMessagesAvailable();
+        }
+        public void folderMessageFlagsChanged(MessageToken token, MessageFlags messageFlags) {
+            handleFolderMessageFlagsChanged(token, messageFlags);
+        }
+        public void folderMessageExpunged(MessageToken expungedToken, MessageToken[] updatedTokens) {
+            handleFolderMessageExpunged(expungedToken, updatedTokens);
+        }
+        public void idleModeError() {
+            handleIdleModeError();
+        }
+    };
+    
     public IncomingMailConnectionHandler(IncomingMailClient client) {
         super(client);
         this.incomingClient = client;
+        this.incomingClient.setListener(mailClientListener);
     }
 
     /**
@@ -149,22 +171,22 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             handleRequestMessageParts((MessageToken)params[0], (MimeMessagePart[])params[1], tag);
             break;
         case REQUEST_MESSAGE_DELETE:
-            handleRequestMessageDelete((MessageToken)params[0], (MessageFlags)params[1], tag);
+            handleRequestMessageDelete((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_UNDELETE:
-            handleRequestMessageUndelete((MessageToken)params[0], (MessageFlags)params[1], tag);
+            handleRequestMessageUndelete((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_ANSWERED:
-            handleRequestMessageAnswered((MessageToken)params[0], (MessageFlags)params[1], tag);
+            handleRequestMessageAnswered((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_FORWARDED:
-            handleRequestMessageForwarded((MessageToken)params[0], (MessageFlags)params[1], tag);
+            handleRequestMessageForwarded((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_SEEN:
-            handleRequestMessageSeen((MessageToken)params[0], (MessageFlags)params[1], tag);
+            handleRequestMessageSeen((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_UNSEEN:
-            handleRequestMessageUnseen((MessageToken)params[0], (MessageFlags)params[1], tag);
+            handleRequestMessageUnseen((MessageToken)params[0], tag);
             break;
         case REQUEST_MESSAGE_APPEND:
             handleRequestMessageAppend((FolderTreeItem)params[0], (String)params[1], (MessageFlags)params[2], tag);
@@ -174,126 +196,138 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
 
+    private void handleRecentFolderMessagesAvailable() {
+        if(getConnectionState() == STATE_IDLE) {
+            if(idleRecentMessagesRequested) { return; }
+            idleRecentMessagesRequested = true;
+        }
+        
+        // Make sure we ignore this event if it occurs during the setup portion
+        // of the command normally enqueued as a result of this notification.
+        if(getRequestInProgress() == REQUEST_FOLDER_MESSAGES_RECENT) {
+            return;
+        }
+        
+        addRequest(
+                IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
+                new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
+                null);
+    }
+
+    private void handleFolderMessageFlagsChanged(MessageToken token, MessageFlags messageFlags) {
+        // This notification just updates local data, so it does not need to
+        // break out of the idle state.
+        
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionRequestComplete(
+                    REQUEST_MESSAGE_SEEN,
+                    new Object[] { token, messageFlags },
+                    null, true);
+        }
+    }
+
+    private void handleFolderMessageExpunged(MessageToken expungedToken, MessageToken[] updatedTokens) {
+        // This notification just updates local data, so it does not need to
+        // break out of the idle state.
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionRequestComplete(
+                    REQUEST_FOLDER_EXPUNGE,
+                    new Object[] {
+                            incomingClient.getActiveFolder(),
+                            new MessageToken[] { expungedToken },
+                            updatedTokens
+                    }, null, true);
+        }
+    }
+
+    private void handleIdleModeError() {
+        idleTimerTask.cancel();
+        Queue requestQueue = getRequestQueue();
+        synchronized(requestQueue) {
+            requestQueue.notifyAll();
+        }
+    }
+
     /**
      * Handles the start of the IDLE state.
      */
     protected void handleBeginIdle() throws IOException, MailException {
+        FolderTreeItem inboxFolder = incomingClient.getInboxFolder();
+        FolderTreeItem activeFolder = incomingClient.getActiveFolder();
+        
+        // This case will happen if the connection died while idling, was
+        // restored, and we need to re-select the correct active folder.
+        if(activeFolder == null && previousActiveFolder != null) {
+            try {
+                handleSetActiveFolder(previousActiveFolder);
+            } catch (MailException e) {
+                handleSetActiveFolder(inboxFolder);
+            }
+        }
+        this.previousActiveFolder = activeFolder;
+        
         if(incomingClient.hasIdle()) {
+            idleRecentMessagesRequested = false;
+            idleTimeout = false;
+            idleTimerTask = new TimerTask() {
+                public void run() {
+                    handleIdleModeTimeout();
+                }
+            };
+            idleTimer.schedule(idleTimerTask, IDLE_TIMEOUT);
+            
             incomingClient.idleModeBegin();
-            boolean endIdle = false;
-            int idleTime = 0;
-            while(!endIdle) {
-                sleepConnectionThread(IDLE_POLL_INTERVAL);
-                idleTime += IDLE_POLL_INTERVAL;
-                if(incomingClient.idleModePoll()) {
-                    addRequest(
-                            IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
-                            null);
-                    endIdle = true;
-                }
-                else if(getShutdownInProgress()) {
-                    endIdle = true;
-                }
-                else if(idleTime >= IDLE_TIMEOUT) {
-                    endIdle = true;
-                }
-                else
-                {
-                    Queue requestQueue = getRequestQueue();
-                    synchronized(requestQueue) {
-                        if(requestQueue.element() != null) {
-                            endIdle = true;
-                        }
-                    }
-                }
-            }
-            incomingClient.idleModeEnd();
 
-            // If the idle state was ended due to a timeout, perform a no-operation
-            // command on the mail server as a final explicit check for new messages.
-            if(idleTime >= IDLE_TIMEOUT) {
-                if(incomingClient.noop()) {
-                    addRequest(
-                            IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
-                            null);
-                }
-                else {
-                    // If we had a non-INBOX folder selected, then an idle timeout
-                    // should switch the active folder back to the INBOX.
-                    FolderTreeItem inboxMailbox = incomingClient.getInboxFolder();
-                    FolderTreeItem activeMailbox = incomingClient.getActiveFolder();
-                    if(inboxMailbox != null && !inboxMailbox.getPath().equalsIgnoreCase(activeMailbox.getPath())) {
-                        incomingClient.setActiveFolder(inboxMailbox);
-                    }
-                }
-            }
         }
         else if(!incomingClient.hasLockedFolders()) {
             // In this case, we do a NOOP-based polling
-            boolean endIdle = false;
-            int idleTime = 0;
-            while(!endIdle) {
-                // Similar to the idle-polling loop, except no actual network
-                // polling is performed.  This is necessary to monitor the
-                // connection handler to be responsive to new requests.
-                sleepConnectionThread(IDLE_POLL_INTERVAL);
-                idleTime += IDLE_POLL_INTERVAL;
-                
-                if(getShutdownInProgress()) {
-                    endIdle = true;
+            idleRecentMessagesRequested = false;
+            idleTimeout = false;
+            idleTimerTask = new TimerTask() {
+                public void run() {
+                    handleIdleModeTimeout();
                 }
-                else if(idleTime >= NOOP_TIMEOUT) {
-                    endIdle = true;
-                }
-                else
-                {
-                    Queue requestQueue = getRequestQueue();
-                    synchronized(requestQueue) {
-                        if(requestQueue.element() != null) {
-                            endIdle = true;
-                        }
-                    }
-                }
-            }
-
-            // Perform a no-operation command on the mail server as an explicit
-            // check for new messages.
-            if(idleTime >= NOOP_TIMEOUT) {
-                if(incomingClient.noop()) {
-                    addRequest(
-                            IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-                            new Object[] { incomingClient.getActiveFolder(), Boolean.FALSE },
-                            null);
-                }
-                else {
-                    // If we had a non-INBOX folder selected, then we should
-                    // switch the active folder back to the INBOX.
-                    FolderTreeItem inboxMailbox = incomingClient.getInboxFolder();
-                    FolderTreeItem activeMailbox = incomingClient.getActiveFolder();
-                    if(inboxMailbox != null && !inboxMailbox.getPath().equalsIgnoreCase(activeMailbox.getPath())) {
-                        incomingClient.setActiveFolder(inboxMailbox);
-                    }
-                }
-            }
+            };
+            idleTimer.schedule(idleTimerTask, NOOP_TIMEOUT);
         }
-        else {
-            Queue requestQueue = getRequestQueue();
-            synchronized(requestQueue) {
-                if(requestQueue.element() != null) {
-                    return;
-                }
-                else {
-                    try {
-                        requestQueue.wait();
-                    } catch (InterruptedException e) { }
+    }
+
+    protected void handleIdleModeTimeout() {
+        idleTimeout = true;
+        Queue requestQueue = getRequestQueue();
+        synchronized(requestQueue) {
+            requestQueue.notifyAll();
+        }
+    }
+
+    protected void handleEndIdle() throws IOException, MailException {
+        if(idleTimerTask != null) {
+            idleTimerTask.cancel();
+        }
+        
+        if(incomingClient.hasIdle()) {
+            incomingClient.idleModeEnd();
+        }
+        
+        if(idleTimeout) {
+            incomingClient.noop();
+            if(!idleRecentMessagesRequested) {
+                // If we had a non-INBOX folder selected, then an idle timeout
+                // should switch the active folder back to the INBOX.
+                FolderTreeItem inboxFolder = incomingClient.getInboxFolder();
+                FolderTreeItem activeFolder = incomingClient.getActiveFolder();
+                if(inboxFolder != null && activeFolder != null
+                        && !inboxFolder.getPath().equalsIgnoreCase(activeFolder.getPath())) {
+                    handleSetActiveFolder(inboxFolder);
                 }
             }
         }
     }
-
+    
     private void handleRequestDisconnect(Object tag) throws IOException, MailException {
+        this.previousActiveFolder = null;
         throw new MailException("", true, REQUEST_DISCONNECT);
     }
 
@@ -312,11 +346,13 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_EXPUNGE);
         showStatus(message);
         checkActiveFolder(folder);
-        int[] indices = incomingClient.expungeActiveFolder();
-
+        incomingClient.expungeActiveFolder();
+        
+        // Notification of expunged messages is received through the client listener
+        
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, new Object[] { folder, indices } , tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_FOLDER_EXPUNGE, folder, tag, true);
         }
     }
 
@@ -497,80 +533,92 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
 
-    private void handleRequestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+    private void handleRequestMessageDelete(MessageToken messageToken, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_DELETE));
         checkActiveFolder(messageToken);
 
-        incomingClient.deleteMessage(messageToken, messageFlags);
+        incomingClient.deleteMessage(messageToken);
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_DELETE, messageToken, tag, true);
         }
+        
+        // Notification of actual flag changes is received through the client listener
     }
     
-    private void handleRequestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+    private void handleRequestMessageUndelete(MessageToken messageToken, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UNDELETE));
         checkActiveFolder(messageToken);
 
-        incomingClient.undeleteMessage(messageToken, messageFlags);
+        incomingClient.undeleteMessage(messageToken);
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken, messageFlags }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNDELETE, messageToken, tag, true);
         }
+        
+        // Notification of actual flag changes is received through the client listener
     }
     
-    private void handleRequestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+    private void handleRequestMessageAnswered(MessageToken messageToken, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
         if(incomingClient.hasFlags()) {
-            incomingClient.messageAnswered(messageToken, messageFlags);
+            checkActiveFolder(messageToken);
+            incomingClient.messageAnswered(messageToken);
         }
-        messageFlags.setAnswered(true);
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_ANSWERED, messageToken, tag, true);
         }
+        
+        // Notification of actual flag changes is received through the client listener
     }
     
-    private void handleRequestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+    private void handleRequestMessageForwarded(MessageToken messageToken, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
         if(incomingClient.hasFlags()) {
-            incomingClient.messageForwarded(messageToken, messageFlags);
+            checkActiveFolder(messageToken);
+            incomingClient.messageForwarded(messageToken);
         }
-        messageFlags.setForwarded(true);
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken, messageFlags }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_FORWARDED, messageToken, tag, true);
         }
+        
+        // Notification of actual flag changes is received through the client listener
     }
     
-    private void handleRequestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+    private void handleRequestMessageSeen(MessageToken messageToken, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
         if(incomingClient.hasFlags()) {
-            incomingClient.messageSeen(messageToken, messageFlags);
+            checkActiveFolder(messageToken);
+            incomingClient.messageSeen(messageToken);
         }
-        messageFlags.setSeen(true);
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_SEEN, new Object[] { messageToken, messageFlags }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_SEEN, messageToken, tag, true);
         }
+        
+        // Notification of actual flag changes is received through the client listener
     }
     
-    private void handleRequestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, Object tag) throws IOException, MailException {
+    private void handleRequestMessageUnseen(MessageToken messageToken, Object tag) throws IOException, MailException {
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
         if(incomingClient.hasFlags()) {
-            incomingClient.messageUnseen(messageToken, messageFlags);
+            checkActiveFolder(messageToken);
+            incomingClient.messageUnseen(messageToken);
         }
-        messageFlags.setSeen(false);
 
         MailConnectionHandlerListener listener = getListener();
         if(listener != null) {
-            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken, messageFlags }, tag, true);
+            listener.mailConnectionRequestComplete(REQUEST_MESSAGE_UNSEEN, messageToken, tag, true);
         }
+        
+        // Notification of actual flag changes is received through the client listener
     }
     
     private void handleRequestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, Object tag) throws IOException, MailException {
@@ -600,13 +648,31 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
 
+    private void handleSetActiveFolder(FolderTreeItem folder) throws IOException, MailException {
+        boolean isStateValid = incomingClient.setActiveFolder(folder, true);
+        
+        if(!isStateValid) {
+            MailConnectionHandlerListener listener = getListener();
+            if(listener != null) {
+                listener.mailConnectionRequestComplete(REQUEST_FOLDER_REFRESH_REQUIRED, new Object[] { folder }, null, true);
+            }
+        }
+    }
+    
     private void checkActiveFolder(FolderTreeItem requestFolder) throws IOException, MailException {
         if(incomingClient.getActiveFolder() == null || !incomingClient.getActiveFolder().getPath().equals(requestFolder.getPath())) {
-            incomingClient.setActiveFolder(requestFolder);
+            handleSetActiveFolder(requestFolder);
         }
     }
 
     private void checkActiveFolder(MessageToken messageToken) throws IOException, MailException {
-        incomingClient.setActiveFolder(messageToken);
+        FolderTreeItem invalidFolder = incomingClient.setActiveFolder(messageToken, true);
+        
+        if(invalidFolder != null) {
+            MailConnectionHandlerListener listener = getListener();
+            if(listener != null) {
+                listener.mailConnectionRequestComplete(REQUEST_FOLDER_REFRESH_REQUIRED, new Object[] { invalidFolder }, null, true);
+            }
+        }
     }
 }

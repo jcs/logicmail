@@ -593,8 +593,7 @@ public class CompositionScreen extends AbstractScreenProvider {
     }
 
     public void makeMenu(Menu menu, int instance) {
-        if (((EmailAddressBookEditField) recipientsFieldManager.getField(selectableIdentity ? 1 : 0))
-                .getText().length() > 0) {
+        if(messageCanBeSent()) {
             menu.add(sendMenuItem);
         }
         MailboxNode draftMailbox = accountNode.getDraftMailbox();
@@ -619,6 +618,22 @@ public class CompositionScreen extends AbstractScreenProvider {
                         && attachmentsFieldManager.getFieldCount() > 0)) {
             menu.add(deleteFieldMenuItem);
         }
+    }
+    
+    private boolean messageCanBeSent() {
+        int startIndex = selectableIdentity ? 1 : 0;
+        int size = recipientsFieldManager.getFieldCount();
+        for(int i=startIndex; i<size; i++) {
+            Field field = recipientsFieldManager.getField(i);
+            if(field instanceof EmailAddressBookEditField) {
+                EmailAddressBookEditField recipientField = (EmailAddressBookEditField)field;
+                if(recipientField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO
+                        && recipientField.getText().length() > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     
     public boolean keyChar(char key, int status, int time) {
@@ -993,7 +1008,7 @@ public class CompositionScreen extends AbstractScreenProvider {
             i = 0;
 
             while (i < size) {
-                if(!(recipientsFieldManager.getField(i) instanceof EmailAddressBookEditField)) { continue; }
+                if(!(recipientsFieldManager.getField(i) instanceof EmailAddressBookEditField)) { i++; continue; }
                 currentField = (EmailAddressBookEditField) recipientsFieldManager.getField(i);
 
                 if ((currentField.getAddressType() == EmailAddressBookEditField.ADDRESS_TO) ||

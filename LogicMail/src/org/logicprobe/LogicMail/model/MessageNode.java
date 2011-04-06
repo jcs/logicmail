@@ -1211,9 +1211,7 @@ public class MessageNode implements Node {
 	 * change event for the message flags.
 	 */
 	public void deleteMessage() {
-		parent.getParentAccount().getMailStoreServices().requestMessageDelete(
-				messageToken,
-				createMessageFlags(this.flags));
+		parent.getParentAccount().getMailStoreServices().requestMessageDelete(messageToken);
 	}
 	
 	/**
@@ -1229,9 +1227,7 @@ public class MessageNode implements Node {
 	public void undeleteMessage() {
 	    MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
 		if(mailStore.hasUndelete()) {
-			mailStore.requestMessageUndelete(
-				messageToken,
-				createMessageFlags(this.flags));
+			mailStore.requestMessageUndelete(messageToken);
 		}
 	}
 	

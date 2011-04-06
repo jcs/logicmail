@@ -58,6 +58,8 @@ public abstract class AbstractMailConnectionHandler {
 	private boolean shutdownInProgress;
 	private Object[] requestInProgress;
 	
+	private static final int RETRY_LIMIT = 2;
+	
     public static final int REQUEST_DISCONNECT = 1;
     
 	// The various states of a mail connection
@@ -305,11 +307,12 @@ public abstract class AbstractMailConnectionHandler {
      * @param params Parameters for the request.
      * @param tag Tag reference to pass along with the request
 	 * @param exception Exception that was thrown to fail the request,
-	 * or null if it failed due to a queue flush
+	 *     or null if it failed due to a queue flush
+	 * @param isFinal true if the connection will be closed, false if it is being reopened
 	 */
-	protected void handleRequestFailed(int type, Object[] params, Object tag, Throwable exception) {
+	protected void handleRequestFailed(int type, Object[] params, Object tag, Throwable exception, boolean isFinal) {
         if(this.listener != null) {
-            listener.mailConnectionRequestFailed(type, tag, exception);
+            listener.mailConnectionRequestFailed(type, tag, exception, isFinal);
         }
 	}
 	
@@ -323,16 +326,35 @@ public abstract class AbstractMailConnectionHandler {
      */
 	private void handleIdleConnection() throws IOException, MailException {
 		showStatus(null);
-		handleBeginIdle();
 		
-		synchronized(requestQueue) {
-			if(requestQueue.element() != null) {
-				setConnectionState(STATE_REQUESTS);
-			}
-			else if(connectionThread.isShutdown()) {
-				setConnectionState(STATE_CLOSING);
-			}
-		}
+		handleBeginIdle();
+
+        synchronized(requestQueue) {
+            if(requestQueue.element() != null) {
+                setConnectionState(STATE_REQUESTS);
+            }
+            else if(connectionThread.isShutdown()) {
+                setConnectionState(STATE_CLOSING);
+            }
+            else {
+                try {
+                    requestQueue.wait();
+                } catch (InterruptedException e) { }
+            }
+        }
+        
+        handleEndIdle();
+        
+        synchronized(requestQueue) {
+            if(getConnectionState() == STATE_IDLE) {
+                if(requestQueue.element() != null) {
+                    setConnectionState(STATE_REQUESTS);
+                }
+                else if(connectionThread.isShutdown()) {
+                    setConnectionState(STATE_CLOSING);
+                }
+            }
+        }
 	}
     
 	/**
@@ -349,6 +371,19 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
 	 */
 	protected abstract void handleBeginIdle() throws IOException, MailException;
+	
+    /**
+     * Handles the end of the IDLE state.
+     * <p>
+     * Subclasses should do anything they need to do to make their connection
+     * leave the idle state with the server.  Exceptions should also be thrown
+     * from this method for any errors that occurred during the idle state.
+     * </p>
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+	protected abstract void handleEndIdle() throws IOException, MailException;
 	
     /**
      * Handles the CLOSING state to close an existing connection.
@@ -405,6 +440,20 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	protected Queue getRequestQueue() {
 		return this.requestQueue;
+	}
+	
+	/**
+	 * Gets the request currently in progress.
+	 *
+	 * @return the request in progress, or <code>-1</code>.
+	 */
+	public synchronized int getRequestInProgress() {
+	    if(requestInProgress != null) {
+	        return ((Integer)requestInProgress[0]).intValue();
+	    }
+	    else {
+	        return -1;
+	    }
 	}
 	
 	/**
@@ -522,19 +571,31 @@ public abstract class AbstractMailConnectionHandler {
 		EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(), EventLogger.ERROR);
 
 		int state = getConnectionState();
+		boolean isFinal;
 		
-		if(state == STATE_OPENING || state == STATE_CLOSING || retryCount < 2) {
+		if(state == STATE_OPENING || state == STATE_CLOSING || retryCount > RETRY_LIMIT) {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
 				setConnectionState(STATE_CLOSING);
 				clearRequestQueue(e);
 			}
+			// Only display the error if we are not going to retry
+	        showError(e.getMessage());
+	        isFinal = true;
 		}
 		else {
 			retryCount++;
+			
+			// Explicitly notify any listeners that the connection dropped,
+			// since the CLOSING state is not entered in this situation.
+            MailConnectionManager.getInstance().fireMailConnectionStateChanged(
+                    client.getConnectionConfig(),
+                    MailConnectionStateEvent.STATE_DISCONNECTED);
+            
+            // Set the next state to opening
 			setConnectionState(STATE_OPENING);
+			isFinal = false;
 		}
-		showError(e.getMessage());
 
         // Notify failure of the current request-in-progress, if applicable
         if(requestInProgress != null) {
@@ -542,7 +603,7 @@ public abstract class AbstractMailConnectionHandler {
                     ((Integer)requestInProgress[0]).intValue(),
                     (Object[])requestInProgress[1],
                     requestInProgress[2],
-                    e);
+                    e, isFinal);
             requestInProgress = null;
         }
 	}
@@ -579,7 +640,7 @@ public abstract class AbstractMailConnectionHandler {
                     ((Integer)requestInProgress[0]).intValue(),
                     (Object[])requestInProgress[1],
                     requestInProgress[2],
-                    e);
+                    e, true);
             requestInProgress = null;
         }
 	}
@@ -609,7 +670,7 @@ public abstract class AbstractMailConnectionHandler {
                     ((Integer)requestInProgress[0]).intValue(),
                     (Object[])requestInProgress[1],
                     requestInProgress[2],
-                    t);
+                    t, true);
             requestInProgress = null;
 		}
 	}
@@ -629,7 +690,7 @@ public abstract class AbstractMailConnectionHandler {
                         ((Integer)request[0]).intValue(),
                         (Object[])request[1],
                         request[2],
-                        null);
+                        null, true);
 	            element = requestQueue.element();
 	        }
 	    }

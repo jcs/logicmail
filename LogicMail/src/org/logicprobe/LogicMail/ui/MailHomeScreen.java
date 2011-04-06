@@ -273,7 +273,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
     private void refreshMailTree() {
         clearMailTreeSubscriptions();
         generateMailTree();
-        populateMailTree(mailTreeRootNode);
+        populateMailTree(mailTreeRootNode, null);
         loadScreenMetadata();
     }
 
@@ -328,6 +328,13 @@ public class MailHomeScreen extends AbstractScreenProvider {
     }
 
     private void refreshAccountFolders(AccountNode accountNode) {
+        final Hashtable stateTable = new Hashtable();
+        UiApplication.getUiApplication().invokeAndWait(new Runnable() {
+            public void run() {
+                saveScreenState(stateTable);
+            }
+        });
+        
         // Unsubscribe from all existing mailbox nodes, remove them
         // from the node-id map, and remove them from the tree.
         Vector mailboxNodeList = new Vector();
@@ -352,7 +359,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
                 accountTreeNode.children[i] = populateMailboxTreeNode(mailboxNodes[i]);
             }
         }
-        populateMailTree(mailTreeRootNode);
+        populateMailTree(mailTreeRootNode, stateTable);
     }
 
     private void selectFolderItemHandler(MailHomeTreeNode treeNode) {
@@ -407,7 +414,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
         }
     }
 
-    public void populateMailTree(final MailHomeTreeNode rootNode) {
+    public void populateMailTree(final MailHomeTreeNode rootNode, final Hashtable stateTable) {
         UiApplication.getUiApplication().invokeAndWait(new Runnable() {
             public void run() {
                 // Clear any existing nodes
@@ -425,7 +432,10 @@ public class MailHomeScreen extends AbstractScreenProvider {
                         populateMailTreeChildren(id, nodes[i]);
                     }
                 }
-                if(firstNode != -1) {
+                if(stateTable != null) {
+                    restoreScreenState(stateTable);
+                }
+                else if(firstNode != -1) {
                     treeField.setCurrentNode(firstNode);
                 }
             }
@@ -776,42 +786,85 @@ public class MailHomeScreen extends AbstractScreenProvider {
                     this.getClass().toString());
 
         if(folderMetadata != null) {
-            int curNode = treeField.nextNode(0, 0, true);
-            Object cookie;
-            Object value;
-            Vector actions = new Vector();
+            restoreScreenState(folderMetadata);
+        }
+        else {
+            treeField.setCurrentNode(treeField.getFirstChild(0));
+        }
+    }
 
-            // Walk the folder tree and build a depth-first list of
-            // nodes we need to set the expansion state for
-            while(curNode > 0) {
+    private void restoreScreenState(Hashtable folderMetadata) {
+        Object cookie;
+        Object value;
+        Vector actions = new Vector();
+        String selectedNodeKey;
+        int selectedNodeId = -1;
+
+        // Get the currently selected node, if one was saved
+        value = folderMetadata.get(Boolean.TRUE);
+        if(value instanceof String) {
+            selectedNodeKey = (String)value;
+        }
+        else {
+            selectedNodeKey = null;
+        }
+        
+        // Walk the folder tree and build a depth-first list of
+        // nodes we need to set the expansion state for
+        int curNode = treeField.nextNode(0, 0, true);
+        while(curNode > 0) {
+            cookie = treeField.getCookie(curNode);
+            if(cookie instanceof MailHomeTreeNode) {
+                String key = getTreeNodeKey((MailHomeTreeNode)cookie);
+                
+                // If the node has children, then check to see if we saved
+                // its expansion state
                 if(treeField.getFirstChild(curNode) != -1) {
-                    cookie = treeField.getCookie(curNode);
-                    if(cookie instanceof MailHomeTreeNode) {
-                        String key = getTreeNodeKey((MailHomeTreeNode)cookie);
-                        value = folderMetadata.get(key);
-                        if(value instanceof Boolean) {
-                            actions.addElement(new Object[] { new Integer(curNode), value } );
-                        }
+                    value = folderMetadata.get(key);
+                    if(value instanceof Boolean) {
+                        actions.addElement(new Object[] { new Integer(curNode), value } );
                     }
                 }
-                curNode = treeField.nextNode(curNode, 0, true);
-            }
 
-            // Iterate backwards across the results from above, and set
-            // the appropriate node expansion states.  This approach is
-            // necessary so complex trees will be configured properly.
-            Object[] action;
-            for(int i = actions.size() - 1; i >= 0; i--) {
-                action = (Object[])actions.elementAt(i);
-                treeField.setExpanded(((Integer)action[0]).intValue(), ((Boolean)action[1]).booleanValue());
+                // If the selected node has not been found, check to see if it
+                // is the element we are currently iterating over
+                if(selectedNodeId == -1 && key.equals(selectedNodeKey)) {
+                    selectedNodeId = curNode;
+                }
             }
+            
+            curNode = treeField.nextNode(curNode, 0, true);
         }
-        treeField.setCurrentNode(treeField.getFirstChild(0));
 
+        // Iterate backwards across the results from above, and set
+        // the appropriate node expansion states.  This approach is
+        // necessary so complex trees will be configured properly.
+        Object[] action;
+        for(int i = actions.size() - 1; i >= 0; i--) {
+            action = (Object[])actions.elementAt(i);
+            treeField.setExpanded(((Integer)action[0]).intValue(), ((Boolean)action[1]).booleanValue());
+        }
+
+        // Set the selected node, if applicable
+        if(selectedNodeId != -1) {
+            treeField.setCurrentNode(selectedNodeId);
+        }
+        else {
+            treeField.setCurrentNode(treeField.getFirstChild(0));
+        }
     }
 
     private void saveScreenMetadata() {
         SerializableHashtable folderMetadata = new SerializableHashtable();
+        saveScreenState(folderMetadata);
+
+        DataStoreFactory.getMetadataStore().putNamedObject(
+                this.getClass().toString(), folderMetadata);
+        DataStoreFactory.getMetadataStore().save();
+    }
+
+    private void saveScreenState(Hashtable folderMetadata) {
+        // Save the expansion state
         int curNode = treeField.nextNode(0, 0, true);
         Object cookie;
         while(curNode > 0) {
@@ -827,9 +880,15 @@ public class MailHomeScreen extends AbstractScreenProvider {
             curNode = treeField.nextNode(curNode, 0, true);
         }
 
-        DataStoreFactory.getMetadataStore().putNamedObject(
-                this.getClass().toString(), folderMetadata);
-        DataStoreFactory.getMetadataStore().save();
+        // Save the currently selected node
+        curNode = treeField.getCurrentNode();
+        if(curNode != -1) {
+            cookie = treeField.getCookie(curNode);
+            if(cookie instanceof MailHomeTreeNode) {
+                String key = getTreeNodeKey((MailHomeTreeNode)cookie);
+                folderMetadata.put(Boolean.TRUE, key);
+            }
+        }
     }
 
     private static String getTreeNodeKey(MailHomeTreeNode treeNode) {

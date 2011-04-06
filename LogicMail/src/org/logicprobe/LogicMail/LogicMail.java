@@ -65,6 +65,7 @@ import org.logicprobe.LogicMail.ui.NavigationController;
 import org.logicprobe.LogicMail.ui.NotificationHandler;
 import org.logicprobe.LogicMail.ui.ThrobberField;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
+import org.logicprobe.LogicMail.util.UtilFactory;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 
@@ -153,6 +154,13 @@ public final class LogicMail extends UiApplication {
                         FileSystemRegistry.addFileSystemListener(MailSettings.getInstance().getFileSystemListener());
                     } catch (ControlledAccessException e) {
                         // Don't fail if file permissions are denied
+                    }
+                    
+                    // Add any sensor listeners
+                    try {
+                        UtilFactory.getInstance().addSensorListeners();
+                    } catch (ControlledAccessException e) {
+                        // Don't fail if permissions are denied
                     }
                     
                     invokeLater(new Runnable() {
@@ -291,6 +299,12 @@ public final class LogicMail extends UiApplication {
             FileSystemRegistry.removeFileSystemListener(MailSettings.getInstance().getFileSystemListener());
         } catch (ControlledAccessException e) {
             // Don't fail if file permissions are denied
+        }
+        
+        try {
+            UtilFactory.getInstance().removeSensorListeners();
+        } catch (ControlledAccessException e) {
+            // Don't fail if permissions are denied
         }
         
         PermissionsHandler.unregisterReasonProvider();

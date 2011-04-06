@@ -1,6 +1,6 @@
 <Properties ModelVersion="1.1.2">
-  <General Title="LogicMail" Version="1.9.1" Vendor="Derek Konigsberg" Description="LogicMail for BlackBerry"/>
-  <Application Type="Library" MainMIDletName="" MainArgs="" HomeScreenPosition="0" StartupTier="7" IsSystemModule="false" IsAutostartup="false"/>
+  <General Title="LogicMail" Version="2.1.0" Vendor="Derek Konigsberg" Description="LogicMail for BlackBerry"/>
+  <Application Type="Library" MainMIDletName="" MainArgs="" HomeScreenPosition="0" StartupTier="7" IsSystemModule="true" IsAutostartup="false"/>
   <Resources hasTitleResource="false" TitleResourceBundleName="" TitleResourceBundleRelativePath="" TitleResourceBundleClassName="" TitleResourceBundleKey="" DescriptionId="">
     <Icons/>
   </Resources>

@@ -43,6 +43,7 @@ public interface MailStoreRequestCallback {
      * Invoked when the mail store request fails.
      * 
      * @param exception the exception that caused the request to fail, if applicable
+     * @param isFinal true if the connection will be closed, false if it is being reopened
      */
-    void mailStoreRequestFailed(Throwable exception);
+    void mailStoreRequestFailed(Throwable exception, boolean isFinal);
 }

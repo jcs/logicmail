@@ -35,6 +35,8 @@ import j2meunit.framework.TestCase;
 import j2meunit.framework.TestMethod;
 import j2meunit.framework.TestSuite;
 
+import net.rim.device.api.util.IntVector;
+
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -52,6 +54,7 @@ import java.util.Vector;
  */
 public class ImapProtocolTest extends TestCase {
     private TestImapProtocol instance;
+    private TestUntaggedResponseListener listener;
 
     public ImapProtocolTest() {
     }
@@ -62,12 +65,15 @@ public class ImapProtocolTest extends TestCase {
 
     public void setUp() {
         instance = new TestImapProtocol();
+        listener = new TestUntaggedResponseListener();
+        instance.setUntaggedResponseListener(listener);
     }
 
     public void tearDown() {
         instance.verifyExpectations();
         instance.clearExpectations();
         instance = null;
+        listener = null;
     }
 
     public void testExecuteCapability() throws Throwable {
@@ -681,7 +687,58 @@ public class ImapProtocolTest extends TestCase {
         assertEquals("us-ascii", structure.charset);
         assertEquals("7bit", structure.encoding);
     }
+    
+    public void testExecuteFetchEnvelopeUntagged() throws Throwable {
+        instance.addExecuteExpectation("UID FETCH",
+            "10:* (FLAGS UID ENVELOPE BODYSTRUCTURE)",
+            new String[] {
+                "* 10 FETCH (FLAGS (\\Answered \\Seen) UID 15 " +
+                "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
+                "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                "((\"jim smith\" NIL \"jsmith\" \"scratch.test\")) " +
+                "((\"John Doe\" NIL \"jdoe\" \"generic.test\")) " +
+                "NIL NIL " + "\"<200703121933.25327.jdoe@generic.test>\" " +
+                "\"<7b02460f0703121938sff23a05xd3c2a37dc6b9eb7d@mail.scratch.test>\") " +
+                "BODYSTRUCTURE (\"TEXT\" \"PLAIN\" (\"CHARSET\" \"us-ascii\") NIL NIL \"7BIT\" 44 2 NIL NIL NIL))",
+                "* 8 FETCH (FLAGS (\\Answered \\Seen) UID 14)",
+                "* 2 EXPUNGE"
+            });
 
+        ShimCallback shim = new ShimCallback();
+        instance.executeFetchEnvelopeUid(10, shim, null);
+
+        ImapProtocol.FetchEnvelopeResponse[] result = shim.getResponses();
+
+        // Perform a very minimal verification on the direct response, just
+        // to ensure we got one relating to the right FETCH.  The above
+        // test data is more rigorously verified in a different test case.
+        assertNotNull(result);
+        assertEquals(1, result.length);
+        assertNotNull(result[0]);
+        assertEquals(10, result[0].index);
+        assertEquals(15, result[0].uid);
+        assertNotNull(result[0].envelope);
+        MessageEnvelope env = result[0].envelope;
+        assertEquals("Re: Calm down! :-)", env.subject);
+
+        String msg ="Untagged FETCH";
+        assertEquals(msg, 1, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse untaggedFetch = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
+        assertEquals(msg, 8, untaggedFetch.index);
+        assertEquals(msg, 14, untaggedFetch.uid);
+        assertTrue(msg, untaggedFetch.flags.seen);
+        assertTrue(msg, untaggedFetch.flags.answered);
+        assertTrue(msg, !untaggedFetch.flags.deleted);
+        assertTrue(msg, !untaggedFetch.flags.draft);
+        assertTrue(msg, !untaggedFetch.flags.flagged);
+        assertTrue(msg, !untaggedFetch.flags.recent);
+        
+        msg = "Untagged EXPUNGE";
+        assertEquals(msg, 1, listener.expunge.size());
+        assertEquals(msg, 2, listener.expunge.elementAt(0));
+    }
+    
     public void testExecuteFetchFlags1() throws Throwable {
         instance.addExecuteExpectation("FETCH", "1:1 (FLAGS UID)",
             new String[] { "* 1 FETCH (FLAGS () UID 42)" });
@@ -727,22 +784,95 @@ public class ImapProtocolTest extends TestCase {
         assertTrue("recent", !flags.recent);
         assertTrue("seen", flags.seen);
     }
+    
+    public void testExecuteFetchFlagsUntagged() throws Throwable {
+        instance.addExecuteExpectation(
+                "UID FETCH", "42:* (FLAGS UID)",
+                new String[] {
+                        "* 40 FETCH (FLAGS (\\Seen) UID 42)",
+                        "* 5 EXPUNGE"
+                });
+
+        ImapProtocol.FetchFlagsResponse[] result = instance.executeFetchFlagsUid(42, null);
+
+        assertNotNull(result);
+        assertEquals(1, result.length);
+        assertEquals(40, result[0].index);
+        assertEquals(42, result[0].uid);
+
+        ImapProtocol.MessageFlags flags = result[0].flags;
+        assertNotNull(flags);
+        assertTrue("answered", !flags.answered);
+        assertTrue("deleted", !flags.deleted);
+        assertTrue("draft", !flags.draft);
+        assertTrue("flagged", !flags.flagged);
+        assertTrue("junk", !flags.junk);
+        assertTrue("recent", !flags.recent);
+        assertTrue("seen", flags.seen);
+        
+        assertEquals("EXPUNGE", 1, listener.expunge.size());
+        assertEquals("EXPUNGE", 5, listener.expunge.elementAt(0));
+    }
+    
+    public void testExecuteFetchBody() throws Throwable {
+        instance.addExecuteExpectation(
+            "UID FETCH", "288 (BODY[1])",
+            new String[] {
+                "* 84 FETCH (UID 288 BODY[1] {7}\r\nHello\r\n)"
+            });
+
+        byte[] result = instance.executeFetchBody(288, "1", null);
+
+        assertNotNull(result);
+        assertEquals(7, result.length);
+        assertEquals("Hello\r\n", new String(result));
+    }
+    
+    public void testExecuteFetchBodyUntagged() throws Throwable {
+        instance.addExecuteExpectation(
+            "UID FETCH", "288 (BODY[1])",
+            new String[] {
+                "* 83 FETCH (FLAGS (\\Answered \\Seen) UID 287)",
+                "* 84 FETCH (UID 288 BODY[1] {7}\r\nHello\r\n)"
+            });
+
+        byte[] result = instance.executeFetchBody(288, "1", null);
+
+        assertNotNull(result);
+        assertEquals(7, result.length);
+        assertEquals("Hello\r\n", new String(result));
+        
+        String msg ="Untagged FETCH";
+        assertEquals(msg, 1, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse untaggedFetch = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
+        assertEquals(msg, 83, untaggedFetch.index);
+        assertEquals(msg, 287, untaggedFetch.uid);
+        assertTrue(msg, untaggedFetch.flags.seen);
+        assertTrue(msg, untaggedFetch.flags.answered);
+        assertTrue(msg, !untaggedFetch.flags.deleted);
+        assertTrue(msg, !untaggedFetch.flags.draft);
+        assertTrue(msg, !untaggedFetch.flags.flagged);
+        assertTrue(msg, !untaggedFetch.flags.recent);
+    }
 
     public void testExecuteStore1() throws Throwable {
         instance.addExecuteExpectation("UID STORE",
             "15 +FLAGS (\\Answered)",
             new String[] { "* 5 FETCH (FLAGS (\\Seen \\Answered) UID 15)" });
 
-        ImapProtocol.MessageFlags result = instance.executeStore(15, true,
-                new String[] { "\\Answered" });
-        assertNotNull(result);
+        instance.executeStore(15, true, new String[] { "\\Answered" });
+        
+        assertEquals(1, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse result = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
 
-        assertTrue(result.seen);
-        assertTrue(result.answered);
-        assertTrue(!result.deleted);
-        assertTrue(!result.draft);
-        assertTrue(!result.flagged);
-        assertTrue(!result.recent);
+        assertEquals(5, result.index);
+        assertEquals(15, result.uid);
+        assertTrue(result.flags.seen);
+        assertTrue(result.flags.answered);
+        assertTrue(!result.flags.deleted);
+        assertTrue(!result.flags.draft);
+        assertTrue(!result.flags.flagged);
+        assertTrue(!result.flags.recent);
     }
 
     public void testExecuteStore2() throws Throwable {
@@ -750,16 +880,19 @@ public class ImapProtocolTest extends TestCase {
             "15 -FLAGS (\\Answered)",
             new String[] { "* 5 FETCH (FLAGS () UID 15)" });
 
-        ImapProtocol.MessageFlags result = instance.executeStore(15, false,
-                new String[] { "\\Answered" });
-        assertNotNull(result);
+        instance.executeStore(15, false, new String[] { "\\Answered" });
 
-        assertTrue(!result.seen);
-        assertTrue(!result.answered);
-        assertTrue(!result.deleted);
-        assertTrue(!result.draft);
-        assertTrue(!result.flagged);
-        assertTrue(!result.recent);
+        assertEquals(1, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse result = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
+
+        assertEquals(5, result.index);
+        assertEquals(15, result.uid);
+        assertTrue(!result.flags.seen);
+        assertTrue(!result.flags.answered);
+        assertTrue(!result.flags.deleted);
+        assertTrue(!result.flags.draft);
+        assertTrue(!result.flags.flagged);
+        assertTrue(!result.flags.recent);
     }
 
     public void testExecuteStore3() throws Throwable {
@@ -769,16 +902,66 @@ public class ImapProtocolTest extends TestCase {
                 "* 5 FETCH (UID 36410 FLAGS (\\Deleted \\Seen $NotJunk NotJunk))"
             });
 
-        ImapProtocol.MessageFlags result = instance.executeStore(36410,
-                true, new String[] { "\\Deleted" });
-        assertNotNull(result);
+        instance.executeStore(36410, true, new String[] { "\\Deleted" });
+        
+        assertEquals(1, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse result = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
 
-        assertTrue(result.seen);
-        assertTrue(!result.answered);
-        assertTrue(result.deleted);
-        assertTrue(!result.draft);
-        assertTrue(!result.flagged);
-        assertTrue(!result.recent);
+        assertEquals(5, result.index);
+        assertEquals(36410, result.uid);
+        assertTrue(result.flags.seen);
+        assertTrue(!result.flags.answered);
+        assertTrue(result.flags.deleted);
+        assertTrue(!result.flags.draft);
+        assertTrue(!result.flags.flagged);
+        assertTrue(!result.flags.recent);
+    }
+    
+    public void testExecuteStoreUntagged() throws Throwable {
+        instance.addExecuteExpectation("UID STORE",
+            "15 +FLAGS (\\Answered)",
+            new String[] {
+                "* 5 FETCH (FLAGS (\\Seen \\Answered) UID 15)",
+                "* 85 FETCH (FLAGS (\\Recent \\Seen) UID 287)",
+                "* 86 FETCH (FLAGS (\\Recent \\Seen) UID 288)"
+            });
+
+        instance.executeStore(15, true, new String[] { "\\Answered" });
+        
+        assertEquals(3, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse result0 = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
+        ImapProtocol.FetchFlagsResponse result1 = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(1);
+        ImapProtocol.FetchFlagsResponse result2 = (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(2);
+
+        String msg = "5 FETCH";
+        assertEquals(msg, 5, result0.index);
+        assertEquals(msg, 15, result0.uid);
+        assertTrue(msg, result0.flags.seen);
+        assertTrue(msg, result0.flags.answered);
+        assertTrue(msg, !result0.flags.deleted);
+        assertTrue(msg, !result0.flags.draft);
+        assertTrue(msg, !result0.flags.flagged);
+        assertTrue(msg, !result0.flags.recent);
+        
+        msg = "85 FETCH";
+        assertEquals(msg, 85, result1.index);
+        assertEquals(msg, 287, result1.uid);
+        assertTrue(msg, result1.flags.seen);
+        assertTrue(msg, !result1.flags.answered);
+        assertTrue(msg, !result1.flags.deleted);
+        assertTrue(msg, !result1.flags.draft);
+        assertTrue(msg, !result1.flags.flagged);
+        assertTrue(msg, result1.flags.recent);
+        
+        msg = "86 FETCH";
+        assertEquals(msg, 86, result2.index);
+        assertEquals(msg, 288, result2.uid);
+        assertTrue(msg, result2.flags.seen);
+        assertTrue(msg, !result2.flags.answered);
+        assertTrue(msg, !result2.flags.deleted);
+        assertTrue(msg, !result2.flags.draft);
+        assertTrue(msg, !result2.flags.flagged);
+        assertTrue(msg, result2.flags.recent);
     }
    
     public void testExecuteExpunge() throws Throwable {
@@ -790,11 +973,49 @@ public class ImapProtocolTest extends TestCase {
                     "* 2 RECENT"
                 });
         
-        int[] result = instance.executeExpunge();
-        assertNotNull(result);
-        assertEquals(2, result.length);
-        assertEquals(80, result[0]);
-        assertEquals(81, result[1]);
+        instance.executeExpunge();
+        
+        assertEquals(2, listener.expunge.size());
+        assertEquals(80, listener.expunge.elementAt(0));
+        assertEquals(81, listener.expunge.elementAt(1));
+    }
+    
+    public void testExecuteNoop() throws Throwable {
+        instance.addExecuteExpectation("NOOP", null,
+                new String[] {
+                    "* OK Still here",
+                    "* 80 EXPUNGE",
+                    "* 81 EXPUNGE",
+                    "* 78 EXISTS",
+                    "* 2 RECENT",
+                    "* 26 FETCH (FLAGS (\\Answered \\Seen))"
+                });
+        
+        instance.executeNoop();
+        
+        assertEquals(2, listener.expunge.size());
+        assertEquals(80, listener.expunge.elementAt(0));
+        assertEquals(81, listener.expunge.elementAt(1));
+        
+        assertEquals(1, listener.exists.size());
+        assertEquals(78, listener.exists.elementAt(0));
+        
+        assertEquals(1, listener.recent.size());
+        assertEquals(2, listener.recent.elementAt(0));
+        
+        assertEquals(1, listener.fetch.size());
+        ImapProtocol.FetchFlagsResponse fetchResponse =
+            (ImapProtocol.FetchFlagsResponse)listener.fetch.elementAt(0);
+        assertEquals(26, fetchResponse.index);
+        assertEquals(-1, fetchResponse.uid);
+        assertTrue(fetchResponse.flags.seen);
+        assertTrue(fetchResponse.flags.answered);
+        assertTrue(!fetchResponse.flags.flagged);
+        assertTrue(!fetchResponse.flags.deleted);
+        assertTrue(!fetchResponse.flags.draft);
+        assertTrue(!fetchResponse.flags.recent);
+        assertTrue(!fetchResponse.flags.forwarded);
+        assertTrue(!fetchResponse.flags.junk);
     }
     
     public Test suite() {
@@ -831,21 +1052,34 @@ public class ImapProtocolTest extends TestCase {
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchEnvelope3(); }}));
         suite.addTest(new ImapProtocolTest("executeFetchEnvelope4", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchEnvelope4(); }}));
+        suite.addTest(new ImapProtocolTest("executeFetchEnvelopeUntagged", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchEnvelopeUntagged(); }}));
 
         suite.addTest(new ImapProtocolTest("executeFetchFlags1", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchFlags1(); }}));
         suite.addTest(new ImapProtocolTest("executeFetchFlags2", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchFlags2(); }}));
-
+        suite.addTest(new ImapProtocolTest("executeFetchFlagsUntagged", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchFlagsUntagged(); }}));
+        
+        suite.addTest(new ImapProtocolTest("executeFetchBody", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchBody(); }}));
+        suite.addTest(new ImapProtocolTest("executeFetchBodyUntagged", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchBodyUntagged(); }}));
+        
         suite.addTest(new ImapProtocolTest("executeStore1", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteStore1(); }}));
         suite.addTest(new ImapProtocolTest("executeStore2", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteStore2(); }}));
         suite.addTest(new ImapProtocolTest("executeStore3", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteStore3(); }}));
+        suite.addTest(new ImapProtocolTest("executeStoreUntagged", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteStoreUntagged(); }}));
 
         suite.addTest(new ImapProtocolTest("executeExpunge", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteExpunge(); }}));
+        suite.addTest(new ImapProtocolTest("executeNoop", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteNoop(); }}));
         
         return suite;
     }
@@ -944,6 +1178,26 @@ public class ImapProtocolTest extends TestCase {
             public String command;
             public String arguments;
             public String[] result;
+        }
+    }
+    
+    class TestUntaggedResponseListener implements ImapProtocol.UntaggedResponseListener {
+        public IntVector exists = new IntVector();
+        public IntVector recent = new IntVector();
+        public IntVector expunge = new IntVector();
+        public Vector fetch = new Vector();
+
+        public void existsResponse(int value) {
+            exists.addElement(value);
+        }
+        public void recentResponse(int value) {
+            recent.addElement(value);
+        }
+        public void expungeResponse(int value) {
+            expunge.addElement(value);
+        }
+        public void fetchResponse(ImapProtocol.FetchFlagsResponse value) {
+            fetch.addElement(value);
         }
     }
 }

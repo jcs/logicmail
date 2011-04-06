@@ -435,58 +435,54 @@ public abstract class AbstractMailStore {
      * Requests a particular message to be deleted.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageDeleted(MessageEvent)}.
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+    public abstract void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be deleted.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageDeleted(MessageEvent)}.
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      */
-    public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags) {
-        requestMessageDelete(messageToken, messageFlags, null);
+    public void requestMessageDelete(MessageToken messageToken) {
+        requestMessageDelete(messageToken, null);
     }
 
     /**
      * Requests a particular message to be undeleted.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageUndeleted(MessageEvent)}.
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
      * 
      * <p>If <tt>hasUndelete()</tt> returns <tt>False</tt>,
      * then this method should throw an
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+    public abstract void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be undeleted.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageUndeleted(MessageEvent)}.
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
      * 
      * <p>If <tt>hasUndelete()</tt> returns <tt>False</tt>,
      * then this method should throw an
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      */
-    public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags) {
-        requestMessageUndelete(messageToken, messageFlags, null);
+    public void requestMessageUndelete(MessageToken messageToken) {
+        requestMessageUndelete(messageToken, null);
     }
 
     /**
@@ -500,10 +496,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+    public abstract void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be marked as answered.
@@ -516,10 +511,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      */
-    public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags) {
-        requestMessageAnswered(messageToken, messageFlags, null);
+    public void requestMessageAnswered(MessageToken messageToken) {
+        requestMessageAnswered(messageToken, null);
     }
 
     /**
@@ -533,10 +527,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+    public abstract void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be marked as forwarded.
@@ -549,10 +542,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      */
-    public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags) {
-        requestMessageForwarded(messageToken, messageFlags, null);
+    public void requestMessageForwarded(MessageToken messageToken) {
+        requestMessageForwarded(messageToken, null);
     }
     
     /**
@@ -566,10 +558,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+    public abstract void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be marked as seen.
@@ -582,10 +573,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      */
-    public void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags) {
-        requestMessageSeen(messageToken, messageFlags, null);
+    public void requestMessageSeen(MessageToken messageToken) {
+        requestMessageSeen(messageToken, null);
     }
     
     /**
@@ -599,10 +589,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      * @param callback The callback to receive success or failure notifications about the request
      */
-    public abstract void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback);
+    public abstract void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback);
 
     /**
      * Requests a particular message to be marked as unseen.
@@ -615,10 +604,9 @@ public abstract class AbstractMailStore {
      * <tt>UnsupportedOperationException</tt>.
      * 
      * @param messageToken The token used to identify the message
-     * @param messageFlags The flags currently associated with the message
      */
-    public void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags) {
-        requestMessageUnseen(messageToken, messageFlags, null);
+    public void requestMessageUnseen(MessageToken messageToken) {
+        requestMessageUnseen(messageToken, null);
     }
     
     /**
@@ -847,7 +835,7 @@ public abstract class AbstractMailStore {
      * Notifies all registered <tt>FolderListener</tt>s that
      * the UID-to-message index map for a folder has been loaded.
      * 
-     * @param folder The folder which has available messages
+     * @param folder The folder which has an updated map
      * @param uidIndexMap The UID-to-index map for the folder's messages
      */
     protected void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
@@ -860,20 +848,57 @@ public abstract class AbstractMailStore {
             ((FolderListener)listeners[i]).folderMessageIndexMapAvailable(e);
         }
     }
+    
+    /**
+     * Notifies all registered <tt>FolderListener</tt>s that
+     * a folder refresh is required.
+     * 
+     * @param folder The folder which requires a refresh
+     */
+    protected void fireFolderRefreshRequired(FolderTreeItem folder) {
+        Object[] listeners = listenerList.getListeners(FolderListener.class);
+        FolderEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderEvent(this, folder);
+            }
+            ((FolderListener)listeners[i]).folderRefreshRequired(e);
+        }
+    }
 
     /**
      * Notifies all registered <tt>FolderListener</tt>s that
      * the folder has been expunged.
      * 
-     * @param indices an array of the indices of all expunged messages, or null if not provided
      * @param root The root node of the updated folder tree
+     * @param indices an array of the indices of all expunged messages, or empty if not provided
+     * @param updatedTokens an array of the tokens updated as a result of the expunge
      */
-    protected void fireFolderExpunged(FolderTreeItem root, int[] indices) {
+    protected void fireFolderExpunged(FolderTreeItem root, int[] indices, MessageToken[] updatedTokens) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderExpungedEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderExpungedEvent(this, root, indices);
+                e = new FolderExpungedEvent(this, root, indices, updatedTokens);
+            }
+            ((FolderListener)listeners[i]).folderExpunged(e);
+        }
+    }
+    
+    /**
+     * Notifies all registered <tt>FolderListener</tt>s that
+     * the folder has been expunged.
+     * 
+     * @param root The root node of the updated folder tree
+     * @param expungedTokens an array of the tokens of all expunged messages
+     * @param updatedTokens an array of the tokens updated as a result of the expunge
+     */
+    protected void fireFolderExpunged(FolderTreeItem root, MessageToken[] expungedTokens, MessageToken[] updatedTokens) {
+        Object[] listeners = listenerList.getListeners(FolderListener.class);
+        FolderExpungedEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new FolderExpungedEvent(this, root, expungedTokens, updatedTokens);
             }
             ((FolderListener)listeners[i]).folderExpunged(e);
         }
@@ -944,42 +969,6 @@ public abstract class AbstractMailStore {
                 e = new MessageEvent(this, messageToken, messageFlags);
             }
             ((MessageListener)listeners[i]).messageFlagsChanged(e);
-        }
-    }
-
-    /**
-     * Notifies all registered <tt>MessageListener</tt>s that
-     * a message has been deleted.
-     * 
-     * @param messageToken The token identifying the message
-     * @param messageFlags The updated message flags
-     */
-    protected void fireMessageDeleted(MessageToken messageToken, MessageFlags messageFlags) {
-        Object[] listeners = listenerList.getListeners(MessageListener.class);
-        MessageEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MessageEvent(this, messageToken, messageFlags);
-            }
-            ((MessageListener)listeners[i]).messageDeleted(e);
-        }
-    }
-
-    /**
-     * Notifies all registered <tt>MessageListener</tt>s that
-     * a message has been undeleted.
-     * 
-     * @param messageToken The token identifying the message
-     * @param messageFlags The updated message flags
-     */
-    protected void fireMessageUndeleted(MessageToken messageToken, MessageFlags messageFlags) {
-        Object[] listeners = listenerList.getListeners(MessageListener.class);
-        MessageEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new MessageEvent(this, messageToken, messageFlags);
-            }
-            ((MessageListener)listeners[i]).messageUndeleted(e);
         }
     }
 }

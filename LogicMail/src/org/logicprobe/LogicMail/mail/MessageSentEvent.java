@@ -38,27 +38,29 @@ import org.logicprobe.LogicMail.message.MessageEnvelope;
  * Object for sent message events. 
  */
 public class MessageSentEvent extends MailSenderEvent {
-	private MessageEnvelope envelope;
-	private Message message;
-	private String messageSource;
-	private Throwable exception;
+	private final MessageEnvelope envelope;
+	private final Message message;
+	private final String messageSource;
+	private final Throwable exception;
+	private final boolean isFinal;
 	
 	/** Creates a new instance of MessageSentEvent */
 	public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource) {
-		this(source, envelope, message, messageSource, null);
+		this(source, envelope, message, messageSource, null, true);
 	}
 	
     /** Creates a new instance of MessageSentEvent */
-    public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, Throwable exception) {
-        this(source, envelope, message, null, exception);
+    public MessageSentEvent(Object source, MessageEnvelope envelope, Message message, Throwable exception, boolean isFinal) {
+        this(source, envelope, message, null, exception, isFinal);
     }
 	
-    private MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource, Throwable exception) {
+    private MessageSentEvent(Object source, MessageEnvelope envelope, Message message, String messageSource, Throwable exception, boolean isFinal) {
         super(source);
         this.envelope = envelope;
         this.message = message;
         this.messageSource = messageSource;
         this.exception = exception;
+        this.isFinal = isFinal;
     }
 	
 	/**
@@ -99,5 +101,9 @@ public class MessageSentEvent extends MailSenderEvent {
 	 */
 	public Throwable getException() {
         return exception;
+    }
+	
+	public boolean isFinal() {
+        return isFinal;
     }
 }

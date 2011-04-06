@@ -38,9 +38,7 @@ import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.DateTimeUtilities;
 import net.rim.device.api.util.NumberUtilities;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 
 import java.util.Calendar;
@@ -65,7 +63,8 @@ public class StringParser {
     private static String strCRLF = "\r\n";
     private static String WORD_SPECIALS = "=_?\"#$%&'(),.:;<>@[\\]^`{|}~";
     private static final int MAX_LINE_LEN = 76;
-    
+    private static final byte HIGH_BIT = (byte)0x80;
+
     public static final int ENCODING_7BIT = 0;
     public static final int ENCODING_QUOTED_PRINTABLE = 1;
     public static final int ENCODING_BASE64 = 2;
@@ -739,7 +738,7 @@ public class StringParser {
 
         if (encoding.charAt(0) == 'Q') {
             // Quoted-Printable
-            result = decodeQuotedPrintable(encodedText.getBytes(), charset);
+            result = decodeQuotedPrintableHeader(encodedText.getBytes(), charset);
         } else if (encoding.charAt(0) == 'B') {
             // Base64
             try {
@@ -1170,24 +1169,7 @@ public class StringParser {
     }
 
     /**
-     * Read all available bytes from an InputStream
-     */
-    public static byte[] readWholeStream(InputStream is)
-        throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        byte[] tmpBuf = new byte[1024];
-        
-        while(true) {
-            int len = is.read(tmpBuf);
-            if(len < 0) { break; }
-            bos.write(tmpBuf, 0, len);
-        }
-        
-        return bos.toByteArray();
-    }
-
-    /**
-     * Decode a quoted-printable string
+     * Decode a quoted-printable string.
      * 
      * @param text The raw input text (as a byte array) to decode
      * @param charset The character set to use for the decoded String
@@ -1195,8 +1177,26 @@ public class StringParser {
      *         to the platform default character set if it is invalid.
      */
     public static String decodeQuotedPrintable(byte[] text, String charset) {
+        return decodeQuotedPrintableImpl(text, charset, false);
+    }
+    
+    /**
+     * Decode a quoted-printable header string.
+     * This implementation uses a slight modification to the encoding, which
+     * assumes that underscores represent spaces.
+     * 
+     * @param text The raw input text (as a byte array) to decode
+     * @param charset The character set to use for the decoded String
+     * @return String created with the specified character set, falling back
+     *         to the platform default character set if it is invalid.
+     */
+    public static String decodeQuotedPrintableHeader(byte[] text, String charset) {
+        return decodeQuotedPrintableImpl(text, charset, true);
+    }
+    
+    private static String decodeQuotedPrintableImpl(byte[] text, String charset, boolean header) {
         DataBuffer buf = new DataBuffer();
-        
+
         int index = 0;
         int length = text.length;
 
@@ -1204,15 +1204,18 @@ public class StringParser {
             if (text[index] == (byte)'=') {
                 if ((index + 2) >= length) {
                     break;
-                } else {
+                }
+                else {
                     byte ch1 = text[index + 1];
                     byte ch2 = text[index + 2];
 
                     if ((ch1 == (byte)'\r') && (ch2 == (byte)'\n')) {
                         index += 3;
-                    } else if (ch1 == (byte)'\n') {
+                    }
+                    else if (ch1 == (byte)'\n') {
                         index += 2;
-                    } else {
+                    }
+                    else {
                         try {
                             int charVal = StringArrays.parseHexInt(text, index + 1, 2);
                             buf.write((byte)charVal);
@@ -1221,10 +1224,12 @@ public class StringParser {
                         index += 3;
                     }
                 }
-            } else if (text[index] == (byte)'_') {
+            }
+            else if (header && text[index] == (byte)'_') {
                 buf.write((byte)' ');
                 index++;
-            } else {
+            }
+            else {
                 buf.write((byte)text[index]);
                 index++;
             }
@@ -1502,10 +1507,11 @@ public class StringParser {
     
     /**
      * Gets the optimal encoding for a text string.
+     * <p>
      * This method scans the string for the maximum character value, and
      * determines the optimal encoding based on it.  The result will be
      * one of the <tt>ENCODING_XXXX</tt> constants.
-     * 
+     * </p>
      *
      * @param text the text to scan
      * @return the optimal encoding
@@ -1533,6 +1539,27 @@ public class StringParser {
         }
         
         return encoding;
+    }
+    
+    /**
+     * Gets the optimal encoding for a text string stored in a byte array.
+     * <p>
+     * This method uses a very simple and conservative approach, where it will
+     * return either <tt>ENCODING_7BIT</tt> or <tt>ENCODING_BASE64</tt>
+     * depending on the values in the array.
+     * </p>
+     *
+     * @param text the text to scan
+     * @return the optimal encoding
+     */
+    public static int getOptimalEncoding(final byte[] text) {
+        for(int i=text.length - 1; i >= 0; --i) {
+            if((text[i] & HIGH_BIT) != 0) {
+                return ENCODING_BASE64;
+            }
+        }
+        
+        return ENCODING_7BIT;
     }
     
     /**

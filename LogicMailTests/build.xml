@@ -3,66 +3,98 @@
  Ant build file for the LogicMail tests
 -->
 <project name="LogicMailTests" default="build" basedir=".">
-    <!-- Properties -->
-    <property name="src.dir" location="src"/>
-	<property name="dist.dir" location="dist"/>
-	<property name="app.src.dir" location="../LogicMail/src"/>
-	<property name="res.src.dir" location="../LogicMail/res"/>
-	<property name="j2meunit.src.dir" location="../J2MEUnit/src"/>
-	<property file="../LogicMail/project.properties"/>
+  <!-- Properties -->
+  <property name="tests.dir" location="." />
+  <property name="dist.dir" location="dist" />
+  <property name="logicmail.dir" location="../LogicMail" />
+  <property name="j2meunit.dir" location="../J2MEUnit" />
+  <property file="../LogicMail/project.properties" />
 
-    <!-- Task definitions -->
-    <typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
+  <!-- Task definitions -->
+  <typedef resource="bb-ant-defs.xml" classpath="../lib/bb-ant-tools.jar" />
+  <taskdef name="hammockmaker"
+    classname="com.hammingweight.hammockmaker.HammockMaker"
+    classpath="../lib/hammockmaker-2.1.0.jar" />
+  
+  <!-- Generate mocks -->
+  <target name="mocks">
+    <mkdir dir="${dist.dir}/prebuild"/>
+    <rapc output="${module.name}Prebuild"
+          destdir="${dist.dir}/prebuild"
+          jdehome="${jde450.home}"
+          defines="BLACKBERRY_4_5_0">
+      <src>
+        <fileset dir="${logicmail.dir}">
+          <include name="src/**/*.java" />
+          <include name="res/**/*.rrc" />
+          <include name="res/**/*.rrh" />
+        </fileset>
+      </src>
+    </rapc>
+    <property name="prebuild.jar" value="${dist.dir}/prebuild/${module.name}Prebuild.jar" />
+    <property name="mocks.classpath" value="${prebuild.jar};${jde450.home}/lib/net_rim_api.jar" />
+    <hammockmaker usecldc11="true" dir="${tests.dir}/src" package="org.logicprobe.LogicMail.mail" classpath="${mocks.classpath}">
+      <mock class="org.logicprobe.LogicMail.mail.IncomingMailClient" />
+      <mock class="org.logicprobe.LogicMail.mail.IncomingMailClientListener" />
+    </hammockmaker>
+    <hammockmaker usecldc11="true" dir="${tests.dir}/src" package="org.logicprobe.LogicMail.mail.imap" classpath="${mocks.classpath}">
+      <mock class="org.logicprobe.LogicMail.mail.imap.ImapProtocol" />
+    </hammockmaker>
+    <delete dir="${dist.dir}/prebuild"/>
+  </target>
 
-	<!-- Build the application tests -->
-	<target name="build">
-		<mkdir dir="${dist.dir}"/>
-
-		<!-- Build the tests -->
-        <rapc output="${module.name}Tests"
-              srcdir="${src.dir}"
-              destdir="${dist.dir}"
-              jdehome="${jde450.home}">
-              <jdp title="${module.title}Tests"
+  <!-- Build the application tests -->
+  <target name="build">
+    <mkdir dir="${dist.dir}"/>
+    <copy file="res/icons/logicmail-tests.png" todir="${dist.dir}"/>
+    <!-- Build the tests -->
+    <rapc output="${module.name}Tests"
+          destdir="${dist.dir}"
+          jdehome="${jde450.home}"
+          defines="BLACKBERRY_4_5_0"
+          generatesourcelist="true">
+      <jdp title="${module.title}Tests"
                  vendor="${module.vendor}"
-                 version="${module.version}"
+                 version="${module.version}.${module.build}"
                  type="cldc"
-                 midletclass="org.logicprobe.LogicMail.LogicMailTests"/>
-            <src>
-                <fileset dir="${j2meunit.src.dir}">
-                    <include name="**/*.java"/>
-                </fileset>
-                <fileset dir="${src.dir}">
-                    <include name="**/*.java"/>
-                </fileset>
-                <fileset dir="${app.src.dir}">
-                    <include name="**/*.java"/>
-                    <exclude name="org/logicprobe/LogicMail/LogicMail.java"/>
-                </fileset>
-                <fileset dir="${res.src.dir}">
-                    <include name="**/*.rrc"/>
-                    <include name="**/*.rrh"/>
-                </fileset>
-            </src>
-        </rapc>
-	</target>
+                 midletclass="org.logicprobe.LogicMail.LogicMailTests"
+                 icon="logicmail-tests.png" />
+      <src>
+        <fileset dir="${j2meunit.dir}">
+          <include name="src/**/*.java" />
+          <include name="res/**/*.png" />
+        </fileset>
+        <fileset dir="${tests.dir}">
+          <include name="src/**/*.java" />
+          <include name="res/**/*.png" />
+        </fileset>
+        <fileset dir="${logicmail.dir}">
+          <include name="src/**/*.java" />
+          <include name="res/**/*.png" />
+          <include name="res/**/*.rrc" />
+          <include name="res/**/*.rrh" />
+        </fileset>
+      </src>
+    </rapc>
+    <delete file="${dist.dir}/logicmail-tests.png"/>
+  </target>
 
-	<!-- Load the build output into the simulator -->
-	<target name="load-simulator" depends="build">
-		<copy todir="${simulator.home}">
-			<fileset dir="${dist.dir}" includes="*.cod,*.csl,*.cso,*.debug,*.jar"/>
-		</copy>
-	</target>
-	
-	<!-- Run the application tests in the simulator -->
-	<target name="run-simulator" depends="load-simulator">
-		<exec
+  <!-- Load the build output into the simulator -->
+  <target name="load-simulator" depends="build">
+    <copy todir="${simulator.home}">
+      <fileset dir="${dist.dir}" includes="*.cod,*.csl,*.cso,*.debug,*.jar"/>
+    </copy>
+  </target>
+
+  <!-- Run the application tests in the simulator -->
+  <target name="run-simulator" depends="load-simulator">
+    <exec
 			dir="${simulator.home}"
 			executable="${simulator.home}/${simulator.exec}"
 			spawn="true"/>
-	</target>
+  </target>
 
-	<target name="clean">
-		<delete dir="${dist.dir}"/>
-	</target>
+  <target name="clean">
+    <delete dir="${dist.dir}"/>
+  </target>
 </project>

@@ -54,8 +54,8 @@ public class NetworkMailStore extends AbstractMailStore {
 			public void mailConnectionRequestComplete(int type, Object tag, Object result, boolean isFinal) {
 				connectionHandler_mailConnectionRequestComplete(type, tag, result, isFinal);
 			}
-            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
-                connectionHandler_mailConnectionRequestFailed(type, tag, exception);
+            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
+                connectionHandler_mailConnectionRequestFailed(type, tag, exception, isFinal);
             }
 		});
 		this.connectionHandler.start();
@@ -233,43 +233,43 @@ public class NetworkMailStore extends AbstractMailStore {
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageParts }, callback);
 	}
 	
-	public void requestMessageDelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { messageToken, messageFlags }, callback);
+	public void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback) {
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { messageToken }, callback);
 	}
 
-	public void requestMessageUndelete(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+	public void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback) {
 		if(!client.hasUndelete()) {
 			throw new UnsupportedOperationException();
 		}
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken, messageFlags }, callback);
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken }, callback);
 	}
 
-	public void requestMessageAnswered(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+	public void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback) {
 		if(!this.hasFlags()) {
 			throw new UnsupportedOperationException();
 		}
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken, messageFlags }, callback);
+		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken }, callback);
 	}
 	
-    public void requestMessageForwarded(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+    public void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback) {
         if(!this.hasFlags()) {
             throw new UnsupportedOperationException();
         }
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken, messageFlags }, callback);
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken }, callback);
     }
 
-    public void requestMessageSeen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+    public void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback) {
         if(!this.hasFlags()) {
             throw new UnsupportedOperationException();
         }
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN, new Object[] { messageToken, messageFlags }, callback);
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN, new Object[] { messageToken }, callback);
     }
     
-    public void requestMessageUnseen(MessageToken messageToken, MessageFlags messageFlags, MailStoreRequestCallback callback) {
+    public void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback) {
         if(!this.hasFlags()) {
             throw new UnsupportedOperationException();
         }
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken, messageFlags }, callback);
+        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken }, callback);
     }
 
 	public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) {
@@ -303,8 +303,18 @@ public class NetworkMailStore extends AbstractMailStore {
 			break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-            results = (Object[])result;
-		    fireFolderExpunged((FolderTreeItem)results[0], (int[])results[1]);
+            if(result instanceof Object[]) {
+                results = (Object[])result;
+                if(results[1] instanceof int[]) {
+                    fireFolderExpunged((FolderTreeItem)results[0], (int[])results[1], (MessageToken[])results[2]);
+                }
+                else if(results[1] instanceof MessageToken[]) {
+                    fireFolderExpunged((FolderTreeItem)results[0], (MessageToken[])results[1], (MessageToken[])results[2]);
+                }
+                else {
+                    fireFolderExpunged((FolderTreeItem)results[0], new int[0], new MessageToken[0]);
+                }
+            }
 		    break;
 		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
@@ -333,6 +343,10 @@ public class NetworkMailStore extends AbstractMailStore {
 		    results = (Object[])result;
 		    fireFolderMessageIndexMapAvailable((FolderTreeItem)results[0], (ToIntHashtable)results[1]);
 		    break;
+		case IncomingMailConnectionHandler.REQUEST_FOLDER_REFRESH_REQUIRED:
+		    results = (Object[])result;
+		    fireFolderRefreshRequired((FolderTreeItem)results[0]);
+		    break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
 			results = (Object[])result;
@@ -348,22 +362,16 @@ public class NetworkMailStore extends AbstractMailStore {
 			fireMessageContentAvailable((MessageToken)results[0], (MimeMessageContent[])results[1]);
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireMessageDeleted((MessageToken)results[0], (MessageFlags)results[1]);
-			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireMessageUndeleted((MessageToken)results[0], (MessageFlags)results[1]);
-			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
         case IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED:
         case IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN:
         case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);
+            if(result instanceof Object[]) {
+    			results = (Object[])result;
+    			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);
+            }
 			break;
 		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
             if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
@@ -376,7 +384,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		}
 	}
 
-    private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception) {
+    private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
         MailStoreRequestCallback callback;
         if(tag instanceof MailStoreRequestCallback) {
             callback = (MailStoreRequestCallback)tag;
@@ -385,6 +393,6 @@ public class NetworkMailStore extends AbstractMailStore {
             callback = null;
         }
         
-        if(callback != null) { callback.mailStoreRequestFailed(exception); }
+        if(callback != null) { callback.mailStoreRequestFailed(exception, isFinal); }
 	}
 }

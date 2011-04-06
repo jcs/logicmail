@@ -127,6 +127,20 @@ public class ImapResponseLineTesterTest extends TestCase {
         trimCount = instance.trimCount();
         assertEquals("Case 3", input.length, responseLength);
         assertEquals("Case 3", 2, trimCount);
+
+        // Zero-length literal
+        input = "* 65 FETCH (UID 346 BODY[1] {0}\r\n)\r\n".getBytes();
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        trimCount = instance.trimCount();
+        assertEquals("Case 4", input.length, responseLength);
+        assertEquals("Case 4", 2, trimCount);
+        
+        // Zero-length literal with following data
+        input = "((UID 346 BODY[1] {0}\r\n) (\\Foo))\r\n".getBytes();
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        trimCount = instance.trimCount();
+        assertEquals("Case 5", input.length, responseLength);
+        assertEquals("Case 5", 2, trimCount);
     }
     
     public void testLinesWithMalformedLiteral() {
