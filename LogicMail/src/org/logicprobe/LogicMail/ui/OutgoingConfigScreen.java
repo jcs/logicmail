@@ -31,9 +31,11 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
+import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.component.BasicEditField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
@@ -129,11 +131,53 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
 
         serverUserField = new BasicEditField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ',
-                outgoingConfig.getServerUser());
+                outgoingConfig.getServerUser()) {
+            protected void paint(Graphics graphics) {
+                if(!isEditable()) {
+                    int originalColor = graphics.getColor();
+                    graphics.setColor(Color.GRAY);
+                    super.paint(graphics);
+                    graphics.setColor(originalColor);
+                }
+                else {
+                    super.paint(graphics);
+                }
+            }
+
+            public void setEditable(boolean editable) {
+                super.setEditable(editable);
+                invalidate();
+            }
+
+            public boolean isFocusable() {
+                return isEditable();
+            }
+        };
         
         serverPassField = new PasswordEditField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ',
-                outgoingConfig.getServerPass());
+                outgoingConfig.getServerPass()) {
+            protected void paint(Graphics graphics) {
+                if(!isEditable()) {
+                    int originalColor = graphics.getColor();
+                    graphics.setColor(Color.GRAY);
+                    super.paint(graphics);
+                    graphics.setColor(originalColor);
+                }
+                else {
+                    super.paint(graphics);
+                }
+            }
+
+            public void setEditable(boolean editable) {
+                super.setEditable(editable);
+                invalidate();
+            }
+
+            public boolean isFocusable() {
+                return isEditable();
+            }
+        };
         
         String[] transportChoices = {
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_TRANSPORT_USE_GLOBAL),

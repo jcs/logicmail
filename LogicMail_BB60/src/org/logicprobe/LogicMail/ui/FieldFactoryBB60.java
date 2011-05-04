@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2009, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,55 +30,20 @@
  */
 package org.logicprobe.LogicMail.ui;
 
-import net.rim.device.api.ui.Color;
-import net.rim.device.api.ui.Graphics;
-import net.rim.device.api.ui.Keypad;
-import net.rim.device.api.ui.component.BasicEditField;
-import net.rim.device.api.ui.component.TextField;
+import net.rim.device.api.ui.Field;
 
-/**
- * Edit field designed for more convenient entry of a hostname.
- */
-public class HostnameEditField extends BasicEditField {
-    private static final int MAX_SIZE = 256;
-    
-    public HostnameEditField(String label, String initialValue) {
-        super(label, initialValue, MAX_SIZE, TextField.NO_NEWLINE | TextField.NO_LEARNING);
+import org.logicprobe.LogicMail.message.TextContent;
+import org.logicprobe.LogicMail.model.MessageNode;
+
+public class FieldFactoryBB60 extends FieldFactoryBB50 {
+    public FieldFactoryBB60() {
+        super();
     }
     
-    protected boolean keyChar(char key, int status, int time) {
-        if(key == Keypad.KEY_SPACE) {
-            int cursor = this.getCursorPosition();
-            if(cursor > 0 && this.getText().charAt(cursor - 1) != '.') {
-                return super.keyChar('.', status, time);
-            }
-            else {
-                return true;
-            }
-        }
-        else {
-            return super.keyChar(key, status, time);
-        }
-    }
-    
-    protected void paint(Graphics graphics) {
-        if(!isEditable()) {
-            int originalColor = graphics.getColor();
-            graphics.setColor(Color.GRAY);
-            super.paint(graphics);
-            graphics.setColor(originalColor);
-        }
-        else {
-            super.paint(graphics);
-        }
-    }
-    
-    public void setEditable(boolean editable) {
-        super.setEditable(editable);
-        invalidate();
-    }
-    
-    public boolean isFocusable() {
-        return isEditable();
+    public Field getHtmlMessageContentField(MessageNode messageNode, TextContent content) {
+        BrowserField2Renderer fieldRenderer = new BrowserField2Renderer(messageNode, content);
+        Field field = fieldRenderer.getBrowserField();
+        
+        return field;
     }
 }

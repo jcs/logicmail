@@ -116,6 +116,11 @@ public class AccountConfigWizard extends WizardController {
 
             populateIdentityItems();
             validateData();
+            
+            if(identityChoiceField.getSize() < 2) {
+                identityChoiceField.setEditable(false);
+            }
+            identityNameEditField.setFocus();
         }
 
         private void newAccountWizardScreen_fieldChanged(Field field, int context) {

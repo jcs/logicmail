@@ -83,6 +83,10 @@ public class StandardScreen extends MainScreen {
         initialize();
     }
 
+    NavigationController getNavigationController() {
+        return navigationController;
+    }
+    
     /**
      * Initialize the screen elements.
      */

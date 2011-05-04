@@ -74,6 +74,18 @@ public class ThreadQueue {
 	}
 	
 	/**
+	 * Blocks until all pending tasks have completed
+	 */
+	public void completePendingTasks() {
+	    if(threadQueueThread != null) {
+	        try {
+	            threadQueueThread.join();
+	        } catch (InterruptedException e) { }
+	        threadQueueThread = null;
+	    }
+	}
+	
+	/**
 	 * Puts the provided <tt>Runnable</tt> object on the
 	 * work item queue.  Starts the worker thread if necessary.
 	 * 

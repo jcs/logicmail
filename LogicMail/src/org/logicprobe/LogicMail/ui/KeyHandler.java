@@ -47,6 +47,7 @@ import net.rim.device.api.util.LongIntHashtable;
  */
 public class KeyHandler {
     private static final LongIntHashtable table = new LongIntHashtable();
+    private static final LongIntHashtable browserTable = new LongIntHashtable();
     private static boolean isReduced;
 
     public final static int MESSAGE_REPLY        = 10;
@@ -60,6 +61,9 @@ public class KeyHandler {
     public final static int SCROLL_NEXT_DATE     = 23;
     public final static int SCROLL_PREV_DATE     = 24;
     public final static int SCROLL_NEXT_UNOPENED = 25;
+    
+    public final static int BROWSER_ZOOM_IN      = 30;
+    public final static int BROWSER_ZOOM_OUT     = 31;
     
     static {
         buildTable();
@@ -87,6 +91,29 @@ public class KeyHandler {
             return table.get(packed);
         }
     }
+    
+    /**
+     * Get the shortcut mapped to the provided key character.
+     * This method is intended to be called from within various
+     * <code>keyChar(char c, int status, int time)</code> methods to assist in
+     * shortcut implementation.
+     *
+     * @param ch Character generated.
+     * @param status Modifier key status.
+     * @return Shortcut for the key, or <code>-1</code> if nothing matched.
+     */
+    public static int keyCharBrowserShortcut(char ch, int status) {
+        if(isReduced) {
+            char altedChar = Keypad.getAltedChar(ch);
+            long packed = ((long) altedChar << 32) | status;
+            return browserTable.get(packed);
+        }
+        else {
+            int keyCode = Keypad.getKeyCode(ch, status);
+            long packed = ((long) keyCode << 32) | status;
+            return browserTable.get(packed);
+        }
+    }
 
     /**
      * Causes the key mapping table to be constructed.
@@ -97,6 +124,7 @@ public class KeyHandler {
     public static void buildTable() {
         synchronized(table) {
             table.clear();
+            browserTable.clear();
             switch(Keypad.getHardwareLayout()) {
             case Keypad.HW_LAYOUT_39:
             case Keypad.HW_LAYOUT_32:
@@ -153,11 +181,15 @@ public class KeyHandler {
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_F << 32), MESSAGE_FORWARD);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_C << 32), MESSAGE_COMPOSE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32) | KeypadListener.STATUS_ALT, MESSAGE_MARK_OPENED);
+        
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_T << 32), SCROLL_TOP);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_B << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_N << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_P << 32), SCROLL_PREV_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32), SCROLL_NEXT_UNOPENED);
+        
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_I << 32), BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_O << 32), BROWSER_ZOOM_OUT);
     }
     
     private static void buildTable_39_32_de() {
@@ -166,11 +198,15 @@ public class KeyHandler {
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_W << 32), MESSAGE_FORWARD);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_C << 32), MESSAGE_COMPOSE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32) | KeypadListener.STATUS_ALT, MESSAGE_MARK_OPENED);
+        
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_O << 32), SCROLL_TOP);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_N << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_V << 32), SCROLL_PREV_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_H << 32), SCROLL_NEXT_UNOPENED);
+
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_E << 32), BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_F << 32), BROWSER_ZOOM_OUT);
     }
     
     private static void buildTable_39_32_fr() {
@@ -179,11 +215,15 @@ public class KeyHandler {
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_W << 32), MESSAGE_FORWARD);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_C << 32), MESSAGE_COMPOSE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32), MESSAGE_MARK_OPENED);
+        
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_D << 32), SCROLL_TOP);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_F << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_S << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_P << 32), SCROLL_PREV_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_N << 32), SCROLL_NEXT_UNOPENED);
+        
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_C << 32), BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_O << 32) | KeypadListener.STATUS_ALT, BROWSER_ZOOM_OUT);
     }
     
     private static void buildTable_39_32_es() {
@@ -192,11 +232,15 @@ public class KeyHandler {
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_V << 32), MESSAGE_FORWARD);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_R << 32), MESSAGE_COMPOSE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_C << 32), MESSAGE_MARK_OPENED);
+        
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_P << 32), SCROLL_TOP);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_F << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_S << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_A << 32), SCROLL_PREV_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_N << 32), SCROLL_NEXT_UNOPENED);
+        
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_M << 32) | KeypadListener.STATUS_ALT, BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_O << 32) | KeypadListener.STATUS_ALT, BROWSER_ZOOM_OUT);
     }
     
     private static void buildTable_39_32_it() {
@@ -205,11 +249,15 @@ public class KeyHandler {
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_F << 32), MESSAGE_FORWARD);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_C << 32), MESSAGE_COMPOSE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32) | KeypadListener.STATUS_ALT, MESSAGE_MARK_OPENED);
+        
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_D << 32), SCROLL_TOP);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_B << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_I << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_T << 32), SCROLL_PREV_DATE);
         table.put(((long) Characters.LATIN_CAPITAL_LETTER_U << 32), SCROLL_NEXT_UNOPENED);
+        
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_I << 32), BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.LATIN_CAPITAL_LETTER_O << 32), BROWSER_ZOOM_OUT);
     }
     
     private static void buildTable_REDUCED_24() {
@@ -217,10 +265,14 @@ public class KeyHandler {
         table.put(((long) Characters.EXCLAMATION_MARK << 32), MESSAGE_REPLY);
         table.put(((long) Characters.FULL_STOP << 32), MESSAGE_FORWARD);
         table.put(((long) Characters.COMMA << 32), MESSAGE_COMPOSE);
+        
         table.put(((long) Characters.DIGIT_ONE << 32), SCROLL_TOP);
         table.put(((long) Characters.DIGIT_SEVEN << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.DIGIT_SIX << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.DIGIT_FOUR << 32), SCROLL_PREV_DATE);
+        
+        browserTable.put(((long) Characters.COMMA << 32), BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.FULL_STOP << 32), BROWSER_ZOOM_OUT);
     }
 
     private static void buildTable_ITUT() {
@@ -228,10 +280,14 @@ public class KeyHandler {
         table.put(((long) Characters.DIGIT_SEVEN << 32), MESSAGE_REPLY);
         table.put(((long) Characters.DIGIT_ONE << 32), MESSAGE_REPLY_ALL);
         table.put(((long) Characters.DIGIT_NINE << 32), MESSAGE_FORWARD);
+        
         table.put(((long) Characters.DIGIT_TWO << 32), SCROLL_TOP);
         table.put(((long) Characters.DIGIT_EIGHT << 32), SCROLL_BOTTOM);
         table.put(((long) Characters.DIGIT_SIX << 32), SCROLL_NEXT_DATE);
         table.put(((long) Characters.DIGIT_FOUR << 32), SCROLL_PREV_DATE);
         table.put(((long) Characters.DIGIT_FIVE << 32), SCROLL_NEXT_UNOPENED);
+        
+        browserTable.put(((long) Characters.DIGIT_THREE << 32), BROWSER_ZOOM_IN);
+        browserTable.put(((long) Characters.DIGIT_NINE << 32), BROWSER_ZOOM_OUT);
     }
 }

@@ -50,7 +50,6 @@ import net.rim.device.api.ui.component.ListField;
 import net.rim.device.api.ui.component.Menu;
 import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.ui.component.ObjectListField;
-import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
@@ -403,9 +402,9 @@ public class ConfigScreen extends AbstractConfigScreen {
         });
 
         if (overrideHostname) {
-            localHostnameEditField = new BasicEditField(
+            localHostnameEditField = new HostnameEditField(
                     resources.getString(LogicMailResource.CONFIG_GLOBAL_HOSTNAME) + ' ',
-                    localHostname, 256, TextField.NO_NEWLINE);
+                    localHostname);
         } else {
             String hostname = System.getProperty("microedition.hostname");
             localHostnameEditField = new HostnameEditField(
@@ -604,7 +603,8 @@ public class ConfigScreen extends AbstractConfigScreen {
         if (overrideHostnameCheckboxField.getChecked()) {
             localHostnameEditField.setText(localHostname);
             localHostnameEditField.setEditable(true);
-        } else {
+        }
+        else {
             String hostname = System.getProperty("microedition.hostname");
             localHostnameEditField.setText((hostname != null) ? hostname
                     : "localhost");

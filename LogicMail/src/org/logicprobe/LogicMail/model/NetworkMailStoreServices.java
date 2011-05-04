@@ -48,11 +48,13 @@ import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
+import org.logicprobe.LogicMail.util.ThreadQueue;
 
 public class NetworkMailStoreServices extends MailStoreServices {
     private final NetworkMailStore mailStore;
     private final FolderMessageCache folderMessageCache;
     private final MessageContentFileManager contentFileManager;
+    private final ThreadQueue threadQueue;
     
     /** Map of FolderTreeItem objects to corresponding request handlers */
     private final Hashtable folderRequestHandlerMap = new Hashtable();
@@ -62,6 +64,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         this.mailStore = mailStore;
         this.folderMessageCache = folderMessageCache;
         this.contentFileManager = MessageContentFileManager.getInstance();
+        this.threadQueue = new ThreadQueue();
     }
 
     AccountConfig getAccountConfig() {
@@ -76,6 +79,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
         mailStore.restart();
     }
 
+    public void shutdown(boolean wait) {
+        threadQueue.shutdown(wait);
+        super.shutdown(wait);
+    }
+    
     public void setConnected(final boolean connected) {
         synchronized(folderRequestHandlerMap) {
             Enumeration e = folderRequestHandlerMap.elements();
@@ -113,11 +121,13 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
         folderMessageCache.commit();
         
-        (new Thread() { public void run() {
-            for(int i=0; i<folderTreeItems.length; i++) {
-                contentFileManager.removeFolder(folderTreeItems[i]);
+        threadQueue.invokeLater(new Runnable() {
+            public void run() {
+                for(int i=0; i<folderTreeItems.length; i++) {
+                    contentFileManager.removeFolder(folderTreeItems[i]);
+                }
             }
-        }}).start();
+        });
         super.removeSavedData(folderTreeItems);
     }
     
@@ -199,6 +209,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
 
     public boolean hasCachedMessageContent(FolderTreeItem folder, MessageToken messageToken) {
+        threadQueue.completePendingTasks();
         return contentFileManager.messageContentExists(folder, messageToken);
     }
     
@@ -342,6 +353,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
         Hashtable loadedPartSet = new Hashtable(partsToLoad.length);
    
+        threadQueue.completePendingTasks();
         if(contentFileManager.messageContentExists(folder, messageToken)) {
             MimeMessageContent[] loadedContent =
                 contentFileManager.getMessageContent(folder, messageToken, partsToLoad);
@@ -378,6 +390,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final MimeMessagePart[] partsToSkip,
             final boolean cacheOnly) {
         
+        threadQueue.completePendingTasks();
         if(structure != null && contentFileManager.messageContentExists(folder, messageToken)) {
             // If the store does not support parts, then take a simplified
             // approach that assumes the cache can only contain complete
@@ -480,10 +493,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     protected void handleMessageAvailable(
-            MessageToken messageToken,
+            final MessageToken messageToken,
             boolean messageComplete,
             MimeMessagePart messageStructure,
-            MimeMessageContent[] messageContent,
+            final MimeMessageContent[] messageContent,
             String messageSource) {
         // Note: This method should only be called by the events triggered by
         // the completion of the request made in requestMessageRefreshWhole().
@@ -492,7 +505,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         handler.handleMessageAvailable(messageToken, messageStructure);
         
-        int[] customValues = new int[] {
+        final int[] customValues = new int[] {
                 (messageComplete ? 1 : 0), 0, 0, 0
         };
         
@@ -501,22 +514,32 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
         
         // Update the message content cache
-        contentFileManager.putCompleteMessageContent(
-                handler.getFolder(), messageToken, messageContent, customValues);
+        final FolderTreeItem folder = handler.getFolder();
+        threadQueue.invokeLater(new Runnable() {
+            public void run() {
+                contentFileManager.putCompleteMessageContent(
+                        folder, messageToken, messageContent, customValues);
+            }
+        });
         
         fireMessageAvailable(messageToken, messageComplete, messageStructure, messageContent, messageSource);
     }
     
     protected void handleMessageContentAvailable(
-            MessageToken messageToken,
-            MimeMessageContent[] messageContent) {
+            final MessageToken messageToken,
+            final MimeMessageContent[] messageContent) {
         
         // Update the status in the folder cache for this message
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         handler.setFolderMessageSeen(messageToken);
         
         // Update the message content cache
-        contentFileManager.putMessageContent(handler.getFolder(), messageToken, messageContent);
+        final FolderTreeItem folder = handler.getFolder();
+        threadQueue.invokeLater(new Runnable() {
+            public void run() {
+                contentFileManager.putMessageContent(folder, messageToken, messageContent);
+            }
+        });
         
         fireMessageContentAvailable(messageToken, messageContent);
         

@@ -185,6 +185,14 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         if(selectedOutgoingConfig != null) {
             outgoingServerField.setSelectedIndex(selectedOutgoingConfig);
         }
+        
+        // Disable choice fields if they only have a single option
+        if(identityField.getSize() < 2) {
+            identityField.setEditable(false);
+        }
+        if(outgoingServerField.getSize() < 2) {
+            outgoingServerField.setEditable(false);
+        }
     }
 
     private static String getTitle(AccountConfig accountConfig) {

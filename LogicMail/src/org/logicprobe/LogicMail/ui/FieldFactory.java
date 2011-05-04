@@ -46,6 +46,7 @@ public abstract class FieldFactory {
      * API version to the lowest.
      */
     private static String[] factoryClasses = {
+        "org.logicprobe.LogicMail.ui.FieldFactoryBB60",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB50",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB47",
         "org.logicprobe.LogicMail.ui.FieldFactoryBB46",

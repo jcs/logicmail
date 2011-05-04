@@ -480,7 +480,7 @@ public class MessageScreen extends AbstractScreenProvider {
             }
         }
         
-        return false;
+        return ((StandardScreen)screen).keyCharDefault(key, status, time);
     }
 
     public void shortcutAction(ShortcutItem item) {
