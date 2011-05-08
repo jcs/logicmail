@@ -39,6 +39,7 @@ import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessageIndexMapEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreEvent;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageEvent;
@@ -67,6 +68,9 @@ public abstract class MailStoreServices {
         mailStore.addMailStoreListener(new MailStoreListener() {
             public void folderTreeUpdated(FolderEvent e) {
                 fireFolderTreeUpdated(e.getFolder());
+            }
+            public void refreshRequired(MailStoreEvent e) {
+                fireRefreshRequired();
             }
         });
         mailStore.addFolderListener(new FolderListener() {
@@ -598,6 +602,21 @@ public abstract class MailStoreServices {
         }
     }
 
+    /**
+     * Notifies all registered <tt>MailStoreListener</tt>s that the mail store
+     * has been idle long enough to trigger an automatic refresh.
+     */
+    protected final void fireRefreshRequired() {
+        Object[] listeners = listenerList.getListeners(MailStoreListener.class);
+        MailStoreEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new MailStoreEvent(this);
+            }
+            ((MailStoreListener)listeners[i]).refreshRequired(e);
+        }
+    }
+    
     protected void handleFolderStatusChanged(FolderTreeItem root) {
         fireFolderStatusChanged(root);
     }

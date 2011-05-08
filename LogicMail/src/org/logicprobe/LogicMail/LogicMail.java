@@ -170,6 +170,7 @@ public final class LogicMail extends UiApplication {
                             navigationController.displayMailHome();
                             popScreen(loadingScreen);
                             loadingScreen = null;
+                            MailManager.getInstance().startupComplete();
                         }
                     });
                 }

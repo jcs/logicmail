@@ -794,6 +794,21 @@ public abstract class AbstractMailStore {
             ((MailStoreListener)listeners[i]).folderTreeUpdated(e);
         }
     }
+    
+    /**
+     * Notifies all registered <tt>MailStoreListener</tt>s that the mail store
+     * has been idle long enough to trigger an automatic refresh.
+     */
+    protected void fireRefreshRequired() {
+        Object[] listeners = listenerList.getListeners(MailStoreListener.class);
+        MailStoreEvent e = null;
+        for(int i=0; i<listeners.length; i++) {
+            if(e == null) {
+                e = new MailStoreEvent(this);
+            }
+            ((MailStoreListener)listeners[i]).refreshRequired(e);
+        }
+    }
 
     /**
      * Notifies all registered <tt>FolderListener</tt>s that

@@ -55,4 +55,11 @@ public interface MailConnectionHandlerListener {
      * @param isFinal true if the connection will be closed, false if it is being reopened
      */
     public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal);
+    
+    /**
+     * Indicates that the connection has left the idle state due to a timeout.
+     * 
+     * @param idleDuration The elapsed time, in milliseconds, that the connection has been idle.
+     */
+    public void mailConnectionIdleTimeout(long idleDuration);
 }

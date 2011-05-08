@@ -56,6 +56,7 @@ import org.logicprobe.LogicMail.util.EventListenerList;
  */
 public class MailManager {
 	private static MailManager instance = null;
+	private boolean startupComplete;
 	private final EventListenerList listenerList = new EventListenerList();
 	private final MailRootNode mailRootNode;
 	private final MailSettings mailSettings;
@@ -175,6 +176,32 @@ public class MailManager {
 		}
 		return instance;
 	}
+
+    /**
+     * This method should be invoked as soon as the application is completely
+     * initialized, and the home screen has been displayed.  It is used to
+     * trigger any operations that happen automatically after startup.
+     */
+    public synchronized void startupComplete() {
+        // Make sure this method can only be called once
+        if(startupComplete) { return; }
+        else { startupComplete = true; }
+        
+        NetworkAccountNode[] networkAccounts = mailRootNode.getNetworkAccounts();
+        for(int i=0; i<networkAccounts.length; i++) {
+            AccountConfig accountConfig = networkAccounts[i].getAccountConfig();
+            int setting = accountConfig.getRefreshOnStartup();
+
+            if(accountConfig.getRefreshOnStartup() >= AccountConfig.REFRESH_ON_STARTUP_STATUS) {
+                //TODO: Consider handling folder refresh on missing-folder errors
+                //TODO: Making the GUI always show a server-side value for message counts will clear up side-effects
+                networkAccounts[i].refreshMailboxStatus();
+            }
+            if(setting == AccountConfig.REFRESH_ON_STARTUP_HEADERS) {
+                networkAccounts[i].triggerAutomaticRefresh();
+            }
+        }
+    }
 	
 	/**
 	 * Gets the mail root node.
@@ -420,5 +447,4 @@ public class MailManager {
             ((MailManagerListener)listeners[i]).mailConfigurationChanged(e);
         }
     }
-
 }

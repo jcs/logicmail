@@ -44,6 +44,10 @@ public class NetworkMailStore extends AbstractMailStore {
 	private IncomingMailClient client;
 	private IncomingMailConnectionHandler connectionHandler;
 	private AccountConfig accountConfig;
+	private volatile long accumulatedIdleTime;
+
+    private static final int MS_PER_MIN = 60000;
+    private static final int REFRESH_TOLERANCE = 60000;
 	
 	public NetworkMailStore(AccountConfig accountConfig) {
 		super();
@@ -57,11 +61,14 @@ public class NetworkMailStore extends AbstractMailStore {
             public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
                 connectionHandler_mailConnectionRequestFailed(type, tag, exception, isFinal);
             }
+            public void mailConnectionIdleTimeout(long idleDuration) {
+                connectionHandler_mailConnectionIdleTimeout(idleDuration);
+            }
 		});
 		this.connectionHandler.start();
 	}
 
-	/**
+    /**
 	 * Gets the account configuration associated with this network mail store.
 	 * 
 	 * @return Account configuration.
@@ -72,6 +79,7 @@ public class NetworkMailStore extends AbstractMailStore {
 	
 	public void shutdown(boolean wait) {
 		connectionHandler.shutdown(wait);
+		accumulatedIdleTime = 0;
 	}
 
 	/**
@@ -81,6 +89,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		if(!connectionHandler.isRunning()) {
 			connectionHandler.start();
 		}
+		accumulatedIdleTime = 0;
 	}
 	
 	public boolean isLocal() {
@@ -140,6 +149,13 @@ public class NetworkMailStore extends AbstractMailStore {
 		return client.isConnected();
 	}
 
+	/**
+	 * Gets the inbox folder, if available.
+	 */
+	public FolderTreeItem getInboxFolder() {
+	    return client.getInboxFolder();
+	}
+	
     /**
      * Requests that the mail store disconnect from the mail server.
      * <p>
@@ -149,18 +165,22 @@ public class NetworkMailStore extends AbstractMailStore {
      * </p>
      */
     public void requestDisconnect() {
+        accumulatedIdleTime = 0;
         connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_DISCONNECT, new Object[] { }, null);
     }
 
 	public void requestFolderTree(MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_TREE, new Object[] { }, callback);
 	}
 
 	public void requestFolderExpunge(FolderTreeItem folder, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 	    connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE, new Object[] { folder }, callback);
 	}
 	
 	public void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS, new Object[] { folders }, callback);
 	}
 
@@ -168,6 +188,7 @@ public class NetworkMailStore extends AbstractMailStore {
 	    if(firstToken == null || increment <= 0) {
 	        throw new IllegalArgumentException();
 	    }
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE,
 				new Object[] { folder, firstToken, new Integer(increment) },
@@ -175,6 +196,7 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 
 	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
 				new Object[] { folder, messageTokens, new Boolean(flagsOnly) },
@@ -182,6 +204,7 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 	
 	public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
         connectionHandler.addRequest(
                 IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
                 new Object[] { folder, messageIndices },
@@ -189,6 +212,7 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 	
 	public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(
 				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
 				new Object[] { folder, new Boolean(flagsOnly) },
@@ -206,6 +230,7 @@ public class NetworkMailStore extends AbstractMailStore {
      * @param callback The callback to receive success or failure notifications about the request
 	 */
 	public void requestFolderMessageIndexMap(FolderTreeItem folder, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
         connectionHandler.addRequest(
                 IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGE_INDEX_MAP,
                 new Object[] { folder },
@@ -226,14 +251,17 @@ public class NetworkMailStore extends AbstractMailStore {
     }
 	
 	public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken, new Boolean(useLimits) }, callback);
 	}
 
 	public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageParts }, callback);
 	}
 	
 	public void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback) {
+	    accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { messageToken }, callback);
 	}
 
@@ -241,6 +269,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		if(!client.hasUndelete()) {
 			throw new UnsupportedOperationException();
 		}
+		accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken }, callback);
 	}
 
@@ -248,6 +277,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		if(!this.hasFlags()) {
 			throw new UnsupportedOperationException();
 		}
+		accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken }, callback);
 	}
 	
@@ -255,6 +285,7 @@ public class NetworkMailStore extends AbstractMailStore {
         if(!this.hasFlags()) {
             throw new UnsupportedOperationException();
         }
+        accumulatedIdleTime = 0;
         connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken }, callback);
     }
 
@@ -262,6 +293,7 @@ public class NetworkMailStore extends AbstractMailStore {
         if(!this.hasFlags()) {
             throw new UnsupportedOperationException();
         }
+        accumulatedIdleTime = 0;
         connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN, new Object[] { messageToken }, callback);
     }
     
@@ -269,6 +301,7 @@ public class NetworkMailStore extends AbstractMailStore {
         if(!this.hasFlags()) {
             throw new UnsupportedOperationException();
         }
+        accumulatedIdleTime = 0;
         connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken }, callback);
     }
 
@@ -276,6 +309,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		if(!this.hasAppend()) {
 			throw new UnsupportedOperationException();
 		}
+		accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND, new Object[] { folder, rawMessage, initialFlags }, callback);
 	}
 	
@@ -283,6 +317,7 @@ public class NetworkMailStore extends AbstractMailStore {
 		if(!this.hasCopy()) {
 			throw new UnsupportedOperationException();
 		}
+		accumulatedIdleTime = 0;
 		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder }, callback);
 	}
 	
@@ -395,4 +430,22 @@ public class NetworkMailStore extends AbstractMailStore {
         
         if(callback != null) { callback.mailStoreRequestFailed(exception, isFinal); }
 	}
+    
+    private void connectionHandler_mailConnectionIdleTimeout(long idleDuration) {
+        accumulatedIdleTime += idleDuration;
+        
+        long refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
+
+        if(refreshFrequency == 0) {
+            accumulatedIdleTime = 0;
+            return;
+        }
+        
+        // If we've been idle for a time period close to the refresh frequency,
+        // then we should trigger a refresh.
+        if(Math.abs(accumulatedIdleTime - refreshFrequency) < REFRESH_TOLERANCE) {
+            accumulatedIdleTime = 0;
+            fireRefreshRequired();
+        }
+    }
 }

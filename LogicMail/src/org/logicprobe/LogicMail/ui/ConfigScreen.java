@@ -248,7 +248,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         identityFieldManager = new VerticalFieldManager();
         identityFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_IDENTITIES),
-                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER));
         identityListField = new AccountListField();
         identityListField.setEmptyString(resources.getFamily(), LogicMailResource.MENUITEM_ADD_IDENTITY, DrawStyle.HCENTER);
         identityFieldManager.add(identityListField);
@@ -258,7 +258,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         accountFieldManager = new VerticalFieldManager();
         accountFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNTS),
-                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER));
         accountListField = new AccountListField();
         accountListField.setEmptyString(resources.getFamily(), LogicMailResource.MENUITEM_ADD_ACCOUNT, DrawStyle.HCENTER);
         accountFieldManager.add(accountListField);
@@ -268,7 +268,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         outgoingFieldManager = new VerticalFieldManager();
         outgoingFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_OUTGOING_SERVERS),
-                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER));
         outgoingListField = new AccountListField();
         outgoingListField.setEmptyString(resources.getFamily(), LogicMailResource.MENUITEM_ADD_OUTGOING_SERVER, DrawStyle.HCENTER);
         outgoingFieldManager.add(outgoingListField);
@@ -357,7 +357,7 @@ public class ConfigScreen extends AbstractConfigScreen {
 
         messageDisplayFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_MESSAGE_DISPLAY),
-                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER));
         messageDisplayFieldManager.add(messageDisplayChoiceField);
         messageDisplayFieldManager.add(displayOrderChoiceField);
         messageDisplayFieldManager.add(hideDeletedMessagesCheckboxField);
@@ -415,7 +415,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         
         networkingFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_NETWORKING),
-                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER));
         networkingFieldManager.add(networkTransportChoiceField);
         networkingFieldManager.add(enableWiFiCheckboxField);
         networkingFieldManager.add(overrideHostnameCheckboxField);
@@ -472,7 +472,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         
         otherFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_OTHER),
-                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+                Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER));
         otherFieldManager.add(localDataLocationChoiceLabel);
         otherFieldManager.add(clearCacheManager);
         

@@ -99,6 +99,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
     }
     
+    public FolderTreeItem getInboxFolder() {
+        return mailStore.getInboxFolder();
+    }
+    
     public void requestFolderRefresh(final FolderTreeItem folderTreeItem) {
         FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
         handler.requestFolderRefresh();

@@ -50,6 +50,8 @@ public abstract class AccountConfig extends ConnectionConfig {
     private long identityConfigId;
     private OutgoingConfig outgoingConfig;
     private long outgoingConfigId;
+    private int refreshOnStartup;
+    private int refreshFrequency;
     private MailboxNode sentMailbox;
     private long sentMailboxId;
     private MailboxNode draftMailbox;
@@ -63,6 +65,10 @@ public abstract class AccountConfig extends ConnectionConfig {
     private int folderMessageIncrement;
     private int maximumFolderMessages;
 
+    public static final int REFRESH_ON_STARTUP_NEVER = 0;
+    public static final int REFRESH_ON_STARTUP_STATUS = 1;
+    public static final int REFRESH_ON_STARTUP_HEADERS = 2;
+    
     /** Account identity configuration selection. */
     public static final int CHANGE_TYPE_IDENTITY = 0x0100;
     /** Account outgoing configuration selection. */
@@ -75,6 +81,8 @@ public abstract class AccountConfig extends ConnectionConfig {
     public static final int CHANGE_TYPE_PROMPTS = 0x1000;
     /** Account prompts for user actions. */
     public static final int CHANGE_TYPE_ADVANCED = 0x2000;
+    /** Account settings for refresh and polling. */
+    public static final int CHANGE_TYPE_REFRESH = 0x4000;
 
     /**
      * Instantiates a new connection configuration with defaults.
@@ -104,6 +112,8 @@ public abstract class AccountConfig extends ConnectionConfig {
         identityConfigId = -1L;
         outgoingConfig = null;
         outgoingConfigId = -1L;
+        refreshOnStartup = REFRESH_ON_STARTUP_NEVER;
+        refreshFrequency = 0;
         sentMailbox = null;
         sentMailboxId = -1L;
         draftMailbox = null;
@@ -231,6 +241,44 @@ public abstract class AccountConfig extends ConnectionConfig {
     }
 
     /**
+     * Checks how the account should be refreshed on startup.
+     */
+    public int getRefreshOnStartup() {
+        return refreshOnStartup;
+    }
+    
+    /**
+     * Sets how the account should be refreshed on startup.
+     */
+    public void setRefreshOnStartup(int refreshOnStartup) {
+        if(this.refreshOnStartup != refreshOnStartup) {
+            this.refreshOnStartup = refreshOnStartup;
+            changeType |= CHANGE_TYPE_REFRESH;
+        }
+    }
+    
+    /**
+     * Gets the refresh frequency.
+     *
+     * @return the refresh frequency in minutes, or <code>0</code> if disabled
+     */
+    public int getRefreshFrequency() {
+        return refreshFrequency;
+    }
+    
+    /**
+     * Sets the refresh frequency.
+     *
+     * @param refreshFrequency the new refresh frequency in minutes, or <code>0</code> if disabled
+     */
+    public void setRefreshFrequency(int refreshFrequency) {
+        if(this.refreshFrequency != refreshFrequency) {
+            this.refreshFrequency = refreshFrequency;
+            changeType |= CHANGE_TYPE_REFRESH;
+        }
+    }
+    
+    /**
      * Gets the sent message mailbox.
      * 
      * @return The sent message mailbox
@@ -322,7 +370,7 @@ public abstract class AccountConfig extends ConnectionConfig {
      * 
      * @return The mailbox node
      */
-    private static MailboxNode findMailboxNode(MailboxNode currentNode, long id) {
+    protected static MailboxNode findMailboxNode(MailboxNode currentNode, long id) {
         if(currentNode.getUniqueId() == id) {
             return currentNode;
         }
@@ -480,6 +528,8 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_serverPass", serverPass);
         table.put("account_identityConfigId", new Long(identityConfigId));
         table.put("account_outgoingConfigId", new Long(outgoingConfigId));
+        table.put("account_refreshOnStartup", new Integer(refreshOnStartup));
+        table.put("account_refreshFrequency", new Integer(refreshFrequency));
         table.put("account_sentMailboxId", new Long(sentMailboxId));
         table.put("account_draftMailboxId", new Long(draftMailboxId));
         table.put("account_replySignatureIncluded", new Boolean(replySignatureIncluded));
@@ -521,6 +571,12 @@ public abstract class AccountConfig extends ConnectionConfig {
         }
         outgoingConfig = null;
 
+        value = table.get("account_refreshOnStartup");
+        if(value instanceof Integer) { refreshOnStartup = ((Integer)value).intValue(); }
+        
+        value = table.get("account_refreshFrequency");
+        if(value instanceof Integer) { refreshFrequency = ((Integer)value).intValue(); }
+        
         value = table.get("account_sentMailboxId");
         if(value instanceof Long) {
             sentMailboxId = ((Long)value).longValue();

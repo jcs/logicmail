@@ -43,4 +43,12 @@ public interface MailStoreListener extends EventListener {
 	 * @param e Folder event data
 	 */
 	void folderTreeUpdated(FolderEvent e);
+	
+	/**
+	 * Invoked when the mail store has been idle long enough to trigger an
+	 * automatic refresh.
+	 *
+	 * @param e Mail store event data
+	 */
+	void refreshRequired(MailStoreEvent e);
 }

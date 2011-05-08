@@ -33,12 +33,14 @@ package org.logicprobe.LogicMail.ui;
 
 import java.util.Vector;
 
+import net.rim.device.api.i18n.MessageFormat;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.BasicEditField;
+import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
@@ -61,6 +63,7 @@ import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.model.MailRootNode;
 import org.logicprobe.LogicMail.model.MailboxNode;
+import org.logicprobe.LogicMail.model.NetworkAccountNode;
 
 /**
  * Account configuration screen
@@ -81,13 +84,19 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private PasswordEditField serverPassField;
     private ObjectChoiceField identityField;
     private ObjectChoiceField outgoingServerField;
+    private ObjectChoiceField refreshOnStartupChoiceField;
+    private ObjectChoiceField refreshFrequencyChoiceField;
 
-    // Folder settings fields
+    // Folder settings fields (both)
     private LabelField sentFolderChoiceLabel;
     private LabelField sentFolderChoiceButtonLabel;
     private LabelField draftFolderChoiceLabel;
     private LabelField draftFolderChoiceButtonLabel;
-
+    
+    // Folder settings fields (IMAP)
+    private ButtonField foldersToRefreshButton;
+    private MailboxNode[] refreshMailboxes;
+    
     // Composition settings fields
     private CheckboxField sigForwardCheckboxField;
     private CheckboxField sigReplyCheckboxField;
@@ -193,6 +202,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         if(outgoingServerField.getSize() < 2) {
             outgoingServerField.setEditable(false);
         }
+        
+        if(accountConfig instanceof ImapConfig) {
+            refreshMailboxes = ((ImapConfig)this.accountConfig).getRefreshMailboxes();
+        }
     }
 
     private static String getTitle(AccountConfig accountConfig) {
@@ -282,6 +295,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_PASSWORD) + ' ',
                 accountConfig.getServerPass(),
                 256, TextField.NO_NEWLINE);
+        
         identityField = new ObjectChoiceField(
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_IDENTITY) + ' ',
                 identityConfigs, 0);
@@ -289,6 +303,43 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_ACCOUNT_OUTGOING_SERVER) + ' ',
                 outgoingConfigs, 0);
 
+        refreshOnStartupChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_REFRESH_ON_STARTUP),
+                new Object[] {
+                    resources.getString(LogicMailResource.MENUITEM_NEVER),
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_REFRESH_STATUS),
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_REFRESH_HEADERS)
+                }, accountConfig.getRefreshOnStartup());
+        
+        String minutePattern = resources.getString(LogicMailResource.CONFIG_ACCOUNT_REFRESH_FREQUENCY_MINUTES);
+        int minuteSetting;
+        switch(accountConfig.getRefreshFrequency()) {
+        case 5:
+            minuteSetting = 1;
+            break;
+        case 10:
+            minuteSetting = 2;
+            break;
+        case 15:
+            minuteSetting = 3;
+            break;
+        case 30:
+            minuteSetting = 4;
+            break;
+        default:
+            minuteSetting = 0;
+        }
+        refreshFrequencyChoiceField = new ObjectChoiceField(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_REFRESH_FREQUENCY),
+                new Object[] {
+                    resources.getString(LogicMailResource.MENUITEM_NEVER),
+                    MessageFormat.format(minutePattern, new Object[] { new Integer(5) }),
+                    MessageFormat.format(minutePattern, new Object[] { new Integer(10) }),
+                    MessageFormat.format(minutePattern, new Object[] { new Integer(15) }),
+                    MessageFormat.format(minutePattern, new Object[] { new Integer(30) }),
+                },
+                minuteSetting);
+        
         manager.add(incomingServerLabelField);
         manager.add(serverNameField);
         manager.add(serverSecurityField);
@@ -298,6 +349,9 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(new SeparatorField());
         manager.add(identityField);
         manager.add(outgoingServerField);
+        manager.add(new SeparatorField());
+        manager.add(refreshOnStartupChoiceField);
+        manager.add(refreshFrequencyChoiceField);
         manager.add(new LabelField());
         
         return manager;
@@ -315,11 +369,22 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         sentFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedSentFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
         draftFolderChoiceLabel = new LabelField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_DRAFT_MESSAGE_FOLDER) + ' ');
         draftFolderChoiceButtonLabel = new LabelField(createSelectedMailboxString(selectedDraftFolder), Field.FOCUSABLE | Field.HIGHLIGHT_FOCUS | Field.FIELD_RIGHT | LabelField.ELLIPSIS);
-
+        
         manager.add(sentFolderChoiceLabel);
         manager.add(sentFolderChoiceButtonLabel);
         manager.add(draftFolderChoiceLabel);
         manager.add(draftFolderChoiceButtonLabel);
+        
+        if(accountConfig instanceof ImapConfig) {
+            foldersToRefreshButton = new ButtonField(
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_FOLDERS_TO_REFRESH),
+                    Field.FIELD_HCENTER | ButtonField.CONSUME_CLICK);
+            foldersToRefreshButton.setChangeListener(fieldChangeListener);
+            
+            manager.add(new SeparatorField());
+            manager.add(foldersToRefreshButton);
+        }
+        
         manager.add(new LabelField());
         
         return manager;
@@ -527,6 +592,9 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 initialFolderMessagesChoiceField.setSelectedValue(value);
             }
         }
+        else if(field == foldersToRefreshButton) {
+            showFoldersToRefreshDialog();
+        }
     }
 
     /* (non-Javadoc)
@@ -617,6 +685,30 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         return buf.toString();
     }
 
+    private void showFoldersToRefreshDialog() {
+        MailRootNode mailRootNode = MailManager.getInstance().getMailRootNode();
+        AccountNode accountNode = mailRootNode.findAccountForConfig(accountConfig);
+        if(accountNode == null) { return; }
+        MailboxNode rootMailbox = accountNode.getRootMailbox();
+        if(rootMailbox == null) { return; }
+
+        MailboxCheckboxDialog dialog = new MailboxCheckboxDialog(
+                resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_FOLDERS_TO_REFRESH),
+                accountNode.getRootMailbox());
+        dialog.setCheckedNodes(refreshMailboxes);
+
+        // Make sure the INBOX is always included in the selection list
+        MailboxNode inboxMailbox = ((NetworkAccountNode)accountNode).getInboxMailbox();
+        if(inboxMailbox != null) {
+            dialog.setChecked(inboxMailbox, true);
+            dialog.setEnabled(inboxMailbox, false);
+        }
+        dialog.doModal();
+        
+        refreshMailboxes = dialog.getCheckedNodes();
+        this.setDirty(true);
+    }
+    
     private static int getTransportChoice(int transportSetting) {
         int result;
         switch(transportSetting) {
@@ -747,6 +839,27 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             this.accountConfig.setOutgoingConfig(selectedOutgoingConfig);
         }
 
+        this.accountConfig.setRefreshOnStartup(refreshOnStartupChoiceField.getSelectedIndex());
+        
+        int refreshFrequency;
+        switch(refreshFrequencyChoiceField.getSelectedIndex()) {
+        case 1:
+            refreshFrequency = 5;
+            break;
+        case 2:
+            refreshFrequency = 10;
+            break;
+        case 3:
+            refreshFrequency = 15;
+            break;
+        case 4:
+            refreshFrequency = 30;
+            break;
+        default:
+            refreshFrequency = 0;
+        }
+        this.accountConfig.setRefreshFrequency(refreshFrequency);
+        
         this.accountConfig.setSentMailbox(selectedSentFolder);
         this.accountConfig.setDraftMailbox(selectedDraftFolder);
 
@@ -765,6 +878,8 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         if(accountConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)accountConfig;
 
+            imapConfig.setRefreshMailboxes(refreshMailboxes);
+            
             imapConfig.setFolderPrefix(imapFolderPrefixField.getText().trim());
 
             try {

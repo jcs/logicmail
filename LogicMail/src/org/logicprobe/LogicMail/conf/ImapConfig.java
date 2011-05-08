@@ -32,7 +32,14 @@
 package org.logicprobe.LogicMail.conf;
 
 import java.io.DataInput;
+import java.util.Vector;
 
+import net.rim.device.api.util.Arrays;
+
+import org.logicprobe.LogicMail.model.AccountNode;
+import org.logicprobe.LogicMail.model.MailManager;
+import org.logicprobe.LogicMail.model.MailRootNode;
+import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 
 /**
@@ -40,6 +47,8 @@ import org.logicprobe.LogicMail.util.SerializableHashtable;
  * IMAP mail accounts.
  */
 public class ImapConfig extends AccountConfig {
+    private MailboxNode[] refreshMailboxes;
+    private long[] refreshMailboxIds;
     private String folderPrefix;
     private int maxMessageSize;
     private int maxFolderDepth;
@@ -67,6 +76,8 @@ public class ImapConfig extends AccountConfig {
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(143);
+        this.refreshMailboxes = null;
+        this.refreshMailboxIds = null;
         this.maxMessageSize = 32768;
         this.maxFolderDepth = 4;
         this.folderPrefix = "";
@@ -79,6 +90,59 @@ public class ImapConfig extends AccountConfig {
     public String toString() {
         String text = getAcctName().concat(" (IMAP)");
         return text;
+    }
+
+    /**
+     * Gets the mailboxes to be automatically refreshed.
+     */
+    public MailboxNode[] getRefreshMailboxes() {
+        if(refreshMailboxIds == null || refreshMailboxIds.length == 0) {
+            return new MailboxNode[0];
+        }
+        else if(refreshMailboxes == null || refreshMailboxes.length == 0) {
+            MailRootNode rootNode = MailManager.getInstance().getMailRootNode();
+            AccountNode accountNode = rootNode.findAccountForConfig(this);
+            if(accountNode == null) {
+                return new MailboxNode[0];
+            }
+            
+            MailboxNode rootMailbox = accountNode.getRootMailbox();
+            Vector foundMailboxes = new Vector(refreshMailboxIds.length);
+            for(int i=0; i<refreshMailboxIds.length; i++) {
+                MailboxNode mailbox = findMailboxNode(rootMailbox, refreshMailboxIds[i]);
+                if(mailbox != null) { foundMailboxes.addElement(mailbox); }
+            }
+            
+            refreshMailboxes = new MailboxNode[foundMailboxes.size()];
+            foundMailboxes.copyInto(refreshMailboxes);
+        }
+
+        return refreshMailboxes;
+    }
+    
+    /**
+     * Sets the mailboxes to be automatically refreshed.
+     */
+    public void setRefreshMailboxes(MailboxNode[] refreshMailboxes) {
+        if(this.refreshMailboxes != null
+                && Arrays.equals(this.refreshMailboxes, refreshMailboxes)) {
+            return;
+        }
+        else if(refreshMailboxes == null || refreshMailboxes.length == 0) {
+            this.refreshMailboxes = null;
+            this.refreshMailboxIds = null;
+            changeType |= CHANGE_TYPE_REFRESH;
+        }
+        else {
+            int size = refreshMailboxes.length;
+            this.refreshMailboxes = new MailboxNode[size];
+            this.refreshMailboxIds = new long[size];
+            for(int i=0; i<size; i++) {
+                this.refreshMailboxes[i] = refreshMailboxes[i];
+                this.refreshMailboxIds[i] = refreshMailboxes[i].getUniqueId();
+            }
+            changeType |= CHANGE_TYPE_REFRESH;
+        }
     }
 
     /**
@@ -170,6 +234,14 @@ public class ImapConfig extends AccountConfig {
      */
     public void writeConfigItems(SerializableHashtable table) {
         super.writeConfigItems(table);
+        
+        if(refreshMailboxIds != null) {
+            table.put("account_imap_refreshMailboxIds", refreshMailboxIds);
+        }
+        else {
+            table.put("account_imap_refreshMailboxIds", new long[0]);
+        }
+        
         if(folderPrefix != null) {
             table.put("account_imap_folderPrefix", folderPrefix);
         }
@@ -188,6 +260,11 @@ public class ImapConfig extends AccountConfig {
         super.readConfigItems(table);
         Object value;
 
+        value = table.get("account_imap_refreshMailboxIds");
+        if(value instanceof long[]) {
+            refreshMailboxIds = (long[])value;
+        }
+        
         value = table.get("account_imap_folderPrefix");
         if(value instanceof String) {
             folderPrefix = (String)value;

@@ -90,6 +90,7 @@ public class NetworkMailStoreTest extends TestCase {
 			public void folderTreeUpdated(FolderEvent e) {
 				eventFolderTreeUpdated = e;
 			}
+            public void refreshRequired(MailStoreEvent e) { }
     	});
     	
     	instance.addFolderListener(new FolderListener() {

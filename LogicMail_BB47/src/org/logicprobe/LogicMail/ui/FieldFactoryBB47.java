@@ -43,12 +43,12 @@ public class FieldFactoryBB47 extends FieldFactoryBB46 {
         oldFieldFactory = new FieldFactoryBB45();
     }
 
-    public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {
+    public TreeField getScreenTreeField(TreeFieldCallback callback, boolean navigation, long style) {
         if(hasTouchscreen) {
-            return new TouchScreenTreeField(callback, style);
+            return new TouchScreenTreeField(callback, navigation, style);
         }
         else {
-            return oldFieldFactory.getScreenTreeField(callback, style);
+            return oldFieldFactory.getScreenTreeField(callback, navigation, style);
         }
     }
 }

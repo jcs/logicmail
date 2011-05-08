@@ -59,6 +59,7 @@ public class SerializableHashtable extends Hashtable implements Serializable {
     final private static int TYPE_FLOAT   = 6;
     final private static int TYPE_INT     = 7;
     final private static int TYPE_LONG    = 8;
+    final private static int TYPE_LONG_ARRAY   = 108;
     final private static int TYPE_SHORT   = 9;
     final private static int TYPE_DATE    = 10;
 
@@ -137,6 +138,14 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             output.writeInt(TYPE_LONG);
             output.writeLong(((Long)item).longValue());
         }
+        else if(item instanceof long[]) {
+            output.writeInt(TYPE_LONG_ARRAY);
+            long[] longArray = (long[])item;
+            output.writeInt(longArray.length);
+            for(int i = 0; i < longArray.length; i++) {
+                output.writeLong(longArray[i]);
+            }
+        }
         else if(item instanceof Short) {
             output.writeInt(TYPE_SHORT);
             output.writeShort(((Short)item).shortValue());
@@ -183,6 +192,13 @@ public class SerializableHashtable extends Hashtable implements Serializable {
             return new Integer(input.readInt());
         case TYPE_LONG:
             return new Long(input.readLong());
+        case TYPE_LONG_ARRAY:
+            len = input.readInt();
+            long[] longArray = new long[len];
+            for(int i=0; i<len; i++) {
+                longArray[i] = input.readLong();
+            }
+            return longArray;
         case TYPE_SHORT:
             return new Short(input.readShort());
         case TYPE_DATE:

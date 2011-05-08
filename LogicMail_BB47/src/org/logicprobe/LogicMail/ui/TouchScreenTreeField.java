@@ -48,10 +48,19 @@ public class TouchScreenTreeField extends TreeField {
 	private static final Bitmap chevronIconHighlighted = Bitmap.getBitmapResource("chevron_right_white_15x22.png");
 	private static final int chevronIconWidth = chevronIcon.getWidth();
 	private static final int chevronIconHeight = chevronIcon.getHeight();
-	
-	public TouchScreenTreeField(TreeFieldCallback callback, long style) {
+	private final boolean navigation;
+
+	/**
+	 * Instantiates a new touch-screen <code>TreeField</code>.
+	 *
+	 * @param callback Drawing callback object for this field.
+	 * @param navigation <code>true</code>, if this field is for navigation purposes
+	 * @param style Field styles
+	 */
+	public TouchScreenTreeField(TreeFieldCallback callback, boolean navigation, long style) {
 		super(new TreeFieldCallbackProxy(), style);
 		this.callback = callback;
+		this.navigation = navigation;
 	}
 	
 	private static class TreeFieldCallbackProxy implements TreeFieldCallback {
@@ -65,7 +74,7 @@ public class TouchScreenTreeField extends TreeField {
 			TreeField treeField, Graphics graphics,
 			int node, int y, int width, int indent) {
 		int drawWidth = width;
-		if(isNodeSelectable(node)) {
+		if(navigation && isNodeSelectable(node)) {
 			int rowWidth = width + indent;
 			int xPos = rowWidth - (chevronIconWidth * 2);
 			int yPos = y + (graphics.getFont().getHeight() / 2) - 11;
@@ -96,18 +105,21 @@ public class TouchScreenTreeField extends TreeField {
 	 * @see net.rim.device.api.ui.Field#touchEvent(net.rim.device.api.ui.TouchEvent)
 	 */
 	protected boolean touchEvent(TouchEvent message) {
-		if(message.getEvent() == TouchEvent.CLICK) {
+	    int event = message.getEvent();
+	    
+		if(event == TouchEvent.CLICK || event == TouchEvent.UNCLICK) {
 			int x = message.getX(1);
 			int y = message.getY(1);
-			if(x < 0 || x >= this.getWidth() || y < 0 || y >= this.getWidth()) {
+			if(x < 0 || x >= this.getWidth() || y < 0 || y >= this.getHeight()) {
 				return super.touchEvent(message);
 			}
 			else {
-				if(x < (this.getWidth() - this.getRowHeight() * 2)) {
+				if(x < (this.getWidth() >>> 1)) {
 					int node = this.getCurrentNode();
 					if(node != -1 && getFirstChild(node) != -1) {
 						// This seems to cause the node to automatically toggle
-						return true;
+					    if(event == TouchEvent.CLICK) { return true; }
+					    else { return super.touchEvent(message); }
 					}
 					else {
 						return false;

@@ -36,6 +36,7 @@ import org.logicprobe.LogicMail.mail.FolderListener;
 import org.logicprobe.LogicMail.mail.FolderMessageIndexMapEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreEvent;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
@@ -85,6 +86,9 @@ public abstract class AccountNode implements Node {
             public void folderTreeUpdated(FolderEvent e) {
                 mailStoreFolderTreeUpdated(e);
             }
+            public void refreshRequired(MailStoreEvent e) {
+                mailStoreRefreshRequired(e);
+            }
         });
 
         this.mailStoreServices.addFolderListener(new FolderListener() {
@@ -123,9 +127,14 @@ public abstract class AccountNode implements Node {
             }
         });
     }
+
+    protected MailboxNode getMailboxNodeForFolder(FolderTreeItem folder) {
+        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(folder.getPath());
+        return mailboxNode;
+    }
     
     private MailboxNode getMailboxNodeForEvent(FolderEvent e) {
-        MailboxNode mailboxNode = (MailboxNode) pathMailboxMap.get(e.getFolder().getPath());
+        MailboxNode mailboxNode = getMailboxNodeForFolder(e.getFolder());
         return mailboxNode;
     }
     
@@ -358,7 +367,11 @@ public abstract class AccountNode implements Node {
         save();
         fireAccountStatusChanged(AccountNodeEvent.TYPE_MAILBOX_TREE);
     }
-
+    
+    protected void mailStoreRefreshRequired(MailStoreEvent e) {
+        // Default empty implementation
+    }
+    
     private void populateFlatMailboxes(Vector flatMailboxes,
         MailboxNode currentMailbox) {
         flatMailboxes.addElement(currentMailbox);

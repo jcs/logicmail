@@ -42,7 +42,7 @@ public class FieldFactoryBB45 extends FieldFactory {
 	public FieldFactoryBB45() {
 	}
 
-	public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {
+	public TreeField getScreenTreeField(TreeFieldCallback callback, boolean navigation, long style) {
 		TreeField treeField = new TreeField(callback, style);
 		treeField.setDefaultExpanded(true);
 		treeField.setIndentWidth(20);

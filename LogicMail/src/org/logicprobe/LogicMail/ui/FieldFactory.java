@@ -60,7 +60,11 @@ public abstract class FieldFactory {
         return instance;
     }
 
-    public abstract TreeField getScreenTreeField(TreeFieldCallback callback, long style);
+    public TreeField getScreenTreeField(TreeFieldCallback callback, long style) {
+        return getScreenTreeField(callback, true, style);
+    }
+    
+    public abstract TreeField getScreenTreeField(TreeFieldCallback callback, boolean navigation, long style);
     
     public abstract BorderedFieldManager getBorderedFieldManager();
     

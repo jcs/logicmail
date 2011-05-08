@@ -87,6 +87,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private TimerTask idleTimerTask;
     private boolean idleTimeout;
     private boolean idleRecentMessagesRequested;
+    private long idleStartTime;
     
     /**
      * Listener to handle asynchronous notifications from the mail client.
@@ -254,6 +255,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      * Handles the start of the IDLE state.
      */
     protected void handleBeginIdle() throws IOException, MailException {
+        idleStartTime = System.currentTimeMillis();
         FolderTreeItem inboxFolder = incomingClient.getInboxFolder();
         FolderTreeItem activeFolder = incomingClient.getActiveFolder();
         
@@ -322,6 +324,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         && !inboxFolder.getPath().equalsIgnoreCase(activeFolder.getPath())) {
                     handleSetActiveFolder(inboxFolder);
                 }
+            }
+            MailConnectionHandlerListener listener = getListener();
+            if(listener != null) {
+                listener.mailConnectionIdleTimeout(System.currentTimeMillis() - idleStartTime);
             }
         }
     }

@@ -32,8 +32,10 @@ package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
+import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreEvent;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -163,6 +165,17 @@ public class NetworkAccountNode extends AccountNode {
      */
     public boolean hasIdentity() {
         return this.accountConfig.getIdentityConfig() != null;
+    }
+    
+    /**
+     * Gets the "Inbox" mailbox, if known.
+     *
+     * @return The Inbox mailbox
+     */
+    public MailboxNode getInboxMailbox() {
+        FolderTreeItem folder = ((NetworkMailStoreServices)this.mailStoreServices).getInboxFolder();
+        if(folder == null) { return null; }
+        return getMailboxNodeForFolder(folder);
     }
     
     /**
@@ -312,5 +325,35 @@ public class NetworkAccountNode extends AccountNode {
         connectionCache.save();
         
         super.removeSavedData();
+    }
+
+    protected void mailStoreRefreshRequired(MailStoreEvent e) {
+        triggerAutomaticRefresh();
+    }
+    
+    /**
+     * Trigger an automatic refresh of the account's contents, based on the
+     * account configuration.  This method can be called on application startup,
+     * or due to an idle timeout, but is never called as a direct result of
+     * user action.
+     */
+    public void triggerAutomaticRefresh() {
+        // All accounts have an INBOX that can be refreshed
+        MailboxNode inboxMailbox = this.getInboxMailbox();
+        if(inboxMailbox != null) {
+            inboxMailbox.refreshMessages();
+        }
+        
+        // IMAP accounts can optionally configure additional mailboxes for refresh
+        if(accountConfig instanceof ImapConfig) {
+            MailboxNode[] refreshMailboxes = ((ImapConfig)accountConfig).getRefreshMailboxes();
+            for(int i=0; i<refreshMailboxes.length; i++) {
+                if(refreshMailboxes[i] == null
+                        || refreshMailboxes[i].getUniqueId() == inboxMailbox.getUniqueId()) {
+                    continue;
+                }
+                refreshMailboxes[i].refreshMessages();
+            }
+        }
     }
 }
