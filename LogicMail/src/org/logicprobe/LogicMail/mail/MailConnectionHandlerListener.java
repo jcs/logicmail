@@ -44,7 +44,7 @@ public interface MailConnectionHandlerListener {
      * @param tag Tag reference to pass along with the request
      * @param isFinal true if this is the final or only callback of a request
 	 */
-	public void mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal);
+	void mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal);
 	
     /**
      * Indicates that a request has failed.
@@ -54,12 +54,19 @@ public interface MailConnectionHandlerListener {
      * @param exception The exception that caused the request to fail, if applicable.
      * @param isFinal true if the connection will be closed, false if it is being reopened
      */
-    public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal);
+    void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal);
     
     /**
      * Indicates that the connection has left the idle state due to a timeout.
      * 
      * @param idleDuration The elapsed time, in milliseconds, that the connection has been idle.
      */
-    public void mailConnectionIdleTimeout(long idleDuration);
+    void mailConnectionIdleTimeout(long idleDuration);
+    
+    /**
+     * Indicates that the connection has disconnected due to a timeout.
+     *
+     * @param idleDuration The elapsed time, in milliseconds, that the connection has been idle.
+     */
+    void mailConnectionDisconnectTimeout(long idleDuration);
 }

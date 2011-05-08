@@ -61,6 +61,7 @@ public abstract class AbstractMailConnectionHandler {
 	private static final int RETRY_LIMIT = 2;
 	
     public static final int REQUEST_DISCONNECT = 1;
+    public static final int REQUEST_DISCONNECT_TIMEOUT = 2;
     
 	// The various states of a mail connection
 	public static final int STATE_CLOSED   = 0;
@@ -582,6 +583,8 @@ public abstract class AbstractMailConnectionHandler {
 			// Only display the error if we are not going to retry
 	        showError(e.getMessage());
 	        isFinal = true;
+	        
+	        //TODO: Deal with triggering the polling timer, and only showing an error in specific situations
 		}
 		else {
 			retryCount++;
@@ -618,19 +621,30 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	private void handleMailException(MailException e) {
 	    boolean disconnect = (e.getCause() == REQUEST_DISCONNECT);
+	    boolean disconnectTimeout = (e.getCause() == REQUEST_DISCONNECT_TIMEOUT);
 	    
-	    if(!disconnect) { 
+	    if(!disconnect && !disconnectTimeout) { 
 	        EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(), EventLogger.ERROR);
 	    }
 	    
-		if(e.isFatal()) {
+        if(disconnectTimeout) {
+            // In this case, we behave like a fatal disconnect only if the
+            // request queue is empty.
+            synchronized (requestQueue) {
+                if(requestQueue.element() == null) {
+                    setConnectionState(STATE_CLOSING);
+                }
+            }
+        }
+        else if(e.isFatal()) {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
 				setConnectionState(STATE_CLOSING);
 				clearRequestQueue(e);
 			}
 		}
-		if(!disconnect) {
+		
+		if(!disconnect && !disconnectTimeout) {
 		    showError(e.getMessage());
 		}
 

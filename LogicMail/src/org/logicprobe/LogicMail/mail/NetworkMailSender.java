@@ -54,6 +54,7 @@ public class NetworkMailSender extends AbstractMailSender {
                 connectionHandler_mailConnectionRequestFailed(type, tag, exception, isFinal);
             }
             public void mailConnectionIdleTimeout(long idleDuration) { }
+            public void mailConnectionDisconnectTimeout(long idleDuration) { }
 		});
 		this.connectionHandler.start();
 	}

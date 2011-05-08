@@ -83,6 +83,13 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      */
     private static final int NOOP_TIMEOUT = 300000;
     
+    /**
+     * Maximum amount of time to keep a connection open on a mail store that
+     * uses locked folders.  Currently set to 4 minutes, so it is slightly
+     * shorter than the smallest configurable polling frequency.
+     */
+    private static final int LOCKED_TIMEOUT = 240000;
+    
     private final Timer idleTimer = new Timer();
     private TimerTask idleTimerTask;
     private boolean idleTimeout;
@@ -126,6 +133,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         switch(type) {
         case REQUEST_DISCONNECT:
             handleRequestDisconnect(tag);
+            break;
+        case REQUEST_DISCONNECT_TIMEOUT:
+            handleRequestDisconnectTimeout(tag);
             break;
         case REQUEST_FOLDER_TREE:
             handleRequestFolderTree(tag);
@@ -271,29 +281,32 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         this.previousActiveFolder = activeFolder;
         
         if(incomingClient.hasIdle()) {
-            idleRecentMessagesRequested = false;
-            idleTimeout = false;
-            idleTimerTask = new TimerTask() {
-                public void run() {
-                    handleIdleModeTimeout();
-                }
-            };
-            idleTimer.schedule(idleTimerTask, IDLE_TIMEOUT);
-            
+            startIdleTimer(IDLE_TIMEOUT);
             incomingClient.idleModeBegin();
-
         }
         else if(!incomingClient.hasLockedFolders()) {
             // In this case, we do a NOOP-based polling
-            idleRecentMessagesRequested = false;
-            idleTimeout = false;
-            idleTimerTask = new TimerTask() {
-                public void run() {
-                    handleIdleModeTimeout();
-                }
-            };
-            idleTimer.schedule(idleTimerTask, NOOP_TIMEOUT);
+            startIdleTimer(NOOP_TIMEOUT);
         }
+        else {
+            // If we got here, that means we are on a mail store that locks
+            // folders while the client is connected. In this case, the only
+            // reason to keep the connection open is to improve the user
+            // experience.  However, we should still eventually timeout and
+            // disconnect.
+            startIdleTimer(LOCKED_TIMEOUT);
+        }
+    }
+
+    private void startIdleTimer(int timeout) {
+        idleRecentMessagesRequested = false;
+        idleTimeout = false;
+        idleTimerTask = new TimerTask() {
+            public void run() {
+                handleIdleModeTimeout();
+            }
+        };
+        idleTimer.schedule(idleTimerTask, timeout);
     }
 
     protected void handleIdleModeTimeout() {
@@ -314,20 +327,28 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
         
         if(idleTimeout) {
-            incomingClient.noop();
-            if(!idleRecentMessagesRequested) {
-                // If we had a non-INBOX folder selected, then an idle timeout
-                // should switch the active folder back to the INBOX.
-                FolderTreeItem inboxFolder = incomingClient.getInboxFolder();
-                FolderTreeItem activeFolder = incomingClient.getActiveFolder();
-                if(inboxFolder != null && activeFolder != null
-                        && !inboxFolder.getPath().equalsIgnoreCase(activeFolder.getPath())) {
-                    handleSetActiveFolder(inboxFolder);
-                }
+            if(incomingClient.hasLockedFolders()) {
+                // An idle timeout on a mail store with locked folders should
+                // be handled by promptly disconnecting.  That way, any further
+                // data requests will cause a reconnect and get fresh data.
+                addRequest(IncomingMailConnectionHandler.REQUEST_DISCONNECT_TIMEOUT, new Object[] { }, null);
             }
-            MailConnectionHandlerListener listener = getListener();
-            if(listener != null) {
-                listener.mailConnectionIdleTimeout(System.currentTimeMillis() - idleStartTime);
+            else {
+                incomingClient.noop();
+                if(!idleRecentMessagesRequested) {
+                    // If we had a non-INBOX folder selected, then an idle timeout
+                    // should switch the active folder back to the INBOX.
+                    FolderTreeItem inboxFolder = incomingClient.getInboxFolder();
+                    FolderTreeItem activeFolder = incomingClient.getActiveFolder();
+                    if(inboxFolder != null && activeFolder != null
+                            && !inboxFolder.getPath().equalsIgnoreCase(activeFolder.getPath())) {
+                        handleSetActiveFolder(inboxFolder);
+                    }
+                }
+                MailConnectionHandlerListener listener = getListener();
+                if(listener != null) {
+                    listener.mailConnectionIdleTimeout(System.currentTimeMillis() - idleStartTime);
+                }
             }
         }
     }
@@ -335,6 +356,17 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private void handleRequestDisconnect(Object tag) throws IOException, MailException {
         this.previousActiveFolder = null;
         throw new MailException("", true, REQUEST_DISCONNECT);
+    }
+    
+    private void handleRequestDisconnectTimeout(Object tag) throws IOException, MailException {
+        this.previousActiveFolder = null;
+        
+        MailConnectionHandlerListener listener = getListener();
+        if(listener != null) {
+            listener.mailConnectionDisconnectTimeout(System.currentTimeMillis() - idleStartTime);
+        }
+        
+        throw new MailException("", true, REQUEST_DISCONNECT_TIMEOUT);
     }
 
     private void handleRequestFolderTree(Object tag) throws IOException, MailException {
