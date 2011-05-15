@@ -165,7 +165,7 @@ public class NetworkMailStoreTest extends TestCase {
                 new Object[] { null }).ignoreArgument(0).setReturnValue(new FolderTreeItem("INBOX", "INBOX", "."));
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
         
-    	instance.requestFolderTree();
+    	instance.processRequest(instance.createFolderTreeRequest());
     	instance.shutdown(true);
     	
     	// Assert that both open and close were really called, and that
@@ -184,7 +184,7 @@ public class NetworkMailStoreTest extends TestCase {
                 new Object[] { null }).ignoreArgument(0).setReturnValue(new FolderTreeItem("INBOX", "INBOX", "."));
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
         
-    	instance.requestFolderTree();
+        instance.processRequest(instance.createFolderTreeRequest());
     	instance.shutdown(true);
     	
     	// Assert that both open and close were really called, and that
@@ -200,7 +200,7 @@ public class NetworkMailStoreTest extends TestCase {
     	
     	// Restart the thread and try again
     	instance.restart();
-    	instance.requestFolderTree();
+    	instance.processRequest(instance.createFolderTreeRequest());
     	instance.shutdown(true);
     	
     	assertNotNull("restart request", eventFolderTreeUpdated);
@@ -215,7 +215,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
         
     	TestCallback callback = new TestCallback();
-    	instance.requestFolderTree(callback);
+    	instance.processRequest(instance.createFolderTreeRequest().setRequestCallback(callback));
     	instance.shutdown(true);
 
     	assertTrue(callback.completed);
@@ -244,7 +244,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
     	
         TestCallback callback = new TestCallback();
-    	instance.requestFolderStatus(folderArray, callback);
+        instance.processRequest(instance.createFolderStatusRequest(folderArray).setRequestCallback(callback));
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -282,7 +282,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
     	
     	TestCallback callback = new TestCallback();
-    	instance.requestFolderMessagesRange(inboxFolder, token, 5, callback);
+    	instance.processRequest(instance.createFolderMessagesRangeRequest(inboxFolder, token, 5).setRequestCallback(callback));
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -341,7 +341,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
     	
     	TestCallback callback = new TestCallback();
-    	instance.requestMessage(messageToken, true, callback);
+    	instance.processRequest(instance.createMessageRequest(messageToken, true).setRequestCallback(callback));
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -378,7 +378,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
     	
     	TestCallback callback = new TestCallback();
-    	instance.requestMessageDelete(messageToken, callback);
+    	instance.processRequest(instance.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.DELETED), true).setRequestCallback(callback));
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -412,7 +412,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setExpectation(MockIncomingMailClient.MTHD_CLOSE);
     	
     	TestCallback callback = new TestCallback();
-    	instance.requestMessageUndelete(messageToken, callback);
+    	instance.processRequest(instance.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.DELETED), false).setRequestCallback(callback));
     	instance.shutdown(true);
     	
         assertTrue(callback.completed);
@@ -457,10 +457,10 @@ public class NetworkMailStoreTest extends TestCase {
     	
     	// Do a whole batch of non-conflicting requests to make
     	// sure the queue is working correctly.
-    	instance.requestFolderTree();
-    	instance.requestFolderStatus(folderArray);
-    	instance.requestFolderMessagesRange(inboxFolder, messageToken, 5);
-    	instance.requestMessage(messageToken1, true);
+        instance.processRequest(instance.createFolderTreeRequest());
+        instance.processRequest(instance.createFolderStatusRequest(folderArray));
+        instance.processRequest(instance.createFolderMessagesRangeRequest(inboxFolder, messageToken, 5));
+        instance.processRequest(instance.createMessageRequest(messageToken1, true));
     	instance.shutdown(true);
     	
     	// We know the requests work individually, so lets just
@@ -504,11 +504,11 @@ public class NetworkMailStoreTest extends TestCase {
 	    public boolean failed;
 	    public Throwable exception;
 	    
-        public void mailStoreRequestComplete() {
+        public void mailStoreRequestComplete(MailStoreRequest request) {
             this.completed = true;
         }
 
-        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
             this.failed = true;
             this.exception = exception;
         }

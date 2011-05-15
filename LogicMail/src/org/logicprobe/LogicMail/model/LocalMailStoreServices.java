@@ -44,7 +44,7 @@ public class LocalMailStoreServices extends MailStoreServices {
     }
 
     public void requestFolderRefresh(FolderTreeItem folderTreeItem) {
-        mailStore.requestFolderMessagesRecent(folderTreeItem);
+        mailStore.processRequest(mailStore.createFolderMessagesRecentRequest(folderTreeItem));
     }
     
     public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) {
@@ -59,7 +59,7 @@ public class LocalMailStoreServices extends MailStoreServices {
             return false;
         }
         else {
-            mailStore.requestMessage(messageToken, true);
+            mailStore.processRequest(mailStore.createMessageRequest(messageToken, true));
             return true;
         }
     }

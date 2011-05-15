@@ -40,16 +40,21 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.EventListenerList;
 
 /**
- * Provides the base implementation for the asynchronous
- * mail store infrastructure.
+ * Provides the base implementation for the asynchronous mail store
+ * infrastructure.
  * 
- * <p>Most methods of this class that could talk to a server
- * are designed to return immediately.  The results should
- * be delivered later via an event sent to the appropriate
- * listener.  Since servers can give notifications independent
- * from specific requests, and since commands can fail,
- * clients should not expect an exact match between requests
- * and events.
+ * <p>
+ * This class is designed to serve as both a factory for requests, and an
+ * acceptor of those requests.  To perform any mail store action, first call
+ * the <code>createXXXXRequest()</code> method to get a request object.
+ * Then pass that object to the {@link #processRequest(MailStoreRequest)}
+ * method to have it queued for processing.  The results of a particular
+ * request will be delivered later via an event sent to the appropriate
+ * listener.  Since servers can give notifications independent from specific
+ * requests, and since commands can fail, clients should not expect an exact
+ * match between requests and events.  Separate request callback methods exist
+ * to fulfill that function.
+ * </p>
  */
 public abstract class AbstractMailStore {
     private final EventListenerList listenerList = new EventListenerList();
@@ -128,20 +133,7 @@ public abstract class AbstractMailStore {
     public abstract boolean hasExpunge();
 
     /**
-     * Requests the regeneration of the mail folder tree.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MailStoreListener#folderTreeUpdated(FolderEvent)}.
-     * 
-     * <p>This can be an expensive operation, so it should
-     * be called sparingly on non-local mail stores.
-     * 
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestFolderTree(MailStoreRequestCallback callback);
-
-    /**
-     * Requests the regeneration of the mail folder tree.
+     * Creates a request for the regeneration of the mail folder tree.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link MailStoreListener#folderTreeUpdated(FolderEvent)}.
@@ -149,58 +141,32 @@ public abstract class AbstractMailStore {
      * <p>This can be an expensive operation, so it should
      * be called sparingly on non-local mail stores.
      */
-    public void requestFolderTree() {
-        requestFolderTree(null);
-    }
+    public abstract FolderTreeRequest createFolderTreeRequest();
 
     /**
-     * Requests that a folder be expunged of deleted messages.
+     * Creates a request for a folder be expunged of deleted messages.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link FolderListener#folderExpunged(FolderEvent)}.
      * 
      * @param folder The folder to expunge
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestFolderExpunge(FolderTreeItem folder, MailStoreRequestCallback callback);
+    public abstract FolderExpungeRequest createFolderExpungeRequest(FolderTreeItem folder);
 
     /**
-     * Requests that a folder be expunged of deleted messages.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderExpunged(FolderEvent)}.
-     * 
-     * @param folder The folder to expunge
-     */
-    public void requestFolderExpunge(FolderTreeItem folder) {
-        requestFolderExpunge(folder, null);
-    }
-
-    /**
-     * Requests the current message counts of a group of folders.
+     * Creates a request for the current message counts of a group of folders.
      * 
      * <p>Successful completion is indicated by calls to
      * {@link FolderListener#folderStatusChanged(FolderEvent)}.
      * 
      * @param folders The folder tree items to refresh.
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback);
+    public abstract FolderStatusRequest createFolderStatusRequest(FolderTreeItem[] folders);
 
     /**
-     * Requests the current message counts of a group of folders.
-     * 
-     * <p>Successful completion is indicated by calls to
-     * {@link FolderListener#folderStatusChanged(FolderEvent)}.
-     * 
-     * @param folders The folder tree items to refresh.
-     */
-    public void requestFolderStatus(FolderTreeItem[] folders) {
-        requestFolderStatus(folders, null);
-    }
-
-    /**
-     * Requests the message listing from a particular folder.
+     * Creates a request for the message listing from a particular folder.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
@@ -208,26 +174,12 @@ public abstract class AbstractMailStore {
      * @param folder The folder to request a message listing for.
      * @param firstToken The token for the message that precedes the requested range.
      * @param increment The maximum size of the requested range.
-     * @param callback The callback to receive success or failure notifications about the request.
+     * @return the request object
      */
-    public abstract void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback);
+    public abstract FolderMessagesRequest createFolderMessagesRangeRequest(FolderTreeItem folder, MessageToken firstToken, int increment);
 
     /**
-     * Requests the message listing from a particular folder.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * 
-     * @param folder The folder to request a message listing for.
-     * @param firstToken The token for the message that precedes the requested range.
-     * @param increment The maximum size of the requested range.
-     */
-    public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment) {
-        requestFolderMessagesRange(folder, firstToken, increment, null);
-    }
-
-    /**
-     * Requests the message listing from a particular folder.
+     * Creates a request for the message listing from a particular folder.
      * All message tokens must refer to messages that exist within the provided
      * folder item, or the results may be unexpected.
      * 
@@ -237,12 +189,12 @@ public abstract class AbstractMailStore {
      * @param folder The folder to request a message listing for.
      * @param messageTokens The set of tokens for the messages to get headers for.
      * @param flagsOnly If true, only tokens and flags will be fetched
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback);
+    public abstract FolderMessagesRequest createFolderMessagesSetRequest(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly);
 
     /**
-     * Requests the message listing from a particular folder.
+     * Creates a request for the message listing from a particular folder.
      * All message tokens must refer to messages that exist within the provided
      * folder item, or the results may be unexpected.
      * 
@@ -251,70 +203,26 @@ public abstract class AbstractMailStore {
      * 
      * @param folder The folder to request a message listing for.
      * @param messageTokens The set of tokens for the messages to get headers for.
-     * @param flagsOnly If true, only tokens and flags will be fetched
+     * @return the request object
      */
-    public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly) {
-        requestFolderMessagesSet(folder, messageTokens, flagsOnly, null);
-    }
-    
-    /**
-     * Requests the message listing from a particular folder.
-     * All message tokens must refer to messages that exist within the provided
-     * folder item, or the results may be unexpected.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * 
-     * @param folder The folder to request a message listing for.
-     * @param messageTokens The set of tokens for the messages to get headers for.
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, MailStoreRequestCallback callback) {
-        requestFolderMessagesSet(folder, messageTokens, false, callback);
+    public FolderMessagesRequest createFolderMessagesSetRequest(FolderTreeItem folder, MessageToken[] messageTokens) {
+        return createFolderMessagesSetRequest(folder, messageTokens, false);
     }
 
     /**
-     * Requests the message listing from a particular folder.
-     * All message tokens must refer to messages that exist within the provided
-     * folder item, or the results may be unexpected.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * 
-     * @param folder The folder to request a message listing for.
-     * @param messageTokens The set of tokens for the messages to get headers for.
-     */
-    public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens) {
-        requestFolderMessagesSet(folder, messageTokens, false, null);
-    }
-    
-    /**
-     * Requests the message listing from a particular folder.
+     * Creates a request for the message listing from a particular folder.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
      * @param messageIndices The set of index values for the messages to get headers for.
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback);
+    public abstract FolderMessagesRequest createFolderMessagesSetByIndexRequest(FolderTreeItem folder, int[] messageIndices);
 
     /**
-     * Requests the message listing from a particular folder.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * 
-     * @param folder The folder to request a message listing for.
-     * @param messageIndices The set of index values for the messages to get headers for.
-     */
-    public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices) {
-        requestFolderMessagesSet(folder, messageIndices, null);
-    }
-
-    /**
-     * Requests the recent message listing from a particular folder.
+     * Creates a request for the recent message listing from a particular folder.
      * 
      * <p>
      * Successful completion is indicated by a call to
@@ -326,80 +234,37 @@ public abstract class AbstractMailStore {
      * 
      * @param folder The folder to request a message listing for.
      * @param flagsOnly If true, only tokens and flags will be fetched
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback);
+    public abstract FolderMessagesRequest createFolderMessagesRecentRequest(FolderTreeItem folder, boolean flagsOnly);
 
     /**
-     * Requests the recent message listing from a particular folder.
-     * 
-     * <p>
-     * Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * If <tt>flagsOnly</tt> is set to <b>true</b>, then the envelope and
-     * structure fields of the returned <tt>FolderMessage</tt> objects
-     * will be set to <b>null</b>.
-     * </p>
-     * 
-     * @param folder The folder to request a message listing for.
-     * @param flagsOnly If true, only tokens and flags will be fetched
-     */
-    public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly) {
-        requestFolderMessagesRecent(folder, flagsOnly, null);
-    }
-
-    /**
-     * Requests the recent message listing from a particular folder.
+     * Creates a request for the recent message listing from a particular folder.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
      * 
      * @param folder The folder to request a message listing for.
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public void requestFolderMessagesRecent(FolderTreeItem folder, MailStoreRequestCallback callback) {
-        requestFolderMessagesRecent(folder, false, callback);
+    public FolderMessagesRequest createFolderMessagesRecentRequest(FolderTreeItem folder) {
+        return createFolderMessagesRecentRequest(folder, false);
     }
 
     /**
-     * Requests the recent message listing from a particular folder.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * 
-     * @param folder The folder to request a message listing for.
-     */
-    public void requestFolderMessagesRecent(FolderTreeItem folder) {
-        requestFolderMessagesRecent(folder, false, null);
-    }
-
-    /**
-     * Requests a particular message to be loaded.
+     * Creates a request for a particular message to be loaded.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link MessageListener#messageAvailable(MessageEvent)}.
      * 
      * @param messageToken The token used to identify the message
      * @param useLimits True, if user-configured download limits should be used
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback);
+    public abstract MessageRequest createMessageRequest(MessageToken messageToken, boolean useLimits);
 
     /**
-     * Requests a particular message to be loaded.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageAvailable(MessageEvent)}.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param useLimits True, if user-configured download limits should be used
-     */
-    public void requestMessage(MessageToken messageToken, boolean useLimits) {
-        requestMessage(messageToken, useLimits, null);
-    }
-
-    /**
-     * Requests a particular message part to be loaded.
+     * Creates a request for a particular message part to be loaded.
      * 
      * <p>Successful completion is indicated by a call to
      * {@link MessageListener#messageAvailable(MessageEvent)}.
@@ -410,207 +275,27 @@ public abstract class AbstractMailStore {
      * 
      * @param messageToken The token used to identify the message
      * @param messagePart The part of the message to load
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback);
+    public abstract MessageRequest createMessagePartsRequest(MessageToken messageToken, MimeMessagePart[] messageParts);
 
     /**
-     * Requests a particular message part to be loaded.
+     * Creates a request for a message flag change.
+     * With the exception of <code>DELETED</code>, all flag changes require the
+     * underlying protocol to support message flags.
      * 
      * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageAvailable(MessageEvent)}.
-     * 
-     * <p>If <tt>hasMessageParts()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
      * 
      * @param messageToken The token used to identify the message
-     * @param messagePart The part of the message to load
+     * @param messageFlags The flags to be added or removed
+     * @param addOrRemove true to add the flags, false to remove them
+     * @return the request object
      */
-    public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) {
-        requestMessageParts(messageToken, messageParts, null);
-    }
+    public abstract MessageFlagChangeRequest createMessageFlagChangeRequest(MessageToken messageToken, MessageFlags messageFlags, boolean addOrRemove);
 
     /**
-     * Requests a particular message to be deleted.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback);
-
-    /**
-     * Requests a particular message to be deleted.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * @param messageToken The token used to identify the message
-     */
-    public void requestMessageDelete(MessageToken messageToken) {
-        requestMessageDelete(messageToken, null);
-    }
-
-    /**
-     * Requests a particular message to be undeleted.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasUndelete()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback);
-
-    /**
-     * Requests a particular message to be undeleted.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasUndelete()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     */
-    public void requestMessageUndelete(MessageToken messageToken) {
-        requestMessageUndelete(messageToken, null);
-    }
-
-    /**
-     * Requests a particular message to be marked as answered.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback);
-
-    /**
-     * Requests a particular message to be marked as answered.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     */
-    public void requestMessageAnswered(MessageToken messageToken) {
-        requestMessageAnswered(messageToken, null);
-    }
-
-    /**
-     * Requests a particular message to be marked as forwarded.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback);
-
-    /**
-     * Requests a particular message to be marked as forwarded.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     */
-    public void requestMessageForwarded(MessageToken messageToken) {
-        requestMessageForwarded(messageToken, null);
-    }
-    
-    /**
-     * Requests a particular message to be marked as seen.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback);
-
-    /**
-     * Requests a particular message to be marked as seen.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     */
-    public void requestMessageSeen(MessageToken messageToken) {
-        requestMessageSeen(messageToken, null);
-    }
-    
-    /**
-     * Requests a particular message to be marked as unseen.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     * @param callback The callback to receive success or failure notifications about the request
-     */
-    public abstract void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback);
-
-    /**
-     * Requests a particular message to be marked as unseen.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
-     * 
-     * <p>If <tt>hasFlags()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param messageToken The token used to identify the message
-     */
-    public void requestMessageUnseen(MessageToken messageToken) {
-        requestMessageUnseen(messageToken, null);
-    }
-    
-    /**
-     * Requests a message to be appended to a folder.
+     * Creates a request for a message to be appended to a folder.
      * 
      * <p>Unlike other methods, this method requires the raw source of a message
      * in order to add it.  This is because we are often trying to save an
@@ -626,34 +311,13 @@ public abstract class AbstractMailStore {
      * @param folder The folder to add the message to
      * @param rawMessage The raw source of the message to add
      * @param initialFlags The initial flags for the message
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback);
+    public abstract MessageAppendRequest createMessageAppendRequest(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags);
 
     /**
-     * Requests a message to be appended to a folder.
-     * 
-     * <p>Unlike other methods, this method requires the raw source of a message
-     * in order to add it.  This is because we are often trying to save an
-     * exact message that was returned by an operation such as sending mail.
-     * 
-     * <p>Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessagesAvailable(FolderMessagesEvent)}.
-     * 
-     * <p>If <tt>hasAppend()</tt> returns <tt>False</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * 
-     * @param folder The folder to add the message to
-     * @param rawMessage The raw source of the message to add
-     * @param initialFlags The initial flags for the message
-     */
-    public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
-        requestMessageAppend(folder, rawMessage, initialFlags, null);
-    }
-
-    /**
-     * Requests a message to be copied into a folder on the server-side.
+     * Creates a request for a message to be copied into a folder on the
+     * server-side.
      * 
      * <p>
      * If <tt>hasCopy()</tt> returns <tt>false</tt>,
@@ -668,31 +332,17 @@ public abstract class AbstractMailStore {
      * 
      * @param messageToken The token used to identify the message
      * @param destinationFolder The folder to copy the message into
-     * @param callback The callback to receive success or failure notifications about the request
+     * @return the request object
      */
-    public abstract void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, MailStoreRequestCallback callback);
+    public abstract MessageCopyRequest createMessageCopyRequest(MessageToken messageToken, FolderTreeItem destinationFolder);
 
     /**
-     * Requests a message to be copied into a folder on the server-side.
-     * 
-     * <p>
-     * If <tt>hasCopy()</tt> returns <tt>false</tt>,
-     * then this method should throw an
-     * <tt>UnsupportedOperationException</tt>.
-     * </p>
-     * 
-     * <p>
-     * Notification of successful completion is not directly provided,
-     * however the destination folder should contain the message if queried.
-     * </p>
-     * 
-     * @param messageToken The token used to identify the message
-     * @param destinationFolder The folder to copy the message into
+     * Submits the request to the mail store for processing.
+     *
+     * @param request the request to process
      */
-    public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder) {
-        requestMessageCopy(messageToken, destinationFolder, null);
-    }
-
+    public abstract void processRequest(MailStoreRequest request);
+    
     /**
      * Adds a <tt>MailStoreListener</tt> to the mail store.
      * 

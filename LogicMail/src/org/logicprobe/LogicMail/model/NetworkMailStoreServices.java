@@ -41,6 +41,7 @@ import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
@@ -270,12 +271,13 @@ public class NetworkMailStoreServices extends MailStoreServices {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         if(handler == null || !handler.isInitialRefreshComplete()) { return false; }
         
-        mailStore.requestMessage(messageToken, false, new MailStoreRequestCallback() {
-            public void mailStoreRequestComplete() { }
-            public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                messageRefreshFailed(messageToken, false);
-            }
-        });
+        mailStore.processRequest(mailStore.createMessageRequest(messageToken, false)
+                .setRequestCallback(new MailStoreRequestCallback() {
+                    public void mailStoreRequestComplete(MailStoreRequest request) { }
+                    public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                        messageRefreshFailed(messageToken, false);
+                    }
+                }));
         return true;
     }
 
@@ -327,17 +329,18 @@ public class NetworkMailStoreServices extends MailStoreServices {
             if(partsToFetch.size() > 0) {
                 MimeMessagePart[] partsArray = new MimeMessagePart[partsToFetch.size()];
                 partsToFetch.copyInto(partsArray);
-                mailStore.requestMessageParts(messageToken, partsArray, new MailStoreRequestCallback() {
-                    public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                        if(isFinal || cacheOnly) {
-                            messageRefreshFailed(messageToken, loadedItems > 0);
-                        }
-                        else {
-                            requestMessageRefresh(messageToken, partsToSkip);
-                        }
-                    }
-                });
+                mailStore.processRequest(mailStore.createMessagePartsRequest(messageToken, partsArray)
+                        .setRequestCallback(new MailStoreRequestCallback() {
+                            public void mailStoreRequestComplete(MailStoreRequest request) { }
+                            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                if(isFinal || cacheOnly) {
+                                    messageRefreshFailed(messageToken, loadedItems > 0);
+                                }
+                                else {
+                                    requestMessageRefresh(messageToken, partsToSkip);
+                                }
+                            }
+                        }));
             }
             else {
                 messageRefreshComplete(messageToken);
@@ -416,18 +419,19 @@ public class NetworkMailStoreServices extends MailStoreServices {
             if(!messageComplete
                     && mailStore.getAccountConfig() instanceof PopConfig
                     && previousMaxLines < ((PopConfig)mailStore.getAccountConfig()).getMaxMessageLines()) {
-                mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
-                    public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                        // In this specific case, a failure will cause us to
-                        // revert to cached data instead of giving up.
-                        if(loadedContent.length > 0) {
-                            fireMessageAvailable(messageToken, messageComplete, structure, loadedContent, null);
-                            FolderRequestHandler handler = getFolderRequestHandler(messageToken);
-                            handler.setFolderMessageSeenCacheOnly(messageToken);
-                        }
-                    }
-                });
+                mailStore.processRequest(mailStore.createMessageRequest(messageToken, true)
+                        .setRequestCallback(new MailStoreRequestCallback() {
+                            public void mailStoreRequestComplete(MailStoreRequest request) { }
+                            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                // In this specific case, a failure will cause us to
+                                // revert to cached data instead of giving up.
+                                if(loadedContent.length > 0) {
+                                    fireMessageAvailable(messageToken, messageComplete, structure, loadedContent, null);
+                                    FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+                                    handler.setFolderMessageSeenCacheOnly(messageToken);
+                                }
+                            }
+                        }));
             }
             else {
                 // Notify listeners that content was loaded
@@ -438,17 +442,18 @@ public class NetworkMailStoreServices extends MailStoreServices {
             }
         }
         else if(!cacheOnly) {
-            mailStore.requestMessage(messageToken, true, new MailStoreRequestCallback() {
-                public void mailStoreRequestComplete() { }
-                public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                    if(isFinal || cacheOnly) {
-                        messageRefreshFailed(messageToken, false);
-                    }
-                    else {
-                        requestMessageRefresh(messageToken, partsToSkip);
-                    }
-                }
-            });
+            mailStore.processRequest(mailStore.createMessageRequest(messageToken, true)
+                    .setRequestCallback(new MailStoreRequestCallback() {
+                        public void mailStoreRequestComplete(MailStoreRequest request) { }
+                        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                            if(isFinal || cacheOnly) {
+                                messageRefreshFailed(messageToken, false);
+                            }
+                            else {
+                                requestMessageRefresh(messageToken, partsToSkip);
+                            }
+                        }
+                    }));
         }
         else {
             messageRefreshComplete(messageToken);
@@ -491,7 +496,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             if(partsToFetch.size() > 0) {
                 MimeMessagePart[] partsArray = new MimeMessagePart[partsToFetch.size()];
                 partsToFetch.copyInto(partsArray);
-                mailStore.requestMessageParts(messageToken, partsArray);
+                mailStore.processRequest(mailStore.createMessagePartsRequest(messageToken, partsArray));
             }
         }}).start();
     }

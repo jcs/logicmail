@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,35 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Callback interface for mail store requests.
- */
-public interface MailStoreRequestCallback {
-    /**
-     * Invoked when the mail store request is completed.
-     * 
-     * @param request the request that completed
-     */
-    void mailStoreRequestComplete(MailStoreRequest request);
+import net.rim.device.api.i18n.ResourceBundle;
+
+import org.logicprobe.LogicMail.LogicMailResource;
+
+abstract class AbstractMailStoreRequest implements MailStoreRequest {
+    protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    private MailStoreRequestCallback requestCallback;
     
-    /**
-     * Invoked when the mail store request fails.
-     * 
-     * @param request the request that failed
-     * @param exception the exception that caused the request to fail, if applicable
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal);
+    public MailStoreRequest setRequestCallback(MailStoreRequestCallback requestCallback) {
+        this.requestCallback = requestCallback;
+        return this;
+    }
+    
+    public MailStoreRequestCallback getRequestCallback() {
+        return requestCallback;
+    }
+    
+    public void fireMailStoreRequestComplete() {
+        if(requestCallback != null) {
+            requestCallback.mailStoreRequestComplete(this);
+        }
+    }
+    
+    public void fireMailStoreRequestFailed(Throwable exception, boolean isFinal) {
+        if(requestCallback != null) {
+            requestCallback.mailStoreRequestFailed(this, exception, isFinal);
+        }
+    }
 }

@@ -30,9 +30,7 @@
  */
 package org.logicprobe.LogicMail.mail;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.Hashtable;
 
 import javax.microedition.io.Connector;
@@ -44,12 +42,8 @@ import net.rim.device.api.system.UnsupportedOperationException;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
-import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
-import org.logicprobe.LogicMail.util.MailMessageParser;
 import org.logicprobe.LogicMail.util.ThreadQueue;
 
 /**
@@ -124,417 +118,101 @@ public class LocalMailStore extends AbstractMailStore {
         return true;
     }
     
-    public void requestFolderTree(MailStoreRequestCallback callback) {
-        if(globalConfig.getLocalDataLocation() == null) {
-            rootFolder.removeAllChildren();
-            rootFolder.addChild(outboxFolder);
-        }
-        else {
-            rootFolder.removeAllChildren();
-            rootFolder.addChild(outboxFolder);
-            for(int i=0; i<localFolders.length; i++) {
-                rootFolder.addChild(localFolders[i]);
-            }
-        }
-        
-        if(callback != null) { callback.mailStoreRequestComplete(); }
-        fireFolderTreeUpdated(rootFolder);
+    public FolderTreeRequest createFolderTreeRequest() {
+        LocalFolderTreeRequest request = new LocalFolderTreeRequest(this);
+        return request;
     }
 
-    public void requestFolderExpunge(FolderTreeItem folder, MailStoreRequestCallback callback) {
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
-        
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new ExpungeFolderRunnable(requestFolder, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
+    public FolderExpungeRequest createFolderExpungeRequest(FolderTreeItem folder) {
+        LocalFolderExpungeRequest request = new LocalFolderExpungeRequest(this, folder);
+        return request;
     }
     
-    private class ExpungeFolderRunnable extends MaildirRunnable {
-        public ExpungeFolderRunnable(FolderTreeItem requestFolder, MailStoreRequestCallback callback) {
-            super(requestFolder, callback);
-        }
-        
-        public void run() {
-            Throwable throwable = null;
-            boolean expunged = false;
-            try {
-                maildirFolder.open();
-                maildirFolder.expunge();
-                maildirFolder.close();
-                expunged = true;
-            } catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID, ("Unable to expunge folder: " + e.toString()).getBytes(), EventLogger.ERROR);
-                throwable = e;
-            }
-            
-            if(expunged) {
-                if(callback != null) { callback.mailStoreRequestComplete(); }
-                fireFolderExpunged(requestFolder, new int[0], new MessageToken[0]);
-            }
-            else {
-                if(callback != null) { callback.mailStoreRequestFailed(throwable, true); }
-            }
-        }
+    public FolderStatusRequest createFolderStatusRequest(FolderTreeItem[] folders) {
+        LocalFolderStatusRequest request = new LocalFolderStatusRequest(this, folders);
+        return request;
     }
     
-    public void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback) {
-        // Make every entry in the provided array match the local folder
-        // objects just in case they do not.  Then, fire change events
-        // for all those folders.  The actual data to answer this
-        // request should already be available.
-        FolderTreeItem[] localFolders = rootFolder.children();
-
-        for (int i = 0; i < folders.length; i++) {
-            for (int j = 0; j < localFolders.length; j++) {
-                if (folders[i].getPath().equals(localFolders[j].getPath())) {
-                    folders[i] = localFolders[j];
-                    break;
-                }
-            }
-        }
-        
-        if(callback != null) { callback.mailStoreRequestComplete(); }
-        for (int i = 0; i < folders.length; i++) {
-            fireFolderStatusChanged(folders[i]);
-        }
-    }
-
-    public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) {
+    public FolderMessagesRequest createFolderMessagesRangeRequest(FolderTreeItem folder, MessageToken firstToken, int increment) {
     	throw new UnsupportedOperationException("Not yet implemented");
 	}
 
-	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback) {
+	public FolderMessagesRequest createFolderMessagesSetRequest(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly) {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
-	public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback) {
+	public FolderMessagesRequest createFolderMessagesSetByIndexRequest(FolderTreeItem folder, int[] messageIndices) {
         throw new UnsupportedOperationException("Not yet implemented");
 	}
 	
-    public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) {
-    	// The flagsOnly parameter has no effect on local mail stores,
-    	// and it is not likely to ever be called on them anyways.
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
-        
-        if(requestFolder != null) {
-        	threadQueue.invokeLater(new RequestFolderMessagesRecentRunnable(requestFolder, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
-    }
-
-    private class RequestFolderMessagesRecentRunnable extends MaildirRunnable {
-    	public RequestFolderMessagesRecentRunnable(FolderTreeItem requestFolder, MailStoreRequestCallback callback) {
-    		super(requestFolder, callback);
-    	}
-    	
-		public void run() {
-		    Throwable throwable = null;
-        	FolderMessage[] folderMessages = null;
-        	try {
-        		maildirFolder.open();
-        		folderMessages = maildirFolder.getFolderMessages();
-        		maildirFolder.close();
-        	} catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
-        		throwable = e;
-        	}
-        	
-        	if(folderMessages != null) {
-                if(callback != null) { callback.mailStoreRequestComplete(); }
-        		fireFolderMessagesAvailable(requestFolder, folderMessages, false);
-        	}
-        	else {
-                if(callback != null) { callback.mailStoreRequestFailed(throwable, true); }
-        	}
-		}
+    public FolderMessagesRequest createFolderMessagesRecentRequest(FolderTreeItem folder, boolean flagsOnly) {
+        LocalFolderMessagesRequest request = new LocalFolderMessagesRequest(this, folder, flagsOnly);
+        return request;
     }
     
-    public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) {
-    	LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
-        
-        if(requestFolder != null) {
-        	threadQueue.invokeLater(new RequestMessageRunnable(requestFolder, localMessageToken, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
+    public MessageRequest createMessageRequest(MessageToken messageToken, boolean useLimits) {
+        LocalMessageRequest request = new LocalMessageRequest(this, messageToken, useLimits);
+        return request;
     }
 
-    private class RequestMessageRunnable extends MaildirRunnable {
-    	private LocalMessageToken localMessageToken;
-    	
-    	public RequestMessageRunnable(FolderTreeItem requestFolder, LocalMessageToken localMessageToken, MailStoreRequestCallback callback) {
-    		super(requestFolder, callback);
-    		this.localMessageToken = localMessageToken;
-    	}
-    	
-		public void run() {
-		    Throwable throwable = null;
-			String messageSource = null;
-			Message message = null;
-        	try {
-        		maildirFolder.open();
-        		messageSource = maildirFolder.getMessageSource(localMessageToken);
-        		maildirFolder.close();
-        		
-        		// Parse the message source
-        		Hashtable contentMap = new Hashtable();
-                MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, new ByteArrayInputStream(messageSource.getBytes()));
-                message = new Message(rootPart);
-                Enumeration e = contentMap.keys();
-                while(e.hasMoreElements()) {
-                    Object element = e.nextElement();
-                    if(!(element instanceof MimeMessagePart)) { continue; }
-                	MimeMessagePart part = (MimeMessagePart)element;
-                	MimeMessageContent content = (MimeMessageContent)contentMap.get(part);
-                	// Local parts are always complete, regardless of what the parser thinks
-                	content.setPartComplete(MimeMessageContent.PART_COMPLETE);
-                	message.putContent(part, content);
-                }
-        	} catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID, ("Unable to read message: " + e.toString()).getBytes(), EventLogger.ERROR);
-        		message = null;
-        		messageSource = null;
-        		throwable = e;
-        	}
-        	
-        	if(message != null && messageSource != null) {
-                if(callback != null) { callback.mailStoreRequestComplete(); }
-        		fireMessageAvailable(localMessageToken, true, message.getStructure(), message.getAllContent(), messageSource);
-        	}
-        	else {
-                if(callback != null) { callback.mailStoreRequestFailed(throwable, true); }
-        	}
-		}
-    }
-
-    public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) {
+    public MessageRequest createMessagePartsRequest(MessageToken messageToken, MimeMessagePart[] messageParts) {
     	throw new UnsupportedOperationException();
     }
     
-    public void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+    public MessageFlagChangeRequest createMessageFlagChangeRequest(
+            MessageToken messageToken,
+            MessageFlags messageFlags,
+            boolean addOrRemove) {
         
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, true, MessageFlags.Flag.DELETED, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
+        LocalMessageFlagChangeRequest request = new LocalMessageFlagChangeRequest(
+                this, messageToken, messageFlags.clone(), addOrRemove);
+        return request;
     }
-
-    public void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
-        
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, false, MessageFlags.Flag.DELETED, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
+    
+    public MessageAppendRequest createMessageAppendRequest(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
+        LocalMessageAppendRequest request = new LocalMessageAppendRequest(
+                this, folder, rawMessage, initialFlags);
+        return request;
     }
-
-    public void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
+    
+    public MessageCopyRequest createMessageCopyRequest(MessageToken messageToken, FolderTreeItem destinationFolder) {
+        LocalMessageCopyRequest request = new LocalMessageCopyRequest(this, messageToken, destinationFolder);
+        return request;
+    }
+    
+    public void processRequest(MailStoreRequest request) {
+        if(!(request instanceof LocalMailStoreRequest)) {
+            throw new IllegalArgumentException();
+        }
+        LocalMailStoreRequest localRequest = (LocalMailStoreRequest)request;
         
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, true, MessageFlags.Flag.ANSWERED, callback));
+        if(localRequest instanceof LocalFolderTreeRequest) {
+            // This is a bad special-case for startup, where this initializes
+            // the folder tree within the local mail store.  It is only called
+            // once during the lifetime of the application, and it simply is
+            // not worth the effort to implement a generic solution to the
+            // problem.
+            localRequest.run();
         }
         else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
+            threadQueue.invokeLater((LocalMailStoreRequest)request);
         }
     }
     
-    public void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
-        
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, true, MessageFlags.Flag.FORWARDED, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
+    GlobalConfig getGlobalConfig() {
+        return globalConfig;
     }
     
-    public void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
-        
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, true, MessageFlags.Flag.SEEN, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
+    FolderTreeItem getRootFolder() {
+        return rootFolder;
     }
     
-    public void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
-        
-        if(requestFolder != null) {
-            threadQueue.invokeLater(new UpdateMessageFlagsRunnable(requestFolder, localMessageToken, false, MessageFlags.Flag.SEEN, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
-    }
-
-    private class UpdateMessageFlagsRunnable extends MaildirRunnable {
-        private final LocalMessageToken localMessageToken;
-        private final boolean addOrRemove;
-        private final int flag;
-        
-        public UpdateMessageFlagsRunnable(
-                FolderTreeItem requestFolder,
-                LocalMessageToken localMessageToken,
-                boolean addOrRemove,
-                int flag,
-                MailStoreRequestCallback callback) {
-            super(requestFolder, callback);
-            this.localMessageToken = localMessageToken;
-            this.addOrRemove = addOrRemove;
-            this.flag = flag;
-        }
-
-        public void run() {
-            Throwable throwable = null;
-            MessageFlags updatedFlags = null;
-            boolean success;
-            try {
-                maildirFolder.open();
-                updatedFlags = maildirFolder.setMessageFlag(localMessageToken, addOrRemove, flag);
-                maildirFolder.close();
-                success = true;
-            } catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
-                success = false;
-                throwable = e;
-            }
-            
-            if(success) {
-                if(callback != null) { callback.mailStoreRequestComplete(); }
-            }
-            else {
-                if(callback != null) { callback.mailStoreRequestFailed(throwable, true); }
-            }
-
-            if(updatedFlags != null) {
-                fireMessageFlagsChanged(localMessageToken, updatedFlags);
-            }
-        }
+    FolderTreeItem getOutboxFolder() {
+        return outboxFolder;
     }
     
-    public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) {
-        FolderTreeItem requestFolder = getMatchingFolderTreeItem(folder.getPath());
-        
-        if(requestFolder != null && rawMessage != null && rawMessage.length() > 0 && initialFlags != null) {
-        	threadQueue.invokeLater(new RequestMessageAppendRunnable(requestFolder, rawMessage, initialFlags, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
-    }
-
-    private class RequestMessageAppendRunnable extends MaildirRunnable {
-    	private String rawMessage;
-    	private MessageFlags initialFlags;
-    	
-    	public RequestMessageAppendRunnable(FolderTreeItem requestFolder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) {
-    		super(requestFolder, callback);
-    		this.rawMessage = rawMessage;
-    		this.initialFlags = initialFlags;
-    	}
-    	
-		public void run() {
-		    Throwable throwable = null;
-        	FolderMessage folderMessage = null;
-        	try {
-        		maildirFolder.open();
-        		folderMessage = maildirFolder.appendMessage(rawMessage, initialFlags);
-        		maildirFolder.close();
-        	} catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
-        		throwable = e;
-        	}
-        	
-        	if(folderMessage != null) {
-                if(callback != null) { callback.mailStoreRequestComplete(); }
-        		fireFolderMessagesAvailable(requestFolder, new FolderMessage[] { folderMessage }, false);
-        	}
-        	else {
-                if(callback != null) { callback.mailStoreRequestFailed(throwable, true); }
-        	}
-		}
-    }
-    
-    /* (non-Javadoc)
-     * @see org.logicprobe.LogicMail.mail.AbstractMailStore#requestMessageCopy(org.logicprobe.LogicMail.mail.MessageToken, org.logicprobe.LogicMail.mail.FolderTreeItem)
-     */
-    public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, MailStoreRequestCallback callback) {
-        LocalMessageToken localMessageToken = (LocalMessageToken)messageToken;
-        FolderTreeItem fromFolder = getMatchingFolderTreeItem(localMessageToken.getFolderPath());
-        FolderTreeItem toFolder = getMatchingFolderTreeItem(destinationFolder.getPath());
-        if(fromFolder != null && toFolder != null) {
-            threadQueue.invokeLater(new MessageCopyRunnable(localMessageToken, fromFolder, toFolder, callback));
-        }
-        else {
-            if(callback != null) { callback.mailStoreRequestFailed(null, true); }
-        }
-    }
-    
-    private class MessageCopyRunnable implements Runnable {
-        private LocalMessageToken localMessageToken;
-        private FolderTreeItem toFolder;
-        private MaildirFolder fromMaildirFolder;
-        private MaildirFolder toMaildirFolder;
-        private MailStoreRequestCallback callback;
-
-        public MessageCopyRunnable(LocalMessageToken localMessageToken, FolderTreeItem fromFolder, FolderTreeItem toFolder, MailStoreRequestCallback callback) {
-            this.localMessageToken = localMessageToken;
-            this.toFolder = toFolder;
-            this.fromMaildirFolder = getMaildirFolder(fromFolder);
-            this.toMaildirFolder = getMaildirFolder(toFolder);
-            this.callback = callback;
-        }
-
-        public void run() {
-            Throwable throwable = null;
-            FolderMessage copiedMessage = null;
-            try {
-                fromMaildirFolder.open();
-                toMaildirFolder.open();
-
-                String messageSource = fromMaildirFolder.getMessageSource(localMessageToken);
-                copiedMessage = toMaildirFolder.appendMessage(
-                        messageSource,
-                        new MessageFlags(false, false, false, false, false, true, false, false));
-
-                toMaildirFolder.close();
-                fromMaildirFolder.close();
-            } catch (IOException e) {
-                EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
-                throwable = e;
-            }
-            
-            if(copiedMessage != null) {
-                if(callback != null) { callback.mailStoreRequestComplete(); }
-                fireFolderMessagesAvailable(toFolder, new FolderMessage[] { copiedMessage }, false);
-            }
-            else {
-                if(callback != null) { callback.mailStoreRequestFailed(throwable, true); }
-            }
-        }
+    FolderTreeItem[] getLocalFolders() {
+        return localFolders;
     }
     
     /**
@@ -546,7 +224,7 @@ public class LocalMailStore extends AbstractMailStore {
      * @param folderPath The folder path.
      * @return The matching folder tree item.
      */
-    private FolderTreeItem getMatchingFolderTreeItem(String folderPath) {
+    FolderTreeItem getMatchingFolderTreeItem(String folderPath) {
         FolderTreeItem[] localFolders = rootFolder.children();
         FolderTreeItem requestFolder = null;
         for (int i = 0; i < localFolders.length; i++) {
@@ -558,19 +236,7 @@ public class LocalMailStore extends AbstractMailStore {
     	return requestFolder;
     }
     
-    private abstract class MaildirRunnable implements Runnable {
-    	protected FolderTreeItem requestFolder;
-    	protected MaildirFolder maildirFolder;
-    	protected MailStoreRequestCallback callback;
-    	
-    	public MaildirRunnable(FolderTreeItem requestFolder, MailStoreRequestCallback callback) {
-    		this.requestFolder = requestFolder;
-    		this.maildirFolder = getMaildirFolder(requestFolder);
-    		this.callback = callback;
-    	}
-    }
-    
-    private MaildirFolder getMaildirFolder(FolderTreeItem requestFolder) {
+    MaildirFolder getMaildirFolder(FolderTreeItem requestFolder) {
         MaildirFolder maildirFolder;
         if(folderMaildirMap.containsKey(requestFolder)) {
             maildirFolder = (MaildirFolder)folderMaildirMap.get(requestFolder);

@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,23 +30,19 @@
  */
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Callback interface for mail store requests.
- */
-public interface MailStoreRequestCallback {
-    /**
-     * Invoked when the mail store request is completed.
-     * 
-     * @param request the request that completed
-     */
-    void mailStoreRequestComplete(MailStoreRequest request);
+import java.util.Vector;
+
+import org.logicprobe.LogicMail.message.FolderMessage;
+
+public interface FolderMessagesRequest extends MailStoreRequest {
+    public static final int TYPE_RANGE = 1;
+    public static final int TYPE_SET_TOKENS = 2;
+    public static final int TYPE_SET_INDICES = 3;
+    public static final int TYPE_RECENT = 4;
     
-    /**
-     * Invoked when the mail store request fails.
-     * 
-     * @param request the request that failed
-     * @param exception the exception that caused the request to fail, if applicable
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal);
+    int getType();
+    FolderTreeItem getFolder();
+    boolean isFlagsOnly();
+    Vector getResultFolderMessages();
+    FolderMessage getResultFolderMessage();
 }

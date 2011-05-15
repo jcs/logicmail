@@ -36,6 +36,7 @@
     <hammockmaker usecldc11="true" dir="${tests.dir}/src" package="org.logicprobe.LogicMail.mail" classpath="${mocks.classpath}">
       <mock class="org.logicprobe.LogicMail.mail.IncomingMailClient" />
       <mock class="org.logicprobe.LogicMail.mail.IncomingMailClientListener" />
+      <mock class="org.logicprobe.LogicMail.mail.AbstractMailStore" />
     </hammockmaker>
     <hammockmaker usecldc11="true" dir="${tests.dir}/src" package="org.logicprobe.LogicMail.mail.imap" classpath="${mocks.classpath}">
       <mock class="org.logicprobe.LogicMail.mail.imap.ImapProtocol" />

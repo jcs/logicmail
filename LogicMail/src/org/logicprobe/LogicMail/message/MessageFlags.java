@@ -36,7 +36,7 @@ package org.logicprobe.LogicMail.message;
  * These flags are normally part of a <tt>FolderMessage</tt>, however
  * they sometimes need to be represented independently.
  */
-public class MessageFlags {
+public final class MessageFlags {
     public static interface Flag {
         public static final int SEEN      = 1;
         public static final int ANSWERED  = 2;
@@ -57,24 +57,8 @@ public class MessageFlags {
 	    this.flags = flags;
 	}
     
-	public MessageFlags(
-		    boolean seen,
-		    boolean answered,
-		    boolean flagged,
-		    boolean deleted,
-		    boolean draft,
-		    boolean recent,
-		    boolean forwarded,
-		    boolean junk) {
-	    
-        if(seen) { flags |= Flag.SEEN; }
-        if(answered) { flags |= Flag.ANSWERED; }
-        if(flagged) { flags |= Flag.FLAGGED; }
-        if(deleted) { flags |= Flag.DELETED; }
-        if(draft) { flags |= Flag.DRAFT; }
-        if(recent) { flags |= Flag.RECENT; }
-        if(forwarded) { flags |= Flag.FORWARDED; }
-        if(junk) { flags |= Flag.JUNK; }
+	public MessageFlags clone() {
+	    return new MessageFlags(this.flags);
 	}
 	
 	/**
@@ -91,8 +75,9 @@ public class MessageFlags {
 	 *
 	 * @param flags the new flags to set
 	 */
-	public void setFlags(int flags) {
+	public MessageFlags setFlags(int flags) {
         this.flags = flags;
+        return this;
     }
 	
     /**
@@ -105,13 +90,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has been previously viewed
      */
-    public void setSeen(boolean seen) {
+    public MessageFlags setSeen(boolean seen) {
         if(seen) {
             this.flags |= Flag.SEEN;
         }
         else {
             this.flags &= ~Flag.SEEN;
         }
+        return this;
     }
 
     /**
@@ -124,13 +110,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has been replied to
      */
-    public void setAnswered(boolean answered) {
+    public MessageFlags setAnswered(boolean answered) {
         if(answered) {
             this.flags |= Flag.ANSWERED;
         }
         else {
             this.flags &= ~Flag.ANSWERED;
         }
+        return this;
     }
 
     /**
@@ -143,13 +130,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has been flagged
      */
-    public void setFlagged(boolean flagged) {
+    public MessageFlags setFlagged(boolean flagged) {
         if(flagged) {
             this.flags |= Flag.FLAGGED;
         }
         else {
             this.flags &= ~Flag.FLAGGED;
         }
+        return this;
     }
 
     /**
@@ -162,13 +150,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has been marked as deleted
      */
-    public void setDeleted(boolean deleted) {
+    public MessageFlags setDeleted(boolean deleted) {
         if(deleted) {
             this.flags |= Flag.DELETED;
         }
         else {
             this.flags &= ~Flag.DELETED;
         }
+        return this;
     }
 
     /**
@@ -181,13 +170,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message is a draft
      */
-    public void setDraft(boolean draft) {
+    public MessageFlags setDraft(boolean draft) {
         if(draft) {
             this.flags |= Flag.DRAFT;
         }
         else {
             this.flags &= ~Flag.DRAFT;
         }
+        return this;
     }
 
     /**
@@ -200,13 +190,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has recently arrived
      */
-    public void setRecent(boolean recent) {
+    public MessageFlags setRecent(boolean recent) {
         if(recent) {
             this.flags |= Flag.RECENT;
         }
         else {
             this.flags &= ~Flag.RECENT;
         }
+        return this;
     }
     
     /**
@@ -219,13 +210,14 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has been forwarded
      */
-    public void setForwarded(boolean forwarded) {
+    public MessageFlags setForwarded(boolean forwarded) {
         if(forwarded) {
             this.flags |= Flag.FORWARDED;
         }
         else {
             this.flags &= ~Flag.FORWARDED;
         }
+        return this;
     }
     
     /**
@@ -238,12 +230,13 @@ public class MessageFlags {
     /**
      * Set the flag indicating whether this message has been flagged as junk
      */
-    public void setJunk(boolean junk) {
+    public MessageFlags setJunk(boolean junk) {
         if(junk) {
             this.flags |= Flag.JUNK;
         }
         else {
             this.flags &= ~Flag.JUNK;
         }
+        return this;
     }
 }

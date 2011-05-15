@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Callback interface for mail store requests.
- */
-public interface MailStoreRequestCallback {
-    /**
-     * Invoked when the mail store request is completed.
-     * 
-     * @param request the request that completed
-     */
-    void mailStoreRequestComplete(MailStoreRequest request);
+import java.io.IOException;
+
+import org.logicprobe.LogicMail.LogicMailResource;
+
+class NetworkFolderStatusRequest extends NetworkMailStoreRequest implements FolderStatusRequest {
+    private final FolderTreeItem[] folders;
+
+    NetworkFolderStatusRequest(NetworkMailStore mailStore, FolderTreeItem[] folders) {
+        super(mailStore);
+        this.folders = folders;
+    }
     
-    /**
-     * Invoked when the mail store request fails.
-     * 
-     * @param request the request that failed
-     * @param exception the exception that caused the request to fail, if applicable
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal);
+    public FolderTreeItem[] getFolders() {
+        return folders;
+    }
+
+    public void execute(MailClient client) throws IOException, MailException {
+        super.execute(client);
+        IncomingMailClient incomingClient = (IncomingMailClient)client;
+        
+        String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);
+        showStatus(message);
+        incomingClient.refreshFolderStatus(folders, getProgressHandler(message));
+
+        fireMailStoreRequestComplete();
+        
+        for(int i=0; i<folders.length; i++) {
+            mailStore.fireFolderStatusChanged(folders[i]);
+        }
+    }
 }

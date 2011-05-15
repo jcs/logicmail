@@ -36,26 +36,6 @@ package org.logicprobe.LogicMail.mail;
  * MailStore implementations.
  */
 public interface MailConnectionHandlerListener {
-	/**
-	 * Indicates that a request has been completed.
-	 * 
-	 * @param type The type of the request.
-	 * @param result The data returned from the request.
-     * @param tag Tag reference to pass along with the request
-     * @param isFinal true if this is the final or only callback of a request
-	 */
-	void mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal);
-	
-    /**
-     * Indicates that a request has failed.
-     * 
-     * @param type The type of the request.
-     * @param tag Tag reference to pass along with the request
-     * @param exception The exception that caused the request to fail, if applicable.
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal);
-    
     /**
      * Indicates that the connection has left the idle state due to a timeout.
      * 

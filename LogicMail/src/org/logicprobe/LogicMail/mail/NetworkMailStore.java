@@ -35,11 +35,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import net.rim.device.api.system.UnsupportedOperationException;
-import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
-import org.logicprobe.LogicMail.message.FolderMessage;
-import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 
@@ -58,14 +55,8 @@ public class NetworkMailStore extends AbstractMailStore {
 		super();
 		this.client = MailClientFactory.createMailClient(accountConfig);
 		this.accountConfig = accountConfig;
-		this.connectionHandler = new IncomingMailConnectionHandler(client);
+		this.connectionHandler = new IncomingMailConnectionHandler(this, client);
 		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-			public void mailConnectionRequestComplete(int type, Object tag, Object result, boolean isFinal) {
-				connectionHandler_mailConnectionRequestComplete(type, tag, result, isFinal);
-			}
-            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
-                connectionHandler_mailConnectionRequestFailed(type, tag, exception, isFinal);
-            }
             public void mailConnectionIdleTimeout(long idleDuration) {
                 connectionHandler_mailConnectionIdleTimeout(idleDuration);
             }
@@ -174,57 +165,46 @@ public class NetworkMailStore extends AbstractMailStore {
      */
     public void requestDisconnect() {
         cleanupIdleState();
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_DISCONNECT, new Object[] { }, null);
+        processRequest(new NetworkDisconnectRequest(this, NetworkDisconnectRequest.REQUEST_DISCONNECT));
     }
 
-	public void requestFolderTree(MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_TREE, new Object[] { }, callback);
+	public FolderTreeRequest createFolderTreeRequest() {
+	    NetworkFolderTreeRequest request = new NetworkFolderTreeRequest(this);
+		return request;
 	}
 
-	public void requestFolderExpunge(FolderTreeItem folder, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-	    connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE, new Object[] { folder }, callback);
+	public FolderExpungeRequest createFolderExpungeRequest(FolderTreeItem folder) {
+	    NetworkFolderExpungeRequest request = new NetworkFolderExpungeRequest(this, folder);
+        return request;
 	}
 	
-	public void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS, new Object[] { folders }, callback);
+	public FolderStatusRequest createFolderStatusRequest(FolderTreeItem[] folders) {
+	    NetworkFolderStatusRequest request = new NetworkFolderStatusRequest(this, folders);
+        return request;
 	}
 
-	public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) {
+	public FolderMessagesRequest createFolderMessagesRangeRequest(FolderTreeItem folder, MessageToken firstToken, int increment) {
 	    if(firstToken == null || increment <= 0) {
 	        throw new IllegalArgumentException();
 	    }
-	    cleanupIdleState();
-		connectionHandler.addRequest(
-				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE,
-				new Object[] { folder, firstToken, new Integer(increment) },
-				callback);
+		
+	    NetworkFolderMessagesRequest request = new NetworkFolderMessagesRequest(this, folder, firstToken, increment);
+	    return request;
 	}
 
-	public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(
-				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
-				new Object[] { folder, messageTokens, new Boolean(flagsOnly) },
-				callback);
+	public FolderMessagesRequest createFolderMessagesSetRequest(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly) {
+        NetworkFolderMessagesRequest request = new NetworkFolderMessagesRequest(this, folder, messageTokens, flagsOnly);
+        return request;
 	}
 	
-	public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-        connectionHandler.addRequest(
-                IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET,
-                new Object[] { folder, messageIndices },
-                callback);
+	public FolderMessagesRequest createFolderMessagesSetByIndexRequest(FolderTreeItem folder, int[] messageIndices) {
+        NetworkFolderMessagesRequest request = new NetworkFolderMessagesRequest(this, folder, messageIndices);
+        return request;
 	}
 	
-	public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(
-				IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT,
-				new Object[] { folder, new Boolean(flagsOnly) },
-				callback);
+	public FolderMessagesRequest createFolderMessagesRecentRequest(FolderTreeItem folder, boolean flagsOnly) {
+        NetworkFolderMessagesRequest request = new NetworkFolderMessagesRequest(this, folder, flagsOnly);
+        return request;
 	}
 	
 	/**
@@ -235,209 +215,68 @@ public class NetworkMailStore extends AbstractMailStore {
      * </p>
      * 
      * @param folder The folder to request a message listing for.
-     * @param callback The callback to receive success or failure notifications about the request
 	 */
-	public void requestFolderMessageIndexMap(FolderTreeItem folder, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-        connectionHandler.addRequest(
-                IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGE_INDEX_MAP,
-                new Object[] { folder },
-                callback);
-	}
-
-    /**
-     * Requests the message index-to-UID map for a particular folder.
-     * <p>
-     * Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessageIndexMapAvailable(FolderMessageIndexMapEvent)}.
-     * </p>
-     * 
-     * @param folder The folder to request a message listing for.
-     */
-    public void requestFolderMessageIndexMap(FolderTreeItem folder) {
-        requestFolderMessageIndexMap(folder, null);
-    }
-	
-	public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE, new Object[] { messageToken, new Boolean(useLimits) }, callback);
-	}
-
-	public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS, new Object[] { messageToken, messageParts }, callback);
+	public NetworkFolderMessageIndexMapRequest requestFolderMessageIndexMap(FolderTreeItem folder) {
+        NetworkFolderMessageIndexMapRequest request = new NetworkFolderMessageIndexMapRequest(this, folder);
+        return request;
 	}
 	
-	public void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback) {
-	    cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE, new Object[] { messageToken }, callback);
+	public MessageRequest createMessageRequest(MessageToken messageToken, boolean useLimits) {
+		NetworkMessageRequest request = new NetworkMessageRequest(this, messageToken, useLimits);
+        return request;
 	}
 
-	public void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback) {
-		if(!client.hasUndelete()) {
-			throw new UnsupportedOperationException();
-		}
-		cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE, new Object[] { messageToken }, callback);
-	}
-
-	public void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback) {
-		if(!this.hasFlags()) {
-			throw new UnsupportedOperationException();
-		}
-		cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED, new Object[] { messageToken }, callback);
+	public MessageRequest createMessagePartsRequest(MessageToken messageToken, MimeMessagePart[] messageParts) {
+		NetworkMessageRequest request = new NetworkMessageRequest(this, messageToken, messageParts);
+        return request;
 	}
 	
-    public void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback) {
-        if(!this.hasFlags()) {
-            throw new UnsupportedOperationException();
-        }
-        cleanupIdleState();
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED, new Object[] { messageToken }, callback);
-    }
+	public MessageFlagChangeRequest createMessageFlagChangeRequest(
+	        MessageToken messageToken,
+	        MessageFlags messageFlags,
+	        boolean addOrRemove) {
 
-    public void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback) {
-        if(!this.hasFlags()) {
-            throw new UnsupportedOperationException();
-        }
-        cleanupIdleState();
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN, new Object[] { messageToken }, callback);
-    }
-    
-    public void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback) {
-        if(!this.hasFlags()) {
-            throw new UnsupportedOperationException();
-        }
-        cleanupIdleState();
-        connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN, new Object[] { messageToken }, callback);
-    }
+	    if(messageFlags.isDeleted()) {
+	        if(!addOrRemove && !client.hasUndelete()) {
+	            throw new UnsupportedOperationException();
+	        }
+	    }
+	    else if(!this.hasFlags()) {
+	        throw new UnsupportedOperationException();
+	    }
+	    else {
+	        throw new IllegalArgumentException();
+	    }
 
-	public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) {
+	    NetworkMessageFlagChangeRequest request = new NetworkMessageFlagChangeRequest(this, messageToken, messageFlags, addOrRemove);
+	    return request;
+	}
+	
+	public MessageAppendRequest createMessageAppendRequest(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
 		if(!this.hasAppend()) {
 			throw new UnsupportedOperationException();
 		}
-		cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND, new Object[] { folder, rawMessage, initialFlags }, callback);
+		NetworkMessageAppendRequest request = new NetworkMessageAppendRequest(this, folder, rawMessage, initialFlags);
+		return request;
 	}
 	
-	public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, MailStoreRequestCallback callback) {
-		if(!this.hasCopy()) {
-			throw new UnsupportedOperationException();
-		}
-		cleanupIdleState();
-		connectionHandler.addRequest(IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY, new Object[] { messageToken, destinationFolder }, callback);
+	public MessageCopyRequest createMessageCopyRequest(MessageToken messageToken, FolderTreeItem destinationFolder) {
+	    if(!this.hasCopy()) {
+	        throw new UnsupportedOperationException();
+	    }
+	    NetworkMessageCopyRequest request = new NetworkMessageCopyRequest(this, messageToken, destinationFolder);
+	    return request;
 	}
 	
-	private void connectionHandler_mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal) {
-        MailStoreRequestCallback callback;
-        if(tag instanceof MailStoreRequestCallback) {
-            callback = (MailStoreRequestCallback)tag;
+    public void processRequest(MailStoreRequest request) {
+        if(request instanceof NetworkMailStoreRequest
+                && request instanceof ConnectionHandlerRequest) {
+            connectionHandler.addRequest((ConnectionHandlerRequest)request);
         }
         else {
-            callback = null;
+            throw new IllegalArgumentException();
         }
-	    
-		Object[] results;
-		switch(type) {
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_TREE:
-		    if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			fireFolderTreeUpdated((FolderTreeItem)result);
-			break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_EXPUNGE:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-            if(result instanceof Object[]) {
-                results = (Object[])result;
-                if(results[1] instanceof int[]) {
-                    fireFolderExpunged((FolderTreeItem)results[0], (int[])results[1], (MessageToken[])results[2]);
-                }
-                else if(results[1] instanceof MessageToken[]) {
-                    fireFolderExpunged((FolderTreeItem)results[0], (MessageToken[])results[1], (MessageToken[])results[2]);
-                }
-                else {
-                    fireFolderExpunged((FolderTreeItem)results[0], new int[0], new MessageToken[0]);
-                }
-            }
-		    break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_STATUS:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			FolderTreeItem[] folders = (FolderTreeItem[])result;
-			for(int i=0; i<folders.length; i++) {
-				fireFolderStatusChanged(folders[i]);
-			}
-			break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RANGE:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-            results = (Object[])result;
-            fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
-		    break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_SET:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], ((Boolean)results[2]).booleanValue());
-			break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGES_RECENT:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], ((Boolean)results[2]).booleanValue());
-			break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_MESSAGE_INDEX_MAP:
-		    if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-		    results = (Object[])result;
-		    fireFolderMessageIndexMapAvailable((FolderTreeItem)results[0], (ToIntHashtable)results[1]);
-		    break;
-		case IncomingMailConnectionHandler.REQUEST_FOLDER_REFRESH_REQUIRED:
-		    results = (Object[])result;
-		    fireFolderRefreshRequired((FolderTreeItem)results[0]);
-		    break;
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireMessageAvailable(
-			        (MessageToken)results[0],
-			        ((Boolean)results[1]).booleanValue(),
-			        (MimeMessagePart)results[2],
-			        (MimeMessageContent[])results[3], null);
-			break;
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_PARTS:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireMessageContentAvailable((MessageToken)results[0], (MimeMessageContent[])results[1]);
-			break;
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_DELETE:
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNDELETE:
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_ANSWERED:
-        case IncomingMailConnectionHandler.REQUEST_MESSAGE_FORWARDED:
-        case IncomingMailConnectionHandler.REQUEST_MESSAGE_SEEN:
-        case IncomingMailConnectionHandler.REQUEST_MESSAGE_UNSEEN:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-            if(result instanceof Object[]) {
-    			results = (Object[])result;
-    			fireMessageFlagsChanged((MessageToken)results[0], (MessageFlags)results[1]);
-            }
-			break;
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_APPEND:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			results = (Object[])result;
-			fireFolderMessagesAvailable((FolderTreeItem)results[0], (FolderMessage[])results[1], false);
-			break;
-		case IncomingMailConnectionHandler.REQUEST_MESSAGE_COPY:
-            if(callback != null && isFinal) { callback.mailStoreRequestComplete(); }
-			break;
-		}
-	}
-
-    private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
-        MailStoreRequestCallback callback;
-        if(tag instanceof MailStoreRequestCallback) {
-            callback = (MailStoreRequestCallback)tag;
-        }
-        else {
-            callback = null;
-        }
-        
-        if(callback != null) { callback.mailStoreRequestFailed(exception, isFinal); }
-	}
+    }
     
     private void connectionHandler_mailConnectionIdleTimeout(long idleDuration) {
         accumulatedIdleTime += idleDuration;
@@ -493,7 +332,7 @@ public class NetworkMailStore extends AbstractMailStore {
         }
     }
     
-    private void cleanupIdleState() {
+    void cleanupIdleState() {
         synchronized(pollingTimer) {
             if(pollingTimerTask != null) {
                 pollingTimerTask.cancel();
@@ -501,5 +340,9 @@ public class NetworkMailStore extends AbstractMailStore {
             }
         }
         accumulatedIdleTime = 0;
+    }
+    
+    IncomingMailConnectionHandler getConnectionHandler() {
+        return connectionHandler;
     }
 }

@@ -41,6 +41,7 @@ import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreEvent;
 import org.logicprobe.LogicMail.mail.MailStoreListener;
+import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageEvent;
 import org.logicprobe.LogicMail.mail.MessageListener;
@@ -167,11 +168,11 @@ public abstract class MailStoreServices {
     // ---- Account level request methods
     
     public void requestFolderTree() {
-        mailStore.requestFolderTree();
+        mailStore.processRequest(mailStore.createFolderTreeRequest());
     }
     
     public void requestFolderStatus(FolderTreeItem[] folders) {
-        mailStore.requestFolderStatus(folders);
+        mailStore.processRequest(mailStore.createFolderStatusRequest(folders));
     }
     
     // ---- Folder level request methods
@@ -314,18 +315,19 @@ public abstract class MailStoreServices {
             final String rawMessage,
             final MessageFlags messageFlags) {
         
-        mailStore.requestMessageAppend(
+        mailStore.processRequest(mailStore.createMessageAppendRequest(
                 folderTreeItem,
                 rawMessage,
-                messageFlags,
-                new MailStoreRequestCallback() {
-                    public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                        if(!isFinal) {
-                            requestMessageAppendRawImpl(folderTreeItem, rawMessage, messageFlags);
-                        }
-                    }
-                });
+                messageFlags)
+                .setRequestCallback(
+                        new MailStoreRequestCallback() {
+                            public void mailStoreRequestComplete(MailStoreRequest request) { }
+                            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                if(!isFinal) {
+                                    requestMessageAppendRawImpl(folderTreeItem, rawMessage, messageFlags);
+                                }
+                            }
+                        }));
     }
     
     /**
@@ -348,15 +350,18 @@ public abstract class MailStoreServices {
                 && messageNode.getParent().getParentAccount().getMailStoreServices() == this)) {
             return;
         }
-        mailStore.requestMessageCopy(messageNode.getMessageToken(), folderTreeItem,
-                new MailStoreRequestCallback() {
-                    public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                        if(!isFinal) {
-                            requestMessageCopy(folderTreeItem, messageNode);
-                        }
-                    }
-                });
+        mailStore.processRequest(mailStore.createMessageCopyRequest(
+                messageNode.getMessageToken(),
+                folderTreeItem)
+                .setRequestCallback(
+                        new MailStoreRequestCallback() {
+                            public void mailStoreRequestComplete(MailStoreRequest request) { }
+                            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                if(!isFinal) {
+                                    requestMessageCopy(folderTreeItem, messageNode);
+                                }
+                            }
+                        }));
     }
     
     /**
@@ -380,10 +385,11 @@ public abstract class MailStoreServices {
                 && messageNode.getParent().getParentAccount().getMailStoreServices() == this)) {
             return;
         }
-        mailStore.requestMessageCopy(
+        mailStore.processRequest(mailStore.createMessageCopyRequest(
                 messageNode.getMessageToken(),
-                folderTreeItem,
-                new MoveMessageIntoCallback(folderTreeItem, messageNode));
+                folderTreeItem)
+                .setRequestCallback(
+                        new MoveMessageIntoCallback(folderTreeItem, messageNode)));
     }
     
     /**
@@ -407,13 +413,16 @@ public abstract class MailStoreServices {
             this.messageNode = messageNode;
         }
         
-        public void mailStoreRequestComplete() {
+        public void mailStoreRequestComplete(MailStoreRequest request) {
             // If the move request succeeded, then dispatch a request
             // to have the original message marked as deleted.
-            mailStore.requestMessageDelete(messageNode.getMessageToken());
+            mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                    messageNode.getMessageToken(),
+                    new MessageFlags(MessageFlags.Flag.DELETED),
+                    true));
         }
 
-        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
             if(!isFinal) {
                 requestMessageMove(folderTreeItem, messageNode);
             }
@@ -422,7 +431,7 @@ public abstract class MailStoreServices {
     }
     
     public void requestFolderExpunge(FolderTreeItem folder) {
-        mailStore.requestFolderExpunge(folder);
+        mailStore.processRequest(mailStore.createFolderExpungeRequest(folder));
     }
     
     // ---- Message level request methods
@@ -468,7 +477,7 @@ public abstract class MailStoreServices {
      * @param messageParts the message parts to fetch
      */
     public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts) {
-        mailStore.requestMessageParts(messageToken, messageParts);
+        mailStore.processRequest(mailStore.createMessagePartsRequest(messageToken, messageParts));
     }
 
     public void requestMessageSeen(MessageToken messageToken) {
@@ -476,19 +485,31 @@ public abstract class MailStoreServices {
     }
     
     public void requestMessageDelete(MessageToken messageToken) {
-        mailStore.requestMessageDelete(messageToken);
+        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                messageToken,
+                new MessageFlags(MessageFlags.Flag.DELETED),
+                true));
     }
     
     public void requestMessageUndelete(MessageToken messageToken) {
-        mailStore.requestMessageUndelete(messageToken);
+        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                messageToken,
+                new MessageFlags(MessageFlags.Flag.DELETED),
+                false));
     }
     
     public void requestMessageAnswered(MessageToken messageToken) {
-        mailStore.requestMessageAnswered(messageToken);
+        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                messageToken,
+                new MessageFlags(MessageFlags.Flag.ANSWERED),
+                true));
     }
     
     public void requestMessageForwarded(MessageToken messageToken) {
-        mailStore.requestMessageForwarded(messageToken);
+        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                messageToken,
+                new MessageFlags(MessageFlags.Flag.FORWARDED),
+                true));
     }
 
     /**

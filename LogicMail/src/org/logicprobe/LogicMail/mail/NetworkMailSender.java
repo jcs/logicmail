@@ -46,13 +46,6 @@ public class NetworkMailSender extends AbstractMailSender {
 		this.outgoingConfig = outgoingConfig;
 		this.connectionHandler = new OutgoingMailConnectionHandler(client);
 		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-			public void mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal) {
-				connectionHandler_mailConnectionRequestComplete(type, result, tag, isFinal);
-			}
-
-            public void mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
-                connectionHandler_mailConnectionRequestFailed(type, tag, exception, isFinal);
-            }
             public void mailConnectionIdleTimeout(long idleDuration) { }
             public void mailConnectionDisconnectTimeout(long idleDuration) { }
 		});
@@ -89,25 +82,7 @@ public class NetworkMailSender extends AbstractMailSender {
 	}
 	
 	public void requestSendMessage(MessageEnvelope envelope, Message message) {
-		connectionHandler.addRequest(OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE, new Object[] { envelope, message }, new Object[] { envelope, message });
+		NetworkSendMessageRequest request = new NetworkSendMessageRequest(this, envelope, message);
+		connectionHandler.addRequest(request);
 	}
-	
-	private void connectionHandler_mailConnectionRequestComplete(int type, Object result, Object tag, boolean isFinal) {
-		Object[] results;
-		switch(type) {
-		case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
-			results = (Object[])result;
-			fireMessageSent((MessageEnvelope)results[0], (Message)results[1], (String)results[2]);
-			break;
-        }
-	}
-	
-	private void connectionHandler_mailConnectionRequestFailed(int type, Object tag, Throwable exception, boolean isFinal) {
-        switch(type) {
-        case OutgoingMailConnectionHandler.REQUEST_SEND_MESSAGE:
-            Object[] params = (Object[])tag;
-            fireMessageSendFailed((MessageEnvelope)params[0], (Message)params[1], exception, isFinal);
-            break;
-        }
-    }
 }

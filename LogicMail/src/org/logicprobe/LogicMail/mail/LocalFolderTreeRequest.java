@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Callback interface for mail store requests.
- */
-public interface MailStoreRequestCallback {
-    /**
-     * Invoked when the mail store request is completed.
-     * 
-     * @param request the request that completed
-     */
-    void mailStoreRequestComplete(MailStoreRequest request);
+class LocalFolderTreeRequest extends LocalMailStoreRequest implements FolderTreeRequest {
+    private FolderTreeItem resultFolderTreeRoot;
     
-    /**
-     * Invoked when the mail store request fails.
-     * 
-     * @param request the request that failed
-     * @param exception the exception that caused the request to fail, if applicable
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal);
+    LocalFolderTreeRequest(LocalMailStore mailStore) {
+        super(mailStore);
+    }
+
+    public void run() {
+        FolderTreeItem rootFolder = mailStore.getRootFolder();
+        FolderTreeItem outboxFolder = mailStore.getOutboxFolder();
+        
+        if(mailStore.getGlobalConfig().getLocalDataLocation() == null) {
+            rootFolder.removeAllChildren();
+            rootFolder.addChild(outboxFolder);
+        }
+        else {
+            FolderTreeItem[] localFolders = mailStore.getLocalFolders();
+            
+            rootFolder.removeAllChildren();
+            rootFolder.addChild(outboxFolder);
+            for(int i=0; i<localFolders.length; i++) {
+                rootFolder.addChild(localFolders[i]);
+            }
+        }
+        
+        resultFolderTreeRoot = rootFolder;
+        fireMailStoreRequestComplete();
+        mailStore.fireFolderTreeUpdated(rootFolder);
+    }
+    
+    public FolderTreeItem getResultFolderTreeRoot() {
+        return resultFolderTreeRoot;
+    }
 }

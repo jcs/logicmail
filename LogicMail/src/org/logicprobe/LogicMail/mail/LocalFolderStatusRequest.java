@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Callback interface for mail store requests.
- */
-public interface MailStoreRequestCallback {
-    /**
-     * Invoked when the mail store request is completed.
-     * 
-     * @param request the request that completed
-     */
-    void mailStoreRequestComplete(MailStoreRequest request);
-    
-    /**
-     * Invoked when the mail store request fails.
-     * 
-     * @param request the request that failed
-     * @param exception the exception that caused the request to fail, if applicable
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal);
+class LocalFolderStatusRequest extends LocalMailStoreRequest implements FolderStatusRequest {
+    private final FolderTreeItem[] folders;
+
+    LocalFolderStatusRequest(LocalMailStore mailStore, FolderTreeItem[] folders) {
+        super(mailStore);
+        this.folders = folders;
+    }
+
+    public FolderTreeItem[] getFolders() {
+        return folders;
+    }
+
+    public void run() {
+        // Make every entry in the provided array match the local folder
+        // objects just in case they do not.  Then, fire change events
+        // for all those folders.  The actual data to answer this
+        // request should already be available.
+        FolderTreeItem[] localFolders = mailStore.getRootFolder().children();
+
+        for (int i = 0; i < folders.length; i++) {
+            for (int j = 0; j < localFolders.length; j++) {
+                if (folders[i].getPath().equals(localFolders[j].getPath())) {
+                    folders[i] = localFolders[j];
+                    break;
+                }
+            }
+        }
+        
+        fireMailStoreRequestComplete();
+        for (int i = 0; i < folders.length; i++) {
+            mailStore.fireFolderStatusChanged(folders[i]);
+        }
+    }
 }

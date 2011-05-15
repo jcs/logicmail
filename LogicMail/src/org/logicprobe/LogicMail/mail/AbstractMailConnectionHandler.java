@@ -56,7 +56,7 @@ public abstract class AbstractMailConnectionHandler {
 	private int retryCount;
 	private boolean invalidLogin;
 	private boolean shutdownInProgress;
-	private Object[] requestInProgress;
+	private ConnectionHandlerRequest requestInProgress;
 	
 	private static final int RETRY_LIMIT = 2;
 	
@@ -164,15 +164,12 @@ public abstract class AbstractMailConnectionHandler {
 	 * Add a request to the queue.
 	 * If the connection is shutting down, all requests will be ignored.
 	 * 
-	 * @param type Type of request
-	 * @param params Parameters passed to the corresponding
-	 *               AbstractMailStore.requestXXXX() method. 
-     * @param tag Tag reference to pass along with the request
+	 * @param request Request object to be added
 	 */
-	public void addRequest(int type, Object[] params, Object tag) {
+	public void addRequest(ConnectionHandlerRequest request) {
 		synchronized(requestQueue) {
 			if(!shutdownInProgress) {
-				requestQueue.add(new Object[] {new Integer(type), params, tag});
+				requestQueue.add(request);
 				requestQueue.notifyAll();
 			}
 		}
@@ -262,14 +259,11 @@ public abstract class AbstractMailConnectionHandler {
 			synchronized (requestQueue) {
 				requestQueue.remove();
 			}
-			Object[] request = (Object[])element;
-			int type = ((Integer)request[0]).intValue();
-			Object[] params = (Object[])request[1];
-            Object tag = request[2];
+			ConnectionHandlerRequest request = (ConnectionHandlerRequest)element;
 			
 			// Delegate to subclasses to handle the specific request
 			requestInProgress = request;
-			handleRequest(type, params, tag);
+			handleRequest(request);
 			requestInProgress = null;
 			
 			synchronized(requestQueue) {
@@ -289,13 +283,13 @@ public abstract class AbstractMailConnectionHandler {
 	 * user on the status of the operation.
 	 * </p>
 	 * 
-	 * @param type Type identifier for the request.
-	 * @param params Parameters for the request.
-     * @param tag Tag reference to pass along with the request
+	 * @param request The request to handle
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
 	 */
-	protected abstract void handleRequest(int type, Object[] params, Object tag) throws IOException, MailException;
+	protected void handleRequest(ConnectionHandlerRequest request) throws IOException, MailException {
+	    request.execute(client);
+	}
 	
 	/**
 	 * Handles a specific request being removed from the queue due to errors.
@@ -304,17 +298,13 @@ public abstract class AbstractMailConnectionHandler {
 	 * request failing.
 	 * </p>
 	 * 
-     * @param type Type identifier for the request.
-     * @param params Parameters for the request.
-     * @param tag Tag reference to pass along with the request
+     * @param request the request that failed
 	 * @param exception Exception that was thrown to fail the request,
 	 *     or null if it failed due to a queue flush
 	 * @param isFinal true if the connection will be closed, false if it is being reopened
 	 */
-	protected void handleRequestFailed(int type, Object[] params, Object tag, Throwable exception, boolean isFinal) {
-        if(this.listener != null) {
-            listener.mailConnectionRequestFailed(type, tag, exception, isFinal);
-        }
+	protected void handleRequestFailed(ConnectionHandlerRequest request, Throwable exception, boolean isFinal) {
+	    request.fireMailStoreRequestFailed(exception, isFinal);
 	}
 	
     /**
@@ -446,15 +436,10 @@ public abstract class AbstractMailConnectionHandler {
 	/**
 	 * Gets the request currently in progress.
 	 *
-	 * @return the request in progress, or <code>-1</code>.
+	 * @return the request in progress, or <code>null</code>.
 	 */
-	public synchronized int getRequestInProgress() {
-	    if(requestInProgress != null) {
-	        return ((Integer)requestInProgress[0]).intValue();
-	    }
-	    else {
-	        return -1;
-	    }
+	public synchronized ConnectionHandlerRequest getRequestInProgress() {
+	    return requestInProgress;
 	}
 	
 	/**
@@ -602,11 +587,7 @@ public abstract class AbstractMailConnectionHandler {
 
         // Notify failure of the current request-in-progress, if applicable
         if(requestInProgress != null) {
-            handleRequestFailed(
-                    ((Integer)requestInProgress[0]).intValue(),
-                    (Object[])requestInProgress[1],
-                    requestInProgress[2],
-                    e, isFinal);
+            handleRequestFailed(requestInProgress, e, isFinal);
             requestInProgress = null;
         }
 	}
@@ -650,11 +631,7 @@ public abstract class AbstractMailConnectionHandler {
 
         // Notify failure of the current request-in-progress, if applicable
         if(requestInProgress != null) {
-            handleRequestFailed(
-                    ((Integer)requestInProgress[0]).intValue(),
-                    (Object[])requestInProgress[1],
-                    requestInProgress[2],
-                    e, true);
+            handleRequestFailed(requestInProgress, e, true);
             requestInProgress = null;
         }
 	}
@@ -680,11 +657,7 @@ public abstract class AbstractMailConnectionHandler {
 
 		// Notify failure of the current request-in-progress, if applicable
 		if(requestInProgress != null) {
-            handleRequestFailed(
-                    ((Integer)requestInProgress[0]).intValue(),
-                    (Object[])requestInProgress[1],
-                    requestInProgress[2],
-                    t, true);
+            handleRequestFailed(requestInProgress, t, true);
             requestInProgress = null;
 		}
 	}
@@ -698,13 +671,9 @@ public abstract class AbstractMailConnectionHandler {
 	    synchronized (requestQueue) {
 	        Object element = requestQueue.element();
 	        while(element != null) {
-	            Object[] request = (Object[])element;
+	            ConnectionHandlerRequest request = (ConnectionHandlerRequest)element;
 	            requestQueue.remove();
-                handleRequestFailed(
-                        ((Integer)request[0]).intValue(),
-                        (Object[])request[1],
-                        request[2],
-                        null, true);
+                handleRequestFailed(request, null, true);
 	            element = requestQueue.element();
 	        }
 	    }

@@ -45,6 +45,7 @@ import net.rim.device.api.util.ToIntHashtable;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
@@ -179,27 +180,29 @@ class FolderRequestHandler {
             
             refreshThread = new Thread() { public void run() {
                 if(mailStore.hasFolderMessageIndexMap()) {
-                    mailStore.requestFolderMessageIndexMap(folderTreeItem, new MailStoreRequestCallback() {
-                        public void mailStoreRequestComplete() { }
-                        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                            indexMapFetchFailed();
-                        }});
+                    mailStore.processRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
+                            .setRequestCallback(new MailStoreRequestCallback() {
+                                public void mailStoreRequestComplete(MailStoreRequest request) { }
+                                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                    indexMapFetchFailed();
+                                }}));
                 }
                 else {
                     // Queue a request for new folder messages from the mail store
                     pendingFlagUpdates = new Vector();
-                    mailStore.requestFolderMessagesRecent(folderTreeItem, true, new MailStoreRequestCallback() {
-                        public void mailStoreRequestComplete() {
-                            // If this initial operation reported invalid
-                            // folder state data, then make sure we verify all
-                            // cached tokens.
-                            if(checkAllTokens) {
-                                loadCachedFolderMessages();
-                            }
-                        }
-                        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                            initialFlagsRefreshFailed();
-                        }});
+                    mailStore.processRequest(mailStore.createFolderMessagesRecentRequest(folderTreeItem, true)
+                            .setRequestCallback(new MailStoreRequestCallback() {
+                                public void mailStoreRequestComplete(MailStoreRequest request) {
+                                    // If this initial operation reported invalid
+                                    // folder state data, then make sure we verify all
+                                    // cached tokens.
+                                    if(checkAllTokens) {
+                                        loadCachedFolderMessages();
+                                    }
+                                }
+                                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                    initialFlagsRefreshFailed();
+                                }}));
                 }
     
                 if(!initialRefreshComplete) {
@@ -340,7 +343,8 @@ class FolderRequestHandler {
             removeOrphanedMessages();
             
             // Do the final request for missing messages
-            mailStore.requestFolderMessagesSet(folderTreeItem, messagesToFetch.toArray(), finalFetchCallback);
+            mailStore.processRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
+                    .setRequestCallback(finalFetchCallback));
         }}).start();
     }
     
@@ -436,11 +440,12 @@ class FolderRequestHandler {
                 MessageToken[] tokens = new MessageToken[cachedTokensToCheck.size()];
                 cachedTokensToCheck.copyInto(tokens);
                 secondaryFlagsRefresh = true;
-                mailStore.requestFolderMessagesSet(folderTreeItem, tokens, true, new MailStoreRequestCallback() {
-                    public void mailStoreRequestComplete() { }
-                    public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                        secondaryFlagsRefreshFailed();
-                    }});
+                mailStore.processRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, tokens, true)
+                        .setRequestCallback(new MailStoreRequestCallback() {
+                            public void mailStoreRequestComplete(MailStoreRequest request) { }
+                            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                                secondaryFlagsRefreshFailed();
+                            }}));
             }
             else {
                 removeOrphanedMessages();
@@ -529,7 +534,8 @@ class FolderRequestHandler {
             MessageToken[] fetchArray = new MessageToken[secondaryMessageTokensToFetch.size()];
             secondaryMessageTokensToFetch.copyInto(fetchArray);
             secondaryMessageTokensToFetch.removeAllElements();
-            mailStore.requestFolderMessagesSet(folderTreeItem, fetchArray, finalFetchCallback);
+            mailStore.processRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, fetchArray)
+                    .setRequestCallback(finalFetchCallback));
         }
         else {
             initialRefreshComplete = true;
@@ -538,11 +544,11 @@ class FolderRequestHandler {
     }
     
     private MailStoreRequestCallback finalFetchCallback = new MailStoreRequestCallback() {
-        public void mailStoreRequestComplete() {
+        public void mailStoreRequestComplete(MailStoreRequest request) {
             initialRefreshComplete = true;
             finalFetchComplete();
         }
-        public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
+        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
             finalFetchComplete();
         }
     };
@@ -596,15 +602,16 @@ class FolderRequestHandler {
     }
     
     public void requestMoreFolderMessages(MessageToken firstToken, int increment) {
-        mailStore.requestFolderMessagesRange(folderTreeItem, firstToken, increment, new MailStoreRequestCallback() {
-            public void mailStoreRequestComplete() { }
-            public void mailStoreRequestFailed(Throwable exception, boolean isFinal) {
-                // Commit and notify even in cases of failure, to ensure that
-                // post-request operations can occur.
-                folderMessageCache.commit();
-                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false);
-            }
-        });
+        mailStore.processRequest(mailStore.createFolderMessagesRangeRequest(folderTreeItem, firstToken, increment)
+                .setRequestCallback(new MailStoreRequestCallback() {
+                    public void mailStoreRequestComplete(MailStoreRequest request) { }
+                    public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                        // Commit and notify even in cases of failure, to ensure that
+                        // post-request operations can occur.
+                        folderMessageCache.commit();
+                        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false);
+                    }
+                }));
     }
     
     /**
@@ -777,7 +784,7 @@ class FolderRequestHandler {
                     messageFlags.setSeen(true);
                     messageFlags.setRecent(false);
                     if(mailStore.hasFlags()) {
-                        mailStore.requestMessageSeen(messageToken);
+                        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
                     }
                     updated = true;
                 }
@@ -816,7 +823,7 @@ class FolderRequestHandler {
                     folderMessageCache.updateFolderMessage(folderTreeItem, message);
                     folderMessageCache.commit();
                     if(!cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen()) {
-                        mailStore.requestMessageSeen(messageToken);
+                        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
                     }
                 }
             }

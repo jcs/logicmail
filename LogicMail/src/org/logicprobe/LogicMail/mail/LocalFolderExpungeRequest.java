@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,53 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package org.logicprobe.LogicMail.mail;
 
-/**
- * Callback interface for mail store requests.
- */
-public interface MailStoreRequestCallback {
-    /**
-     * Invoked when the mail store request is completed.
-     * 
-     * @param request the request that completed
-     */
-    void mailStoreRequestComplete(MailStoreRequest request);
+import java.io.IOException;
+
+import net.rim.device.api.system.EventLogger;
+
+import org.logicprobe.LogicMail.AppInfo;
+
+class LocalFolderExpungeRequest extends LocalMailStoreRequest implements FolderExpungeRequest, Runnable {
+    private final FolderTreeItem folder;
+
+    LocalFolderExpungeRequest(LocalMailStore mailStore, FolderTreeItem folder) {
+        super(mailStore);
+        this.folder = folder;
+    }
+
+    public FolderTreeItem getFolder() {
+        return folder;
+    }
     
-    /**
-     * Invoked when the mail store request fails.
-     * 
-     * @param request the request that failed
-     * @param exception the exception that caused the request to fail, if applicable
-     * @param isFinal true if the connection will be closed, false if it is being reopened
-     */
-    void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal);
+    public void run() {
+        FolderTreeItem requestFolder = mailStore.getMatchingFolderTreeItem(folder.getPath());
+        if(requestFolder == null) {
+            fireMailStoreRequestFailed(null, true);
+            return;
+        }
+        
+        Throwable throwable = null;
+        boolean expunged = false;
+        MaildirFolder maildirFolder = mailStore.getMaildirFolder(requestFolder);
+        try {
+            maildirFolder.open();
+            maildirFolder.expunge();
+            maildirFolder.close();
+            expunged = true;
+        } catch (IOException e) {
+            EventLogger.logEvent(AppInfo.GUID, ("Unable to expunge folder: " + e.toString()).getBytes(), EventLogger.ERROR);
+            throwable = e;
+        }
+        
+        if(expunged) {
+            fireMailStoreRequestComplete();
+            mailStore.fireFolderExpunged(requestFolder, new int[0], new MessageToken[0]);
+        }
+        else {
+            fireMailStoreRequestFailed(throwable, true);
+        }
+    }
 }

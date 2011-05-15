@@ -32,11 +32,11 @@ package org.logicprobe.LogicMail.model;
 
 import java.util.Hashtable;
 
-import org.logicprobe.LogicMail.mail.AbstractMailStore;
+import org.logicprobe.LogicMail.mail.FolderStatusRequest;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
+import org.logicprobe.LogicMail.mail.FolderTreeRequest;
 import org.logicprobe.LogicMail.mail.MessageToken;
-import org.logicprobe.LogicMail.message.MessageFlags;
+import org.logicprobe.LogicMail.mail.MockAbstractMailStore;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 
 import j2meunit.framework.Test;
@@ -227,7 +227,9 @@ public class AccountNodeTest extends TestCase {
         public boolean requestEntireMessageRefresh(MessageToken messageToken) { return false; }
     }
     
-    private class TestMailStore extends AbstractMailStore {
+    private class TestMailStore extends MockAbstractMailStore {
+        // This implementation only uses an auto-generated mock to reduce the
+        // amount of stub implementations that have to be constantly modified.
     	public FolderTreeItem rootFolder = null;
     	public FolderTreeItem statusUpdatedRootFolder = null;
     	
@@ -263,14 +265,16 @@ public class AccountNodeTest extends TestCase {
 			return false;
 		}
 
-		public void requestFolderTree(MailStoreRequestCallback callback) {
+		public FolderTreeRequest createFolderTreeRequest() {
 			fireFolderTreeUpdated(rootFolder);
+			return null;
 		}
 		
-		public void requestFolderStatus(FolderTreeItem[] folders, MailStoreRequestCallback callback) {
+		public FolderStatusRequest createFolderStatusRequest(FolderTreeItem[] folders) {
 		    for(int i=0; i<folders.length; i++) {
 		        requestFolderStatusImpl(statusUpdatedRootFolder);
 		    }
+		    return null;
 		}
 		
 		private void requestFolderStatusImpl(FolderTreeItem folder) {
@@ -283,22 +287,6 @@ public class AccountNodeTest extends TestCase {
 		    }
 		}
 		
-		public void requestMessage(MessageToken messageToken, boolean useLimits, MailStoreRequestCallback callback) { }
-		public void requestMessageParts(MessageToken messageToken, MimeMessagePart[] messageParts, MailStoreRequestCallback callback) { }
-		public void requestMessageAnswered(MessageToken messageToken, MailStoreRequestCallback callback) { }
-        public void requestMessageForwarded(MessageToken messageToken, MailStoreRequestCallback callback) { }
-        public void requestMessageSeen(MessageToken messageToken, MailStoreRequestCallback callback) { }
-        public void requestMessageUnseen(MessageToken messageToken, MailStoreRequestCallback callback) { }
-		public void requestMessageDelete(MessageToken messageToken, MailStoreRequestCallback callback) { }
-		public void requestMessageUndelete(MessageToken messageToken, MailStoreRequestCallback callback) { }
 		public void shutdown(boolean wait) { }
-		public void requestFolderMessagesRange(FolderTreeItem folder, MessageToken firstToken, int increment, MailStoreRequestCallback callback) { }
-		public void requestFolderMessagesRecent(FolderTreeItem folder, MailStoreRequestCallback callback) { }
-		public void requestMessageAppend(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags, MailStoreRequestCallback callback) { }
-		public void requestMessageCopy(MessageToken messageToken, FolderTreeItem destinationFolder, MailStoreRequestCallback callback) { }
-		public void requestFolderMessagesRecent(FolderTreeItem folder, boolean flagsOnly, MailStoreRequestCallback callback) { }
-		public void requestFolderMessagesSet(FolderTreeItem folder, MessageToken[] messageTokens, boolean flagsOnly, MailStoreRequestCallback callback) { }
-        public void requestFolderMessagesSet(FolderTreeItem folder, int[] messageIndices, MailStoreRequestCallback callback) { }
-        public void requestFolderExpunge(FolderTreeItem folder, MailStoreRequestCallback callback) { }
     }
 }
