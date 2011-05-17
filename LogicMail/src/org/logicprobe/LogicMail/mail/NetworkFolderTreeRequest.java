@@ -43,7 +43,6 @@ class NetworkFolderTreeRequest extends NetworkMailStoreRequest implements Folder
     }
 
     public void execute(MailClient client) throws IOException, MailException {
-        super.execute(client);
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE);

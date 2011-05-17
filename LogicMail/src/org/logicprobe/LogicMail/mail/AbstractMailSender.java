@@ -71,9 +71,17 @@ public abstract class AbstractMailSender {
      * 
      * @param envelope The envelope of the message to send.
      * @param message The message to send.
+     * @return The request object for sending a message
      */
-	public abstract void requestSendMessage(MessageEnvelope envelope, Message message);
+	public abstract NetworkSendMessageRequest createSendMessageRequest(MessageEnvelope envelope, Message message);
 
+    /**
+     * Submits the request to the mail sender for processing.
+     *
+     * @param request the request to process
+     */
+	public abstract void processRequest(ConnectionHandlerRequest request);
+	
     /**
      * Adds a <tt>MailSenderListener</tt> to the mail sender.
      * 

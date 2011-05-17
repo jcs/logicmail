@@ -45,10 +45,6 @@ public class NetworkMailSender extends AbstractMailSender {
 		this.client = MailClientFactory.createOutgoingMailClient(outgoingConfig);
 		this.outgoingConfig = outgoingConfig;
 		this.connectionHandler = new OutgoingMailConnectionHandler(client);
-		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-            public void mailConnectionIdleTimeout(long idleDuration) { }
-            public void mailConnectionDisconnectTimeout(long idleDuration) { }
-		});
 		this.connectionHandler.start();
 	}
 
@@ -81,8 +77,17 @@ public class NetworkMailSender extends AbstractMailSender {
 	    return this.outgoingConfig.toString();
 	}
 	
-	public void requestSendMessage(MessageEnvelope envelope, Message message) {
+	public NetworkSendMessageRequest createSendMessageRequest(MessageEnvelope envelope, Message message) {
 		NetworkSendMessageRequest request = new NetworkSendMessageRequest(this, envelope, message);
-		connectionHandler.addRequest(request);
+		return request;
+	}
+	
+	public void processRequest(ConnectionHandlerRequest request) {
+	    if(request instanceof NetworkSendMessageRequest) {
+	        connectionHandler.addRequest(request);
+	    }
+	    else {
+	        throw new IllegalArgumentException();
+	    }
 	}
 }

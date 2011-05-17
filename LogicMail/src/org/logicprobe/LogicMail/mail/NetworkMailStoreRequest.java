@@ -33,6 +33,8 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 
+import net.rim.device.api.i18n.MessageFormat;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -47,10 +49,6 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
     
     public AbstractMailStore getMailStore() {
         return mailStore;
-    }
-    
-    public void execute(MailClient client) throws IOException, MailException {
-        mailStore.cleanupIdleState();
     }
     
     protected void checkActiveFolder(IncomingMailClient incomingClient, FolderTreeItem requestFolder) throws IOException, MailException {
@@ -81,7 +79,7 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
      * @param message The message to show
      */
     protected void showStatus(String message) {
-        MailConnectionManager.getInstance().fireMailConnectionStatus(config, message);
+        MailConnectionManager.getInstance().fireMailConnectionStatus(config, this, message);
     }
     
     /**
@@ -91,7 +89,7 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
      * @param progress The progress percentage
      */
     protected void showStatus(String message, int progress) {
-        MailConnectionManager.getInstance().fireMailConnectionStatus(config, message, progress);
+        MailConnectionManager.getInstance().fireMailConnectionStatus(config, this, message, progress);
     }
     
     /**
@@ -108,6 +106,9 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
     protected MailProgressHandler getProgressHandler(String message) {
         return new MailConnectionProgressHandler(message);
     }
+
+    private static final MessageFormat networkMessageFormat = new MessageFormat("{0} ({1})...");
+    private static final MessageFormat processingMessageFormat = new MessageFormat("{0} ({1}%)...");
     
     /**
      * Standard progress handler to be used for mail connection handlers.
@@ -118,26 +119,24 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         private int total = 0;
         private int lastTotal = 0;
         private int threshold = 128;
-        private final String messageStart;
-        private String networkMessageEnd = ")...";
-        private String processingMessageEnd = "%)...";
+        private final String message;
         
         public MailConnectionProgressHandler(String message) {
-            this.messageStart = message + " (";
+            this.message = message;
         }
         
         public void mailProgress(int type, int count, int max) {
             if(type == MailProgressHandler.TYPE_NETWORK) {
                 total += count;
                 if((total - lastTotal) >= threshold) {
-                    showStatus(messageStart + StringParser.toDataSizeString(total) + networkMessageEnd);
+                    showStatus(networkMessageFormat.format(new Object[] { message, StringParser.toDataSizeString(total) }));
                     lastTotal = total;
                     if(threshold < 1024 && total >= 1024) { threshold = 1024; }
                 }
             }
             else if(type == MailProgressHandler.TYPE_PROCESSING && max > 0){
                 if(count > 0) { count = (count * 100) / max; }
-                showStatus(messageStart + count + processingMessageEnd);
+                showStatus(processingMessageFormat.format(new Object[] { message, Integer.toString(count) }));
             }
         }
     };

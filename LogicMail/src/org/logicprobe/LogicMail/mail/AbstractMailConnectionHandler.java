@@ -39,7 +39,6 @@ import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.Queue;
-import org.logicprobe.LogicMail.util.StringParser;
 
 /**
  * This class is responsible for managing the lifecycle of a mail
@@ -52,7 +51,6 @@ public abstract class AbstractMailConnectionHandler {
 	private ConnectionThread connectionThread;
 	private int state;
 	private Queue requestQueue;
-	private MailConnectionHandlerListener listener;
 	private int retryCount;
 	private boolean invalidLogin;
 	private boolean shutdownInProgress;
@@ -76,7 +74,6 @@ public abstract class AbstractMailConnectionHandler {
 		this.connectionThread = new ConnectionThread();
 		this.state = STATE_CLOSED;
 		this.requestQueue = new Queue();
-		this.listener = null;
 		this.retryCount = 0;
 		this.invalidLogin = false;
 		this.shutdownInProgress = false;
@@ -139,25 +136,6 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	public boolean isRunning() {
 		return connectionThread.isAlive();
-	}
-	
-	/**
-	 * Sets the listener for events from this class.
-	 * The listener is the class that handles results from requests.
-	 * 
-	 * @param listener The listener
-	 */
-	public void setListener(MailConnectionHandlerListener listener) {
-		this.listener = listener;
-	}
-
-	/**
-	 * Gets the listener for events from this class.
-	 * 
-	 * @return The listener
-	 */
-	protected MailConnectionHandlerListener getListener() {
-		return this.listener;
 	}
 	
 	/**
@@ -276,11 +254,8 @@ public abstract class AbstractMailConnectionHandler {
 	/**
 	 * Handles a specific request during the REQUESTS state.
 	 * <p>
-	 * Subclasses should implement this to dispatch requests for all
-	 * the request types they know how to handle.
-	 * Subclasses should also call {@link #showStatus(String)} and/or
-	 * {@link #showStatus(String, int)} as necessary to update the
-	 * user on the status of the operation.
+	 * Subclasses should only override this method if they need to perform
+	 * operations before or after the normal processing of a request.
 	 * </p>
 	 * 
 	 * @param request The request to handle
@@ -468,7 +443,7 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param message The message to show
 	 */
 	protected void showStatus(String message) {
-		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), message);
+		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), null, message);
 	}
 	
 	/**
@@ -478,22 +453,7 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param progress The progress percentage
 	 */
 	protected void showStatus(String message, int progress) {
-		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), message, progress);
-	}
-	
-	/**
-	 * Gets a progress handler for a request with the provided status message.
-	 * <p>
-	 * This default progress handler displays the message along with the
-	 * amount of data downloaded for network updates, and percentage complete
-	 * for processing updates.
-	 * </p>
-	 * 
-	 * @param message The status message for the request
-	 * @return The progress handler
-	 */
-	protected MailProgressHandler getProgressHandler(String message) {
-		return new MailConnectionProgressHandler(message);
+		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), null, message, progress);
 	}
 	
 	/**
@@ -502,7 +462,7 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param message The message to show
 	 */
 	private void showError(String message) {
-		MailConnectionManager.getInstance().fireMailConnectionError(client.getConnectionConfig(), message);
+		MailConnectionManager.getInstance().fireMailConnectionError(client.getConnectionConfig(), null, message);
 	}
 	
 	/**
@@ -758,37 +718,4 @@ public abstract class AbstractMailConnectionHandler {
         	}
         }
 	}
-	
-	/**
-	 * Standard progress handler to be used for mail connection handlers.
-	 * This takes the operation's message and appends a relevant status
-	 * indicator to it.
-	 */
-	private class MailConnectionProgressHandler implements MailProgressHandler {
-		private int total = 0;
-		private int lastTotal = 0;
-		private int threshold = 128;
-		private String messageStart;
-		private String networkMessageEnd = ")...";
-		private String processingMessageEnd = "%)...";
-		
-		public MailConnectionProgressHandler(String message) {
-			this.messageStart = message + " (";
-		}
-		
-		public void mailProgress(int type, int count, int max) {
-			if(type == MailProgressHandler.TYPE_NETWORK) {
-				total += count;
-				if((total - lastTotal) >= threshold) {
-					showStatus(messageStart + StringParser.toDataSizeString(total) + networkMessageEnd);
-					lastTotal = total;
-					if(threshold < 1024 && total >= 1024) { threshold = 1024; }
-				}
-			}
-			else if(type == MailProgressHandler.TYPE_PROCESSING && max > 0){
-				if(count > 0) { count = (count * 100) / max; }
-				showStatus(messageStart + count + processingMessageEnd);
-			}
-		}
-	};
 }

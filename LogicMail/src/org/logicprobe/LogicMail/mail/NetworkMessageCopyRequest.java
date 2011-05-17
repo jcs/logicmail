@@ -54,7 +54,6 @@ class NetworkMessageCopyRequest extends NetworkMailStoreRequest implements Messa
     }
     
     public void execute(MailClient client) throws IOException, MailException {
-        super.execute(client);
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
         showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_COPY));

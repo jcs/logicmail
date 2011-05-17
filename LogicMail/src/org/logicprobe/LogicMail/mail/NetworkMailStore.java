@@ -31,9 +31,6 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -44,26 +41,11 @@ public class NetworkMailStore extends AbstractMailStore {
 	private IncomingMailClient client;
 	private IncomingMailConnectionHandler connectionHandler;
 	private AccountConfig accountConfig;
-	private volatile long accumulatedIdleTime;
-	private final Timer pollingTimer = new Timer();
-	private TimerTask pollingTimerTask;
-	
-    private static final int MS_PER_MIN = 60000;
-    private static final int REFRESH_TOLERANCE = 60000;
-	
 	public NetworkMailStore(AccountConfig accountConfig) {
 		super();
 		this.client = MailClientFactory.createMailClient(accountConfig);
 		this.accountConfig = accountConfig;
 		this.connectionHandler = new IncomingMailConnectionHandler(this, client);
-		this.connectionHandler.setListener(new MailConnectionHandlerListener() {
-            public void mailConnectionIdleTimeout(long idleDuration) {
-                connectionHandler_mailConnectionIdleTimeout(idleDuration);
-            }
-            public void mailConnectionDisconnectTimeout(long idleDuration) {
-                connectionHandler_mailConnectionDisconnectTimeout(idleDuration);
-            }
-		});
 		this.connectionHandler.start();
 	}
 
@@ -77,7 +59,6 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 	
 	public void shutdown(boolean wait) {
-	    cleanupIdleState();
 		connectionHandler.shutdown(wait);
 	}
 
@@ -85,7 +66,6 @@ public class NetworkMailStore extends AbstractMailStore {
 	 * Restarts the mail connection handler thread.
 	 */
 	public void restart() {
-	    cleanupIdleState();
 		if(!connectionHandler.isRunning()) {
 			connectionHandler.start();
 		}
@@ -164,7 +144,6 @@ public class NetworkMailStore extends AbstractMailStore {
      * </p>
      */
     public void requestDisconnect() {
-        cleanupIdleState();
         processRequest(new NetworkDisconnectRequest(this, NetworkDisconnectRequest.REQUEST_DISCONNECT));
     }
 
@@ -276,70 +255,6 @@ public class NetworkMailStore extends AbstractMailStore {
         else {
             throw new IllegalArgumentException();
         }
-    }
-    
-    private void connectionHandler_mailConnectionIdleTimeout(long idleDuration) {
-        accumulatedIdleTime += idleDuration;
-        
-        long refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
-
-        if(refreshFrequency == 0) {
-            accumulatedIdleTime = 0;
-            return;
-        }
-        
-        // If we've been idle for a time period close to the refresh frequency,
-        // then we should trigger a refresh.
-        if(Math.abs(accumulatedIdleTime - refreshFrequency) < REFRESH_TOLERANCE) {
-            accumulatedIdleTime = 0;
-            fireRefreshRequired();
-        }
-    }
-    
-    private void connectionHandler_mailConnectionDisconnectTimeout(long idleDuration) {
-        accumulatedIdleTime += idleDuration;
-        
-        long refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
-        
-        if(refreshFrequency == 0) {
-            accumulatedIdleTime = 0;
-            return;
-        }
-        
-        // If we've been idle for a time period close to the refresh frequency,
-        // then we should trigger a refresh.
-        if((accumulatedIdleTime + (REFRESH_TOLERANCE >>> 1)) > refreshFrequency) {
-            accumulatedIdleTime = 0;
-            fireRefreshRequired();
-        }
-        else {
-            // Otherwise, we should start the polling timer
-            long nextRefresh = refreshFrequency - accumulatedIdleTime;
-            
-            synchronized(pollingTimer) {
-                if(pollingTimerTask != null) {
-                    pollingTimerTask.cancel();
-                    pollingTimerTask = null;
-                }
-                pollingTimerTask = new TimerTask() {
-                    public void run() {
-                        accumulatedIdleTime = 0;
-                        fireRefreshRequired();
-                    }
-                };
-                pollingTimer.schedule(pollingTimerTask, nextRefresh);
-            }
-        }
-    }
-    
-    void cleanupIdleState() {
-        synchronized(pollingTimer) {
-            if(pollingTimerTask != null) {
-                pollingTimerTask.cancel();
-                pollingTimerTask = null;
-            }
-        }
-        accumulatedIdleTime = 0;
     }
     
     IncomingMailConnectionHandler getConnectionHandler() {

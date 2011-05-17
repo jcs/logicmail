@@ -110,14 +110,15 @@ public class MailConnectionManager {
      * of an updated status message.
      * 
      * @param connectionConfig The configuration for the connection that generated this event.
+     * @param request The request-in-progress that status is being provided for.
      * @param message The status message.
      */
-    void fireMailConnectionStatus(ConnectionConfig connectionConfig, String message) {
+    void fireMailConnectionStatus(ConnectionConfig connectionConfig, ConnectionHandlerRequest request, String message) {
     	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
     	MailConnectionStatusEvent e = null;
     	for(int i=0; i<listeners.length; i++) {
     		if(e == null) {
-    			e = new MailConnectionStatusEvent(this, connectionConfig, message);
+    			e = new MailConnectionStatusEvent(this, connectionConfig, request, message);
     		}
     		((MailConnectionListener)listeners[i]).mailConnectionStatus(e);
     	}
@@ -128,16 +129,17 @@ public class MailConnectionManager {
      * of an updated status message with a progress percentage.
      * 
      * @param connectionConfig The configuration for the connection that generated this event.
+     * @param request The request-in-progress that status is being provided for.
      * @param message The status message.
      * @param progress The progress percentage.
      */
-    void fireMailConnectionStatus(ConnectionConfig connectionConfig, String message, int progress) {
+    void fireMailConnectionStatus(ConnectionConfig connectionConfig, ConnectionHandlerRequest request, String message, int progress) {
     	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
     	MailConnectionStatusEvent e = null;
     	for(int i=0; i<listeners.length; i++) {
     		if(e == null) {
     			e = new MailConnectionStatusEvent(
-    					this, connectionConfig, message,
+    					this, connectionConfig, request, message,
     					MailConnectionStatusEvent.PROGRESS_MEASURED, progress);
     		}
     		((MailConnectionListener)listeners[i]).mailConnectionStatus(e);
@@ -149,14 +151,15 @@ public class MailConnectionManager {
      * of an error with the mail connection.
      * 
      * @param connectionConfig The configuration for the connection that generated this event.
+     * @param request The request that generated the error.
      * @param message The error message.
      */
-    void fireMailConnectionError(ConnectionConfig connectionConfig, String message) {
+    void fireMailConnectionError(ConnectionConfig connectionConfig, ConnectionHandlerRequest request, String message) {
     	Object[] listeners = listenerList.getListeners(MailConnectionListener.class);
     	MailConnectionStatusEvent e = null;
     	for(int i=0; i<listeners.length; i++) {
     		if(e == null) {
-    			e = new MailConnectionStatusEvent(this, connectionConfig, message);
+    			e = new MailConnectionStatusEvent(this, connectionConfig, request, message);
     		}
     		((MailConnectionListener)listeners[i]).mailConnectionError(e);
     	}

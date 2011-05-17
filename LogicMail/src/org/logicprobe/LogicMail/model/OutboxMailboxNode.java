@@ -359,7 +359,7 @@ public class OutboxMailboxNode extends MailboxNode {
         // Update the outbound map and request the message to be sent
         outboundMessageMap.put(message, outgoingMessageNode);
         outboundMessageNodeMap.put(outgoingMessageNode, message);
-        mailSender.requestSendMessage(envelope, message);
+        mailSender.processRequest(mailSender.createSendMessageRequest(envelope, message));
     }
 
     private void mailSender_MessageSent(MessageSentEvent e) {
@@ -448,7 +448,7 @@ public class OutboxMailboxNode extends MailboxNode {
             // Handle the specific case of a failed server connection being retried
             if(!e.isFinal() && e.getException() instanceof IOException) {
                 AbstractMailSender mailSender = outgoingMessageNode.getMailSender();
-                mailSender.requestSendMessage(e.getEnvelope(), message);
+                mailSender.processRequest(mailSender.createSendMessageRequest(e.getEnvelope(), message));
                 return;
             }
 

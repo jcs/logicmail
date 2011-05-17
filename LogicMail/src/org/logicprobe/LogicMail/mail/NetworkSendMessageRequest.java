@@ -65,7 +65,7 @@ class NetworkSendMessageRequest implements ConnectionHandlerRequest {
     }
     
     private void showStatus(OutgoingMailClient outgoingClient, String message) {
-        MailConnectionManager.getInstance().fireMailConnectionStatus(outgoingClient.getConnectionConfig(), message);
+        MailConnectionManager.getInstance().fireMailConnectionStatus(outgoingClient.getConnectionConfig(), this, message);
     }
 
     public void fireMailStoreRequestFailed(Throwable exception, boolean isFinal) {

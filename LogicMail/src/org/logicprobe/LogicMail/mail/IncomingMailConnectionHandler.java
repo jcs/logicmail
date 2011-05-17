@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.Queue;
 
@@ -42,7 +43,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private final NetworkMailStore mailStore;
     private final IncomingMailClient incomingClient;
     private FolderTreeItem previousActiveFolder;
-
+    private AccountConfig accountConfig;
+    
     /**
      * Maximum amount of time to spend in the idle state.
      * Currently set to 5 minutes. (1000 ms/sec * 60 sec/min * 5 min)
@@ -68,6 +70,13 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private boolean idleRecentMessagesRequested;
     private long idleStartTime;
     
+    private volatile long accumulatedIdleTime;
+    private final Timer pollingTimer = new Timer();
+    private TimerTask pollingTimerTask;
+    
+    private static final int MS_PER_MIN = 60000;
+    private static final int REFRESH_TOLERANCE = 60000;
+    
     /**
      * Listener to handle asynchronous notifications from the mail client.
      */
@@ -88,11 +97,27 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     
     public IncomingMailConnectionHandler(NetworkMailStore mailStore, IncomingMailClient client) {
         super(client);
+        this.accountConfig = client.getAcctConfig();
         this.mailStore = mailStore;
         this.incomingClient = client;
         this.incomingClient.setListener(mailClientListener);
     }
 
+    public void start() {
+        cleanupIdleState();
+        super.start();
+    }
+    
+    public void shutdown(boolean wait) {
+        cleanupIdleState();
+        super.shutdown(wait);
+    }
+    
+    protected void handleRequest(ConnectionHandlerRequest request) throws IOException, MailException {
+        cleanupIdleState();
+        super.handleRequest(request);
+    }
+    
     private void handleRecentFolderMessagesAvailable() {
         if(getConnectionState() == STATE_IDLE) {
             if(idleRecentMessagesRequested) { return; }
@@ -216,10 +241,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         handleSetActiveFolder(inboxFolder);
                     }
                 }
-                MailConnectionHandlerListener listener = getListener();
-                if(listener != null) {
-                    listener.mailConnectionIdleTimeout(System.currentTimeMillis() - idleStartTime);
-                }
+                handleConnectionIdleTimeout(System.currentTimeMillis() - idleStartTime);
             }
         }
     }
@@ -231,12 +253,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     
     void handleRequestDisconnectTimeout() throws IOException, MailException {
         this.previousActiveFolder = null;
-        
-        MailConnectionHandlerListener listener = getListener();
-        if(listener != null) {
-            listener.mailConnectionDisconnectTimeout(System.currentTimeMillis() - idleStartTime);
-        }
-        
+        handleConnectionDisconnectTimeout(System.currentTimeMillis() - idleStartTime);
         throw new MailException("", true, REQUEST_DISCONNECT_TIMEOUT);
     }
 
@@ -246,5 +263,69 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         if(!isStateValid) {
             mailStore.fireFolderRefreshRequired(folder);
         }
+    }
+    
+    private void handleConnectionIdleTimeout(long idleDuration) {
+        accumulatedIdleTime += idleDuration;
+        
+        long refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
+
+        if(refreshFrequency == 0) {
+            accumulatedIdleTime = 0;
+            return;
+        }
+        
+        // If we've been idle for a time period close to the refresh frequency,
+        // then we should trigger a refresh.
+        if(Math.abs(accumulatedIdleTime - refreshFrequency) < REFRESH_TOLERANCE) {
+            accumulatedIdleTime = 0;
+            mailStore.fireRefreshRequired();
+        }
+    }
+    
+    private void handleConnectionDisconnectTimeout(long idleDuration) {
+        accumulatedIdleTime += idleDuration;
+        
+        long refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
+        
+        if(refreshFrequency == 0) {
+            accumulatedIdleTime = 0;
+            return;
+        }
+        
+        // If we've been idle for a time period close to the refresh frequency,
+        // then we should trigger a refresh.
+        if((accumulatedIdleTime + (REFRESH_TOLERANCE >>> 1)) > refreshFrequency) {
+            accumulatedIdleTime = 0;
+            mailStore.fireRefreshRequired();
+        }
+        else {
+            // Otherwise, we should start the polling timer
+            long nextRefresh = refreshFrequency - accumulatedIdleTime;
+            
+            synchronized(pollingTimer) {
+                if(pollingTimerTask != null) {
+                    pollingTimerTask.cancel();
+                    pollingTimerTask = null;
+                }
+                pollingTimerTask = new TimerTask() {
+                    public void run() {
+                        accumulatedIdleTime = 0;
+                        mailStore.fireRefreshRequired();
+                    }
+                };
+                pollingTimer.schedule(pollingTimerTask, nextRefresh);
+            }
+        }
+    }
+    
+    private void cleanupIdleState() {
+        synchronized(pollingTimer) {
+            if(pollingTimerTask != null) {
+                pollingTimerTask.cancel();
+                pollingTimerTask = null;
+            }
+        }
+        accumulatedIdleTime = 0;
     }
 }

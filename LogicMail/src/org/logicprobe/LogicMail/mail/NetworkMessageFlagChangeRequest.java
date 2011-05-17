@@ -61,7 +61,6 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
     }
     
     public void execute(MailClient client) throws IOException, MailException {
-        super.execute(client);
         IncomingMailClient incomingClient = (IncomingMailClient)client;
 
         if(messageFlags.isDeleted()) {

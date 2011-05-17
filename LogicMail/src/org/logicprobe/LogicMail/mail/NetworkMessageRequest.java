@@ -82,7 +82,6 @@ class NetworkMessageRequest extends NetworkMailStoreRequest implements MessageRe
     }
     
     public void execute(MailClient client) throws IOException, MailException {
-        super.execute(client);
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
         String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);

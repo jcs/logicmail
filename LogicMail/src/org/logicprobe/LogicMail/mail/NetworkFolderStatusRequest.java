@@ -48,7 +48,6 @@ class NetworkFolderStatusRequest extends NetworkMailStoreRequest implements Fold
     }
 
     public void execute(MailClient client) throws IOException, MailException {
-        super.execute(client);
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);

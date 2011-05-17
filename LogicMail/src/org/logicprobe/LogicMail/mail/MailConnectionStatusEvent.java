@@ -37,9 +37,10 @@ import org.logicprobe.LogicMail.conf.ConnectionConfig;
  * Object for mail connection status events.
  */
 public class MailConnectionStatusEvent extends MailConnectionEvent {
-	private String message;
-	private int progressType;
-	private int progressPercentage;
+	private final String message;
+	private final int progressType;
+	private final int progressPercentage;
+	private final ConnectionHandlerRequest request;
 	
 	/** The progress is indeterminate. */
 	public static final int PROGRESS_INDETERMINATE = 0;
@@ -51,12 +52,14 @@ public class MailConnectionStatusEvent extends MailConnectionEvent {
 	 * 
 	 * @param source the source
 	 * @param connectionConfig the connection configuration instance
+	 * @param request the request-in-progress that status is being provided for
 	 * @param message the status message
 	 * @param progressType the progress type
 	 * @param progressPercentage the progress percentage
 	 */
-	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, String message, int progressType, int progressPercentage) {
+	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, ConnectionHandlerRequest request, String message, int progressType, int progressPercentage) {
 		super(source, connectionConfig);
+		this.request = request;
 		this.message = message;
 		this.progressType = progressType;
 		this.progressPercentage = progressPercentage;
@@ -68,12 +71,22 @@ public class MailConnectionStatusEvent extends MailConnectionEvent {
 	 * 
 	 * @param source the source
 	 * @param connectionConfig the connection configuration instance
+	 * @param request the request-in-progress that status is being provided for
 	 * @param message the status message
 	 */
-	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, String message) {
-		this(source, connectionConfig, message, PROGRESS_INDETERMINATE, 0);
+	public MailConnectionStatusEvent(Object source, ConnectionConfig connectionConfig, ConnectionHandlerRequest request, String message) {
+		this(source, connectionConfig, request, message, PROGRESS_INDETERMINATE, 0);
 	}
 
+	/**
+	 * Gets the request-in-progress that status is being provided for.
+	 *
+	 * @return the request-in-progress, or <code>null</code> if not applicable
+	 */
+	public ConnectionHandlerRequest getRequest() {
+        return request;
+    }
+	
 	/**
 	 * Gets the status message.
 	 * 
