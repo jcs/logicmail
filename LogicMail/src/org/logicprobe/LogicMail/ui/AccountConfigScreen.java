@@ -115,6 +115,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private BasicEditField imapMaxMessageSizeEditField;
     private BasicEditField imapMaxFolderDepthEditField;
     private CheckboxField imapShowOnlySubscribedField;
+    private CheckboxField imapEnableCompressionField;
     // Advanced settings fields (POP)
     private BasicEditField popMaxLinesEditField;
 
@@ -503,10 +504,15 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                     resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_ONLY_SUBSCRIBED_FOLDERS),
                     imapConfig.getOnlySubscribedFolders());
 
+            imapEnableCompressionField = new CheckboxField(
+                    resources.getString(LogicMailResource.CONFIG_ACCOUNT_IMAP_ENABLE_COMPRESSION),
+                    imapConfig.getEnableCompression());
+            
             manager.add(imapFolderPrefixField);
             manager.add(imapMaxMessageSizeEditField);
             manager.add(imapMaxFolderDepthEditField);
             manager.add(imapShowOnlySubscribedField);
+            manager.add(imapEnableCompressionField);
         }
         else if(accountConfig instanceof PopConfig) {
             PopConfig popConfig = (PopConfig)accountConfig;
@@ -893,6 +899,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
             } catch (Exception e) { }
 
             imapConfig.setOnlySubscribedFolders(imapShowOnlySubscribedField.getChecked());
+            imapConfig.setEnableCompression(imapEnableCompressionField.getChecked());
         }
         else if(accountConfig instanceof PopConfig) {
             PopConfig popConfig = (PopConfig)accountConfig;

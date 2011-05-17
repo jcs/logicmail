@@ -187,6 +187,24 @@ public class ImapProtocol {
     }
 
     /**
+     * Execute the "COMPRESS DEFLATE" command
+     * @return true, if compression was successfully enabled
+     */
+    public boolean executeCompressDeflate() throws IOException, MailException {
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("ImapProtocol.executeCompress()").getBytes(), EventLogger.DEBUG_INFO);
+        }
+
+        try {
+            execute(COMPRESS, DEFLATE, null);
+        } catch (MailException e) {
+            return false;
+        }
+        return true;
+    }
+    
+    /**
      * Execute the "NAMESPACE" command
      * @return A fully populated Namespace object
      */
@@ -2060,6 +2078,8 @@ public class ImapProtocol {
     private static String LOGOUT = "LOGOUT";
     private static String LOGIN = "LOGIN";
     private static String STARTTLS = "STARTTLS";
+    private static String COMPRESS = "COMPRESS";
+    private static String DEFLATE = "DEFLATE";
     private static String FLAG_MARKED = "\\Marked";
     private static String FLAG_NOINFERIORS = "\\Noinferiors";
     private static String FLAG_HAS_CHILDREN = "\\HasChildren";

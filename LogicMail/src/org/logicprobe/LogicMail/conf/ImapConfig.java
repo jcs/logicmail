@@ -53,6 +53,7 @@ public class ImapConfig extends AccountConfig {
     private int maxMessageSize;
     private int maxFolderDepth;
     private boolean onlySubscribedFolders;
+    private boolean enableCompression;
 
     /**
      * Instantiates a new connection configuration with defaults.
@@ -82,6 +83,7 @@ public class ImapConfig extends AccountConfig {
         this.maxFolderDepth = 4;
         this.folderPrefix = "";
         this.onlySubscribedFolders = true;
+        this.enableCompression = true;
     }
 
     /* (non-Javadoc)
@@ -229,6 +231,27 @@ public class ImapConfig extends AccountConfig {
         }
     }
 
+    /**
+     * Gets whether to enable compression.
+     *
+     * @return whether to enable compression
+     */
+    public boolean getEnableCompression() {
+        return enableCompression;
+    }
+    
+    /**
+     * Sets whether to enable compression.
+     *
+     * @param enableCompression true, if compression is enabled
+     */
+    public void setEnableCompression(boolean enableCompression) {
+        if(this.enableCompression != enableCompression) {
+            this.enableCompression = enableCompression;
+            changeType |= CHANGE_TYPE_ADVANCED;
+        }
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.conf.AccountConfig#writeConfigItems(org.logicprobe.LogicMail.util.SerializableHashtable)
      */
@@ -251,6 +274,7 @@ public class ImapConfig extends AccountConfig {
         table.put("account_imap_maxMessageSize", new Integer(maxMessageSize));
         table.put("account_imap_maxFolderDepth", new Integer(maxFolderDepth));
         table.put("account_imap_onlySubscribedFolders", new Boolean(onlySubscribedFolders));
+        table.put("account_imap_enableCompression", new Boolean(enableCompression));
     }
 
     /* (non-Javadoc)
@@ -281,6 +305,10 @@ public class ImapConfig extends AccountConfig {
         value = table.get("account_imap_onlySubscribedFolders");
         if(value instanceof Boolean) {
             onlySubscribedFolders = ((Boolean)value).booleanValue();
+        }
+        value = table.get("account_imap_enableCompression");
+        if(value instanceof Boolean) {
+            enableCompression = ((Boolean)value).booleanValue();
         }
     }
 }

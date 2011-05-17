@@ -132,6 +132,7 @@ public class ImapClient extends AbstractIncomingMailClient {
     private static String CAPABILITY_NAMESPACE = "NAMESPACE";
     private static String CAPABILITY_STARTTLS = "STARTTLS";
     private static String CAPABILITY_IDLE = "IDLE";
+    private static String CAPABILITY_COMPRESS = "COMPRESS=DEFLATE";
     
     public ImapClient(NetworkConnector networkConnector, GlobalConfig globalConfig, ImapConfig accountConfig) {
         this(networkConnector, globalConfig, accountConfig, new ImapProtocol());
@@ -208,6 +209,14 @@ public class ImapClient extends AbstractIncomingMailClient {
                 return false;
             }
 
+            // Enable compression, if enabled and supported
+            if(accountConfig.getEnableCompression()
+                    && capabilities.containsKey(CAPABILITY_COMPRESS)) {
+                if(imapProtocol.executeCompressDeflate()) {
+                    connection.enableCompression();
+                }
+            }
+            
             // Get the namespaces, if supported
             if(capabilities.containsKey(CAPABILITY_NAMESPACE)) {
                 ImapProtocol.NamespaceResponse nsResponse = imapProtocol.executeNamespace();

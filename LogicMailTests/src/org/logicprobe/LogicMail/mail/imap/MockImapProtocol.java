@@ -167,6 +167,33 @@ public class MockImapProtocol extends org.logicprobe.LogicMail.mail.imap.ImapPro
         super.executeClose();
     }
 
+    public static final MockMethod MTHD_EXECUTE_COMPRESS_DEFLATE = new MockMethod(
+        MockImapProtocol.class, 
+        "MTHD_EXECUTE_COMPRESS_DEFLATE",
+        new Class[]{},
+        new Class[]{java.io.IOException.class, org.logicprobe.LogicMail.mail.MailException.class},
+        Boolean.class,
+        false);
+    public boolean executeCompressDeflate() throws java.io.IOException, org.logicprobe.LogicMail.mail.MailException {
+        try {
+            Object[] args = new Object[0];
+            MethodInvocation mi = new MethodInvocation(MTHD_EXECUTE_COMPRESS_DEFLATE, this, args);
+            getInvocationHandler().invoke(mi);
+            if (mi.isEvaluated()) {
+                Object retVal = mi.getReturnValue();
+                AMockObject.assertReturnNotNull(MTHD_EXECUTE_COMPRESS_DEFLATE, retVal);
+                return ((Boolean)retVal).booleanValue();
+            }
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            if (t instanceof java.io.IOException) { throw (java.io.IOException)t; }
+            if (t instanceof org.logicprobe.LogicMail.mail.MailException) { throw (org.logicprobe.LogicMail.mail.MailException)t; }
+            throw new HammockException(t);
+        }
+        return super.executeCompressDeflate();
+    }
+
     public static final MockMethod MTHD_EXECUTE_CONTINUE_$_STRING_STRING_STRING_STRING = new MockMethod(
         MockImapProtocol.class, 
         "MTHD_EXECUTE_CONTINUE_$_STRING_STRING_STRING_STRING",

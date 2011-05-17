@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.util;
 
+import net.rim.device.api.compress.ZLibInputStream;
+import net.rim.device.api.compress.ZLibOutputStream;
 import net.rim.device.api.io.NoCopyByteArrayOutputStream;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
@@ -97,6 +99,15 @@ public class Connection {
         this.localAddress = socket.getLocalAddress();
         this.bytesSent = 0;
         this.bytesReceived = 0;
+    }
+    
+    /**
+     * Enables compression on the I/O sockets using ZLib.
+     */
+    public void enableCompression() {
+        if(this.input instanceof ZLibInputStream) { return; }
+        this.input = new ZLibInputStream(this.input, true);
+        this.output = new ZLibOutputStream(this.output, true);
     }
     
     /**
