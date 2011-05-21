@@ -71,7 +71,7 @@ public abstract class MailStoreServices {
                 fireFolderTreeUpdated(e.getFolder());
             }
             public void refreshRequired(MailStoreEvent e) {
-                fireRefreshRequired();
+                fireRefreshRequired(e.getEventOrigin());
             }
         });
         mailStore.addFolderListener(new FolderListener() {
@@ -93,7 +93,7 @@ public abstract class MailStoreServices {
                 handleFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
             }
             public void folderRefreshRequired(FolderEvent e) {
-                handleFolderRefreshRequired(e.getFolder());
+                handleFolderRefreshRequired(e.getFolder(), e.getEventOrigin());
             }
         });
         mailStore.addMessageListener(new MessageListener() {
@@ -627,12 +627,12 @@ public abstract class MailStoreServices {
      * Notifies all registered <tt>MailStoreListener</tt>s that the mail store
      * has been idle long enough to trigger an automatic refresh.
      */
-    protected final void fireRefreshRequired() {
+    protected final void fireRefreshRequired(int eventOrigin) {
         Object[] listeners = listenerList.getListeners(MailStoreListener.class);
         MailStoreEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MailStoreEvent(this);
+                e = new MailStoreEvent(this, eventOrigin);
             }
             ((MailStoreListener)listeners[i]).refreshRequired(e);
         }
@@ -717,7 +717,7 @@ public abstract class MailStoreServices {
         }
     }
 
-    protected void handleFolderRefreshRequired(FolderTreeItem folder) { }
+    protected void handleFolderRefreshRequired(FolderTreeItem folder, int eventOrigin) { }
     
     protected void handleFolderExpunged(FolderTreeItem folder, int[] indices, MessageToken[] updatedTokens) {
         fireFolderExpunged(folder, indices, updatedTokens);

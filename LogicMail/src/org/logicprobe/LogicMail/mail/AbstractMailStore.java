@@ -448,13 +448,17 @@ public abstract class AbstractMailStore {
     /**
      * Notifies all registered <tt>MailStoreListener</tt>s that the mail store
      * has been idle long enough to trigger an automatic refresh.
+     * 
+     * @param deliberate true, if the refresh is being required as the result
+     *   of a deliberate user-triggered action
      */
-    protected void fireRefreshRequired() {
+    protected void fireRefreshRequired(boolean deliberate) {
         Object[] listeners = listenerList.getListeners(MailStoreListener.class);
         MailStoreEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new MailStoreEvent(this);
+                e = new MailStoreEvent(this,
+                        deliberate ? MailStoreEvent.ORIGIN_DELIBERATE : MailStoreEvent.ORIGIN_POLLING);
             }
             ((MailStoreListener)listeners[i]).refreshRequired(e);
         }
@@ -519,13 +523,16 @@ public abstract class AbstractMailStore {
      * a folder refresh is required.
      * 
      * @param folder The folder which requires a refresh
+     * @param deliberate true, if the refresh is being required as the result
+     *   of a deliberate user-triggered action
      */
-    protected void fireFolderRefreshRequired(FolderTreeItem folder) {
+    protected void fireFolderRefreshRequired(FolderTreeItem folder, boolean deliberate) {
         Object[] listeners = listenerList.getListeners(FolderListener.class);
         FolderEvent e = null;
         for(int i=0; i<listeners.length; i++) {
             if(e == null) {
-                e = new FolderEvent(this, folder);
+                e = new FolderEvent(this, folder,
+                        deliberate ? MailStoreEvent.ORIGIN_DELIBERATE : MailStoreEvent.ORIGIN_POLLING);
             }
             ((FolderListener)listeners[i]).folderRefreshRequired(e);
         }

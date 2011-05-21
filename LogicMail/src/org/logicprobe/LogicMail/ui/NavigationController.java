@@ -173,7 +173,9 @@ public final class NavigationController {
 	}
 	
 	private void handleMailConnectionStatus(MailConnectionStatusEvent e) {
-	    statusRunnable.updateStatus(e);
+	    if(e.getRequest() == null || e.getRequest().isDeliberate()) {
+	        statusRunnable.updateStatus(e);
+	    }
 	}
 
 	private final MailConnectionStatusRunnable statusRunnable = new MailConnectionStatusRunnable();
@@ -222,6 +224,8 @@ public final class NavigationController {
 	}
 	
 	private void handleMailConnectionError(MailConnectionStatusEvent e) {
+	    if(e.getRequest() != null && !e.getRequest().isDeliberate()) { return; }
+	    
 		UiApplication.getUiApplication().invokeLater(new EventObjectRunnable(e) {
 			public void run() {
 				String message = ((MailConnectionStatusEvent)getEvent()).getMessage();

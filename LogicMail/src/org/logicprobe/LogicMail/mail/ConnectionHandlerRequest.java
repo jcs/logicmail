@@ -34,6 +34,8 @@ package org.logicprobe.LogicMail.mail;
 import java.io.IOException;
 
 public interface ConnectionHandlerRequest {
+    void setDeliberate(boolean deliberate);
+    boolean isDeliberate();
     void execute(MailClient client) throws IOException, MailException;
-    void fireMailStoreRequestFailed(Throwable exception, boolean isFinal);
+    void notifyConnectionRequestFailed(Throwable exception, boolean isFinal);
 }

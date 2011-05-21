@@ -126,13 +126,15 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         
         // Make sure we ignore this event if it occurs during the setup portion
         // of the command normally enqueued as a result of this notification.
-        ConnectionHandlerRequest request = getRequestInProgress();
-        if(request instanceof FolderMessagesRequest
-                && ((FolderMessagesRequest)request).getType() == FolderMessagesRequest.TYPE_RECENT) {
+        ConnectionHandlerRequest currentRequest = getRequestInProgress();
+        if(currentRequest instanceof FolderMessagesRequest
+                && ((FolderMessagesRequest)currentRequest).getType() == FolderMessagesRequest.TYPE_RECENT) {
             return;
         }
 
-        mailStore.processRequest(mailStore.createFolderMessagesRecentRequest(incomingClient.getActiveFolder(), false));
+        FolderMessagesRequest request = mailStore.createFolderMessagesRecentRequest(incomingClient.getActiveFolder(), false);
+        ((ConnectionHandlerRequest)request).setDeliberate(false);
+        mailStore.processRequest(request);
     }
 
     private void handleFolderMessageFlagsChanged(MessageToken token, MessageFlags messageFlags) {
@@ -227,7 +229,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 // An idle timeout on a mail store with locked folders should
                 // be handled by promptly disconnecting.  That way, any further
                 // data requests will cause a reconnect and get fresh data.
-                mailStore.processRequest(new NetworkDisconnectRequest(mailStore, NetworkDisconnectRequest.REQUEST_DISCONNECT_TIMEOUT));
+                NetworkDisconnectRequest disconnectRequest = new NetworkDisconnectRequest(mailStore, NetworkDisconnectRequest.REQUEST_DISCONNECT_TIMEOUT);
+                disconnectRequest.setDeliberate(false);
+                mailStore.processRequest(disconnectRequest);
             }
             else {
                 incomingClient.noop();
@@ -261,7 +265,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         boolean isStateValid = incomingClient.setActiveFolder(folder, true);
         
         if(!isStateValid) {
-            mailStore.fireFolderRefreshRequired(folder);
+            mailStore.fireFolderRefreshRequired(folder, false);
         }
     }
     
@@ -279,7 +283,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         // then we should trigger a refresh.
         if(Math.abs(accumulatedIdleTime - refreshFrequency) < REFRESH_TOLERANCE) {
             accumulatedIdleTime = 0;
-            mailStore.fireRefreshRequired();
+            mailStore.fireRefreshRequired(false);
         }
     }
     
@@ -297,25 +301,36 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         // then we should trigger a refresh.
         if((accumulatedIdleTime + (REFRESH_TOLERANCE >>> 1)) > refreshFrequency) {
             accumulatedIdleTime = 0;
-            mailStore.fireRefreshRequired();
+            mailStore.fireRefreshRequired(false);
         }
         else {
             // Otherwise, we should start the polling timer
             long nextRefresh = refreshFrequency - accumulatedIdleTime;
             
-            synchronized(pollingTimer) {
-                if(pollingTimerTask != null) {
-                    pollingTimerTask.cancel();
-                    pollingTimerTask = null;
-                }
-                pollingTimerTask = new TimerTask() {
-                    public void run() {
-                        accumulatedIdleTime = 0;
-                        mailStore.fireRefreshRequired();
-                    }
-                };
-                pollingTimer.schedule(pollingTimerTask, nextRefresh);
+            schedulePollingRefresh(nextRefresh);
+        }
+    }
+    
+    protected void handleFailedConnection(boolean isSilent) {
+        long refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
+        if(refreshFrequency == 0) { return; }
+        
+        schedulePollingRefresh(refreshFrequency);
+    }
+
+    private void schedulePollingRefresh(long nextRefresh) {
+        synchronized(pollingTimer) {
+            if(pollingTimerTask != null) {
+                pollingTimerTask.cancel();
+                pollingTimerTask = null;
             }
+            pollingTimerTask = new TimerTask() {
+                public void run() {
+                    accumulatedIdleTime = 0;
+                    mailStore.fireRefreshRequired(false);
+                }
+            };
+            pollingTimer.schedule(pollingTimerTask, nextRefresh);
         }
     }
     

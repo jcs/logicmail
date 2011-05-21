@@ -537,18 +537,19 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
         super.fireFolderMessageIndexMapAvailable(arg0, arg1);
     }
 
-    public static final MockMethod MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM = new MockMethod(
+    public static final MockMethod MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM_BOOLEAN = new MockMethod(
         MockAbstractMailStore.class, 
-        "MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM",
-        new Class[]{org.logicprobe.LogicMail.mail.FolderTreeItem.class},
+        "MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM_BOOLEAN",
+        new Class[]{org.logicprobe.LogicMail.mail.FolderTreeItem.class, Boolean.class},
         new Class[]{},
         null,
         false);
-    public void fireFolderRefreshRequired(org.logicprobe.LogicMail.mail.FolderTreeItem arg0)  {
+    public void fireFolderRefreshRequired(org.logicprobe.LogicMail.mail.FolderTreeItem arg0, boolean arg1)  {
         try {
-            Object[] args = new Object[1];
+            Object[] args = new Object[2];
             args[0] = arg0;
-            MethodInvocation mi = new MethodInvocation(MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM, this, args);
+            args[1] = new Boolean(arg1);
+            MethodInvocation mi = new MethodInvocation(MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM_BOOLEAN, this, args);
             getInvocationHandler().invoke(mi);
             if (mi.isEvaluated()) {
                 mi.getReturnValue();
@@ -559,7 +560,7 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
             if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
             throw new HammockException(t);
         }
-        super.fireFolderRefreshRequired(arg0);
+        super.fireFolderRefreshRequired(arg0, arg1);
     }
 
     public static final MockMethod MTHD_FIRE_FOLDER_STATUS_CHANGED_$_FOLDERTREEITEM = new MockMethod(
@@ -693,17 +694,18 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
         super.fireMessageFlagsChanged(arg0, arg1);
     }
 
-    public static final MockMethod MTHD_FIRE_REFRESH_REQUIRED = new MockMethod(
+    public static final MockMethod MTHD_FIRE_REFRESH_REQUIRED_$_BOOLEAN = new MockMethod(
         MockAbstractMailStore.class, 
-        "MTHD_FIRE_REFRESH_REQUIRED",
-        new Class[]{},
+        "MTHD_FIRE_REFRESH_REQUIRED_$_BOOLEAN",
+        new Class[]{Boolean.class},
         new Class[]{},
         null,
         false);
-    public void fireRefreshRequired()  {
+    public void fireRefreshRequired(boolean arg0)  {
         try {
-            Object[] args = new Object[0];
-            MethodInvocation mi = new MethodInvocation(MTHD_FIRE_REFRESH_REQUIRED, this, args);
+            Object[] args = new Object[1];
+            args[0] = new Boolean(arg0);
+            MethodInvocation mi = new MethodInvocation(MTHD_FIRE_REFRESH_REQUIRED_$_BOOLEAN, this, args);
             getInvocationHandler().invoke(mi);
             if (mi.isEvaluated()) {
                 mi.getReturnValue();
@@ -714,7 +716,7 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
             if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
             throw new HammockException(t);
         }
-        super.fireRefreshRequired();
+        super.fireRefreshRequired(arg0);
     }
 
     public static final MockMethod MTHD_GET_FOLDER_LISTENERS = new MockMethod(

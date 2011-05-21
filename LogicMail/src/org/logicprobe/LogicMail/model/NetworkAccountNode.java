@@ -328,7 +328,7 @@ public class NetworkAccountNode extends AccountNode {
     }
 
     protected void mailStoreRefreshRequired(MailStoreEvent e) {
-        triggerAutomaticRefresh();
+        triggerAutomaticRefresh(e.getEventOrigin() == MailStoreEvent.ORIGIN_DELIBERATE);
     }
     
     /**
@@ -336,12 +336,15 @@ public class NetworkAccountNode extends AccountNode {
      * account configuration.  This method can be called on application startup,
      * or due to an idle timeout, but is never called as a direct result of
      * user action.
+     * 
+     * @param deliberate true, if the refresh is deliberately triggered due to
+     *     user interaction.
      */
-    public void triggerAutomaticRefresh() {
+    public void triggerAutomaticRefresh(boolean deliberate) {
         // All accounts have an INBOX that can be refreshed
         MailboxNode inboxMailbox = this.getInboxMailbox();
         if(inboxMailbox != null) {
-            inboxMailbox.refreshMessages();
+            inboxMailbox.refreshMessages(deliberate);
         }
         
         // IMAP accounts can optionally configure additional mailboxes for refresh
@@ -352,7 +355,7 @@ public class NetworkAccountNode extends AccountNode {
                         || refreshMailboxes[i].getUniqueId() == inboxMailbox.getUniqueId()) {
                     continue;
                 }
-                refreshMailboxes[i].refreshMessages();
+                refreshMailboxes[i].refreshMessages(deliberate);
             }
         }
     }

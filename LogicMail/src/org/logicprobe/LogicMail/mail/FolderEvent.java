@@ -37,11 +37,14 @@ package org.logicprobe.LogicMail.mail;
 public class FolderEvent extends MailStoreEvent {
 	private final FolderTreeItem folder;
 	
-    /** Creates a new instance of FolderEvent */
-	public FolderEvent(Object source, FolderTreeItem folder) {
-		super(source);
+	public FolderEvent(Object source, FolderTreeItem folder, int eventOrigin) {
+		super(source, eventOrigin);
 		this.folder = folder;
 	}
+	
+    public FolderEvent(Object source, FolderTreeItem folder) {
+        this(source, folder, MailStoreEvent.ORIGIN_DELIBERATE);
+    }
 
 	/**
 	 * Gets the folder that has been updated to trigger this event.

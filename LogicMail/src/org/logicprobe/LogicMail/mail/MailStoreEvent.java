@@ -37,8 +37,23 @@ import org.logicprobe.LogicMail.util.EventObject;
  * Object for MailStore events. 
  */
 public class MailStoreEvent extends EventObject {
-    /** Creates a new instance of MailStoreEvent */
+    /** The origin of this event was a deliberate user action. */
+    public static final int ORIGIN_DELIBERATE = 1;
+    /** The origin of this event was a background idle/polling thread. */
+    public static final int ORIGIN_POLLING = 2;
+    
+    private final int eventOrigin;
+    
+    public MailStoreEvent(Object source, int eventOrigin) {
+        super(source);
+        this.eventOrigin = eventOrigin;
+    }
+    
 	public MailStoreEvent(Object source) {
-		super(source);
+		this(source, ORIGIN_DELIBERATE);
+	}
+	
+	public int getEventOrigin() {
+	    return eventOrigin;
 	}
 }

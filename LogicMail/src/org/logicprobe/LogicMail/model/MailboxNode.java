@@ -1102,15 +1102,17 @@ public class MailboxNode implements Node, Serializable {
 	
     /**
      * Called to refresh the message list contained within this mailbox.
-     * This currently replaces the existing message list with the N most
-     * recent messages, as defined in the configuration options.
-     * 
-     * Eventually, this needs to replaced or supplemented with a more
-     * sophisticated version that can selectively load additional
-     * messages without replacing the existing ones. 
+     *  
+     * @param deliberate true, if the refresh is deliberately triggered due to
+     *     user interaction.
      */
-    public void refreshMessages() {
-        parentAccount.getMailStoreServices().requestFolderRefresh(this.folderTreeItem);
+    public void refreshMessages(boolean deliberate) {
+        if(!deliberate && parentAccount instanceof NetworkAccountNode) {
+            ((NetworkMailStoreServices)parentAccount.getMailStoreServices()).requestFolderRefreshAutomated(this.folderTreeItem);
+        }
+        else {
+            parentAccount.getMailStoreServices().requestFolderRefresh(this.folderTreeItem);
+        }
     }
 
     /**

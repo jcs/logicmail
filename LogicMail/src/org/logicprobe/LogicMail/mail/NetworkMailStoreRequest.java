@@ -41,6 +41,7 @@ import org.logicprobe.LogicMail.util.StringParser;
 abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implements ConnectionHandlerRequest {
     protected final NetworkMailStore mailStore;
     protected final AccountConfig config;
+    private boolean deliberate = true;
     
     NetworkMailStoreRequest(NetworkMailStore mailStore) {
         this.mailStore = mailStore;
@@ -49,6 +50,18 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
     
     public AbstractMailStore getMailStore() {
         return mailStore;
+    }
+
+    public void setDeliberate(boolean deliberate) {
+        this.deliberate = deliberate;
+    }
+    
+    public boolean isDeliberate() {
+        return deliberate;
+    }
+    
+    public void notifyConnectionRequestFailed(Throwable exception, boolean isFinal) {
+        fireMailStoreRequestFailed(exception, isFinal);
     }
     
     protected void checkActiveFolder(IncomingMailClient incomingClient, FolderTreeItem requestFolder) throws IOException, MailException {
@@ -61,7 +74,7 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         FolderTreeItem invalidFolder = incomingClient.setActiveFolder(messageToken, true);
         
         if(invalidFolder != null) {
-            mailStore.fireFolderRefreshRequired(invalidFolder);
+            mailStore.fireFolderRefreshRequired(invalidFolder, this.deliberate);
         }
     }
     
@@ -69,7 +82,7 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         boolean isStateValid = incomingClient.setActiveFolder(folder, true);
         
         if(!isStateValid) {
-            mailStore.fireFolderRefreshRequired(folder);
+            mailStore.fireFolderRefreshRequired(folder, this.deliberate);
         }
     }
     

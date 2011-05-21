@@ -50,6 +50,7 @@ public abstract class AbstractMailConnectionHandler {
 	private MailClient client;
 	private ConnectionThread connectionThread;
 	private int state;
+	private boolean transitionSilent;
 	private Queue requestQueue;
 	private int retryCount;
 	private boolean invalidLogin;
@@ -157,10 +158,11 @@ public abstract class AbstractMailConnectionHandler {
 	 * Handles the CLOSED state.
 	 */
 	private void handleClosedConnection() {
-		showStatus(null);
+		showTransitionStatus(null);
 		synchronized(requestQueue) {
 			if(requestQueue.element() != null) {
-				setConnectionState(STATE_OPENING);
+				setConnectionState(STATE_OPENING,
+				        !((ConnectionHandlerRequest)requestQueue.element()).isDeliberate());
 			}
 			else if(!connectionThread.isShutdown()) {
 				try {
@@ -180,7 +182,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
      */
 	private void handleOpeningConnection() throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_OPENING_CONNECTION));
+		showTransitionStatus(resources.getString(LogicMailResource.MAILCONNECTION_OPENING_CONNECTION));
 		if(checkLogin(client)) {
 			if(client.open()) {
 				invalidLogin = false;
@@ -196,7 +198,7 @@ public abstract class AbstractMailConnectionHandler {
 			}
 		}
 		// Unable to open, so transition to closing and clear the queue
-        setConnectionState(STATE_CLOSING);
+        setConnectionState(STATE_CLOSING, this.transitionSilent);
         synchronized(requestQueue) {
             clearRequestQueue(null);
         }
@@ -209,7 +211,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
 	 */
 	private void handleOpenedConnection() throws IOException, MailException {
-		showStatus(null);
+		showTransitionStatus(null);
 		retryCount = 0;
 		synchronized(requestQueue) {
 			if(requestQueue.element() != null) {
@@ -279,7 +281,7 @@ public abstract class AbstractMailConnectionHandler {
 	 * @param isFinal true if the connection will be closed, false if it is being reopened
 	 */
 	protected void handleRequestFailed(ConnectionHandlerRequest request, Throwable exception, boolean isFinal) {
-	    request.fireMailStoreRequestFailed(exception, isFinal);
+	    request.notifyConnectionRequestFailed(exception, isFinal);
 	}
 	
     /**
@@ -291,7 +293,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
      */
 	private void handleIdleConnection() throws IOException, MailException {
-		showStatus(null);
+		showTransitionStatus(null);
 		
 		handleBeginIdle();
 
@@ -360,7 +362,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws MailException on protocol errors
      */
 	private void handleClosingConnection() throws IOException, MailException {
-		showStatus(resources.getString(LogicMailResource.MAILCONNECTION_CLOSING_CONNECTION));
+		showTransitionStatus(resources.getString(LogicMailResource.MAILCONNECTION_CLOSING_CONNECTION));
 		handleBeforeClosing();
 		try { client.close(); } catch (IOException e) {} catch (MailException e) {}
 		setConnectionState(STATE_CLOSED);
@@ -387,14 +389,25 @@ public abstract class AbstractMailConnectionHandler {
 		return this.state;
 	}
 	
+    /**
+     * Sets the current connection state.
+     * 
+     * @param state Connection state
+     */
+    protected void setConnectionState(int state) {
+        setConnectionState(state, false);
+    }
+    
 	/**
 	 * Sets the current connection state.
 	 * 
 	 * @param state Connection state
+	 * @param transitionSilent true, if the transition should not cause a notification
 	 */
-	protected synchronized void setConnectionState(int state) {
+	protected synchronized void setConnectionState(int state, boolean transitionSilent) {
 		if(state >= STATE_CLOSED && state <= STATE_CLOSING) {
 			this.state = state;
+			this.transitionSilent = transitionSilent;
 		}
 	}
 	
@@ -442,18 +455,10 @@ public abstract class AbstractMailConnectionHandler {
 	 * 
 	 * @param message The message to show
 	 */
-	protected void showStatus(String message) {
-		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), null, message);
-	}
-	
-	/**
-	 * Show a status message with a progress percentage.
-	 * 
-	 * @param message The message to show
-	 * @param progress The progress percentage
-	 */
-	protected void showStatus(String message, int progress) {
-		MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), null, message, progress);
+	protected void showTransitionStatus(String message) {
+	    if(message == null || !transitionSilent) {
+	        MailConnectionManager.getInstance().fireMailConnectionStatus(client.getConnectionConfig(), null, message);
+	    }
 	}
 	
 	/**
@@ -502,6 +507,16 @@ public abstract class AbstractMailConnectionHandler {
 	}
 
 	/**
+	 * Called when a connection cannot be opened.
+	 * Subclasses should override this if they need to implement some sort of
+	 * polling and/or retry behavior that does not respond immediately.
+	 * 
+	 * @param isSilent true, if the operation in progress is not one that the
+	 *     user was being given status notifications for
+	 */
+	protected void handleFailedConnection(boolean isSilent) { }
+	
+	/**
 	 * Handles <tt>IOException</tt>s that occur during a connection.
 	 * These are typically due to network errors, and are handled
 	 * in different ways depending on the connection state:
@@ -518,18 +533,28 @@ public abstract class AbstractMailConnectionHandler {
 
 		int state = getConnectionState();
 		boolean isFinal;
+		boolean isSilent;
+		
+		// Keep silent if the connection died without a request in progress
+		if(requestInProgress == null) {
+		    isSilent = true;
+		}
+		else {
+		    isSilent = isSilentRequestInProgress();
+		}
 		
 		if(state == STATE_OPENING || state == STATE_CLOSING || retryCount > RETRY_LIMIT) {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
-				setConnectionState(STATE_CLOSING);
+				setConnectionState(STATE_CLOSING, isSilent);
 				clearRequestQueue(e);
 			}
 			// Only display the error if we are not going to retry
-	        showError(e.getMessage());
+	        if(!isSilent) { showError(e.getMessage()); }
 	        isFinal = true;
 	        
-	        //TODO: Deal with triggering the polling timer, and only showing an error in specific situations
+	        //TODO: Figure out a way of detecting if the failure was not coverage-related
+	        handleFailedConnection(isSilent);
 		}
 		else {
 			retryCount++;
@@ -541,7 +566,7 @@ public abstract class AbstractMailConnectionHandler {
                     MailConnectionStateEvent.STATE_DISCONNECTED);
             
             // Set the next state to opening
-			setConnectionState(STATE_OPENING);
+			setConnectionState(STATE_OPENING, isSilent);
 			isFinal = false;
 		}
 
@@ -563,6 +588,7 @@ public abstract class AbstractMailConnectionHandler {
 	private void handleMailException(MailException e) {
 	    boolean disconnect = (e.getCause() == REQUEST_DISCONNECT);
 	    boolean disconnectTimeout = (e.getCause() == REQUEST_DISCONNECT_TIMEOUT);
+	    boolean isSilent = isSilentRequestInProgress();
 	    
 	    if(!disconnect && !disconnectTimeout) { 
 	        EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(), EventLogger.ERROR);
@@ -573,19 +599,19 @@ public abstract class AbstractMailConnectionHandler {
             // request queue is empty.
             synchronized (requestQueue) {
                 if(requestQueue.element() == null) {
-                    setConnectionState(STATE_CLOSING);
+                    setConnectionState(STATE_CLOSING, isSilent);
                 }
             }
         }
         else if(e.isFatal()) {
 			// Switch to the CLOSING state and clear the request queue.
 			synchronized (requestQueue) {
-				setConnectionState(STATE_CLOSING);
+				setConnectionState(STATE_CLOSING, isSilent);
 				clearRequestQueue(e);
 			}
 		}
 		
-		if(!disconnect && !disconnectTimeout) {
+		if(!disconnect && !disconnectTimeout && !isSilent) {
 		    showError(e.getMessage());
 		}
 
@@ -607,13 +633,14 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	private void handleThrowable(Throwable t) {
 		EventLogger.logEvent(AppInfo.GUID, t.toString().getBytes(), EventLogger.ERROR);
-
+		boolean isSilent = isSilentRequestInProgress();
+		
 		// Switch to the CLOSING state and clear the request queue.
 		synchronized (requestQueue) {
-			setConnectionState(STATE_CLOSING);
+			setConnectionState(STATE_CLOSING, isSilent);
 			clearRequestQueue(t);
 		}
-		showError(t.getMessage());
+		if(!isSilent) { showError(t.getMessage()); }
 
 		// Notify failure of the current request-in-progress, if applicable
 		if(requestInProgress != null) {
@@ -621,7 +648,16 @@ public abstract class AbstractMailConnectionHandler {
             requestInProgress = null;
 		}
 	}
-	
+
+    private boolean isSilentRequestInProgress() {
+        if(requestInProgress != null) {
+            return !requestInProgress.isDeliberate();
+        }
+        else {
+            return false;
+        }
+    }
+
 	/**
 	 * Clear the request queue, sending any necessary failure notifications.
 	 * 

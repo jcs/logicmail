@@ -48,11 +48,20 @@ class NetworkSendMessageRequest implements ConnectionHandlerRequest {
     private final NetworkMailSender mailSender;
     private final MessageEnvelope envelope;
     private final Message message;
+    private boolean deliberate = true;
     
     NetworkSendMessageRequest(NetworkMailSender mailSender, MessageEnvelope envelope, Message message) {
         this.mailSender = mailSender;
         this.envelope = envelope;
         this.message = message;
+    }
+    
+    public void setDeliberate(boolean deliberate) {
+        this.deliberate = deliberate;
+    }
+    
+    public boolean isDeliberate() {
+        return deliberate;
     }
     
     public void execute(MailClient client) throws IOException, MailException {
@@ -62,6 +71,10 @@ class NetworkSendMessageRequest implements ConnectionHandlerRequest {
         String messageSource = outgoingClient.sendMessage(envelope, message);
         
         mailSender.fireMessageSent(envelope, message, messageSource);
+    }
+    
+    public void notifyConnectionRequestFailed(Throwable exception, boolean isFinal) {
+        fireMailStoreRequestFailed(exception, isFinal);
     }
     
     private void showStatus(OutgoingMailClient outgoingClient, String message) {

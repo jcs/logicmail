@@ -194,7 +194,7 @@ public class MailboxScreen extends AbstractScreenProvider {
             	}
             }
             
-        	this.mailboxNode.refreshMessages();
+        	this.mailboxNode.refreshMessages(true);
         	firstDisplay = false;
         }
         int size = knownMessages.size();

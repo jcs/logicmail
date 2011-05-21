@@ -48,13 +48,13 @@ abstract class AbstractMailStoreRequest implements MailStoreRequest {
         return requestCallback;
     }
     
-    public void fireMailStoreRequestComplete() {
+    protected void fireMailStoreRequestComplete() {
         if(requestCallback != null) {
             requestCallback.mailStoreRequestComplete(this);
         }
     }
     
-    public void fireMailStoreRequestFailed(Throwable exception, boolean isFinal) {
+    protected void fireMailStoreRequestFailed(Throwable exception, boolean isFinal) {
         if(requestCallback != null) {
             requestCallback.mailStoreRequestFailed(this, exception, isFinal);
         }

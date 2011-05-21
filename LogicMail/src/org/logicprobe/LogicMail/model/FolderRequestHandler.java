@@ -44,6 +44,7 @@ import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.mail.ConnectionHandlerRequest;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
@@ -75,6 +76,12 @@ class FolderRequestHandler {
      * Flag to track whether a folder refresh is currently in progress.
      */
     private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    
+    /**
+     * Flag to track whether the current refresh-in-progress is deliberate
+     * or automated, so the request objects can be configured appropriately.
+     */
+    private boolean refreshInProgressDeliberate = true;
     
     /**
      * Collection of <code>Runnable</code> tasks to execute following a
@@ -145,6 +152,7 @@ class FolderRequestHandler {
     
     private void prepareForUse() {
         if(cleanPriorToUse) {
+            refreshInProgressDeliberate = true;
             initialRefreshComplete = false;
             secondaryFlagsRefresh = false;
             secondaryMessageTokensToFetch = null;
@@ -164,9 +172,10 @@ class FolderRequestHandler {
         }
     }
     
-    public void requestFolderRefresh() {
+    public void requestFolderRefresh(final boolean deliberate) {
         if(refreshInProgress.compareAndSet(false, true)) {
             prepareForUse();
+            this.refreshInProgressDeliberate = deliberate;
             if(mailStore.hasLockedFolders() && initialRefreshComplete) {
                 // Subsequent refresh is pointless on locked-folder mail stores
                 refreshInProgress.set(false);
@@ -180,7 +189,7 @@ class FolderRequestHandler {
             
             refreshThread = new Thread() { public void run() {
                 if(mailStore.hasFolderMessageIndexMap()) {
-                    mailStore.processRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
+                    processMailStoreRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
                             .setRequestCallback(new MailStoreRequestCallback() {
                                 public void mailStoreRequestComplete(MailStoreRequest request) { }
                                 public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
@@ -190,7 +199,7 @@ class FolderRequestHandler {
                 else {
                     // Queue a request for new folder messages from the mail store
                     pendingFlagUpdates = new Vector();
-                    mailStore.processRequest(mailStore.createFolderMessagesRecentRequest(folderTreeItem, true)
+                    processMailStoreRequest(mailStore.createFolderMessagesRecentRequest(folderTreeItem, true)
                             .setRequestCallback(new MailStoreRequestCallback() {
                                 public void mailStoreRequestComplete(MailStoreRequest request) {
                                     // If this initial operation reported invalid
@@ -343,7 +352,7 @@ class FolderRequestHandler {
             removeOrphanedMessages();
             
             // Do the final request for missing messages
-            mailStore.processRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
+            processMailStoreRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
                     .setRequestCallback(finalFetchCallback));
         }}).start();
     }
@@ -440,7 +449,7 @@ class FolderRequestHandler {
                 MessageToken[] tokens = new MessageToken[cachedTokensToCheck.size()];
                 cachedTokensToCheck.copyInto(tokens);
                 secondaryFlagsRefresh = true;
-                mailStore.processRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, tokens, true)
+                processMailStoreRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, tokens, true)
                         .setRequestCallback(new MailStoreRequestCallback() {
                             public void mailStoreRequestComplete(MailStoreRequest request) { }
                             public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
@@ -534,7 +543,7 @@ class FolderRequestHandler {
             MessageToken[] fetchArray = new MessageToken[secondaryMessageTokensToFetch.size()];
             secondaryMessageTokensToFetch.copyInto(fetchArray);
             secondaryMessageTokensToFetch.removeAllElements();
-            mailStore.processRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, fetchArray)
+            processMailStoreRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, fetchArray)
                     .setRequestCallback(finalFetchCallback));
         }
         else {
@@ -602,7 +611,7 @@ class FolderRequestHandler {
     }
     
     public void requestMoreFolderMessages(MessageToken firstToken, int increment) {
-        mailStore.processRequest(mailStore.createFolderMessagesRangeRequest(folderTreeItem, firstToken, increment)
+        processMailStoreRequest(mailStore.createFolderMessagesRangeRequest(folderTreeItem, firstToken, increment)
                 .setRequestCallback(new MailStoreRequestCallback() {
                     public void mailStoreRequestComplete(MailStoreRequest request) { }
                     public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
@@ -758,7 +767,7 @@ class FolderRequestHandler {
                     // means we should add our task to the list, and trigger
                     // the refresh operation
                     postRefreshTasks.addElement(runnable);
-                    requestFolderRefresh();
+                    requestFolderRefresh(refreshInProgressDeliberate);
                 }
                 else {
                     // We are okay to execute this task normally
@@ -784,7 +793,7 @@ class FolderRequestHandler {
                     messageFlags.setSeen(true);
                     messageFlags.setRecent(false);
                     if(mailStore.hasFlags()) {
-                        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
+                        processMailStoreRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
                     }
                     updated = true;
                 }
@@ -823,7 +832,7 @@ class FolderRequestHandler {
                     folderMessageCache.updateFolderMessage(folderTreeItem, message);
                     folderMessageCache.commit();
                     if(!cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen()) {
-                        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
+                        processMailStoreRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
                     }
                 }
             }
@@ -839,5 +848,10 @@ class FolderRequestHandler {
         else {
             return null;
         }
+    }
+    
+    private void processMailStoreRequest(MailStoreRequest request) {
+        ((ConnectionHandlerRequest)request).setDeliberate(refreshInProgressDeliberate);
+        mailStore.processRequest(request);
     }
 }

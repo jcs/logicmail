@@ -40,7 +40,10 @@ import net.rim.device.api.util.ToIntHashtable;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
 import org.logicprobe.LogicMail.conf.PopConfig;
+import org.logicprobe.LogicMail.mail.ConnectionHandlerRequest;
+import org.logicprobe.LogicMail.mail.FolderStatusRequest;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
+import org.logicprobe.LogicMail.mail.FolderTreeRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -104,9 +107,29 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return mailStore.getInboxFolder();
     }
     
+    public void requestFolderTreeAutomated() {
+        FolderTreeRequest request = mailStore.createFolderTreeRequest();
+        ((ConnectionHandlerRequest)request).setDeliberate(false);
+        mailStore.processRequest(request);
+    }
+    
+    public void requestFolderStatusAutomated(FolderTreeItem[] folders, final boolean automated) {
+        FolderStatusRequest request = mailStore.createFolderStatusRequest(folders);
+        ((ConnectionHandlerRequest)request).setDeliberate(false);
+        mailStore.processRequest(request);
+    }
+    
     public void requestFolderRefresh(final FolderTreeItem folderTreeItem) {
+        requestFolderRefreshImpl(folderTreeItem, false);
+    }
+    
+    public void requestFolderRefreshAutomated(final FolderTreeItem folderTreeItem) {
+        requestFolderRefreshImpl(folderTreeItem, true);
+    }
+    
+    private void requestFolderRefreshImpl(final FolderTreeItem folderTreeItem, final boolean automated) {
         FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
-        handler.requestFolderRefresh();
+        handler.requestFolderRefresh(!automated);
     }
     
     public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) {
@@ -153,7 +176,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         handler.handleFolderMessageIndexMapAvailable(uidIndexMap);
     }
 
-    protected void handleFolderRefreshRequired(FolderTreeItem folder) {
+    protected void handleFolderRefreshRequired(FolderTreeItem folder, int eventOrigin) {
         FolderRequestHandler handler = getFolderRequestHandler(folder);
         
         handler.requestFolderRefreshRequired();

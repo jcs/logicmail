@@ -105,7 +105,7 @@ public class MailManager {
 			}
 			
 			// Refresh messages for local mailboxes
-			localMailboxes[i].refreshMessages();
+			localMailboxes[i].refreshMessages(true);
 		}
 	}
 	
@@ -198,7 +198,7 @@ public class MailManager {
                 networkAccounts[i].refreshMailboxStatus();
             }
             if(setting == AccountConfig.REFRESH_ON_STARTUP_HEADERS) {
-                networkAccounts[i].triggerAutomaticRefresh();
+                networkAccounts[i].triggerAutomaticRefresh(true);
             }
         }
     }
