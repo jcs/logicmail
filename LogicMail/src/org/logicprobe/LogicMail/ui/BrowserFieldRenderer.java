@@ -427,17 +427,6 @@ public class BrowserFieldRenderer implements RenderingApplication {
     private static String getNormalizedText(TextContent content) {
         if(MailSettings.getInstance().getGlobalConfig().getUnicodeNormalization()) {
         	String text = content.getText();
-        	
-            // If the encoding type is QP, then we need to do a charset
-            // juggle to make sure that the data is using the right
-            // characters instead of ISO-8859-1 characters
-        	if(((TextPart)content.getMessagePart()).getEncoding().equalsIgnoreCase("quoted-printable")) {
-                try{
-                    byte[] encodedBytes = text.getBytes();
-                    text = new String(encodedBytes, ((TextPart)content.getMessagePart()).getCharset());
-                } catch(Exception e){}
-        	}
-        	
         	return UnicodeNormalizer.getInstance().normalize(text);
         }
         else {
