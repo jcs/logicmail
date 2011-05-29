@@ -33,4 +33,8 @@ package org.logicprobe.LogicMail;
 public class PlatformInfoBB46 extends PlatformInfoBB45 {
     public PlatformInfoBB46() {
     }
+    
+    public boolean hasApplicationIndicators() {
+        return true;
+    }
 }

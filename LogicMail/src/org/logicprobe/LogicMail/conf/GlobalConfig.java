@@ -93,6 +93,8 @@ public class GlobalConfig implements Serializable {
     private boolean promptOnDelete;
     /** The expunge-related behavior when leaving a mailbox. */
     private int expungeMode;
+    /** Whether to show a notification icon on the homescreen. */
+    private boolean notificationIconShown;
 
     public static String FILE_URL_PREFIX = "file:///";
     public static String FILESYSTEM_DISABLED = "<NONE>";
@@ -135,6 +137,7 @@ public class GlobalConfig implements Serializable {
         this.filesystemRoot = "";
         this.promptOnDelete = true;
         this.expungeMode = GlobalConfig.EXPUNGE_PROMPT;
+        this.notificationIconShown = true;
         changeType = 0;
     }
 
@@ -416,6 +419,27 @@ public class GlobalConfig implements Serializable {
         }
     }
     
+    /**
+     * Checks if is notification icon should be shown on the homescreen.
+     *
+     * @return true, if is notification icon is shown
+     */
+    public boolean isNotificationIconShown() {
+        return notificationIconShown;
+    }
+    
+    /**
+     * Sets whether the notification icon should be shown on the homescreen.
+     *
+     * @param notificationIconShown the new notification icon setting
+     */
+    public void setNotificationIconShown(boolean notificationIconShown) {
+        if(this.notificationIconShown != notificationIconShown) {
+            this.notificationIconShown = notificationIconShown;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
+    }
+    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.util.Serializable#serialize(java.io.DataOutput)
      */
@@ -436,6 +460,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_localHostname", localHostname);
         table.put("global_promptOnDelete", new Boolean(promptOnDelete));
         table.put("global_expungeMode", new Integer(expungeMode));
+        table.put("global_notificationIconShown", new Boolean(notificationIconShown));
 
         table.serialize(output);
         changeType = 0;
@@ -500,6 +525,10 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_expungeMode");
         if(value instanceof Integer) {
             expungeMode = ((Integer)value).intValue();
+        }
+        value = table.get("global_notificationIconShown");
+        if(value instanceof Boolean) {
+            notificationIconShown = ((Boolean)value).booleanValue();
         }
         
         ensureValidFilesystemRoot();

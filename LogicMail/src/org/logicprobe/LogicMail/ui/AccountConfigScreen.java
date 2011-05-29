@@ -86,13 +86,15 @@ public class AccountConfigScreen extends AbstractConfigScreen {
     private ObjectChoiceField outgoingServerField;
     private ObjectChoiceField refreshOnStartupChoiceField;
     private ObjectChoiceField refreshFrequencyChoiceField;
+    private ObjectChoiceField notificationIconChoiceField;
+    private CheckboxField notificationIconCheckboxField;
 
     // Folder settings fields (both)
     private LabelField sentFolderChoiceLabel;
     private LabelField sentFolderChoiceButtonLabel;
     private LabelField draftFolderChoiceLabel;
     private LabelField draftFolderChoiceButtonLabel;
-    
+
     // Folder settings fields (IMAP)
     private ButtonField foldersToRefreshButton;
     private MailboxNode[] refreshMailboxes;
@@ -341,6 +343,25 @@ public class AccountConfigScreen extends AbstractConfigScreen {
                 },
                 minuteSetting);
         
+        if(hasIndicators) {
+            if(accountConfig instanceof ImapConfig) {
+                notificationIconChoiceField = new ObjectChoiceField(
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SHOW_NEW_MESSAGE_COUNT),
+                        new Object[] {
+                            resources.getString(LogicMailResource.MENUITEM_DISABLED),
+                            resources.getString(LogicMailResource.MAILBOX_INBOX),
+                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SHOW_NEW_MESSAGE_COUNT_REFRESHED_FOLDERS),
+                            resources.getString(LogicMailResource.CONFIG_ACCOUNT_SHOW_NEW_MESSAGE_COUNT_ALL_FOLDERS)
+                        },
+                        accountConfig.getNotificationIconSetting());
+            }
+            else {
+                notificationIconCheckboxField = new CheckboxField(
+                        resources.getString(LogicMailResource.CONFIG_ACCOUNT_SHOW_NEW_MESSAGE_COUNT),
+                        accountConfig.getNotificationIconSetting() != AccountConfig.NOTIFICATION_ICON_DISABLED);
+            }
+        }
+        
         manager.add(incomingServerLabelField);
         manager.add(serverNameField);
         manager.add(serverSecurityField);
@@ -353,6 +374,14 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(new SeparatorField());
         manager.add(refreshOnStartupChoiceField);
         manager.add(refreshFrequencyChoiceField);
+        if(hasIndicators) {
+            if(accountConfig instanceof ImapConfig) {
+                manager.add(notificationIconChoiceField);
+            }
+            else {
+                manager.add(notificationIconCheckboxField);
+            }
+        }
         manager.add(new LabelField());
         
         return manager;
@@ -884,6 +913,10 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         if(accountConfig instanceof ImapConfig) {
             ImapConfig imapConfig = (ImapConfig)accountConfig;
 
+            if(hasIndicators) {
+                imapConfig.setNotificationIconSetting(notificationIconChoiceField.getSelectedIndex());
+            }
+            
             imapConfig.setRefreshMailboxes(refreshMailboxes);
             
             imapConfig.setFolderPrefix(imapFolderPrefixField.getText().trim());
@@ -904,6 +937,13 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         else if(accountConfig instanceof PopConfig) {
             PopConfig popConfig = (PopConfig)accountConfig;
 
+            if(hasIndicators) {
+                popConfig.setNotificationIconSetting(
+                        notificationIconCheckboxField.getChecked() ?
+                                AccountConfig.NOTIFICATION_ICON_INBOX_ONLY
+                                : AccountConfig.NOTIFICATION_ICON_DISABLED);
+            }
+            
             try {
                 popConfig.setMaxMessageLines(Integer.parseInt(popMaxLinesEditField.getText()));
             } catch (Exception e) { }

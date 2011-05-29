@@ -551,6 +551,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             FolderTreeItem item = (FolderTreeItem)mboxMap.get(mboxPathsArray[i]);
             item.setMsgCount(response[i].exists);
             item.setUnseenCount(response[i].unseen);
+            item.setRecentCount(response[i].recent);
         }
     }
 
@@ -658,6 +659,8 @@ public class ImapClient extends AbstractIncomingMailClient {
 
         this.activeMailbox = mailbox;
         activeMailbox.setMsgCount(response.exists);
+        activeMailbox.setUnseenCount(response.unseen);
+        activeMailbox.setRecentCount(response.recent);
         
         // If the response lacked a valid UIDNEXT value, then copy it over from
         // the previous SELECT of this mailbox

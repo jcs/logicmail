@@ -151,6 +151,24 @@ public abstract class AccountNode implements Node {
         return null;
     }
 
+    protected MailboxNode[] getAllMailboxNodes() {
+        Vector resultVector = new Vector();
+        Enumeration e = pathMailboxMap.elements();
+        while(e.hasMoreElements()) {
+            MailboxNode mailbox = (MailboxNode)e.nextElement();
+            if(mailbox.getType() == MailboxNode.TYPE_INBOX) {
+                resultVector.insertElementAt(mailbox, 0);
+            }
+            else {
+                resultVector.addElement(mailbox);
+            }
+        }
+
+        MailboxNode[] result = new MailboxNode[resultVector.size()];
+        resultVector.copyInto(result);
+        return result;
+    }
+    
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
     }

@@ -55,6 +55,10 @@ public class PlatformInfoBB45 extends PlatformInfo {
         return platformVersion;
     }
     
+    public boolean hasApplicationIndicators() {
+        return false;
+    }
+    
     public boolean hasTouchscreen() {
         return false;
     }

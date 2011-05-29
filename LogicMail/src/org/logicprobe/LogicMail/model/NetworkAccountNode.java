@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Vector;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
@@ -194,6 +196,60 @@ public class NetworkAccountNode extends AccountNode {
      */
     public MailboxNode getDraftMailbox() {
         return this.accountConfig.getDraftMailbox();
+    }
+    
+    /**
+     * Gets the configured list of periodically refreshed mailboxes.
+     * This list will start with, and normally contain, the Inbox.
+     *
+     * @return the refresh mailboxes
+     */
+    public MailboxNode[] getRefreshMailboxes() {
+        Vector resultVector = new Vector();
+        MailboxNode inboxNode = getInboxMailbox();
+        if(inboxNode != null) {
+            resultVector.addElement(inboxNode);
+        }
+        
+        if(this.accountConfig instanceof ImapConfig) {
+            MailboxNode[] refreshMailboxes = ((ImapConfig)this.accountConfig).getRefreshMailboxes();
+            for(int i=0; i<refreshMailboxes.length; i++) {
+                if(refreshMailboxes[i] != inboxNode) {
+                    resultVector.addElement(refreshMailboxes[i]);
+                }
+            }
+        }
+        
+        MailboxNode[] result = new MailboxNode[resultVector.size()];
+        resultVector.copyInto(result);
+        return result;
+    }
+
+    /**
+     * Gets the configured list of mailboxes that should be included in the
+     * notification icon display.
+     * 
+     * @return the notification icon mailboxes
+     */
+    public MailboxNode[] getNotificationMailboxes() {
+        int setting = this.accountConfig.getNotificationIconSetting();
+        switch(setting) {
+        case AccountConfig.NOTIFICATION_ICON_INBOX_ONLY:
+            MailboxNode inboxMailbox = getInboxMailbox();
+            if(inboxMailbox != null) {
+                return new MailboxNode[] { inboxMailbox };
+            }
+            else {
+                return new MailboxNode[0];
+            }
+        case AccountConfig.NOTIFICATION_ICON_REFRESH_FOLDERS:
+            return getRefreshMailboxes();
+        case AccountConfig.NOTIFICATION_ICON_ALL_FOLDERS:
+            return getAllMailboxNodes();
+        case AccountConfig.NOTIFICATION_ICON_DISABLED:
+        default:
+            return new MailboxNode[0];
+        }
     }
     
     /**

@@ -79,6 +79,7 @@ public class MailboxNode implements Node, Serializable {
 	private int type;
 	private FolderTreeItem folderTreeItem;
 	private boolean hasAppend;
+    private int recentMessageCount;
 	private int unseenMessageCount;
 	
 	/**
@@ -784,16 +785,24 @@ public class MailboxNode implements Node, Serializable {
     void updateUnseenMessages(boolean fireEvent) {
         boolean updated = false;
         synchronized(messages) {
-            int newCount = 0;
+            int recentCount = 0;
+            int unseenCount = 0;
             int size = messages.size();
             for(int i=0; i<size; i++) {
                 int flags = ((MessageNode)messages.elementAt(i)).getFlags();
+                if((flags & MessageNode.Flag.RECENT) != 0) {
+                    recentCount++;
+                }
                 if((flags & MessageNode.Flag.SEEN) == 0) {
-                    newCount++;
+                    unseenCount++;
                 }
             }
-            if(newCount != unseenMessageCount) {
-                unseenMessageCount = newCount;
+            if(recentCount != recentMessageCount) {
+                recentMessageCount = recentCount;
+                updated = true;
+            }
+            if(unseenCount != unseenMessageCount) {
+                unseenMessageCount = unseenCount;
                 updated = true;
             }
         }
@@ -880,7 +889,9 @@ public class MailboxNode implements Node, Serializable {
         synchronized(messages) {
             folderTreeItem.setMsgCount(eventFolder.getMsgCount());
             folderTreeItem.setUnseenCount(eventFolder.getUnseenCount());
+            folderTreeItem.setRecentCount(eventFolder.getRecentCount());
             unseenMessageCount = folderTreeItem.getUnseenCount();
+            recentMessageCount = folderTreeItem.getRecentCount();
         }
         fireMailboxStatusChanged(MailboxNodeEvent.TYPE_STATUS, null);
     }
@@ -1089,6 +1100,15 @@ public class MailboxNode implements Node, Serializable {
         if(messageNode != null) {
             messageNode.mailStoreMessageFlagsChanged(e);
         }
+    }
+    
+    /**
+     * Gets the recent message count for this folder.
+     * 
+     * @return Recent message count.
+     */
+    public int getRecentMessageCount() {
+        return recentMessageCount;
     }
     
     /**

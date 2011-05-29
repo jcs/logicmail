@@ -36,6 +36,9 @@ import java.util.Vector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailEventSource;
+import org.logicprobe.LogicMail.conf.MailSettings;
+import org.logicprobe.LogicMail.conf.MailSettingsEvent;
+import org.logicprobe.LogicMail.conf.MailSettingsListener;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.AccountNodeEvent;
 import org.logicprobe.LogicMail.model.AccountNodeListener;
@@ -45,8 +48,8 @@ import org.logicprobe.LogicMail.model.MailManagerListener;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
-import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.NetworkAccountNode;
+import org.logicprobe.LogicMail.util.PlatformUtils;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
 import net.rim.device.api.notification.NotificationsConstants;
@@ -63,17 +66,46 @@ import net.rim.device.api.util.LongHashtable;
  */
 public class NotificationHandler {
 	private static NotificationHandler instance = null;
-	private Hashtable accountMap;
-	private boolean isEnabled;
 
-	private NotificationHandler() {
-		accountMap = new Hashtable();
+	/**
+	 * Map of <code>AccountNode</code> to <code>MailboxNode[]</code> tracking
+	 * subscribed mailboxes.  The first mailbox in the array is assumed to be
+	 * the Inbox.
+	 */
+	private final Hashtable accountMap = new Hashtable();
+	
+	private boolean isEnabled;
+	private boolean notificationActive;
+
+    private static String[] concreteClasses = {
+        "org.logicprobe.LogicMail.ui.NotificationHandlerBB46",
+        "org.logicprobe.LogicMail.ui.NotificationHandler"
+    };
+
+    /**
+     * Gets the NotificationHandler instance.
+     * 
+     * @return Single instance of NotificationHandler
+     */
+    public static synchronized NotificationHandler getInstance() {
+        if(instance == null) {
+            instance = (NotificationHandler)PlatformUtils.getFactoryInstance(concreteClasses);
+        }
+        return instance;
+    }
+	
+	protected NotificationHandler() {
 		Application.getApplication().addHolsterListener(holsterListener);
 		
 		MailManager.getInstance().addMailManagerListener(new MailManagerListener() {
 			public void mailConfigurationChanged(MailManagerEvent e) {
-				MailManager_mailConfigurationChanged(e);
+			    NotificationHandler.this.mailConfigurationChanged(e);
 			}
+		});
+		MailSettings.getInstance().addMailSettingsListener(new MailSettingsListener() {
+            public void mailSettingsSaved(MailSettingsEvent e) {
+                NotificationHandler.this.mailSettingsSaved(e);
+            }
 		});
 		
 		try {
@@ -86,26 +118,27 @@ public class NotificationHandler {
 		}
 	}
 
-	private AccountNodeListener accountNodeListener = new AccountNodeListener() {
+    private AccountNodeListener accountNodeListener = new AccountNodeListener() {
 		public void accountStatusChanged(AccountNodeEvent e) {
-			if(e.getType() == AccountNodeEvent.TYPE_MAILBOX_TREE) {
-				updateAccountMap((AccountNode)e.getSource());
+			if(e.getType() == AccountNodeEvent.TYPE_MAILBOX_TREE
+			        && e.getSource() instanceof NetworkAccountNode) {
+				updateAccountMap((NetworkAccountNode)e.getSource());
+	            updateMessageIndicator();
 			}
 		}
 	};
-	
-	/**
-	 * Gets the NotificationHandler instance.
-	 * 
-	 * @return Single instance of NotificationHandler
-	 */
-	public static synchronized NotificationHandler getInstance() {
-		if(instance == null) {
-			instance = new NotificationHandler();
-		}
-		return instance;
-	}
-	
+	private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
+	    public void mailboxStatusChanged(MailboxNodeEvent e) {
+	        mailboxNodeStatusChanged(e);
+	    }
+	};
+	private HolsterListener holsterListener = new HolsterListener() {
+	    public void inHolster() {
+	    }
+	    public void outOfHolster() {
+	    }
+	};
+
 	/**
 	 * Sets whether notifications are enabled.
 	 * 
@@ -120,56 +153,62 @@ public class NotificationHandler {
 	 */
 	public void shutdown() {
 		cancelNotification();
+		indicateUnseenMessageCount(0, false);
 		isEnabled = false;
 		Application.getApplication().removeHolsterListener(holsterListener);
 	}
 	
-	private HolsterListener holsterListener = new HolsterListener() {
-		public void inHolster() {
-		}
-
-		public void outOfHolster() {
-		}
-	};
-	
-	private MailboxNodeListener mailboxNodeListener = new MailboxNodeListener() {
-		public void mailboxStatusChanged(MailboxNodeEvent e) {
-			mailboxNodeListener_mailboxStatusChanged(e);
-		}
-	};
-	
-	private void MailManager_mailConfigurationChanged(MailManagerEvent e) {
+	protected void mailConfigurationChanged(MailManagerEvent e) {
 		updateAccountSubscriptions();
+		updateMessageIndicator();
 	}
+
+    protected void mailSettingsSaved(MailSettingsEvent e) {
+        updateMessageIndicator();
+    }
 	
-	private void mailboxNodeListener_mailboxStatusChanged(MailboxNodeEvent e) {
+	protected void mailboxNodeStatusChanged(MailboxNodeEvent e) {
+	    if(!isEnabled) { return; }
+	    
 		MailboxNode mailboxNode = (MailboxNode)e.getSource();
-		if(e.getType() == MailboxNodeEvent.TYPE_NEW_MESSAGES) {
-			if(isEnabled) {
-				boolean raiseNotification = false;
-				MessageNode[] messages = e.getAffectedMessages();
-				for(int i=0; i<messages.length; i++) {
-					if((messages[i].getFlags() & MessageNode.Flag.RECENT) != 0) {
-						raiseNotification = true;
-						break;
-					}
-				}
-				if(raiseNotification) {
-					notifyNewMessages(mailboxNode);
-				}
-			}
-		}
-		else if(e.getType() == MailboxNodeEvent.TYPE_STATUS) {
-			if(mailboxNode.getUnseenMessageCount() > 0) {
-				setAppIcon(true);
-			}
-			else {
-				setAppIcon(false);
-			}
+
+		switch(e.getType()) {
+		case MailboxNodeEvent.TYPE_FETCH_COMPLETE:
+		case MailboxNodeEvent.TYPE_DELETED_MESSAGES:
+		case MailboxNodeEvent.TYPE_STATUS:
+		    if(mailboxNode.getRecentMessageCount() > 0) {
+                notificationActive = true;
+                notifyNewMessages(mailboxNode);
+		    }
+		    updateMessageIndicator();
+		    break;
 		}
 	}
-	
-	/**
+
+    private void updateMessageIndicator() {
+        int count = calculateIndicatorCount();
+        indicateUnseenMessageCount(count, notificationActive);
+    }
+
+    private int calculateIndicatorCount() {
+	    int count = 0;
+	    synchronized(accountMap) {
+            Enumeration e = accountMap.elements();
+            while(e.hasMoreElements()) {
+                MailboxNode[] mailboxNodes = (MailboxNode[])e.nextElement();
+                for(int i=0; i<mailboxNodes.length; i++) {
+                    count += mailboxNodes[i].getUnseenMessageCount();
+                }
+            }
+	    }
+        return count;
+    }
+    
+    protected void indicateUnseenMessageCount(int count, boolean notificationActive) {
+        setAppIcon(count > 0);
+    }
+
+    /**
 	 * Update the account subscriptions.
 	 */
 	private void updateAccountSubscriptions() {
@@ -222,67 +261,66 @@ public class NotificationHandler {
     }
 
     private void unsubscribeFromDeletedAccounts(LongHashtable eventSourceMap, NetworkAccountNode[] accountNodes) {
-        Vector deletedAccounts = new Vector();
-		Enumeration e = accountMap.keys();
-		while(e.hasMoreElements()) {
-			AccountNode accountNode = (AccountNode)e.nextElement();
-			boolean accountDeleted = true;
-			for(int i=0; i<accountNodes.length; i++) {
-				if(accountNodes[i] == accountNode) {
-					accountDeleted = false;
-					break;
-				}
-			}
-			if(accountDeleted) {
-				deletedAccounts.addElement(accountNode);
-			}
-		}
-		
-		e = deletedAccounts.elements();
-		while(e.hasMoreElements()) {
-			AccountNode accountNode = (AccountNode)e.nextElement();
-			((MailboxNode)accountMap.get(accountNode)).removeMailboxNodeListener(mailboxNodeListener);
-			accountMap.remove(accountNode);
-			accountNode.removeAccountNodeListener(accountNodeListener);
+        synchronized(accountMap) {
+            Vector deletedAccounts = new Vector();
+            Enumeration e = accountMap.keys();
+            while(e.hasMoreElements()) {
+                AccountNode accountNode = (AccountNode)e.nextElement();
+                boolean accountDeleted = true;
+                for(int i=0; i<accountNodes.length; i++) {
+                    if(accountNodes[i] == accountNode) {
+                        accountDeleted = false;
+                        break;
+                    }
+                }
+                if(accountDeleted) {
+                    deletedAccounts.addElement(accountNode);
+                }
+            }
 
-			// Unregister the notification source
-			long eventSourceKey = ((NetworkAccountNode)accountNode).getUniqueId();
-			LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
-			if(eventSource != null) {
-				NotificationsManager.deregisterSource(eventSource.getEventSourceId());
-				eventSourceMap.remove(eventSourceKey);
-			}
-		}
+            e = deletedAccounts.elements();
+            while(e.hasMoreElements()) {
+                AccountNode accountNode = (AccountNode)e.nextElement();
+                MailboxNode[] mailboxes = (MailboxNode[])accountMap.remove(accountNode);
+                for(int i=0; i<mailboxes.length; i++) {
+                    mailboxes[i].removeMailboxNodeListener(mailboxNodeListener);
+                }
+                accountNode.removeAccountNodeListener(accountNodeListener);
+
+                // Unregister the notification source
+                long eventSourceKey = ((NetworkAccountNode)accountNode).getUniqueId();
+                LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
+                if(eventSource != null) {
+                    NotificationsManager.deregisterSource(eventSource.getEventSourceId());
+                    eventSourceMap.remove(eventSourceKey);
+                }
+            }
+        }
     }
 	
 	/**
-	 * Update the INBOX subscription for the provided account node.
+	 * Update the subscriptions for the provided account node.
 	 * 
 	 * @param accountNode The account node
 	 */
-	private void updateAccountMap(AccountNode accountNode) {
-		MailboxNode rootMailbox = accountNode.getRootMailbox();
-		if(rootMailbox != null) {
-			MailboxNode[] mailboxNodes = rootMailbox.getMailboxes();
-			MailboxNode inboxNode = null;
-			for(int j=0; j<mailboxNodes.length; j++) {
-				if(mailboxNodes[j].toString().equalsIgnoreCase("INBOX")) {
-					inboxNode = mailboxNodes[j];
-					break;
-				}
-			}
-			
-			if(inboxNode != null) {
-				if(accountMap.containsKey(accountNode) && accountMap.get(accountNode) != inboxNode) {
-					((MailboxNode)accountMap.get(accountNode)).removeMailboxNodeListener(mailboxNodeListener);
-				}
-				else if(!accountMap.containsKey(accountNode)) {
-					inboxNode.addMailboxNodeListener(mailboxNodeListener);
-					accountMap.put(accountNode, inboxNode);
-				}
-			}
-		}
-	}
+    private void updateAccountMap(NetworkAccountNode accountNode) {
+        synchronized(accountMap) {
+            // Remove any existing listeners for the updated account
+            MailboxNode[] mailboxes = (MailboxNode[])accountMap.remove(accountNode);
+            if(mailboxes != null) {
+                for(int i=0; i<mailboxes.length; i++) {
+                    mailboxes[i].removeMailboxNodeListener(mailboxNodeListener);
+                }
+            }
+
+            // Add listeners for the notification mailboxes on the updated account
+            mailboxes = accountNode.getNotificationMailboxes();
+            for(int i=0; i<mailboxes.length; i++) {
+                mailboxes[i].addMailboxNodeListener(mailboxNodeListener);
+            }
+            accountMap.put(accountNode, mailboxes);
+        }
+    }
 	
 	/**
 	 * Notify the user of new messages.
@@ -292,21 +330,22 @@ public class NotificationHandler {
 	private void notifyNewMessages(MailboxNode mailboxNode) {
 		long sourceId = AppInfo.GUID + ((NetworkAccountNode)mailboxNode.getParentAccount()).getUniqueId();
 		NotificationsManager.triggerImmediateEvent(sourceId, 0, this, null);
-		setAppIcon(true);
 	}
 
 	/**
 	 * Cancel all existing notifications.
 	 */
 	public void cancelNotification() {
-		Enumeration e = accountMap.keys();
-		while(e.hasMoreElements()) {
-			AccountNode accountNode = (AccountNode)e.nextElement();
-			long sourceId = AppInfo.GUID + ((NetworkAccountNode)accountNode).getUniqueId();
-			NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
-		}
-		
-		setAppIcon(false);
+	    synchronized(accountMap) {
+	        Enumeration e = accountMap.keys();
+	        while(e.hasMoreElements()) {
+	            AccountNode accountNode = (AccountNode)e.nextElement();
+	            long sourceId = AppInfo.GUID + ((NetworkAccountNode)accountNode).getUniqueId();
+	            NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
+	        }
+	    }
+	    notificationActive = false;
+	    updateMessageIndicator();
 	}
 	
 	private void setAppIcon(boolean newMessages) {

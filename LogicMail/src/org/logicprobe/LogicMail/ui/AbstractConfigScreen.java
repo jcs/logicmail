@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.ui;
 
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.PlatformInfo;
 
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.container.MainScreen;
@@ -43,6 +44,7 @@ import net.rim.device.api.ui.component.LabelField;
  */
 public abstract class AbstractConfigScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+	protected static final boolean hasIndicators = PlatformInfo.getInstance().hasApplicationIndicators();
 
     /**
      * Instantiates a new abstract configuration screen.

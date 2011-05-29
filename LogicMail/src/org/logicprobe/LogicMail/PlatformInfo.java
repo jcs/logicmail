@@ -73,6 +73,15 @@ public abstract class PlatformInfo {
     public abstract String getPlatformVersion();
 
     /**
+     * Checks whether the platform has support for application indicators on
+     * the device homescreen.  These should be available on any OS 4.6+ device
+     * with an appropriate build of this application.
+     * 
+     * @return true, if application indicator support is available
+     */
+    public abstract boolean hasApplicationIndicators();
+    
+    /**
      * Checks for whether the platform has a touch screen.
      * 
      * @return true, if this is a touch screen device

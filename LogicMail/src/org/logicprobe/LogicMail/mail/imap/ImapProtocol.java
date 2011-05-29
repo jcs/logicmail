@@ -345,7 +345,7 @@ public class ImapProtocol {
         for (int i = 0; i < replyText.length; i++) {
             String rowText = replyText[i];
 
-            if ((p = rowText.indexOf(" EXISTS")) != -1) {
+            if ((p = rowText.indexOf(_EXISTS)) != -1) {
                 q = p;
                 p = rowText.indexOf(' ');
 
@@ -357,7 +357,7 @@ public class ImapProtocol {
                         response.exists = 0;
                     }
                 }
-            } else if ((p = rowText.indexOf(" RECENT")) != -1) {
+            } else if ((p = rowText.indexOf(_RECENT)) != -1) {
                 q = p;
                 p = rowText.indexOf(' ');
 
@@ -369,7 +369,7 @@ public class ImapProtocol {
                         response.recent = 0;
                     }
                 }
-            } else if ((p = rowText.indexOf("UNSEEN ")) != -1) {
+            } else if ((p = rowText.indexOf(UNSEEN_)) != -1) {
                 p += 6;
                 q = rowText.indexOf(']');
 
@@ -381,7 +381,7 @@ public class ImapProtocol {
                         response.unseen = 0;
                     }
                 }
-            } else if ((p = rowText.indexOf("UIDVALIDITY ")) != -1) {
+            } else if ((p = rowText.indexOf(UIDVALIDITY_)) != -1) {
                 p += 11;
                 q = rowText.indexOf(']');
 
@@ -393,7 +393,7 @@ public class ImapProtocol {
                         response.uidValidity = 0;
                     }
                 }
-            } else if ((p = rowText.indexOf("UIDNEXT ")) != -1) {
+            } else if ((p = rowText.indexOf(UIDNEXT_)) != -1) {
                 p += 7;
                 q = rowText.indexOf(']');
 
@@ -455,7 +455,7 @@ public class ImapProtocol {
         for (i = 0; i < mboxpaths.length; i++) {
             arguments[i] = CHAR_QUOTE +
                 StringParser.addEscapedChars(mboxpaths[i]) +
-                "\" (MESSAGES UNSEEN)";
+                "\" (MESSAGES RECENT UNSEEN)";
         }
 
         String[] result = executeBatch(STATUS, arguments, progressHandler);
@@ -481,7 +481,7 @@ public class ImapProtocol {
             String[] fields = StringParser.parseTokenString(result[i].substring(p +
                         1, q), CHAR_SP);
 
-            if (fields.length != 4) {
+            if (fields.length != 6) {
                 continue;
             }
 
@@ -489,6 +489,11 @@ public class ImapProtocol {
                 if (fields[j].equalsIgnoreCase(MESSAGES)) {
                     try {
                         response[i].exists = Integer.parseInt(fields[j + 1]);
+                    } catch (NumberFormatException e) {
+                    }
+                } else if (fields[j].equalsIgnoreCase(RECENT)) {
+                    try {
+                        response[i].recent = Integer.parseInt(fields[j + 1]);
                     } catch (NumberFormatException e) {
                     }
                 } else if (fields[j].equalsIgnoreCase(UNSEEN)) {
@@ -2002,6 +2007,7 @@ public class ImapProtocol {
     public static class StatusResponse {
         public int exists;
         public int unseen;
+        public int recent;
     }
 
     /**
@@ -2067,6 +2073,7 @@ public class ImapProtocol {
     private static String UID = "UID";
     private static String FLAGS = "FLAGS";
     private static String UNSEEN = "UNSEEN";
+    private static String RECENT = "RECENT";
     private static String MESSAGES = "MESSAGES";
     private static String NAMESPACE = "NAMESPACE";
     private static String CAPABILITY = "CAPABILITY";
@@ -2099,4 +2106,9 @@ public class ImapProtocol {
     private static String CHAR_COLON_ASTERISK = ":*";
     private static String CRLF = "\r\n";
     private static String TIME = "time";
+    private static String UIDNEXT_ = "UIDNEXT ";
+    private static String UIDVALIDITY_ = "UIDVALIDITY ";
+    private static String UNSEEN_ = "UNSEEN ";
+    private static String _RECENT = " RECENT";
+    private static String _EXISTS = " EXISTS";
 }

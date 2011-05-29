@@ -53,6 +53,7 @@ public class FolderTreeItem implements Serializable {
     private boolean appendable;
     private int msgCount;
     private int unseenCount;
+    private int recentCount;
 
     /**
      * Create a root folder tree item.
@@ -70,6 +71,7 @@ public class FolderTreeItem implements Serializable {
         this.appendable = false;
         this.msgCount = -1;
         this.unseenCount = -1;
+        this.recentCount = -1;
         this.children = null;
     }
     
@@ -90,6 +92,7 @@ public class FolderTreeItem implements Serializable {
         this.appendable = false;
         this.msgCount = -1;
         this.unseenCount = -1;
+        this.recentCount = -1;
         this.children = null;
     }
     
@@ -112,6 +115,7 @@ public class FolderTreeItem implements Serializable {
         this.appendable = appendable;
         this.msgCount = -1;
         this.unseenCount = -1;
+        this.recentCount = -1;
         this.children = null;
     }
     
@@ -130,6 +134,7 @@ public class FolderTreeItem implements Serializable {
         this.appendable = source.appendable;
         this.msgCount = source.msgCount;
         this.unseenCount = source.unseenCount;
+        this.recentCount = source.recentCount;
     }
     
     /**
@@ -331,6 +336,14 @@ public class FolderTreeItem implements Serializable {
         this.unseenCount = unseenCount;
     }
 
+    public int getRecentCount() {
+        return recentCount;
+    }
+    
+    public void setRecentCount(int recentCount) {
+        this.recentCount = recentCount;
+    }
+    
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
@@ -372,6 +385,8 @@ public class FolderTreeItem implements Serializable {
         buffer.append(msgCount);
         buffer.append(", unseenCount=");
         buffer.append(unseenCount);
+        buffer.append(", recentCount=");
+        buffer.append(recentCount);
         buffer.append("]");
         return buffer.toString();
     }

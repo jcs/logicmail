@@ -52,6 +52,7 @@ public abstract class AccountConfig extends ConnectionConfig {
     private long outgoingConfigId;
     private int refreshOnStartup;
     private int refreshFrequency;
+    private int notificationIconSetting;
     private MailboxNode sentMailbox;
     private long sentMailboxId;
     private MailboxNode draftMailbox;
@@ -68,6 +69,11 @@ public abstract class AccountConfig extends ConnectionConfig {
     public static final int REFRESH_ON_STARTUP_NEVER = 0;
     public static final int REFRESH_ON_STARTUP_STATUS = 1;
     public static final int REFRESH_ON_STARTUP_HEADERS = 2;
+    
+    public static final int NOTIFICATION_ICON_DISABLED = 0;
+    public static final int NOTIFICATION_ICON_INBOX_ONLY = 1;
+    public static final int NOTIFICATION_ICON_REFRESH_FOLDERS = 2;
+    public static final int NOTIFICATION_ICON_ALL_FOLDERS = 3;
     
     /** Account identity configuration selection. */
     public static final int CHANGE_TYPE_IDENTITY = 0x0100;
@@ -114,6 +120,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         outgoingConfigId = -1L;
         refreshOnStartup = REFRESH_ON_STARTUP_NEVER;
         refreshFrequency = 0;
+        notificationIconSetting = NOTIFICATION_ICON_INBOX_ONLY;
         sentMailbox = null;
         sentMailboxId = -1L;
         draftMailbox = null;
@@ -274,6 +281,27 @@ public abstract class AccountConfig extends ConnectionConfig {
     public void setRefreshFrequency(int refreshFrequency) {
         if(this.refreshFrequency != refreshFrequency) {
             this.refreshFrequency = refreshFrequency;
+            changeType |= CHANGE_TYPE_REFRESH;
+        }
+    }
+    
+    /**
+     * Gets the notification icon setting.
+     *
+     * @return the notification icon setting
+     */
+    public int getNotificationIconSetting() {
+        return notificationIconSetting;
+    }
+    
+    /**
+     * Sets the notification icon setting.
+     *
+     * @param notificationIconSetting the new notification icon setting
+     */
+    public void setNotificationIconSetting(int notificationIconSetting) {
+        if(this.notificationIconSetting != notificationIconSetting) {
+            this.notificationIconSetting = notificationIconSetting;
             changeType |= CHANGE_TYPE_REFRESH;
         }
     }
@@ -530,6 +558,7 @@ public abstract class AccountConfig extends ConnectionConfig {
         table.put("account_outgoingConfigId", new Long(outgoingConfigId));
         table.put("account_refreshOnStartup", new Integer(refreshOnStartup));
         table.put("account_refreshFrequency", new Integer(refreshFrequency));
+        table.put("account_notificationIconSetting", new Integer(notificationIconSetting));
         table.put("account_sentMailboxId", new Long(sentMailboxId));
         table.put("account_draftMailboxId", new Long(draftMailboxId));
         table.put("account_replySignatureIncluded", new Boolean(replySignatureIncluded));
@@ -576,6 +605,9 @@ public abstract class AccountConfig extends ConnectionConfig {
         
         value = table.get("account_refreshFrequency");
         if(value instanceof Integer) { refreshFrequency = ((Integer)value).intValue(); }
+        
+        value = table.get("account_notificationIconSetting");
+        if(value instanceof Integer) { notificationIconSetting = ((Integer)value).intValue(); }
         
         value = table.get("account_sentMailboxId");
         if(value instanceof Long) {
