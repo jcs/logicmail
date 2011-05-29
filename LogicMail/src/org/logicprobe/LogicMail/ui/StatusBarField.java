@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.ui.Color;
 import net.rim.device.api.ui.Field;
@@ -45,10 +46,12 @@ import net.rim.device.api.ui.Graphics;
 public class StatusBarField extends Field {
     private int preferredHeight;
     private String statusText;
-    private ThrobberRenderer throbberRenderer;
-    private Timer timer;
+    private final Timer timer;
     private TimerTask timerTask;
 
+    private final int statusSize;
+    private final Bitmap statusBitmap;
+    
     /**
      * Instantiates a new status bar field.
      */
@@ -56,7 +59,19 @@ public class StatusBarField extends Field {
         super(Field.USE_ALL_WIDTH);
 
         preferredHeight = Font.getDefault().getHeight() + 2;
-        throbberRenderer = new ThrobberRenderer(preferredHeight);
+        if(preferredHeight >= 32) {
+            statusBitmap = Bitmap.getBitmapResource("process-working_32x32.png");
+            statusSize = 32;
+        }
+        else if(preferredHeight >= 22) {
+            statusBitmap = Bitmap.getBitmapResource("process-working_22x22.png");
+            statusSize = 22;
+        }
+        else {
+            statusBitmap = Bitmap.getBitmapResource("process-working_16x16.png");
+            statusSize = 16;
+        }
+        
         this.timer = new Timer();
     }
 
@@ -128,12 +143,14 @@ public class StatusBarField extends Field {
         return preferredHeight;
     }
 
+    private int statusX = 1;
+    private int statusY = 0;
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Field#paint(net.rim.device.api.ui.Graphics)
      */
     protected void paint(Graphics graphics) {
         int width = this.getPreferredWidth();
-        int throbberSize = throbberRenderer.getSize();
         int backgroundColor = graphics.getBackgroundColor();
         graphics.setBackgroundColor(Color.LIGHTGREY);
         graphics.clear();
@@ -141,10 +158,10 @@ public class StatusBarField extends Field {
         graphics.drawRect(0, 0, width, preferredHeight);
 
         if(statusText != null && statusText.length() > 0) {
-            graphics.drawText(statusText, 1, 1, Graphics.ELLIPSIS, width - throbberSize - 2);
+            graphics.drawText(statusText, 1, 1, Graphics.ELLIPSIS, width - statusSize - 2);
         }
-        graphics.pushRegion(width - throbberSize, 0, throbberSize, throbberSize, 0, 0);
-        throbberRenderer.paint(graphics);
+        graphics.pushRegion(width - statusSize, (preferredHeight >>> 1) - (statusSize >>> 1), statusSize, statusSize, 0, 0);
+        graphics.drawBitmap(0, 0, statusSize, statusSize, statusBitmap, statusX * statusSize, statusY * statusSize);
         graphics.popContext();
         graphics.setBackgroundColor(backgroundColor);
     }
@@ -153,12 +170,23 @@ public class StatusBarField extends Field {
      * Internal timer task class to support animation.
      */
     private class AnimationTimerTask extends TimerTask {
-
         /* (non-Javadoc)
          * @see java.util.TimerTask#run()
          */
         public void run() {
-            StatusBarField.this.throbberRenderer.nextPosition();
+            if(statusX == 7) {
+                if(statusY == 3) {
+                    statusX = 1;
+                    statusY = 0;
+                }
+                else {
+                    statusX = 0;
+                    statusY++;
+                }
+            }
+            else {
+                statusX++;
+            }
             StatusBarField.this.invalidate();
         }
     }
