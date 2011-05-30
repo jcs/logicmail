@@ -48,6 +48,7 @@ import org.logicprobe.LogicMail.model.MailManagerListener;
 import org.logicprobe.LogicMail.model.MailboxNode;
 import org.logicprobe.LogicMail.model.MailboxNodeEvent;
 import org.logicprobe.LogicMail.model.MailboxNodeListener;
+import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.logicprobe.LogicMail.util.PlatformUtils;
 
@@ -75,7 +76,7 @@ public class NotificationHandler {
 	private final Hashtable accountMap = new Hashtable();
 	
 	private boolean isEnabled;
-	private boolean notificationActive;
+	private boolean notificationTriggered;
 
     private static String[] concreteClasses = {
         "org.logicprobe.LogicMail.ui.NotificationHandlerBB46",
@@ -164,6 +165,7 @@ public class NotificationHandler {
 	}
 
     protected void mailSettingsSaved(MailSettingsEvent e) {
+        updateAccountSubscriptions();
         updateMessageIndicator();
     }
 	
@@ -173,21 +175,37 @@ public class NotificationHandler {
 		MailboxNode mailboxNode = (MailboxNode)e.getSource();
 
 		switch(e.getType()) {
+		case MailboxNodeEvent.TYPE_NEW_MESSAGES:
+		    boolean raiseNotification = messagesAreRecent(e.getAffectedMessages());
+            if(raiseNotification && !notificationTriggered) {
+                notificationTriggered = true;
+                triggerNotification(mailboxNode);
+            }
+		    break;
 		case MailboxNodeEvent.TYPE_FETCH_COMPLETE:
+		    notificationTriggered = false;
 		case MailboxNodeEvent.TYPE_DELETED_MESSAGES:
 		case MailboxNodeEvent.TYPE_STATUS:
-		    if(mailboxNode.getRecentMessageCount() > 0) {
-                notificationActive = true;
-                notifyNewMessages(mailboxNode);
-		    }
 		    updateMessageIndicator();
 		    break;
 		}
 	}
 
+    private boolean messagesAreRecent(MessageNode[] messages) {
+        boolean recent = false;
+        for(int i=0; i<messages.length; i++) {
+            if((messages[i].getFlags() & MessageNode.Flag.RECENT) != 0) {
+                recent = true;
+                break;
+            }
+        }
+        return recent;
+    }
+
     private void updateMessageIndicator() {
         int count = calculateIndicatorCount();
-        indicateUnseenMessageCount(count, notificationActive);
+        boolean recent = checkForRecentMessages();
+        indicateUnseenMessageCount(count, recent);
     }
 
     private int calculateIndicatorCount() {
@@ -203,8 +221,29 @@ public class NotificationHandler {
 	    }
         return count;
     }
+
+    private boolean checkForRecentMessages() {
+        synchronized(accountMap) {
+            Enumeration e = accountMap.elements();
+            while(e.hasMoreElements()) {
+                MailboxNode[] mailboxNodes = (MailboxNode[])e.nextElement();
+                for(int i=0; i<mailboxNodes.length; i++) {
+                    if(mailboxNodes[i].getRecentMessageCount() > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     
-    protected void indicateUnseenMessageCount(int count, boolean notificationActive) {
+    /**
+     * Called when the message indicator(s) need to be updated.
+     *
+     * @param count the number of new messages that should be indicated
+     * @param recent true, if at least one message is considered recent
+     */
+    protected void indicateUnseenMessageCount(int count, boolean recent) {
         setAppIcon(count > 0);
     }
 
@@ -327,7 +366,7 @@ public class NotificationHandler {
 	 * 
 	 * @param mailboxNode The mailbox node containing the new messages
 	 */
-	private void notifyNewMessages(MailboxNode mailboxNode) {
+	private void triggerNotification(MailboxNode mailboxNode) {
 		long sourceId = AppInfo.GUID + ((NetworkAccountNode)mailboxNode.getParentAccount()).getUniqueId();
 		NotificationsManager.triggerImmediateEvent(sourceId, 0, this, null);
 	}
@@ -344,7 +383,6 @@ public class NotificationHandler {
 	            NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
 	        }
 	    }
-	    notificationActive = false;
 	    updateMessageIndicator();
 	}
 	

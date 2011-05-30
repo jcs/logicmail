@@ -77,11 +77,11 @@ public class NotificationHandlerBB46 extends NotificationHandler {
         super.mailSettingsSaved(e);
     }
     
-    protected void indicateUnseenMessageCount(int count, boolean notificationActive) {
-        super.indicateUnseenMessageCount(count, notificationActive);
+    protected void indicateUnseenMessageCount(int count, boolean recent) {
+        super.indicateUnseenMessageCount(count, recent);
         synchronized(indicatorLock) {
             if(indicatorRegistered) {
-                indicator.setIcon(notificationActive ? indicatorNewIcon : indicatorIcon);
+                indicator.setIcon(recent ? indicatorNewIcon : indicatorIcon);
                 indicator.setValue(count);
                 indicator.setVisible(count > 0);
             }
