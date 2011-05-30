@@ -46,7 +46,6 @@ import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.ImageContent;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.TextContent;
-import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.util.UnicodeNormalizer;
 
