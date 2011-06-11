@@ -42,11 +42,14 @@ class NetworkFolderTreeRequest extends NetworkMailStoreRequest implements Folder
         super(mailStore);
     }
 
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE);
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
-        
+
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_TREE);
-        showStatus(message);
         resultFolderTreeRoot = incomingClient.getFolderTree(getProgressHandler(message));
 
         if(resultFolderTreeRoot != null) {

@@ -29,39 +29,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.logicprobe.LogicMail.mail;
+package org.logicprobe.LogicMail.util;
 
-import java.io.IOException;
-
-import org.logicprobe.LogicMail.LogicMailResource;
-
-class NetworkFolderStatusRequest extends NetworkMailStoreRequest implements FolderStatusRequest {
-    private final FolderTreeItem[] folders;
-
-    NetworkFolderStatusRequest(NetworkMailStore mailStore, FolderTreeItem[] folders) {
-        super(mailStore);
-        this.folders = folders;
-    }
-    
-    public FolderTreeItem[] getFolders() {
-        return folders;
-    }
-
-    protected String getInitialStatus() {
-        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);
-    }
-    
-    public void execute(MailClient client) throws IOException, MailException {
-        IncomingMailClient incomingClient = (IncomingMailClient)client;
-        
-        showInitialStatus();
-        String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_STATUS);
-        incomingClient.refreshFolderStatus(folders, getProgressHandler(message));
-
-        fireMailStoreRequestComplete();
-        
-        for(int i=0; i<folders.length; i++) {
-            mailStore.fireFolderStatusChanged(folders[i]);
-        }
-    }
+public interface WatchdogListener {
+    void watchdogTimeout();
 }

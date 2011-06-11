@@ -40,12 +40,25 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
     private final MessageToken messageToken;
     private final MessageFlags messageFlags;
     private final boolean addOrRemove;
+    private final String initialStatus;
     
     NetworkMessageFlagChangeRequest(NetworkMailStore mailStore, MessageToken messageToken, MessageFlags messageFlags, boolean addOrRemove) {
         super(mailStore);
         this.messageToken = messageToken;
         this.messageFlags = messageFlags;
         this.addOrRemove = addOrRemove;
+        
+        if(messageFlags.isDeleted()) {
+            if(addOrRemove) {
+                this.initialStatus = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_DELETE);
+            }
+            else {
+                this.initialStatus = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UNDELETE);
+            }
+        }
+        else {
+            this.initialStatus = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS);
+        }
     }
 
     public MessageToken getMessageToken() {
@@ -60,33 +73,32 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
         return addOrRemove;
     }
     
+    protected String getInitialStatus() {
+        return initialStatus;
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
 
         if(messageFlags.isDeleted()) {
             if(addOrRemove) {
-                showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_DELETE));
                 checkActiveFolder(incomingClient, messageToken);
                 incomingClient.deleteMessage(messageToken);
             }
             else {
-                showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UNDELETE));
                 checkActiveFolder(incomingClient, messageToken);
                 incomingClient.undeleteMessage(messageToken);
             }
         }
         else if(messageFlags.isAnswered() && addOrRemove) {
-            showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
             checkActiveFolder(incomingClient, messageToken);
             incomingClient.messageAnswered(messageToken);
         }
         else if(messageFlags.isForwarded() && addOrRemove) {
-            showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
             checkActiveFolder(incomingClient, messageToken);
             incomingClient.messageForwarded(messageToken);
         }
         else if(messageFlags.isSeen()) {
-            showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS));
             checkActiveFolder(incomingClient, messageToken);
             if(addOrRemove) {
                 incomingClient.messageSeen(messageToken);

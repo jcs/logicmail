@@ -99,11 +99,14 @@ class NetworkFolderMessagesRequest extends NetworkMailStoreRequest implements Fo
         return flagsOnly;
     }
     
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES) + "...";
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
 
         String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
-        showStatus(message + "...");
         checkActiveFolder(incomingClient, folder);
         
         GetFolderMessageCallback clientCallback = new GetFolderMessageCallback();

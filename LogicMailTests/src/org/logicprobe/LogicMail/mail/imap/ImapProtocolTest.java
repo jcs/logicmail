@@ -816,9 +816,9 @@ public class ImapProtocolTest extends TestCase {
     
     public void testExecuteFetchBody() throws Throwable {
         instance.addExecuteExpectation(
-            "UID FETCH", "288 (BODY[1])",
+            "UID FETCH", "288 (BODY[1]<0.1024>)",
             new String[] {
-                "* 84 FETCH (UID 288 BODY[1] {7}\r\nHello\r\n)"
+                "* 84 FETCH (UID 288 BODY[1]<0> {7}\r\nHello\r\n)"
             });
 
         byte[] result = instance.executeFetchBody(288, "1", null);
@@ -828,12 +828,56 @@ public class ImapProtocolTest extends TestCase {
         assertEquals("Hello\r\n", new String(result));
     }
     
+    public void testExecuteFetchBodyLong() throws Throwable {
+        StringBuffer buf = new StringBuffer();
+        for(int i=0; i<128; i++) {
+            buf.append((char)('A' + (i%32)));
+        }
+        String body1 = buf.toString();
+        
+        buf.setLength(0);
+        for(int i=0; i<128; i++) {
+            buf.append((char)('a' + (i%32)));
+        }
+        String body2 = buf.toString();
+
+        buf.setLength(0);
+        for(int i=0; i<32; i++) {
+            buf.append((char)('1' + (i%10)));
+        }
+        String body3 = buf.toString();
+
+        instance.setFetchIncrement(128);
+        
+        instance.addExecuteExpectation(
+                "UID FETCH", "288 (BODY[1]<0.128>)",
+                new String[] {
+                        "* 84 FETCH (UID 288 BODY[1]<0> {128}\r\n" + body1 + ")"
+                });
+        instance.addExecuteExpectation(
+                "UID FETCH", "288 (BODY[1]<128.128>)",
+                new String[] {
+                        "* 84 FETCH (UID 288 BODY[1]<128> {128}\r\n" + body2 + ")"
+                });
+        instance.addExecuteExpectation(
+                "UID FETCH", "288 (BODY[1]<256.128>)",
+                new String[] {
+                        "* 84 FETCH (UID 288 BODY[1]<256> {32}\r\n" + body3 + ")"
+                });
+
+        byte[] result = instance.executeFetchBody(288, "1", null);
+
+        assertNotNull(result);
+        assertEquals(body1.length() + body2.length() + body3.length(), result.length);
+        assertEquals(body1 + body2 + body3, new String(result));
+    }
+    
     public void testExecuteFetchBodyUntagged() throws Throwable {
         instance.addExecuteExpectation(
-            "UID FETCH", "288 (BODY[1])",
+            "UID FETCH", "288 (BODY[1]<0.1024>)",
             new String[] {
                 "* 83 FETCH (FLAGS (\\Answered \\Seen) UID 287)",
-                "* 84 FETCH (UID 288 BODY[1] {7}\r\nHello\r\n)"
+                "* 84 FETCH (UID 288 BODY[1]<0> {7}\r\nHello\r\n)"
             });
 
         byte[] result = instance.executeFetchBody(288, "1", null);
@@ -1064,6 +1108,8 @@ public class ImapProtocolTest extends TestCase {
         
         suite.addTest(new ImapProtocolTest("executeFetchBody", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchBody(); }}));
+        suite.addTest(new ImapProtocolTest("executeFetchBodyLong", new TestMethod()
+        { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchBodyLong(); }}));
         suite.addTest(new ImapProtocolTest("executeFetchBodyUntagged", new TestMethod()
         { public void run(TestCase tc) throws Throwable { ((ImapProtocolTest) tc).testExecuteFetchBodyUntagged(); }}));
         
@@ -1108,6 +1154,7 @@ public class ImapProtocolTest extends TestCase {
      */
     class TestImapProtocol extends ImapProtocol {
         private Vector executeExpectations;
+        private int fetchIncrement = 1024;
 
         public TestImapProtocol() {
             super();
@@ -1135,7 +1182,7 @@ public class ImapProtocolTest extends TestCase {
             MailProgressHandler progressHandler) {
             assertTrue("No expectations", !executeExpectations.isEmpty());
 
-            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();
+            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.firstElement();
             assertEquals("Bad command", expect.command, command);
             assertEquals("Bad arguments", expect.arguments, arguments);
             executeExpectations.removeElement(expect);
@@ -1147,7 +1194,7 @@ public class ImapProtocolTest extends TestCase {
                 MailProgressHandler progressHandler) throws IOException, MailException {
             assertTrue("No expectations", !executeExpectations.isEmpty());
 
-            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();
+            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.firstElement();
             assertEquals("Bad command", expect.command, command);
             assertEquals("Bad arguments", expect.arguments, arguments);
             executeExpectations.removeElement(expect);
@@ -1164,7 +1211,7 @@ public class ImapProtocolTest extends TestCase {
                 throws IOException, MailException {
             assertTrue("No expectations", !executeExpectations.isEmpty());
 
-            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.lastElement();
+            ExecuteExpectation expect = (ExecuteExpectation) executeExpectations.firstElement();
             assertEquals("Bad command", expect.command, command);
             assertEquals("Bad arguments", expect.arguments, arguments);
             executeExpectations.removeElement(expect);
@@ -1172,6 +1219,14 @@ public class ImapProtocolTest extends TestCase {
             for(int i=0; i<expect.result.length; i++) {
                 callback.processResponse(expect.result[i].getBytes());
             }
+        }
+        
+        public void setFetchIncrement(int fetchIncrement) {
+            this.fetchIncrement = fetchIncrement;
+        }
+        
+        protected int getFetchIncrement(int previousIncrement, long previousTime) {
+            return fetchIncrement;
         }
         
         private class ExecuteExpectation {

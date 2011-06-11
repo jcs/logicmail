@@ -194,25 +194,25 @@ public class MockImapProtocol extends org.logicprobe.LogicMail.mail.imap.ImapPro
         return super.executeCompressDeflate();
     }
 
-    public static final MockMethod MTHD_EXECUTE_CONTINUE_$_STRING_STRING_STRING_STRING = new MockMethod(
+    public static final MockMethod MTHD_EXECUTE_CONTINUE_$_STRING_STRING_ARRAY_BYTE_STRING = new MockMethod(
         MockImapProtocol.class, 
-        "MTHD_EXECUTE_CONTINUE_$_STRING_STRING_STRING_STRING",
-        new Class[]{java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class},
+        "MTHD_EXECUTE_CONTINUE_$_STRING_STRING_ARRAY_BYTE_STRING",
+        new Class[]{java.lang.String.class, java.lang.String.class, byte[].class, java.lang.String.class},
         new Class[]{java.io.IOException.class, org.logicprobe.LogicMail.mail.MailException.class},
-        java.lang.String[].class,
+        byte[][].class,
         false);
-    public java.lang.String[] executeContinue(java.lang.String arg0, java.lang.String arg1, java.lang.String arg2, java.lang.String arg3) throws java.io.IOException, org.logicprobe.LogicMail.mail.MailException {
+    public byte[][] executeContinue(java.lang.String arg0, java.lang.String arg1, byte[] arg2, java.lang.String arg3) throws java.io.IOException, org.logicprobe.LogicMail.mail.MailException {
         try {
             Object[] args = new Object[4];
             args[0] = arg0;
             args[1] = arg1;
             args[2] = arg2;
             args[3] = arg3;
-            MethodInvocation mi = new MethodInvocation(MTHD_EXECUTE_CONTINUE_$_STRING_STRING_STRING_STRING, this, args);
+            MethodInvocation mi = new MethodInvocation(MTHD_EXECUTE_CONTINUE_$_STRING_STRING_ARRAY_BYTE_STRING, this, args);
             getInvocationHandler().invoke(mi);
             if (mi.isEvaluated()) {
                 Object retVal = mi.getReturnValue();
-                return (java.lang.String[])retVal;
+                return (byte[][])retVal;
             }
         } catch (Throwable t) {
             if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
@@ -980,6 +980,33 @@ public class MockImapProtocol extends org.logicprobe.LogicMail.mail.imap.ImapPro
         return super.executeUntagged(arg0, arg1, arg2);
     }
 
+    public static final MockMethod MTHD_GET_FETCH_INCREMENT_$_INT_LONG = new MockMethod(
+        MockImapProtocol.class, 
+        "MTHD_GET_FETCH_INCREMENT_$_INT_LONG",
+        new Class[]{Integer.class, Long.class},
+        new Class[]{},
+        Integer.class,
+        false);
+    public int getFetchIncrement(int arg0, long arg1)  {
+        try {
+            Object[] args = new Object[2];
+            args[0] = new Integer(arg0);
+            args[1] = new Long(arg1);
+            MethodInvocation mi = new MethodInvocation(MTHD_GET_FETCH_INCREMENT_$_INT_LONG, this, args);
+            getInvocationHandler().invoke(mi);
+            if (mi.isEvaluated()) {
+                Object retVal = mi.getReturnValue();
+                AMockObject.assertReturnNotNull(MTHD_GET_FETCH_INCREMENT_$_INT_LONG, retVal);
+                return ((Integer)retVal).intValue();
+            }
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            throw new HammockException(t);
+        }
+        return super.getFetchIncrement(arg0, arg1);
+    }
+
     public static final MockMethod MTHD_RECEIVE = new MockMethod(
         MockImapProtocol.class, 
         "MTHD_RECEIVE",
@@ -1054,6 +1081,31 @@ public class MockImapProtocol extends org.logicprobe.LogicMail.mail.imap.ImapPro
             throw new HammockException(t);
         }
         super.setUntaggedResponseListener(arg0);
+    }
+
+    public static final MockMethod MTHD_SET_WATCHDOG_$_WATCHDOG = new MockMethod(
+        MockImapProtocol.class, 
+        "MTHD_SET_WATCHDOG_$_WATCHDOG",
+        new Class[]{org.logicprobe.LogicMail.util.Watchdog.class},
+        new Class[]{},
+        null,
+        false);
+    public void setWatchdog(org.logicprobe.LogicMail.util.Watchdog arg0)  {
+        try {
+            Object[] args = new Object[1];
+            args[0] = arg0;
+            MethodInvocation mi = new MethodInvocation(MTHD_SET_WATCHDOG_$_WATCHDOG, this, args);
+            getInvocationHandler().invoke(mi);
+            if (mi.isEvaluated()) {
+                mi.getReturnValue();
+                return;
+            }
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            throw new HammockException(t);
+        }
+        super.setWatchdog(arg0);
     }
 
     // Constructors.

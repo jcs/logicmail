@@ -214,7 +214,9 @@ public abstract class AbstractMailConnectionHandler {
 		showTransitionStatus(null);
 		retryCount = 0;
 		synchronized(requestQueue) {
-			if(requestQueue.element() != null) {
+		    ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
+		    if(request != null && request.isDeliberate()) {
+			    request.showInitialStatus();
 				setConnectionState(STATE_REQUESTS);
 			}
 			else {
@@ -298,7 +300,9 @@ public abstract class AbstractMailConnectionHandler {
 		handleBeginIdle();
 
         synchronized(requestQueue) {
-            if(requestQueue.element() != null) {
+            ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
+            if(request != null && request.isDeliberate()) {
+                request.showInitialStatus();
                 setConnectionState(STATE_REQUESTS);
             }
             else if(connectionThread.isShutdown()) {
@@ -308,6 +312,16 @@ public abstract class AbstractMailConnectionHandler {
                 try {
                     requestQueue.wait();
                 } catch (InterruptedException e) { }
+                
+                // Check if a new request caused us to break out of idle,
+                // in which case we should display that request's status
+                // message while recovering from idle.
+                synchronized(requestQueue) {
+                    request = (ConnectionHandlerRequest)requestQueue.element();
+                    if(request != null && request.isDeliberate()) {
+                        request.showInitialStatus();
+                    }
+                }
             }
         }
         
@@ -315,7 +329,9 @@ public abstract class AbstractMailConnectionHandler {
         
         synchronized(requestQueue) {
             if(getConnectionState() == STATE_IDLE) {
-                if(requestQueue.element() != null) {
+                ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
+                if(request != null && request.isDeliberate()) {
+                    request.showInitialStatus();
                     setConnectionState(STATE_REQUESTS);
                 }
                 else if(connectionThread.isShutdown()) {

@@ -47,11 +47,13 @@ class NetworkFolderExpungeRequest extends NetworkMailStoreRequest implements Fol
         return folder;
     }
     
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_EXPUNGE);
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
-        String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_EXPUNGE);
-        showStatus(message);
         checkActiveFolder(incomingClient, folder);
         incomingClient.expungeActiveFolder();
         

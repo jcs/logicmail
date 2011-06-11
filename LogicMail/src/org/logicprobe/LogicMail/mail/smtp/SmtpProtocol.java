@@ -42,12 +42,14 @@ import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.Watchdog;
 
 /**
  * This class implements the commands for the SMTP protocol
  */
 public class SmtpProtocol {
     private Connection connection;
+    private Watchdog watchdog;
     
     /** Specifies the PLAIN authentication mechanism */
     public static final int AUTH_PLAIN = 1;
@@ -72,6 +74,17 @@ public class SmtpProtocol {
     public void setConnection(Connection connection) {
         this.connection = connection;
     }
+
+    /**
+     * Sets the watchdog instance used by this class to detect stalled
+     * connections. This should be set after opening the connection, and
+     * prior to calling any command methods, to enable watchdog functionality.
+     *
+     * @param watchdog the new watchdog instance
+     */
+    public void setWatchdog(Watchdog watchdog) {
+        this.watchdog = watchdog;
+    }
     
     /**
      * Receive the initial greeting from the server, and ensure it is valid.
@@ -86,15 +99,23 @@ public class SmtpProtocol {
             EventLogger.DEBUG_INFO);
         }
         
+        // Wait 45 sec for the initial greeting
+        if(watchdog != null) { watchdog.start(45000); }
+        
         byte[] buffer = connection.receive();
+        if(watchdog != null) { watchdog.kick(); }
+        
         while(buffer != null && buffer.length > 0) {
             if(buffer.length >=4 && buffer[3] == (byte)' ') {
                 break;
             }
             else {
                 buffer = connection.receive();
+                if(watchdog != null) { watchdog.kick(); }
             }
         }
+        
+        if(watchdog != null) { watchdog.cancel(); }
         
         // Make sure the last line of the greeting had the status code "220"
         if(!(buffer != null && buffer.length >= 3
@@ -272,13 +293,28 @@ public class SmtpProtocol {
             ("SmtpProtocol.executeData(\""+message+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result = execute(DATA);
+
+        if(watchdog != null) { watchdog.start(); }
+        
+        connection.sendCommand(DATA);
+        String result = new String(connection.receive());
+
+        if(watchdog != null) { watchdog.kick(); }
+        
         if(!result.startsWith(CODE_354)) {
             return false;
         }
         
-        connection.sendRaw(message);
-        result = execute("\r\n.");
+        byte[] data = message.getBytes();
+        for(int i=0; i<data.length; i+=1024) {
+            connection.sendRaw(data, i, Math.min(1024, data.length - i));
+            if(watchdog != null) { watchdog.kick(); }
+        }
+        
+        connection.sendCommand("\r\n.");
+        result = new String(connection.receive());
+        
+        if(watchdog != null) { watchdog.cancel(); }
         
         return result.startsWith(CODE_250);
     }
@@ -322,11 +358,15 @@ public class SmtpProtocol {
      * @return The result
      */
     private String execute(String command) throws IOException, MailException {
+        if(watchdog != null) { watchdog.start(); }
+        
         if(command != null) {
             connection.sendCommand(command);
         }
         
         String result = new String(connection.receive());
+        
+        if(watchdog != null) { watchdog.cancel(); }
         
         return result;
     }
@@ -341,17 +381,28 @@ public class SmtpProtocol {
      * @return An array of lines containing the response
      */
     private String[] executeFollow(String command) throws IOException, MailException {
-        execute(command);
-            
+        if(watchdog != null) { watchdog.start(); }
+        
+        if(command != null) {
+            connection.sendCommand(command);
+        }
+        connection.receive();
+        if(watchdog != null) { watchdog.kick(); }
+        
         String buffer = new String(connection.receive());
+        if(watchdog != null) { watchdog.kick(); }
+        
         String[] lines = new String[0];
         while(buffer != null) {
             buffer = new String(connection.receive());
+            if(watchdog != null) { watchdog.kick(); }
+            
             Arrays.add(lines, buffer);
             if(buffer.length() >=4 && buffer.charAt(3) == ' ') {
                 break;
             }
         }
+        if(watchdog != null) { watchdog.cancel(); }
         return lines;
     }
 

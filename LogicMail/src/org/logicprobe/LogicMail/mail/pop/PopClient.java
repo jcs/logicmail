@@ -63,6 +63,8 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.MailMessageParser;
+import org.logicprobe.LogicMail.util.Watchdog;
+import org.logicprobe.LogicMail.util.WatchdogListener;
 
 /**
  * 
@@ -75,6 +77,7 @@ public class PopClient extends AbstractIncomingMailClient {
     private final GlobalConfig globalConfig;
     private final PopConfig accountConfig;
     private final PopProtocol popProtocol;
+    private final Watchdog watchdog;
     private Connection connection;
     private String username;
     private String password;
@@ -100,6 +103,17 @@ public class PopClient extends AbstractIncomingMailClient {
         this.globalConfig = globalConfig;
         this.accountConfig = accountConfig;
         this.mailSettings = MailSettings.getInstance();
+        this.watchdog = new Watchdog(new WatchdogListener() {
+            public void watchdogTimeout() {
+                // A timeout will simply cause a forced-close of the
+                // connection, causing IOExceptions elsewhere that
+                // will cause any necessary cleanup.
+                if(connection != null) {
+                    connection.forceClose();
+                }
+            }
+        });
+        
         popProtocol = new PopProtocol();
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
@@ -156,9 +170,13 @@ public class PopClient extends AbstractIncomingMailClient {
         if(!openStarted) {
             connection = networkConnector.open(accountConfig);
             popProtocol.setConnection(connection);
+            popProtocol.setWatchdog(watchdog);
+            watchdog.setDefaultTimeoutForConnection(connection.getConnectionType());
             
             // Eat the initial server response
+            watchdog.start(45000); // wait 45 sec for initial greeting
             connection.receive();
+            watchdog.cancel();
             
             // Find out server capabilities
             capabilities = popProtocol.executeCapa();
@@ -222,6 +240,7 @@ public class PopClient extends AbstractIncomingMailClient {
             connection.close();
             connection = null;
         }
+        if(watchdog.isStarted()) { watchdog.cancel(); }
     }
 
     /* (non-Javadoc)

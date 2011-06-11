@@ -52,6 +52,8 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
     /** Flags indicating the coverage status of each transport */
     protected boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
     
+    private int connectionType;
+    
     public NetworkConnectorBB45(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
         super(globalConfig, connectionConfig);
     }
@@ -64,6 +66,10 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         SocketConnection connection = attemptToOpenConnection(urlBase);
         
         return connection;
+    }
+    
+    protected int openedSocketConnectionType() {
+        return connectionType;
     }
     
     /**
@@ -179,6 +185,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
                     EventLogger.DEBUG_INFO);
         }
         SocketConnection socket = openSocket(connectStr);
+        connectionType = ConnectionConfig.TRANSPORT_WIFI_ONLY;
         return socket;
     }
 
@@ -189,6 +196,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
                     EventLogger.DEBUG_INFO);
         }
         SocketConnection socket = openSocket(connectStr);
+        connectionType = ConnectionConfig.TRANSPORT_DIRECT_TCP;
         return socket;
     }
 
@@ -199,6 +207,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
                     EventLogger.DEBUG_INFO);
         }
         SocketConnection socket = openSocket(connectStr);
+        connectionType = ConnectionConfig.TRANSPORT_MDS;
         return socket;
     }
 
@@ -209,6 +218,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
                     EventLogger.DEBUG_INFO);
         }
         SocketConnection socket = openSocket(connectStr);
+        connectionType = ConnectionConfig.TRANSPORT_WAP2;
         return socket;
     }
 

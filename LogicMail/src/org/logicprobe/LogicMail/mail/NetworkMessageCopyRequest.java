@@ -53,10 +53,13 @@ class NetworkMessageCopyRequest extends NetworkMailStoreRequest implements Messa
         return destinationFolder;
     }
     
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_COPY);
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
-        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_COPY));
         if(incomingClient.hasCopy()) {
             checkActiveFolder(incomingClient, messageToken);
             incomingClient.copyMessage(messageToken, destinationFolder);

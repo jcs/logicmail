@@ -54,7 +54,7 @@ public class ConnectionTest extends TestCase {
 
     public void testCreateConnection() throws Throwable {
         StubSocketConnection socket = new StubSocketConnection();
-        Connection connection = new Connection(socket);
+        Connection connection = new Connection(socket, 0);
         
         assertEquals(socket.getLocalAddress(), connection.getLocalAddress());
         assertTrue(connection.isConnected());
@@ -64,7 +64,7 @@ public class ConnectionTest extends TestCase {
     
     public void testCloseConnection() throws Throwable {
         StubSocketConnection socket = new StubSocketConnection();
-        Connection connection = new Connection(socket);
+        Connection connection = new Connection(socket, 0);
         connection.close();
         
         assertTrue(!connection.isConnected());
@@ -73,7 +73,7 @@ public class ConnectionTest extends TestCase {
     
     public void testSendCommand() throws Throwable {
         StubSocketConnection socket = new StubSocketConnection();
-        Connection connection = new Connection(socket);
+        Connection connection = new Connection(socket, 0);
         int expectedSent = 0;
         
         byte[] expected = "TheCommand\r\n".getBytes();
@@ -101,26 +101,26 @@ public class ConnectionTest extends TestCase {
     
     public void testSendRaw() throws Throwable {
         StubSocketConnection socket = new StubSocketConnection();
-        Connection connection = new Connection(socket);
+        Connection connection = new Connection(socket, 0);
         int expectedSent = 0;
         
         byte[] expected = new byte[0];
-        connection.sendRaw("");
+        connection.sendRaw(new byte[0], 0, 0);
         assertTrue("Empty send", Arrays.equals(expected, socket.getSentBytes()));
         socket.resetSentBytes();
         expectedSent += expected.length;
         
         expected = "QWERTY".getBytes();
-        connection.sendRaw("QWERTY");
+        connection.sendRaw("QWERTY".getBytes(), 0, 6);
         assertTrue("Normal send", Arrays.equals(expected, socket.getSentBytes()));
         socket.resetSentBytes();
         expectedSent += expected.length;
         
         expected = "1234567890".getBytes();
-        connection.sendRaw("1234");
-        connection.sendRaw("56");
-        connection.sendRaw("789");
-        connection.sendRaw("0");
+        connection.sendRaw("1234".getBytes(), 0, 4);
+        connection.sendRaw("56".getBytes(), 0, 2);
+        connection.sendRaw("789".getBytes(), 0, 3);
+        connection.sendRaw("0".getBytes(), 0, 1);
         assertTrue("Multiple sends", Arrays.equals(expected, socket.getSentBytes()));
         socket.resetSentBytes();
         expectedSent += expected.length;
@@ -131,25 +131,25 @@ public class ConnectionTest extends TestCase {
     }
     
     public void testReceiveLine() throws Throwable {
-        Connection connection = new Connection(new StubSocketConnection("Hello\r\n".getBytes()));
+        Connection connection = new Connection(new StubSocketConnection("Hello\r\n".getBytes()), 0);
         byte[] expected = "Hello".getBytes();
         byte[] actual = connection.receive();
         assertTrue("Single line", Arrays.equals(expected, actual));
         connection.close();
         
-        connection = new Connection(new StubSocketConnection("Hello\n".getBytes()));
+        connection = new Connection(new StubSocketConnection("Hello\n".getBytes()), 0);
         expected = "Hello".getBytes();
         actual = connection.receive();
         assertTrue("Single line LF", Arrays.equals(expected, actual));
         connection.close();        
 
-        connection = new Connection(new StubSocketConnection("Hello\n\nWorld\r\n".getBytes()));
+        connection = new Connection(new StubSocketConnection("Hello\n\nWorld\r\n".getBytes()), 0);
         expected = "Hello\n\nWorld".getBytes();
         actual = connection.receive();
         assertTrue("Single line with LFLF in middle", Arrays.equals(expected, actual));
         connection.close();        
         
-        connection = new Connection(new StubSocketConnection("Hello\r\nWorld\r\n".getBytes()));
+        connection = new Connection(new StubSocketConnection("Hello\r\nWorld\r\n".getBytes()), 0);
         expected = "Hello".getBytes();
         actual = connection.receive();
         assertTrue("Multiple lines", Arrays.equals(expected, actual));
@@ -158,7 +158,7 @@ public class ConnectionTest extends TestCase {
         assertTrue("Multiple lines", Arrays.equals(expected, actual));
         connection.close();
         
-        connection = new Connection(new StubSocketConnection("Hello\nWorld\n".getBytes()));
+        connection = new Connection(new StubSocketConnection("Hello\nWorld\n".getBytes()), 0);
         expected = "Hello".getBytes();
         actual = connection.receive();
         assertTrue("Multiple lines LF", Arrays.equals(expected, actual));
@@ -180,13 +180,13 @@ public class ConnectionTest extends TestCase {
             }
         };
         
-        Connection connection = new Connection(new StubSocketConnection("Hello.".getBytes()));
+        Connection connection = new Connection(new StubSocketConnection("Hello.".getBytes()), 0);
         byte[] expected = "Hello".getBytes();
         byte[] actual = connection.receive(responseTester);
         assertTrue("Single line", Arrays.equals(expected, actual));
         connection.close();
         
-        connection = new Connection(new StubSocketConnection("Hello.World.".getBytes()));
+        connection = new Connection(new StubSocketConnection("Hello.World.".getBytes()), 0);
         expected = "Hello".getBytes();
         actual = connection.receive(responseTester);
         assertTrue("Multiple lines", Arrays.equals(expected, actual));
@@ -197,7 +197,7 @@ public class ConnectionTest extends TestCase {
     }
     
     public Test suite() {
-        TestSuite suite = new TestSuite("ConnectionTest");
+        TestSuite suite = new TestSuite("Connection");
         
         suite.addTest(new ConnectionTest("createConnection", new TestMethod()
         { public void run(TestCase tc) throws Throwable {((ConnectionTest)tc).testCreateConnection(); } }));

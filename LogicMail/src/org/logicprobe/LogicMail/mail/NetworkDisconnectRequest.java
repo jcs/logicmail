@@ -48,6 +48,10 @@ class NetworkDisconnectRequest extends NetworkMailStoreRequest implements MailSt
         return type;
     }
     
+    protected String getInitialStatus() {
+        return null;
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         if(type == REQUEST_DISCONNECT) {
             mailStore.getConnectionHandler().handleRequestDisconnect();

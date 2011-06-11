@@ -50,13 +50,16 @@ public class NetworkFolderMessageIndexMapRequest extends NetworkMailStoreRequest
         return folder;
     }
     
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES) + "...";
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
-        String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
-        showStatus(message + "...");
         checkActiveFolder(incomingClient, folder);
         
+        String message = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_FOLDER_MESSAGES);
         resultUidIndexMap = incomingClient.getFolderMessageIndexMap(getProgressHandler(message));
         
         fireMailStoreRequestComplete();

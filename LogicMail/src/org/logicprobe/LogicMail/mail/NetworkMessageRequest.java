@@ -81,11 +81,14 @@ class NetworkMessageRequest extends NetworkMailStoreRequest implements MessageRe
         return messageParts;
     }
     
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
         String statusMessage = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE);
-        showStatus(statusMessage);
         checkActiveFolder(incomingClient, messageToken);
 
         if(messageParts == null) {

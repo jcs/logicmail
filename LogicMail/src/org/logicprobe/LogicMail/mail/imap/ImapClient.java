@@ -67,6 +67,8 @@ import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
+import org.logicprobe.LogicMail.util.Watchdog;
+import org.logicprobe.LogicMail.util.WatchdogListener;
 
 /**
  * 
@@ -78,6 +80,7 @@ public class ImapClient extends AbstractIncomingMailClient {
     private final MailSettings mailSettings;
     private final ImapConfig accountConfig;
     private final ImapProtocol imapProtocol;
+    private final Watchdog watchdog;
     private Connection connection;
     private String username;
     private String password;
@@ -144,6 +147,16 @@ public class ImapClient extends AbstractIncomingMailClient {
         this.mailSettings = MailSettings.getInstance();
         this.imapProtocol = imapProtocol;
         this.imapProtocol.setUntaggedResponseListener(untaggedResponseListener);
+        this.watchdog = new Watchdog(new WatchdogListener() {
+            public void watchdogTimeout() {
+                // A timeout will simply cause a forced-close of the
+                // connection, causing IOExceptions elsewhere that
+                // will cause any necessary cleanup.
+                if(connection != null) {
+                    connection.forceClose();
+                }
+            }
+        });
         username = accountConfig.getServerUser();
         password = accountConfig.getServerPass();
         openStarted = false;
@@ -182,11 +195,15 @@ public class ImapClient extends AbstractIncomingMailClient {
             if(!openStarted) {
                 connection = networkConnector.open(accountConfig);
                 imapProtocol.setConnection(connection);
+                imapProtocol.setWatchdog(watchdog);
+                watchdog.setDefaultTimeoutForConnection(connection.getConnectionType());
                 
                 activeMailbox = null;
 
                 // Swallow the initial "* OK" line from the server
+                watchdog.start(45000); // wait 45 sec for initial greeting
                 connection.receive();
+                watchdog.cancel();
                 
                 // Find out server capabilities
                 capabilities = imapProtocol.executeCapability();
@@ -270,6 +287,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             connection.close();
             connection = null;
         }
+        if(watchdog.isStarted()) { watchdog.cancel(); }
     }
 
     /* (non-Javadoc)

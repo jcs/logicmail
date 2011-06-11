@@ -55,6 +55,7 @@ public class UtilTests extends TestCase {
         testSuite.addTest(new ConnectionTest().suite());
         testSuite.addTest(new FilenameEncoderTest().suite());
         testSuite.addTest(new AtomicBooleanTest().suite());
+        testSuite.addTest(new WatchdogTest().suite());
         return testSuite;
     }
 }

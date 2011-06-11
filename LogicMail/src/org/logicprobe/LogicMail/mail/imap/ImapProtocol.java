@@ -30,11 +30,15 @@
  */
 package org.logicprobe.LogicMail.mail.imap;
 
+import net.rim.device.api.i18n.MessageFormat;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.IntIntHashtable;
+import net.rim.device.api.util.MathUtilities;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -42,6 +46,7 @@ import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.ConnectionResponseTester;
 import org.logicprobe.LogicMail.util.StringArrays;
 import org.logicprobe.LogicMail.util.StringParser;
+import org.logicprobe.LogicMail.util.Watchdog;
 
 import java.io.IOException;
 
@@ -54,9 +59,17 @@ import java.util.Vector;
 public class ImapProtocol {
     private static final ConnectionResponseTester executeResponseTester = new ImapResponseLineTester();    
     private Connection connection;
+    private Watchdog watchdog;
     private IdleThread idleThread;
     private UntaggedResponseListener untaggedResponseListener;
+    private String selectedMailbox;
 
+    // Number of octets to fetch at a time, when fetching body content.
+    private static final int FETCH_INCREMENT_INITIAL_WIFI = 8192;
+    private static final int FETCH_INCREMENT_INITIAL_MOBILE = 4096;
+    private static final int FETCH_INCREMENT_MIN = 1024;
+    private static final int FETCH_INCREMENT_MAX = 32768;
+    
     /**
      * Counts the commands executed so far in this session. Every command of an
      * IMAP session needs a unique ID that is prepended to the command line.
@@ -76,6 +89,17 @@ public class ImapProtocol {
      */
     public void setConnection(Connection connection) {
         this.connection = connection;
+    }
+
+    /**
+     * Sets the watchdog instance used by this class to detect stalled
+     * connections. This should be set after opening the connection, and
+     * prior to calling any command methods, to enable watchdog functionality.
+     *
+     * @param watchdog the new watchdog instance
+     */
+    public void setWatchdog(Watchdog watchdog) {
+        this.watchdog = watchdog;
     }
     
     /**
@@ -116,6 +140,8 @@ public class ImapProtocol {
                 password + "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
+        this.selectedMailbox = "";
+        
         // Authenticate with the server
         try {
             execute(LOGIN,
@@ -140,6 +166,8 @@ public class ImapProtocol {
                 EventLogger.DEBUG_INFO);
         }
 
+        this.selectedMailbox = "";
+        
         execute(LOGOUT, null, null);
     }
 
@@ -408,6 +436,10 @@ public class ImapProtocol {
             }
         }
 
+        // Keep track of the selected mailbox for the few commands that
+        // can operate on any mailbox.
+        this.selectedMailbox = mboxpath;
+        
         return response;
     }
 
@@ -989,7 +1021,7 @@ public class ImapProtocol {
 
         return msgStructure;
     }
-
+    
     /**
      * Execute the "FETCH (BODY)" command
      * @param uid Unique ID of the message
@@ -1004,11 +1036,86 @@ public class ImapProtocol {
                 "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
-        byte[][] rawList = executeResponse(UID_FETCH,
-                uid + " (BODY[" + address + "])", progressHandler);
+        DataBuffer buf = new DataBuffer();
+        int fetchOffset = 0;
+        int previousIncrement = -1;
+        long previousTime = -1L;
+        while(true) {
+            int fetchIncrement = getFetchIncrement(previousIncrement, previousTime);
+            long time1 = System.currentTimeMillis();
+            int fetched = fetchBodyIncrement(buf, uid, address, fetchOffset, fetchIncrement, progressHandler);
+            long time2 = System.currentTimeMillis();
+            previousTime = Math.abs(time2 - time1);
+            previousIncrement = fetchIncrement;
+            
+            if(fetched < fetchIncrement) {
+                break;
+            }
+            else {
+                fetchOffset += fetched;
+            }
+        }
+        
+        return buf.toArray();
+    }
+
+    /**
+     * Gets the fetch increment for the next message body fetch operation.
+     * The initial value is based on the network transport type.  With each
+     * successful fetch, the increment is updated using a form of additive
+     * increase / multiplicative decrease algorithm.
+     *
+     * @param previousIncrement the previous increment
+     * @param previousTime the previous increment's receive time
+     * @return the next fetch increment
+     */
+    protected int getFetchIncrement(int previousIncrement, long previousTime) {
+        int fetchIncrement;
+        if(previousIncrement < 0 || previousTime < 0) {
+            if(connection.getConnectionType() == ConnectionConfig.TRANSPORT_WIFI_ONLY) {
+                fetchIncrement = FETCH_INCREMENT_INITIAL_WIFI;
+            }
+            else {
+                fetchIncrement = FETCH_INCREMENT_INITIAL_MOBILE;
+            }
+        }
+        else {
+            if(previousTime < 900) {
+                // If we fetched the previous increment too quickly, then
+                // increase the increment size by 1024 bytes.
+                fetchIncrement = previousIncrement + 1024;
+            }
+            else if(previousTime > 1100) {
+                // If we fetched the previous increment too slowly, then
+                // halve the increment size.
+                fetchIncrement = previousIncrement >>> 1;
+            }
+            else {
+                // If the previous increment was fetched in 1000 +/- 100 sec,
+                // consider ourselves stable and change nothing.
+                fetchIncrement = previousIncrement;
+            }
+            
+            // Make sure our chosen increment is within the allowable range.
+            fetchIncrement = MathUtilities.clamp(FETCH_INCREMENT_MIN, fetchIncrement, FETCH_INCREMENT_MAX);
+        }
+        return fetchIncrement;
+    }
+
+    private int fetchBodyIncrement(DataBuffer buf, int uid, String address, int fetchOffset, int fetchIncrement, MailProgressHandler progressHandler) throws IOException, MailException {
+        String args = MessageFormat.format(
+                "{0} (BODY[{1}]<{2}.{3}>)",
+                new Object[] {
+                        Integer.toString(uid),
+                        address,
+                        Integer.toString(fetchOffset),
+                        Integer.toString(fetchIncrement)
+                });
+        
+        byte[][] rawList = executeResponse(UID_FETCH, args, progressHandler);
 
         if (rawList.length < 1) {
-            return new byte[0];
+            return -1;
         }
 
         byte[] rawMessage = null;
@@ -1043,14 +1150,15 @@ public class ImapProtocol {
             }
         }
 
-        // Make sure we return an empty body instead of a null value
-        if(rawMessage == null) {
-            rawMessage = new byte[0];
+        if(rawMessage != null && rawMessage.length > 0) {
+            buf.write(rawMessage, 0, rawMessage.length);
+            return rawMessage.length;
         }
-
-        return rawMessage;
+        else {
+            return 0;
+        }
     }
-
+    
     /**
      * Execute the "STORE" command to update message flags.
      * Updated flags will be returned through the untagged response listener.
@@ -1123,10 +1231,18 @@ public class ImapProtocol {
                 "\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
-        executeContinue(APPEND,
+        
+        byte[] rawData = rawMessage.getBytes();
+        byte[][] rawList = executeContinue(APPEND,
             CHAR_QUOTE + StringParser.addEscapedChars(mboxName) + "\" (" +
-            flagsString + ") {" + rawMessage.length() + "}", rawMessage,
+            flagsString + ") {" + rawData.length + "}", rawData,
             "Unable to append message to " + mboxName);
+        
+        if(selectedMailbox != null && selectedMailbox.equals(mboxName)) {
+            for(int i=0; i<rawList.length; i++) {
+                checkForUntaggedValue(rawList[i]);
+            }
+        }
     }
 
     /**
@@ -1564,6 +1680,7 @@ public class ImapProtocol {
         // If the idle thread is not currently alive, it is because some
         // exception caused it to terminate prematurely.  In that case, there
         // is no point in trying to further communicate with the server here.
+        if(watchdog != null) { watchdog.start(); }
         if(idleThread.isAlive()) {
             connection.sendCommand(DONE);
         }
@@ -1575,6 +1692,7 @@ public class ImapProtocol {
             EventLogger.logEvent(AppInfo.GUID,
                     e.toString().getBytes(), EventLogger.ERROR);
         }
+        if(watchdog != null && watchdog.isStarted()) { watchdog.cancel(); }
         
         IdleThread temp = idleThread;
         idleThread = null;
@@ -1609,7 +1727,11 @@ public class ImapProtocol {
         }
 
         int preCount = connection.getBytesReceived();
-        connection.sendRaw(commandBuf.toString());
+        
+        if(watchdog != null) { watchdog.start(); }
+        byte[] data = commandBuf.toString().getBytes();
+        connection.sendRaw(data, 0, data.length);
+        if(watchdog != null) { watchdog.kick(); }
 
         int postCount = connection.getBytesReceived();
 
@@ -1624,7 +1746,10 @@ public class ImapProtocol {
 
         while (count < arguments.length) {
             preCount = postCount;
+
             temp = connection.receive();
+            if(watchdog != null) { watchdog.kick(); }
+            
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1636,6 +1761,7 @@ public class ImapProtocol {
 
             if(Arrays.equals(temp, p + 1, BAD_PREFIX, 0, BAD_PREFIX.length)
                     || Arrays.equals(temp, p + 1, NO_PREFIX, 0, NO_PREFIX.length)) {
+                if(watchdog != null) { watchdog.cancel(); }
                 throw new MailException(new String(temp));
             }
 
@@ -1650,6 +1776,8 @@ public class ImapProtocol {
             }
         }
 
+        if(watchdog != null) { watchdog.cancel(); }
+        
         return result;
     }
 
@@ -1666,13 +1794,17 @@ public class ImapProtocol {
         byte[][] result = new byte[0][];
 
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
+        
+        if(watchdog != null) { watchdog.start(); }
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
+        if(watchdog != null) { watchdog.kick(); }
 
         byte[] tagBytes = tag.getBytes();
 
         int preCount = connection.getBytesReceived();
         byte[] temp = connection.receive(executeResponseTester);
+        if(watchdog != null) { watchdog.kick(); }
         int postCount = connection.getBytesReceived();
 
         if (progressHandler != null) {
@@ -1684,6 +1816,7 @@ public class ImapProtocol {
             Arrays.add(result, temp);
             preCount = postCount;
             temp = connection.receive(executeResponseTester);
+            if(watchdog != null) { watchdog.kick(); }
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1692,11 +1825,13 @@ public class ImapProtocol {
             }
         }
 
+        if(watchdog != null) { watchdog.cancel(); }
+        
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
         }
-
+        
         return result;
     }
 
@@ -1715,13 +1850,16 @@ public class ImapProtocol {
     throws IOException, MailException {
         
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
+        if(watchdog != null) { watchdog.start(); }
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
+        if(watchdog != null) { watchdog.kick(); }
 
         byte[] tagBytes = tag.getBytes();
 
         int preCount = connection.getBytesReceived();
         byte[] temp = connection.receive(executeResponseTester);
+        if(watchdog != null) { watchdog.kick(); }
         int postCount = connection.getBytesReceived();
 
         if (progressHandler != null) {
@@ -1740,6 +1878,7 @@ public class ImapProtocol {
             
             preCount = postCount;
             temp = connection.receive(executeResponseTester);
+            if(watchdog != null) { watchdog.kick(); }
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1748,6 +1887,8 @@ public class ImapProtocol {
             }
         }
 
+        if(watchdog != null) { watchdog.cancel(); }
+        
         try {
             callback.executeComplete();
         } catch (Throwable t) {
@@ -1783,13 +1924,16 @@ public class ImapProtocol {
         String[] result = new String[0];
 
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
+        if(watchdog != null) { watchdog.start(); }
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
+        if(watchdog != null) { watchdog.kick(); }
 
         byte[] tagBytes = tag.getBytes();
 
         int preCount = connection.getBytesReceived();
         byte[] temp = connection.receive();
+        if(watchdog != null) { watchdog.kick(); }
         int postCount = connection.getBytesReceived();
 
         if (progressHandler != null) {
@@ -1801,6 +1945,7 @@ public class ImapProtocol {
             Arrays.add(result, new String(temp));
             preCount = postCount;
             temp = connection.receive();
+            if(watchdog != null) { watchdog.kick(); }
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1808,7 +1953,9 @@ public class ImapProtocol {
                     (postCount - preCount), -1);
             }
         }
-
+        
+        if(watchdog != null) { watchdog.cancel(); }
+        
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
@@ -1825,34 +1972,45 @@ public class ImapProtocol {
      * @param command IMAP command
      * @param arguments Arguments for the command
      * @param errorMsg Error message if we get back something other than a continue
-     * @return List of returned strings
+     * @return Command responses
      */
-    protected String[] executeContinue(String command, String arguments,
-        String text, String errorMsg) throws IOException, MailException {
-        String[] result = new String[0];
+    protected byte[][] executeContinue(String command, String arguments,
+        byte[] textData, String errorMsg) throws IOException, MailException {
+        byte[][] result = new byte[0][];
 
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
+        if(watchdog != null) { watchdog.start(); }
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
+        if(watchdog != null) { watchdog.kick(); }
 
         byte[] tagBytes = tag.getBytes();
 
         byte[] temp = connection.receive();
+        if(watchdog != null) { watchdog.kick(); }
 
         if (Arrays.getIndex(temp, CHAR_PLUS) == -1) {
             throw new MailException(errorMsg);
         }
 
-        connection.sendRaw(text);
-        connection.sendRaw(CRLF);
+        for(int i=0; i<textData.length; i+=1024) {
+            connection.sendRaw(textData, i, Math.min(1024, textData.length - i));
+            if(watchdog != null) { watchdog.kick(); }
+        }
+        connection.sendRaw(CRLF_B, 0, CRLF_B.length);
+        if(watchdog != null) { watchdog.kick(); }
 
         temp = connection.receive();
+        if(watchdog != null) { watchdog.kick(); }
 
         while (!StringArrays.startsWith(temp, tagBytes)) {
-            Arrays.add(result, new String(temp));
+            Arrays.add(result, temp);
             temp = connection.receive();
+            if(watchdog != null) { watchdog.kick(); }
         }
 
+        if(watchdog != null) { watchdog.cancel(); }
+        
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
             throw new MailException(new String(temp));
@@ -1868,13 +2026,17 @@ public class ImapProtocol {
      */
     protected String receive() throws IOException, MailException {
         String result;
-
+        
+        if(watchdog != null) { watchdog.start(); }
+        
         if (connection.available() > 0) {
             result = new String(connection.receive());
         } else {
             result = null;
         }
 
+        if(watchdog != null) { watchdog.cancel(); }
+        
         return result;
     }
 
@@ -1887,8 +2049,11 @@ public class ImapProtocol {
     protected String executeNoReply(String command, String arguments)
         throws IOException, MailException {
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
+        
+        if(watchdog != null) { watchdog.start(); }
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
+        if(watchdog != null) { watchdog.cancel(); }
 
         return tag;
     }
@@ -1905,8 +2070,10 @@ public class ImapProtocol {
         String endTag) throws IOException, MailException {
         String[] result = new String[0];
 
+        if(watchdog != null) { watchdog.start(); }
         connection.sendCommand(command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
+        if(watchdog != null) { watchdog.kick(); }
 
         byte[] tagBytes = endTag.getBytes();
         byte[] temp = connection.receive();
@@ -1914,7 +2081,10 @@ public class ImapProtocol {
         while (!StringArrays.startsWith(temp, tagBytes)) {
             Arrays.add(result, new String(temp));
             temp = connection.receive();
+            if(watchdog != null) { watchdog.kick(); }
         }
+        
+        if(watchdog != null) { watchdog.cancel(); }
 
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
@@ -2105,6 +2275,7 @@ public class ImapProtocol {
     private static String CHAR_QUOTE = "\"";
     private static String CHAR_COLON_ASTERISK = ":*";
     private static String CRLF = "\r\n";
+    private static final byte[] CRLF_B = CRLF.getBytes();
     private static String TIME = "time";
     private static String UIDNEXT_ = "UIDNEXT ";
     private static String UIDVALIDITY_ = "UIDVALIDITY ";

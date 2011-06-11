@@ -49,6 +49,8 @@ import org.logicprobe.LogicMail.conf.GlobalConfig;
 
 public class NetworkConnectorBB50 extends AbstractNetworkConnector {
 
+    private int connectionType;
+    
     public NetworkConnectorBB50(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
         super(globalConfig, connectionConfig);
     }
@@ -89,6 +91,25 @@ public class NetworkConnectorBB50 extends AbstractNetworkConnector {
             SocketConnection connection = (SocketConnection)descriptor.getConnection();
             logConnectionInformation(descriptor);
             setConnectionUrl(descriptor.getUrl());
+            
+            switch(descriptor.getTransportDescriptor().getTransportType()) {
+            case TransportInfo.TRANSPORT_TCP_CELLULAR:
+                connectionType = ConnectionConfig.TRANSPORT_DIRECT_TCP;
+                break;
+            case TransportInfo.TRANSPORT_MDS:
+                connectionType = ConnectionConfig.TRANSPORT_MDS;
+                break;
+            case TransportInfo.TRANSPORT_WAP2:
+                connectionType = ConnectionConfig.TRANSPORT_WAP2;
+                break;
+            case TransportInfo.TRANSPORT_TCP_WIFI:
+                connectionType = ConnectionConfig.TRANSPORT_WIFI_ONLY;
+                break;
+            default:
+                connectionType = 0;
+                break;
+            }
+            
             return connection;
         }
         else {
@@ -96,6 +117,10 @@ public class NetworkConnectorBB50 extends AbstractNetworkConnector {
         }
     }
 
+    protected int openedSocketConnectionType() {
+        return connectionType;
+    }
+    
     private void setPreferredTransports(ConnectionFactory connectionFactory) {
         IntVector preferredTransports = new IntVector();
         if((transports & TRANSPORT_WIFI) != 0) {

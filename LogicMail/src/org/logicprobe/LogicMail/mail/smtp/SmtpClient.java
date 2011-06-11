@@ -45,6 +45,8 @@ import org.logicprobe.LogicMail.message.MessageMimeConverter;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.NetworkConnector;
 import org.logicprobe.LogicMail.util.MailMessageParser;
+import org.logicprobe.LogicMail.util.Watchdog;
+import org.logicprobe.LogicMail.util.WatchdogListener;
 
 import java.io.IOException;
 
@@ -59,6 +61,7 @@ public class SmtpClient implements OutgoingMailClient {
     private final GlobalConfig globalConfig;
     private final OutgoingConfig outgoingConfig;
     private final SmtpProtocol smtpProtocol;
+    private final Watchdog watchdog;
     private String hostname;
     private Connection connection;
     private boolean isFresh;
@@ -83,6 +86,17 @@ public class SmtpClient implements OutgoingMailClient {
     	this.globalConfig = globalConfig;
         this.outgoingConfig = outgoingConfig;
         this.mailSettings = MailSettings.getInstance();
+        this.watchdog = new Watchdog(new WatchdogListener() {
+            public void watchdogTimeout() {
+                // A timeout will simply cause a forced-close of the
+                // connection, causing IOExceptions elsewhere that
+                // will cause any necessary cleanup.
+                if(connection != null) {
+                    connection.forceClose();
+                }
+            }
+        });
+        
         smtpProtocol = new SmtpProtocol();
 
         if (outgoingConfig.getUseAuth() > 0) {
@@ -119,6 +133,8 @@ public class SmtpClient implements OutgoingMailClient {
         if (!openStarted) {
             connection = networkConnector.open(outgoingConfig);
             smtpProtocol.setConnection(connection);
+            smtpProtocol.setWatchdog(watchdog);
+            watchdog.setDefaultTimeoutForConnection(connection.getConnectionType());
 
             // Receive the initial server greeting
             smtpProtocol.receiveGreeting();
@@ -175,6 +191,7 @@ public class SmtpClient implements OutgoingMailClient {
             connection.close();
             connection = null;
         }
+        if(watchdog.isStarted()) { watchdog.cancel(); }
     }
 
     public ConnectionConfig getConnectionConfig() {

@@ -60,6 +60,12 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         return deliberate;
     }
     
+    protected abstract String getInitialStatus();
+    
+    public void showInitialStatus() {
+        showStatus(getInitialStatus());
+    }
+    
     public void notifyConnectionRequestFailed(Throwable exception, boolean isFinal) {
         fireMailStoreRequestFailed(exception, isFinal);
     }

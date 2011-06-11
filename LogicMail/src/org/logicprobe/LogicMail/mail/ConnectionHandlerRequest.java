@@ -33,9 +33,41 @@ package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
 
+/**
+ * Interface used by the connection handler to manage requests. 
+ */
 public interface ConnectionHandlerRequest {
+    /**
+     * Sets whether this is a deliberate request.
+     * Deliberate requests are created in response to direct user action,
+     * and thus should have status reported. Non-deliberate requests are
+     * created by entirely background processes, and the user should
+     * not be notified of their status.
+     */
     void setDeliberate(boolean deliberate);
+    
+    /**
+     * Checks if this is a deliberate request.
+     */
     boolean isDeliberate();
+    
+    /**
+     * Requests are normally responsible for showing their own status messages.
+     * This method is called prior to processing a request, so that its initial
+     * status message can be show before {@link #execute(MailClient)} is called.
+     */
+    void showInitialStatus();
+    
+    /**
+     * Called by the connection handler to tell a request to execute its
+     * mail client operations.
+     */
     void execute(MailClient client) throws IOException, MailException;
+    
+    /**
+     * Notifies a request that it has failed.
+     * This can be caused either by an exception being thrown during its
+     * execution, or another error causing it to be removed from the queue.
+     */
     void notifyConnectionRequestFailed(Throwable exception, boolean isFinal);
 }

@@ -64,6 +64,12 @@ class NetworkSendMessageRequest implements ConnectionHandlerRequest {
         return deliberate;
     }
     
+    public void showInitialStatus() {
+        MailConnectionManager.getInstance().fireMailConnectionStatus(
+                mailSender.getOutgoingConfig(), this,
+                resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_SEND_MESSAGE));
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         OutgoingMailClient outgoingClient = (OutgoingMailClient)client;
         

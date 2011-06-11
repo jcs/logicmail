@@ -62,8 +62,9 @@ public class Connection {
     private static String strCRLF = "\r\n";
 
     private SocketConnection socket;
-    private String localAddress;
-    private GlobalConfig globalConfig;
+    private final int connectionType;
+    private final String localAddress;
+    private final GlobalConfig globalConfig;
     private InputStream input;
     private OutputStream output;
     private int fakeAvailable = -1;
@@ -71,6 +72,7 @@ public class Connection {
     private int bytesReceived = 0;
     private final Object socketLock = new Object();
     private final Object socketReadLock = new Object();
+    private volatile boolean connectionClosed = true;
     
     /**
      * Byte stream used to hold received data before it is passed back to
@@ -87,10 +89,13 @@ public class Connection {
     /**
      * Initializes a new connection object.
      * 
-     * @param socket Socket representing the connection
-     * @throws IOException Thrown if an I/O error occurs
+     * @param socket Socket representing the connection.
+     * @param connectionType The type of connection that was opened, based on
+     *     the <code>ConnectionConfig.TRANSPORT_XXXX</code> constants.
+     * @throws IOException Thrown if an I/O error occurs.
      */
-    public Connection(SocketConnection socket) throws IOException {
+    public Connection(SocketConnection socket, int connectionType) throws IOException {
+        this.connectionType = connectionType;
         this.globalConfig = MailSettings.getInstance().getGlobalConfig();
         
         this.socket = socket;
@@ -99,6 +104,7 @@ public class Connection {
         this.localAddress = socket.getLocalAddress();
         this.bytesSent = 0;
         this.bytesReceived = 0;
+        this.connectionClosed = false;
     }
     
     /**
@@ -115,23 +121,57 @@ public class Connection {
      */
     public void close() {
         synchronized(socketLock) {
-            try {
-                input.close();
-                output.close();
-                socket.close();
-            } catch (Exception exp) {
-                EventLogger.logEvent(AppInfo.GUID,
-                        ("Error closing connection: " + exp.getMessage()).getBytes(),
-                        EventLogger.WARNING);
-            } finally {
-                input = null;
-                output = null;
-                socket = null;
-            }
+            forceClose();
         }
         
         EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
                 EventLogger.INFORMATION);
+    }
+
+    /**
+     * Closes a connection abruptly, regardless of its current state.
+     */
+    public void forceClose() {
+        connectionClosed = true;
+        
+        Exception[] exp = new Exception[3];
+
+        if(input != null) {
+            try {
+                input.close();
+            } catch (Exception e) {
+                exp[0] = e;
+            } finally {
+                input = null;
+            }
+        }
+
+        if(output != null) {
+            try {
+                output.close();
+            } catch (Exception e) {
+                exp[1] = e;
+            } finally {
+                output = null;
+            }
+        }
+
+        if(socket != null) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                exp[2] = e;
+            } finally {
+                socket = null;
+            }
+        }
+        
+        for(int i=0; i<exp.length; i++) {
+            if(exp[i] == null) { continue; }
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Error closing connection: " + exp[i].getMessage()).getBytes(),
+                    EventLogger.WARNING);
+        }
     }
 
     /**
@@ -146,6 +186,16 @@ public class Connection {
         }
     }
 
+    /**
+     * Gets the type of connection that was opened.
+     *
+     * @return the connection type, based on the
+     *     <code>ConnectionConfig.TRANSPORT_XXXX</code> constants.
+     */
+    public int getConnectionType() {
+        return connectionType;
+    }
+    
     /**
      * Get the local address to which this connection is bound
      * @return Local address
@@ -238,6 +288,7 @@ public class Connection {
     
             output.flush();
         }
+        if(connectionClosed) { throw new IOException(); }
     }
 
     /**
@@ -248,20 +299,21 @@ public class Connection {
      *
      * @see #send
      */
-    public void sendRaw(String s) throws IOException {
-        byte[] buf = s.getBytes();
-
+    public void sendRaw(byte[] data, int offset, int length) throws IOException {
         if (globalConfig.getConnDebug()) {
             EventLogger.logEvent(AppInfo.GUID,
-                    ("[SEND RAW]\r\n" + s).getBytes(), EventLogger.DEBUG_INFO);
+                    ("[SEND RAW]\r\n"
+                            + new String(data, offset, length)).getBytes(),
+                            EventLogger.DEBUG_INFO);
         }
 
         synchronized(socketLock) {
-            output.write(buf, 0, buf.length);
-            bytesSent += buf.length;
+            output.write(data, offset, length);
+            bytesSent += length;
     
             output.flush();
         }
+        if(connectionClosed) { throw new IOException(); }
     }
 
     /**
@@ -291,7 +343,9 @@ public class Connection {
      * @return the complete line, minus the CRLF, as a byte array
      */
     public byte[] receive() throws IOException {
-        return receive(lineResponseTester);
+        byte[] result = receive(lineResponseTester);
+        if(connectionClosed) { throw new IOException(); }
+        return result;
     }
     
     /**
@@ -311,6 +365,7 @@ public class Connection {
                         EventLogger.DEBUG_INFO);
         }
         
+        if(connectionClosed) { throw new IOException(); }
         return result;
     }
     
@@ -471,6 +526,6 @@ public class Connection {
         
         public String logString(byte[] result) {
             return new String(result);
-        };
+        }
     };
 }

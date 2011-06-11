@@ -94,9 +94,11 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
             throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION), e);
         }
         
-        logOpenConnection();
+        int connectionType = openedSocketConnectionType();
         
-        Connection connection = new Connection(socket);
+        logOpenConnection(connectionType);
+        
+        Connection connection = new Connection(socket, connectionType);
         return connection;
     }
 
@@ -140,12 +142,32 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
         if(enableWiFi) { transports |= TRANSPORT_WIFI; }
     }
 
-    private void logOpenConnection() throws IOException {
+    private void logOpenConnection(int connectionType) throws IOException {
         if (EventLogger.getMinimumLevel() >= EventLogger.INFORMATION) {
             StringBuffer buf = new StringBuffer();
             buf.append("Connection established:\r\n");
             buf.append("Socket: ").append(socket.getClass().toString()).append(CRLF);
             buf.append("Local address: ").append(((SocketConnection)socket).getLocalAddress()).append(CRLF);
+            
+            buf.append("Connection type: ");
+            switch(connectionType) {
+            case ConnectionConfig.TRANSPORT_DIRECT_TCP:
+                buf.append("Direct TCP");
+                break;
+            case ConnectionConfig.TRANSPORT_MDS:
+                buf.append("MDS");
+                break;
+            case ConnectionConfig.TRANSPORT_WAP2:
+                buf.append("WAP 2.0");
+                break;
+            case ConnectionConfig.TRANSPORT_WIFI_ONLY:
+                buf.append("WiFi");
+                break;
+            default:
+                buf.append("Unknown");
+                break;
+            }
+            
             buf.append("URL: ").append(connectionUrl);
             EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(),
                     EventLogger.INFORMATION);
@@ -164,6 +186,15 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     protected abstract SocketConnection openSocketConnection() throws IOException;
+    
+    /**
+     * Gets the type of connection that was returned by the preceeding call to
+     * <code>openSocketConnection()</code>.
+     * 
+     * @return The type of connection that was opened, based on the
+     *     <code>ConnectionConfig.TRANSPORT_XXXX</code> constants.
+     */
+    protected abstract int openedSocketConnectionType();
     
     /**
      * Sets the connection URL that was used to open the socket connection.
@@ -193,7 +224,7 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
                             connectionUrl,
                             true);
 
-            Connection tlsConnection = new Connection(tlsSocket);
+            Connection tlsConnection = new Connection(tlsSocket, connection.getConnectionType());
             return tlsConnection;
             
         } catch (IOException e) {

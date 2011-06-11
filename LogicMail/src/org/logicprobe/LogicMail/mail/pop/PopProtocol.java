@@ -43,12 +43,14 @@ import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.mail.MailProgressHandler;
 import org.logicprobe.LogicMail.util.Connection;
 import org.logicprobe.LogicMail.util.StringArrays;
+import org.logicprobe.LogicMail.util.Watchdog;
 
 /**
  * This class implements the commands for the POP3 protocol
  */
 public class PopProtocol {
     private Connection connection;
+    private Watchdog watchdog;
     
     /** Creates a new instance of PopProtocol */
     public PopProtocol() {
@@ -63,6 +65,17 @@ public class PopProtocol {
      */
     public void setConnection(Connection connection) {
         this.connection = connection;
+    }
+
+    /**
+     * Sets the watchdog instance used by this class to detect stalled
+     * connections. This should be set after opening the connection, and
+     * prior to calling any command methods, to enable watchdog functionality.
+     *
+     * @param watchdog the new watchdog instance
+     */
+    public void setWatchdog(Watchdog watchdog) {
+        this.watchdog = watchdog;
     }
     
     /**
@@ -361,9 +374,15 @@ public class PopProtocol {
      */
     private String[] executeFollow(String command, boolean errorFatal, MailProgressHandler progressHandler) throws IOException, MailException {
     	int preCount = connection.getBytesReceived();
-        if(execute(command, errorFatal) == null) { return null; }
+    	if(watchdog != null) { watchdog.start(); }
+    	if(executeImpl(command, errorFatal) == null) {
+    	    if(watchdog != null) { watchdog.cancel(); }
+    	    return null;
+    	}
         
         String buffer = new String(connection.receive());
+        if(watchdog != null) { watchdog.kick(); }
+        
         int postCount = connection.getBytesReceived();
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
 
@@ -372,9 +391,12 @@ public class PopProtocol {
             Arrays.add(lines, buffer);
             preCount = postCount;
             buffer = new String(connection.receive());
+            if(watchdog != null) { watchdog.kick(); }
+            
             postCount = connection.getBytesReceived();
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }
+        if(watchdog != null) { watchdog.cancel(); }
         return lines;
     }
     
@@ -393,9 +415,15 @@ public class PopProtocol {
      */
     private byte[][] executeFollowBinary(String command, boolean errorFatal, MailProgressHandler progressHandler) throws IOException, MailException {
         int preCount = connection.getBytesReceived();
-        if(execute(command, errorFatal) == null) { return null; }
+        if(watchdog != null) { watchdog.start(); }
+        if(executeImpl(command, errorFatal) == null) {
+            if(watchdog != null) { watchdog.cancel(); }
+            return null;
+        }
         
         byte[] buffer = connection.receive();
+        if(watchdog != null) { watchdog.kick(); }
+        
         int postCount = connection.getBytesReceived();
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
 
@@ -404,9 +432,12 @@ public class PopProtocol {
             Arrays.add(lines, buffer);
             preCount = postCount;
             buffer = connection.receive();
+            if(watchdog != null) { watchdog.kick(); }
+            
             postCount = connection.getBytesReceived();
             if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
         }
+        if(watchdog != null) { watchdog.cancel(); }
         return lines;
     }
     
@@ -419,7 +450,10 @@ public class PopProtocol {
      * @return The result
      */
     private String execute(String command) throws IOException, MailException {
-        return execute(command, false);
+        if(watchdog != null) { watchdog.start(); }
+        String result = executeImpl(command, false);
+        if(watchdog != null) { watchdog.cancel(); }
+        return result;
     }
     
     /**
@@ -434,11 +468,20 @@ public class PopProtocol {
      *         <code>false</code> and the response was an error.
      */
     private String execute(String command, boolean errorFatal) throws IOException, MailException {
+        if(watchdog != null) { watchdog.start(); }
+        String result = executeImpl(command, errorFatal);
+        if(watchdog != null) { watchdog.cancel(); }
+        return result;
+    }
+    
+    private String executeImpl(String command, boolean errorFatal) throws IOException, MailException {
         if(command != null) {
             connection.sendCommand(command);
+            if(watchdog != null) { watchdog.kick(); }
         }
         
         String result = new String(connection.receive());
+        if(watchdog != null) { watchdog.kick(); }
         
         if((result.length() > 1) && (result.charAt(0) == '-')) {
             int p = result.indexOf(' ');
@@ -446,6 +489,7 @@ public class PopProtocol {
                 result = result.substring(p + 1);
             }
             if(errorFatal) {
+                if(watchdog != null) { watchdog.cancel(); }
                 throw new MailException(result);
             }
             else {

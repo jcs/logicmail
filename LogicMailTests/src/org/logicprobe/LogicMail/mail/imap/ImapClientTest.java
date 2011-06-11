@@ -94,7 +94,7 @@ public class ImapClientTest extends TestCase {
         accountConfig.setServerSecurity(0);
         accountConfig.setServerUser("user");
         accountConfig.setServerPass("password");
-
+        
         // Capture the listener that ImapClient passes to ImapProtocol when it
         // is constructed
         hammock.setExpectation(MockImapProtocol.MTHD_SET_UNTAGGED_RESPONSE_LISTENER_$_IMAPPROTOCOL$UNTAGGEDRESPONSELISTENER,
@@ -124,6 +124,7 @@ public class ImapClientTest extends TestCase {
      */
     private void configureForBasicOpen() throws Throwable {
         hammock.setStubExpectation(MockImapProtocol.MTHD_SET_CONNECTION_$_CONNECTION);
+        hammock.setStubExpectation(MockImapProtocol.MTHD_SET_WATCHDOG_$_WATCHDOG);
         
         Hashtable capabilities = new Hashtable();
         capabilities.put("NAMESPACE", Boolean.TRUE);
@@ -506,7 +507,7 @@ public class ImapClientTest extends TestCase {
                         public void write(int b) throws IOException { }
                     }));
             
-            Connection connection = new Connection(stubSocket);
+            Connection connection = new Connection(stubSocket, 0);
             return connection;
         }
 

@@ -60,10 +60,13 @@ class NetworkMessageAppendRequest extends NetworkMailStoreRequest implements Mes
         return initialFlags;
     }
     
+    protected String getInitialStatus() {
+        return resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_APPEND);
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
         
-        showStatus(resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_APPEND));
         if(incomingClient.hasAppend()) {
             incomingClient.appendMessage(folder, rawMessage, initialFlags);
         }
