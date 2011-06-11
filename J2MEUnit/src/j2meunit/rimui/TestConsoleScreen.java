@@ -178,6 +178,15 @@ public class TestConsoleScreen extends MainScreen implements TestListener {
     public boolean keyChar(char key, int status, int time) {
         boolean retval = false;
         switch (key) {
+        case 'n':
+            retval = nextSibling();
+            break;
+        case 'p':
+            retval = prevSibling();
+            break;
+        case Characters.ENTER:
+            retval = openResultsForCurrentNode();
+            break;
         case Characters.ESCAPE:
             System.exit(1);
             break;
@@ -185,6 +194,38 @@ public class TestConsoleScreen extends MainScreen implements TestListener {
             retval = super.keyChar(key, status, time);
         }
         return retval;
+    }
+
+    private boolean nextSibling() {
+        int id = testTreeField.getCurrentNode();
+        if(id == -1) { return false; }
+        int nextId = testTreeField.getNextSibling(id);
+        if(nextId == -1) { return false; }
+        
+        testTreeField.setCurrentNode(nextId);
+        return true;
+    }
+
+    private boolean prevSibling() {
+        int id = testTreeField.getCurrentNode();
+        if(id == -1) { return false; }
+        int prevId = testTreeField.getPreviousSibling(id);
+        if(prevId == -1) { return false; }
+        
+        testTreeField.setCurrentNode(prevId);
+        return true;
+    }
+
+    private boolean openResultsForCurrentNode() {
+        int node = testTreeField.getCurrentNode();
+        if(node > 0) {
+            TestTreeItem item = (TestTreeItem)testTreeField.getCookie(node);
+            if(item.hasRun && item.test instanceof TestCase) {
+                showTestResults();
+                return true;
+            }
+        }
+        return false;
     }
 
     private void testTreeField_DrawTreeItem(TreeField treeField, Graphics graphics, int node, int y, int width, int indent) {
