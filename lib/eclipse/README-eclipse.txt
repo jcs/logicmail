@@ -10,7 +10,7 @@ https://www.blackberry.com/jira/browse/TOOL-250
 
 Since a fix is not expected any time soon, I've created a workaround for the
 issue. This workaround is implemented as a wrapper for the RIM "rapc.jar"
-utility, that filters eroneous entries out of its command-line arguments.
+utility, that filters erroneous entries out of its command-line arguments.
 
 To install this workaround, perform the following steps in each component-pack
 plugin directory:
