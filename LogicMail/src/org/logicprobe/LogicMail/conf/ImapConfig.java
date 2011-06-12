@@ -83,7 +83,7 @@ public class ImapConfig extends AccountConfig {
         this.maxFolderDepth = 4;
         this.folderPrefix = "";
         this.onlySubscribedFolders = true;
-        this.enableCompression = true;
+        this.enableCompression = false;
     }
 
     /* (non-Javadoc)
