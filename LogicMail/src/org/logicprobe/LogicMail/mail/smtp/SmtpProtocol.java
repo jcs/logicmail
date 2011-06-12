@@ -62,6 +62,7 @@ public class SmtpProtocol {
     
     /** Creates a new instance of SmtpProtocol */
     public SmtpProtocol() {
+        this.watchdog = Watchdog.getDisabledWatchdog();
     }
     
     /**
@@ -100,10 +101,10 @@ public class SmtpProtocol {
         }
         
         // Wait 45 sec for the initial greeting
-        if(watchdog != null) { watchdog.start(45000); }
+        watchdog.start(45000);
         
         byte[] buffer = connection.receive();
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         
         while(buffer != null && buffer.length > 0) {
             if(buffer.length >=4 && buffer[3] == (byte)' ') {
@@ -111,11 +112,11 @@ public class SmtpProtocol {
             }
             else {
                 buffer = connection.receive();
-                if(watchdog != null) { watchdog.kick(); }
+                watchdog.kick();
             }
         }
         
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         // Make sure the last line of the greeting had the status code "220"
         if(!(buffer != null && buffer.length >= 3
@@ -294,12 +295,12 @@ public class SmtpProtocol {
             EventLogger.DEBUG_INFO);
         }
 
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         
         connection.sendCommand(DATA);
         String result = new String(connection.receive());
 
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         
         if(!result.startsWith(CODE_354)) {
             return false;
@@ -308,13 +309,13 @@ public class SmtpProtocol {
         byte[] data = message.getBytes();
         for(int i=0; i<data.length; i+=1024) {
             connection.sendRaw(data, i, Math.min(1024, data.length - i));
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
         }
         
         connection.sendCommand("\r\n.");
         result = new String(connection.receive());
         
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         return result.startsWith(CODE_250);
     }
@@ -358,7 +359,7 @@ public class SmtpProtocol {
      * @return The result
      */
     private String execute(String command) throws IOException, MailException {
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         
         if(command != null) {
             connection.sendCommand(command);
@@ -366,7 +367,7 @@ public class SmtpProtocol {
         
         String result = new String(connection.receive());
         
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         return result;
     }
@@ -381,28 +382,28 @@ public class SmtpProtocol {
      * @return An array of lines containing the response
      */
     private String[] executeFollow(String command) throws IOException, MailException {
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         
         if(command != null) {
             connection.sendCommand(command);
         }
         connection.receive();
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         
         String buffer = new String(connection.receive());
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         
         String[] lines = new String[0];
         while(buffer != null) {
             buffer = new String(connection.receive());
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
             
             Arrays.add(lines, buffer);
             if(buffer.length() >=4 && buffer.charAt(3) == ' ') {
                 break;
             }
         }
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         return lines;
     }
 

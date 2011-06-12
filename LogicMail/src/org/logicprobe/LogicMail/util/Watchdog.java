@@ -36,6 +36,16 @@ import net.rim.device.api.system.EventLogger;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 
+/**
+ * This class implements watchdog functionality that is used to guard against
+ * stalled synchronous I/O operations.  The watchdog timer is started with a
+ * call to {@link #start()}, reset with periodic calls to {@link #kick()},
+ * and canceled with a call to {@link #cancel()}.  Any attempt to call these
+ * methods out of order may result in an {@link IllegalStateException}.
+ * If the watchdog reaches its timeout, the timer will be implicitly canceled
+ * and {@link WatchdogListener#watchdogTimeout()} will be called.
+ * </p>
+ */
 public class Watchdog {
     private static final long DEFAULT_TIMEOUT = 15000;
     private static final long DEFAULT_TIMEOUT_MOBILE = 30000;
@@ -45,7 +55,12 @@ public class Watchdog {
     private final WatchdogThread watchdogThread;
     private boolean started;
     private long defaultTimeout = DEFAULT_TIMEOUT;
-
+    
+    /**
+     * Instantiates a new watchdog instance.
+     *
+     * @param listener the listener to be notified of timeouts
+     */
     public Watchdog(WatchdogListener listener) {
         if(listener == null) {
             throw new NullPointerException("Must supply a listener");
@@ -54,7 +69,33 @@ public class Watchdog {
         this.watchdogThread = new WatchdogThread();
     }
 
+    /**
+     * Instantiates a new disabled watchdog.
+     * This method is intended to only be called through {@link #getDisabledWatchdog()}
+     * to avoid usage confusion.
+     */
+    private Watchdog() {
+        this.listener = null;
+        this.watchdogThread = null;
+    }
+    
+    /**
+     * Gets a disabled watchdog instance.
+     * This is intended for use by code that can operate with or without an
+     * active watchdog timer, without requiring that code to constantly check
+     * its configuration prior to making watchdog calls.
+     *
+     * @return a disabled watchdog instance
+     */
+    public static Watchdog getDisabledWatchdog() {
+        return new Watchdog();
+    }
+    
+    /**
+     * Shutdown the watchdog timer, if it is running.
+     */
     public void shutdown() {
+        if(listener == null) { return; }
         if(watchdogThread.isAlive()) {
             watchdogThread.shutdown();
             try {
@@ -63,14 +104,31 @@ public class Watchdog {
         }
     }
     
+    /**
+     * Gets the default timeout value used when calling {@link #start()}.
+     *
+     * @return the default timeout
+     */
     public long getDefaultTimeout() {
         return defaultTimeout;
     }
     
+    /**
+     * Sets the default timeout value used when calling {@link #start()}.
+     *
+     * @param defaultTimeout the new default timeout
+     */
     public void setDefaultTimeout(long defaultTimeout) {
         this.defaultTimeout = defaultTimeout;
     }
     
+    /**
+     * Sets the default timeout value to use when calling {@link #start()},
+     * based on the provided network connection type.
+     *
+     * @param connectionType the connection type, as a {@link ConnectionConfig}
+     *     transport type constant.
+     */
     public void setDefaultTimeoutForConnection(int connectionType) {
         switch(connectionType) {
         case ConnectionConfig.TRANSPORT_WIFI_ONLY:
@@ -82,11 +140,20 @@ public class Watchdog {
         }
     }
     
+    /**
+     * Start the watchdog timer with the default timeout.
+     */
     public void start() {
         start(defaultTimeout);
     }
 
+    /**
+     * Start the watchdog timer.
+     *
+     * @param timeout the timeout value to use
+     */
     public void start(long timeout) {
+        if(listener == null) { return; }
         if(started) {
             throw new IllegalStateException();
         }
@@ -97,14 +164,22 @@ public class Watchdog {
         started = true;
     }
     
+    /**
+     * Kick the watchdog timer, effectively resetting the elapsed time.
+     */
     public void kick() {
+        if(listener == null) { return; }
         if(!started) {
             throw new IllegalStateException();
         }
         watchdogThread.kickTimeout();
     }
 
+    /**
+     * Cancel the watchdog timer.
+     */
     public void cancel() {
+        if(listener == null) { return; }
         if(!started) {
             throw new IllegalStateException();
         }
@@ -112,6 +187,11 @@ public class Watchdog {
         started = false;
     }
 
+    /**
+     * Checks if the watchdog timer is started.
+     *
+     * @return true, if it is started
+     */
     public boolean isStarted() {
         return started;
     }

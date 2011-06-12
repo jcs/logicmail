@@ -78,6 +78,7 @@ public class ImapProtocol {
 
     /** Creates a new instance of ImapProtocol */
     public ImapProtocol() {
+        this.watchdog = Watchdog.getDisabledWatchdog();
     }
 
     /**
@@ -1685,7 +1686,7 @@ public class ImapProtocol {
         // If the idle thread is not currently alive, it is because some
         // exception caused it to terminate prematurely.  In that case, there
         // is no point in trying to further communicate with the server here.
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         if(idleThread.isAlive()) {
             connection.sendCommand(DONE);
         }
@@ -1697,7 +1698,7 @@ public class ImapProtocol {
             EventLogger.logEvent(AppInfo.GUID,
                     e.toString().getBytes(), EventLogger.ERROR);
         }
-        if(watchdog != null && watchdog.isStarted()) { watchdog.cancel(); }
+        if(watchdog.isStarted()) { watchdog.cancel(); }
         
         IdleThread temp = idleThread;
         idleThread = null;
@@ -1733,10 +1734,10 @@ public class ImapProtocol {
 
         int preCount = connection.getBytesReceived();
         
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         byte[] data = commandBuf.toString().getBytes();
         connection.sendRaw(data, 0, data.length);
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         int postCount = connection.getBytesReceived();
 
@@ -1753,7 +1754,7 @@ public class ImapProtocol {
             preCount = postCount;
 
             temp = connection.receive();
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
             
             postCount = connection.getBytesReceived();
 
@@ -1766,7 +1767,7 @@ public class ImapProtocol {
 
             if(Arrays.equals(temp, p + 1, BAD_PREFIX, 0, BAD_PREFIX.length)
                     || Arrays.equals(temp, p + 1, NO_PREFIX, 0, NO_PREFIX.length)) {
-                if(watchdog != null) { watchdog.cancel(); }
+                watchdog.cancel();
                 throw new MailException(new String(temp));
             }
 
@@ -1781,7 +1782,7 @@ public class ImapProtocol {
             }
         }
 
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         return result;
     }
@@ -1800,16 +1801,16 @@ public class ImapProtocol {
 
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
         
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         byte[] tagBytes = tag.getBytes();
 
         int preCount = connection.getBytesReceived();
         byte[] temp = connection.receive(executeResponseTester);
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         int postCount = connection.getBytesReceived();
 
         if (progressHandler != null) {
@@ -1821,7 +1822,7 @@ public class ImapProtocol {
             Arrays.add(result, temp);
             preCount = postCount;
             temp = connection.receive(executeResponseTester);
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1830,7 +1831,7 @@ public class ImapProtocol {
             }
         }
 
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
@@ -1855,16 +1856,16 @@ public class ImapProtocol {
     throws IOException, MailException {
         
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         byte[] tagBytes = tag.getBytes();
 
         int preCount = connection.getBytesReceived();
         byte[] temp = connection.receive(executeResponseTester);
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         int postCount = connection.getBytesReceived();
 
         if (progressHandler != null) {
@@ -1883,7 +1884,7 @@ public class ImapProtocol {
             
             preCount = postCount;
             temp = connection.receive(executeResponseTester);
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1892,7 +1893,7 @@ public class ImapProtocol {
             }
         }
 
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         try {
             callback.executeComplete();
@@ -1929,16 +1930,16 @@ public class ImapProtocol {
         String[] result = new String[0];
 
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         byte[] tagBytes = tag.getBytes();
 
         int preCount = connection.getBytesReceived();
         byte[] temp = connection.receive();
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
         int postCount = connection.getBytesReceived();
 
         if (progressHandler != null) {
@@ -1950,7 +1951,7 @@ public class ImapProtocol {
             Arrays.add(result, new String(temp));
             preCount = postCount;
             temp = connection.receive();
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
             postCount = connection.getBytesReceived();
 
             if (progressHandler != null) {
@@ -1959,7 +1960,7 @@ public class ImapProtocol {
             }
         }
         
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
@@ -1984,15 +1985,15 @@ public class ImapProtocol {
         byte[][] result = new byte[0][];
 
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         byte[] tagBytes = tag.getBytes();
 
         byte[] temp = connection.receive();
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         if (Arrays.getIndex(temp, CHAR_PLUS) == -1) {
             throw new MailException(errorMsg);
@@ -2000,21 +2001,21 @@ public class ImapProtocol {
 
         for(int i=0; i<textData.length; i+=1024) {
             connection.sendRaw(textData, i, Math.min(1024, textData.length - i));
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
         }
         connection.sendRaw(CRLF_B, 0, CRLF_B.length);
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         temp = connection.receive();
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         while (!StringArrays.startsWith(temp, tagBytes)) {
             Arrays.add(result, temp);
             temp = connection.receive();
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
         }
 
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
@@ -2032,7 +2033,7 @@ public class ImapProtocol {
     protected String receive() throws IOException, MailException {
         String result;
         
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         
         if (connection.available() > 0) {
             result = new String(connection.receive());
@@ -2040,7 +2041,7 @@ public class ImapProtocol {
             result = null;
         }
 
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
         
         return result;
     }
@@ -2055,10 +2056,10 @@ public class ImapProtocol {
         throws IOException, MailException {
         String tag = TAG_PREFIX + commandCount++ + CHAR_SP;
         
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         connection.sendCommand(tag + command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
 
         return tag;
     }
@@ -2075,10 +2076,10 @@ public class ImapProtocol {
         String endTag) throws IOException, MailException {
         String[] result = new String[0];
 
-        if(watchdog != null) { watchdog.start(); }
+        watchdog.start();
         connection.sendCommand(command +
             ((arguments == null) ? "" : (CHAR_SP + arguments)));
-        if(watchdog != null) { watchdog.kick(); }
+        watchdog.kick();
 
         byte[] tagBytes = endTag.getBytes();
         byte[] temp = connection.receive();
@@ -2086,10 +2087,10 @@ public class ImapProtocol {
         while (!StringArrays.startsWith(temp, tagBytes)) {
             Arrays.add(result, new String(temp));
             temp = connection.receive();
-            if(watchdog != null) { watchdog.kick(); }
+            watchdog.kick();
         }
         
-        if(watchdog != null) { watchdog.cancel(); }
+        watchdog.cancel();
 
         if(Arrays.equals(temp, tagBytes.length, BAD_PREFIX, 0, BAD_PREFIX.length)
                 || Arrays.equals(temp, tagBytes.length, NO_PREFIX, 0, NO_PREFIX.length)) {
