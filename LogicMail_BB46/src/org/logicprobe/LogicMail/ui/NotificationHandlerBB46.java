@@ -40,7 +40,7 @@ import net.rim.device.api.system.EncodedImage;
 
 public class NotificationHandlerBB46 extends NotificationHandler {
     private ApplicationIndicatorRegistry indicatorRegistry;
-    private ApplicationIndicator indicator;
+    protected ApplicationIndicator indicator;
     private boolean indicatorRegistered;
     private final Object indicatorLock = new Object();
     
@@ -81,11 +81,15 @@ public class NotificationHandlerBB46 extends NotificationHandler {
         super.indicateUnseenMessageCount(count, recent);
         synchronized(indicatorLock) {
             if(indicatorRegistered) {
-                indicator.setIcon(recent ? indicatorNewIcon : indicatorIcon);
-                indicator.setValue(count);
-                indicator.setVisible(count > 0);
+                updateIndicator(count, recent);
             }
         }
+    }
+    
+    protected void updateIndicator(int count, boolean recent) {
+        indicator.setIcon(recent ? indicatorNewIcon : indicatorIcon);
+        indicator.setValue(count);
+        indicator.setVisible(count > 0);
     }
     
     private void registerIndicator() {

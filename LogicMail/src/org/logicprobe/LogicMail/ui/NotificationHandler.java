@@ -79,6 +79,7 @@ public class NotificationHandler {
 	private boolean notificationTriggered;
 
     private static String[] concreteClasses = {
+        "org.logicprobe.LogicMail.ui.NotificationHandlerBB60",
         "org.logicprobe.LogicMail.ui.NotificationHandlerBB46",
         "org.logicprobe.LogicMail.ui.NotificationHandler"
     };
@@ -386,7 +387,7 @@ public class NotificationHandler {
 	    updateMessageIndicator();
 	}
 	
-	private void setAppIcon(boolean newMessages) {
+	protected void setAppIcon(boolean newMessages) {
 		if(newMessages) {
 			HomeScreen.updateIcon(AppInfo.getNewMessagesIcon());
 			HomeScreen.setRolloverIcon(AppInfo.getNewMessagesRolloverIcon());
