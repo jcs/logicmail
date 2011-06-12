@@ -480,23 +480,28 @@ public class ImapProtocol {
         }
 
         StatusResponse[] response = new StatusResponse[mboxpaths.length];
-        String[] arguments = new String[mboxpaths.length];
-
+        String[] result = new String[mboxpaths.length];
+        
         int i;
-
-        for (i = 0; i < mboxpaths.length; i++) {
-            arguments[i] = CHAR_QUOTE +
-                StringParser.addEscapedChars(mboxpaths[i]) +
-                "\" (MESSAGES RECENT UNSEEN)";
+        for (i = 0; i < mboxpaths.length; i+=10) {
+            int increment = Math.min(10, mboxpaths.length - i);
+            String[] arguments = new String[increment];
+            for(int j=0; j<increment; j++) {
+                arguments[j] = CHAR_QUOTE
+                    + StringParser.addEscapedChars(mboxpaths[i + j])
+                    + "\" (MESSAGES RECENT UNSEEN)";
+            }
+            
+            String[] tempResult = executeBatch(STATUS, arguments, progressHandler);
+            if ((tempResult == null) || (tempResult.length != arguments.length)) {
+                throw new MailException("Unable to query folder status");
+            }
+            for(int j=0; j<increment; j++) {
+                result[i + j] = tempResult[j];
+            }
         }
 
-        String[] result = executeBatch(STATUS, arguments, progressHandler);
-
-        if ((result == null) || (result.length != arguments.length)) {
-            throw new MailException("Unable to query folder status");
-        }
-
-        for (i = 0; i < arguments.length; i++) {
+        for (i = 0; i < result.length; i++) {
             response[i] = new StatusResponse();
 
             if (result[i] == null) {
