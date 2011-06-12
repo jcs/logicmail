@@ -215,8 +215,8 @@ public abstract class AbstractMailConnectionHandler {
 		retryCount = 0;
 		synchronized(requestQueue) {
 		    ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
-		    if(request != null && request.isDeliberate()) {
-			    request.showInitialStatus();
+		    if(request != null) {
+			    if(request.isDeliberate()) { request.showInitialStatus(); }
 				setConnectionState(STATE_REQUESTS);
 			}
 			else {
@@ -301,8 +301,8 @@ public abstract class AbstractMailConnectionHandler {
 
         synchronized(requestQueue) {
             ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
-            if(request != null && request.isDeliberate()) {
-                request.showInitialStatus();
+            if(request != null) {
+                if(request.isDeliberate()) { request.showInitialStatus(); }
                 setConnectionState(STATE_REQUESTS);
             }
             else if(connectionThread.isShutdown()) {
@@ -330,8 +330,8 @@ public abstract class AbstractMailConnectionHandler {
         synchronized(requestQueue) {
             if(getConnectionState() == STATE_IDLE) {
                 ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
-                if(request != null && request.isDeliberate()) {
-                    request.showInitialStatus();
+                if(request != null) {
+                    if(request.isDeliberate()) { request.showInitialStatus(); }
                     setConnectionState(STATE_REQUESTS);
                 }
                 else if(connectionThread.isShutdown()) {
