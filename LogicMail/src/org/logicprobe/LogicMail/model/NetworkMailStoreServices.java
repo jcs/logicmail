@@ -58,7 +58,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
     private final NetworkMailStore mailStore;
     private final FolderMessageCache folderMessageCache;
     private final MessageContentFileManager contentFileManager;
-    private final ThreadQueue threadQueue;
+    private final ThreadQueue messageCacheThreadQueue;
+    private final ThreadQueue requestThreadQueue;
     
     /** Map of FolderTreeItem objects to corresponding request handlers */
     private final Hashtable folderRequestHandlerMap = new Hashtable();
@@ -68,7 +69,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
         this.mailStore = mailStore;
         this.folderMessageCache = folderMessageCache;
         this.contentFileManager = MessageContentFileManager.getInstance();
-        this.threadQueue = new ThreadQueue();
+        this.messageCacheThreadQueue = new ThreadQueue();
+        this.requestThreadQueue = new ThreadQueue();
     }
 
     AccountConfig getAccountConfig() {
@@ -84,7 +86,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
 
     public void shutdown(boolean wait) {
-        threadQueue.shutdown(wait);
+        messageCacheThreadQueue.shutdown(wait);
+        requestThreadQueue.shutdown(wait);
         super.shutdown(wait);
     }
     
@@ -149,7 +152,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
         folderMessageCache.commit();
         
-        threadQueue.invokeLater(new Runnable() {
+        messageCacheThreadQueue.invokeLater(new Runnable() {
             public void run() {
                 for(int i=0; i<folderTreeItems.length; i++) {
                     contentFileManager.removeFolder(folderTreeItems[i]);
@@ -171,9 +174,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     protected void handleFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
-        FolderRequestHandler handler = getFolderRequestHandler(folder);
-        
-        handler.handleFolderMessageIndexMapAvailable(uidIndexMap);
+        // No longer handled through a mail store listener
     }
 
     protected void handleFolderRefreshRequired(FolderTreeItem folder, int eventOrigin) {
@@ -206,7 +207,12 @@ public class NetworkMailStoreServices extends MailStoreServices {
         synchronized(folderRequestHandlerMap) {
             handler = (FolderRequestHandler)folderRequestHandlerMap.get(folder);
             if(handler == null) {
-                handler = new FolderRequestHandler(this, mailStore, folderMessageCache, folder);
+                if(mailStore.hasFolderMessageIndexMap() && mailStore.hasLockedFolders()) {
+                    handler = new PopFolderRequestHandler(this, mailStore, folderMessageCache, folder);
+                }
+                else {
+                    handler = new ImapFolderRequestHandler(this, mailStore, folderMessageCache, folder);
+                }
                 folderRequestHandlerMap.put(folder, handler);
             }
         }
@@ -236,8 +242,16 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return handler;
     }
 
+    /**
+     * Places a <code>Runnable</code> on the shared thread queue for this
+     * network mail store services layer.
+     */
+    void invokeLater(Runnable runnable) {
+        requestThreadQueue.invokeLater(runnable);
+    }
+    
     public boolean hasCachedMessageContent(FolderTreeItem folder, MessageToken messageToken) {
-        threadQueue.completePendingTasks();
+        messageCacheThreadQueue.completePendingTasks();
         return contentFileManager.messageContentExists(folder, messageToken);
     }
     
@@ -274,14 +288,16 @@ public class NetworkMailStoreServices extends MailStoreServices {
         if(mailStore.hasMessageParts() && structure == null) { return false; }
         
         // Start a thread for the remaining logic, which includes file I/O
-        (new Thread() { public void run() {
-            if(mailStore.hasMessageParts()) {
-                requestMessageRefreshParts(folder, messageToken, structure, partsToSkip, cacheOnly);
+        requestThreadQueue.invokeLater(new Runnable() {
+            public void run() {
+                if(mailStore.hasMessageParts()) {
+                    requestMessageRefreshParts(folder, messageToken, structure, partsToSkip, cacheOnly);
+                }
+                else {
+                    requestMessageRefreshWhole(folder, messageToken, structure, partsToSkip, cacheOnly);
+                }
             }
-            else {
-                requestMessageRefreshWhole(folder, messageToken, structure, partsToSkip, cacheOnly);
-            }
-        }}).start();
+        });
         return true;
     }
     
@@ -383,7 +399,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
         Hashtable loadedPartSet = new Hashtable(partsToLoad.length);
    
-        threadQueue.completePendingTasks();
+        messageCacheThreadQueue.completePendingTasks();
         if(contentFileManager.messageContentExists(folder, messageToken)) {
             MimeMessageContent[] loadedContent =
                 contentFileManager.getMessageContent(folder, messageToken, partsToLoad);
@@ -420,7 +436,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final MimeMessagePart[] partsToSkip,
             final boolean cacheOnly) {
         
-        threadQueue.completePendingTasks();
+        messageCacheThreadQueue.completePendingTasks();
         if(structure != null && contentFileManager.messageContentExists(folder, messageToken)) {
             // If the store does not support parts, then take a simplified
             // approach that assumes the cache can only contain complete
@@ -503,25 +519,27 @@ public class NetworkMailStoreServices extends MailStoreServices {
         final FolderTreeItem folder = handler.getFolder();
 
         // Start a thread for the remaining logic, which includes file I/O
-        (new Thread() { public void run() {
-            // Load any parts that may be in the cache
-            Hashtable loadedPartSet = loadMessagePartsFromCache(folder, messageToken, messageParts);
-            
-            // Build a list of any non-cached parts that need to be fetched
-            Vector partsToFetch = new Vector();
-            for(int i=0; i<messageParts.length; i++) {
-                if(!loadedPartSet.containsKey(messageParts[i])) {
-                    partsToFetch.addElement(messageParts[i]);
+        requestThreadQueue.invokeLater(new Runnable() {
+            public void run() {
+                // Load any parts that may be in the cache
+                Hashtable loadedPartSet = loadMessagePartsFromCache(folder, messageToken, messageParts);
+                
+                // Build a list of any non-cached parts that need to be fetched
+                Vector partsToFetch = new Vector();
+                for(int i=0; i<messageParts.length; i++) {
+                    if(!loadedPartSet.containsKey(messageParts[i])) {
+                        partsToFetch.addElement(messageParts[i]);
+                    }
+                }
+                
+                // Request the remaining parts from the server
+                if(partsToFetch.size() > 0) {
+                    MimeMessagePart[] partsArray = new MimeMessagePart[partsToFetch.size()];
+                    partsToFetch.copyInto(partsArray);
+                    mailStore.processRequest(mailStore.createMessagePartsRequest(messageToken, partsArray));
                 }
             }
-            
-            // Request the remaining parts from the server
-            if(partsToFetch.size() > 0) {
-                MimeMessagePart[] partsArray = new MimeMessagePart[partsToFetch.size()];
-                partsToFetch.copyInto(partsArray);
-                mailStore.processRequest(mailStore.createMessagePartsRequest(messageToken, partsArray));
-            }
-        }}).start();
+        });
     }
     
     protected void handleMessageAvailable(
@@ -547,7 +565,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
         // Update the message content cache
         final FolderTreeItem folder = handler.getFolder();
-        threadQueue.invokeLater(new Runnable() {
+        messageCacheThreadQueue.invokeLater(new Runnable() {
             public void run() {
                 contentFileManager.putCompleteMessageContent(
                         folder, messageToken, messageContent, customValues);
@@ -567,7 +585,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
         
         // Update the message content cache
         final FolderTreeItem folder = handler.getFolder();
-        threadQueue.invokeLater(new Runnable() {
+        messageCacheThreadQueue.invokeLater(new Runnable() {
             public void run() {
                 contentFileManager.putMessageContent(folder, messageToken, messageContent);
             }

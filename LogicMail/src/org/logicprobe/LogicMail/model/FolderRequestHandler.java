@@ -34,15 +34,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import net.rim.device.api.collection.util.BigVector;
-import net.rim.device.api.system.EventLogger;
-import net.rim.device.api.util.Comparator;
-import net.rim.device.api.util.IntHashtable;
-import net.rim.device.api.util.IntVector;
-import net.rim.device.api.util.SimpleSortingIntVector;
-import net.rim.device.api.util.ToIntHashtable;
-
-import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.ConnectionHandlerRequest;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -58,24 +49,25 @@ import org.logicprobe.LogicMail.util.AtomicBoolean;
 /**
  * Handles folder-oriented requests for the mail store services layer.
  * <p>
- * While it is written to appear as generic as possible, it actually has two
- * somewhat protocol-specific logic flows.  If the protocol advertises support
- * for a mailbox-wide index map fetch (POP), then this is a two-part operation
- * consisting of an index map fetch and a message header fetch.  Otherwise
- * (IMAP) this is a three-part operation consisting of two flags fetches and
- * a message header fetch.
+ * While most of the application outside of the actual protocol level is
+ * written to be as generic as possible, coded based on features instead of
+ * specific protocols, this simply is not practical in this case. There are
+ * very significant differences between how the various protocols handle their
+ * mail folders, making a generic approach to folder refresh completely
+ * impractical. As such, protocol specific subclasses are provided to implement
+ * this behavior.
  * </p>
  */
-class FolderRequestHandler {
-    private final NetworkMailStoreServices mailStoreServices;
-    private final NetworkMailStore mailStore;
-    private final FolderMessageCache folderMessageCache;
-    private final FolderTreeItem folderTreeItem;
+abstract class FolderRequestHandler {
+    protected final NetworkMailStoreServices mailStoreServices;
+    protected final NetworkMailStore mailStore;
+    protected final FolderMessageCache folderMessageCache;
+    protected final FolderTreeItem folderTreeItem;
     
     /**
      * Flag to track whether a folder refresh is currently in progress.
      */
-    private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+    protected final AtomicBoolean refreshInProgress = new AtomicBoolean();
     
     /**
      * Flag to track whether the current refresh-in-progress is deliberate
@@ -87,40 +79,27 @@ class FolderRequestHandler {
      * Collection of <code>Runnable</code> tasks to execute following a
      * refresh operation.
      */
-    private final Vector postRefreshTasks = new Vector();
+    protected final Vector postRefreshTasks = new Vector();
     
     /**
      * Indicates that the initial refresh has completed.
      */
-    private volatile boolean initialRefreshComplete;
-    
-    /**
-     * Flag that is set during an existing refresh to force a check of
-     * all tokens.
-     */
-    private volatile boolean checkAllTokens;
+    protected volatile boolean initialRefreshComplete;
     
     /** Indicates that cached messages have been loaded. */
-    private boolean cacheLoaded;
-    
-    // For the two part flags refresh (IMAP) use case
-    private Vector pendingFlagUpdates;
-    private boolean secondaryFlagsRefresh;
-    private Vector secondaryMessageTokensToFetch;
+    protected boolean cacheLoaded;
     
     /**
      * Set of messages that have been loaded from the cache, but no longer
      * exist on the server.
      */
-    private final Hashtable orphanedMessageSet = new Hashtable();
-    
-    private Thread refreshThread;
+    protected final Hashtable orphanedMessageSet = new Hashtable();
     
     /**
      * Set if the mail store is disconnected, to indicate that local state
      * should be cleared prior to the next refresh request.
      */
-    private volatile boolean cleanPriorToUse;
+    protected volatile boolean cleanPriorToUse;
     
     public FolderRequestHandler(
             NetworkMailStoreServices mailStoreServices,
@@ -150,85 +129,32 @@ class FolderRequestHandler {
         }
     }
     
-    private void prepareForUse() {
+    protected void prepareForUse() {
         if(cleanPriorToUse) {
             refreshInProgressDeliberate = true;
             initialRefreshComplete = false;
-            secondaryFlagsRefresh = false;
-            secondaryMessageTokensToFetch = null;
-            pendingFlagUpdates = null;
             orphanedMessageSet.clear();
-            refreshThread = null;
             cleanPriorToUse = false;
         }
     }
     
     public void requestFolderRefreshRequired() {
-        if(refreshInProgress.get()) {
-            checkAllTokens = true;
-        }
-        else {
+        if(!refreshInProgress.get()) {
             cleanBeforeNextUse();
         }
     }
     
-    public void requestFolderRefresh(final boolean deliberate) {
+    public void requestFolderRefresh(boolean deliberate) {
         if(refreshInProgress.compareAndSet(false, true)) {
             prepareForUse();
             this.refreshInProgressDeliberate = deliberate;
-            if(mailStore.hasLockedFolders() && initialRefreshComplete) {
-                // Subsequent refresh is pointless on locked-folder mail stores
-                refreshInProgress.set(false);
-                
-                // Fire an event so the caller knows we're no longer processing
-                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
-                
-                invokePostRefreshTasks();
-                return;
-            }
-            
-            refreshThread = new Thread() { public void run() {
-                if(mailStore.hasFolderMessageIndexMap()) {
-                    processMailStoreRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
-                            .setRequestCallback(new MailStoreRequestCallback() {
-                                public void mailStoreRequestComplete(MailStoreRequest request) { }
-                                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
-                                    indexMapFetchFailed();
-                                }}));
-                }
-                else {
-                    // Queue a request for new folder messages from the mail store
-                    pendingFlagUpdates = new Vector();
-                    processMailStoreRequest(mailStore.createFolderMessagesRecentRequest(folderTreeItem, true)
-                            .setRequestCallback(new MailStoreRequestCallback() {
-                                public void mailStoreRequestComplete(MailStoreRequest request) {
-                                    // If this initial operation reported invalid
-                                    // folder state data, then make sure we verify all
-                                    // cached tokens.
-                                    if(checkAllTokens) {
-                                        loadCachedFolderMessages();
-                                    }
-                                }
-                                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
-                                    initialFlagsRefreshFailed();
-                                }}));
-                }
-    
-                if(!initialRefreshComplete) {
-                    // Fetch messages stored in cache
-                    loadCachedFolderMessages();
-                }
-    
-                // If a message index map was requested (POP), execution will
-                // resume in indexMapFetchXXXX().
-                // Otherwise (IMAP), execution will resume in
-                // initialFlagsRefreshXXXX().
-            }};
-            refreshThread.start();
+            requestFolderRefreshImpl();
         }
     }
-
-    private void loadCachedFolderMessages() {
+    
+    protected abstract void requestFolderRefreshImpl();
+    
+    protected void loadCachedFolderMessages() {
         boolean dispOrder = MailSettings.getInstance().getGlobalConfig().getDispOrder();
         FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
         if(messages.length > 0) {
@@ -266,293 +192,9 @@ class FolderRequestHandler {
                 cacheLoaded = true;
             }
         }
-    }    
-    
-    private void indexMapFetchFailed() {
-        // Initial fetch failed.  Since the index map retrieval is implemented
-        // as a single operation, we cannot do anything more beyond cleanup.
-        
-        (new Thread() { public void run() {
-            // Make sure the cache loading thread finishes
-            joinRefreshThread();
-            
-            // Clear the set of loaded messages, since we cannot process them further
-            orphanedMessageSet.clear();
-            
-            refreshInProgress.set(false);
-            
-            invokePostRefreshTasks();
-        }}).start();
     }
     
-    private void indexMapFetchComplete(final ToIntHashtable uidIndexMap) {
-        final int initialMessageLimit = mailStore.getAccountConfig().getInitialFolderMessages();
-        final int messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
-        
-        (new Thread() { public void run() {
-            joinRefreshThread();
-            
-            Vector messagesUpdated = new Vector();
-            SimpleSortingIntVector indexVector = new SimpleSortingIntVector();
-            IntHashtable cachedIndexToMessageMap = new IntHashtable();
-            
-            // Iterate through the UID-to-index map, and do the following:
-            // - Remove cache-loaded messages from the orphan set if they exist on the server.
-            // - Update index information for those messages that do still exist server-side.
-            // - Build a sortable vector of index values
-            Enumeration e = uidIndexMap.keys();
-            while(e.hasMoreElements()) {
-                String uid = (String)e.nextElement();
-                int index = uidIndexMap.get(uid);
-                indexVector.addElement(index);
-                
-                FolderMessage message = (FolderMessage)orphanedMessageSet.remove(uid);
-                if(message != null) {
-                    message.setIndex(index);
-                    message.getMessageToken().updateMessageIndex(index);
-                    
-                    if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                        messagesUpdated.addElement(message);
-                        cachedIndexToMessageMap.put(index, message);
-                    }
-                }
-            }
-            indexVector.reSort(SimpleSortingIntVector.SORT_TYPE_NUMERIC);
-            
-            notifyMessageFlagUpdates(messagesUpdated);
-            removeOrphanedMessages();
-
-            // Determine the fetch range
-            int size = indexVector.size();
-            if(size == 0) { return; }
-            int fetchRangeStart = Math.max(0, size - initialMessageLimit);
-            
-            // Build a list of indices to fetch
-            IntVector messagesToFetch = new IntVector();
-            for(int i=indexVector.size() - 1; i >= fetchRangeStart; --i) {
-                int index = indexVector.elementAt(i);
-                if(!cachedIndexToMessageMap.containsKey(index)) {
-                    messagesToFetch.addElement(index);
-                }
-            }
-
-            int additionalMessageLimit = messageRetentionLimit - initialMessageLimit;
-            for(int i=fetchRangeStart - 1; i >= 0; --i) {
-                if(additionalMessageLimit > 0) {
-                    additionalMessageLimit--;
-                }
-                else {
-                    // Beyond the limit, add these back to the orphan set
-                    FolderMessage message = (FolderMessage)cachedIndexToMessageMap.get(indexVector.elementAt(i));
-                    if(message != null) {
-                        orphanedMessageSet.put(message.getMessageToken().getMessageUid(), message);
-                    }
-                }
-            }
-            removeOrphanedMessages();
-            
-            // Do the final request for missing messages
-            processMailStoreRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
-                    .setRequestCallback(finalFetchCallback));
-        }}).start();
-    }
-    
-    private void initialFlagsRefreshFailed() {
-        // Initial fetch failed.  Since flags retrieval is implemented as an
-        // incremental operation, we can still apply any received flag updates
-        // prior to cleaning up.  We cannot remove orphaned messages, however.
-        
-        (new Thread() { public void run() {
-            // Make sure the cache loading thread finishes
-            joinRefreshThread();
-            
-            Vector messagesUpdated = new Vector();
-            int size = pendingFlagUpdates.size();
-            for(int i=0; i<size; i++) {
-                FolderMessage message = (FolderMessage)pendingFlagUpdates.elementAt(i);
-                if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                    messagesUpdated.addElement(message);
-                }
-            }
-            pendingFlagUpdates.removeAllElements();
-            notifyMessageFlagUpdates(messagesUpdated);
-            
-            // Clear the set of loaded messages, since we cannot process them further
-            orphanedMessageSet.clear();
-            
-            refreshInProgress.set(false);
-            
-            invokePostRefreshTasks();
-        }}).start();
-    }
-    
-    private void initialFlagsRefreshComplete() {
-        (new Thread() { public void run() {
-            joinRefreshThread();
-            
-            Vector messagesUpdated = new Vector();
-            secondaryMessageTokensToFetch = new Vector();
-            MessageToken oldestFetchedToken = null;
-            Comparator tokenComparator = null;
-            
-            // Iterate through the pending flag updates, doing the following:
-            // - Remove messages from the orphan set that exist on the server
-            // - Update the cache for fetched messages
-            // - Build a collection of messages to provide update notifications for
-            // - Build a collection of messages that need to be fetched
-            // - Keep track of the oldest message in the update set
-            int size = pendingFlagUpdates.size();
-            for(int i=0; i<size; i++) {
-                FolderMessage message = (FolderMessage)pendingFlagUpdates.elementAt(i);
-                MessageToken token = message.getMessageToken();
-                
-                // Remove messages with received flag updates from the orphan set
-                orphanedMessageSet.remove(token.getMessageUid());
-                
-                if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                    messagesUpdated.addElement(message);
-                }
-                else {
-                    secondaryMessageTokensToFetch.addElement(token);
-                }
-                
-                if(oldestFetchedToken == null) {
-                    oldestFetchedToken = token;
-                    tokenComparator = token.getComparator();
-                }
-                else {
-                    if(tokenComparator.compare(token, oldestFetchedToken) < 0) {
-                        oldestFetchedToken = token;
-                    }
-                }
-            }
-            pendingFlagUpdates.removeAllElements();
-            
-            notifyMessageFlagUpdates(messagesUpdated);
-            
-            // Build a collection of messages in the cache that still need to be verified
-            Vector cachedTokensToCheck = new Vector();
-            if(oldestFetchedToken != null) {
-                Enumeration e = orphanedMessageSet.elements();
-                while(e.hasMoreElements()) {
-                    MessageToken token = ((FolderMessage)e.nextElement()).getMessageToken();
-                    if(checkAllTokens || tokenComparator.compare(token, oldestFetchedToken) < 0) {
-                        cachedTokensToCheck.addElement(token);
-                    }
-                }
-            }
-            
-            checkAllTokens = false;
-            
-            if(cachedTokensToCheck.size() > 0) {
-                // Perform a second flags fetch
-                MessageToken[] tokens = new MessageToken[cachedTokensToCheck.size()];
-                cachedTokensToCheck.copyInto(tokens);
-                secondaryFlagsRefresh = true;
-                processMailStoreRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, tokens, true)
-                        .setRequestCallback(new MailStoreRequestCallback() {
-                            public void mailStoreRequestComplete(MailStoreRequest request) { }
-                            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
-                                secondaryFlagsRefreshFailed();
-                            }}));
-            }
-            else {
-                removeOrphanedMessages();
-                finalFolderMessageFetch();
-            }
-        }}).start();
-    }
-    
-    private void secondaryFlagsRefreshFailed() {
-        // Secondary flags fetch failed.  We can still apply any received flag
-        // updates prior to cleaning up, but we cannot remove orphaned messages.
-
-        Vector messagesUpdated = new Vector();
-        int size = pendingFlagUpdates.size();
-        for(int i=0; i<size; i++) {
-            FolderMessage message = (FolderMessage)pendingFlagUpdates.elementAt(i);
-            if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                messagesUpdated.addElement(message);
-            }
-        }
-        pendingFlagUpdates.removeAllElements();
-        notifyMessageFlagUpdates(messagesUpdated);
-
-        // Clear the set of loaded messages, since we cannot process them further
-        orphanedMessageSet.clear();
-
-        refreshInProgress.set(false);
-        
-        invokePostRefreshTasks();
-    }
-    
-    private void secondaryFlagsRefreshComplete() {
-        int size = pendingFlagUpdates.size();
-        BigVector messagesUpdated = new BigVector(size);
-        Comparator folderMessageComparator = FolderMessage.getComparator();
-        for(int i=0; i<size; i++) {
-            FolderMessage message = (FolderMessage)pendingFlagUpdates.elementAt(i);
-            MessageToken token = message.getMessageToken();
-            
-            // Remove messages with received flag updates from the orphan set
-            orphanedMessageSet.remove(token.getMessageUid());
-            
-            if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                messagesUpdated.insertElement(folderMessageComparator, message);
-            }
-        }
-        pendingFlagUpdates.removeAllElements();
-        
-        // Determine the how many messages from this secondary set we can keep
-        int initialMessageLimit = mailStore.getAccountConfig().getInitialFolderMessages();
-        int messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
-        int additionalMessageLimit = messageRetentionLimit - initialMessageLimit;
-        
-        size = messagesUpdated.size();
-        if(size > additionalMessageLimit) {
-            // We have too many additional messages, so we need to prune the set
-            messagesUpdated.optimize();
-            Vector messagesToNotify = new Vector();
-
-            int splitIndex = messagesUpdated.size() - additionalMessageLimit;
-            for(int i=0; i<splitIndex; i++) {
-                FolderMessage message = (FolderMessage)messagesUpdated.elementAt(i);
-                orphanedMessageSet.put(message.getMessageToken().getMessageUid(), message);
-            }
-            for(int i=splitIndex; i<size; i++) {
-                messagesToNotify.addElement(messagesUpdated.elementAt(i));
-            }
-            
-            notifyMessageFlagUpdates(messagesToNotify);
-        }
-        else {
-            if(!messagesUpdated.isEmpty()) {
-                FolderMessage[] messages = new FolderMessage[messagesUpdated.size()];
-                messagesUpdated.copyInto(0, size, messages, 0);
-                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true, true);
-            }
-        }
-        
-        removeOrphanedMessages();
-        finalFolderMessageFetch();
-    }
-
-    private void finalFolderMessageFetch() {
-        // Queue a fetch for messages missing from the cache
-        if(!secondaryMessageTokensToFetch.isEmpty()) {
-            MessageToken[] fetchArray = new MessageToken[secondaryMessageTokensToFetch.size()];
-            secondaryMessageTokensToFetch.copyInto(fetchArray);
-            secondaryMessageTokensToFetch.removeAllElements();
-            processMailStoreRequest(mailStore.createFolderMessagesSetRequest(folderTreeItem, fetchArray)
-                    .setRequestCallback(finalFetchCallback));
-        }
-        else {
-            initialRefreshComplete = true;
-            finalFetchComplete();
-        }
-    }
-    
-    private MailStoreRequestCallback finalFetchCallback = new MailStoreRequestCallback() {
+    protected MailStoreRequestCallback finalFetchCallback = new MailStoreRequestCallback() {
         public void mailStoreRequestComplete(MailStoreRequest request) {
             initialRefreshComplete = true;
             finalFetchComplete();
@@ -568,7 +210,7 @@ class FolderRequestHandler {
      * cases we commit the cache, mark the refresh as complete, and notify
      * the listeners.
      */
-    private void finalFetchComplete() {
+    protected void finalFetchComplete() {
         folderMessageCache.commit();
         refreshInProgress.set(false);
         
@@ -578,18 +220,7 @@ class FolderRequestHandler {
         invokePostRefreshTasks();
     }
     
-    /**
-     * Joins refresh thread, after which the cached messages have been loaded.
-     */
-    private void joinRefreshThread() {
-        // Make sure the cache refresh is completed
-        try {
-            refreshThread.join();
-        } catch (InterruptedException e) { }
-        refreshThread = null;
-    }    
-    
-    private void notifyMessageFlagUpdates(final Vector messagesUpdated) {
+    protected void notifyMessageFlagUpdates(final Vector messagesUpdated) {
         if(!messagesUpdated.isEmpty()) {
             FolderMessage[] messages = new FolderMessage[messagesUpdated.size()];
             messagesUpdated.copyInto(messages);
@@ -597,7 +228,7 @@ class FolderRequestHandler {
         }
     }
 
-    private void removeOrphanedMessages() {
+    protected void removeOrphanedMessages() {
         Enumeration e = orphanedMessageSet.elements();
         MessageToken[] orphanedTokens = new MessageToken[orphanedMessageSet.size()];
         int index = 0;
@@ -635,38 +266,21 @@ class FolderRequestHandler {
     }
     
     void handleFolderMessageFlagsAvailable(FolderMessage[] messages) {
-        if(refreshInProgress.get()) {
-            handleFolderMessageFlagsAvailableDuringRefresh(messages);
-        }
-        else {
-            if(messages != null) {
-                for(int i=0; i<messages.length; i++) {
-                    folderMessageCache.updateFolderMessage(folderTreeItem, messages[i]);
-                }
-                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true);
-            }
-            else {
-                folderMessageCache.commit();
-                mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true);
-            }
-        }
-    }
-
-    private void handleFolderMessageFlagsAvailableDuringRefresh(FolderMessage[] messages) {
-        if(messages != null && pendingFlagUpdates != null) {
+        if(messages != null) {
+            Vector updatedMessages = new Vector(messages.length);
             for(int i=0; i<messages.length; i++) {
-                pendingFlagUpdates.addElement(messages[i]);
+                if(folderMessageCache.updateFolderMessage(folderTreeItem, messages[i])) {
+                    updatedMessages.addElement(messages[i]);
+                }
             }
+            messages = new FolderMessage[updatedMessages.size()];
+            updatedMessages.copyInto(messages);
+
         }
         else {
-            if(secondaryFlagsRefresh) {
-                secondaryFlagsRefresh = false;
-                secondaryFlagsRefreshComplete();
-            }
-            else {
-                initialFlagsRefreshComplete();
-            }
+            folderMessageCache.commit();
         }
+        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true);
     }
     
     void handleFolderMessagesAvailable(FolderMessage[] messages) {
@@ -674,20 +288,11 @@ class FolderRequestHandler {
             for(int i=0; i<messages.length; i++) {
                 folderMessageCache.addFolderMessage(folderTreeItem, messages[i]);
             }
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, false);
         }
-        else if(!refreshInProgress.get()) {
-            // If a refresh is in progress, the request callback will handle
-            // the end of the operation.
+        else {
             folderMessageCache.commit();
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, false);
         }
-    }
-    
-    void handleFolderMessageIndexMapAvailable(ToIntHashtable uidIndexMap) {
-        if(!refreshInProgress.get()) { return; }
-        
-        indexMapFetchComplete(uidIndexMap);
+        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, false);
     }
     
     void handleFolderExpunged(int[] indices, MessageToken[] updatedTokens) {
@@ -712,7 +317,11 @@ class FolderRequestHandler {
         mailStoreServices.fireFolderExpunged(folderTreeItem, expungedTokens, updatedTokens);
     }
     
-    private void invokePostRefreshTasks() {
+    /**
+     * This method is called at the end of any refresh operation, whether it
+     * succeeds or fails.
+     */
+    protected void invokePostRefreshTasks() {
         Runnable[] tasksToRun = null;
         synchronized(postRefreshTasks) {
             int size = postRefreshTasks.size();
@@ -725,11 +334,7 @@ class FolderRequestHandler {
         
         if(tasksToRun != null) {
             for(int i=0; i<tasksToRun.length; i++) {
-                try {
-                    tasksToRun[i].run();
-                } catch (Throwable t) {
-                    EventLogger.logEvent(AppInfo.GUID, t.toString().getBytes(), EventLogger.ERROR);
-                }
+                mailStoreServices.invokeLater(tasksToRun[i]);
             }
         }
     }
@@ -850,7 +455,7 @@ class FolderRequestHandler {
         }
     }
     
-    private void processMailStoreRequest(MailStoreRequest request) {
+    protected void processMailStoreRequest(MailStoreRequest request) {
         ((ConnectionHandlerRequest)request).setDeliberate(refreshInProgressDeliberate);
         mailStore.processRequest(request);
     }
