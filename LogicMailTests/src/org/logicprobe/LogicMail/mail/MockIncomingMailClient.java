@@ -765,6 +765,28 @@ public class MockIncomingMailClient extends AMockObject implements org.logicprob
         }
     }
 
+    public static final MockMethod MTHD_IS_IDLE_ENABLED = new MockMethod(
+        MockIncomingMailClient.class, 
+        "MTHD_IS_IDLE_ENABLED",
+        new Class[]{},
+        new Class[]{},
+        Boolean.class,
+        true);
+    public boolean isIdleEnabled()  {
+        try {
+            Object[] args = new Object[0];
+            MethodInvocation mi = new MethodInvocation(MTHD_IS_IDLE_ENABLED, this, args);
+            getInvocationHandler().invoke(mi);
+            Object retVal = mi.getReturnValue();
+            AMockObject.assertReturnNotNull(MTHD_IS_IDLE_ENABLED, retVal);
+            return ((Boolean)retVal).booleanValue();
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            throw new HammockException(t);
+        }
+    }
+
     public static final MockMethod MTHD_IS_LOGIN_REQUIRED = new MockMethod(
         MockIncomingMailClient.class, 
         "MTHD_IS_LOGIN_REQUIRED",
@@ -996,6 +1018,27 @@ public class MockIncomingMailClient extends AMockObject implements org.logicprob
             if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
             if (t instanceof java.io.IOException) { throw (java.io.IOException)t; }
             if (t instanceof org.logicprobe.LogicMail.mail.MailException) { throw (org.logicprobe.LogicMail.mail.MailException)t; }
+            throw new HammockException(t);
+        }
+    }
+
+    public static final MockMethod MTHD_SET_IDLE_ENABLED_$_BOOLEAN = new MockMethod(
+        MockIncomingMailClient.class, 
+        "MTHD_SET_IDLE_ENABLED_$_BOOLEAN",
+        new Class[]{Boolean.class},
+        new Class[]{},
+        null,
+        true);
+    public void setIdleEnabled(boolean arg0)  {
+        try {
+            Object[] args = new Object[1];
+            args[0] = new Boolean(arg0);
+            MethodInvocation mi = new MethodInvocation(MTHD_SET_IDLE_ENABLED_$_BOOLEAN, this, args);
+            getInvocationHandler().invoke(mi);
+            mi.getReturnValue();
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
             throw new HammockException(t);
         }
     }

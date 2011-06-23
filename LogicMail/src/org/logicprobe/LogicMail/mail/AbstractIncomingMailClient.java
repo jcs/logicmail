@@ -44,6 +44,7 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
  */
 public abstract class AbstractIncomingMailClient implements IncomingMailClient {
     protected IncomingMailClientListener clientListener;
+    private boolean idleEnabled = true;
 
     public void setListener(IncomingMailClientListener listener) {
         this.clientListener = listener;
@@ -154,6 +155,14 @@ public abstract class AbstractIncomingMailClient implements IncomingMailClient {
         return false;
     }
 
+    public void setIdleEnabled(boolean idleEnabled) {
+        this.idleEnabled = idleEnabled;
+    }
+    
+    public boolean isIdleEnabled() {
+        return idleEnabled;
+    }
+    
     public void idleModeBegin() throws IOException, MailException {
         // Default empty implementation for unsupported feature
     }

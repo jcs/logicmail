@@ -178,7 +178,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
         this.previousActiveFolder = activeFolder;
         
-        if(incomingClient.hasIdle()) {
+        if(incomingClient.hasIdle() && incomingClient.isIdleEnabled()) {
             startIdleTimer(IDLE_TIMEOUT);
             incomingClient.idleModeBegin();
         }
@@ -220,7 +220,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             idleTimerTask.cancel();
         }
         
-        if(incomingClient.hasIdle()) {
+        if(incomingClient.hasIdle() && incomingClient.isIdleEnabled()) {
             incomingClient.idleModeEnd();
         }
         
@@ -234,6 +234,11 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 mailStore.processRequest(disconnectRequest);
             }
             else {
+                // If idle mode was disabled for long enough that a timeout
+                // occurred, then something forgot to re-enable it. Just to be
+                // safe, we will re-enable it behind the scenes.
+                incomingClient.setIdleEnabled(true);
+                
                 incomingClient.noop();
                 if(!idleRecentMessagesRequested) {
                     // If we had a non-INBOX folder selected, then an idle timeout

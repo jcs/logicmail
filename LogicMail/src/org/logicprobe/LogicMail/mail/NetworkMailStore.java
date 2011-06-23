@@ -147,6 +147,19 @@ public class NetworkMailStore extends AbstractMailStore {
         processRequest(new NetworkDisconnectRequest(this, NetworkDisconnectRequest.REQUEST_DISCONNECT));
     }
 
+    /**
+     * Creates a request to instruct the mail client to enable or disable its
+     * idle mode.  This request is useful at the beginning and end of a batch
+     * operation, to prevent the mail client from entering and exiting idle
+     * mode between requests.
+     *
+     * @param idleEnabled whether or not the idle mode should be enabled
+     */
+    public NetworkClientIdleModeRequest createClientIdleModeRequest(boolean idleEnabled) {
+        NetworkClientIdleModeRequest request = new NetworkClientIdleModeRequest(this, idleEnabled);
+        return request;
+    }
+    
 	public FolderTreeRequest createFolderTreeRequest() {
 	    NetworkFolderTreeRequest request = new NetworkFolderTreeRequest(this);
 		return request;

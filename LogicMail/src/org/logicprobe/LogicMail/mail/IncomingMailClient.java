@@ -565,6 +565,20 @@ public interface IncomingMailClient extends MailClient {
      * @throws MailException on protocol errors
      */
     void noop() throws IOException, MailException;
+
+    /**
+     * Sets whether idle support is enabled
+     *
+     * @param idleEnabled true, if idle support is enabled
+     */
+    void setIdleEnabled(boolean idleEnabled);
+    
+    /**
+     * Checks if idle support is enabled.
+     *
+     * @return true, if idle support is enabled
+     */
+    boolean isIdleEnabled();
     
     /**
      * Begins the idle mode for the underlying protocol.

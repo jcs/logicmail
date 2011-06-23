@@ -47,6 +47,7 @@ import org.logicprobe.LogicMail.mail.FolderTreeRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
+import org.logicprobe.LogicMail.mail.NetworkClientIdleModeRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -139,8 +140,19 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     private void requestFolderRefreshImpl(final FolderTreeItem folderTreeItem, final boolean automated) {
-        FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
-        handler.requestFolderRefresh(!automated);
+        NetworkClientIdleModeRequest disableIdleRequest = mailStore.createClientIdleModeRequest(false);
+        disableIdleRequest.setRequestCallback(new MailStoreRequestCallback() {
+            public void mailStoreRequestComplete(MailStoreRequest request) {
+                FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
+                handler.requestFolderRefresh(!automated, new Runnable() {
+                    public void run() {
+                        mailStore.processRequest(mailStore.createClientIdleModeRequest(true));
+                    }
+                });
+            }
+            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) { }
+        });
+        mailStore.processRequest(disableIdleRequest);
     }
     
     private void requestFolderRefreshImpl(final FolderTreeItem[] folderTreeItems, final boolean automated) {
@@ -153,14 +165,20 @@ public class NetworkMailStoreServices extends MailStoreServices {
             // process is necessary to ensure that all folders are refreshed in
             // the specified order, without overlapping requests.
             
-            //TODO: Inhibit IDLE mode during this entire process
             final Vector foldersNeedingRefresh = new Vector(folderTreeItems.length - 1);
             for(int i=1; i<folderTreeItems.length; i++) {
                 foldersNeedingRefresh.addElement(folderTreeItems[i]);
             }
 
-            FolderRequestHandler handler = getFolderRequestHandler(folderTreeItems[0]);
-            handler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
+            NetworkClientIdleModeRequest disableIdleRequest = mailStore.createClientIdleModeRequest(false);
+            disableIdleRequest.setRequestCallback(new MailStoreRequestCallback() {
+                public void mailStoreRequestComplete(MailStoreRequest request) {
+                    FolderRequestHandler handler = getFolderRequestHandler(folderTreeItems[0]);
+                    handler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
+                }
+                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) { }
+            });
+            mailStore.processRequest(disableIdleRequest);
         }
     }
     
@@ -177,7 +195,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
             FolderRequestHandler nextHandler = getFolderRequestHandler(nextFolder);
             
             if(foldersNeedingRefresh.size() == 0) {
-                nextHandler.requestFolderRefresh(!automated);
+                nextHandler.requestFolderRefresh(!automated, new Runnable() {
+                    public void run() {
+                        mailStore.processRequest(mailStore.createClientIdleModeRequest(true));
+                    }
+                });
             }
             else {
                 nextHandler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
