@@ -126,13 +126,63 @@ public class NetworkMailStoreServices extends MailStoreServices {
         requestFolderRefreshImpl(folderTreeItem, false);
     }
     
+    public void requestFolderRefresh(final FolderTreeItem[] folderTreeItems) {
+        requestFolderRefreshImpl(folderTreeItems, false);
+    }
+    
     public void requestFolderRefreshAutomated(final FolderTreeItem folderTreeItem) {
         requestFolderRefreshImpl(folderTreeItem, true);
+    }
+    
+    public void requestFolderRefreshAutomated(final FolderTreeItem[] folderTreeItems) {
+        requestFolderRefreshImpl(folderTreeItems, true);
     }
     
     private void requestFolderRefreshImpl(final FolderTreeItem folderTreeItem, final boolean automated) {
         FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
         handler.requestFolderRefresh(!automated);
+    }
+    
+    private void requestFolderRefreshImpl(final FolderTreeItem[] folderTreeItems, final boolean automated) {
+        if(folderTreeItems.length == 1) {
+            requestFolderRefreshImpl(folderTreeItems[0], automated);
+        }
+        else {
+            // Special refresh implementation that chains each folder refresh
+            // onto the end of the previous folder refresh.  This awkward
+            // process is necessary to ensure that all folders are refreshed in
+            // the specified order, without overlapping requests.
+            
+            //TODO: Inhibit IDLE mode during this entire process
+            final Vector foldersNeedingRefresh = new Vector(folderTreeItems.length - 1);
+            for(int i=1; i<folderTreeItems.length; i++) {
+                foldersNeedingRefresh.addElement(folderTreeItems[i]);
+            }
+
+            FolderRequestHandler handler = getFolderRequestHandler(folderTreeItems[0]);
+            handler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
+        }
+    }
+    
+    private class FolderRefreshSequenceRunnable implements Runnable {
+        private final boolean automated;
+        private final Vector foldersNeedingRefresh;
+        public FolderRefreshSequenceRunnable(boolean automated, Vector foldersNeedingRefresh) {
+            this.automated = automated;
+            this.foldersNeedingRefresh = foldersNeedingRefresh;
+        }
+        public void run() {
+            FolderTreeItem nextFolder = (FolderTreeItem)foldersNeedingRefresh.elementAt(0);
+            foldersNeedingRefresh.removeElementAt(0);
+            FolderRequestHandler nextHandler = getFolderRequestHandler(nextFolder);
+            
+            if(foldersNeedingRefresh.size() == 0) {
+                nextHandler.requestFolderRefresh(!automated);
+            }
+            else {
+                nextHandler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
+            }
+        }
     }
     
     public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) {

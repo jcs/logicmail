@@ -188,6 +188,18 @@ public abstract class MailStoreServices {
     public abstract void requestFolderRefresh(FolderTreeItem folderTreeItem);
     
     /**
+     * Requests a batch of folder refresh operations that are expected to be
+     * executed sequentially.
+     *
+     * @param folderTreeItems the mail store folders to be refreshed
+     */
+    public void requestFolderRefresh(FolderTreeItem[] folderTreeItems) {
+        for(int i=0; i<folderTreeItems.length; i++) {
+            requestFolderRefresh(folderTreeItems[i]);
+        }
+    }
+    
+    /**
      * Requests a folder fetch for more messages that may be available within
      * the provided folder.
      * 

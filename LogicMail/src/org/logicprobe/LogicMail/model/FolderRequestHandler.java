@@ -64,9 +64,7 @@ abstract class FolderRequestHandler {
     protected final FolderMessageCache folderMessageCache;
     protected final FolderTreeItem folderTreeItem;
     
-    /**
-     * Flag to track whether a folder refresh is currently in progress.
-     */
+    /** Flag to track whether a folder refresh is currently in progress. */
     protected final AtomicBoolean refreshInProgress = new AtomicBoolean();
     
     /**
@@ -79,15 +77,13 @@ abstract class FolderRequestHandler {
      * Collection of <code>Runnable</code> tasks to execute following a
      * refresh operation.
      */
-    protected final Vector postRefreshTasks = new Vector();
+    private final Vector postRefreshTasks = new Vector();
     
-    /**
-     * Indicates that the initial refresh has completed.
-     */
+    /** Indicates that the initial refresh has completed. */
     protected volatile boolean initialRefreshComplete;
     
     /** Indicates that cached messages have been loaded. */
-    protected boolean cacheLoaded;
+    private boolean cacheLoaded;
     
     /**
      * Set of messages that have been loaded from the cache, but no longer
@@ -138,6 +134,12 @@ abstract class FolderRequestHandler {
         }
     }
     
+    /**
+     * This method is called if the underlying protocol implementation detects
+     * conditions that invalidate the current folder state information.
+     * It is a likely situation that this method will be invoked during the
+     * first request of a folder refresh operation.
+     */
     public void requestFolderRefreshRequired() {
         if(!refreshInProgress.get()) {
             cleanBeforeNextUse();
@@ -145,15 +147,73 @@ abstract class FolderRequestHandler {
     }
     
     public void requestFolderRefresh(boolean deliberate) {
+        requestFolderRefresh(deliberate, null);
+    }
+    
+    public void requestFolderRefresh(boolean deliberate, Runnable postRefreshTask) {
         if(refreshInProgress.compareAndSet(false, true)) {
             prepareForUse();
             this.refreshInProgressDeliberate = deliberate;
-            requestFolderRefreshImpl();
+            
+            if(postRefreshTask != null) {
+                invokeAfterRefresh(postRefreshTask, true);
+            }
+            
+            beginFolderRefreshOperation();
+        }
+        else {
+            if(postRefreshTask != null) {
+                invokeAfterRefresh(postRefreshTask, true);
+            }
         }
     }
     
-    protected abstract void requestFolderRefreshImpl();
+    /**
+     * Subclasses should implement this method to to begin the folder refresh
+     * operation.  Upon completion of the operation, regardless of outcome,
+     * {@link #endFolderRefreshOperation()} must be called.
+     */
+    protected abstract void beginFolderRefreshOperation();
     
+    /**
+     * This method should be called upon the completion of a folder refresh.
+     * The final cleanup here has no difference in handling depending on
+     * success or failure.  This is due to the lack of any follow-up requests.
+     * In both cases we commit the cache, mark the refresh as complete, and
+     * notify the listeners.
+     * 
+     * @param success true, if the operation completed successfully
+     */
+    protected void endFolderRefreshOperation(final boolean success) {
+        // These final operations are all placed on the folder request thread
+        // queue, to make sure that they happen after the completion of any
+        // other refresh-related code.
+        mailStoreServices.invokeLater(new Runnable() { public void run() {
+            // Clear the set of loaded messages that have not yet been reconciled,
+            // which should only be non-empty if this method was called due to an
+            // error.
+            orphanedMessageSet.clear();
+
+            // Commit the folder message cache
+            folderMessageCache.commit();
+            
+            // Clear the flag indicating that a refresh operation is in progress
+            refreshInProgress.set(false);
+            
+            // Notify listeners of the end of the operation
+            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
+
+            // Enqueue any folder-related requests that arrived during the refresh
+            invokePostRefreshTasks(success);
+        }});
+    }
+    
+    /**
+     * Loads cached folder messages, and populates the <code>orphanedMessageSet</code>
+     * with them.  If the cache has not already been loaded, then corresponding
+     * events are fired to notify listeners of the messages.  The load order is
+     * determined by the global message display order setting.
+     */
     protected void loadCachedFolderMessages() {
         boolean dispOrder = MailSettings.getInstance().getGlobalConfig().getDispOrder();
         FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
@@ -193,41 +253,12 @@ abstract class FolderRequestHandler {
             }
         }
     }
-    
-    protected MailStoreRequestCallback finalFetchCallback = new MailStoreRequestCallback() {
-        public void mailStoreRequestComplete(MailStoreRequest request) {
-            initialRefreshComplete = true;
-            finalFetchComplete();
-        }
-        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
-            finalFetchComplete();
-        }
-    };
 
     /**
-     * The final fetch has no difference in handling depending on success or
-     * failure.  This is due to the lack of any follow-up requests.  In both
-     * cases we commit the cache, mark the refresh as complete, and notify
-     * the listeners.
+     * Removes any messages stored in the <code>orphanedMessageSet</code> from
+     * the cache, clears the set, and then fires the necessary events to have
+     * them expunged by any listeners.
      */
-    protected void finalFetchComplete() {
-        folderMessageCache.commit();
-        refreshInProgress.set(false);
-        
-        // Notify the end of the operation
-        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
-        
-        invokePostRefreshTasks();
-    }
-    
-    protected void notifyMessageFlagUpdates(final Vector messagesUpdated) {
-        if(!messagesUpdated.isEmpty()) {
-            FolderMessage[] messages = new FolderMessage[messagesUpdated.size()];
-            messagesUpdated.copyInto(messages);
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true, true);
-        }
-    }
-
     protected void removeOrphanedMessages() {
         Enumeration e = orphanedMessageSet.elements();
         MessageToken[] orphanedTokens = new MessageToken[orphanedMessageSet.size()];
@@ -320,21 +351,32 @@ abstract class FolderRequestHandler {
     /**
      * This method is called at the end of any refresh operation, whether it
      * succeeds or fails.
+     * 
+     * @param success true, if the refresh operation was successful
      */
-    protected void invokePostRefreshTasks() {
-        Runnable[] tasksToRun = null;
+    private void invokePostRefreshTasks(boolean success) {
+        Vector tasksToRun = null;
+        
         synchronized(postRefreshTasks) {
             int size = postRefreshTasks.size();
             if(size > 0) {
-                tasksToRun = new Runnable[size];
-                postRefreshTasks.copyInto(tasksToRun);
+                tasksToRun = new Vector(size);
+                for(int i=0; i<size; i++) {
+                    Object[] element = (Object[])postRefreshTasks.elementAt(i);
+                    // Add the task if the refresh was successful, or if the
+                    // task does not depend on a successful refresh.
+                    if(success || !((Boolean)element[1]).booleanValue()) {
+                        tasksToRun.addElement((Runnable)element[0]);
+                    }
+                }
                 postRefreshTasks.removeAllElements();
             }
         }
         
         if(tasksToRun != null) {
-            for(int i=0; i<tasksToRun.length; i++) {
-                mailStoreServices.invokeLater(tasksToRun[i]);
+            int size = tasksToRun.size();
+            for(int i=0; i<size; i++) {
+                mailStoreServices.invokeLater((Runnable)tasksToRun.elementAt(i));
             }
         }
     }
@@ -342,10 +384,17 @@ abstract class FolderRequestHandler {
     /**
      * Invoke the provided <code>Runnable</code> after the refresh for this
      * handler's folder has completed, successfully or unsuccessfully.
+     * <p>
      * If the refresh has not yet occurred, and <code>triggerRefresh</code>
-     * is set, this method will trigger it.
+     * is set, this method will trigger it. With <code>triggerRefresh</code>
+     * set, it is also assumed that the task depends on the successful
+     * completion of a refresh. As such, if the triggered or in-progress
+     * refresh fails, the task will not be executed.
+     * </p>
+     * <p>
      * If the refresh has already completed, the <code>Runnable</code> will be
      * executed immediately.
+     * </p>
      *
      * @param runnable the runnable to execute following a refresh
      * @param triggerRefresh true, if a refresh should be triggered
@@ -357,7 +406,7 @@ abstract class FolderRequestHandler {
             if(refreshInProgress.get()) {
                 // A refresh is currently in progress, so add this task to the
                 // list of post-refresh tasks
-                postRefreshTasks.addElement(runnable);
+                postRefreshTasks.addElement(new Object[] { runnable, new Boolean(triggerRefresh) });
             }
             else {
                 // A refresh is not in progress
@@ -365,13 +414,13 @@ abstract class FolderRequestHandler {
                     // The refresh completed, but the post-refresh tasks have
                     // not yet been executed.  This means we should add our
                     // task to the end of that list.
-                    postRefreshTasks.addElement(runnable);
+                    postRefreshTasks.addElement(new Object[] { runnable, new Boolean(triggerRefresh) });
                 }
                 else if((!initialRefreshComplete || cleanPriorToUse) && triggerRefresh) {
                     // The refresh has not yet begun, but is necessary.  This
                     // means we should add our task to the list, and trigger
                     // the refresh operation
-                    postRefreshTasks.addElement(runnable);
+                    postRefreshTasks.addElement(new Object[] { runnable, new Boolean(triggerRefresh) });
                     requestFolderRefresh(refreshInProgressDeliberate);
                 }
                 else {
@@ -458,5 +507,29 @@ abstract class FolderRequestHandler {
     protected void processMailStoreRequest(MailStoreRequest request) {
         ((ConnectionHandlerRequest)request).setDeliberate(refreshInProgressDeliberate);
         mailStore.processRequest(request);
+    }
+
+    /**
+     * Callback that should be used for the final operation of the folder
+     * refresh process. It will set the <code>initialRefreshComplete</code>
+     * flag prior to cleanup.
+     */
+    protected MailStoreRequestCallback finalFetchCallback = new FolderRefreshRequestCallback() {
+        public void mailStoreRequestComplete(MailStoreRequest request) {
+            initialRefreshComplete = true;
+            endFolderRefreshOperation(true);
+        }
+    };
+    
+    /**
+     * Standard callback used by all requests that are part of the folder
+     * refresh process.
+     */
+    protected abstract class FolderRefreshRequestCallback implements MailStoreRequestCallback {
+        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+            // All folder refresh request failures are handled by cleanly
+            // ending the refresh process.
+            endFolderRefreshOperation(false);
+        }
     }
 }

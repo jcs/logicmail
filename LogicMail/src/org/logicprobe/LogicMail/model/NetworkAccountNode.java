@@ -397,10 +397,12 @@ public class NetworkAccountNode extends AccountNode {
      *     user interaction.
      */
     public void triggerAutomaticRefresh(boolean deliberate) {
+        Vector foldersToRefresh = new Vector();
+        
         // All accounts have an INBOX that can be refreshed
         MailboxNode inboxMailbox = this.getInboxMailbox();
         if(inboxMailbox != null) {
-            inboxMailbox.refreshMessages(deliberate);
+            foldersToRefresh.addElement(inboxMailbox.getFolderTreeItem());
         }
         
         // IMAP accounts can optionally configure additional mailboxes for refresh
@@ -411,8 +413,18 @@ public class NetworkAccountNode extends AccountNode {
                         || refreshMailboxes[i].getUniqueId() == inboxMailbox.getUniqueId()) {
                     continue;
                 }
-                refreshMailboxes[i].refreshMessages(deliberate);
+                foldersToRefresh.addElement(refreshMailboxes[i].getFolderTreeItem());
             }
+        }
+        if(foldersToRefresh.size() == 0) { return; }
+
+        FolderTreeItem[] folders = new FolderTreeItem[foldersToRefresh.size()];
+        foldersToRefresh.copyInto(folders);
+        if(deliberate) {
+            mailStoreServices.requestFolderRefresh(folders);
+        }
+        else {
+            ((NetworkMailStoreServices)mailStoreServices).requestFolderRefreshAutomated(folders);
         }
     }
 }

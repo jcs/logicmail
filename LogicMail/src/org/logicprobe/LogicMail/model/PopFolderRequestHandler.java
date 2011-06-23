@@ -31,7 +31,6 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Enumeration;
-import java.util.Vector;
 
 import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.util.IntVector;
@@ -40,7 +39,6 @@ import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreRequest;
-import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.NetworkFolderMessageIndexMapRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -65,30 +63,23 @@ class PopFolderRequestHandler extends FolderRequestHandler {
         super(mailStoreServices, mailStore, folderMessageCache, folderTreeItem);
     }
     
-    protected void requestFolderRefreshImpl() {
+    protected void beginFolderRefreshOperation() {
         if(initialRefreshComplete) {
             // Subsequent refresh is pointless on locked-folder mail stores
-            refreshInProgress.set(false);
-
-            // Fire an event so the caller knows we're no longer processing
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, null, false, false);
-
-            invokePostRefreshTasks();
+            endFolderRefreshOperation(true);
             return;
         }
 
         mailStoreServices.invokeLater(new Runnable() { public void run() {
             processMailStoreRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
-                    .setRequestCallback(new MailStoreRequestCallback() {
+                    .setRequestCallback(new FolderRefreshRequestCallback() {
                         public void mailStoreRequestComplete(MailStoreRequest request) {
                             NetworkFolderMessageIndexMapRequest indexMapRequest = (NetworkFolderMessageIndexMapRequest)request;
                             indexMapFetchComplete(indexMapRequest.getResultUidIndexMap());
                         }
-                        public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
-                            indexMapFetchFailed();
-                        }}));
+                    }));
 
-            // Fetch messages stored in cache
+            // Fetch messages stored in the cache
             loadCachedFolderMessages();
         }});
     }
@@ -98,7 +89,6 @@ class PopFolderRequestHandler extends FolderRequestHandler {
         final int messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
         
         mailStoreServices.invokeLater(new Runnable() { public void run() {
-            Vector messagesUpdated = new Vector();
             SimpleSortingIntVector indexVector = new SimpleSortingIntVector();
             IntHashtable cachedIndexToMessageMap = new IntHashtable();
             
@@ -118,14 +108,12 @@ class PopFolderRequestHandler extends FolderRequestHandler {
                     message.getMessageToken().updateMessageIndex(index);
                     
                     if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                        messagesUpdated.addElement(message);
                         cachedIndexToMessageMap.put(index, message);
                     }
                 }
             }
             indexVector.reSort(SimpleSortingIntVector.SORT_TYPE_NUMERIC);
             
-            notifyMessageFlagUpdates(messagesUpdated);
             removeOrphanedMessages();
 
             // Determine the fetch range
@@ -160,20 +148,6 @@ class PopFolderRequestHandler extends FolderRequestHandler {
             // Do the final request for missing messages
             processMailStoreRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
                     .setRequestCallback(finalFetchCallback));
-        }});
-    }
-    
-    private void indexMapFetchFailed() {
-        // Initial fetch failed.  Since the index map retrieval is implemented
-        // as a single operation, we cannot do anything more beyond cleanup.
-        
-        mailStoreServices.invokeLater(new Runnable() { public void run() {
-            // Clear the set of loaded messages, since we cannot process them further
-            orphanedMessageSet.clear();
-            
-            refreshInProgress.set(false);
-            
-            invokePostRefreshTasks();
         }});
     }
 }
