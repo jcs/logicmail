@@ -498,7 +498,7 @@ abstract class FolderRequestHandler {
                     folderMessageCache.commit();
                     
                     if(updateInMailStore) {
-                        mailStore.requestMessageSeen(messageToken);
+                        processMailStoreRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
                     }
                 }
             }
