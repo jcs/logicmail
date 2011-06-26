@@ -231,6 +231,32 @@ public class StringParserTest extends TestCase {
             result.get("message-id"));
         assertEquals("MIMEDefang 2.54 on 10.4.1.12", result.get("x-scanned-by"));
     }
+    
+    /**
+     * Test of parseMailHeaders method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testParseMailHeadersMalformed() {
+        // Test for correct handling of a block of headers where some are
+        // malformed.
+        String[] rawLines = {
+                "Return-Path: <jdoe@generic.test>",
+                "X-TM-IMSS-Message-ID:<12345678@foo.bar>",
+                "From: John Doe <jdoe@generic.test>",
+                "To: neo@generic.test",
+                "X-MISC-LINE:",
+                "Subject: Some test message",
+                "Date: Sun, 24 Dec 2006 20:59:41 -0500",
+        };
+        
+        Hashtable result = StringParser.parseMailHeaders(rawLines);
+        assertEquals("Number of headers", rawLines.length, result.size());
+        assertEquals("<jdoe@generic.test>", result.get("return-path"));
+        assertEquals("<12345678@foo.bar>", result.get("x-tm-imss-message-id"));
+        assertEquals("John Doe <jdoe@generic.test>", result.get("from"));
+        assertEquals("neo@generic.test", result.get("to"));
+        assertEquals("", result.get("x-misc-line"));
+        assertEquals("Some test message", result.get("subject"));
+    }
 
     /**
      * Test of parseMailHeaders method, of class org.logicprobe.LogicMail.util.StringParser.
@@ -242,7 +268,7 @@ public class StringParserTest extends TestCase {
         String[] rawLines = {
                 "Return-Path: <jdoe@generic.test>", "Subject: Some test message",
                 "Some random content", "More random content"
-            };
+        };
 
         Hashtable result = StringParser.parseMailHeaders(rawLines);
         assertEquals("Number of headers", 2, result.size());
@@ -705,7 +731,8 @@ public class StringParserTest extends TestCase {
         
         testSuite.addTest(new StringParserTest("parseMailHeaders", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testParseMailHeaders(); }}));
-        
+        testSuite.addTest(new StringParserTest("parseMailHeadersMalformed", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testParseMailHeadersMalformed(); }}));
         testSuite.addTest(new StringParserTest("parseMailHeadersNoBlank", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testParseMailHeadersNoBlank(); }}));
         

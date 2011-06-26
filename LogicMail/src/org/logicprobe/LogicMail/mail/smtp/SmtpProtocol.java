@@ -141,75 +141,87 @@ public class SmtpProtocol {
             ("SmtpProtocol.executeAuth("+mech+", \""+username+"\", \""+password+"\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
-        String result;
-        byte[] data;
-        if(mech == AUTH_PLAIN) {
-            result = execute(STR_AUTH_PLAIN);
-            if(!result.startsWith(CODE_334)) {
-                throw new MailException(result.substring(4));
-            }
-            
-            // Format the username and password
-            byte[] userData = username.getBytes();
-            byte[] passData = password.getBytes();
-            data = new byte[userData.length + passData.length + 2];
-            int i = 0;
-            data[i++] = 0;
-            for(int j=0; j<userData.length; j++) {
-                data[i++] = userData[j];
-            }
-            data[i++] = 0;
-            for(int j=0; j<passData.length; j++) {
-                data[i++] = passData[j];
-            }
-            
-            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith(CODE_235)) {
-                return false;
-            }
-        }
-        else if(mech == AUTH_LOGIN) {
-            result = execute(STR_AUTH_LOGIN);
-            if(!result.startsWith(CODE_334)) {
-                throw new MailException(result.substring(4));
-            }
-            data = username.getBytes();
-            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith(CODE_334)) {
-                throw new MailException("Authentication error");
-            }
-            data = password.getBytes();
-            result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
-            if(!result.startsWith(CODE_235)) {
-                return false;
-            }
-        }
-        else if(mech == AUTH_CRAM_MD5) {
-            result = execute(STR_AUTH_CRAM_MD5);
-            if(!result.startsWith(CODE_334)) {
-                throw new MailException(result.substring(4));
-            }
-            
-            byte[] challenge = Base64InputStream.decode(result.substring(4));
-           
-            byte[] s = password.getBytes(US_ASCII);
-            byte[] digest = hmac_md5(s, challenge);
-            StringBuffer buf = new StringBuffer();
-            buf.append(username);
-            buf.append(' ');
-            buf.append(byteArrayToHexString(digest));
-
-            byte[] eval = buf.toString().getBytes(US_ASCII);
-            
-            result = execute(Base64OutputStream.encodeAsString(eval, 0, eval.length, false, false));
-            if(!result.startsWith(CODE_235)) {
-                return false;
-            }
-        }
-        else {
+        
+        switch(mech) {
+        case AUTH_PLAIN:
+            return executeAuthPlain(username, password);
+        case AUTH_LOGIN:
+            return executeAuthLogin(username, password);
+        case AUTH_CRAM_MD5:
+            return executeAuthCramMD5(username, password);
+        default:
             throw new MailException("Unknown authentication mechanism");
         }
-        return true;
+    }
+
+    private boolean executeAuthPlain(String username, String password)
+            throws IOException, MailException {
+
+        StringBuffer buf = new StringBuffer();
+        buf.append(STR_AUTH_PLAIN);
+        buf.append(' ');
+        
+        // Format the username and password
+        byte[] userData = username.getBytes();
+        byte[] passData = password.getBytes();
+        byte[] data = new byte[userData.length + passData.length + 2];
+        int i = 0;
+        data[i++] = 0;
+        for(int j=0; j<userData.length; j++) {
+            data[i++] = userData[j];
+        }
+        data[i++] = 0;
+        for(int j=0; j<passData.length; j++) {
+            data[i++] = passData[j];
+        }
+        
+        buf.append(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+        
+        String result = execute(buf.toString());
+        
+        return result.startsWith(CODE_235);
+    }
+
+    private boolean executeAuthLogin(String username, String password)
+            throws IOException, MailException {
+
+        String result = execute(STR_AUTH_LOGIN);
+        if(!result.startsWith(CODE_334)) {
+            throw new MailException(result.substring(4));
+        }
+        byte[] data = username.getBytes();
+        result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+        if(!result.startsWith(CODE_334)) {
+            throw new MailException("Authentication error");
+        }
+        data = password.getBytes();
+        result = execute(Base64OutputStream.encodeAsString(data, 0, data.length, false, false));
+        
+        return result.startsWith(CODE_235);
+    }
+
+    private boolean executeAuthCramMD5(String username, String password)
+            throws IOException, MailException {
+
+        String result = execute(STR_AUTH_CRAM_MD5);
+        if(!result.startsWith(CODE_334)) {
+            throw new MailException(result.substring(4));
+        }
+        
+        byte[] challenge = Base64InputStream.decode(result.substring(4));
+         
+        byte[] s = password.getBytes(US_ASCII);
+        byte[] digest = hmac_md5(s, challenge);
+        StringBuffer buf = new StringBuffer();
+        buf.append(username);
+        buf.append(' ');
+        buf.append(byteArrayToHexString(digest));
+
+        byte[] eval = buf.toString().getBytes(US_ASCII);
+        
+        result = execute(Base64OutputStream.encodeAsString(eval, 0, eval.length, false, false));
+        
+        return result.startsWith(CODE_235);
     }
 
     /**

@@ -297,63 +297,77 @@ public class EmailAddressBookEditField extends EditField {
      * Handle choosing an address from the address book
      */
     private void addressBookChooser() {
-    	Contact contact = null;
-		try {
-			BlackBerryContactList list = (BlackBerryContactList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
-	    	PIMItem item = list.choose();
-	    	if (item instanceof Contact) {
-		    	contact = (Contact)item;
-	    	}
-	    	else if (item instanceof BlackBerryContactGroup) {
-	    		BlackBerryContactGroup contactGroup = (BlackBerryContactGroup)item;
-	    		addContactGroup(contactGroup);
-	    	}
-		} catch (PIMException e) {
-			EventLogger.logEvent(AppInfo.GUID,
-                ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
-                EventLogger.ERROR);
-			return;
-		} catch (ControlledAccessException e) {
+        Contact contact = null;
+        try {
+            BlackBerryContactList list = (BlackBerryContactList)PIM.getInstance().openPIMList(PIM.CONTACT_LIST, PIM.READ_WRITE);
+            PIMItem item = list.choose();
+            if (item instanceof Contact) {
+                contact = (Contact)item;
+            }
+            else if (item instanceof BlackBerryContactGroup) {
+                BlackBerryContactGroup contactGroup = (BlackBerryContactGroup)item;
+                addContactGroup(contactGroup);
+            }
+        } catch (PIMException e) {
             EventLogger.logEvent(AppInfo.GUID,
                     ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
                     EventLogger.ERROR);
-                return;
-		}
-    	
-		if(contact != null) {
-			String contactName;
-			String[] contactEmail;
+            return;
+        } catch (ControlledAccessException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
+                    EventLogger.ERROR);
+            return;
+        }
 
-            String[] values = contact.getStringArray(Contact.NAME, 0);
-            contactName = values[1] + ' ' + values[0];
+        if(contact != null) {
+            String contactName;
+            String[] contactEmail;
+
+            contactName = getContactName(contact);
 
             int count = contact.countValues(Contact.EMAIL);
             contactEmail = new String[count];
             for (int i = 0; i < count; i++) {
-            	contactEmail[i] = contact.getString(Contact.EMAIL, i);
+                contactEmail[i] = contact.getString(Contact.EMAIL, i);
             }
-            
+
             if(count > 1) {
-              Dialog addressDialog = new Dialog(
-            		  resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_WHICH_ADDRESS),
-            		  contactEmail, null, 0,
-            		  Bitmap.getPredefinedBitmap(Bitmap.QUESTION));
-              int choice = addressDialog.doModal();
-              if(choice != -1) {
-	              address = contactEmail[choice];
-	              name = contactName;
-	              setAddressMode(MODE_NAME);
-              }
+                Dialog addressDialog = new Dialog(
+                        resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_WHICH_ADDRESS),
+                        contactEmail, null, 0,
+                        Bitmap.getPredefinedBitmap(Bitmap.QUESTION));
+                int choice = addressDialog.doModal();
+                if(choice != -1) {
+                    address = contactEmail[choice];
+                    name = contactName;
+                    setAddressMode(MODE_NAME);
+                }
             }
             else if(count == 1) {
-				address = contactEmail[0];
-				name = contactName;
-				setAddressMode(MODE_NAME);
+                address = contactEmail[0];
+                name = contactName;
+                setAddressMode(MODE_NAME);
             }
             else {
-            	Dialog.alert(resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_ALERT_NO_ADDRESS));
+                Dialog.alert(resources.getString(LogicMailResource.EMAILADDRESSBOOKEDIT_ALERT_NO_ADDRESS));
             }
-		}
+        }
+    }
+
+    private static String getContactName(Contact contact) {
+        String[] values = contact.getStringArray(Contact.NAME, 0);
+        StringBuffer buf = new StringBuffer();
+        if(values[1] != null && values[1].length() > 0) {
+            buf.append(values[1]);
+        }
+        if(values[0] != null && values[0].length() > 0) {
+            if(buf.length() > 0) {
+                buf.append(' ');
+            }
+            buf.append(values[0]);
+        }
+        return buf.toString();
     }
 
     /**

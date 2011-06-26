@@ -637,19 +637,47 @@ public class CompositionScreen extends AbstractScreenProvider {
     }
     
     public boolean keyChar(char key, int status, int time) {
+        boolean handled = false;
+        
         switch (key) {
         case Keypad.KEY_BACKSPACE:
             if(deleteField(true)) {
-                return true;
+                handled = true;
             }
-            else {
-                return super.keyChar(key, status, time);
+            break;
+        case Keypad.KEY_ENTER:
+            if(subjectEditField.isFocus()) {
+                messageEditField.setFocus();
+                handled = true;
             }
-        default:
+            else if(recipientsFieldManager.isFocus()) {
+                moveRecipientFocusDownward();
+                handled = true;
+            }
+            break;
+        }
+        
+        if(handled) {
+            return true;
+        }
+        else {
             return super.keyChar(key, status, time);
         }
     }
     
+    private void moveRecipientFocusDownward() {
+        int count = recipientsFieldManager.getFieldCount();
+        int index = recipientsFieldManager.getFieldWithFocusIndex();
+        if(count == 0 && index == -1) { return; }
+        
+        if(index < count - 1) {
+            recipientsFieldManager.getField(index + 1).setFocus();
+        }
+        else {
+            subjectEditField.setFocus();
+        }
+    }
+
     /**
      * Delete the current recipient or attachment field.
      *

@@ -84,6 +84,7 @@ public class PopClient extends AbstractIncomingMailClient {
     private boolean openStarted;
     
     private static final byte[] CRLF = new byte[] { (byte)'\r', (byte)'\n' };
+    private static String CAPA_STLS = "STLS"; 
     
     /**
      * Table of supported server capabilities
@@ -184,9 +185,9 @@ public class PopClient extends AbstractIncomingMailClient {
             // TLS initialization
             int serverSecurity = accountConfig.getServerSecurity();
             if((serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE
-                    && capabilities != null && capabilities.containsKey("STARTTLS"))
+                    && capabilities != null && capabilities.containsKey(CAPA_STLS))
                     || (serverSecurity == ConnectionConfig.SECURITY_TLS)) {
-                if(popProtocol.executeStartTLS()) {
+                if(popProtocol.executeSTLS()) {
                     connection = networkConnector.getConnectionAsTLS(connection);
                     popProtocol.setConnection(connection);
                 }
@@ -195,7 +196,7 @@ public class PopClient extends AbstractIncomingMailClient {
                 }
             }
             else if(capabilities == null && serverSecurity == ConnectionConfig.SECURITY_TLS_IF_AVAILABLE) {
-                if(popProtocol.executeStartTLS()) {
+                if(popProtocol.executeSTLS()) {
                     connection = networkConnector.getConnectionAsTLS(connection);
                     popProtocol.setConnection(connection);
                 }

@@ -317,6 +317,15 @@ abstract class FolderRequestHandler {
     void handleFolderMessagesAvailable(FolderMessage[] messages) {
         if(messages != null) {
             for(int i=0; i<messages.length; i++) {
+                
+                // Manually set the "recent" flag on the message if it is marked
+                // as unseen on the server. This is necessary because the
+                // "recent" flag is an unreliable indicator of message newness.
+                // Since this method should only be called when messages are
+                // newly loaded from the server, it shouldn't cause redundant
+                // new message notifications.
+                if(!messages[i].isSeen()) { messages[i].setRecent(true); }
+                
                 folderMessageCache.addFolderMessage(folderTreeItem, messages[i]);
             }
         }
@@ -481,12 +490,15 @@ abstract class FolderRequestHandler {
                 if(message == null) { return; }
                 MessageFlags messageFlags = message.getFlags();
                 if(!messageFlags.isSeen() || messageFlags.isRecent()) {
+                    boolean updateInMailStore = !cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen();
+                    
                     messageFlags.setSeen(true);
                     messageFlags.setRecent(false);
                     folderMessageCache.updateFolderMessage(folderTreeItem, message);
                     folderMessageCache.commit();
-                    if(!cacheOnly && mailStore.hasFlags() && !messageFlags.isSeen()) {
-                        processMailStoreRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
+                    
+                    if(updateInMailStore) {
+                        mailStore.requestMessageSeen(messageToken);
                     }
                 }
             }

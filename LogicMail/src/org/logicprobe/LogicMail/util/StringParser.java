@@ -448,15 +448,9 @@ public class StringParser {
                 line = line + strCRLF + rawLines[i];
             } else {
                 if (line.length() != 0) {
-                    int p = line.indexOf(':');
-                    int q = line.indexOf(' ');
-
-                    if ((p == -1) || (q == -1)) {
+                    if(!insertHeaderLine(table, line)) {
                         break;
                     }
-
-                    table.put((line.substring(0, p)).toLowerCase(),
-                        line.substring(q + 1));
                 }
 
                 line = rawLines[i];
@@ -464,19 +458,39 @@ public class StringParser {
 
             // Special case for last item
             if ((i == (rawLines.length - 1)) && (line.length() != 0)) {
-                int p = line.indexOf(':');
-                int q = line.indexOf(' ');
-
-                if ((p == -1) || (q == -1)) {
-                    break;
-                }
-
-                table.put((line.substring(0, p)).toLowerCase(),
-                    line.substring(q + 1));
+                insertHeaderLine(table, line);
             }
         }
 
         return table;
+    }
+
+    private static boolean insertHeaderLine(Hashtable table, String line) {
+        int p = line.indexOf(':');
+        int q = line.indexOf(' ');
+
+        if (p != -1) {
+            // Key followed by a colon
+            if(q != -1) {
+                // Completely normal case
+                table.put((line.substring(0, p)).toLowerCase(),
+                        line.substring(q + 1));
+            }
+            else if(p + 1 < line.length()){
+                // Missing space
+                table.put((line.substring(0, p)).toLowerCase(),
+                        line.substring(p + 1));
+            }
+            else {
+                // Missing value
+                table.put((line.substring(0, p)).toLowerCase(), "");
+            }
+            return true;
+        }
+        else {
+            // Line with no colon, have to assume it is the body start
+            return false;
+        }
     }
     
     /**

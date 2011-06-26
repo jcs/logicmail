@@ -116,19 +116,19 @@ public class PopProtocol {
 	}
 	
     /**
-     * Execute the "STARTTLS" command.
+     * Execute the "STLS" command.
      * The underlying connection mode must be switched after the
      * successful execution of this command.
      * 
      * @return true, if successful
      */
-	public boolean executeStartTLS() throws IOException, MailException {
+	public boolean executeSTLS() throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("PopProtocol.executeStartTLS()").getBytes(),
+                ("PopProtocol.executeSTLS()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-        return execute(STARTTLS, false) != null;
+        return execute(STLS, false) != null;
 	}
 	
     /**
@@ -513,7 +513,7 @@ public class PopProtocol {
     private static String QUIT = "QUIT";
     private static String PASS_ = "PASS ";
     private static String USER_ = "USER ";
-    private static String STARTTLS = "STARTTLS";
+    private static String STLS = "STLS";
     private static String CAPA = "CAPA";
     private static String[] AUTH_FAILURES = {
         "[auth]",
