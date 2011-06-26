@@ -91,6 +91,9 @@
               includes="LogicMail.rrc,LogicMail.rrh,${rrc.files} "/>
           <fileset refid="startupfileset" />
           <fileset refid="@{platformfileset}" />
+
+          <!-- NOTE: This line needs to be commented out if building without analytics support -->
+          <fileset file="${webtrends.library}" />
         </src>
         
         <!-- NOTE: This line needs to be commented out if building without analytics support -->
@@ -114,7 +117,7 @@
              outputter="default">
       <replace path="/resources/string[@name='wt_dc_app_name']/text()" withText="${module.name}"/>
       <replace path="/resources/string[@name='wt_dc_app_publisher']/text()" withText="${module.vendor}"/>
-      <replace path="/resources/string[@name='wt_dc_app_version']/text()" withText="${module.version}"/>
+      <replace path="/resources/string[@name='wt_dc_app_version']/text()" withText="${module.version}.${module.build}"/>
       <replace path="/resources/string[@name='wt_dc_dcsid']/text()" withText="${webtrends.dcsid}"/>
       <replace path="/resources/string[@name='wt_dc_debug']/text()" withText="${webtrends.debug}"/>
     </xmltask>
