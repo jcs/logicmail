@@ -110,6 +110,7 @@ public class PermissionsHandler {
         permRequest.addPermission(ApplicationPermissions.PERMISSION_EXTERNAL_CONNECTIONS);
         permRequest.addPermission(ApplicationPermissions.PERMISSION_WIFI);
         permRequest.addPermission(ApplicationPermissions.PERMISSION_PIM);
+        permRequest.addPermission(ApplicationPermissions.PERMISSION_HANDHELD_KEYSTORE);
         
         // Request that the user change permissions
         boolean acceptance = permissionsManager.invokePermissionsRequest(permRequest);
@@ -129,9 +130,10 @@ public class PermissionsHandler {
 
     private static boolean hasExtendedPermissions(ApplicationPermissions permissions) {
         return permissions.getPermission(ApplicationPermissions.PERMISSION_FILE_API) == ApplicationPermissions.VALUE_ALLOW
-                && permissions.getPermission(ApplicationPermissions.PERMISSION_INTERNAL_CONNECTIONS) == ApplicationPermissions.VALUE_ALLOW
-                && permissions.getPermission(ApplicationPermissions.PERMISSION_EXTERNAL_CONNECTIONS) == ApplicationPermissions.VALUE_ALLOW
-                && permissions.getPermission(ApplicationPermissions.PERMISSION_WIFI) == ApplicationPermissions.VALUE_ALLOW
-                && permissions.getPermission(ApplicationPermissions.PERMISSION_PIM) == ApplicationPermissions.VALUE_ALLOW;
+            && permissions.getPermission(ApplicationPermissions.PERMISSION_INTERNAL_CONNECTIONS) == ApplicationPermissions.VALUE_ALLOW
+            && permissions.getPermission(ApplicationPermissions.PERMISSION_EXTERNAL_CONNECTIONS) == ApplicationPermissions.VALUE_ALLOW
+            && permissions.getPermission(ApplicationPermissions.PERMISSION_WIFI) == ApplicationPermissions.VALUE_ALLOW
+            && permissions.getPermission(ApplicationPermissions.PERMISSION_PIM) == ApplicationPermissions.VALUE_ALLOW
+            && permissions.getPermission(ApplicationPermissions.PERMISSION_HANDHELD_KEYSTORE) == ApplicationPermissions.VALUE_ALLOW;
     }
 }

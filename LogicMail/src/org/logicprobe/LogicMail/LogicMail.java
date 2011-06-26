@@ -83,6 +83,7 @@ import org.logicprobe.LogicMail.conf.MailSettings;
  * Main class for the application.
  */
 public final class LogicMail extends UiApplication {
+    private boolean analyticsAppStartHappened = false;
     private boolean autoStart;
     private StartupSystemListener systemListener;
     private NavigationController navigationController;
@@ -183,6 +184,7 @@ public final class LogicMail extends UiApplication {
             if(AppInfo.isLicenceAccepted()) {
                 foreground = true;
                 PermissionsHandler.checkStartupPermissions(false);
+                AnalyticsDataCollector.getInstance().setConfigured(AppInfo.isAnalyticsEnabled());
                 requestForeground();
                 pushScreen(loadingScreen);
                 loadingThread.start();
@@ -194,13 +196,14 @@ public final class LogicMail extends UiApplication {
                         HomeScreenPopup popupDialog = new HomeScreenPopup();
                         pushGlobalScreen(popupDialog, 1, UiEngine.GLOBAL_MODAL);
 
-                        if(!popupDialog.isAccepted()) {
+                        if(!popupDialog.isLicenseAccepted()) {
                             PermissionsHandler.unregisterReasonProvider();
                             System.exit(0);
                         }
                         else {
                             AppInfo.updateLastVersion();
                             AppInfo.setLicenseAccepted(true);
+                            AppInfo.setAnalyticsEnabled(popupDialog.isAnalyticsEnabled());
                             PermissionsHandler.checkStartupPermissions(true);
                             foreground = true;
                             LogicMail.this.requestForeground();
@@ -214,6 +217,30 @@ public final class LogicMail extends UiApplication {
         enterEventDispatcher();
     }
 
+    public void activate() {
+        activateAnalytics();
+        super.activate();
+    }
+
+    private void activateAnalytics() {
+        if(AppInfo.isAnalyticsEnabled()) {
+            if(analyticsAppStartHappened) {
+                AnalyticsDataCollector.getInstance().onApplicationForeground();
+            }
+            else {
+                AnalyticsDataCollector.getInstance().onApplicationStart();
+                analyticsAppStartHappened = true;
+            }
+        }
+    }
+    
+    public void deactivate() {
+        if(AppInfo.isAnalyticsEnabled()) {
+            AnalyticsDataCollector.getInstance().onApplicationBackground();
+        }
+        super.deactivate();
+    }
+    
     protected boolean acceptsForeground() {
         return foreground;
     }
@@ -309,6 +336,9 @@ public final class LogicMail extends UiApplication {
         }
         
         PermissionsHandler.unregisterReasonProvider();
+        
+        AnalyticsDataCollector.getInstance().onApplicationTerminate();
+        
         System.exit(0);
     }
     

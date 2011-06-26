@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2010, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,20 +30,44 @@
  */
 package org.logicprobe.LogicMail;
 
-import net.rim.device.api.util.Persistable;
+import java.util.Hashtable;
 
-import org.logicprobe.LogicMail.util.PersistableContainer;
+class StubDataCollector extends AnalyticsDataCollector {
+    public void setConfigured(boolean configured) { }
 
-/**
- * Container for persistable application-wide properties that need to be
- * kept outside the normal configuration system.
- */
-public class PersistableAppInfo extends PersistableContainer implements Persistable {
-    public static final int FIELD_LAST_APP_VERSION = 0;
-    public static final int FIELD_LICENSE_ACCEPTED = 1;
-    public static final int FIELD_ANALYTICS_ENABLED = 2;
+    public void onApplicationStart() { }
+
+    public void onApplicationTerminate() { }
+
+    public void onApplicationForeground() { }
+
+    public void onApplicationBackground() { }
     
-    public PersistableAppInfo() {
-        super(3);
-    }
+    public void onButtonClick(
+            String eventPath,
+            String eventDesc,
+            String eventType,
+            Hashtable customData) { }
+
+    public void onContentView(
+            String eventPath,
+            String eventDesc,
+            String eventType,
+            Hashtable customData,
+            String contentGroup) { }
+
+    public void onMediaEvent(
+            String eventPath,
+            String eventDesc,
+            String eventType,
+            Hashtable customData,
+            String contentGroup,
+            String mediaName,
+            String mediaType,
+            String mediaEventType) { }
+
+    public void onCustomEvent(
+            String eventPath,
+            String eventDesc,
+            Hashtable customData) { }
 }

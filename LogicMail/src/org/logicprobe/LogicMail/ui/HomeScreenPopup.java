@@ -39,6 +39,7 @@ import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Manager;
 import net.rim.device.api.ui.Ui;
 import net.rim.device.api.ui.component.ButtonField;
+import net.rim.device.api.ui.component.CheckboxField;
 import net.rim.device.api.ui.component.RichTextField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.container.PopupScreen;
@@ -50,7 +51,11 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
  */
 public class HomeScreenPopup extends PopupScreen {
     protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
-    private RichTextField textField;
+    private RichTextField licenseTextField;
+    private CheckboxField analyticsCheckboxField;
+    private RichTextField acceptTextField;
+    private RichTextField spacerField1;
+    private RichTextField spacerField2;
     private ButtonField okayButton;
     private ButtonField cancelButton;
     private boolean accepted;
@@ -58,17 +63,38 @@ public class HomeScreenPopup extends PopupScreen {
     public HomeScreenPopup() {
         super(new VerticalFieldManager(Manager.VERTICAL_SCROLL | Manager.VERTICAL_SCROLLBAR));
         
-        textField = new RichTextField(RichTextField.READONLY);
+        Font font = Font.getDefault().derive(Font.PLAIN, 6, Ui.UNITS_pt);
+        
+        licenseTextField = new RichTextField(RichTextField.READONLY);
         String[] licenseText = resources.getStringArray(LogicMailResource.ABOUT_LICENSE);
         for(int i=0; i<licenseText.length; i++) {
-            textField.insert(licenseText[i]);
+            licenseTextField.insert(licenseText[i]);
             if(i < licenseText.length - 1) {
-                textField.insert("\n");
+                licenseTextField.insert("\n");
             }
         }
-        textField.setFont(Font.getDefault().derive(Font.PLAIN, 6, Ui.UNITS_pt));
-        textField.setEditable(false);
+        licenseTextField.setFont(font);
+        licenseTextField.setEditable(false);
 
+        spacerField1 = new RichTextField("", RichTextField.READONLY);
+        spacerField1.setFont(font);
+        spacerField1.setEditable(false);
+        
+        analyticsCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.ABOUT_ANALYTICS_ENABLE),
+                true);
+        analyticsCheckboxField.setFont(font);
+        
+        acceptTextField = new RichTextField(
+                resources.getString(LogicMailResource.ABOUT_LICENSE_ACCEPT),
+                RichTextField.READONLY);
+        acceptTextField.setFont(font);
+        acceptTextField.setEditable(false);
+        
+        spacerField2 = new RichTextField("", RichTextField.READONLY);
+        spacerField2.setFont(font);
+        spacerField2.setEditable(false);
+        
         okayButton = new ButtonField(resources.getString(LogicMailResource.MENUITEM_ACCEPT), ButtonField.CONSUME_CLICK | Field.FIELD_HCENTER);
         okayButton.setChangeListener(new FieldChangeListener() {
             public void fieldChanged(Field field, int context) {
@@ -80,7 +106,11 @@ public class HomeScreenPopup extends PopupScreen {
                 cancelButtonClicked();
             }});
         
-        add(textField);
+        add(licenseTextField);
+        add(spacerField1);
+        add(analyticsCheckboxField);
+        add(spacerField2);
+        add(acceptTextField);
         add(new SeparatorField());
         add(okayButton);
         add(cancelButton);
@@ -96,7 +126,11 @@ public class HomeScreenPopup extends PopupScreen {
         this.close();
     }
     
-    public boolean isAccepted() {
+    public boolean isLicenseAccepted() {
         return accepted;
+    }
+    
+    public boolean isAnalyticsEnabled() {
+        return analyticsCheckboxField.getChecked();
     }
 }

@@ -53,6 +53,7 @@ import net.rim.device.api.ui.component.ObjectListField;
 import net.rim.device.api.ui.container.HorizontalFieldManager;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
@@ -115,6 +116,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     private CheckboxField unicodeNormalizationCheckboxField;
     private ObjectChoiceField languageChoiceField;
     private ButtonField clearCacheButtonField;
+    private CheckboxField analyticsCheckboxField;
     
     private volatile boolean clearingCache;
     
@@ -473,9 +475,14 @@ public class ConfigScreen extends AbstractConfigScreen {
                 clearCacheButtonFieldChanged(field, context);
             }
         });
+        
         HorizontalFieldManager clearCacheManager = new HorizontalFieldManager(Manager.NO_HORIZONTAL_SCROLL | Manager.FIELD_LEFT);
         clearCacheManager.add(clearCacheLabelField);
         clearCacheManager.add(clearCacheButtonField);
+
+        analyticsCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.ABOUT_ANALYTICS_ENABLE),
+                AppInfo.isAnalyticsEnabled());
         
         otherFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_OTHER),
@@ -492,6 +499,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
         otherFieldManager.add(unicodeNormalizationCheckboxField);
         otherFieldManager.add(connectionDebuggingCheckboxField);
+        otherFieldManager.add(analyticsCheckboxField);
         otherFieldManager.add(new BlankSeparatorField(separatorHeight));
         add(otherFieldManager);
     }
@@ -1088,6 +1096,22 @@ public class ConfigScreen extends AbstractConfigScreen {
         }
 
         config.setConnDebug(connectionDebuggingCheckboxField.getChecked());
+        
+        toggleAnalyticsValue(AppInfo.isAnalyticsEnabled(), analyticsCheckboxField.getChecked());
+        
         mailSettings.saveSettings();
+    }
+
+    private void toggleAnalyticsValue(boolean oldValue, boolean newValue) {
+        if(oldValue == newValue) { return; }
+        
+        if(oldValue == false && newValue == true) {
+            AnalyticsDataCollector.getInstance().setConfigured(true);
+            UiApplication.getUiApplication().activate();
+        }
+        else if(oldValue == true && newValue == false) {
+            AnalyticsDataCollector.getInstance().setConfigured(false);
+        }
+        AppInfo.setAnalyticsEnabled(newValue);
     }
 }

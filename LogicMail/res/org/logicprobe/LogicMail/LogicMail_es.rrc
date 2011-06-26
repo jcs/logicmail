@@ -11,9 +11,8 @@ ABOUT_LICENSE#0={
     "Iconos usados en este proyecto son de \"Tango Desktop Project\" (http://tango.freedesktop.org/), a menos que se indique lo contrario, y están usados directamente o con pequeñas modificaciones.",
     "",
     "Nota: Usar LogicMail para conectar a Servidores de Email puede incurrir en cargos por uso de datos. Para mas información, por favor contacte al proveedor del servicio.",
-    "",
-    "Click en \"Aceptar\" para aceptar los términos legales y licencia, o \"Declinar\" para declinar los términos y salir de LogicMail.",
 };
+ABOUT_LICENSE_ACCEPT#0="Click en \"Aceptar\" para aceptar los términos legales y licencia, o \"Declinar\" para declinar los términos y salir de LogicMail.";
 ABOUT_TITLE#0="Acerca de";
 ABOUT_URL#0="http://logicmail.org/";
 APPNAME#0="LogicMail";

@@ -179,6 +179,21 @@ public final class AppInfo {
         commitPersistableInfo();
     }
     
+    public static boolean isAnalyticsEnabled() {
+        Object value = persistableInfo.getElement(PersistableAppInfo.FIELD_ANALYTICS_ENABLED);
+        if(value instanceof Boolean) {
+            return ((Boolean)value).booleanValue();
+        }
+        else {
+            return false;
+        }
+    }
+    
+    public static void setAnalyticsEnabled(boolean enabled) {
+        persistableInfo.setElement(PersistableAppInfo.FIELD_ANALYTICS_ENABLED, new Boolean(enabled));
+        commitPersistableInfo();
+    }
+    
     public static void resetPersistableInfo() {
         persistableInfo.setElement(PersistableAppInfo.FIELD_LAST_APP_VERSION, "");
         persistableInfo.setElement(PersistableAppInfo.FIELD_LICENSE_ACCEPTED, Boolean.FALSE);

@@ -48,6 +48,18 @@
         <property name="argument.release" value=""/>
       </else></if>
       
+      <if><isset property="webtrends.library"/><then>
+        <fileset id="startupfileset" dir="${startup.src.dir}">
+          <include name="**/*.java"/>
+          <include name="**/*.xml"/>
+        </fileset>
+      </then><else>
+        <fileset id="startupfileset" dir="${startup.src.dir}">
+          <include name="**/*.java"/>
+          <exclude name="**/*Webtrends*.java"/>
+        </fileset>
+      </else></if>
+      
       <mkdir dir="${dist.dir}/@{platform}"/>
       <copy file="res/icons/logicmail.png" todir="${dist.dir}/@{platform}"/>
       <rapc output="${module.name}"
@@ -77,16 +89,37 @@
           </fileset>
           <fileset dir="res/org/logicprobe/LogicMail"
               includes="LogicMail.rrc,LogicMail.rrh,${rrc.files} "/>
-          <fileset dir="${startup.src.dir}">
-            <include name="**/*.java"/>
-          </fileset>
+          <fileset refid="startupfileset" />
           <fileset refid="@{platformfileset}" />
         </src>
+        
+        <!-- NOTE: This line needs to be commented out if building without analytics support -->
+        <import location="${webtrends.library}" />
+      
       </rapc>
       <delete file="${dist.dir}/@{platform}/logicmail.png"/>
     </sequential>
   </macrodef>
-  
+
+  <!-- Generate the analytics configuration file -->
+  <target name="webtrends-config" if="webtrends.dcsid">
+    <if><istrue value="${module.release}"/><then>
+      <property name="webtrends.debug" value="false"/>
+    </then><else>
+      <property name="webtrends.debug" value="true"/>
+    </else></if>
+    
+    <xmltask source="../lib/webtrends-template.xml"
+             dest="${startup.src.dir}/org/logicprobe/LogicMail/webtrends.xml"
+             outputter="default">
+      <replace path="/resources/string[@name='wt_dc_app_name']/text()" withText="${module.name}"/>
+      <replace path="/resources/string[@name='wt_dc_app_publisher']/text()" withText="${module.vendor}"/>
+      <replace path="/resources/string[@name='wt_dc_app_version']/text()" withText="${module.version}"/>
+      <replace path="/resources/string[@name='wt_dc_dcsid']/text()" withText="${webtrends.dcsid}"/>
+      <replace path="/resources/string[@name='wt_dc_debug']/text()" withText="${webtrends.debug}"/>
+    </xmltask>
+  </target>
+
   <!-- Build the application -->
   <target name="build">
     <if><isset property="jde450.home"/><then>

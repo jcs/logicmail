@@ -11,9 +11,8 @@ ABOUT_LICENSE#0={
     "Icons used in this project are from the \"Tango Desktop Project\" (http://tango.freedesktop.org/) unless otherwise noted, and are either used directly or with minor modifications.",
     "",
     "Note: Using LogicMail to connect to E-Mail servers can incur data usage charges.  For more information, please contact your service provider.",
-    "",
-    "Click \"Accept\" to accept the terms of the license agreement, or \"Decline\" to decline the agreement and exit LogicMail.",
 };
+ABOUT_LICENSE_ACCEPT#0="Click \"Accept\" to accept the terms of the license agreement, or \"Decline\" to decline the agreement and exit LogicMail.";
 ABOUT_TITLE#0="Über";
 ABOUT_URL#0="http://logicmail.org/";
 APPNAME#0="LogicMail";
