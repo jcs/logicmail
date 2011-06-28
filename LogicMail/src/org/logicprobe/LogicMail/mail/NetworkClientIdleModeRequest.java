@@ -52,6 +52,10 @@ public class NetworkClientIdleModeRequest extends NetworkMailStoreRequest implem
         setDeliberate(false);
     }
 
+    public boolean isAdministrative() {
+        return true;
+    }
+    
     public boolean isIdleEnabled() {
         return idleEnabled;
     }
@@ -62,9 +66,7 @@ public class NetworkClientIdleModeRequest extends NetworkMailStoreRequest implem
     
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
-        if(incomingClient.hasIdle()) {
-            incomingClient.setIdleEnabled(idleEnabled);
-        }
+        incomingClient.setIdleEnabled(idleEnabled);
         fireMailStoreRequestComplete();
     }
 }

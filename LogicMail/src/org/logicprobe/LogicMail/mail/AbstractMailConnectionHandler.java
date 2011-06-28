@@ -159,16 +159,29 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	private void handleClosedConnection() {
 		showTransitionStatus(null);
+		ConnectionHandlerRequest adminRequest = null;
 		synchronized(requestQueue) {
 			if(requestQueue.element() != null) {
-				setConnectionState(STATE_OPENING,
-				        !((ConnectionHandlerRequest)requestQueue.element()).isDeliberate());
+			    ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
+			    if(request.isAdministrative()) {
+			        adminRequest = request;
+			        requestQueue.remove();
+			    }
+			    else {
+			        setConnectionState(STATE_OPENING, !request.isDeliberate());
+			    }
 			}
 			else if(!connectionThread.isShutdown()) {
 				try {
 					requestQueue.wait();
 				} catch (InterruptedException e) { }
 			}
+		}
+		
+		if(adminRequest != null) {
+		    requestInProgress = adminRequest;
+		    handleAdministrativeRequest(adminRequest);
+		    requestInProgress = null;
 		}
 	}
 	
@@ -245,7 +258,12 @@ public abstract class AbstractMailConnectionHandler {
 			
 			// Delegate to subclasses to handle the specific request
 			requestInProgress = request;
-			handleRequest(request);
+			if(request.isAdministrative()) {
+			    handleAdministrativeRequest(request);
+			}
+			else {
+			    handleRequest(request);
+			}
 			requestInProgress = null;
 			
 			synchronized(requestQueue) {
@@ -268,6 +286,22 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	protected void handleRequest(ConnectionHandlerRequest request) throws IOException, MailException {
 	    request.execute(client);
+	}
+	
+	/**
+	 * Handles a specific administrative request, which could be processed
+	 * during any state.  These requests should only be used for simple
+	 * operations, like changing client properties, which do not require a
+	 * network connection.
+	 *
+	 * @param request The request to handle
+	 */
+	protected void handleAdministrativeRequest(ConnectionHandlerRequest request) {
+	    try {
+	        request.execute(client);
+	    } catch (Exception e) {
+	        request.notifyConnectionRequestFailed(e, true);
+	    }
 	}
 	
 	/**

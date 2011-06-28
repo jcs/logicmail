@@ -64,6 +64,10 @@ class NetworkSendMessageRequest implements ConnectionHandlerRequest {
         return deliberate;
     }
     
+    public boolean isAdministrative() {
+        return false;
+    }
+    
     public void showInitialStatus() {
         MailConnectionManager.getInstance().fireMailConnectionStatus(
                 mailSender.getOutgoingConfig(), this,

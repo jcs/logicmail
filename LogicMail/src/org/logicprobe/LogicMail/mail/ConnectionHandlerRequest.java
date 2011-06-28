@@ -52,6 +52,13 @@ public interface ConnectionHandlerRequest {
     boolean isDeliberate();
     
     /**
+     * Checks if this is an administrative request.  Administrative requests
+     * change client configuration parameters, and do not require an active
+     * network connection to function.
+     */
+    boolean isAdministrative();
+    
+    /**
      * Requests are normally responsible for showing their own status messages.
      * This method is called prior to processing a request, so that its initial
      * status message can be show before {@link #execute(MailClient)} is called.

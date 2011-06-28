@@ -60,6 +60,10 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         return deliberate;
     }
     
+    public boolean isAdministrative() {
+        return false;
+    }
+    
     protected abstract String getInitialStatus();
     
     public void showInitialStatus() {

@@ -399,10 +399,10 @@ public class NetworkAccountNode extends AccountNode {
     public void triggerAutomaticRefresh(boolean deliberate) {
         Vector foldersToRefresh = new Vector();
         
-        // All accounts have an INBOX that can be refreshed
         MailboxNode inboxMailbox = this.getInboxMailbox();
+        long inboxUniqueId = -1;
         if(inboxMailbox != null) {
-            foldersToRefresh.addElement(inboxMailbox.getFolderTreeItem());
+            inboxUniqueId = inboxMailbox.getUniqueId();
         }
         
         // IMAP accounts can optionally configure additional mailboxes for refresh
@@ -410,12 +410,19 @@ public class NetworkAccountNode extends AccountNode {
             MailboxNode[] refreshMailboxes = ((ImapConfig)accountConfig).getRefreshMailboxes();
             for(int i=0; i<refreshMailboxes.length; i++) {
                 if(refreshMailboxes[i] == null
-                        || refreshMailboxes[i].getUniqueId() == inboxMailbox.getUniqueId()) {
+                        || refreshMailboxes[i].getUniqueId() == inboxUniqueId) {
                     continue;
                 }
                 foldersToRefresh.addElement(refreshMailboxes[i].getFolderTreeItem());
             }
         }
+        
+        // The INBOX should be added last, to ensure that it is the selected
+        // folder after the refresh operation completes.
+        if(inboxMailbox != null) {
+            foldersToRefresh.addElement(inboxMailbox.getFolderTreeItem());
+        }
+        
         if(foldersToRefresh.size() == 0) { return; }
 
         FolderTreeItem[] folders = new FolderTreeItem[foldersToRefresh.size()];
