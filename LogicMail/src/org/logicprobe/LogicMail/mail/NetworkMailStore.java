@@ -236,9 +236,6 @@ public class NetworkMailStore extends AbstractMailStore {
 	    else if(!this.hasFlags()) {
 	        throw new UnsupportedOperationException();
 	    }
-	    else {
-	        throw new IllegalArgumentException();
-	    }
 
 	    NetworkMessageFlagChangeRequest request = new NetworkMessageFlagChangeRequest(this, messageToken, messageFlags, addOrRemove);
 	    return request;
