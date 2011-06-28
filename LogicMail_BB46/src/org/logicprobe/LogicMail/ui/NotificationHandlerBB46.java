@@ -38,7 +38,7 @@ import net.rim.blackberry.api.messagelist.ApplicationIndicator;
 import net.rim.blackberry.api.messagelist.ApplicationIndicatorRegistry;
 import net.rim.device.api.system.EncodedImage;
 
-public class NotificationHandlerBB46 extends NotificationHandler {
+public class NotificationHandlerBB46 extends NotificationHandlerBB45 {
     private ApplicationIndicatorRegistry indicatorRegistry;
     protected ApplicationIndicator indicator;
     private boolean indicatorRegistered;
@@ -65,7 +65,7 @@ public class NotificationHandlerBB46 extends NotificationHandler {
         unregisterIndicator();
     }
     
-    protected void mailSettingsSaved(MailSettingsEvent e) {
+    protected void handleMailSettingsSaved(MailSettingsEvent e) {
         boolean showIndicator = MailSettings.getInstance().getGlobalConfig().isNotificationIconShown();
         if(showIndicator) {
             registerIndicator();
@@ -74,7 +74,7 @@ public class NotificationHandlerBB46 extends NotificationHandler {
             unregisterIndicator();
         }
         
-        super.mailSettingsSaved(e);
+        super.handleMailSettingsSaved(e);
     }
     
     protected void indicateUnseenMessageCount(int count, boolean recent) {
