@@ -52,7 +52,41 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
     private final Object invokeLock = new Object();
 	private Vector invokeItems = new Vector();
 	private boolean invokeInProgress = false;
+    private final String screenName;
+    private String screenPath = "";
+    
+    protected AbstractScreenProvider() {
+        screenName = getSimpleClassName(getClass().getName());
+    }
+    
+    private static String getSimpleClassName(String className) {
+        int p = className.lastIndexOf('.');
+        if(p != -1 && p < className.length() - 1) {
+            return className.substring(p + 1);
+        }
+        else {
+            return className;
+        }
+    }
 	
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.ScreenProvider#getScreenName()
+     */
+    public String getScreenName() {
+        return screenName;
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.ScreenProvider#getScreenPath()
+     */
+    public String getScreenPath() {
+        return screenPath;
+    }
+    
+    public Vector getInvokeItems() {
+        return invokeItems;
+    }
+    
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#getStyle()
 	 */
@@ -120,17 +154,27 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 	public boolean navigationClick(int status, int time) {
 		return standardScreen.navigationClickDefault(status, time);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#onDisplay()
 	 */
 	public void onDisplay() {
+	    if(standardScreen == null) { return; }
+	    
+	    Screen screen = standardScreen.getScreenBelow();
+        if(screen instanceof StandardScreen) {
+            screenPath = ((StandardScreen)screen).getScreenPath() + '/' + screenName;
+        }
+        else {
+            screenPath = '/' + screenName;
+        }
 	}
 
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#onUndisplay()
 	 */
 	public void onUndisplay() {
+	    screenPath = "";
 	}
 	
 	/* (non-Javadoc)

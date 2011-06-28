@@ -286,6 +286,7 @@ public class MessageScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
     public void onDisplay() {
+        super.onDisplay();
         padAndFocusScreen();
         
     	messageNode.addMessageNodeListener(messageNodeListener);

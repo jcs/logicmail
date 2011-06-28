@@ -97,10 +97,9 @@ public class LogicMailWebtrendsDataCollector extends AnalyticsDataCollector {
     public void onButtonClick(
             String eventPath,
             String eventDesc,
-            String eventType,
-            Hashtable customData) {
+            String eventType) {
         try {
-            dataCollector.onButtonClick(eventPath, eventDesc, eventType, customData);
+            dataCollector.onButtonClick(eventPath, eventDesc, eventType, null);
         }
         catch (IllegalWebtrendsParameterValueException err) {
             collectorLogger.e(err.getMessage());
@@ -111,10 +110,9 @@ public class LogicMailWebtrendsDataCollector extends AnalyticsDataCollector {
             String eventPath,
             String eventDesc,
             String eventType,
-            Hashtable customData,
             String contentGroup) {
         try {
-            dataCollector.onContentView(eventPath, eventDesc, eventType, customData, contentGroup);
+            dataCollector.onContentView(eventPath, eventDesc, eventType, null, contentGroup);
         }
         catch (IllegalWebtrendsParameterValueException err) {
             collectorLogger.e(err.getMessage());
@@ -125,13 +123,12 @@ public class LogicMailWebtrendsDataCollector extends AnalyticsDataCollector {
             String eventPath,
             String eventDesc,
             String eventType,
-            Hashtable customData,
             String contentGroup,
             String mediaName,
             String mediaType,
             String mediaEventType) {
         try {
-            dataCollector.onMediaEvent(eventPath, eventDesc, eventType, customData,
+            dataCollector.onMediaEvent(eventPath, eventDesc, eventType, null,
                     contentGroup, mediaName, mediaType, mediaEventType);
         }
         catch (IllegalWebtrendsParameterValueException err) {

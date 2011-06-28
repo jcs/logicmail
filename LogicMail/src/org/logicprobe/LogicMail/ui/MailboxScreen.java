@@ -52,6 +52,7 @@ import net.rim.device.api.ui.container.VerticalFieldManager;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.DateTimeUtilities;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
@@ -173,6 +174,7 @@ public class MailboxScreen extends AbstractScreenProvider {
      * @see org.logicprobe.LogicMail.ui.BaseScreen#onDisplay()
      */
     public void onDisplay() {
+        super.onDisplay();
         if(this.hideDeleted != globalConfig.getHideDeletedMsg()) {
             this.hideDeleted = !this.hideDeleted;
             displayableChanged();
@@ -352,6 +354,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     private void initMenuItems() {
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
+	            AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "composition");
 	        	navigationController.displayComposition((NetworkAccountNode)mailboxNode.getParentAccount());
 	        }
 	    };
@@ -861,6 +864,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     public boolean navigationClick(int status, int time) {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
+    	    AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "select");
     		messageActions.openMessage(messageNode);
     		return true;
     	}
@@ -1014,6 +1018,8 @@ public class MailboxScreen extends AbstractScreenProvider {
     }
 
     private void handleMessageGapAction(final MailboxActionField gapField) {
+        AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "requestMoreMessages");
+        
         // This method inserts a short delay, where the gap action field is
         // disabled, prior to starting the request.  This is done to provide
         // feedback that the user has triggered an action before the field

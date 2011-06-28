@@ -46,21 +46,18 @@ class StubDataCollector extends AnalyticsDataCollector {
     public void onButtonClick(
             String eventPath,
             String eventDesc,
-            String eventType,
-            Hashtable customData) { }
+            String eventType) { }
 
     public void onContentView(
             String eventPath,
             String eventDesc,
             String eventType,
-            Hashtable customData,
             String contentGroup) { }
 
     public void onMediaEvent(
             String eventPath,
             String eventDesc,
             String eventType,
-            Hashtable customData,
             String contentGroup,
             String mediaName,
             String mediaType,

@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMail;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.AccountNode;
@@ -64,7 +65,7 @@ public class StandardScreen extends MainScreen {
     private MenuItem closeItem;
     private MenuItem exitItem;
 
-    protected ScreenProvider screenProvider;
+    protected final ScreenProvider screenProvider;
 
     /**
      * Instantiates a new standard screen.
@@ -109,6 +110,14 @@ public class StandardScreen extends MainScreen {
                 + screenProvider.getTitle());
     }
 
+    public String getScreenName() {
+        return screenProvider.getScreenName();
+    }
+    
+    public String getScreenPath() {
+        return screenProvider.getScreenPath();
+    }
+    
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.container.MainScreen#setStatus(net.rim.device.api.ui.Field)
      */
@@ -209,11 +218,13 @@ public class StandardScreen extends MainScreen {
     private void initMenuItems() {
         configItem = new MenuItem(resources, LogicMailResource.MENUITEM_CONFIGURATION, 800000, 9000) {
             public void run() {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "config");
                 showConfigScreen();
             }
         };
         aboutItem = new MenuItem(resources, LogicMailResource.MENUITEM_ABOUT, 800100, 9000) {
             public void run() {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "about");
                 // Show the about dialog
                 AboutDialog dialog = new AboutDialog();
                 dialog.doModal();
@@ -221,6 +232,7 @@ public class StandardScreen extends MainScreen {
         };
         closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 60000000, 9000) {
             public void run() {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "close");
                 // TODO: Deal with closing/hiding while still running
 
                 StandardScreen.super.onClose();
@@ -228,6 +240,7 @@ public class StandardScreen extends MainScreen {
         };
         exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 60000100, 9000) {
             public void run() {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "exit");
                 tryShutdownApplication();
             }
         };

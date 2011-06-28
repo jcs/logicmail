@@ -38,6 +38,18 @@ import net.rim.device.api.ui.component.Menu;
  */
 public interface ScreenProvider {
     /**
+     * Gets the name of the screen.
+     */
+    String getScreenName();
+    
+    /**
+     * Gets a path representing this screen, and all screens below it, on the
+     * display stack.  This method should only return a value when the screen
+     * actually is on the display stack.
+     */
+    String getScreenPath();
+    
+    /**
      * Gets the style bits to be passed to the constructor of the screen.
      * 
      * @return style bits, or 0 if none are set.

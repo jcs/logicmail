@@ -35,10 +35,12 @@ import java.util.Vector;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
@@ -140,7 +142,15 @@ public class MessageActions {
             }
         };
     }
-	
+
+    private static void trackButtonClick(String eventType) {
+        Screen screen = UiApplication.getUiApplication().getActiveScreen();
+        if(screen instanceof StandardScreen) {
+            StandardScreen standardScreen = (StandardScreen)screen;
+            AnalyticsDataCollector.getInstance().onButtonClick(standardScreen.getScreenPath(), standardScreen.getScreenName(), eventType);
+        }
+    }
+
     /**
      * Populate the provided menu with items appropriate for the
      * provided message node.
@@ -294,6 +304,8 @@ public class MessageActions {
      */
     public void openMessage(MessageNode messageNode)
     {
+        trackButtonClick("openMessage");
+
         if(!messageNode.existsOnServer() && !messageNode.hasCachedContent()) {
             return;
         }
@@ -373,6 +385,7 @@ public class MessageActions {
      */
     public void openMessageProperties(MessageNode messageNode)
     {
+        trackButtonClick("openMessageProperties");
     	MessagePropertiesScreen propertiesScreen =
     		new MessagePropertiesScreen(messageNode);
         UiApplication.getUiApplication().pushModalScreen(propertiesScreen);
@@ -385,6 +398,7 @@ public class MessageActions {
      * @return true, if the operation proceeded
      */
     public boolean deleteMessage(MessageNode messageNode) {
+        trackButtonClick("deleteMessage");
         MailSettings mailSettings = MailSettings.getInstance();
         if(mailSettings.getGlobalConfig().getPromptOnDelete()) {
             Dialog dialog = new Dialog(
@@ -416,6 +430,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void undeleteMessage(MessageNode messageNode) {
+        trackButtonClick("undeleteMessage");
 		messageNode.undeleteMessage();
     }
 
@@ -449,6 +464,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void replyMessage(final MessageNode messageNode) {
+        trackButtonClick("replyMessage");
         refreshMessageAndRun(messageNode, new Runnable() {
             public void run() {
                 navigationController.displayCompositionReply(
@@ -463,6 +479,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void replyAllMessage(final MessageNode messageNode) {
+        trackButtonClick("replyAllMessage");
         refreshMessageAndRun(messageNode, new Runnable() {
             public void run() {
                 navigationController.displayCompositionReply(
@@ -477,6 +494,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void forwardMessage(final MessageNode messageNode) {
+        trackButtonClick("forwardMessage");
         refreshMessageAndRun(messageNode, new Runnable() {
             public void run() {
                 navigationController.displayCompositionForward(
@@ -491,6 +509,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void copyToMailbox(MessageNode messageNode) {
+        trackButtonClick("copyToMailbox");
         if(messageNode.hasMessageContent() || messageNode.hasCachedContent()) {
             // Normal case where the message has been loaded within the
             // data model and all copy options should be made available.
@@ -573,6 +592,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void moveToMailbox(MessageNode messageNode) {
+        trackButtonClick("moveToMailbox");
         if(messageNode.getParent().hasCopy()) {
         	MailboxSelectionDialog dialog = new MailboxSelectionDialog(
         			resources.getString(LogicMailResource.MESSAGE_SELECT_FOLDER_MOVE_TO),
@@ -594,6 +614,7 @@ public class MessageActions {
      * @param messageNode the message node
      */
     public void sendMessage(MessageNode messageNode) {
+        trackButtonClick("sendMessage");
         if(messageNode instanceof OutgoingMessageNode) {
             OutgoingMessageNode outgoingMessage = (OutgoingMessageNode)messageNode;
             if(outgoingMessage.isSendAttempted() && !outgoingMessage.isSending()) {

@@ -50,6 +50,7 @@ import net.rim.device.api.ui.component.TreeFieldCallback;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.util.ToIntHashtable;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.AccountNodeEvent;
@@ -202,31 +203,37 @@ public class MailHomeScreen extends AbstractScreenProvider {
     private void initMenuItems() {
         selectFolderItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SELECT, 300100, 1) {
             public void runNode(MailHomeTreeNode treeNode) {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "selectFolder");
                 selectFolderItemHandler(treeNode);
             }
         };
         sendUnsentItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_SEND_UNSENT_MESSAGES, 300200, 1020) {
             public void runNode(MailHomeTreeNode treeNode) {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "sendUnsent");
                 sendUnsentItemHandler(treeNode);
             }
         };
         refreshStatusItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_STATUS, 300300, 2000) {
             public void runNode(MailHomeTreeNode treeNode) {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "refreshStatus");
                 refreshStatusItemHandler(treeNode);
             }
         };
         refreshFoldersItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_REFRESH_FOLDERS, 300400, 2000) {
             public void runNode(MailHomeTreeNode treeNode) {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "refreshFolders");
                 refreshFoldersItemHandler(treeNode);
             }
         };
         compositionItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
             public void runNode(MailHomeTreeNode treeNode) {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "composition");
                 compositionItemHandler(treeNode);
             }
         };
         disconnectItem = new TreeNodeMenuItem(resources, LogicMailResource.MENUITEM_DISCONNECT, 700100, 8000) {
             public void runNode(MailHomeTreeNode treeNode) {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "disconnect");
                 disconnectItemHandler(treeNode);
             }
         };
