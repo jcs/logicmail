@@ -69,6 +69,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     private boolean idleTimeout;
     private boolean idleRecentMessagesRequested;
     private long idleStartTime;
+    private boolean idleEnabledAtBegin;
     
     private volatile long accumulatedIdleTime;
     private final Timer pollingTimer = new Timer();
@@ -178,7 +179,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
         this.previousActiveFolder = activeFolder;
         
-        if(incomingClient.hasIdle() && incomingClient.isIdleEnabled()) {
+        idleEnabledAtBegin = incomingClient.isIdleEnabled();
+        
+        if(incomingClient.hasIdle() && idleEnabledAtBegin) {
             startIdleTimer(IDLE_TIMEOUT);
             incomingClient.idleModeBegin();
         }
@@ -220,7 +223,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             idleTimerTask.cancel();
         }
         
-        if(incomingClient.hasIdle() && incomingClient.isIdleEnabled()) {
+        if(incomingClient.hasIdle() && idleEnabledAtBegin) {
             incomingClient.idleModeEnd();
         }
         
