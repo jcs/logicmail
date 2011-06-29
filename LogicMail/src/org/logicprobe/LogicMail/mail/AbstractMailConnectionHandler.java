@@ -229,7 +229,7 @@ public abstract class AbstractMailConnectionHandler {
 		synchronized(requestQueue) {
 		    ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
 		    if(request != null) {
-			    if(request.isDeliberate()) { request.showInitialStatus(); }
+			    showInitialStatusIfDeliberate(request);
 				setConnectionState(STATE_REQUESTS);
 			}
 			else {
@@ -333,39 +333,55 @@ public abstract class AbstractMailConnectionHandler {
 		
 		handleBeginIdle();
 
-        synchronized(requestQueue) {
-            ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
-            if(request != null) {
-                if(request.isDeliberate()) { request.showInitialStatus(); }
-                setConnectionState(STATE_REQUESTS);
-            }
-            else if(connectionThread.isShutdown()) {
-                setConnectionState(STATE_CLOSING);
-            }
-            else {
-                try {
-                    requestQueue.wait();
-                } catch (InterruptedException e) { }
-                
-                // Check if a new request caused us to break out of idle,
-                // in which case we should display that request's status
-                // message while recovering from idle.
-                synchronized(requestQueue) {
-                    request = (ConnectionHandlerRequest)requestQueue.element();
-                    if(request != null && request.isDeliberate()) {
-                        request.showInitialStatus();
-                    }
-                }
-            }
-        }
-        
+		while(true) {
+		    ConnectionHandlerRequest adminRequest = null;
+		    synchronized(requestQueue) {
+		        ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
+		        if(request != null) {
+		            showInitialStatusIfDeliberate(request);
+		            setConnectionState(STATE_REQUESTS);
+		        }
+		        else if(connectionThread.isShutdown()) {
+		            setConnectionState(STATE_CLOSING);
+		        }
+		        else {
+		            try {
+		                requestQueue.wait();
+		            } catch (InterruptedException e) { }
+
+		            // Check if a new request caused us to break out of idle,
+		            // in which case we should display that request's status
+		            // message while recovering from idle.
+		            synchronized(requestQueue) {
+		                request = (ConnectionHandlerRequest)requestQueue.element();
+		                if(request != null) {
+		                    if(request.isAdministrative()) {
+		                        adminRequest = request;
+		                        requestQueue.remove();
+		                    }
+		                    else {
+		                        showInitialStatusIfDeliberate(request);
+		                        break;
+		                    }
+		                }
+		            }
+		        }
+		    }
+		    
+		    if(adminRequest != null) {
+		        requestInProgress = adminRequest;
+		        handleAdministrativeRequest(adminRequest);
+		        requestInProgress = null;
+		    }
+		}
+		
         handleEndIdle();
         
         synchronized(requestQueue) {
             if(getConnectionState() == STATE_IDLE) {
                 ConnectionHandlerRequest request = (ConnectionHandlerRequest)requestQueue.element();
                 if(request != null) {
-                    if(request.isDeliberate()) { request.showInitialStatus(); }
+                    showInitialStatusIfDeliberate(request);
                     setConnectionState(STATE_REQUESTS);
                 }
                 else if(connectionThread.isShutdown()) {
@@ -724,7 +740,11 @@ public abstract class AbstractMailConnectionHandler {
 	        }
 	    }
 	}
-	
+
+    private static void showInitialStatusIfDeliberate(ConnectionHandlerRequest request) {
+        if(request.isDeliberate()) { request.showInitialStatus(); }
+    }
+
 	/**
 	 * Thread for the standard mail connection lifecycle.
 	 */
