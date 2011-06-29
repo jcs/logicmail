@@ -361,7 +361,6 @@ public abstract class AbstractMailConnectionHandler {
 		                    }
 		                    else {
 		                        showInitialStatusIfDeliberate(request);
-		                        break;
 		                    }
 		                }
 		            }
@@ -372,6 +371,9 @@ public abstract class AbstractMailConnectionHandler {
 		        requestInProgress = adminRequest;
 		        handleAdministrativeRequest(adminRequest);
 		        requestInProgress = null;
+		    }
+		    else {
+		        break;
 		    }
 		}
 		
