@@ -60,6 +60,12 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
     
     private Vector secondaryMessageTokensToFetch;
 
+    /**
+     * Keeps a running total of how many messages we may retain, updated
+     * throughout the refresh process.
+     */
+    private int messageRetentionLimit;
+    
     public ImapFolderRequestHandler(
             NetworkMailStoreServices mailStoreServices,
             NetworkMailStore mailStore,
@@ -69,10 +75,9 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
     }
 
     protected void prepareForUse() {
+        messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
+        secondaryMessageTokensToFetch = null;
         super.prepareForUse();
-        if(cleanPriorToUse) {
-            secondaryMessageTokensToFetch = null;
-        }
     }
     
     public void requestFolderRefreshRequired() {
@@ -137,6 +142,7 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
                     }
                 }
             }
+            messageRetentionLimit -= size;
             pendingFlagUpdates.removeAllElements();
             
             // Build a collection of messages in the cache that still need to be verified
@@ -157,7 +163,7 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
             }
             checkAllTokens = false;
             
-            if(cachedTokensToCheck.size() > 0) {
+            if(cachedTokensToCheck.size() > 0 && messageRetentionLimit > 0) {
                 // Perform a second flags fetch
                 MessageToken[] tokens = new MessageToken[cachedTokensToCheck.size()];
                 cachedTokensToCheck.copyInto(tokens);
@@ -195,16 +201,12 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
         pendingFlagUpdates.removeAllElements();
         
         // Determine the how many messages from this secondary set we can keep
-        int initialMessageLimit = mailStore.getAccountConfig().getInitialFolderMessages();
-        int messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
-        int additionalMessageLimit = messageRetentionLimit - initialMessageLimit;
-        
         size = messagesUpdated.size();
-        if(size > additionalMessageLimit) {
+        if(size > messageRetentionLimit) {
             // We have too many additional messages, so we need to prune the set
             messagesUpdated.optimize();
 
-            int splitIndex = messagesUpdated.size() - additionalMessageLimit;
+            int splitIndex = messagesUpdated.size() - messageRetentionLimit;
             for(int i=0; i<splitIndex; i++) {
                 FolderMessage message = (FolderMessage)messagesUpdated.elementAt(i);
                 orphanedMessageSet.put(message.getMessageToken().getMessageUid(), message);

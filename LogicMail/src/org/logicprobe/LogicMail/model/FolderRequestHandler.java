@@ -222,6 +222,11 @@ abstract class FolderRequestHandler {
             // cache.  Server-side messages will be removed from the
             // set later on.
             for(int i=0; i<messages.length; i++) {
+                // If the message was loaded from the cache, then by definition
+                // it cannot be considered recent.  This is done to prevent
+                // redundant new message notifications.
+                messages[i].getFlags().setRecent(false);
+                
                 orphanedMessageSet.put(messages[i].getMessageToken().getMessageUid(), messages[i]);
             }
             

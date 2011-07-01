@@ -166,14 +166,12 @@ public class StandardScreen extends MainScreen {
         if(attached) {
             super.onUiEngineAttached(true);
             updateStatus(navigationController.getCurrentStatus());
-            NotificationHandler.getInstance().cancelNotification();
             screenProvider.onDisplay();
         }
         else {
             screenProvider.onUndisplay();
             superSetStatusImpl(originalStatusField);
             statusBarField.setStatusText(null);
-            NotificationHandler.getInstance().cancelNotification();
             super.onUiEngineAttached(false);   
         }
     }
@@ -184,6 +182,7 @@ public class StandardScreen extends MainScreen {
     protected void onExposed() {
         super.onExposed();
         updateStatus(navigationController.getCurrentStatus());
+        NotificationHandler.getInstance().cancelNotification();
     }
 
     /* (non-Javadoc)

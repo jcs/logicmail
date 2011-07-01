@@ -598,7 +598,8 @@ public class MailboxScreen extends AbstractScreenProvider {
     private void insertDisplayableMessage(MessageNode messageNode) {
     	Field selectedField = messageFieldManager.getFieldWithFocus();
     	
-		if(messageFieldManager.getFieldCount() > 0) {
+    	int fieldCount = messageFieldManager.getFieldCount();
+		if(fieldCount > 0) {
 			Comparator comparator = MessageNode.getComparator();
 			int index = messageFieldManager.getFieldCount();
 			
@@ -609,6 +610,11 @@ public class MailboxScreen extends AbstractScreenProvider {
 					index--;
 					if(index > 0) { lastMessage = getLastDisplayedMessage(index - 1); }
 				}
+                
+                // Deal with the case of trying to insert right before an action field
+                if(index < fieldCount - 1 && messageFieldManager.getField(index + 1) instanceof MailboxActionField) {
+                    index++;
+                }
 			}
 			else {
 				// Descending order
@@ -616,6 +622,11 @@ public class MailboxScreen extends AbstractScreenProvider {
 				while(lastMessage != null && index > 0 && comparator.compare(lastMessage, messageNode) <= 0) {
 					index--;
 					if(index > 0) { lastMessage = getLastDisplayedMessage(index - 1); }
+				}
+				
+				// Deal with the case of trying to insert right after an action field
+				if(index > 0 && messageFieldManager.getField(index - 1) instanceof MailboxActionField) {
+				    index--;
 				}
 			}
 			MailboxMessageField mailboxMessageField =
