@@ -875,7 +875,6 @@ public class MailboxScreen extends AbstractScreenProvider {
     public boolean navigationClick(int status, int time) {
     	MessageNode messageNode = getSelectedMessage();
     	if(messageNode != null) {
-    	    AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "select");
     		messageActions.openMessage(messageNode);
     		return true;
     	}

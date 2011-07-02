@@ -67,6 +67,7 @@ import net.rim.device.api.ui.component.NullField;
 import net.rim.device.api.ui.component.Status;
 import net.rim.device.api.ui.container.VerticalFieldManager;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
@@ -364,6 +365,7 @@ public class MessageScreen extends AbstractScreenProvider {
     private void initMenuItems() {
 	    saveAttachmentItem = new MenuItem(resources, LogicMailResource.MENUITEM_SAVE_ATTACHMENT, 300050, 1005) {
 	        public void run() {
+	            AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "saveAttachment");
 	            Field field = attachmentsFieldManager.getFieldWithFocus();
 	            if(field instanceof AttachmentField) {
 	                saveAttachment(((AttachmentField)field).getMessagePart());
@@ -372,6 +374,7 @@ public class MessageScreen extends AbstractScreenProvider {
 	    };
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
+	            AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "composition");
 	            navigationController.displayComposition((NetworkAccountNode)parentAccount);
 	        }
 	    };
@@ -585,6 +588,12 @@ public class MessageScreen extends AbstractScreenProvider {
                     cutOffField.setFont(Font.getDefault().derive(Font.BOLD));
                     messageFields.addElement(cutOffField);
                 }
+                
+                AnalyticsDataCollector.getInstance().onMediaEvent(
+                        getScreenPath(), getScreenName(),
+                        "view", "message", "displayableContent",
+                        displayableParts[i].getMimeType() + '/' + displayableParts[i].getMimeSubtype(),
+                        (content.isPartComplete() == MimeMessageContent.PART_COMPLETE) ? "f" : "50");
     		}
     	}
     }
@@ -603,6 +612,12 @@ public class MessageScreen extends AbstractScreenProvider {
                         | BorderedFieldManager.OUTER_FILL_NONE);
             for(int i=0; i<attachmentParts.length; i++) {
                 attachmentsFieldManager.add(new AttachmentField(messageNode, (ContentPart)attachmentParts[i]));
+                
+                AnalyticsDataCollector.getInstance().onMediaEvent(
+                        getScreenPath(), getScreenName(),
+                        "view", "message", "attachmentField",
+                        attachmentParts[i].getMimeType() + '/' + attachmentParts[i].getMimeSubtype(),
+                        "f");
             }
             messageFields.addElement(attachmentsFieldManager);
         }
@@ -699,6 +714,12 @@ public class MessageScreen extends AbstractScreenProvider {
     	MimeMessageContent content = messageNode.getMessageContent(contentPart);
     	FileSaveDialog dialog = new FileSaveDialog(contentPart.getName());
 		if(dialog.doModal() != Dialog.CANCEL) {
+            AnalyticsDataCollector.getInstance().onMediaEvent(
+                    getScreenPath(), getScreenName(),
+                    "view", "message", "attachmentDownload",
+                    contentPart.getMimeType() + '/' + contentPart.getMimeSubtype(),
+                    "p");
+		    
 	    	if(content != null) {
 	    		// Content has been downloaded already, so just save it
 	    		saveAttachmentInBackground(content, dialog.getFileUrl());
@@ -720,7 +741,7 @@ public class MessageScreen extends AbstractScreenProvider {
         (new SaveAttachmentThread(content, fileUrl)).start();
     }
     
-    private static class SaveAttachmentThread extends Thread {
+    private class SaveAttachmentThread extends Thread {
     	private MimeMessageContent content;
     	private String fileUrl;
     	
@@ -786,6 +807,14 @@ public class MessageScreen extends AbstractScreenProvider {
 	                    Status.show(resources.getString(LogicMailResource.MESSAGE_UNABLE_TO_SAVE_ATTACHMENT));
 		            }
 		        });
+			}
+			else {
+			    ContentPart part = content.getMessagePart();
+	            AnalyticsDataCollector.getInstance().onMediaEvent(
+	                    getScreenPath(), getScreenName(),
+	                    "view", "message", "attachmentDownload",
+	                    part.getMimeType() + '/' + part.getMimeSubtype(),
+	                    "f");
 			}
     	}
     }
