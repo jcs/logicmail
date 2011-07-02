@@ -160,7 +160,9 @@ public class StatusBarField extends Field {
         if(statusText != null && statusText.length() > 0) {
             graphics.drawText(statusText, 1, 1, Graphics.ELLIPSIS, width - statusSize - 2);
         }
-        graphics.pushRegion(width - statusSize, (preferredHeight >>> 1) - (statusSize >>> 1), statusSize, statusSize, 0, 0);
+        
+        int statusSpace = (preferredHeight >>> 1) - (statusSize >>> 1);
+        graphics.pushRegion(width - statusSize - statusSpace, statusSpace, statusSize, statusSize, 0, 0);
         graphics.drawBitmap(0, 0, statusSize, statusSize, statusBitmap, statusX * statusSize, statusY * statusSize);
         graphics.popContext();
         graphics.setBackgroundColor(backgroundColor);

@@ -31,7 +31,10 @@
 
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.PlatformInfo;
+
 import net.rim.device.api.system.Application;
+import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.RadioInfo;
@@ -42,6 +45,7 @@ import net.rim.device.api.ui.DrawStyle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
 import net.rim.device.api.ui.Graphics;
+import net.rim.device.api.util.Arrays;
 
 /**
  * General purpose header field for application screens.
@@ -64,6 +68,8 @@ public class HeaderField extends Field {
     private boolean listenersActive;
     private int signalLevel;
     private int batteryLevel;
+    private final boolean heightManager;
+    private final Bitmap batteryFillBitmap;
     
     public HeaderField(String title) {
         super(Field.NON_FOCUSABLE);
@@ -72,7 +78,7 @@ public class HeaderField extends Field {
         this.showBattery = true;
         this.showTitle = true;
         this.fontColor = -1;
-        this.headerFont = Font.getDefault().derive(Font.BOLD);
+        this.headerFont = Font.getDefault();
         this.backgroundColor = 0;
         this.batteryBackground = 0x999999;
         this.signalBarColor = Color.BLUE;
@@ -81,6 +87,12 @@ public class HeaderField extends Field {
         batteryLevel = DeviceInfo.getBatteryLevel();
         
         this.listenersActive = false;
+        
+        String platformVersion = PlatformInfo.getInstance().getPlatformVersion();
+        heightManager = !platformVersion.startsWith("4.5");
+        
+        batteryFillBitmap = new Bitmap(34, 8);
+        updateBatteryFillBitmap();
         
         this.systemListener = new SystemListener() {
             public void powerOff() {
@@ -124,10 +136,35 @@ public class HeaderField extends Field {
             }
         };
     }
-    
+
     protected void onBatteryStatusChanged() {
         batteryLevel = DeviceInfo.getBatteryLevel();
+        updateBatteryFillBitmap();
         invalidate();
+    }
+    
+    private void updateBatteryFillBitmap() {
+        // Pick the battery color
+        int batteryColor;
+        if(batteryLevel > 75) { batteryColor = 0x28f300; }
+        else if(batteryLevel > 50) { batteryColor = 0x91dc00; }
+        else if(batteryLevel > 25) { batteryColor = 0xefec00; }
+        else { batteryColor = 0xff2200; }
+
+        // Clear the battery fill bitmap
+        int dataTransparent[] = new int[34 * 8];
+        Arrays.fill(dataTransparent, 0, 0, dataTransparent.length);
+        batteryFillBitmap.setARGB(dataTransparent, 0, 34, 0, 0, 34, 8);
+        
+        // Paint the battery fill in the appropriate color
+        Graphics g = new Graphics(batteryFillBitmap);
+        g.setGlobalAlpha(255);
+        g.setColor(batteryColor);
+        g.fillRect(0, 0, 6, 8);
+        g.fillRect(7, 0, 6, 8);
+        g.fillRect(14, 0, 6, 8);
+        g.fillRect(21, 0, 6, 8);
+        g.fillRect(28, 0, 6, 8);
     }
     
     protected void onRadioStatusChanged() {
@@ -239,18 +276,19 @@ public class HeaderField extends Field {
         }
 
         graphics.setFont(headerFont);
-        int graphicsDiff = 0;
-        int preferredWidth = this.getPreferredWidth();
-        int preferredHeight = this.getPreferredHeight();
-        int midPoint = preferredHeight / 2;
+        int width = getWidth();
+        
+        int height = heightManager ? getManager().getHeight() : getHeight();
+        int midPoint = height >>> 1;
+        int graphicsDiff = midPoint - 7;
         
         if(backgroundColor != 0) {
             graphics.setColor(backgroundColor);
-            graphics.fillRect(0, 0, preferredWidth, preferredHeight);
+            graphics.fillRect(0, 0, width, height);
         }
         
         if(showSignal) {
-        	graphics.pushRegion(preferredWidth - 37, midPoint - 7, 35, 14, 0, 0);
+        	graphics.pushRegion(width - 37 - graphicsDiff, midPoint - 7, 35, 14, 0, 0);
         	drawSignalIndicator(graphics);
         	graphics.popContext();
         	
@@ -258,7 +296,7 @@ public class HeaderField extends Field {
         }
         
         if(showBattery) {
-        	graphics.pushRegion(preferredWidth - 48 - graphicsDiff, midPoint - 7, 44, 14, 0, 0);
+        	graphics.pushRegion(width - 48 - graphicsDiff, midPoint - 7, 44, 14, 0, 0);
         	drawBatteryIndicator(graphics);
         	graphics.popContext();
         	
@@ -268,7 +306,7 @@ public class HeaderField extends Field {
         graphics.setColor(fontColor);
         
         if(showTitle) {
-            graphics.drawText(title, 1, 0, DrawStyle.ELLIPSIS, preferredWidth - graphicsDiff);
+            graphics.drawText(title, 4, 0, DrawStyle.ELLIPSIS, width - graphicsDiff - 4);
         }
     }
     
@@ -309,34 +347,17 @@ public class HeaderField extends Field {
     }
 
     private void drawBatteryIndicator(Graphics graphics) {
-    	int backgroundColor = graphics.getBackgroundColor();
-    	
+        // Paint the battery background
     	graphics.setColor(batteryBackground);
     	graphics.drawRect(1, 0, 40, 14);
     	graphics.drawRect(2, 1, 38, 12);
-    	graphics.drawLine(0, 2, 0, 12);
+    	graphics.drawLine(0, 2, 0, 11);
     	graphics.fillRect(41, 3, 3, 8);
 
-    	graphics.setColor(backgroundColor);
-    	graphics.fillRect(3, 2, 36, 10);
-    	
-		// Pick the battery color
-    	if(batteryLevel > 75) { graphics.setColor(0x28f300); }
-		else if(batteryLevel > 50) { graphics.setColor(0x91dc00); }
-		else if(batteryLevel > 25) { graphics.setColor(0xefec00); }
-		else { graphics.setColor(0xff2200); }
-		
     	// Paint the battery level indicator
-    	graphics.fillRect(4, 3, 6, 8);
-    	graphics.fillRect(11, 3, 6, 8);
-    	graphics.fillRect(18, 3, 6, 8);
-    	graphics.fillRect(25, 3, 6, 8);
-    	graphics.fillRect(32, 3, 6, 8);
-    	
-    	graphics.setColor(backgroundColor);
         int power = (int)((34.00/100) * batteryLevel);
         power = Math.max(power, 0);
         power = Math.min(power, 34);
-        graphics.fillRect(38 - (34 - power), 3, 34 - power, 8);
+        graphics.drawBitmap(4, 3, power, 8, batteryFillBitmap, 0, 0);
     }
 }
