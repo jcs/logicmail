@@ -166,6 +166,7 @@ public class StandardScreen extends MainScreen {
         if(attached) {
             super.onUiEngineAttached(true);
             updateStatus(navigationController.getCurrentStatus());
+            NotificationHandler.getInstance().cancelNotification();
             screenProvider.onDisplay();
         }
         else {
