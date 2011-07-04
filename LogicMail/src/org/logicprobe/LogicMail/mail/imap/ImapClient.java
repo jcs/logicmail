@@ -193,6 +193,7 @@ public class ImapClient extends AbstractIncomingMailClient {
     public boolean open() throws IOException, MailException {
         try {
             if(!openStarted) {
+                watchdog.shutdown();
                 connection = networkConnector.open(accountConfig);
                 imapProtocol.setConnection(connection);
                 imapProtocol.setWatchdog(watchdog);

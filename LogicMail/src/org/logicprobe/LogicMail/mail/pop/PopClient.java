@@ -169,6 +169,7 @@ public class PopClient extends AbstractIncomingMailClient {
      */
     public boolean open() throws IOException, MailException {
         if(!openStarted) {
+            watchdog.shutdown();
             connection = networkConnector.open(accountConfig);
             popProtocol.setConnection(connection);
             popProtocol.setWatchdog(watchdog);

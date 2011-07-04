@@ -131,6 +131,7 @@ public class SmtpClient implements OutgoingMailClient {
 
     public boolean open() throws IOException, MailException {
         if (!openStarted) {
+            watchdog.shutdown();
             connection = networkConnector.open(outgoingConfig);
             smtpProtocol.setConnection(connection);
             smtpProtocol.setWatchdog(watchdog);

@@ -93,6 +93,8 @@ public class Watchdog {
     
     /**
      * Shutdown the watchdog timer, if it is running.
+     * This will put the watchdog in a state where it can safely be reused,
+     * regardless of its prior state.
      */
     public void shutdown() {
         if(listener == null) { return; }
@@ -102,6 +104,8 @@ public class Watchdog {
                 watchdogThread.join();
             } catch (InterruptedException e) { }
         }
+        started = false;
+        defaultTimeout = DEFAULT_TIMEOUT;
     }
     
     /**
