@@ -218,6 +218,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
         handler.setFolderMessageSeen(messageToken);
     }
     
+    public void requestMessageUnseen(MessageToken messageToken) {
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        handler.setFolderMessageUnseen(messageToken);
+    }
+    
     public void removeSavedData(final FolderTreeItem[] folderTreeItems) {
         for(int i=0; i<folderTreeItems.length; i++) {
             folderMessageCache.removeFolder(folderTreeItems[i]);

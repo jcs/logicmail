@@ -72,6 +72,8 @@ public class MessageActions {
     private MenuItem deleteItem;
     private MenuItem undeleteItem;
     private MenuItem sendOutgoingItem;
+    private MenuItem markOpenedItem;
+    private MenuItem markUnopenedItem;
 	
     /** Current message node from the last call to makeMenu() */
     private MessageNode activeMessageNode;
@@ -130,7 +132,6 @@ public class MessageActions {
                 moveToMailbox(activeMessageNode);
             }
         };
-        
         deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 300180, 2000) {
             public void run() {
                 deleteMessage(activeMessageNode);
@@ -139,6 +140,16 @@ public class MessageActions {
         undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 300190, 2000) {
             public void run() {
                 undeleteMessage(activeMessageNode);
+            }
+        };
+        markOpenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_OPENED, 300200, 2000) {
+            public void run() {
+                markMessageOpened(activeMessageNode);
+            }
+        };
+        markUnopenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_UNOPENED, 300210, 2000) {
+            public void run() {
+                markMessageUnopened(activeMessageNode);
             }
         };
     }
@@ -163,10 +174,10 @@ public class MessageActions {
      * 
      * @param menu Menu to which items should be added.
      * @param instance The instance of the desired menu. If your screen
-     * supports only one menu, this may be ignored. By default, it is 0.
+     *     supports only one menu, this may be ignored. By default, it is 0.
      * @param messageNode The message node for which menu items should be offered.
      * @param isOpen True if the message node is currently open, false if it is
-     * displayed along with other message nodes.
+     *     displayed along with other message nodes.
      */
     public void makeMenu(Menu menu, int instance, MessageNode messageNode, boolean isOpen) {
         if(messageNode == null) { return; }
@@ -239,6 +250,16 @@ public class MessageActions {
         else {
             menu.add(deleteItem);
         }
+        
+        if(!(messageNode instanceof OutgoingMessageNode)) {
+            if((messageNode.getFlags() & MessageNode.Flag.SEEN) != 0) {
+                menu.add(markUnopenedItem);
+            }
+            else {
+                menu.add(markOpenedItem);
+            }
+        }
+        
         if(failedOutgoingMessage) {
             menu.add(sendOutgoingItem);
         }
@@ -287,6 +308,17 @@ public class MessageActions {
                     forwardItem.run();
                     return true;
                 }
+            }
+        case KeyHandler.MESSAGE_MARK_OPENED:
+            if(!(messageNode instanceof OutgoingMessageNode)) {
+                this.activeMessageNode = messageNode;
+                if((messageNode.getFlags() & MessageNode.Flag.SEEN) != 0) {
+                    markUnopenedItem.run();
+                }
+                else {
+                    markOpenedItem.run();
+                }
+                return true;
             }
         }
         
@@ -432,6 +464,26 @@ public class MessageActions {
     public void undeleteMessage(MessageNode messageNode) {
         trackButtonClick("undeleteMessage");
 		messageNode.undeleteMessage();
+    }
+    
+    /**
+     * Marks a message as opened.
+     * 
+     * @param messageNode the message node
+     */
+    public void markMessageOpened(MessageNode messageNode) {
+        trackButtonClick("markMessageOpened");
+        messageNode.markMessageOpened();
+    }
+    
+    /**
+     * Marks a message as unopened.
+     * 
+     * @param messageNode the message node
+     */
+    public void markMessageUnopened(MessageNode messageNode) {
+        trackButtonClick("markMessageUnopened");
+        messageNode.markMessageUnopened();
     }
 
     /**

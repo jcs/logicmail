@@ -1232,6 +1232,26 @@ public class MessageNode implements Node {
 	}
 	
     /**
+     * Called to request that the state of a message be explicitly set to
+     * opened.  Completion of this request will be indicated by a status
+     * change event for the message flags.
+     */
+	public void markMessageOpened() {
+	    MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+	    mailStore.requestMessageSeen(messageToken);
+	}
+	
+    /**
+     * Called to request that the state of a message be explicitly set to
+     * unopened.  Completion of this request will be indicated by a status
+     * change event for the message flags.
+     */
+    public void markMessageUnopened() {
+        MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
+        mailStore.requestMessageUnseen(messageToken);
+    }
+	
+    /**
      * Called when the mail store has new message data available.
      *
      * @param e the event from the mail store

@@ -493,7 +493,17 @@ public abstract class MailStoreServices {
     }
 
     public void requestMessageSeen(MessageToken messageToken) {
-        // Default empty implementation
+        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                messageToken,
+                new MessageFlags(MessageFlags.Flag.SEEN),
+                true));
+    }
+    
+    public void requestMessageUnseen(MessageToken messageToken) {
+        mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
+                messageToken,
+                new MessageFlags(MessageFlags.Flag.SEEN),
+                false));
     }
     
     public void requestMessageDelete(MessageToken messageToken) {

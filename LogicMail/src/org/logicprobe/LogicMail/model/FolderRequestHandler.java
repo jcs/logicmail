@@ -481,6 +481,10 @@ abstract class FolderRequestHandler {
 
     void setFolderMessageSeen(MessageToken messageToken) {
         setFolderMessageSeenImpl(messageToken, false);
+    }
+    
+    void setFolderMessageUnseen(MessageToken messageToken) {
+        setFolderMessageUnseenImpl(messageToken, false);
     }    
     
     void setFolderMessageSeenCacheOnly(MessageToken messageToken) {
@@ -504,6 +508,35 @@ abstract class FolderRequestHandler {
                     
                     if(updateInMailStore) {
                         processMailStoreRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), true));
+                    }
+                    else if(!mailStore.hasFlags()) {
+                        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, new FolderMessage[] { message }, true, false);
+                    }
+                }
+            }
+        }, false);
+    }
+    
+    private void setFolderMessageUnseenImpl(final MessageToken messageToken, final boolean cacheOnly) {
+        invokeAfterRefresh(new Runnable() {
+            public void run() {
+                if(messageToken == null) { return; }
+                FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+                if(message == null) { return; }
+                MessageFlags messageFlags = message.getFlags();
+                if(messageFlags.isSeen()) {
+                    boolean updateInMailStore = !cacheOnly && mailStore.hasFlags();
+                    
+                    messageFlags.setSeen(false);
+                    messageFlags.setRecent(false);
+                    folderMessageCache.updateFolderMessage(folderTreeItem, message);
+                    folderMessageCache.commit();
+                    
+                    if(updateInMailStore) {
+                        processMailStoreRequest(mailStore.createMessageFlagChangeRequest(messageToken, new MessageFlags(MessageFlags.Flag.SEEN), false));
+                    }
+                    else if(!mailStore.hasFlags()) {
+                        mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, new FolderMessage[] { message }, true, false);
                     }
                 }
             }

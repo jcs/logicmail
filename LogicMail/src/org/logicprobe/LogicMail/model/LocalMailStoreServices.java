@@ -32,6 +32,9 @@ package org.logicprobe.LogicMail.model;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.LocalMailStore;
+import org.logicprobe.LogicMail.mail.MailStoreRequest;
+import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
+import org.logicprobe.LogicMail.mail.MessageRequest;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 
@@ -59,7 +62,14 @@ public class LocalMailStoreServices extends MailStoreServices {
             return false;
         }
         else {
-            mailStore.processRequest(mailStore.createMessageRequest(messageToken, true));
+            mailStore.processRequest(mailStore.createMessageRequest(messageToken, true)
+                    .setRequestCallback(new MailStoreRequestCallback() {
+                        public void mailStoreRequestComplete(MailStoreRequest request) {
+                            requestMessageSeen(((MessageRequest)request).getMessageToken());                    
+                        }
+                        public void mailStoreRequestFailed(MailStoreRequest request,
+                                Throwable exception, boolean isFinal) { }
+                    }));
             return true;
         }
     }

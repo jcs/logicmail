@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Enumeration;
+import java.util.Vector;
 
 import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.util.IntVector;
@@ -89,6 +90,7 @@ class PopFolderRequestHandler extends FolderRequestHandler {
         final int messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
         
         mailStoreServices.invokeLater(new Runnable() { public void run() {
+            Vector messagesUpdated = new Vector();
             SimpleSortingIntVector indexVector = new SimpleSortingIntVector();
             IntHashtable cachedIndexToMessageMap = new IntHashtable();
             
@@ -108,12 +110,14 @@ class PopFolderRequestHandler extends FolderRequestHandler {
                     message.getMessageToken().updateMessageIndex(index);
                     
                     if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
+                        messagesUpdated.addElement(message);
                         cachedIndexToMessageMap.put(index, message);
                     }
                 }
             }
             indexVector.reSort(SimpleSortingIntVector.SORT_TYPE_NUMERIC);
             
+            notifyMessageFlagUpdates(messagesUpdated);
             removeOrphanedMessages();
 
             // Determine the fetch range
@@ -146,8 +150,22 @@ class PopFolderRequestHandler extends FolderRequestHandler {
             removeOrphanedMessages();
             
             // Do the final request for missing messages
-            processMailStoreRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
-                    .setRequestCallback(finalFetchCallback));
+            if(messagesToFetch.size() > 0) {
+                processMailStoreRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
+                        .setRequestCallback(finalFetchCallback));
+            }
+            else {
+                initialRefreshComplete = true;
+                endFolderRefreshOperation(true);
+            }
         }});
+    }
+    
+    private void notifyMessageFlagUpdates(final Vector messagesUpdated) {
+        if(!messagesUpdated.isEmpty()) {
+            FolderMessage[] messages = new FolderMessage[messagesUpdated.size()];
+            messagesUpdated.copyInto(messages);
+            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true, true);
+        }
     }
 }
