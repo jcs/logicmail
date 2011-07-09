@@ -128,6 +128,7 @@ public class NetworkMailStoreTest extends TestCase {
         hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_UNDELETE).setReturnValue(Boolean.TRUE);
         hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_LOCKED_FOLDERS).setReturnValue(Boolean.TRUE);
         hammock.setStubExpectation(MockIncomingMailClient.MTHD_HAS_IDLE).setReturnValue(Boolean.FALSE);
+        hammock.setStubExpectation(MockIncomingMailClient.MTHD_IS_IDLE_ENABLED).setReturnValue(Boolean.TRUE);
         hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_ACCT_CONFIG).setReturnValue(fakeAccountConfig);
         hammock.setStubExpectation(MockIncomingMailClient.MTHD_GET_CONNECTION_CONFIG).setReturnValue(fakeAccountConfig);
         hammock.setStubExpectation(MockIncomingMailClient.MTHD_SET_LISTENER_$_INCOMINGMAILCLIENTLISTENER, new Object[1])
