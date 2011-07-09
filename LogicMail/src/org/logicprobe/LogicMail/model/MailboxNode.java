@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.model;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -875,6 +876,15 @@ public class MailboxNode implements Node, Serializable {
         MessageNode[][] result = new MessageNode[gaps.size()][];
         gaps.copyInto(result);
         return result;
+    }
+
+    /**
+     * Marks all messages prior to the provided date as opened.
+     *
+     * @param startDate the date from which to mark messages as opened
+     */
+    public void markPriorMessagesOpened(Date startDate) {
+        parentAccount.getMailStoreServices().requestPriorMessagesSeen(folderTreeItem, startDate);
     }
 
     /**

@@ -76,7 +76,20 @@ public class MessageActions {
     private MenuItem markUnopenedItem;
 	
     /** Current message node from the last call to makeMenu() */
-    private MessageNode activeMessageNode;
+    protected MessageNode activeMessageNode;
+    
+    protected static final int ITEM_SELECT        = 0x0001;
+    protected static final int ITEM_PROPERTIES    = 0x0002;
+    protected static final int ITEM_REPLY         = 0x0004;
+    protected static final int ITEM_REPLY_ALL     = 0x0008;
+    protected static final int ITEM_FORWARD       = 0x0010;
+    protected static final int ITEM_COPY_TO       = 0x0020;
+    protected static final int ITEM_MOVE_TO       = 0x0040;
+    protected static final int ITEM_DELETE        = 0x0080;
+    protected static final int ITEM_UNDELETE      = 0x0100;
+    protected static final int ITEM_SEND_OUTGOING = 0x0200;
+    protected static final int ITEM_MARK_OPENED   = 0x0400;
+    protected static final int ITEM_MARK_UNOPENED = 0x0800;
     
 	/**
 	 * Instantiates a new message actions handler delegate.
@@ -91,7 +104,7 @@ public class MessageActions {
 	/**
 	 * Initialize the common menu items provided by this class.
 	 */
-    private void initMenuItems() {
+    protected void initMenuItems() {
         selectItem = new MenuItem(resources, LogicMailResource.MENUITEM_SELECT, 300100, 1010) {
             public void run() {
                 openMessage(activeMessageNode);
@@ -154,7 +167,7 @@ public class MessageActions {
         };
     }
 
-    private static void trackButtonClick(String eventType) {
+    protected static void trackButtonClick(String eventType) {
         Screen screen = UiApplication.getUiApplication().getActiveScreen();
         if(screen instanceof StandardScreen) {
             StandardScreen standardScreen = (StandardScreen)screen;
@@ -163,24 +176,19 @@ public class MessageActions {
     }
 
     /**
-     * Populate the provided menu with items appropriate for the
-     * provided message node.
-     * <p>
-     * This method sets a class field for the active message node,
-     * so it is not thread-safe.  It normal usage, it should only
-     * be called for one screen at a time, so it should not cause
-     * any issues.
-     * </p>
+     * Inspects the properties of the provided message node, and returns the
+     * set of valid menu items.  This allows the complex logic for determining
+     * valid menu items to be reused in several different contexts.
      * 
-     * @param menu Menu to which items should be added.
-     * @param instance The instance of the desired menu. If your screen
-     *     supports only one menu, this may be ignored. By default, it is 0.
      * @param messageNode The message node for which menu items should be offered.
      * @param isOpen True if the message node is currently open, false if it is
      *     displayed along with other message nodes.
+     * @return bit field set of valid menu items
      */
-    public void makeMenu(Menu menu, int instance, MessageNode messageNode, boolean isOpen) {
-        if(messageNode == null) { return; }
+    protected int getValidMenuItems(MessageNode messageNode, boolean isOpen) {
+        int items = 0;
+        
+        if(messageNode == null) { return items; }
         
         // Get all the message properties necessary to determine whether or
         // not to add the various menu items.
@@ -204,20 +212,20 @@ public class MessageActions {
         }
         
         if(!isOpen && (messageNode.existsOnServer() || messageNode.hasCachedContent())) {
-            menu.add(selectItem);
+            items |= ITEM_SELECT;
         }
         
-        menu.add(propertiesItem);
+        items |= ITEM_PROPERTIES;
         
         if(!unloaded) {
             if(accountNode instanceof NetworkAccountNode) {
                 NetworkAccountNode networkAccount = (NetworkAccountNode)accountNode;
                 if(networkAccount.hasMailSender()) {
-                    menu.add(replyItem);
+                    items |= ITEM_REPLY;
                     if(networkAccount.hasIdentity()) {
-                        menu.add(replyAllItem);
+                        items |= ITEM_REPLY_ALL;
                     }
-                    menu.add(forwardItem);
+                    items |= ITEM_FORWARD;
                 }
             }
         }
@@ -230,7 +238,7 @@ public class MessageActions {
         // be appropriately filtered to only allow valid destination
         // mailboxes for the current state of the message node.
         if(!unloaded || mailboxNode.hasCopy() || failedOutgoingMessage) {
-            menu.add(copyToItem);
+            items |= ITEM_COPY_TO;
         }
         
         // Move-To is currently only supported if the underlying mail store
@@ -239,34 +247,74 @@ public class MessageActions {
         // simplest way to be absolutely sure that a user cannot mess up their
         // data with a message move.
         if(mailboxNode.hasCopy()) {
-            menu.add(moveToItem);
+            items |= ITEM_MOVE_TO;
         }
         
         if((messageNode.getFlags() & MessageNode.Flag.DELETED) != 0) {
             if(mailboxNode != null && mailboxNode.getParentAccount().hasUndelete()) {
-                menu.add(undeleteItem);
+                items |= ITEM_UNDELETE;
             }
         }
         else {
-            menu.add(deleteItem);
+            items |= ITEM_DELETE;
         }
         
         if(!(messageNode instanceof OutgoingMessageNode)) {
             if((messageNode.getFlags() & MessageNode.Flag.SEEN) != 0) {
-                menu.add(markUnopenedItem);
+                items |= ITEM_MARK_UNOPENED;
             }
             else {
-                menu.add(markOpenedItem);
+                items |= ITEM_MARK_OPENED;
             }
         }
         
         if(failedOutgoingMessage) {
-            menu.add(sendOutgoingItem);
+            items |= ITEM_SEND_OUTGOING;
         }
         
+        return items;
+    }
+    
+    /**
+     * Populate the provided menu with items appropriate for the
+     * provided message node.
+     * <p>
+     * This method sets a class field for the active message node,
+     * so it is not thread-safe.  It normal usage, it should only
+     * be called for one screen at a time, so it should not cause
+     * any issues.
+     * </p>
+     * 
+     * @param menu Menu to which items should be added.
+     * @param instance The instance of the desired menu. If your screen
+     *     supports only one menu, this may be ignored. By default, it is 0.
+     * @param messageNode The message node for which menu items should be offered.
+     * @param isOpen True if the message node is currently open, false if it is
+     *     displayed along with other message nodes.
+     */
+    public void makeMenu(Menu menu, int instance, MessageNode messageNode, boolean isOpen) {
+        int items = getValidMenuItems(messageNode, isOpen);
+
+        if((items & ITEM_SELECT) != 0) { menu.add(selectItem); }
+        if((items & ITEM_PROPERTIES) != 0) { menu.add(propertiesItem); }
+        if((items & ITEM_REPLY) != 0) { menu.add(replyItem); }
+        if((items & ITEM_REPLY_ALL) != 0) { menu.add(replyAllItem); }
+        if((items & ITEM_FORWARD) != 0) { menu.add(forwardItem); }
+        if((items & ITEM_COPY_TO) != 0) { menu.add(copyToItem); }
+        if((items & ITEM_MOVE_TO) != 0) { menu.add(moveToItem); }
+        if((items & ITEM_UNDELETE) != 0) { menu.add(undeleteItem); }
+        if((items & ITEM_DELETE) != 0) { menu.add(deleteItem); }
+        if((items & ITEM_MARK_UNOPENED) != 0) { menu.add(markUnopenedItem); }
+        if((items & ITEM_MARK_OPENED) != 0) { menu.add(markOpenedItem); }
+        if((items & ITEM_SEND_OUTGOING) != 0) { menu.add(sendOutgoingItem); }
+
         this.activeMessageNode = messageNode;
     }
 
+    public void makeContextMenu(Menu menu, int instance, MessageNode messageNode, boolean isOpen) {
+        makeMenu(menu, instance, messageNode, isOpen);
+    }
+    
     public boolean keyCharShortcut(MessageNode messageNode, int shortcut) {
         // Get all the message properties necessary to determine whether or
         // not to various shortcuts are valid.

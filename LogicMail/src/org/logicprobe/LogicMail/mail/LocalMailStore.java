@@ -31,6 +31,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.Hashtable;
 
 import javax.microedition.io.Connector;
@@ -166,6 +167,27 @@ public class LocalMailStore extends AbstractMailStore {
         
         LocalMessageFlagChangeRequest request = new LocalMessageFlagChangeRequest(
                 this, messageToken, messageFlags.clone(), addOrRemove);
+        return request;
+    }
+    
+    public MessageFlagChangeRequest createMessageFlagChangeRequest(
+            MessageToken[] messageTokens,
+            MessageFlags messageFlags,
+            boolean addOrRemove) {
+        
+        LocalMessageFlagChangeRequest request = new LocalMessageFlagChangeRequest(
+                this, messageTokens, messageFlags.clone(), addOrRemove);
+        return request;
+    }
+    
+    public MessageRangeFlagChangeRequest createMessageRangeFlagChangeRequest(
+            FolderTreeItem folder,
+            Date startDate,
+            MessageFlags messageFlags,
+            boolean addOrRemove) {
+        
+        LocalMessageRangeFlagChangeRequest request = new LocalMessageRangeFlagChangeRequest(
+                this, folder, startDate, messageFlags.clone(), addOrRemove);
         return request;
     }
     

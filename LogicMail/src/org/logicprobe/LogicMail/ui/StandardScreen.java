@@ -295,10 +295,12 @@ public class StandardScreen extends MainScreen {
      */
     protected void makeMenu(Menu menu, int instance) {
         screenProvider.makeMenu(menu, instance);
-        menu.add(configItem);
-        menu.add(aboutItem);
-        menu.add(closeItem);
-        menu.add(exitItem);
+        if(instance == Menu.INSTANCE_DEFAULT) {
+            menu.add(configItem);
+            menu.add(aboutItem);
+            menu.add(closeItem);
+            menu.add(exitItem);
+        }
     }
 
     /* (non-Javadoc)
@@ -326,6 +328,24 @@ public class StandardScreen extends MainScreen {
         return super.navigationClick(status, time);
     }
     
+    /* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#navigationUnclick(int, int)
+     */
+    protected boolean navigationUnclick(int status, int time) {
+        return screenProvider.navigationUnclick(status, time);
+    }
+    
+    /**
+     * Provides a way for <code>ScreenProvider</code> implementations to call
+     * {@link net.rim.device.api.ui.Screen#navigationUnclick(int, int)} if they
+     * do not want to override its behavior.
+     *
+     * @see net.rim.device.api.ui.Screen#navigationUnclick(int, int)
+     */
+    boolean navigationUnclickDefault(int status, int time) {
+        return super.navigationUnclick(status, time);
+    }
+
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)
      */

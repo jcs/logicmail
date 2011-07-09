@@ -74,6 +74,10 @@ public abstract class ScreenFactory {
     
     public abstract void clearScreenTransition(Screen screen);
     
+    public MessageActions getMessageActions(NavigationController navigationController) {
+        return new MessageActions(navigationController);
+    }
+    
     public abstract StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode);
 
     public abstract StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode);

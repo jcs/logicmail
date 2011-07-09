@@ -1196,6 +1196,13 @@ public class ImapClient extends AbstractIncomingMailClient {
     }
     
     /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.AbstractIncomingMailClient#messageSeen(org.logicprobe.LogicMail.mail.MessageToken[])
+     */
+    public void messageSeen(MessageToken[] messageTokens) throws IOException, MailException {
+        changeMessageFlag(messageTokens, true, ImapParser.FLAG_SEEN);
+    }
+    
+    /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#messageUnseen(org.logicprobe.LogicMail.mail.MessageToken)
      */
     public void messageUnseen(MessageToken messageToken) throws IOException, MailException {
@@ -1214,6 +1221,25 @@ public class ImapClient extends AbstractIncomingMailClient {
         }
 
         imapProtocol.executeStore(imapMessageToken.getImapMessageUid(), addOrRemove, new String[] { flag });
+    }
+    
+    private void changeMessageFlag(
+            MessageToken[] messageTokens,
+            boolean addOrRemove,
+            String flag)
+    throws MailException, IOException {
+        if(messageTokens.length == 0) { return; }
+        
+        if(!((ImapMessageToken)messageTokens[0]).getFolderPath().equalsIgnoreCase(activeMailbox.getPath())) {
+            throw new MailException("Invalid mailbox for messages");
+        }
+        
+        int[] messageUids = new int[messageTokens.length];
+        for(int i=0; i<messageTokens.length; i++) {
+            messageUids[i] = ((ImapMessageToken)messageTokens[i]).getImapMessageUid();
+        }
+
+        imapProtocol.executeStore(messageUids, addOrRemove, new String[] { flag });
     }
     
     private static void refreshMessageFlags(ImapProtocol.MessageFlags updatedFlags, MessageFlags messageFlags) {

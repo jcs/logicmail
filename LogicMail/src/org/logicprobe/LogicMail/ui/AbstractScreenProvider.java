@@ -155,6 +155,13 @@ public abstract class AbstractScreenProvider implements ScreenProvider {
 		return standardScreen.navigationClickDefault(status, time);
 	}
 	
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.ui.ScreenProvider#navigationUnclick(int, int)
+     */
+    public boolean navigationUnclick(int status, int time) {
+        return standardScreen.navigationUnclickDefault(status, time);
+    }
+	
 	/* (non-Javadoc)
 	 * @see org.logicprobe.LogicMail.ui.ScreenProvider#onDisplay()
 	 */

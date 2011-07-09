@@ -38,6 +38,7 @@ import org.logicprobe.LogicMail.message.MessageFlags;
 
 class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements MessageFlagChangeRequest {
     private final MessageToken messageToken;
+    private final MessageToken[] messageTokens;
     private final MessageFlags messageFlags;
     private final boolean addOrRemove;
     private final String initialStatus;
@@ -45,6 +46,7 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
     NetworkMessageFlagChangeRequest(NetworkMailStore mailStore, MessageToken messageToken, MessageFlags messageFlags, boolean addOrRemove) {
         super(mailStore);
         this.messageToken = messageToken;
+        this.messageTokens = null;
         this.messageFlags = messageFlags;
         this.addOrRemove = addOrRemove;
         
@@ -60,9 +62,23 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
             this.initialStatus = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS);
         }
     }
+    
+    NetworkMessageFlagChangeRequest(NetworkMailStore mailStore, MessageToken[] messageTokens, MessageFlags messageFlags, boolean addOrRemove) {
+        super(mailStore);
+        this.messageToken = null;
+        this.messageTokens = messageTokens;
+        this.messageFlags = messageFlags;
+        this.addOrRemove = addOrRemove;
+
+        this.initialStatus = resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_MESSAGE_UPDATING_FLAGS);
+    }
 
     public MessageToken getMessageToken() {
         return messageToken;
+    }
+
+    public MessageToken[] getMessageTokens() {
+        return messageTokens;
     }
     
     public MessageFlags getMessageFlags() {
@@ -80,6 +96,19 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
     public void execute(MailClient client) throws IOException, MailException {
         IncomingMailClient incomingClient = (IncomingMailClient)client;
 
+        if(messageToken != null) {
+            executeWithSingleMessage(incomingClient);
+        }
+        else if(messageTokens != null && messageTokens.length > 0) {
+            executeWithMessageSet(incomingClient);
+        }
+
+        fireMailStoreRequestComplete();
+
+        // Notification of actual flag changes is received through the client listener
+    }
+    
+    private void executeWithSingleMessage(IncomingMailClient incomingClient) throws IOException, MailException {
         if(messageFlags.isDeleted()) {
             if(addOrRemove) {
                 checkActiveFolder(incomingClient, messageToken);
@@ -107,9 +136,16 @@ class NetworkMessageFlagChangeRequest extends NetworkMailStoreRequest implements
                 incomingClient.messageUnseen(messageToken);
             }
         }
-
-        fireMailStoreRequestComplete();
-
-        // Notification of actual flag changes is received through the client listener
+    }
+    
+    private void executeWithMessageSet(IncomingMailClient incomingClient) throws IOException, MailException {
+        // Currently only implementing flag changes on message sets for marking
+        // messages as seen, since that is all that is currently required.
+        if(messageFlags.isSeen()) {
+            checkActiveFolder(incomingClient, messageTokens[0]);
+            if(addOrRemove) {
+                incomingClient.messageSeen(messageTokens);
+            }
+        }
     }
 }

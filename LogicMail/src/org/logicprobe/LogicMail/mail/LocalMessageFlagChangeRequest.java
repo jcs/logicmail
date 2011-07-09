@@ -32,6 +32,7 @@
 package org.logicprobe.LogicMail.mail;
 
 import java.io.IOException;
+import java.util.Vector;
 
 import net.rim.device.api.system.EventLogger;
 
@@ -40,18 +41,32 @@ import org.logicprobe.LogicMail.message.MessageFlags;
 
 class LocalMessageFlagChangeRequest extends LocalMailStoreRequest implements MessageFlagChangeRequest {
     private final LocalMessageToken messageToken;
+    private final MessageToken[] messageTokens;
     private final MessageFlags messageFlags;
     private final boolean addOrRemove;
     
     LocalMessageFlagChangeRequest(LocalMailStore mailStore, MessageToken messageToken, MessageFlags messageFlags, boolean addOrRemove) {
         super(mailStore);
         this.messageToken = (LocalMessageToken)messageToken;
+        this.messageTokens = null;
+        this.messageFlags = messageFlags;
+        this.addOrRemove = addOrRemove;
+    }
+    
+    LocalMessageFlagChangeRequest(LocalMailStore mailStore, MessageToken[] messageTokens, MessageFlags messageFlags, boolean addOrRemove) {
+        super(mailStore);
+        this.messageToken = null;
+        this.messageTokens = messageTokens;
         this.messageFlags = messageFlags;
         this.addOrRemove = addOrRemove;
     }
 
     public MessageToken getMessageToken() {
         return messageToken;
+    }
+    
+    public MessageToken[] getMessageTokens() {
+        return messageTokens;
     }
     
     public MessageFlags getMessageFlags() {
@@ -63,7 +78,20 @@ class LocalMessageFlagChangeRequest extends LocalMailStoreRequest implements Mes
     }
     
     public void run() {
+        if(messageToken != null) {
+            runWithSingleMessage();
+        }
+        else if(messageTokens != null && messageTokens.length > 0) {
+            runWithMessageSet();
+        }
+        else {
+            fireMailStoreRequestComplete();
+        }
+    }
+
+    private void runWithSingleMessage() {
         FolderTreeItem tokenFolder = mailStore.getMatchingFolderTreeItem(messageToken.getFolderPath());
+        
         FolderTreeItem requestFolder = mailStore.getMatchingFolderTreeItem(tokenFolder.getPath());
         if(requestFolder == null) {
             fireMailStoreRequestFailed(null, true);
@@ -96,5 +124,49 @@ class LocalMessageFlagChangeRequest extends LocalMailStoreRequest implements Mes
             mailStore.fireMessageFlagsChanged(messageToken, updatedFlags);
         }
     }
+    
+    private void runWithMessageSet() {
+        FolderTreeItem tokenFolder = mailStore.getMatchingFolderTreeItem(((LocalMessageToken)messageTokens[0]).getFolderPath());
+        
+        FolderTreeItem requestFolder = mailStore.getMatchingFolderTreeItem(tokenFolder.getPath());
+        if(requestFolder == null) {
+            fireMailStoreRequestFailed(null, true);
+            return;
+        }
+        
+        Vector updatedMessages = new Vector();
+        
+        Throwable throwable = null;
+        boolean success;
+        MaildirFolder maildirFolder = mailStore.getMaildirFolder(requestFolder);
+        try {
+            maildirFolder.open();
+            for(int i=0; i<messageTokens.length; i++) {
+                MessageFlags updatedFlags = maildirFolder.setMessageFlag(
+                        (LocalMessageToken)messageTokens[i], addOrRemove, messageFlags.getFlags());
+                if(updatedFlags != null) {
+                    updatedMessages.addElement(new Object[] { messageTokens[i], updatedFlags });
+                }
+            }
+            maildirFolder.close();
+            success = true;
+        } catch (IOException e) {
+            EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
+            success = false;
+            throwable = e;
+        }
+        
+        if(success) {
+            fireMailStoreRequestComplete();
+        }
+        else {
+            fireMailStoreRequestFailed(throwable, true);
+        }
 
+        int count = updatedMessages.size();
+        for(int i=0; i<count; i++) {
+            Object[] element = (Object[])updatedMessages.elementAt(i);
+            mailStore.fireMessageFlagsChanged((MessageToken)element[0], (MessageFlags)element[1]);
+        }
+    }
 }

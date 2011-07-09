@@ -855,6 +855,29 @@ public class MockIncomingMailClient extends AMockObject implements org.logicprob
         }
     }
 
+    public static final MockMethod MTHD_MESSAGE_SEEN_$_ARRAY_MESSAGETOKEN = new MockMethod(
+        MockIncomingMailClient.class, 
+        "MTHD_MESSAGE_SEEN_$_ARRAY_MESSAGETOKEN",
+        new Class[]{org.logicprobe.LogicMail.mail.MessageToken[].class},
+        new Class[]{java.io.IOException.class, org.logicprobe.LogicMail.mail.MailException.class},
+        null,
+        true);
+    public void messageSeen(org.logicprobe.LogicMail.mail.MessageToken[] arg0) throws java.io.IOException, org.logicprobe.LogicMail.mail.MailException {
+        try {
+            Object[] args = new Object[1];
+            args[0] = arg0;
+            MethodInvocation mi = new MethodInvocation(MTHD_MESSAGE_SEEN_$_ARRAY_MESSAGETOKEN, this, args);
+            getInvocationHandler().invoke(mi);
+            mi.getReturnValue();
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            if (t instanceof java.io.IOException) { throw (java.io.IOException)t; }
+            if (t instanceof org.logicprobe.LogicMail.mail.MailException) { throw (org.logicprobe.LogicMail.mail.MailException)t; }
+            throw new HammockException(t);
+        }
+    }
+
     public static final MockMethod MTHD_MESSAGE_SEEN_$_MESSAGETOKEN = new MockMethod(
         MockIncomingMailClient.class, 
         "MTHD_MESSAGE_SEEN_$_MESSAGETOKEN",

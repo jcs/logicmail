@@ -922,6 +922,35 @@ public class MockImapProtocol extends org.logicprobe.LogicMail.mail.imap.ImapPro
         return super.executeStatus(arg0, arg1);
     }
 
+    public static final MockMethod MTHD_EXECUTE_STORE_$_ARRAY_INT_BOOLEAN_ARRAY_STRING = new MockMethod(
+        MockImapProtocol.class, 
+        "MTHD_EXECUTE_STORE_$_ARRAY_INT_BOOLEAN_ARRAY_STRING",
+        new Class[]{int[].class, Boolean.class, java.lang.String[].class},
+        new Class[]{java.io.IOException.class, org.logicprobe.LogicMail.mail.MailException.class},
+        null,
+        false);
+    public void executeStore(int[] arg0, boolean arg1, java.lang.String[] arg2) throws java.io.IOException, org.logicprobe.LogicMail.mail.MailException {
+        try {
+            Object[] args = new Object[3];
+            args[0] = arg0;
+            args[1] = new Boolean(arg1);
+            args[2] = arg2;
+            MethodInvocation mi = new MethodInvocation(MTHD_EXECUTE_STORE_$_ARRAY_INT_BOOLEAN_ARRAY_STRING, this, args);
+            getInvocationHandler().invoke(mi);
+            if (mi.isEvaluated()) {
+                mi.getReturnValue();
+                return;
+            }
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            if (t instanceof java.io.IOException) { throw (java.io.IOException)t; }
+            if (t instanceof org.logicprobe.LogicMail.mail.MailException) { throw (org.logicprobe.LogicMail.mail.MailException)t; }
+            throw new HammockException(t);
+        }
+        super.executeStore(arg0, arg1, arg2);
+    }
+
     public static final MockMethod MTHD_EXECUTE_STORE_$_INT_BOOLEAN_ARRAY_STRING = new MockMethod(
         MockImapProtocol.class, 
         "MTHD_EXECUTE_STORE_$_INT_BOOLEAN_ARRAY_STRING",

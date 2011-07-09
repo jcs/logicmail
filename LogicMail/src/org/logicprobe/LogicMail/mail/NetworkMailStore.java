@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import java.util.Date;
+
 import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -241,6 +243,33 @@ public class NetworkMailStore extends AbstractMailStore {
 	    return request;
 	}
 	
+    public MessageFlagChangeRequest createMessageFlagChangeRequest(
+            MessageToken[] messageTokens,
+            MessageFlags messageFlags,
+            boolean addOrRemove) {
+
+        if(messageFlags.isDeleted()) {
+            if(!addOrRemove && !client.hasUndelete()) {
+                throw new UnsupportedOperationException();
+            }
+        }
+        else if(!this.hasFlags()) {
+            throw new UnsupportedOperationException();
+        }
+
+        NetworkMessageFlagChangeRequest request = new NetworkMessageFlagChangeRequest(this, messageTokens, messageFlags, addOrRemove);
+        return request;
+    }
+	
+	public MessageRangeFlagChangeRequest createMessageRangeFlagChangeRequest(
+	        FolderTreeItem folder,
+	        Date startDate,
+	        MessageFlags messageFlags,
+	        boolean addOrRemove) {
+
+	    throw new UnsupportedOperationException();
+	}
+    
 	public MessageAppendRequest createMessageAppendRequest(FolderTreeItem folder, String rawMessage, MessageFlags initialFlags) {
 		if(!this.hasAppend()) {
 			throw new UnsupportedOperationException();

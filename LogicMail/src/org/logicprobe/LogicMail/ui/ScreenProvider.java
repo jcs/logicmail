@@ -130,6 +130,11 @@ public interface ScreenProvider {
      * @see net.rim.device.api.ui.Screen#navigationClick(int, int)
      */
 	boolean navigationClick(int status, int time);
+
+	/* (non-Javadoc)
+     * @see net.rim.device.api.ui.Screen#navigationUnclick(int, int)
+     */
+    boolean navigationUnclick(int status, int time);
 	
     /* (non-Javadoc)
      * @see net.rim.device.api.ui.Screen#keyChar(char, int, int)

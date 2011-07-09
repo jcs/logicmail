@@ -31,6 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import java.util.Date;
+
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -294,6 +296,39 @@ public abstract class AbstractMailStore {
      */
     public abstract MessageFlagChangeRequest createMessageFlagChangeRequest(MessageToken messageToken, MessageFlags messageFlags, boolean addOrRemove);
 
+    /**
+     * Creates a request for a message flag change on a set of messages.
+     * All of these messages are required to be in the same folder.
+     * With the exception of <code>DELETED</code>, all flag changes require the
+     * underlying protocol to support message flags.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * @param messageTokens The tokens used to identify the messages
+     * @param messageFlags The flags to be added or removed
+     * @param addOrRemove true to add the flags, false to remove them
+     * @return the request object
+     */
+    public abstract MessageFlagChangeRequest createMessageFlagChangeRequest(MessageToken[] messageTokens, MessageFlags messageFlags, boolean addOrRemove);
+
+    /**
+     * Creates a request for a message flag change for a batch of messages
+     * with dates prior to the one provided.
+     * All flag changes require the underlying protocol to support message
+     * flags, as well as the ability to search for messages baased on dates.
+     * 
+     * <p>Successful completion is indicated by a call to
+     * {@link MessageListener#messageFlagsChanged(MessageEvent)}.
+     * 
+     * @param folder The folder the messages are within
+     * @param startDate The date to change flags on messages prior to
+     * @param messageFlags The flags to be added or removed
+     * @param addOrRemove true to add the flags, false to remove them
+     * @return the request object
+     */
+    public abstract MessageRangeFlagChangeRequest createMessageRangeFlagChangeRequest(FolderTreeItem folder, Date startDate, MessageFlags messageFlags, boolean addOrRemove);
+    
     /**
      * Creates a request for a message to be appended to a folder.
      * 

@@ -69,7 +69,7 @@ public final class NavigationController {
 		this.uiApplication = uiApplication;
 		this.screenFactory = ScreenFactory.getInstance();
 		this.mailRootNode = MailManager.getInstance().getMailRootNode();
-		this.messageActions = new MessageActions(this);
+		this.messageActions = this.screenFactory.getMessageActions(this);
 		
 		MailConnectionManager.getInstance().addMailConnectionListener(new MailConnectionListener() {
 			public void mailConnectionStateChanged(MailConnectionStateEvent e) { }

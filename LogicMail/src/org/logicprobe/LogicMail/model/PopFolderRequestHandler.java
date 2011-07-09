@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -40,9 +41,11 @@ import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreRequest;
+import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkFolderMessageIndexMapRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 /**
  * Handles folder-oriented requests for the mail store services layer, with
@@ -167,5 +170,35 @@ class PopFolderRequestHandler extends FolderRequestHandler {
             messagesUpdated.copyInto(messages);
             mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true, true);
         }
+    }
+    
+    public void setPriorFolderMessagesSeen(final Date startDate) {
+        invokeAfterRefresh(new Runnable() {
+            public void run() {
+                long startTime = startDate.getTime();
+                FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
+                
+                Vector updatedMessages = new Vector();
+                for(int i=0; i<messages.length; i++) {
+                    if(messages[i].getEnvelope().date.getTime() < startTime
+                            && !messages[i].isSeen()) {
+                        messages[i].setSeen(true);
+                        messages[i].setRecent(false);
+                        if(folderMessageCache.updateFolderMessage(folderTreeItem, messages[i])) {
+                            updatedMessages.addElement(new Object[] { messages[i].getMessageToken(), messages[i].getFlags() });
+                        }
+                    }
+                }
+                if(updatedMessages.size() > 0) {
+                    folderMessageCache.commit();
+                    
+                    int count = updatedMessages.size();
+                    for(int i=0; i<count; i++) {
+                        Object[] element = (Object[])updatedMessages.elementAt(i);
+                        mailStoreServices.fireMessageFlagsChanged((MessageToken)element[0], (MessageFlags)element[1]);
+                    }
+                }
+            }
+        }, false);
     }
 }

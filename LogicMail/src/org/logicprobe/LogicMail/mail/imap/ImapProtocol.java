@@ -634,16 +634,7 @@ public class ImapProtocol {
             return new FetchFlagsResponse[0];
         }
 
-        StringBuffer buf = new StringBuffer();
-
-        for (int i = 0; i < (uids.length - 1); i++) {
-            buf.append(uids[i]);
-            buf.append(',');
-        }
-
-        buf.append(uids[uids.length - 1]);
-
-        String uidList = buf.toString();
+        String uidList = getUidList(uids);
         
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -670,6 +661,19 @@ public class ImapProtocol {
         FetchFlagsResponse[] resultArray = new FetchFlagsResponse[result.size()];
         result.copyInto(resultArray);
         return resultArray;
+    }
+
+    private static String getUidList(int[] uids) {
+        StringBuffer buf = new StringBuffer();
+
+        for (int i = 0; i < (uids.length - 1); i++) {
+            buf.append(uids[i]);
+            buf.append(',');
+        }
+
+        buf.append(uids[uids.length - 1]);
+
+        return buf.toString();
     }
 
     private FetchFlagsResponse prepareFetchFlagsResponse(byte[] rawText) {
@@ -819,16 +823,7 @@ public class ImapProtocol {
             return;
         }
 
-        StringBuffer buf = new StringBuffer();
-
-        for (int i = 0; i < (indices.length - 1); i++) {
-            buf.append(indices[i]);
-            buf.append(',');
-        }
-
-        buf.append(indices[indices.length - 1]);
-
-        String indexList = buf.toString();
+        String indexList = getUidList(indices);
 
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -868,16 +863,7 @@ public class ImapProtocol {
             return;
         }
 
-        StringBuffer buf = new StringBuffer();
-
-        for (int i = 0; i < (uids.length - 1); i++) {
-            buf.append(uids[i]);
-            buf.append(',');
-        }
-
-        buf.append(uids[uids.length - 1]);
-
-        String uidList = buf.toString();
+        String uidList = getUidList(uids);
 
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
@@ -1194,8 +1180,49 @@ public class ImapProtocol {
             EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.DEBUG_INFO);
         }
 
+        executeStoreImpl(Integer.toString(uid), addOrRemove, flags);
+    }
+
+    /**
+     * Execute the "STORE" command to update message flags.
+     * Updated flags will be returned through the untagged response listener.
+     * 
+     * @param uid The message unique ID to modify.
+     * @param addOrRemove True to add flags, false to remove them.
+     * @param flags Array of flags to change.  (i.e. "\Seen", "\Answered")
+     */
+    public void executeStore(int[] uids, boolean addOrRemove, String[] flags) throws IOException, MailException {
+        if(uids.length == 0) { return; }
+        
+        String uidList = getUidList(uids);
+        
+        if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+            StringBuffer buf = new StringBuffer();
+            buf.append("ImapProtocol.executeStore(");
+            buf.append('{');
+            buf.append(uidList);
+            buf.append("}, ");
+            buf.append(addOrRemove ? "add" : "remove");
+            buf.append(", {");
+            for (int i = 0; i < flags.length; i++) {
+                buf.append('\"');
+                buf.append(flags[i]);
+                buf.append('\"');
+
+                if (i < (flags.length - 1)) {
+                    buf.append(", ");
+                }
+            }
+            buf.append("})");
+            EventLogger.logEvent(AppInfo.GUID, buf.toString().getBytes(), EventLogger.DEBUG_INFO);
+        }
+
+        executeStoreImpl(uidList, addOrRemove, flags);
+    }
+
+    private void executeStoreImpl(String uidParam, boolean addOrRemove, String[] flags) throws IOException, MailException {
         StringBuffer buf = new StringBuffer();
-        buf.append(uid);
+        buf.append(uidParam);
         buf.append(' ');
         buf.append(addOrRemove ? '+' : '-');
         buf.append("FLAGS (");

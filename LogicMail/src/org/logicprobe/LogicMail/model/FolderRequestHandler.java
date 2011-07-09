@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -543,6 +544,21 @@ abstract class FolderRequestHandler {
         }, false);
     }
 
+    public abstract void setPriorFolderMessagesSeen(Date startDate);
+
+    public void handleMessageFlagsChanged(final MessageToken messageToken, final MessageFlags messageFlags) {
+        // Update the flags for the message in the cache
+        FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
+        if(message != null) {
+            message.setFlags(messageFlags);
+            if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
+                folderMessageCache.commit();
+            }
+        }
+        // Pass the event upwards
+        mailStoreServices.fireMessageFlagsChanged(messageToken, messageFlags);
+    }
+    
     MimeMessagePart getCachedMessageStructure(MessageToken messageToken) {
         // TODO Consider blocking if a refresh is in progress
         FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);

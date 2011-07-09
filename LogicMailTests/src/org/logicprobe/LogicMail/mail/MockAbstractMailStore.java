@@ -360,6 +360,30 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
         }
     }
 
+    public static final MockMethod MTHD_CREATE_MESSAGE_FLAG_CHANGE_REQUEST_$_ARRAY_MESSAGETOKEN_MESSAGEFLAGS_BOOLEAN = new MockMethod(
+        MockAbstractMailStore.class, 
+        "MTHD_CREATE_MESSAGE_FLAG_CHANGE_REQUEST_$_ARRAY_MESSAGETOKEN_MESSAGEFLAGS_BOOLEAN",
+        new Class[]{org.logicprobe.LogicMail.mail.MessageToken[].class, org.logicprobe.LogicMail.message.MessageFlags.class, Boolean.class},
+        new Class[]{},
+        org.logicprobe.LogicMail.mail.MessageFlagChangeRequest.class,
+        true);
+    public org.logicprobe.LogicMail.mail.MessageFlagChangeRequest createMessageFlagChangeRequest(org.logicprobe.LogicMail.mail.MessageToken[] arg0, org.logicprobe.LogicMail.message.MessageFlags arg1, boolean arg2)  {
+        try {
+            Object[] args = new Object[3];
+            args[0] = arg0;
+            args[1] = arg1;
+            args[2] = new Boolean(arg2);
+            MethodInvocation mi = new MethodInvocation(MTHD_CREATE_MESSAGE_FLAG_CHANGE_REQUEST_$_ARRAY_MESSAGETOKEN_MESSAGEFLAGS_BOOLEAN, this, args);
+            getInvocationHandler().invoke(mi);
+            Object retVal = mi.getReturnValue();
+            return (org.logicprobe.LogicMail.mail.MessageFlagChangeRequest)retVal;
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            throw new HammockException(t);
+        }
+    }
+
     public static final MockMethod MTHD_CREATE_MESSAGE_FLAG_CHANGE_REQUEST_$_MESSAGETOKEN_MESSAGEFLAGS_BOOLEAN = new MockMethod(
         MockAbstractMailStore.class, 
         "MTHD_CREATE_MESSAGE_FLAG_CHANGE_REQUEST_$_MESSAGETOKEN_MESSAGEFLAGS_BOOLEAN",
@@ -400,6 +424,31 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
             getInvocationHandler().invoke(mi);
             Object retVal = mi.getReturnValue();
             return (org.logicprobe.LogicMail.mail.MessageRequest)retVal;
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            throw new HammockException(t);
+        }
+    }
+
+    public static final MockMethod MTHD_CREATE_MESSAGE_RANGE_FLAG_CHANGE_REQUEST_$_FOLDERTREEITEM_DATE_MESSAGEFLAGS_BOOLEAN = new MockMethod(
+        MockAbstractMailStore.class, 
+        "MTHD_CREATE_MESSAGE_RANGE_FLAG_CHANGE_REQUEST_$_FOLDERTREEITEM_DATE_MESSAGEFLAGS_BOOLEAN",
+        new Class[]{org.logicprobe.LogicMail.mail.FolderTreeItem.class, java.util.Date.class, org.logicprobe.LogicMail.message.MessageFlags.class, Boolean.class},
+        new Class[]{},
+        org.logicprobe.LogicMail.mail.MessageRangeFlagChangeRequest.class,
+        true);
+    public org.logicprobe.LogicMail.mail.MessageRangeFlagChangeRequest createMessageRangeFlagChangeRequest(org.logicprobe.LogicMail.mail.FolderTreeItem arg0, java.util.Date arg1, org.logicprobe.LogicMail.message.MessageFlags arg2, boolean arg3)  {
+        try {
+            Object[] args = new Object[4];
+            args[0] = arg0;
+            args[1] = arg1;
+            args[2] = arg2;
+            args[3] = new Boolean(arg3);
+            MethodInvocation mi = new MethodInvocation(MTHD_CREATE_MESSAGE_RANGE_FLAG_CHANGE_REQUEST_$_FOLDERTREEITEM_DATE_MESSAGEFLAGS_BOOLEAN, this, args);
+            getInvocationHandler().invoke(mi);
+            Object retVal = mi.getReturnValue();
+            return (org.logicprobe.LogicMail.mail.MessageRangeFlagChangeRequest)retVal;
         } catch (Throwable t) {
             if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
             if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }

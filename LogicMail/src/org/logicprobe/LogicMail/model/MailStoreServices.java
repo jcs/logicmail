@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Date;
+
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
@@ -115,7 +117,7 @@ public abstract class MailStoreServices {
                 }
             }
             public void messageFlagsChanged(MessageEvent e) {
-                fireMessageFlagsChanged(e.getMessageToken(), e.getMessageFlags());
+                handleMessageFlagsChanged(e.getMessageToken(), e.getMessageFlags());
             }
         });
     }
@@ -505,6 +507,14 @@ public abstract class MailStoreServices {
                 new MessageFlags(MessageFlags.Flag.SEEN),
                 false));
     }
+
+    public void requestPriorMessagesSeen(FolderTreeItem folder, Date startDate) {
+        mailStore.processRequest(mailStore.createMessageRangeFlagChangeRequest(
+                folder,
+                startDate,
+                new MessageFlags(MessageFlags.Flag.SEEN),
+                true));
+    }
     
     public void requestMessageDelete(MessageToken messageToken) {
         mailStore.processRequest(mailStore.createMessageFlagChangeRequest(
@@ -832,6 +842,10 @@ public abstract class MailStoreServices {
             }
             ((MessageListener)listeners[i]).messageAvailable(e);
         }
+    }
+
+    protected void handleMessageFlagsChanged(MessageToken messageToken, MessageFlags messageFlags) {
+        fireMessageFlagsChanged(messageToken, messageFlags);
     }
 
     /**

@@ -30,8 +30,23 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.model.MailboxNode;
+
 public class ScreenFactoryBB60 extends ScreenFactoryBB50 {
 
+    public MessageActions getMessageActions(NavigationController navigationController) {
+        return new MessageActionsBB60(navigationController);
+    }
+    
+    public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
+        if(hasTouchscreen) {
+            return getStandardTouchScreen(navigationController, new MailboxScreenBB60(mailboxNode));
+        }
+        else {
+            return getStandardScreen(navigationController, new MailboxScreenBB60(mailboxNode));
+        }
+    }
+    
     protected StandardScreen getStandardTouchScreen(NavigationController navigationController, ScreenProvider screenProvider) {
         return new StandardTouchScreenBB60(navigationController, screenProvider);
     }

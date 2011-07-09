@@ -31,11 +31,13 @@
 
 package org.logicprobe.LogicMail.mail;
 
+import java.util.Date;
+
 import org.logicprobe.LogicMail.message.MessageFlags;
 
-public interface MessageFlagChangeRequest extends MailStoreRequest {
-    MessageToken getMessageToken();
-    MessageToken[] getMessageTokens();
+public interface MessageRangeFlagChangeRequest extends MailStoreRequest {
+    FolderTreeItem getFolder();
+    Date getStartDate();
     MessageFlags getMessageFlags();
     boolean isAddOrRemove();
 }

@@ -536,6 +536,26 @@ public interface IncomingMailClient extends MailClient {
     void messageSeen(MessageToken messageToken) throws IOException, MailException;
     
     /**
+     * Sets the flags on a message set so that the server marks them as seen.
+     * Since this automatically happens during normal message retrieval, this
+     * should only be necessary if a state change is needed without a
+     * corresponding fetch request.
+     * This should do nothing if the underlying protocol does not support
+     * changing the seen state of messages.
+     * <p>
+     * The actual flag updates will be provided asynchronously via
+     * {@link IncomingMailClientListener#folderMessageFlagsChanged(MessageToken, MessageFlags)}.
+     * </p>
+     *
+     * @param messageTokens Tokens identifying the messages being modified
+     * 
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     * @see #hasFlags()
+     */
+    void messageSeen(MessageToken[] messageTokens) throws IOException, MailException;
+    
+    /**
      * Sets the flags on a message so that the server marks it as unseen.
      * This should do nothing if the underlying protocol does not support
      * changing the seen state of a message.

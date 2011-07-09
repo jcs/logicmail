@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -42,6 +43,7 @@ import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MessageFlags;
 
 /**
  * Handles folder-oriented requests for the mail store services layer, with
@@ -230,5 +232,30 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
             initialRefreshComplete = true;
             endFolderRefreshOperation(true);
         }
+    }
+    
+    public void setPriorFolderMessagesSeen(final Date startDate) {
+        invokeAfterRefresh(new Runnable() {
+            public void run() {
+                long startTime = startDate.getTime();
+                FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
+
+                Vector messagesToUpdate = new Vector();
+                for(int i=0; i<messages.length; i++) {
+                    if(messages[i].getEnvelope().date.getTime() < startTime
+                            && !messages[i].isSeen()) {
+                        messagesToUpdate.addElement(messages[i].getMessageToken());
+                    }
+                }
+
+                if(messagesToUpdate.size() > 0) {
+                    MessageToken[] tokens = new MessageToken[messagesToUpdate.size()];
+                    messagesToUpdate.copyInto(tokens);
+
+                    processMailStoreRequest(mailStore.createMessageFlagChangeRequest(
+                            tokens, new MessageFlags(MessageFlags.Flag.SEEN), true));
+                }
+            }
+        }, false);
     }
 }

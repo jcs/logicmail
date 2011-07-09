@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -50,6 +51,7 @@ import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkClientIdleModeRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
+import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
@@ -221,6 +223,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
     public void requestMessageUnseen(MessageToken messageToken) {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         handler.setFolderMessageUnseen(messageToken);
+    }
+    
+    public void requestPriorMessagesSeen(FolderTreeItem folder, Date startDate) {
+        FolderRequestHandler handler = getFolderRequestHandler(folder);
+        handler.setPriorFolderMessagesSeen(startDate);
     }
     
     public void removeSavedData(final FolderTreeItem[] folderTreeItems) {
@@ -674,5 +681,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
         // will be called once for all requested content, it is safe to assume
         // that the operation is complete here.
         messageRefreshComplete(messageToken);
+    }
+    
+    protected void handleMessageFlagsChanged(MessageToken messageToken, MessageFlags messageFlags) {
+        FolderRequestHandler handler = getFolderRequestHandler(messageToken);
+        handler.handleMessageFlagsChanged(messageToken, messageFlags);
     }
 }

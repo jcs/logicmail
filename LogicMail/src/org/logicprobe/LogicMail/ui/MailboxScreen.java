@@ -93,9 +93,11 @@ public class MailboxScreen extends AbstractScreenProvider {
     private boolean displayOrder;
     private boolean hideDeleted;
     private MessageActions messageActions;
-    private boolean composeEnabled;
+    protected boolean composeEnabled;
+    protected Field currentContextField;
 
-	private MenuItem compositionItem;
+    protected MenuItem compositionItem;
+    protected MenuItem markPriorOpenedItem;
 	
     /**
      * Initializes a new MailboxScreen to view the provided mailbox.
@@ -351,27 +353,70 @@ public class MailboxScreen extends AbstractScreenProvider {
         standardScreen.setShortcutEnabled(SHORTCUT_DELETE, deleteEnabled);
     }
 
-    private void initMenuItems() {
+    protected void initMenuItems() {
 	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
 	        public void run() {
 	            AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "composition");
 	        	navigationController.displayComposition((NetworkAccountNode)mailboxNode.getParentAccount());
 	        }
 	    };
+	    markPriorOpenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_PRIOR_OPENED, 400110, 2000) {
+            public void run() {
+                if(!(currentContextField instanceof MessageSeparatorField)) { return; }
+                
+                int choice = Dialog.ask(
+                        resources.getString(LogicMailResource.MAILBOX_MARK_ALL_PRIOR_ITEMS_OPENED_PROMPT),
+                        new Object[] {
+                                resources.getString(LogicMailResource.MENUITEM_MARK_OPENED),
+                                resources.getString(LogicMailResource.MENUITEM_CANCEL)
+                        },
+                        new int[] { Dialog.OK, Dialog.CANCEL },
+                        Dialog.CANCEL);
+                
+                if(choice == Dialog.OK) {
+                    AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "markPriorOpened");
+                    Date separatorDate = ((MessageSeparatorField)currentContextField).getDate();
+                    
+                    // The separator date is midnight on the day it shows,
+                    // so we pass a date that is exactly one day past it to
+                    // ensure the desired effect of this request.
+                    mailboxNode.markPriorMessagesOpened(new Date(separatorDate.getTime() + 86400000));
+                }
+            }
+        };
 	}
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.BaseScreen#makeMenu(net.rim.device.api.ui.component.Menu, int)
      */
     public void makeMenu(Menu menu, int instance) {
-    	Field fieldWithFocus = messageFieldManager.getFieldWithFocus();
-    	if(fieldWithFocus instanceof MailboxMessageField) {
-    	    MessageNode messageNode = ((MailboxMessageField)fieldWithFocus).getMessageNode();
-    	    messageActions.makeMenu(menu, instance, messageNode, false);
+    	currentContextField = messageFieldManager.getFieldWithFocus();
+    	if(currentContextField instanceof MailboxMessageField) {
+    	    makeMessageMenu((MailboxMessageField)currentContextField, menu, instance);
     	}
+    	else if(currentContextField instanceof MessageSeparatorField) {
+    	    makeSeparatorMenu((MessageSeparatorField)currentContextField, menu, instance);
+    	}
+    }
+
+    protected void makeMessageMenu(MailboxMessageField messageField, Menu menu, int instance) {
+        MessageNode messageNode = messageField.getMessageNode();
+        if(instance == Menu.INSTANCE_DEFAULT) {
+            messageActions.makeMenu(menu, instance, messageNode, false);
+            if(composeEnabled) {
+                menu.add(compositionItem);
+            }
+        }
+        else {
+            messageActions.makeContextMenu(menu, instance, messageNode, false);
+        }
+    }
+    
+    protected void makeSeparatorMenu(MessageSeparatorField separatorField, Menu menu, int instance) {
         if(composeEnabled) {
             menu.add(compositionItem);
         }
+        menu.add(markPriorOpenedItem);
     }
     
     public boolean onClose() {
@@ -1077,7 +1122,7 @@ public class MailboxScreen extends AbstractScreenProvider {
     	}
     }
     
-    private static class MessageSeparatorField extends LabeledSeparatorField {
+    protected static class MessageSeparatorField extends LabeledSeparatorField {
         private final Date date;
         
         public MessageSeparatorField(Date date) {
