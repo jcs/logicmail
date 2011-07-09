@@ -52,7 +52,7 @@ public class Watchdog {
     private static final long DEFAULT_TIMEOUT_WIFI = 15000;
     
     private final WatchdogListener listener;
-    private final WatchdogThread watchdogThread;
+    private WatchdogThread watchdogThread;
     private boolean started;
     private long defaultTimeout = DEFAULT_TIMEOUT;
     
@@ -66,7 +66,6 @@ public class Watchdog {
             throw new NullPointerException("Must supply a listener");
         }
         this.listener = listener;
-        this.watchdogThread = new WatchdogThread();
     }
 
     /**
@@ -98,12 +97,13 @@ public class Watchdog {
      */
     public void shutdown() {
         if(listener == null) { return; }
-        if(watchdogThread.isAlive()) {
+        if(watchdogThread != null && watchdogThread.isAlive()) {
             watchdogThread.shutdown();
             try {
                 watchdogThread.join();
             } catch (InterruptedException e) { }
         }
+        watchdogThread = null;
         started = false;
         defaultTimeout = DEFAULT_TIMEOUT;
     }
@@ -161,7 +161,8 @@ public class Watchdog {
         if(started) {
             throw new IllegalStateException();
         }
-        if(!watchdogThread.isAlive()) {
+        if(watchdogThread == null) {
+            watchdogThread = new WatchdogThread();
             watchdogThread.start();
         }
         watchdogThread.startTimeout(timeout);
@@ -173,7 +174,7 @@ public class Watchdog {
      */
     public void kick() {
         if(listener == null) { return; }
-        if(!started) {
+        if(!started || watchdogThread == null) {
             throw new IllegalStateException();
         }
         watchdogThread.kickTimeout();
@@ -184,7 +185,7 @@ public class Watchdog {
      */
     public void cancel() {
         if(listener == null) { return; }
-        if(!started) {
+        if(!started || watchdogThread == null) {
             throw new IllegalStateException();
         }
         watchdogThread.cancelTimeout();
