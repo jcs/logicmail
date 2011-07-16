@@ -75,6 +75,9 @@ class PopFolderRequestHandler extends FolderRequestHandler {
         }
 
         mailStoreServices.invokeLater(new Runnable() { public void run() {
+            // Fetch messages stored in the cache
+            loadCachedFolderMessages();
+            
             processMailStoreRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
                     .setRequestCallback(new FolderRefreshRequestCallback() {
                         public void mailStoreRequestComplete(MailStoreRequest request) {
@@ -82,9 +85,6 @@ class PopFolderRequestHandler extends FolderRequestHandler {
                             indexMapFetchComplete(indexMapRequest.getResultUidIndexMap());
                         }
                     }));
-
-            // Fetch messages stored in the cache
-            loadCachedFolderMessages();
         }});
     }
     

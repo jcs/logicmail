@@ -93,6 +93,11 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
     
     protected void beginFolderRefreshOperation() {
         mailStoreServices.invokeLater(new Runnable() { public void run() {
+            if(!initialRefreshComplete) {
+                // Fetch messages stored in cache
+                loadCachedFolderMessages();
+            }
+
             // Queue a request for new folder messages from the mail store
             processMailStoreRequest(mailStore.createFolderMessagesRecentRequest(folderTreeItem, true)
                     .setRequestCallback(new FolderRefreshRequestCallback() {
@@ -102,11 +107,6 @@ class ImapFolderRequestHandler extends FolderRequestHandler {
                             initialFlagsRefreshComplete(folderMessages);
                         }
                     }));
-
-            if(!initialRefreshComplete) {
-                // Fetch messages stored in cache
-                loadCachedFolderMessages();
-            }
         }});
     }
     
