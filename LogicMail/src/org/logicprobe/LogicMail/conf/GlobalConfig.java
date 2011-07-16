@@ -93,6 +93,8 @@ public class GlobalConfig implements Serializable {
     private boolean promptOnDelete;
     /** The expunge-related behavior when leaving a mailbox. */
     private int expungeMode;
+    /** Whether the application should launch on device startup. */
+    private boolean autoStartupEnabled;
     /** Whether to show a notification icon on the homescreen. */
     private boolean notificationIconShown;
 
@@ -137,6 +139,7 @@ public class GlobalConfig implements Serializable {
         this.filesystemRoot = "";
         this.promptOnDelete = true;
         this.expungeMode = GlobalConfig.EXPUNGE_PROMPT;
+        this.autoStartupEnabled = false;
         this.notificationIconShown = true;
         changeType = 0;
     }
@@ -420,7 +423,28 @@ public class GlobalConfig implements Serializable {
     }
     
     /**
-     * Checks if is notification icon should be shown on the homescreen.
+     * Checks if the application should launch on device startup.
+     *
+     * @return true, if auto startup is enabled
+     */
+    public boolean isAutoStartupEnabled() {
+        return autoStartupEnabled;
+    }
+    
+    /**
+     * Sets whether the application should launch on device startup.
+     *
+     * @param autoStartupEnabled the new auto startup setting
+     */
+    public void setAutoStartupEnabled(boolean autoStartupEnabled) {
+        if(this.autoStartupEnabled != autoStartupEnabled) {
+            this.autoStartupEnabled = autoStartupEnabled;
+            changeType |= CHANGE_TYPE_OTHER;
+        }
+    }
+    
+    /**
+     * Checks if a notification icon should be shown on the homescreen.
      *
      * @return true, if is notification icon is shown
      */
@@ -460,6 +484,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_localHostname", localHostname);
         table.put("global_promptOnDelete", new Boolean(promptOnDelete));
         table.put("global_expungeMode", new Integer(expungeMode));
+        table.put("global_autoStartupEnabled", new Boolean(autoStartupEnabled));
         table.put("global_notificationIconShown", new Boolean(notificationIconShown));
 
         table.serialize(output);
@@ -525,6 +550,10 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_expungeMode");
         if(value instanceof Integer) {
             expungeMode = ((Integer)value).intValue();
+        }
+        value = table.get("global_autoStartupEnabled");
+        if(value instanceof Boolean) {
+            autoStartupEnabled = ((Boolean)value).booleanValue();
         }
         value = table.get("global_notificationIconShown");
         if(value instanceof Boolean) {

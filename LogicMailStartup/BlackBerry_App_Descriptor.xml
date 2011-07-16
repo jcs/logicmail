@@ -20,7 +20,7 @@
     <PackageProtection/>
   </HiddenProperties>
   <AlternateEntryPoints>
-    <AlternateEntryPoint Title="LogicMailInit" MainMIDletName="" ArgumentsForMain="autostartup" HomeScreenPosition="0" StartupTier="7" IsSystemModule="true" IsAutostartup="true" hasTitleResource="false" TitleResourceBundleKey="" TitleResourceBundleName="" TitleResourceBundleClassName="" TitleResourceBundleRelativePath="">
+    <AlternateEntryPoint Title="LogicMail" MainMIDletName="" ArgumentsForMain="autostartup" HomeScreenPosition="0" StartupTier="7" IsSystemModule="true" IsAutostartup="true" hasTitleResource="false" TitleResourceBundleKey="" TitleResourceBundleName="" TitleResourceBundleClassName="" TitleResourceBundleRelativePath="">
       <Icons/>
     </AlternateEntryPoint>
   </AlternateEntryPoints>

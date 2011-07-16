@@ -46,6 +46,7 @@ import org.logicprobe.LogicMail.util.SerializableVector;
  */
 public class MailSettings {
     private static MailSettings instance;
+    private boolean settingsLoaded;
 	private EventListenerList listenerList = new EventListenerList();
     private GlobalConfig globalConfig;
     private Vector identityConfigs;
@@ -55,6 +56,8 @@ public class MailSettings {
     private boolean isIdentityListDirty;
     private boolean isAccountListDirty;
     private boolean isOutgoingListDirty;
+
+    private final Object fileSystemEventLock = new Object();
     
     /** Keeps track of configured filesystem root if temporarily removed. */
     private String removedFilesystemRoot;
@@ -346,7 +349,9 @@ public class MailSettings {
         isIdentityListDirty = false;
         isAccountListDirty = false;
         isOutgoingListDirty = false;
-        removedFilesystemRoot = null;
+        synchronized(fileSystemEventLock) {
+            removedFilesystemRoot = null;
+        }
     }
         
     private void removeExistingSettings(String key) {
@@ -365,6 +370,7 @@ public class MailSettings {
      * the application, preferably at the very start.
      */
     public void loadSettings() {
+        if(settingsLoaded) { return; }
         configStore.load();
         
         Object loadedObj;
@@ -429,27 +435,51 @@ public class MailSettings {
         isIdentityListDirty = false;
         isAccountListDirty = false;
         isOutgoingListDirty = false;
-        removedFilesystemRoot = null;
+        synchronized(fileSystemEventLock) {
+            removedFilesystemRoot = null;
+        }
+        settingsLoaded = true;
+    }
+    
+    /**
+     * Reload the configurations from persistent storage.
+     * This method is identical to {@link #loadSettings()} except that it will
+     * run even if settings have already been loaded.
+     */
+    public void reloadSettings() {
+        settingsLoaded = false;
+        loadSettings();
     }
     
     private FileSystemListener fileSystemListener = new FileSystemListener() {
         public void rootChanged(int state, String rootName) {
-            if(state == FileSystemListener.ROOT_REMOVED
-                    && globalConfig.getFilesystemRoot().indexOf(rootName) != -1) {
-                removedFilesystemRoot = globalConfig.getFilesystemRoot();
-                globalConfig.setFilesystemRoot(GlobalConfig.FILESYSTEM_DISABLED);
-                MailSettingsEvent e = new MailSettingsEvent(this);
-                e.setGlobalChange(globalConfig.getChangeType());
-                fireMailSettingsSaved(e);
-            }
-            else if(state == FileSystemListener.ROOT_ADDED
-                    && removedFilesystemRoot != null
-                    && removedFilesystemRoot.indexOf(rootName) != -1) {
-                globalConfig.setFilesystemRoot(removedFilesystemRoot);
-                removedFilesystemRoot = null;
-                MailSettingsEvent e = new MailSettingsEvent(this);
-                e.setGlobalChange(globalConfig.getChangeType());
-                fireMailSettingsSaved(e);
+            synchronized(fileSystemEventLock) {
+                if(state == FileSystemListener.ROOT_REMOVED
+                        && globalConfig.getFilesystemRoot().indexOf(rootName) != -1) {
+                    removedFilesystemRoot = globalConfig.getFilesystemRoot();
+                    globalConfig.setFilesystemRoot(GlobalConfig.FILESYSTEM_DISABLED);
+                    MailSettingsEvent settingsEvent = new MailSettingsEvent(this);
+                    settingsEvent.setGlobalChange(globalConfig.getChangeType());
+                    fireMailSettingsSaved(settingsEvent);
+                }
+                else if(state == FileSystemListener.ROOT_ADDED) {
+                    if(removedFilesystemRoot != null
+                            && removedFilesystemRoot.indexOf(rootName) != -1) {
+                        globalConfig.setFilesystemRoot(removedFilesystemRoot);
+                        removedFilesystemRoot = null;
+                        MailSettingsEvent settingsEvent = new MailSettingsEvent(this);
+                        settingsEvent.setGlobalChange(globalConfig.getChangeType());
+                        fireMailSettingsSaved(settingsEvent);
+                    }
+                    else if(globalConfig.getFilesystemRoot().indexOf(rootName) != -1) {
+                        // Fake a data location change event, now that the
+                        // configured root has become available.  This should
+                        // cause local data features to become enabled.
+                        MailSettingsEvent settingsEvent = new MailSettingsEvent(this);
+                        settingsEvent.setGlobalChange(GlobalConfig.CHANGE_TYPE_DATA);
+                        fireMailSettingsSaved(settingsEvent);
+                    }
+                }
             }
         }
     };
@@ -463,6 +493,19 @@ public class MailSettings {
      */
     public FileSystemListener getFileSystemListener() {
         return fileSystemListener;
+    }
+    
+    /**
+     * Simulates a change to the global data configuration.
+     * This method is synchronized so that it will not overlap with any
+     * notifications from a <code>FileSystemListener</code> event. 
+     */
+    public void simulateGlobalDataChange() {
+        synchronized(fileSystemEventLock) {
+            MailSettingsEvent settingsEvent = new MailSettingsEvent(this);
+            settingsEvent.setGlobalChange(GlobalConfig.CHANGE_TYPE_DATA);
+            fireMailSettingsSaved(settingsEvent);
+        }
     }
     
 	/**

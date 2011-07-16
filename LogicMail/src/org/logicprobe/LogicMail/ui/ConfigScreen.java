@@ -110,6 +110,7 @@ public class ConfigScreen extends AbstractConfigScreen {
 
     // Other
     private VerticalFieldManager otherFieldManager;
+    private CheckboxField autoStartupCheckboxField;
     private CheckboxField notificationIconCheckboxField;
     private ObjectChoiceField localDataLocationChoiceLabel;
     private CheckboxField connectionDebuggingCheckboxField;
@@ -430,6 +431,10 @@ public class ConfigScreen extends AbstractConfigScreen {
     private void initOtherFields() {
         otherFieldManager = new VerticalFieldManager();
         
+        autoStartupCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_AUTO_STARTUP),
+                existingGlobalConfig.isAutoStartupEnabled());
+        
         if(hasIndicators) {
             notificationIconCheckboxField = new CheckboxField(
                     resources.getString(LogicMailResource.CONFIG_GLOBAL_SHOW_NOTIFICATION_ICON),
@@ -487,6 +492,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         otherFieldManager.add(new LabeledSeparatorField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_SECTION_OTHER),
                 Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
+        otherFieldManager.add(autoStartupCheckboxField);
         if(hasIndicators) {
             otherFieldManager.add(notificationIconCheckboxField);
         }
@@ -1077,6 +1083,8 @@ public class ConfigScreen extends AbstractConfigScreen {
         
         config.setEnableWiFi(enableWiFiCheckboxField.getChecked());
 
+        config.setAutoStartupEnabled(autoStartupCheckboxField.getChecked());
+        
         if(hasIndicators) {
             config.setNotificationIconShown(notificationIconCheckboxField.getChecked());
         }

@@ -31,14 +31,33 @@
 package org.logicprobe.LogicMail.ui;
 
 import net.rim.blackberry.api.homescreen.HomeScreen;
+import net.rim.device.api.system.ApplicationDescriptor;
+import net.rim.device.api.system.CodeModuleManager;
 
 import org.logicprobe.LogicMail.AppInfo;
 
 public class NotificationHandlerBB60 extends NotificationHandlerBB46 {
     private boolean iconSet;
+    private final ApplicationDescriptor appDescriptor;
 
     public NotificationHandlerBB60() {
         super();
+        this.appDescriptor = findHomeScreenApplicationDescriptor();
+    }
+    
+    private static ApplicationDescriptor findHomeScreenApplicationDescriptor() {
+        ApplicationDescriptor result = null;
+        try {
+            int moduleHandle = ApplicationDescriptor.currentApplicationDescriptor().getModuleHandle();
+            ApplicationDescriptor[] descriptors = CodeModuleManager.getApplicationDescriptors(moduleHandle);
+            for(int i=0; i<descriptors.length; i++) {
+                if(descriptors[i].getIndex() == 0) {
+                    result = descriptors[i];
+                    break;
+                }
+            }
+        } catch (Exception e) { }
+        return result;
     }
     
     protected void updateIndicator(int count, boolean recent) {
@@ -48,11 +67,16 @@ public class NotificationHandlerBB60 extends NotificationHandlerBB46 {
     }
     
     protected void setAppIcon(boolean newMessages) {
-        if(!iconSet) {
-            HomeScreen.updateIcon(AppInfo.getIcon());
-            HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon());
-            iconSet = true;
+        if(appDescriptor != null) {
+            if(!iconSet) {
+                HomeScreen.updateIcon(AppInfo.getIcon(), appDescriptor);
+                HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), appDescriptor);
+                iconSet = true;
+            }
+            HomeScreen.setNewState(newMessages, appDescriptor);
         }
-        HomeScreen.setNewState(newMessages);
+        else {
+            super.setAppIcon(newMessages);
+        }
     }
 }

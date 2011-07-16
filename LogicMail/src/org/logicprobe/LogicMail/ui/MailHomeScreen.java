@@ -475,8 +475,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
      */
     public boolean onClose() {
         saveScreenMetadata();
-        // Roundabout kludge for now
-        ((StandardScreen)screen).tryShutdownApplication();
+        UiApplication.getUiApplication().requestBackground();
         return false;
     }
 

@@ -233,9 +233,7 @@ public class StandardScreen extends MainScreen {
         closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 60000000, 9000) {
             public void run() {
                 AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "close");
-                // TODO: Deal with closing/hiding while still running
-
-                StandardScreen.super.onClose();
+                StandardScreen.this.onClose();
             }
         };
         exitItem = new MenuItem(resources, LogicMailResource.MENUITEM_EXIT, 60000100, 9000) {

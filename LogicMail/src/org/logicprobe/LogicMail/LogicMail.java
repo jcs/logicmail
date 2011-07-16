@@ -46,7 +46,6 @@ import net.rim.device.api.system.ControlledAccessException;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.Display;
 import net.rim.device.api.system.EventLogger;
-import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.system.SystemListener;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.Font;
@@ -56,7 +55,6 @@ import net.rim.device.api.ui.UiEngine;
 import net.rim.device.api.ui.component.BitmapField;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
-import net.rim.device.api.util.LongHashtable;
 
 import org.logicprobe.LogicMail.model.MailManager;
 import org.logicprobe.LogicMail.ui.BlankSeparatorField;
@@ -110,116 +108,26 @@ public final class LogicMail extends UiApplication {
     public void run() {
         PermissionsHandler.registerReasonProvider();
         if(autoStart) {
-            if(ApplicationManager.getApplicationManager().inStartup()) {
-                systemListener = new StartupSystemListener();
-                this.addSystemListener(systemListener);
-            }
-            else {
-                this.startupInitializationLater();
-            }
+            runAutoStartup();
         }
         else {
-            logStartupAppInfo();
-
-            createLoadingScreen();
-
-            final Thread loadingThread = new Thread() {
-                public void run() {
-                    // Load the configuration
-                    DataStoreFactory.getConnectionCacheStore().load();
-                    MailSettings.getInstance().loadSettings();
-                    
-                    // Locale override is not used in release builds
-                    if(!AppInfo.isRelease()) {
-                        // Set the language, if configured
-                        String languageCode =
-                            MailSettings.getInstance().getGlobalConfig().getLanguageCode();
-                        if(languageCode != null && languageCode.length() > 0) {
-                            try {
-                                Locale.setDefault(Locale.get(languageCode));
-                            } catch (Exception e) { }
-                        }
-                    }
-
-                    // Initialize the data model explicitly
-                    MailManager.initialize();
-
-                    // Initialize the notification handler
-                    NotificationHandler.getInstance().setEnabled(true);
-
-                    // Initialize the navigation controller
-                    navigationController = new NavigationController(LogicMail.this);
-
-                    // Add the filesystem listener
-                    try {
-                        FileSystemRegistry.addFileSystemListener(MailSettings.getInstance().getFileSystemListener());
-                    } catch (ControlledAccessException e) {
-                        // Don't fail if file permissions are denied
-                    }
-                    
-                    // Add any sensor listeners
-                    try {
-                        UtilFactory.getInstance().addSensorListeners();
-                    } catch (ControlledAccessException e) {
-                        // Don't fail if permissions are denied
-                    }
-                    
-                    invokeLater(new Runnable() {
-                        public void run() {
-                            // Push the mail home screen and pop
-                            // the loading screen
-                            navigationController.displayMailHome();
-                            popScreen(loadingScreen);
-                            loadingScreen = null;
-                            MailManager.getInstance().startupComplete();
-                        }
-                    });
-                }
-            };
-
-            if(!AppInfo.getVersion().equals(AppInfo.getLastVersion())) {
-                AppInfo.setLicenseAccepted(false);
-            }
-            
-            if(AppInfo.isLicenceAccepted()) {
-                foreground = true;
-                PermissionsHandler.checkStartupPermissions(false);
-                AnalyticsDataCollector.getInstance().setConfigured(AppInfo.isAnalyticsEnabled());
-                requestForeground();
-                pushScreen(loadingScreen);
-                loadingThread.start();
-            }
-            else {
-                foreground = false;
-                invokeLater(new Runnable() {
-                    public void run() {
-                        HomeScreenPopup popupDialog = new HomeScreenPopup();
-                        pushGlobalScreen(popupDialog, 1, UiEngine.GLOBAL_MODAL);
-
-                        if(!popupDialog.isLicenseAccepted()) {
-                            PermissionsHandler.unregisterReasonProvider();
-                            System.exit(0);
-                        }
-                        else {
-                            AppInfo.updateLastVersion();
-                            AppInfo.setLicenseAccepted(true);
-                            AppInfo.setAnalyticsEnabled(popupDialog.isAnalyticsEnabled());
-                            PermissionsHandler.checkStartupPermissions(true);
-                            foreground = true;
-                            LogicMail.this.requestForeground();
-                            pushScreen(loadingScreen);
-                            loadingThread.start();
-                        }
-                    }
-                });
-            }
+            runNormalStartup();
         }
         enterEventDispatcher();
     }
-
+    
     public void activate() {
         activateAnalytics();
         super.activate();
+    }
+    
+    public void deactivate() {
+        deactivateAnalytics();
+        super.deactivate();
+    }
+    
+    protected boolean acceptsForeground() {
+        return foreground;
     }
 
     private void activateAnalytics() {
@@ -233,16 +141,167 @@ public final class LogicMail extends UiApplication {
             }
         }
     }
-    
-    public void deactivate() {
-        if(AppInfo.isAnalyticsEnabled()) {
+
+    private void deactivateAnalytics() {
+        if(AppInfo.isAnalyticsEnabled() && analyticsAppStartHappened) {
             AnalyticsDataCollector.getInstance().onApplicationBackground();
         }
-        super.deactivate();
     }
     
-    protected boolean acceptsForeground() {
-        return foreground;
+    private void runNormalStartup() {
+        logStartupAppInfo();
+        createLoadingScreen();
+        checkForVersionIncrease();
+        
+        if(AppInfo.isLicenceAccepted()) {
+            beginNormalStartup(true);
+        }
+        else {
+            showLicenseDialog();
+        }
+    }
+
+    private void runBackgroundStartup() {
+        logStartupAppInfo();
+        beginNormalStartup(false);
+    }
+    
+    private void checkForVersionIncrease() {
+        if(!AppInfo.getVersion().equals(AppInfo.getLastVersion())) {
+            AppInfo.setLicenseAccepted(false);
+        }
+    }
+
+    private void beginNormalStartup(boolean runInForeground) {
+        // First check to see if we have an already-running instance
+        if(runInForeground) {
+            tryRequestForground();
+        }
+        
+        foreground = true;
+        PermissionsHandler.checkStartupPermissions(false);
+        AnalyticsDataCollector.getInstance().setConfigured(AppInfo.isAnalyticsEnabled());
+        if(runInForeground) {
+            requestForeground();
+            pushScreen(loadingScreen);
+        }
+        startBackgroundLoadingProcess();
+    }
+
+    private void tryRequestForground() {
+        try {
+            UiApplication applicationInstance =
+                LogicMailRuntimeState.getInstance().getApplicationInstance();
+            if(applicationInstance != null) {
+                applicationInstance.requestForeground();
+                System.exit(0);
+            }
+        } catch (ControlledAccessException e) { }
+    }
+
+    private void showLicenseDialog() {
+        foreground = false;
+        invokeLater(new Runnable() {
+            public void run() {
+                HomeScreenPopup popupDialog = new HomeScreenPopup();
+                pushGlobalScreen(popupDialog, 1, UiEngine.GLOBAL_MODAL);
+
+                if(!popupDialog.isLicenseAccepted()) {
+                    PermissionsHandler.unregisterReasonProvider();
+                    LogicMailRuntimeState.getInstance().setApplicationInstance(null);
+                    System.exit(0);
+                }
+                else {
+                    AppInfo.updateLastVersion();
+                    AppInfo.setLicenseAccepted(true);
+                    AppInfo.setAnalyticsEnabled(popupDialog.isAnalyticsEnabled());
+                    PermissionsHandler.checkStartupPermissions(true);
+                    foreground = true;
+                    LogicMail.this.requestForeground();
+                    pushScreen(loadingScreen);
+                    startBackgroundLoadingProcess();
+                }
+            }
+        });
+    }
+
+    private void startBackgroundLoadingProcess() {
+        Thread loadingThread = new Thread() {
+            public void run() {
+                loadConfiguration();
+
+                setDefaultLocale();
+
+                // Initialize the data model explicitly
+                MailManager.initialize();
+
+                // Initialize the notification handler
+                NotificationHandler.getInstance().setEnabled(true);
+
+                // Initialize the navigation controller
+                navigationController = new NavigationController(LogicMail.this);
+
+                addSystemListeners();
+
+                // Explicitly trigger a refresh of the local data location, just in
+                // case the file system appeared before we registered the listeners.
+                MailSettings.getInstance().simulateGlobalDataChange();
+                
+                showMailHomeScreen();
+            };
+        };
+        loadingThread.start();
+    }
+
+    private void loadConfiguration() {
+        // Load the configuration
+        DataStoreFactory.getConnectionCacheStore().load();
+        MailSettings.getInstance().loadSettings();
+    }
+
+    private void setDefaultLocale() {
+        // Locale override is not used in release builds
+        if(!AppInfo.isRelease()) {
+            // Set the language, if configured
+            String languageCode =
+                MailSettings.getInstance().getGlobalConfig().getLanguageCode();
+            if(languageCode != null && languageCode.length() > 0) {
+                try {
+                    Locale.setDefault(Locale.get(languageCode));
+                } catch (Exception e) { }
+            }
+        }
+    }
+
+    private void addSystemListeners() {
+        // Add the filesystem listener
+        try {
+            FileSystemRegistry.addFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+        } catch (ControlledAccessException e) {
+            // Don't fail if file permissions are denied
+        }
+        
+        // Add any sensor listeners
+        try {
+            UtilFactory.getInstance().addSensorListeners();
+        } catch (ControlledAccessException e) {
+            // Don't fail if permissions are denied
+        }
+    }
+
+    private void showMailHomeScreen() {
+        invokeLater(new Runnable() {
+            public void run() {
+                // Push the mail home screen and pop
+                // the loading screen
+                navigationController.displayMailHome();
+                if(loadingScreen != null) {
+                    popScreen(loadingScreen);
+                    loadingScreen = null;
+                }
+                MailManager.getInstance().startupComplete();
+            }
+        });
     }
     
     private void logStartupAppInfo() {
@@ -257,18 +316,7 @@ public final class LogicMail extends UiApplication {
             buf.append(AppInfo.getName());
             buf.append("\r\n");
             buf.append("Version: ");
-            buf.append(AppInfo.getVersion());
-            if(AppInfo.isRelease()) {
-                String moniker = AppInfo.getVersionMoniker();
-                if(moniker != null && moniker.length() > 0) {
-                    buf.append(" (");
-                    buf.append(moniker);
-                    buf.append(')');
-                }
-            }
-            else {
-                buf.append(" (dev)");
-            }
+            appendAppVersion(buf);
             buf.append("\r\n");
             buf.append("Platform: ");
             buf.append(DeviceInfo.getDeviceName());
@@ -302,6 +350,11 @@ public final class LogicMail extends UiApplication {
         
         StringBuffer buf = new StringBuffer();
         buf.append("Version ");
+        appendAppVersion(buf);
+        loadingScreen.add(new LabelField(buf.toString(), Field.FIELD_HCENTER));
+    }
+
+    private static void appendAppVersion(StringBuffer buf) {
         buf.append(AppInfo.getVersion());
         if(AppInfo.isRelease()) {
             String moniker = AppInfo.getVersionMoniker();
@@ -314,7 +367,6 @@ public final class LogicMail extends UiApplication {
         else {
             buf.append(" (dev)");
         }
-        loadingScreen.add(new LabelField(buf.toString(), Field.FIELD_HCENTER));
     }
     
     /**
@@ -336,10 +388,25 @@ public final class LogicMail extends UiApplication {
         }
         
         PermissionsHandler.unregisterReasonProvider();
+        LogicMailRuntimeState.getInstance().setApplicationInstance(null);
         
         AnalyticsDataCollector.getInstance().onApplicationTerminate();
         
         System.exit(0);
+    }
+
+    private void runAutoStartup() {
+        if(ApplicationManager.getApplicationManager().inStartup()) {
+            systemListener = new StartupSystemListener();
+            this.addSystemListener(systemListener);
+        }
+        else {
+            invokeLater(new Runnable() {
+                public void run() {
+                    startupInitialization();
+                }
+            });
+        }
     }
     
     private class StartupSystemListener implements SystemListener {
@@ -354,19 +421,13 @@ public final class LogicMail extends UiApplication {
         public void batteryStatusChange(int status) { }
     }
     
-    private void startupInitializationLater() {
-        invokeLater(new Runnable() {
-            public void run() {
-                startupInitialization();
-            }
-        });
-    }
-    
     private void startupInitialization() {
         // The BlackBerry has finished its startup process
 
+        MailSettings mailSettings = null;
+        boolean initialized = false;
         try {
-            if(RuntimeStore.getRuntimeStore().remove(AppInfo.GUID) == null) {
+            if(!LogicMailRuntimeState.removeInstance()) {
                 // Configure the rollover icons
                 HomeScreen.updateIcon(AppInfo.getIcon(), 0);
                 HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
@@ -374,31 +435,49 @@ public final class LogicMail extends UiApplication {
                 // Register for synchronization
                 SyncManager.getInstance().enableSynchronization(LogicMailSyncCollection.getInstance());
             }
-    
-            // Configure a notification source for each account
-            MailSettings mailSettings = MailSettings.getInstance();
+
+            // Load application settings
+            mailSettings = MailSettings.getInstance();
             mailSettings.loadSettings();
-            int numAccounts = mailSettings.getNumAccounts();
-            LongHashtable eventSourceMap = new LongHashtable(numAccounts);
-            for(int i=0; i<numAccounts; i++) {
-                AccountConfig accountConfig = mailSettings.getAccountConfig(i);
-                LogicMailEventSource eventSource =
-                    new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
-                NotificationsManager.registerSource(
-                        eventSource.getEventSourceId(),
-                        eventSource,
-                        NotificationsConstants.CASUAL);
-                eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
-            }
+            
+            LogicMailRuntimeState runtimeState = LogicMailRuntimeState.getInstance();
+            
+            configureNotificationSources(runtimeState, mailSettings);
     
-            // Save the registered event sources in the runtime store
-            RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
+            initialized = true;
         } catch (ControlledAccessException e) {
             // If permissions have not been granted, we may get here
         }
+
+        checkForVersionIncrease();
         
-        //Exit the application.
-        PermissionsHandler.unregisterReasonProvider();
-        System.exit(0);
+        if(initialized
+                && AppInfo.isLicenceAccepted()
+                && mailSettings != null
+                && mailSettings.getGlobalConfig().isAutoStartupEnabled()) {
+            LogicMailRuntimeState.getInstance().setApplicationInstance(this);
+            runBackgroundStartup();
+        }
+        else {
+            // Exit the application.
+            PermissionsHandler.unregisterReasonProvider();
+            LogicMailRuntimeState.getInstance().setApplicationInstance(null);
+            System.exit(0);
+        }
+    }
+
+    private static void configureNotificationSources(LogicMailRuntimeState runtimeState, MailSettings mailSettings) {
+        // Configure a notification source for each account
+        int numAccounts = mailSettings.getNumAccounts();
+        for(int i=0; i<numAccounts; i++) {
+            AccountConfig accountConfig = mailSettings.getAccountConfig(i);
+            LogicMailEventSource eventSource =
+                new LogicMailEventSource(accountConfig.getAcctName(), accountConfig.getUniqueId());
+            NotificationsManager.registerSource(
+                    eventSource.getEventSourceId(),
+                    eventSource,
+                    NotificationsConstants.CASUAL);
+            runtimeState.putEventSource(eventSource);
+        }
     }
 } 

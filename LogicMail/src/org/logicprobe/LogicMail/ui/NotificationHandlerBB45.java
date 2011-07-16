@@ -40,11 +40,10 @@ import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.system.Application;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.HolsterListener;
-import net.rim.device.api.system.RuntimeStore;
-import net.rim.device.api.util.LongHashtable;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailEventSource;
+import org.logicprobe.LogicMail.LogicMailRuntimeState;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.MailSettingsEvent;
 import org.logicprobe.LogicMail.conf.MailSettingsListener;
@@ -225,23 +224,14 @@ public class NotificationHandlerBB45 extends NotificationHandler {
      * Update the account subscriptions.
      */
     private void updateAccountSubscriptions() {
-        // Get the registered event sources from the runtime store
-        LongHashtable eventSourceMap = getEventSourceMap();
+        // Get the runtime state object
+        LogicMailRuntimeState runtimeState = LogicMailRuntimeState.getInstance();
         
         // Subscribe to any new accounts
-        NetworkAccountNode[] accountNodes = subscribeToNewAccounts(eventSourceMap);
+        NetworkAccountNode[] accountNodes = subscribeToNewAccounts(runtimeState);
 
         // Unsubscribe from any deleted accounts
-        unsubscribeFromDeletedAccounts(eventSourceMap, accountNodes);
-    }
-    
-    private LongHashtable getEventSourceMap() {
-        LongHashtable eventSourceMap = (LongHashtable)RuntimeStore.getRuntimeStore().get(AppInfo.GUID);
-        if(eventSourceMap == null) {
-            eventSourceMap = new LongHashtable();
-            RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
-        }
-        return eventSourceMap;
+        unsubscribeFromDeletedAccounts(runtimeState, accountNodes);
     }
     
     /**
@@ -250,7 +240,7 @@ public class NotificationHandlerBB45 extends NotificationHandler {
      * @param eventSourceMap Map of account IDs to event source objects
      * @return Configured network account nodes
      */
-    private NetworkAccountNode[] subscribeToNewAccounts(LongHashtable eventSourceMap) {
+    private NetworkAccountNode[] subscribeToNewAccounts(LogicMailRuntimeState runtimeState) {
         NetworkAccountNode[] accountNodes = MailManager.getInstance().getMailRootNode().getNetworkAccounts();
         for(int i=0; i<accountNodes.length; i++) {
             updateAccountMap(accountNodes[i]);
@@ -260,20 +250,20 @@ public class NotificationHandlerBB45 extends NotificationHandler {
             // Register the notification source, if necessary
             long accountUniqueId = ((NetworkAccountNode)accountNodes[i]).getUniqueId();
             String accountName = accountNodes[i].toString();
-            LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(accountUniqueId);
+            LogicMailEventSource eventSource = runtimeState.getEventSource(accountUniqueId);
             if(eventSource == null || !eventSource.getAccountName().equals(accountName)) {
                 eventSource = new LogicMailEventSource(accountName, accountUniqueId);
                 NotificationsManager.registerSource(
                     eventSource.getEventSourceId(),
                     eventSource,
                     NotificationsConstants.CASUAL);
-                eventSourceMap.put(accountUniqueId, eventSource);
+                runtimeState.putEventSource(eventSource);
             }
         }
         return accountNodes;
     }
 
-    private void unsubscribeFromDeletedAccounts(LongHashtable eventSourceMap, NetworkAccountNode[] accountNodes) {
+    private void unsubscribeFromDeletedAccounts(LogicMailRuntimeState runtimeState, NetworkAccountNode[] accountNodes) {
         synchronized(accountMap) {
             Vector deletedAccounts = new Vector();
             Enumeration e = accountMap.keys();
@@ -301,11 +291,11 @@ public class NotificationHandlerBB45 extends NotificationHandler {
                 accountNode.removeAccountNodeListener(accountNodeListener);
 
                 // Unregister the notification source
-                long eventSourceKey = ((NetworkAccountNode)accountNode).getUniqueId();
-                LogicMailEventSource eventSource = (LogicMailEventSource)eventSourceMap.get(eventSourceKey);
+                long accountUniqueId = ((NetworkAccountNode)accountNode).getUniqueId();
+                LogicMailEventSource eventSource = runtimeState.getEventSource(accountUniqueId);
                 if(eventSource != null) {
                     NotificationsManager.deregisterSource(eventSource.getEventSourceId());
-                    eventSourceMap.remove(eventSourceKey);
+                    runtimeState.removeEventSource(accountUniqueId);
                 }
             }
         }
@@ -341,20 +331,23 @@ public class NotificationHandlerBB45 extends NotificationHandler {
      * @param mailboxNode The mailbox node containing the new messages
      */
     private void triggerNotification(MailboxNode mailboxNode) {
-        long sourceId = AppInfo.GUID + ((NetworkAccountNode)mailboxNode.getParentAccount()).getUniqueId();
-        NotificationsManager.triggerImmediateEvent(sourceId, 0, this, null);
+        long accountUniqueId = ((NetworkAccountNode)mailboxNode.getParentAccount()).getUniqueId();
+        LogicMailEventSource eventSource = LogicMailRuntimeState.getInstance().getEventSource(accountUniqueId);
+        NotificationsManager.triggerImmediateEvent(eventSource.getEventSourceId(), 0, this, null);
     }
 
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.ui.NotificationHandler#cancelNotification()
      */
     public void cancelNotification() {
+        LogicMailRuntimeState runtimeState = LogicMailRuntimeState.getInstance();
         synchronized(accountMap) {
             Enumeration e = accountMap.keys();
             while(e.hasMoreElements()) {
                 AccountNode accountNode = (AccountNode)e.nextElement();
-                long sourceId = AppInfo.GUID + ((NetworkAccountNode)accountNode).getUniqueId();
-                NotificationsManager.cancelImmediateEvent(sourceId, 0, this, null);
+                long accountUniqueId = ((NetworkAccountNode)accountNode).getUniqueId();
+                LogicMailEventSource eventSource = runtimeState.getEventSource(accountUniqueId);
+                NotificationsManager.cancelImmediateEvent(eventSource.getEventSourceId(), 0, this, null);
             }
         }
         updateMessageIndicator();
@@ -362,12 +355,12 @@ public class NotificationHandlerBB45 extends NotificationHandler {
     
     protected void setAppIcon(boolean newMessages) {
         if(newMessages) {
-            HomeScreen.updateIcon(AppInfo.getNewMessagesIcon());
-            HomeScreen.setRolloverIcon(AppInfo.getNewMessagesRolloverIcon());
+            HomeScreen.updateIcon(AppInfo.getNewMessagesIcon(), 0);
+            HomeScreen.setRolloverIcon(AppInfo.getNewMessagesRolloverIcon(), 0);
         }
         else {
-            HomeScreen.updateIcon(AppInfo.getIcon());
-            HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon());
+            HomeScreen.updateIcon(AppInfo.getIcon(), 0);
+            HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
         }
     }
 }

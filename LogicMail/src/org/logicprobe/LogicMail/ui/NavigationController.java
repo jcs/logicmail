@@ -129,7 +129,7 @@ public final class NavigationController {
 		uiApplication.pushScreen(screen);
 	}
 
-	public void displayComposition(NetworkAccountNode accountNode, String address) {
+	public synchronized void displayComposition(NetworkAccountNode accountNode, String address) {
 		StandardScreen screen = screenFactory.getCompositionScreen(this, accountNode, address);
         ScreenFactory.getInstance().attachScreenTransition(screen, ScreenFactory.TRANSITION_ZOOM);
 		uiApplication.pushScreen(screen);

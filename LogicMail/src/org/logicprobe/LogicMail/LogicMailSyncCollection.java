@@ -44,9 +44,7 @@ import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.synchronization.SyncCollection;
 import net.rim.device.api.synchronization.SyncConverter;
 import net.rim.device.api.synchronization.SyncObject;
-import net.rim.device.api.system.RuntimeStore;
 import net.rim.device.api.util.DataBuffer;
-import net.rim.device.api.util.LongHashtable;
 
 public class LogicMailSyncCollection implements SyncCollection, SyncConverter {
     private static LogicMailSyncCollection instance;
@@ -75,11 +73,13 @@ public class LogicMailSyncCollection implements SyncCollection, SyncConverter {
         
         // Re-run all the startup code, which should be refactored into a
         // common place to avoid duplication
-        RuntimeStore.getRuntimeStore().remove(AppInfo.GUID);
+        LogicMailRuntimeState runtimeState = LogicMailRuntimeState.getInstance();
+        runtimeState.removeAllEventSources();
+        
         MailSettings mailSettings = MailSettings.getInstance();
-        mailSettings.loadSettings();
+        mailSettings.reloadSettings();
+        
         int numAccounts = mailSettings.getNumAccounts();
-        LongHashtable eventSourceMap = new LongHashtable(numAccounts);
         for(int i=0; i<numAccounts; i++) {
             AccountConfig accountConfig = mailSettings.getAccountConfig(i);
             LogicMailEventSource eventSource =
@@ -88,9 +88,8 @@ public class LogicMailSyncCollection implements SyncCollection, SyncConverter {
                     eventSource.getEventSourceId(),
                     eventSource,
                     NotificationsConstants.CASUAL);
-            eventSourceMap.put(accountConfig.getUniqueId(), eventSource);
+            runtimeState.putEventSource(eventSource);
         }
-        RuntimeStore.getRuntimeStore().put(AppInfo.GUID, eventSourceMap);
     }
     
     public SyncConverter getSyncConverter() {
