@@ -51,6 +51,10 @@ public class LocalAccountNode extends AccountNode {
         return "Local Folders";
     }
     
+    public String getProtocolName() {
+        return "Local";
+    }
+    
     protected int getMailboxType(FolderTreeItem folderTreeItem) {
         int mailboxType;
         String path = folderTreeItem.getPath();

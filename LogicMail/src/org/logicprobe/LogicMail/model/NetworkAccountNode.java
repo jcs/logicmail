@@ -35,6 +35,7 @@ import java.util.Vector;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
+import org.logicprobe.LogicMail.conf.PopConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreEvent;
@@ -83,6 +84,18 @@ public class NetworkAccountNode extends AccountNode {
      */
     public String toString() {
         return this.accountConfig.toString();
+    }
+    
+    public String getProtocolName() {
+        if(this.accountConfig instanceof ImapConfig) {
+            return "IMAP";
+        }
+        else if(this.accountConfig instanceof PopConfig) {
+            return "POP";
+        }
+        else {
+            return "";
+        }
     }
     
     /**

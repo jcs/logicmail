@@ -169,6 +169,13 @@ public abstract class AccountNode implements Node {
         return result;
     }
     
+    /**
+     * The name of the protocol behind this account.
+     */
+    public String getProtocolName() {
+        return "";
+    }
+    
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
     }

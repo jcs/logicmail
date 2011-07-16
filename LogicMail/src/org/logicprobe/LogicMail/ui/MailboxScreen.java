@@ -177,6 +177,31 @@ public class MailboxScreen extends AbstractScreenProvider {
      */
     public void onDisplay() {
         super.onDisplay();
+        
+        String eventType;
+        switch(mailboxNode.getType()) {
+        case MailboxNode.TYPE_INBOX:
+            eventType = "Mailbox_INBOX";
+            break;
+        case MailboxNode.TYPE_OUTBOX:
+            eventType = "Mailbox_OUTBOX";
+            break;
+        case MailboxNode.TYPE_DRAFTS:
+            eventType = "Mailbox_DRAFTS";
+            break;
+        case MailboxNode.TYPE_SENT:
+            eventType = "Mailbox_SENT";
+            break;
+        case MailboxNode.TYPE_TRASH:
+            eventType = "Mailbox_TRASH";
+            break;
+        default:
+            eventType = "Mailbox_NORMAL";
+            break;
+        }
+        String contentGroup = mailboxNode.getParentAccount().getProtocolName();
+        AnalyticsDataCollector.getInstance().onContentView(getScreenPath(), getScreenName(), eventType, contentGroup);
+        
         if(this.hideDeleted != globalConfig.getHideDeletedMsg()) {
             this.hideDeleted = !this.hideDeleted;
             displayableChanged();
