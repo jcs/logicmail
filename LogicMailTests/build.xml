@@ -33,6 +33,9 @@
     </rapc>
     <property name="prebuild.jar" value="${dist.dir}/prebuild/${module.name}Prebuild.jar" />
     <property name="mocks.classpath" value="${prebuild.jar};${jde450.home}/lib/net_rim_api.jar" />
+    <hammockmaker usecldc11="true" dir="${tests.dir}/src" package="org.logicprobe.LogicMail.util" classpath="${mocks.classpath}">
+      <mock class="org.logicprobe.LogicMail.util.Connection" />
+    </hammockmaker>
     <hammockmaker usecldc11="true" dir="${tests.dir}/src" package="org.logicprobe.LogicMail.mail" classpath="${mocks.classpath}">
       <mock class="org.logicprobe.LogicMail.mail.IncomingMailClient" />
       <mock class="org.logicprobe.LogicMail.mail.IncomingMailClientListener" />

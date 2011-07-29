@@ -223,7 +223,7 @@ public class SmtpClient implements OutgoingMailClient {
         this.password = password;
     }
 
-    public String sendMessage(MessageEnvelope envelope, Message message)
+    public byte[] sendMessage(MessageEnvelope envelope, Message message)
         throws IOException, MailException {
         if (!isFresh) {
             smtpProtocol.executeReset();
@@ -231,20 +231,37 @@ public class SmtpClient implements OutgoingMailClient {
 
         isFresh = false;
 
-        // serialize the message
-        MessageMimeConverter messageMime = new MessageMimeConverter(message);
+        byte[] rawMessage = generateRawMessage(envelope, message);
 
-        String mimeStr = messageMime.toMimeString();
-
-        StringBuffer buffer = new StringBuffer();
-
-        // Generate the headers
-        buffer.append(MailMessageParser.generateMessageHeaders(envelope, true));
-        
-        // Add the body
-        buffer.append(mimeStr);
+        sendEnvelopeInformation(envelope);
 
         // Send the message
+        if (!smtpProtocol.executeData(rawMessage)) {
+            throw new MailException("Error sending message");
+        }
+
+        return rawMessage;
+    }
+    
+    private byte[] generateRawMessage(MessageEnvelope envelope, Message message) {
+        // Serialize the message
+        MessageMimeConverter messageMimeConverter = new MessageMimeConverter(message);
+
+        // Generate the envelope headers
+        byte[] messageHeaderData = MailMessageParser.generateMessageHeaders(envelope, true).getBytes();
+
+        // Generate the body headers and content
+        byte[] messageMimeData = messageMimeConverter.toMimeByteArray();
+
+        // Combine the two into the raw message
+        byte[] rawMessage = new byte[messageHeaderData.length + messageMimeData.length];
+        System.arraycopy(messageHeaderData, 0, rawMessage, 0, messageHeaderData.length);
+        System.arraycopy(messageMimeData, 0, rawMessage, messageHeaderData.length, messageMimeData.length);
+        return rawMessage;
+    }
+
+    private void sendEnvelopeInformation(MessageEnvelope envelope)
+            throws IOException, MailException, RecipientException {
         if (!smtpProtocol.executeMail(stripEmail(envelope.from[0]))) {
             throw new MailException("Error with sender");
         }
@@ -273,14 +290,6 @@ public class SmtpClient implements OutgoingMailClient {
                 }
             }
         }
-
-        String rawMessage = buffer.toString();
-
-        if (!smtpProtocol.executeData(rawMessage)) {
-            throw new MailException("Error sending message");
-        }
-
-        return rawMessage;
     }
 
     private static String stripEmail(String input) {

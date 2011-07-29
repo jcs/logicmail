@@ -56,6 +56,8 @@ public class MessageMimeConverter {
 
     private MessageMimeConverterPartVisitor partVisitor;
     
+    private boolean processed;
+    
     /** Creates a new instance of MessageMimeConverter */
     public MessageMimeConverter(Message message) {
     	this.message = message;
@@ -67,17 +69,32 @@ public class MessageMimeConverter {
 
     /**
      * Get the contents of this converter.
-     * Due to the internal implementation, this method
-     * may only be called once per instance.
      *
      * @return Message encoded in MIME format
      */
     public String toMimeString() {
-    	message.getStructure().accept(partVisitor);
-    	partMimeMap.clear();
+        processMessage();
         return byteArrayOutputStream.toString();
     }
 
+    /**
+     * Get the contents of this converter.
+     *
+     * @return Message encoded in MIME format
+     */
+    public byte[] toMimeByteArray() {
+        processMessage();
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    private void processMessage() {
+        if(!processed) {
+            message.getStructure().accept(partVisitor);
+            partMimeMap.clear();
+            processed = true;
+        }
+    }
+    
     private class MessageMimeConverterPartVisitor extends AbstractMimeMessagePartVisitor {
 	    public void visitMultiPart(MultiPart part) {
 	        MIMEOutputStream currentStream = startCurrentStream(part, null);

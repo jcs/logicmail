@@ -296,15 +296,20 @@ public class Connection {
      * the processing done by the normal send method, and is most useful
      * for bulk transmissions.  It writes the provided string to the socket
      * in a single command, followed by a flush.
+     * 
+     * @param data   the data.
+     * @param offset the start offset in the data.
+     * @param length the number of bytes to write. 
      *
      * @see #send
      */
     public void sendRaw(byte[] data, int offset, int length) throws IOException {
         if (globalConfig.getConnDebug()) {
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            stream.write("[SEND RAW]\r\n".getBytes());
+            stream.write(data, offset, length);
             EventLogger.logEvent(AppInfo.GUID,
-                    ("[SEND RAW]\r\n"
-                            + new String(data, offset, length)).getBytes(),
-                            EventLogger.DEBUG_INFO);
+                    stream.toByteArray(), EventLogger.DEBUG_INFO);
         }
 
         synchronized(socketLock) {

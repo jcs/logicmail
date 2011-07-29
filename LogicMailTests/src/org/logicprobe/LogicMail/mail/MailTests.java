@@ -34,6 +34,8 @@ import j2meunit.framework.Test;
 import j2meunit.framework.TestCase;
 import j2meunit.framework.TestSuite;
 import org.logicprobe.LogicMail.mail.imap.ImapTests;
+import org.logicprobe.LogicMail.mail.pop.PopTests;
+import org.logicprobe.LogicMail.mail.smtp.SmtpTests;
 
 /**
  * Unit test suite for the LogicMail.mail classes
@@ -48,6 +50,8 @@ public class MailTests extends TestCase {
         TestSuite suite = new TestSuite("LogicMail.mail");
         suite.addTest(new NetworkMailStoreTest().suite());
         suite.addTest(new ImapTests().suite());
+        suite.addTest(new PopTests().suite());
+        suite.addTest(new SmtpTests().suite());
         return suite;
     }
 }

@@ -93,7 +93,7 @@ public class PopProtocol {
                 ("PopProtocol.executeCapa()").getBytes(),
                 EventLogger.DEBUG_INFO);
         }
-        String[] replyText = executeFollow(CAPA, false, null);
+        byte[][] replyText = executeFollowBinary(CAPA, false, null);
         
         if ((replyText == null) || (replyText.length < 1)) {
             return null;
@@ -102,13 +102,14 @@ public class PopProtocol {
         Hashtable table = new Hashtable();
 
         for(int i=0; i<replyText.length; i++) {
-        	int p = replyText[i].indexOf(' ');
-        	int len = replyText[i].length();
+            String replyLine = new String(replyText[i]);
+        	int p = replyLine.indexOf(' ');
+        	int len = replyLine.length();
         	if(p != -1 && p + 1 < len) {
-        		table.put(replyText[i].substring(0, p), replyText[i].substring(p + 1, len));
+        		table.put(replyLine.substring(0, p), replyLine.substring(p + 1, len));
         	}
         	else {
-        		table.put(replyText[i], Boolean.TRUE);
+        		table.put(replyLine, Boolean.TRUE);
         	}
         }
         
@@ -373,47 +374,6 @@ public class PopProtocol {
      *         if <code>errorFatal</code> is <code>false</code> and the
      *         response was an error.
      */
-    private String[] executeFollow(String command, boolean errorFatal, MailProgressHandler progressHandler) throws IOException, MailException {
-    	int preCount = connection.getBytesReceived();
-    	watchdog.start();
-    	if(executeImpl(command, errorFatal) == null) {
-    	    watchdog.cancel();
-    	    return null;
-    	}
-        
-        String buffer = new String(connection.receive());
-        watchdog.kick();
-        
-        int postCount = connection.getBytesReceived();
-        if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
-
-        String[] lines = new String[0];
-        while(buffer != null && !buffer.equals(".")) {
-            Arrays.add(lines, buffer);
-            preCount = postCount;
-            buffer = new String(connection.receive());
-            watchdog.kick();
-            
-            postCount = connection.getBytesReceived();
-            if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
-        }
-        watchdog.cancel();
-        return lines;
-    }
-    
-    /**
-     * Execute a POP3 command that returns multiple lines.
-     * This works by running the normal execute() and then receiving every new
-     * line until a lone "." is encountered.
-     *
-     * @param command The command to execute
-     * @param errorFatal If true, then an "-ERR" response to the command will
-     *                   generate an exception.
-     * @param progressHandler progress handler
-     * @return An array of lines containing the response, or <code>null</code>
-     *         if <code>errorFatal</code> is <code>false</code> and the
-     *         response was an error.
-     */
     private byte[][] executeFollowBinary(String command, boolean errorFatal, MailProgressHandler progressHandler) throws IOException, MailException {
         int preCount = connection.getBytesReceived();
         watchdog.start();
@@ -429,8 +389,8 @@ public class PopProtocol {
         if(progressHandler != null) { progressHandler.mailProgress(MailProgressHandler.TYPE_NETWORK, (postCount - preCount), -1); }
 
         byte[][] lines = new byte[0][];
-        while(buffer != null && !(buffer.length == 1 && buffer[0] == (byte)'.')) {
-            Arrays.add(lines, buffer);
+        while(buffer != null && !(buffer.length == 1 && buffer[0] == CHAR_PERIOD)) {
+            Arrays.add(lines, unescapeDots(buffer));
             preCount = postCount;
             buffer = connection.receive();
             watchdog.kick();
@@ -440,6 +400,26 @@ public class PopProtocol {
         }
         watchdog.cancel();
         return lines;
+    }
+    
+    /**
+     * Removes escaped dots from POP responses.
+     * 
+     * According to RFC 1939, lines starting with '.' in multi-line POP
+     * responses are escaped by adding an additional dot in the beginning,
+     * which should be discarded when processing the response.  
+     *
+     * @param lineData the line of the server response to process
+     * @return version of the line with leading dots un-escaped
+     */
+    private static byte[] unescapeDots(byte[] lineData) {
+        if(lineData != null && lineData.length > 1
+                && lineData[0] == CHAR_PERIOD && lineData[1] == CHAR_PERIOD) {
+            return Arrays.copy(lineData, 1, lineData.length - 1);
+        }
+        else {
+            return lineData;
+        }
     }
     
     /**
@@ -523,4 +503,5 @@ public class PopProtocol {
         "password",
         "invalid"
     };
+    private static final byte CHAR_PERIOD = (byte)'.';
 }

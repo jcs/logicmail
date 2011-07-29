@@ -42,6 +42,7 @@ import net.rim.device.api.util.Arrays;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MailException;
 import org.logicprobe.LogicMail.util.Connection;
+import org.logicprobe.LogicMail.util.StringArrays;
 import org.logicprobe.LogicMail.util.Watchdog;
 
 /**
@@ -296,10 +297,10 @@ public class SmtpProtocol {
     
     /**
      * Execute the "DATA" command.
-     * @param message Message data fully serialized into a flat ASCII string
+     * @param message Message data fully serialized into a flat ASCII byte array
      * @return True if successful, false on failure
      */
-    public boolean executeData(String message) throws IOException, MailException {
+    public boolean executeData(byte[] message) throws IOException, MailException {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
@@ -318,17 +319,35 @@ public class SmtpProtocol {
             return false;
         }
         
-        byte[] data = message.getBytes();
-        for(int i=0; i<data.length; i+=1024) {
-            connection.sendRaw(data, i, Math.min(1024, data.length - i));
-            watchdog.kick();
+        int offset = 0;
+        while(offset < message.length) {
+            int p = StringArrays.indexOf(message, CHAR_LF, offset);
+            int len;
+            if(p != -1) {
+                len = (p + 1) - offset;
+            }
+            else {
+                len = message.length - offset;
+            }
+            
+            if(len == 0) { break; }
+            if(message[offset] == CHAR_PERIOD) {
+                byte[] escapedLine = new byte[len + 1];
+                escapedLine[0] = CHAR_PERIOD;
+                System.arraycopy(message, offset, escapedLine, 1, len);
+                connection.sendRaw(escapedLine, 0, escapedLine.length);
+            }
+            else {
+                connection.sendRaw(message, offset, len);
+            }
+			watchdog.kick();
+            offset += len;
         }
         
         connection.sendCommand("\r\n.");
         result = new String(connection.receive());
-        
         watchdog.cancel();
-        
+		
         return result.startsWith(CODE_250);
     }
     
@@ -498,4 +517,6 @@ public class SmtpProtocol {
     private static String DATA = "DATA";
     private static String RSET = "RSET";
     private static String QUIT = "QUIT";
+    private static final byte CHAR_PERIOD = (byte)'.';
+    private static final byte CHAR_LF = (byte)'\n';
 }

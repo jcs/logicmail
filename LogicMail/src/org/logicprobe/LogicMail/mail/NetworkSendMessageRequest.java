@@ -78,7 +78,14 @@ class NetworkSendMessageRequest implements ConnectionHandlerRequest {
         OutgoingMailClient outgoingClient = (OutgoingMailClient)client;
         
         showStatus(outgoingClient, resources.getString(LogicMailResource.MAILCONNECTION_REQUEST_SEND_MESSAGE));
-        String messageSource = outgoingClient.sendMessage(envelope, message);
+		byte[] rawMessage = outgoingClient.sendMessage(envelope, message);
+		String messageSource;
+		if(rawMessage != null && rawMessage.length > 0) {
+		    messageSource = new String(rawMessage);
+		}
+		else {
+		    messageSource = null;
+		}
         
         mailSender.fireMessageSent(envelope, message, messageSource);
     }

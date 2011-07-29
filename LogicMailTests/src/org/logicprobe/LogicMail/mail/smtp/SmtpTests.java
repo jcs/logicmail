@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2006, Derek Konigsberg
+ * Copyright (c) 2011, Derek Konigsberg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.logicprobe.LogicMail.mail.smtp;
 
-package org.logicprobe.LogicMail.mail;
+import j2meunit.framework.Test;
+import j2meunit.framework.TestCase;
+import j2meunit.framework.TestSuite;
 
-import java.io.IOException;
-import org.logicprobe.LogicMail.message.Message;
-import org.logicprobe.LogicMail.message.MessageEnvelope;
+public class SmtpTests extends TestCase {
 
-/**
- * Create a generic interface to outgoing mail protocols.
- */
-public interface OutgoingMailClient extends MailClient {
-    /**
-     * Send a message
-     *
-     * @param envelope Envelope of the message to send.
-     * @param message Message to send.
-     * @return Actual raw message text that was sent.
-     * @throws IOException on I/O errors
-     * @throws MailException on protocol errors
-     */
-    public abstract byte[] sendMessage(MessageEnvelope envelope, Message message) throws IOException, MailException;
+    public SmtpTests() {
+        super();
+    }
+    
+    public Test suite() {
+        TestSuite suite = new TestSuite("LogicMail.mail.smtp");
+        suite.addTest(new SmtpProtocolTest().suite());
+        return suite;
+    }
 }
