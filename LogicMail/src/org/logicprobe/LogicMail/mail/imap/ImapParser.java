@@ -36,6 +36,9 @@ import net.rim.device.api.util.ByteVector;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
+import org.logicprobe.LogicMail.message.MessagePart;
+import org.logicprobe.LogicMail.message.MultiPart;
+import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.util.StringArrays;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -56,6 +59,8 @@ class ImapParser {
     private static Character LPAREN = new Character('(');
     private static Character RPAREN = new Character(')');
     private static String US_ASCII = "US-ASCII";
+    private static String NAME = "name";
+    private static String CHARSET = "charset";
     static String FLAG_SEEN = "\\Seen";
     static String FLAG_ANSWERED = "\\Answered";
     static String FLAG_FLAGGED = "\\Flagged";
@@ -409,7 +414,7 @@ class ImapParser {
                             address, i + 1, (Vector) parsedStruct.elementAt(i)));
                 } else if (parsedStruct.elementAt(i) instanceof byte[]) {
                     MessageSection section = new MessageSection();
-                    section.type = "multipart";
+                    section.type = MultiPart.TYPE;
                     section.subtype = (new String((byte[]) parsedStruct.elementAt(i))).toLowerCase();
                     section.subsections = new MessageSection[subSectionsVector.size()];
                     subSectionsVector.copyInto(section.subsections);
@@ -450,9 +455,9 @@ class ImapParser {
                     String key = new String((byte[]) tmpVec.elementAt(i));
                     String value = new String((byte[]) tmpVec.elementAt(i + 1));
 
-                    if (key.equalsIgnoreCase("charset")) {
+                    if (key.equalsIgnoreCase(CHARSET)) {
                         sec.charset = value;
-                    } else if (key.equalsIgnoreCase("name")) {
+                    } else if (key.equalsIgnoreCase(NAME)) {
                         sec.name = value;
                     }
                 }
@@ -475,9 +480,20 @@ class ImapParser {
             }
         }
 
-        if ((sectionListSize > 8) &&
-                sectionList.elementAt(8) instanceof Vector) {
-            tmpVec = (Vector) sectionList.elementAt(8);
+        int dispositionIndex;
+        if(TextPart.TYPE.equalsIgnoreCase(sec.type)) {
+            dispositionIndex = 9;
+        }
+        else if(MessagePart.TYPE.equalsIgnoreCase(sec.type)) {
+            dispositionIndex = 11;
+        }
+        else {
+            dispositionIndex = 8;
+        }
+        
+        if ((sectionListSize >= dispositionIndex) &&
+                sectionList.elementAt(dispositionIndex) instanceof Vector) {
+            tmpVec = (Vector) sectionList.elementAt(dispositionIndex);
 
             if (tmpVec.elementAt(0) instanceof byte[]) {
                 sec.disposition = new String((byte[]) tmpVec.elementAt(0)).toLowerCase();

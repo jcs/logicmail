@@ -32,6 +32,8 @@ package org.logicprobe.LogicMail.message;
 
 import java.io.IOException;
 
+import org.logicprobe.LogicMail.util.StringParser;
+
 public class ApplicationContent extends MimeMessageContent {
 	private byte[] rawData;
 	
@@ -44,6 +46,12 @@ public class ApplicationContent extends MimeMessageContent {
         	} catch (IOException e) {
         		throw new UnsupportedContentException("Unable to decode");
         	}
+        } else if (encoding.equalsIgnoreCase(ENCODING_QUOTED_PRINTABLE)) {
+            try {
+                this.rawData = StringParser.decodeQuotedPrintableBytes(data);
+            } catch (Exception e) {
+                throw new UnsupportedContentException("Unable to decode");
+            }
         } else {
 			throw new UnsupportedContentException("Unsupported encoding");
         }

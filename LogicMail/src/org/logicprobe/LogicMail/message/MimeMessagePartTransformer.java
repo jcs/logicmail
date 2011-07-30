@@ -137,13 +137,8 @@ public class MimeMessagePartTransformer {
 	/**
 	 * Gets a list of message parts that are considered to be attachments.
 	 * <p>
-	 * This includes all parts that are <b>not</b> of one of the following types:
-	 * <ul>
-	 * <li>multipart</li>
-	 * <li>text/plain</li>
-	 * <li>text/html</li>
-	 * <li>unsupported</li>
-	 * </ul>
+	 * This includes all supported content parts that are either not
+	 * displayable or have their content disposition set as "attachment".
 	 * </p>
 	 * 
 	 * @param rootPart The root part of the message.
@@ -165,8 +160,10 @@ public class MimeMessagePartTransformer {
 		
 		public void visitTextPart(TextPart part) {
 			String subtype = part.getMimeSubtype();
-			if(!subtype.equalsIgnoreCase("plain") && !subtype.equalsIgnoreCase("html")) {
-				attachmentParts.addElement(part);
+			if(ContentPart.DISPOSITION_ATTACHMENT.equalsIgnoreCase(part.getDisposition())
+			        || (!TextPart.SUBTYPE_PLAIN.equalsIgnoreCase(subtype)
+			                && !TextPart.SUBTYPE_HTML.equalsIgnoreCase(subtype))) {
+			    attachmentParts.addElement(part);
 			}
 		}
 
@@ -184,6 +181,10 @@ public class MimeMessagePartTransformer {
 		
 		public void visitVideoPart(VideoPart part) {
 			attachmentParts.addElement(part);
+		}
+		
+		public void visitMessagePart(MessagePart part) {
+            attachmentParts.addElement(part);
 		}
 	}
 }

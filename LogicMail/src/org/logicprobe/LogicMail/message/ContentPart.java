@@ -43,6 +43,8 @@ public abstract class ContentPart extends MimeMessagePart {
 	private String disposition;
 	private String contentId;
 	
+	public static String DISPOSITION_ATTACHMENT = "attachment";
+	
 	public ContentPart(String mimeType, String mimeSubtype, String name, String encoding, String disposition, String contentId, int size, String tag) {
         super(mimeType, mimeSubtype, size, tag);
         this.name = name;

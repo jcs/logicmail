@@ -42,7 +42,6 @@ import org.logicprobe.LogicMail.util.StringParser;
  */
 public class TextContent extends MimeMessageContent {
     private static String UTF_8 = "UTF-8";
-    private static String ISO_8859_1 = "ISO-8859-1";
     private String text;
 	private byte[] rawData;
 	
@@ -57,53 +56,29 @@ public class TextContent extends MimeMessageContent {
             String charset,
             byte[] data) throws UnsupportedContentException {
     	super(textPart);
-    	String mimeSubtype = textPart.getMimeSubtype();
-    	
-        // Check for a supported text sub-type
-        if (!mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_PLAIN) &&
-                !mimeSubtype.equalsIgnoreCase(TextPart.SUBTYPE_HTML)) {
-            throw new UnsupportedContentException("Unsupported subtype");
-        }
-        
         // Check for any encodings that need to be handled
-        if (encoding.equalsIgnoreCase("quoted-printable")) {
-            this.text = StringParser.decodeQuotedPrintable(data, charset);
+        if (encoding.equalsIgnoreCase(ENCODING_QUOTED_PRINTABLE)) {
+            this.rawData = StringParser.decodeQuotedPrintableBytes(data);
         }
         else if (encoding.equalsIgnoreCase(ENCODING_BASE64)) {
-        	byte[] textBytes;
-
             try {
-                textBytes = decodeBase64(data);
+                this.rawData = decodeBase64(data);
             } catch (IOException exp) {
                 throw new UnsupportedContentException("Unable to decode");
             }
-
-            try {
-                // If a charset is not provided, ISO-8859-1 is assumed
-                if (charset == null) {
-                    charset = ISO_8859_1;
-                }
-
-                this.text = StringFactory.create(textBytes, charset);
-            } catch (UnsupportedEncodingException exp) {
-                // If encoding type is bad, attempt with the default encoding
-                // so the user will at least see something.
-                this.text = new String(textBytes);
-            }
         }
-        else if (charset != null) {
-            // If the text is not encoded (i.e. 7bit or 8bit) and uses a
-            // non-Latin charset, then bring the text back to a byte array
-            // and attempt to decode it based on the charset parameter.
-
-            try {
-                this.text = StringFactory.create(data, charset);
-            } catch (UnsupportedEncodingException exp) {
-                // If encoding type is bad, use the default platform charset.
-                // This may result in the user seeing garbage, but at least
-                // they'll know there was a decoding problem.
-                this.text = new String(data);
-            }
+        else {
+            this.rawData = data;
+        }
+        
+        // Create a string based on the raw data
+        try {
+            this.text = StringFactory.create(rawData, charset);
+        } catch (UnsupportedEncodingException e) {
+            // If encoding type is bad, use the default platform charset.
+            // This may result in the user seeing garbage, but at least
+            // they'll know there was a decoding problem.
+            this.text = new String(rawData);
         }
     }
     

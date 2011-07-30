@@ -1208,9 +1208,31 @@ public class StringParser {
         return decodeQuotedPrintableImpl(text, charset, true);
     }
     
+    /**
+     * Decode a quoted-printable string as a raw array of bytes.
+     * 
+     * @param text The raw input text (as a byte array) to decode
+     * @return Raw array of decoded data
+     */
+    public static byte[] decodeQuotedPrintableBytes(byte[] text) {
+        DataBuffer buf = new DataBuffer();
+        decodeQuotedPrintableDataImpl(buf, text, false);
+        return buf.toArray();
+    }
+    
     private static String decodeQuotedPrintableImpl(byte[] text, String charset, boolean header) {
         DataBuffer buf = new DataBuffer();
-
+        decodeQuotedPrintableDataImpl(buf, text, header);
+        String result;
+        try {
+            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength(), charset);
+        } catch (UnsupportedEncodingException e) {
+            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+        }
+        return result;
+    }
+    
+    private static void decodeQuotedPrintableDataImpl(DataBuffer buf, byte[] text, boolean header) {
         int index = 0;
         int length = text.length;
 
@@ -1248,14 +1270,6 @@ public class StringParser {
                 index++;
             }
         }
-
-        String result;
-        try {
-            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength(), charset);
-        } catch (UnsupportedEncodingException e) {
-            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
-        }
-        return result;
     }
 
     /**

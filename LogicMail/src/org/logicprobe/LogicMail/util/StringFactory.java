@@ -117,6 +117,10 @@ public class StringFactory {
      * @see String#String(byte[], String)
      */
     public static String create(byte[] bytes, String charset) throws UnsupportedEncodingException {
+        if(charset == null || charset.length() == 0) {
+            throw new UnsupportedEncodingException();
+        }
+        
         String result;
         try {
             result = new String(bytes, charset);

@@ -40,6 +40,8 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.TimeZone;
 
+import net.rim.device.api.util.Arrays;
+
 /**
  * Unit test for StringParser
  */
@@ -628,6 +630,38 @@ public class StringParserTest extends TestCase {
         String result = StringParser.decodeQuotedPrintableHeader(text.getBytes(), "ISO-8859-1");
         assertEquals(msg, expectedResult, result);
     }
+    
+    /**
+     * Test of decodeQuotedPrintableBytes method, of class org.logicprobe.LogicMail.util.StringParser.
+     */
+    public void testDecodeQuotedPrintableBytes() {
+        String msg = "Basic test";
+        byte[] text = "=A1Hol=E1 Se=F1or!".getBytes();
+        byte[] expectedResult = "¡Holá Señor!".getBytes();
+        byte[] result = StringParser.decodeQuotedPrintableBytes(text);
+        assertTrue(msg, Arrays.equals(expectedResult, result));
+
+        msg = "Basic binary data test";
+        text = "DEAD=BE=EF".getBytes();
+        expectedResult = new byte[] {
+                (byte)'D', (byte)'E', (byte)'A', (byte)'D',
+                (byte)0xBE, (byte)0xEF
+        };
+        result = StringParser.decodeQuotedPrintableBytes(text);
+        assertTrue(msg, Arrays.equals(expectedResult, result));
+        
+        msg = "Soft line-break test";
+        text = "=A1Hol=E1 Se=F1or!=20=20H=\now=20are=20you=20today?".getBytes();
+        expectedResult = "¡Holá Señor!  How are you today?".getBytes();
+        result = StringParser.decodeQuotedPrintableBytes(text);
+        assertTrue(msg, Arrays.equals(expectedResult, result));
+
+        msg = "Underscore test (regular)";
+        text = "=A1Hol=E1_Se=F1or!".getBytes();
+        expectedResult = "¡Holá_Señor!".getBytes();
+        result = StringParser.decodeQuotedPrintableBytes(text);
+        assertTrue(msg, Arrays.equals(expectedResult, result));
+    }
 
     /**
      * Test of encodeQuotedPrintable method, of class org.logicprobe.LogicMail.util.StringParser.
@@ -764,6 +798,8 @@ public class StringParserTest extends TestCase {
         { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintable(); }}));
         testSuite.addTest(new StringParserTest("decodeQuotedPrintableHeader", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintableHeader(); }}));
+        testSuite.addTest(new StringParserTest("decodeQuotedPrintableBytes", new TestMethod()
+        { public void run(TestCase tc) { ((StringParserTest) tc).testDecodeQuotedPrintableBytes(); }}));
         
         testSuite.addTest(new StringParserTest("encodeQuotedPrintable1", new TestMethod()
         { public void run(TestCase tc) { ((StringParserTest) tc).testEncodeQuotedPrintable1(); }}));

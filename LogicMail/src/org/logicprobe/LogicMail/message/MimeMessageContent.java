@@ -52,6 +52,7 @@ public abstract class MimeMessageContent implements Serializable {
     private ContentPart messagePart;
     private int partComplete;
     protected static String ENCODING_BASE64 = "base64";
+    protected static String ENCODING_QUOTED_PRINTABLE = "quoted-printable";
 
     public static final int PART_COMPLETE = 1;
     public static final int PART_INCOMPLETE = 0;
