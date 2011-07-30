@@ -625,6 +625,8 @@ class ImapParser {
                         }
 
                         i += 2;
+                    } else if (ch == (byte)'\r' || ch == (byte)'\n') {
+                        i++;
                     } else if (ch == '"') {
                         result.addElement(buf.toArray());
                         i++;

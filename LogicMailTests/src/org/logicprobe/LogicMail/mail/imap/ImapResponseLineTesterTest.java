@@ -225,6 +225,36 @@ public class ImapResponseLineTesterTest extends TestCase {
         assertEquals("Complete", 2, trimCount);
     }
     
+    public void testLinesWithQuoted() {
+        byte[] input = "\"Hello World\"\r\nFoo\r\n".getBytes();
+        int responseLength = instance.checkForCompleteResponse(input, input.length);
+        int trimCount = instance.trimCount();
+        assertEquals("Case 1", 15, responseLength); // Length of '"Hello World"\r\n'
+        assertEquals("Case 1", 2, trimCount);
+        
+        input = "\"Hello \\\"Foo\\\\Bar\\\" World\"\r\nFoo\r\n".getBytes();
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        trimCount = instance.trimCount();
+        assertEquals("Case 2", 28, responseLength); // Length of '"Hello \"Foo\\Bar\" World"\r\n'
+        assertEquals("Case 2", 2, trimCount);
+    }
+    
+    public void testLinesWithMalformedQuoted() {
+        // This tests for a case that is technically invalid according to the
+        // IMAP grammar, but an actual server has been observed to produce it.
+        byte[] input = "\"Hello\n World\"\r\nFoo\r\n".getBytes();
+        int responseLength = instance.checkForCompleteResponse(input, input.length);
+        int trimCount = instance.trimCount();
+        assertEquals("Case 1", 16, responseLength); // Length of '"Hello\n World"\r\n'
+        assertEquals("Case 1", 2, trimCount);
+        
+        input = "\"Hello\r\n World\"\r\nFoo\r\n".getBytes();
+        responseLength = instance.checkForCompleteResponse(input, input.length);
+        trimCount = instance.trimCount();
+        assertEquals("Case 2", 17, responseLength); // Length of '"Hello\r\n World"\r\n'
+        assertEquals("Case 2", 2, trimCount);
+    }
+    
     public Test suite() {
         TestSuite suite = new TestSuite("ImapResponseLineTester");
 
@@ -240,6 +270,10 @@ public class ImapResponseLineTesterTest extends TestCase {
         { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testMultipleChecks(); }}));
         suite.addTest(new ImapResponseLineTesterTest("multipleChecksWithLiteral", new TestMethod()
         { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testMultipleChecksWithLiteral(); }}));
+        suite.addTest(new ImapResponseLineTesterTest("linesWithQuoted", new TestMethod()
+        { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testLinesWithQuoted(); }}));
+        suite.addTest(new ImapResponseLineTesterTest("linesWithMalformedQuoted", new TestMethod()
+        { public void run(TestCase tc) { ((ImapResponseLineTesterTest) tc).testLinesWithMalformedQuoted(); }}));
 
         return suite;
     }

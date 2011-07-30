@@ -95,6 +95,33 @@ public class ImapParserTest extends TestCase {
         assertEquals("Empty body literal", expected, result);
     }
     
+    public void testParenStringLexerQuotedWithLineBreak() {
+        // This test covers the case where a line-break appears in the middle
+        // of a quoted section. Since this is technically invalid according
+        // to the IMAP grammar, this test verifies that the line break
+        // characters are removed from the result.
+        
+        String rawText = "(TOKEN \"Hello\n World\")";
+        Object[] expected = new Object[] {
+                LPAREN, "TOKEN", "Hello World".getBytes(), RPAREN
+        };
+
+        byte[] data = rawText.getBytes();
+        Vector result = ImapParser.parenListLexer(data, 0, data.length);
+        
+        assertEquals("Quoted with LF", expected, result);
+        
+        rawText = "(TOKEN \"Hello\r\n World\")";
+        expected = new Object[] {
+                LPAREN, "TOKEN", "Hello World".getBytes(), RPAREN
+        };
+
+        data = rawText.getBytes();
+        result = ImapParser.parenListLexer(data, 0, data.length);
+        
+        assertEquals("Quoted with CRLF", expected, result);
+    }
+    
     public void testParenStringLexerEnvelope1() {
         String rawText = "(FLAGS (\\Answered \\Seen) " +
             "ENVELOPE (\"Mon, 12 Mar 2007 19:38:31 -0700\" \"Re: Calm down! :-)\" " +
@@ -422,6 +449,9 @@ public class ImapParserTest extends TestCase {
         
         suite.addTest(new ImapParserTest("parenStringLexerSimple", new TestMethod()
         { public void run(TestCase tc) { ((ImapParserTest) tc).testParenStringLexerSimple(); }}));
+        
+        suite.addTest(new ImapParserTest("parenStringLexerQuotedWithLineBreak", new TestMethod()
+        { public void run(TestCase tc) { ((ImapParserTest) tc).testParenStringLexerQuotedWithLineBreak(); }}));
 
         suite.addTest(new ImapParserTest("parenStringLexerEnvelope1", new TestMethod()
         { public void run(TestCase tc) { ((ImapParserTest) tc).testParenStringLexerEnvelope1(); }}));
