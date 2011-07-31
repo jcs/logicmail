@@ -31,8 +31,8 @@
 
 package org.logicprobe.LogicMail.mail;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -92,7 +92,8 @@ class LocalMessageRequest extends LocalMailStoreRequest implements MessageReques
             
             // Parse the message source
             Hashtable contentMap = new Hashtable();
-            MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, new ByteArrayInputStream(messageSource.getBytes()));
+            InputStream messageStream = MailMessageParser.convertMessageResultToStream(messageSource);
+            MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, messageStream);
             message = new Message(rootPart);
             Enumeration e = contentMap.keys();
             while(e.hasMoreElements()) {

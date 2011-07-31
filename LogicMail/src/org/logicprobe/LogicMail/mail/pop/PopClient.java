@@ -31,14 +31,12 @@
 
 package org.logicprobe.LogicMail.mail.pop;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
 import net.rim.device.api.util.Arrays;
-import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
@@ -83,7 +81,6 @@ public class PopClient extends AbstractIncomingMailClient {
     private String password;
     private boolean openStarted;
     
-    private static final byte[] CRLF = new byte[] { (byte)'\r', (byte)'\n' };
     private static String CAPA_STLS = "STLS"; 
     
     /**
@@ -521,7 +518,7 @@ public class PopClient extends AbstractIncomingMailClient {
         // the special case where maxLines == retrievedLines and we are
         // downloading a single-part message with no separators.
 
-        InputStream inputStream = convertMessageResultToStream(retrResult);
+        InputStream inputStream = MailMessageParser.convertMessageResultToStream(retrResult);
         
         Hashtable contentMap = new Hashtable();
         MimeMessagePart rootPart = MailMessageParser.parseRawMessage(contentMap, inputStream);
@@ -554,60 +551,6 @@ public class PopClient extends AbstractIncomingMailClient {
         }
     }
 
-    /**
-     * Convert the server result to an InputStream wrapping a byte[] buffer
-     * that includes the CRLF markers that were stripped out by the socket
-     * reading code, and has any other necessary pre-processing applied.
-     *
-     * @param resultLines the lines of message data returned by the server
-     * @return the input stream to be passed to the parser code
-     */
-    private static InputStream convertMessageResultToStream(byte[][] resultLines) {
-        DataBuffer buf = new DataBuffer();
-        
-        boolean inHeaders = true;
-        for(int i=0; i<resultLines.length; i++) {
-            if(inHeaders) {
-                // Special logic to unfold message headers and replace HTAB
-                // indentations in folded headers with spaces.
-                // This is a workaround for a bug in MIMEInputStream that
-                // causes it to fail to parse certain messages with folded
-                // headers.  (The bug appears to be fixed in OS 6.0, but the
-                // workaround is always invoked because it should not have
-                // any harmful side-effects.)
-                if(resultLines[i].length == 0) {
-                    inHeaders = false;
-                    if(i > 0) {
-                        buf.write(CRLF);
-                    }
-                    buf.write(CRLF);
-                }
-                else if(resultLines[i][0] == (byte)'\t') {
-                    resultLines[i][0] = (byte)' ';
-                    buf.write(resultLines[i]);
-                }
-                else if(resultLines[i][0] == (byte)' ') {
-                    buf.write(resultLines[i]);
-                }
-                else {
-                    if(i > 0) {
-                        buf.write(CRLF);
-                    }
-                    buf.write(resultLines[i]);
-                }
-            }
-            else {
-                buf.write(resultLines[i]);
-                buf.write(CRLF);
-            }
-        }
-        
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(
-                buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
-        
-        return inputStream;
-    }
-    
     /* (non-Javadoc)
      * @see org.logicprobe.LogicMail.mail.IncomingMailClient#deleteMessage(org.logicprobe.LogicMail.mail.MessageToken)
      */

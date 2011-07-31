@@ -351,9 +351,10 @@ public class MessageMimeConverter {
                 ContentPart contentPart = (ContentPart)part;
                 String name = contentPart.getName();
                 if(name.length() > 0) {
-                    mimeStream.addContentTypeParameter("name", name);
+                    mimeStream.addContentTypeParameter("name", "\"" + StringParser.createEncodedHeader(10, name) + "\"");
                     if(contentPart.getDisposition().equalsIgnoreCase("attachment")) {
-                        mimeStream.addHeaderField("Content-Disposition: attachment; filename=\"" + name + "\"");
+                        mimeStream.addHeaderField("Content-Disposition: attachment; filename=\""
+                                + StringParser.createEncodedHeader(44, name) + "\"");
                     }
                 }
             }

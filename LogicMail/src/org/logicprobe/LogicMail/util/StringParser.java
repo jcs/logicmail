@@ -504,12 +504,30 @@ public class StringParser {
      * @return Processed unicode string
      */
     public static String parseEncodedHeader(String text) {
+        return parseEncodedHeader(text, true);
+    }
+    
+    /**
+     * Scans the provided string for blocks of text encoded according
+     * to RFC2047, decodes them accordingly, and returns a new Unicode
+     * string usable in the rest of the application.  If the charset for
+     * a block of text is not supported, then that block is not included
+     * in the result.
+     *
+     * @param text The text to scan.
+     * @param reencode true, if the text should be reencoded if it contains
+     *     characters outside of the US-ASCII 7bit range
+     * @return Processed unicode string
+     */
+    public static String parseEncodedHeader(String text, boolean reencode) {
         // Quick check for null input
         if (text == null) {
             return null;
         }
 
-        text = reencodeStringIfNecessary(text);
+        if(reencode) {
+            text = reencodeStringIfNecessary(text);
+        }
 
         int size = text.length();
 
@@ -756,9 +774,12 @@ public class StringParser {
         } else if (encoding.charAt(0) == 'B') {
             // Base64
             try {
-                result = new String(
-                        Base64InputStream.decode(encodedText),
-                        charset);
+                byte[] decodedData = Base64InputStream.decode(encodedText);
+                try {
+                    result = StringFactory.create(decodedData, charset);
+                } catch (UnsupportedEncodingException e) {
+                    result = new String(decodedData);
+                }
             } catch (IOException e) {
                 result = "";
             }
@@ -784,6 +805,14 @@ public class StringParser {
         buf.append(' ');
         
         appendEncodedHeaderSegment(buf, key.length() + 1, text);
+        
+        return buf.toString();
+    }
+    
+    public static String createEncodedHeader(int indent, String text) {
+        StringBuffer buf = new StringBuffer();
+        
+        appendEncodedHeaderSegment(buf, indent, text);
         
         return buf.toString();
     }
@@ -1225,7 +1254,7 @@ public class StringParser {
         decodeQuotedPrintableDataImpl(buf, text, header);
         String result;
         try {
-            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength(), charset);
+            result = StringFactory.create(buf.getArray(), buf.getArrayStart(), buf.getArrayLength(), charset);
         } catch (UnsupportedEncodingException e) {
             result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
         }

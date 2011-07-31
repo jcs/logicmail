@@ -30,6 +30,8 @@
  */
 package org.logicprobe.LogicMail.util;
 
+import net.rim.device.api.util.CharacterUtilities;
+
 /**
  * Provides utility methods that operate on <code>byte</code> arrays, with
  * similar functionality to common <code>String</code> methods.
@@ -92,31 +94,80 @@ public class StringArrays {
      * @throws NullPointerException if <code>str</code> is <code>null</code>
      */
     public static int indexOf(byte[] array, byte[] str, int fromIndex) {
+        return indexOf(array, str, fromIndex, array.length, false);
+    }
+    
+    /**
+     * Returns the index within this string of the first occurrence of the
+     * specified substring, starting at the specified index.
+     *
+     * @param array the array representing the string.
+     * @param str the substring to search for.
+     * @param fromIndex the index to start the search from.
+     * @param arrayLength the length of the data in the array that is valid for
+     *   the search
+     * @param ignoreCase true, if the search should be case insensitive
+     * @return If the string argument occurs as a substring within this object
+     *   at a starting index no smaller than <code>fromIndex</code>, then the
+     *   index of the first character of the first such substring is returned.
+     *   If it does not occur as a substring starting at <code>fromIndex</code>
+     *   or beyond, <code>-1</code> is returned.
+     * @throws NullPointerException if <code>str</code> is <code>null</code>
+     */
+    public static int indexOf(byte[] array, byte[] str, int fromIndex, int arrayLength, boolean ignoreCase) {
         if(str == null) {
             throw new NullPointerException();
         }
-        if(fromIndex + str.length > array.length) {
+        if(fromIndex + str.length > arrayLength) {
             return -1;
         }
         
-        int max = array.length - str.length;
+        int max = arrayLength - str.length;
 
-        for (int i = fromIndex; i <= max; i++) {
-            if (array[i] != str[0]) {
-                while (++i <= max && array[i] != str[0]);
+        if(ignoreCase) {
+            for (int i = fromIndex; i <= max; i++) {
+                if (!equalsIgnoreCase(array[i], str[0])) {
+                    while (++i <= max && !equalsIgnoreCase(array[i], str[0]));
+                }
+
+                if (i <= max) {
+                    int j = i + 1;
+                    int end = j + str.length - 1;
+                    for (int k = 1; j < end && equalsIgnoreCase(array[j], str[k]); j++, k++);
+
+                    if (j == end) {
+                        return i;
+                    }
+                }
             }
+        }
+        else {
+            for (int i = fromIndex; i <= max; i++) {
+                if (array[i] != str[0]) {
+                    while (++i <= max && array[i] != str[0]);
+                }
 
-            if (i <= max) {
-                int j = i + 1;
-                int end = j + str.length - 1;
-                for (int k = 1; j < end && array[j] == str[k]; j++, k++);
+                if (i <= max) {
+                    int j = i + 1;
+                    int end = j + str.length - 1;
+                    for (int k = 1; j < end && array[j] == str[k]; j++, k++);
 
-                if (j == end) {
-                    return i;
+                    if (j == end) {
+                        return i;
+                    }
                 }
             }
         }
         return -1;
+    }
+    
+    private static boolean equalsIgnoreCase(byte ch1, byte ch2) {
+        if(CharacterUtilities.isLetter((char)ch1) && CharacterUtilities.isLetter((char)ch2)) {
+            return CharacterUtilities.toUpperCase((char)ch1) == CharacterUtilities.toUpperCase((char)ch2);
+        }
+        else {
+            return ch1 == ch2;
+        }
     }
     
     /**

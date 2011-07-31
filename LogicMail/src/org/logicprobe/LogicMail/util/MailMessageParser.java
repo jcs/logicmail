@@ -31,11 +31,13 @@
 package org.logicprobe.LogicMail.util;
 
 import net.rim.device.api.io.IOUtilities;
+import net.rim.device.api.io.LineReader;
 import net.rim.device.api.io.SharedInputStream;
 import net.rim.device.api.mime.MIMEInputStream;
 import net.rim.device.api.mime.MIMEParsingException;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Arrays;
+import net.rim.device.api.util.DataBuffer;
 
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -47,11 +49,13 @@ import org.logicprobe.LogicMail.message.MultiPart;
 import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.message.UnsupportedContentException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Calendar;
 import java.util.Hashtable;
+import java.util.Vector;
 
 
 /**
@@ -60,6 +64,9 @@ import java.util.Hashtable;
  */
 public class MailMessageParser {
     private static String strCRLF = "\r\n";
+    private static final byte[] CRLF = new byte[] { (byte)'\r', (byte)'\n' };
+    private static final byte[] CONTENT_TYPE_KEY = "Content-Type:".getBytes();
+    private static final byte[] BOUNDARY_EQ = "boundary=".getBytes();
 
     private MailMessageParser() {
     }
@@ -182,6 +189,128 @@ public class MailMessageParser {
 
         return addresses;
     }
+    
+    /**
+     * Convert string-format raw message source to an InputStream that is
+     * compatible with {@link #parseRawMessage(Hashtable, InputStream)}.
+     *
+     * @param messageSource the message source
+     * @return the input stream to be passed to the parser code
+     */
+    public static InputStream convertMessageResultToStream(String messageSource) {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(messageSource.getBytes());
+        
+        Vector lines = new Vector();
+        try {
+            LineReader reader = new LineReader(inputStream);
+            byte[] line;
+            while((line = reader.readLine()) != null) {
+                lines.addElement(line);
+            }
+        } catch (IOException e) {
+            EventLogger.logEvent(AppInfo.GUID,
+                    ("Error converting message to stream: " + e.getMessage()).getBytes(),
+                    EventLogger.WARNING);
+        }
+        
+        byte[][] resultLines = new byte[lines.size()][];
+        lines.copyInto(resultLines);
+        return convertMessageResultToStream(resultLines);
+    }
+    
+    /**
+     * Convert the server result to an InputStream wrapping a byte[] buffer
+     * that includes the CRLF markers that were stripped out by the socket
+     * reading code, and has any other necessary pre-processing applied.
+     *
+     * @param resultLines the lines of message data returned by the server
+     * @return the input stream to be passed to the parser code
+     */
+    public static InputStream convertMessageResultToStream(byte[][] resultLines) {
+        DataBuffer buf = new DataBuffer();
+        
+        boolean inHeaders = true;
+        boolean inInitialHeaders = true;
+        boolean firstHeaderLine = true;
+        byte[] boundary = null;
+        for(int i=0; i<resultLines.length; i++) {
+            if(inHeaders) {
+                // Special logic to unfold message headers and replace HTAB
+                // indentations in folded headers with spaces.
+                // This is a workaround for a bug in MIMEInputStream that
+                // causes it to fail to parse certain messages with folded
+                // headers.  (The bug appears to be fixed in OS 6.0, but the
+                // workaround is always invoked because it should not have
+                // any harmful side-effects.)
+                if(resultLines[i].length == 0) {
+                    inHeaders = false;
+                    if(!firstHeaderLine) {
+                        buf.write(CRLF);
+                    }
+                    buf.write(CRLF);
+                    
+                    if(inInitialHeaders) {
+                        boundary = getContentBoundary(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+                        inInitialHeaders = false;
+                    }
+                }
+                else if(resultLines[i][0] == (byte)'\t' || resultLines[i][0] == (byte)' ') {
+                    for(int j=1; j<resultLines[i].length; j++) {
+                        if(resultLines[i][j] != (byte)'\t' && resultLines[i][j] != (byte)' ') {
+                            buf.write((byte)' ');
+                            buf.write(resultLines[i], j, resultLines[i].length - j);
+                            break;
+                        }
+                    }
+                }
+                else {
+                    if(!firstHeaderLine) {
+                        buf.write(CRLF);
+                    }
+                    buf.write(resultLines[i]);
+                }
+                if(firstHeaderLine) { firstHeaderLine = false; }
+            }
+            else {
+                buf.write(resultLines[i]);
+                buf.write(CRLF);
+                if(Arrays.equals(resultLines[i], boundary)) {
+                    inHeaders = true;
+                    firstHeaderLine = true;
+                }
+            }
+        }
+        
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(
+                buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+        
+        return inputStream;
+    }
+    
+    private static byte[] getContentBoundary(byte[] buf, int offset, int length) {
+        int p = StringArrays.indexOf(buf, CONTENT_TYPE_KEY, offset, length, true);
+        if(p == -1) { return null; } else { p += CONTENT_TYPE_KEY.length; }
+        
+        int q = StringArrays.indexOf(buf, CRLF, p, length, false);
+        if(q == -1) { return null; }
+        
+        int r = StringArrays.indexOf(buf, BOUNDARY_EQ, p, q, true);
+        if(r == -1) { return null; } else { r += BOUNDARY_EQ.length; }
+        
+        int s = StringArrays.indexOf(buf, (byte)' ', r);
+        if(s == -1 || s > q) { s = q; }
+        
+        if(buf[r] == (byte)'\"') { r++; }
+        if(buf[s - 1] == (byte)'\"') { s--; }
+        if((s - r) <= 0) { return null; }
+        
+        byte[] result = new byte[(s - r) + 2];
+        result[0] = (byte)'-';
+        result[1] = (byte)'-';
+        System.arraycopy(buf, r, result, 2, s - r);
+        
+        return result;
+    }
 
     /**
      * Parses the raw message body.
@@ -236,7 +365,7 @@ public class MailMessageParser {
         String subtype = mimeType.substring(mimeType.indexOf('/') + 1);
         String encoding = mimeInputStream.getHeader("Content-Transfer-Encoding");
         String charset = mimeInputStream.getContentTypeParameter("charset");
-        String name = mimeInputStream.getContentTypeParameter("name");
+        String name = StringParser.parseEncodedHeader(mimeInputStream.getContentTypeParameter("name"), false);
         String disposition = mimeInputStream.getHeader("Content-Disposition");
         String contentId = mimeInputStream.getHeader("Content-ID");
 

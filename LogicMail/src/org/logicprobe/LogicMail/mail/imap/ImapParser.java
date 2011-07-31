@@ -458,7 +458,7 @@ class ImapParser {
                     if (key.equalsIgnoreCase(CHARSET)) {
                         sec.charset = value;
                     } else if (key.equalsIgnoreCase(NAME)) {
-                        sec.name = value;
+                        sec.name = StringParser.parseEncodedHeader(value);
                     }
                 }
             }

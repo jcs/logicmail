@@ -54,6 +54,7 @@ import java.util.Hashtable;
  * <li><b>&quot;Windows-1256&quot;</b> - Arabic</li>
  * <li><b>&quot;Windows-1257&quot;</b> - Estonian, Latvian and Lithuanian</li>
  * <li><b>&quot;Windows-1258&quot;</b> - Vietnamese</li>
+ * <li><b>&quot;ISO-8859-2&quot;</b> - Central European and Eastern European languages that use Latin script</li>
  * <li><b>&quot;KOI8-R&quot;</b> - Russian</li>
  * <li><b>&quot;KOI8-U&quot;</b> - Ukrainian</li>
  * </ul>
@@ -85,6 +86,7 @@ public class StringFactory {
         charsetMappingTables.put("WINDOWS-1257", mappingTableCP1257);
         charsetMappingTables.put("CP1258", mappingTableCP1258);
         charsetMappingTables.put("WINDOWS-1258", mappingTableCP1258);
+        charsetMappingTables.put("ISO-8859-2", mappingTable8859_2);
         charsetMappingTables.put("KOI8-R", mappingTableKOI8R);
         charsetMappingTables.put("KOI8-U", mappingTableKOI8U);
     }
@@ -117,15 +119,36 @@ public class StringFactory {
      * @see String#String(byte[], String)
      */
     public static String create(byte[] bytes, String charset) throws UnsupportedEncodingException {
+        return create(bytes, 0, bytes.length, charset);
+    }
+
+    /**
+     * Construct a new <tt>String</tt> by converting the specified array of
+     * bytes using the specified character encoding.  This method will first
+     * attempt to use the constructor of the <tt>String</tt> class that takes
+     * a character encoding parameter.  If <tt>String</tt> does not directly
+     * recognize the encoding, this method will then attempt to use a variety
+     * of Unicode mapping tables.
+     *
+     * @param bytes The bytes to be converted into characters
+     * @param off Index of the first byte to convert
+     * @param len Number of bytes to convert
+     * @param charset The name of a supported character encoding
+     * @return Converted string representation
+     * @throws UnsupportedEncodingException If the named character encoding is not supported
+     * 
+     * @see String#String(byte[], String)
+     */
+    public static String create(byte[] bytes, int off, int len, String charset) throws UnsupportedEncodingException {
         if(charset == null || charset.length() == 0) {
             throw new UnsupportedEncodingException();
         }
         
         String result;
         try {
-            result = new String(bytes, charset);
+            result = new String(bytes, off, len, charset);
         } catch (UnsupportedEncodingException exp) {
-            result = getInstance().createFromMappingTable(bytes, charset);
+            result = getInstance().createFromMappingTable(bytes, off, len, charset);
         }
         return result;
     }
@@ -135,18 +158,20 @@ public class StringFactory {
      * bytes using the specified character encoding.
      *
      * @param bytes The bytes to be converted into characters
+     * @param off Index of the first byte to convert
+     * @param len Number of bytes to convert
      * @param charset The name of a supported character encoding
      * @return Converted string representation
      * @throws UnsupportedEncodingException If the named character encoding is not supported
      */
-    private String createFromMappingTable(byte[] bytes, String charset) throws UnsupportedEncodingException {
+    private String createFromMappingTable(byte[] bytes, int off, int len, String charset) throws UnsupportedEncodingException {
         char[] mappingTable = (char[])charsetMappingTables.get(charset.toUpperCase());
         if(mappingTable == null) {
             throw new UnsupportedEncodingException();
         }
         
         StringBuffer buf = new StringBuffer();
-        for(int i=0; i<bytes.length; i++) {
+        for(int i=off; i<len; i++) {
             buf.append(mappingTable[(int) bytes[i] & 0xFF]);
         }
         return buf.toString();
@@ -647,6 +672,61 @@ public class StringFactory {
         '\u00FC', '\u01B0', '\u20AB', '\u00FF'
     };
 
+    /**
+     * ISO-8859-2 to Unicode table
+     * <pre>
+     * Unicode version: 3.0
+     * Table version: 1.0
+     * Date: 07/27/1999
+     * URL:  http://www.unicode.org/Public/MAPPINGS/ISO8859/8859-2.TXT
+     * </pre>
+     */
+    private static char[] mappingTable8859_2 = {
+        '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005',
+        '\u0006', '\u0007', '\u0008', '\u0009', '\n', '\u000B',
+        '\u000C', '\r', '\u000E', '\u000F', '\u0010', '\u0011',
+        '\u0012', '\u0013', '\u0014', '\u0015', '\u0016', '\u0017',
+        '\u0018', '\u0019', '\u001A', '\u001B', '\u001C', '\u001D',
+        '\u001E', '\u001F', '\u0020', '\u0021', '\u0022', '\u0023',
+        '\u0024', '\u0025', '\u0026', '\'', '\u0028', '\u0029',
+        '\u002A', '\u002B', '\u002C', '\u002D', '\u002E', '\u002F',
+        '\u0030', '\u0031', '\u0032', '\u0033', '\u0034', '\u0035',
+        '\u0036', '\u0037', '\u0038', '\u0039', '\u003A', '\u003B',
+        '\u003C', '\u003D', '\u003E', '\u003F', '\u0040', '\u0041',
+        '\u0042', '\u0043', '\u0044', '\u0045', '\u0046', '\u0047',
+        '\u0048', '\u0049', '\u004A', '\u004B', '\u004C', '\u004D',
+        '\u004E', '\u004F', '\u0050', '\u0051', '\u0052', '\u0053',
+        '\u0054', '\u0055', '\u0056', '\u0057', '\u0058', '\u0059',
+        '\u005A', '\u005B', '\\', '\u005D', '\u005E', '\u005F',
+        '\u0060', '\u0061', '\u0062', '\u0063', '\u0064', '\u0065',
+        '\u0066', '\u0067', '\u0068', '\u0069', '\u006A', '\u006B',
+        '\u006C', '\u006D', '\u006E', '\u006F', '\u0070', '\u0071',
+        '\u0072', '\u0073', '\u0074', '\u0075', '\u0076', '\u0077',
+        '\u0078', '\u0079', '\u007A', '\u007B', '\u007C', '\u007D',
+        '\u007E', '\u007F', '\u0080', '\u0081', '\u0082', '\u0083',
+        '\u0084', '\u0085', '\u0086', '\u0087', '\u0088', '\u0089',
+        '\u008A', '\u008B', '\u008C', '\u008D', '\u008E', '\u008F',
+        '\u0090', '\u0091', '\u0092', '\u0093', '\u0094', '\u0095',
+        '\u0096', '\u0097', '\u0098', '\u0099', '\u009A', '\u009B',
+        '\u009C', '\u009D', '\u009E', '\u009F', '\u00A0', '\u0104',
+        '\u02D8', '\u0141', '\u00A4', '\u013D', '\u015A', '\u00A7',
+        '\u00A8', '\u0160', '\u015E', '\u0164', '\u0179', '\u00AD',
+        '\u017D', '\u017B', '\u00B0', '\u0105', '\u02DB', '\u0142',
+        '\u00B4', '\u013E', '\u015B', '\u02C7', '\u00B8', '\u0161',
+        '\u015F', '\u0165', '\u017A', '\u02DD', '\u017E', '\u017C',
+        '\u0154', '\u00C1', '\u00C2', '\u0102', '\u00C4', '\u0139',
+        '\u0106', '\u00C7', '\u010C', '\u00C9', '\u0118', '\u00CB',
+        '\u011A', '\u00CD', '\u00CE', '\u010E', '\u0110', '\u0143',
+        '\u0147', '\u00D3', '\u00D4', '\u0150', '\u00D6', '\u00D7',
+        '\u0158', '\u016E', '\u00DA', '\u0170', '\u00DC', '\u00DD',
+        '\u0162', '\u00DF', '\u0155', '\u00E1', '\u00E2', '\u0103',
+        '\u00E4', '\u013A', '\u0107', '\u00E7', '\u010D', '\u00E9',
+        '\u0119', '\u00EB', '\u011B', '\u00ED', '\u00EE', '\u010F',
+        '\u0111', '\u0144', '\u0148', '\u00F3', '\u00F4', '\u0151',
+        '\u00F6', '\u00F7', '\u0159', '\u016F', '\u00FA', '\u0171',
+        '\u00FC', '\u00FD', '\u0163', '\u02D9'
+    };
+    
     /**
      * KOI8-R (RFC1489) to Unicode table
      * <pre>

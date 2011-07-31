@@ -1086,14 +1086,11 @@ public class CompositionScreen extends AbstractScreenProvider {
                 String mimeSubtype = mimeType.substring(p + 1);
                 mimeType = mimeType.substring(0, p);
                 
-                p = fileUrl.lastIndexOf('/');
-                String fileName = fileUrl.substring(p + 1);
-                
                 MimeMessagePart part =
                     MimeMessagePartFactory.createMimeMessagePart(
                             mimeType,
                             mimeSubtype,
-                            fileName,
+                            fileConnection.getName(),
                             null,         // encoding
                             null,         // param
                             "attachment", // disposition
