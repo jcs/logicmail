@@ -149,7 +149,7 @@ public class BrowserField2Renderer {
         };
         manager.add(browserField);
         
-        browserField.displayContent(content.getText(), "");
+        browserField.displayContent(content.getRawData(), "text/html", "");
         
         return manager;
     }
@@ -162,7 +162,7 @@ public class BrowserField2Renderer {
             if(node instanceof HTMLAnchorElement) {
                 HTMLAnchorElement anchor = (HTMLAnchorElement)node;
                 String href = anchor.getHref();
-                if(href.regionMatches(true, 0, MAILTO, 0, MAILTO.length()) && href.length() > MAILTO.length()) {
+                if(href != null && href.regionMatches(true, 0, MAILTO, 0, MAILTO.length()) && href.length() > MAILTO.length()) {
                     anchor.setHref(LM_MAILTO + href.substring(7));
                 }
             }
