@@ -143,7 +143,7 @@ public class TextContent extends MimeMessageContent {
 	protected void putRawData(byte[] rawData) {
 	    this.rawData = rawData;
 		try {
-            this.text = new String(rawData, UTF_8);
+            this.text = new String(rawData, ((TextPart)getMessagePart()).getCharset());
         } catch (UnsupportedEncodingException e) {
             this.text = new String(rawData);
         }
