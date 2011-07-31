@@ -245,12 +245,13 @@ public class MailMessageParser {
                 if(resultLines[i].length == 0) {
                     inHeaders = false;
                     if(!firstHeaderLine) {
+                        removeTrailingColon(buf);
                         buf.write(CRLF);
                     }
                     buf.write(CRLF);
                     
                     if(inInitialHeaders) {
-                        boundary = getContentBoundary(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+                        boundary = getContentBoundary(buf.getArray(), buf.getArrayStart(), buf.getLength());
                         inInitialHeaders = false;
                     }
                 }
@@ -265,6 +266,7 @@ public class MailMessageParser {
                 }
                 else {
                     if(!firstHeaderLine) {
+                        removeTrailingColon(buf);
                         buf.write(CRLF);
                     }
                     buf.write(resultLines[i]);
@@ -282,11 +284,18 @@ public class MailMessageParser {
         }
         
         ByteArrayInputStream inputStream = new ByteArrayInputStream(
-                buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+                buf.getArray(), buf.getArrayStart(), buf.getLength());
         
         return inputStream;
     }
     
+    private static void removeTrailingColon(DataBuffer buf) {
+        int len = buf.getLength();
+        if(len > 0 && buf.getArray()[buf.getArrayStart() + len - 1] == (byte)';') {
+            buf.setLength(len - 1);
+        }
+    }
+
     private static byte[] getContentBoundary(byte[] buf, int offset, int length) {
         int p = StringArrays.indexOf(buf, CONTENT_TYPE_KEY, offset, length, true);
         if(p == -1) { return null; } else { p += CONTENT_TYPE_KEY.length; }
@@ -301,6 +310,8 @@ public class MailMessageParser {
         if(s == -1 || s > q) { s = q; }
         
         if(buf[r] == (byte)'\"') { r++; }
+        if(buf[s - 1] == (byte)';') { s--; }
+        if((s - r) <= 0) { return null; }
         if(buf[s - 1] == (byte)'\"') { s--; }
         if((s - r) <= 0) { return null; }
         

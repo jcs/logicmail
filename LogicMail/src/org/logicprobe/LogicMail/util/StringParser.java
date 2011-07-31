@@ -1254,9 +1254,9 @@ public class StringParser {
         decodeQuotedPrintableDataImpl(buf, text, header);
         String result;
         try {
-            result = StringFactory.create(buf.getArray(), buf.getArrayStart(), buf.getArrayLength(), charset);
+            result = StringFactory.create(buf.getArray(), buf.getArrayStart(), buf.getLength(), charset);
         } catch (UnsupportedEncodingException e) {
-            result = new String(buf.getArray(), buf.getArrayStart(), buf.getArrayLength());
+            result = new String(buf.getArray(), buf.getArrayStart(), buf.getLength());
         }
         return result;
     }
