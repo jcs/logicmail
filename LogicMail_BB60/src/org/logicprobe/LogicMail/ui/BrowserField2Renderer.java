@@ -56,6 +56,7 @@ import net.rim.device.api.ui.container.HorizontalFieldManager;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.TextContent;
+import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.MessageNode;
 import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import org.w3c.dom.Document;
@@ -71,9 +72,12 @@ public class BrowserField2Renderer {
     private final MessageNode messageNode;
     private final TextContent content;
 
+    private static String CHARSET_PARAM = "; charset=";
+    private static String TEXT_HTML = "text/html";
     private static String TAG_NAME_A = "a";
     private static String MAILTO = "mailto:";
     private static String LM_MAILTO = "lmmailto://";
+    private static String CID_COLON = "cid:";
     
     /**
      * Instantiates a new browser field 2 renderer.
@@ -149,9 +153,21 @@ public class BrowserField2Renderer {
         };
         manager.add(browserField);
         
-        browserField.displayContent(content.getRawData(), "text/html", "");
+        String contentType = getContentType();
+        browserField.displayContent(content.getRawData(), contentType, "");
         
         return manager;
+    }
+
+    private String getContentType() {
+        String charset = ((TextPart)content.getMessagePart()).getCharset();
+        StringBuffer buf = new StringBuffer(TEXT_HTML);
+        if(charset != null && charset.length() > 0) {
+            buf.append(CHARSET_PARAM);
+            buf.append(charset);
+        }
+        String contentType = buf.toString();
+        return contentType;
     }
 
     protected void browserFieldDocumentLoaded(BrowserField browserField, Document document) {
@@ -204,7 +220,7 @@ public class BrowserField2Renderer {
     
     private MimeMessageContent findContentMatch(BrowserFieldRequest request) {
         String url = request.getURL();
-        int p = url.indexOf("cid:");
+        int p = url.indexOf(CID_COLON);
         if(p == -1 || url.length() < 5) { return null; }
         String contentId = '<' + url.substring(4) + '>';
         MimeMessageContent contentMatch = null;
