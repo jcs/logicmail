@@ -192,13 +192,22 @@ public class MailManager {
             AccountConfig accountConfig = networkAccounts[i].getAccountConfig();
             int setting = accountConfig.getRefreshOnStartup();
 
+            boolean refreshTriggered = false;
             if(accountConfig.getRefreshOnStartup() >= AccountConfig.REFRESH_ON_STARTUP_STATUS) {
                 //TODO: Consider handling folder refresh on missing-folder errors
                 //TODO: Making the GUI always show a server-side value for message counts will clear up side-effects
                 networkAccounts[i].refreshMailboxStatus();
+                refreshTriggered = true;
             }
             if(setting == AccountConfig.REFRESH_ON_STARTUP_HEADERS) {
                 networkAccounts[i].triggerAutomaticRefresh(true);
+                refreshTriggered = true;
+            }
+            
+            // If a refresh was not triggered on startup, but polling is
+            // enabled, then make sure the polling thread is still started.
+            if(!refreshTriggered && accountConfig.getRefreshFrequency() > 0) {
+                networkAccounts[i].scheduleAutomaticRefresh();
             }
         }
     }

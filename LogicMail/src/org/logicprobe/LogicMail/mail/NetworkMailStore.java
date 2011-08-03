@@ -150,6 +150,16 @@ public class NetworkMailStore extends AbstractMailStore {
     }
 
     /**
+     * Creates a request to instruct the connection handler thread to start
+     * its polling timer, if the connection is closed and it is not already
+     * started.
+     */
+    public NetworkPollingStartRequest createPollingStartRequest() {
+        NetworkPollingStartRequest request = new NetworkPollingStartRequest(this);
+        return request;
+    }
+
+    /**
      * Creates a request to instruct the mail client to enable or disable its
      * idle mode.  This request is useful at the beginning and end of a batch
      * operation, to prevent the mail client from entering and exiting idle

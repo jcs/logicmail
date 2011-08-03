@@ -35,6 +35,10 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import net.rim.device.api.system.Backlight;
+import net.rim.device.api.system.DeviceInfo;
+import net.rim.device.api.ui.UiApplication;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.Queue;
@@ -63,6 +67,12 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      * shorter than the smallest configurable polling frequency.
      */
     private static final int LOCKED_TIMEOUT = 240000;
+    
+    /**
+     * Rate at which to check device status while an idle connection is open
+     * on a mail store with locked folders.
+     */
+    private static final int LOCKED_INTERVAL = 15000;
     
     private final Timer idleTimer = new Timer();
     private TimerTask idleTimerTask;
@@ -195,7 +205,7 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             // reason to keep the connection open is to improve the user
             // experience.  However, we should still eventually timeout and
             // disconnect.
-            startIdleTimer(LOCKED_TIMEOUT);
+            startLockedFoldersIdleTimer();
         }
     }
 
@@ -208,6 +218,43 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
             }
         };
         idleTimer.schedule(idleTimerTask, timeout);
+    }
+    
+    private void startLockedFoldersIdleTimer() {
+        idleRecentMessagesRequested = false;
+        idleTimeout = false;
+        idleTimerTask = new TimerTask() {
+            public void run() {
+                boolean handleTimeout = false;
+                long timeInIdle = System.currentTimeMillis() - idleStartTime;
+                if(timeInIdle > LOCKED_TIMEOUT) {
+                    // If we've been idle longer than the timeout constant, then
+                    // consider this an idle timeout.
+                    handleTimeout = true;
+                }
+                else if(DeviceInfo.isInHolster()) {
+                    // Device is in the holster, and thus assumed to not be
+                    // in use.
+                    handleTimeout = true;
+                }
+                else if(!UiApplication.getUiApplication().isForeground()) {
+                    // Application is in the background, and not being
+                    // interacted with by the user.
+                    handleTimeout = true;
+                }
+                else if(!Backlight.isEnabled() && DeviceInfo.getIdleTime() > 30) {
+                    // The screen backlight as shut off, and the user has not
+                    // touched the device for at least 30 seconds. In this case,
+                    // we are assuming that the device probably isn't in use.
+                    handleTimeout = true;
+                }
+                
+                if(handleTimeout) {
+                    handleIdleModeTimeout();
+                }
+            }
+        };
+        idleTimer.scheduleAtFixedRate(idleTimerTask, LOCKED_INTERVAL, LOCKED_INTERVAL);
     }
 
     protected void handleIdleModeTimeout() {
@@ -250,6 +297,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                     FolderTreeItem activeFolder = incomingClient.getActiveFolder();
                     if(inboxFolder != null && activeFolder != null
                             && !inboxFolder.getPath().equalsIgnoreCase(activeFolder.getPath())) {
+                        handleSetActiveFolder(inboxFolder);
+                    }
+                    else if(inboxFolder != null && activeFolder == null) {
                         handleSetActiveFolder(inboxFolder);
                     }
                 }
@@ -324,6 +374,18 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         if(refreshFrequency == 0) { return; }
         
         schedulePollingRefresh(refreshFrequency);
+    }
+
+    public void startPollingThread() {
+        long refreshFrequency = 0;
+        synchronized(pollingTimer) {
+            if(getConnectionState() == STATE_CLOSED && pollingTimerTask == null) {
+                refreshFrequency = accountConfig.getRefreshFrequency() * MS_PER_MIN;
+            }
+        }
+        if(refreshFrequency > 0) {
+            schedulePollingRefresh(refreshFrequency);
+        }
     }
 
     private void schedulePollingRefresh(long nextRefresh) {

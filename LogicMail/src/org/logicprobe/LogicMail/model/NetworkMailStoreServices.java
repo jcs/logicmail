@@ -50,6 +50,7 @@ import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.NetworkClientIdleModeRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
+import org.logicprobe.LogicMail.mail.NetworkPollingStartRequest;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -111,6 +112,16 @@ public class NetworkMailStoreServices extends MailStoreServices {
     
     public FolderTreeItem getInboxFolder() {
         return mailStore.getInboxFolder();
+    }
+
+    /**
+     * Requests that the polling thread be started, if it is not currently
+     * running, and the connection is in a closed state where it will not
+     * normally be started.
+     */
+    public void requestPollingStart() {
+        NetworkPollingStartRequest request = mailStore.createPollingStartRequest();
+        mailStore.processRequest(request);
     }
     
     public void requestFolderTreeAutomated() {

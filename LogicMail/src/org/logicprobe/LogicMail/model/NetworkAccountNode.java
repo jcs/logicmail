@@ -447,4 +447,15 @@ public class NetworkAccountNode extends AccountNode {
             ((NetworkMailStoreServices)mailStoreServices).requestFolderRefreshAutomated(folders);
         }
     }
+
+    /**
+     * Schedule an automatic refresh of the account's contents, based on the
+     * account configuration.  It simply starts the polling thread, if the
+     * connection is closed and the polling thread is dormant. This method
+     * is intended to be called on application startup, in cases where polling
+     * is configured but connect on startup is not.
+     */
+    public void scheduleAutomaticRefresh() {
+        ((NetworkMailStoreServices)mailStoreServices).requestPollingStart();
+    }
 }
