@@ -55,6 +55,7 @@ import net.rim.device.api.ui.component.ObjectChoiceField;
 import net.rim.device.api.util.Arrays;
 import net.rim.device.api.util.DataBuffer;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
@@ -901,8 +902,10 @@ public class CompositionScreen extends AbstractScreenProvider {
                     fileConnection.close();
                 } catch (IOException e) {
                     EventLogger.logEvent(AppInfo.GUID,
-                            ("Error: " + e.getMessage()).getBytes(),
+                            ("Error adding attachment: " + e.getMessage()).getBytes(),
                             EventLogger.ERROR);
+                    AnalyticsDataCollector.getInstance().onApplicationError(
+                            "Error adding attachment: " + e.getMessage());
                     data = null;
                 }
                 

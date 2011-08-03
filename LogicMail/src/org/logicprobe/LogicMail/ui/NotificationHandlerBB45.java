@@ -41,6 +41,7 @@ import net.rim.device.api.system.Application;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.HolsterListener;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailEventSource;
 import org.logicprobe.LogicMail.LogicMailRuntimeState;
@@ -88,9 +89,11 @@ public class NotificationHandlerBB45 extends NotificationHandler {
             updateAccountSubscriptions();
         } catch (Throwable t) {
             EventLogger.logEvent(AppInfo.GUID,
-                    ("Unable to update notification sources:\r\n"
+                    ("Unable to update notification sources: "
                             + t.toString()).toString().getBytes(),
                             EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(
+                    "Unable to update notification sources: " + t.toString());
         }
     }
 

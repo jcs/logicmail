@@ -37,6 +37,7 @@ import net.rim.device.api.util.DataBuffer;
 import net.rim.device.api.util.IntIntHashtable;
 import net.rim.device.api.util.MathUtilities;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.mail.MailException;
@@ -734,6 +735,7 @@ public class ImapProtocol {
         } catch (Throwable exp) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Parse error: " + exp);
             flagRespItem = null;
         }
 
@@ -967,6 +969,7 @@ public class ImapProtocol {
         } catch (Exception exp) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Parse error: " + exp);
             envRespItem = null;
         }
 
@@ -1005,6 +1008,7 @@ public class ImapProtocol {
             } catch (Exception exp) {
                 EventLogger.logEvent(AppInfo.GUID,
                     ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("Parse error: " + exp);
             }
             if(msgStructure == null) {
                 checkForUntaggedValue(rawText);
@@ -1676,6 +1680,7 @@ public class ImapProtocol {
                         EventLogger.logEvent(AppInfo.GUID,
                                 ("Error parsing untagged FETCH: " + exp.toString()).getBytes(),
                                 EventLogger.ERROR);
+                        AnalyticsDataCollector.getInstance().onApplicationError("Error parsing untagged FETCH: " + exp.toString());
                     }
                     if(fetchResponse.flags != null) {
                         if(untaggedResponseListener != null) {
@@ -1724,6 +1729,7 @@ public class ImapProtocol {
         } catch (InterruptedException e) {
             EventLogger.logEvent(AppInfo.GUID,
                     e.toString().getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(e.toString());
         }
         if(watchdog.isStarted()) { watchdog.cancel(); }
         
@@ -1907,6 +1913,7 @@ public class ImapProtocol {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to parse response: " + t.getMessage()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("Unable to parse response: " + t.getMessage());
             }
             
             preCount = postCount;

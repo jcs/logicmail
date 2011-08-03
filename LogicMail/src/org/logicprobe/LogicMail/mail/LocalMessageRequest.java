@@ -38,6 +38,7 @@ import java.util.Hashtable;
 
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
@@ -107,6 +108,7 @@ class LocalMessageRequest extends LocalMailStoreRequest implements MessageReques
             }
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, ("Unable to read message: " + e.toString()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Unable to read message: " + e.toString());
             message = null;
             messageSource = null;
             throwable = e;

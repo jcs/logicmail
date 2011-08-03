@@ -93,7 +93,18 @@ public class LogicMailWebtrendsDataCollector extends AnalyticsDataCollector {
             collectorLogger.e(err.getMessage());
         }
     }
-    
+
+    public void onApplicationError(String errorMessage) {
+        Hashtable customParams = new Hashtable();
+        customParams.put("WT.er", errorMessage);
+        try {
+            dataCollector.onApplicationError(AppInfo.getName(), customParams);
+        }
+        catch (IllegalWebtrendsParameterValueException err) {
+            collectorLogger.e(err.getMessage());
+        }        
+    }
+
     public void onButtonClick(
             String eventPath,
             String eventDesc,

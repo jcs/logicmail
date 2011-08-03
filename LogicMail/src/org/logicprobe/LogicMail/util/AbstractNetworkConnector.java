@@ -43,6 +43,7 @@ import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.cldc.io.ssl.TLSException;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
@@ -91,6 +92,7 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
             socket = openSocketConnection();
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, e.getMessage().getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(e.getMessage());
             throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION), e);
         }
         
@@ -230,10 +232,14 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID,
                     ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(
+                    "Unable to switch to TLS mode: " + e.getMessage());
             throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_SWITCH_TO_TLS_MODE), e);
         } catch (TLSException e) {
             EventLogger.logEvent(AppInfo.GUID,
                     ("Unable to switch to TLS mode: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(
+                    "Unable to switch to TLS mode: " + e.getMessage());
             throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_SWITCH_TO_TLS_MODE), e);
         }
     }

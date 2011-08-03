@@ -32,6 +32,7 @@ package org.logicprobe.LogicMail.mail.imap;
 
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.MessageToken;
 import org.logicprobe.LogicMail.mail.imap.ImapProtocol.SelectResponse;
@@ -193,6 +194,8 @@ public class MailboxState {
                     EventLogger.logEvent(AppInfo.GUID,
                             ("Untagged FETCH response is out of sync with known mailbox state").getBytes(),
                             EventLogger.ERROR);
+                    AnalyticsDataCollector.getInstance().onApplicationError(
+                            "Untagged FETCH response is out of sync with known mailbox state");
                     
                     indexToTokenMap.clear();
                     indexVector.removeAllElements();

@@ -47,6 +47,7 @@ import javax.microedition.pim.PIM;
 import javax.microedition.pim.PIMException;
 import javax.microedition.pim.PIMItem;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.StringParser;
@@ -310,13 +311,17 @@ public class EmailAddressBookEditField extends EditField {
             }
         } catch (PIMException e) {
             EventLogger.logEvent(AppInfo.GUID,
-                    ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
+                    ("Unable to open contact list: " + e.toString()).getBytes(),
                     EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(
+                    "Unable to open contact list: " + e.toString());
             return;
         } catch (ControlledAccessException e) {
             EventLogger.logEvent(AppInfo.GUID,
-                    ("Unable to open contact list:\r\n" + e.toString()).getBytes(),
+                    ("Unable to open contact list: " + e.toString()).getBytes(),
                     EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(
+                    "Unable to open contact list: " + e.toString());
             return;
         }
 

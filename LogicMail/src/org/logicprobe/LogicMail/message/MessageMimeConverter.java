@@ -35,6 +35,7 @@ import net.rim.device.api.mime.MIMEOutputStream;
 import net.rim.device.api.system.EncodedImage;
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.util.StringParser;
 
@@ -177,6 +178,7 @@ public class MessageMimeConverter {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("MIME conversion error: " + e.toString());
             }
             
             finishCurrentStream(currentStream);
@@ -241,6 +243,7 @@ public class MessageMimeConverter {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("MIME conversion error: " + e.toString());
             }
             
             finishCurrentStream(currentStream);
@@ -270,6 +273,7 @@ public class MessageMimeConverter {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("MIME conversion error: " + e.toString());
 	        }
 	        
 	        finishCurrentStream(currentStream);
@@ -303,6 +307,7 @@ public class MessageMimeConverter {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("MIME conversion error: " + e.toString());
             }
 
             finishCurrentStream(currentStream);
@@ -319,6 +324,7 @@ public class MessageMimeConverter {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("MIME conversion error: " + e.toString());
 	        }
 	        
 	        finishCurrentStream(currentStream);
@@ -368,6 +374,7 @@ public class MessageMimeConverter {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("MIME conversion error: " + e.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("MIME conversion error: " + e.toString());
             }
         }
     }

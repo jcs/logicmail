@@ -38,6 +38,7 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 import javax.microedition.io.file.FileSystemRegistry;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 
@@ -202,6 +203,7 @@ public class FilePickerDialog extends Dialog {
                 fileConnection.close();
             } catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID, ("Unable to open: " + folderUrl).getBytes(), EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("Unable to open folder: " + e.toString());
                 if(folderList.size() == 0) {
                     folderList.addElement(PREV_FOLDER);
                     folderElementTypeList.addElement(TYPE_FOLDER);
@@ -209,6 +211,7 @@ public class FilePickerDialog extends Dialog {
                 result = false;
             } catch (ControlledAccessException e) {
                 EventLogger.logEvent(AppInfo.GUID, ("No permission to open: " + folderUrl).getBytes(), EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("No permission to open folder: " + e.toString());
                 if(folderList.size() == 0) {
                     folderList.addElement(PREV_FOLDER);
                     folderElementTypeList.addElement(TYPE_FOLDER);

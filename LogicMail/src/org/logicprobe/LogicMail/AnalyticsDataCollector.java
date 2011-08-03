@@ -121,6 +121,13 @@ public abstract class AnalyticsDataCollector {
     public abstract void onApplicationBackground();
 
     /**
+     * Tracks instances that errors occur in an application.
+     * 
+     * @param errorMessage The error message.
+     */
+    public abstract void onApplicationError(String errorMessage);
+    
+    /**
      * Tracks instances that a user clicks a button in an application.
      *
      * @param eventPath The hierarchical location of where an object or content

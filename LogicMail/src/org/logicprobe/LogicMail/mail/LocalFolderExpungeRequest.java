@@ -35,6 +35,7 @@ import java.io.IOException;
 
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 
 class LocalFolderExpungeRequest extends LocalMailStoreRequest implements FolderExpungeRequest, Runnable {
@@ -66,6 +67,7 @@ class LocalFolderExpungeRequest extends LocalMailStoreRequest implements FolderE
             expunged = true;
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, ("Unable to expunge folder: " + e.toString()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Unable to expunge folder: " + e.toString());
             throwable = e;
         }
         

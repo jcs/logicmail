@@ -793,6 +793,7 @@ public class MessageScreen extends AbstractScreenProvider {
 					success = true;
 				} catch (IOException e) {
 					EventLogger.logEvent(AppInfo.GUID, ("Unable to save: " + fileUrl).getBytes(), EventLogger.ERROR);
+					AnalyticsDataCollector.getInstance().onApplicationError("Unable to save attachment: " + e.toString());
 					success = false;
 				}
 			}

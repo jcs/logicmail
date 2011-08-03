@@ -43,6 +43,7 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.InvertedOrderComparator;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -131,6 +132,8 @@ public class MessageContentFileManager {
                         ("Unable to open cache: " + newCacheUrl
                             + "\r\n" + e.getMessage()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError(
+                        "Unable to open cache: " + e.getMessage());
                 cacheUrl = null;
             }
         }
@@ -230,12 +233,16 @@ public class MessageContentFileManager {
                         ("Unable to read token: " + fileUrl
                             + "\r\n" + e.getMessage()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError(
+                        "Unable to read token: " + e.getMessage());
             }
             else {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to access cache for folder: " + folder.getPath()
                             + "\r\n" + e.getMessage()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError(
+                        "Unable to access cache for folder: " + e.getMessage());
             }
         } finally {
             if(fileConnection != null) {

@@ -36,6 +36,7 @@ import java.io.IOException;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.Queue;
@@ -618,7 +619,10 @@ public abstract class AbstractMailConnectionHandler {
 				clearRequestQueue(e);
 			}
 			// Only display the error if we are not going to retry
-	        if(!isSilent) { showError(e.getMessage()); }
+	        if(!isSilent) {
+	            AnalyticsDataCollector.getInstance().onApplicationError(e.toString());
+	            showError(e.getMessage());
+	        }
 	        isFinal = true;
 	        
 	        //TODO: Figure out a way of detecting if the failure was not coverage-related
@@ -660,6 +664,7 @@ public abstract class AbstractMailConnectionHandler {
 	    
 	    if(!disconnect && !disconnectTimeout) { 
 	        EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(), EventLogger.ERROR);
+	        AnalyticsDataCollector.getInstance().onApplicationError(e.toString());
 	    }
 	    
         if(disconnectTimeout) {
@@ -701,6 +706,7 @@ public abstract class AbstractMailConnectionHandler {
 	 */
 	private void handleThrowable(Throwable t) {
 		EventLogger.logEvent(AppInfo.GUID, t.toString().getBytes(), EventLogger.ERROR);
+		AnalyticsDataCollector.getInstance().onApplicationError(t.toString());
 		boolean isSilent = isSilentRequestInProgress();
 		
 		// Switch to the CLOSING state and clear the request queue.

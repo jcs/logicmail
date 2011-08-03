@@ -48,6 +48,7 @@ import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.DeviceInfo;
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageEnvelope;
@@ -269,6 +270,8 @@ public class MaildirFolder {
                             ("Unable to read envelope for "
                                     + mailFileConnection.getURL()).getBytes(),
                                     EventLogger.ERROR);
+                    AnalyticsDataCollector.getInstance().onApplicationError(
+                            "Unable to read envelope: " + exp.toString());
                 }
             }
 

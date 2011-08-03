@@ -40,6 +40,7 @@ import java.io.UnsupportedEncodingException;
 
 import javax.microedition.io.HttpConnection;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
@@ -101,6 +102,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 			}
 		} catch (RenderingException e) {
 			EventLogger.logEvent(AppInfo.GUID, ("RenderingException: " + e.toString()).getBytes(), EventLogger.ERROR);
+			AnalyticsDataCollector.getInstance().onApplicationError("RenderingException: " + e.toString());
 		}
 		
 		if(field != null) {
@@ -132,6 +134,7 @@ public class BrowserFieldRenderer implements RenderingApplication {
 				loadingFinished = true;
 			} catch (RenderingException e) {
 				EventLogger.logEvent(AppInfo.GUID, ("RenderingException: " + e.toString()).getBytes(), EventLogger.ERROR);
+				AnalyticsDataCollector.getInstance().onApplicationError("RenderingException: " + e.toString());
 			}
 		}
 	}

@@ -35,6 +35,7 @@ import java.io.IOException;
 
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -80,6 +81,7 @@ class LocalMessageAppendRequest extends LocalMailStoreRequest implements Message
             maildirFolder.close();
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Unable to read folder: " + e.toString());
             throwable = e;
         }
         

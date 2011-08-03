@@ -47,6 +47,7 @@ import java.util.Hashtable;
 import java.util.TimeZone;
 import java.util.Vector;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 
 
@@ -1075,6 +1076,7 @@ public class StringParser {
             buffer.append(encoded);
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, ("Unable to encode header: " + e.getMessage()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Unable to encode header: " + e.getMessage());
         }
         
         return count;

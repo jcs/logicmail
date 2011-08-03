@@ -39,6 +39,7 @@ import net.rim.device.api.system.PersistentObject;
 import net.rim.device.api.system.PersistentStore;
 import net.rim.device.api.util.ToIntHashtable;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
@@ -221,9 +222,12 @@ public class OutboxMailboxNode extends MailboxNode {
                 }
             } catch (Throwable exp) {
                 EventLogger.logEvent(AppInfo.GUID,
-                        ("Unable to read outgoing messages\r\n"
+                        ("Unable to read outgoing messages: "
                                 + exp.getMessage()).getBytes(),
                                 EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError(
+                        "Unable to read outgoing messages: "
+                        + exp.getMessage());
             }
             refreshInProgress.set(false);
         }
@@ -306,6 +310,8 @@ public class OutboxMailboxNode extends MailboxNode {
                 EventLogger.logEvent(AppInfo.GUID,
                         ("Unable to store outgoing message: " + exp.toString()).getBytes(),
                         EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError(
+                        "Unable to store outgoing message: " + exp.toString());
             }
         }
 
@@ -421,6 +427,8 @@ public class OutboxMailboxNode extends MailboxNode {
             EventLogger.logEvent(AppInfo.GUID,
                     ("Unable to delete sent message: " + exp.toString()).getBytes(),
                     EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError(
+                    "Unable to delete sent message: " + exp.toString());
         }
     }
     

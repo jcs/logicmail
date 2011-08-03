@@ -35,6 +35,7 @@ import java.io.IOException;
 import javax.microedition.io.Connector;
 import javax.microedition.io.file.FileConnection;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -169,6 +170,7 @@ public class FileSaveDialog extends Dialog {
 				}
 			} catch (IOException e) {
 				EventLogger.logEvent(AppInfo.GUID, ("Unable to open: " + folderUrl).getBytes(), EventLogger.ERROR);
+				AnalyticsDataCollector.getInstance().onApplicationError("Unable to open folder: " + e.toString());
 				this.folderUrl = ROOT_URL;
 			}
 		}

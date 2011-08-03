@@ -36,6 +36,7 @@ import java.util.Vector;
 
 import net.rim.device.api.system.EventLogger;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.message.MessageFlags;
 
@@ -109,6 +110,7 @@ class LocalMessageFlagChangeRequest extends LocalMailStoreRequest implements Mes
             success = true;
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Unable to read folder: " + e.toString());
             success = false;
             throwable = e;
         }
@@ -152,6 +154,7 @@ class LocalMessageFlagChangeRequest extends LocalMailStoreRequest implements Mes
             success = true;
         } catch (IOException e) {
             EventLogger.logEvent(AppInfo.GUID, ("Unable to read folder: " + e.toString()).getBytes(), EventLogger.ERROR);
+            AnalyticsDataCollector.getInstance().onApplicationError("Unable to read folder: " + e.toString());
             success = false;
             throwable = e;
         }

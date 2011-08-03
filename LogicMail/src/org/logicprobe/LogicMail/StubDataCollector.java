@@ -43,6 +43,8 @@ class StubDataCollector extends AnalyticsDataCollector {
 
     public void onApplicationBackground() { }
     
+    public void onApplicationError(String errorMessage) { }
+    
     public void onButtonClick(
             String eventPath,
             String eventDesc,

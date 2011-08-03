@@ -40,6 +40,7 @@ import javax.microedition.io.file.FileConnection;
 import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.UnsupportedOperationException;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -273,6 +274,7 @@ public class LocalMailStore extends AbstractMailStore {
                 fileConnection.close();
             } catch (IOException e) {
                 EventLogger.logEvent(AppInfo.GUID, ("Error preparing root path: " + e.toString()).getBytes(), EventLogger.ERROR);
+                AnalyticsDataCollector.getInstance().onApplicationError("Error preparing root path: " + e.toString());
             }
             
             StringBuffer buf = new StringBuffer();
