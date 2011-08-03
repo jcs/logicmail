@@ -157,8 +157,9 @@ public class NetworkMailStoreServices extends MailStoreServices {
         disableIdleRequest.setRequestCallback(new MailStoreRequestCallback() {
             public void mailStoreRequestComplete(MailStoreRequest request) {
                 FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
-                handler.requestFolderRefresh(!automated, new Runnable() {
-                    public void run() {
+                handler.requestFolderRefresh(!automated, new FolderRequestHandler.PostRefreshRunnable() {
+                    public void run(boolean refreshSuccessful) {
+                        if(!refreshSuccessful) { return; }
                         mailStore.processRequest(mailStore.createClientIdleModeRequest(true));
                     }
                 });
@@ -195,21 +196,23 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
     }
     
-    private class FolderRefreshSequenceRunnable implements Runnable {
+    private class FolderRefreshSequenceRunnable extends FolderRequestHandler.PostRefreshRunnable {
         private final boolean automated;
         private final Vector foldersNeedingRefresh;
         public FolderRefreshSequenceRunnable(boolean automated, Vector foldersNeedingRefresh) {
             this.automated = automated;
             this.foldersNeedingRefresh = foldersNeedingRefresh;
         }
-        public void run() {
+        public void run(boolean refreshSuccessful) {
+            if(!refreshSuccessful) { return; }
             FolderTreeItem nextFolder = (FolderTreeItem)foldersNeedingRefresh.elementAt(0);
             foldersNeedingRefresh.removeElementAt(0);
             FolderRequestHandler nextHandler = getFolderRequestHandler(nextFolder);
             
             if(foldersNeedingRefresh.size() == 0) {
-                nextHandler.requestFolderRefresh(!automated, new Runnable() {
-                    public void run() {
+                nextHandler.requestFolderRefresh(!automated, new FolderRequestHandler.PostRefreshRunnable() {
+                    public void run(boolean refreshSuccessful) {
+                        if(!refreshSuccessful) { return; }
                         mailStore.processRequest(mailStore.createClientIdleModeRequest(true));
                     }
                 });
@@ -356,9 +359,16 @@ public class NetworkMailStoreServices extends MailStoreServices {
 
         //TODO: Figure out how to deal with error conditions from requestMessageRefreshImpl
         
-        handler.invokeAfterRefresh(new Runnable() {
-            public void run() {
-                requestMessageRefreshImpl(messageToken, partsToSkip, false);
+        handler.invokeAfterRefresh(new FolderRequestHandler.PostRefreshRunnable() {
+            public void run(boolean refreshSuccessful) {
+                boolean triggered = false;
+                if(refreshSuccessful) {
+                    triggered = requestMessageRefreshImpl(messageToken, partsToSkip, false);
+                }
+                
+                if(!triggered) {
+                    messageRefreshFailed(messageToken, false);
+                }
             }
         }, true);
         

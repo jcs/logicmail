@@ -1152,7 +1152,9 @@ public class MessageNode implements Node {
             }
             
             MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-            return mailStore.requestMessageRefresh(messageToken, loadedParts);
+            boolean refreshTriggered = mailStore.requestMessageRefresh(messageToken, loadedParts);
+            if(!refreshTriggered) { refreshInProgress.compareAndSet(true, false); }
+            return refreshTriggered;
         }
         else {
             return false;

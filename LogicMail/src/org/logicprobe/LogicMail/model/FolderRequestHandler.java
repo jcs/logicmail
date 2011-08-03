@@ -97,6 +97,24 @@ abstract class FolderRequestHandler {
      * should be cleared prior to the next refresh request.
      */
     protected volatile boolean cleanPriorToUse;
+
+    /**
+     * Tasks that need to be executed after a folder refresh should subclass
+     * this class.
+     */
+    public static abstract class PostRefreshRunnable implements Runnable {
+        private boolean refreshSuccessful;
+        public final void run() {
+            this.run(refreshSuccessful);
+        }
+        
+        /**
+         * Called upon success or failure of a folder refresh operation.
+         * 
+         * @param refreshSuccessful true, if the refresh operation was successful
+         */
+        public abstract void run(boolean refreshSuccessful);
+    }
     
     public FolderRequestHandler(
             NetworkMailStoreServices mailStoreServices,
@@ -151,7 +169,7 @@ abstract class FolderRequestHandler {
         requestFolderRefresh(deliberate, null);
     }
     
-    public void requestFolderRefresh(boolean deliberate, Runnable postRefreshTask) {
+    public void requestFolderRefresh(boolean deliberate, PostRefreshRunnable postRefreshTask) {
         if(refreshInProgress.compareAndSet(false, true)) {
             prepareForUse();
             this.refreshInProgressDeliberate = deliberate;
@@ -377,12 +395,9 @@ abstract class FolderRequestHandler {
             if(size > 0) {
                 tasksToRun = new Vector(size);
                 for(int i=0; i<size; i++) {
-                    Object[] element = (Object[])postRefreshTasks.elementAt(i);
-                    // Add the task if the refresh was successful, or if the
-                    // task does not depend on a successful refresh.
-                    if(success || !((Boolean)element[1]).booleanValue()) {
-                        tasksToRun.addElement((Runnable)element[0]);
-                    }
+                    PostRefreshRunnable element = (PostRefreshRunnable)postRefreshTasks.elementAt(i);
+                    element.refreshSuccessful = success;
+                    tasksToRun.addElement(element);
                 }
                 postRefreshTasks.removeAllElements();
             }
@@ -401,10 +416,7 @@ abstract class FolderRequestHandler {
      * handler's folder has completed, successfully or unsuccessfully.
      * <p>
      * If the refresh has not yet occurred, and <code>triggerRefresh</code>
-     * is set, this method will trigger it. With <code>triggerRefresh</code>
-     * set, it is also assumed that the task depends on the successful
-     * completion of a refresh. As such, if the triggered or in-progress
-     * refresh fails, the task will not be executed.
+     * is set, this method will trigger it.
      * </p>
      * <p>
      * If the refresh has already completed, the <code>Runnable</code> will be
@@ -414,14 +426,14 @@ abstract class FolderRequestHandler {
      * @param runnable the runnable to execute following a refresh
      * @param triggerRefresh true, if a refresh should be triggered
      */
-    public void invokeAfterRefresh(Runnable runnable, boolean triggerRefresh) {
+    public void invokeAfterRefresh(PostRefreshRunnable runnable, boolean triggerRefresh) {
         boolean runImmediately = false;
         
         synchronized(postRefreshTasks) {
             if(refreshInProgress.get()) {
                 // A refresh is currently in progress, so add this task to the
                 // list of post-refresh tasks
-                postRefreshTasks.addElement(new Object[] { runnable, new Boolean(triggerRefresh) });
+                postRefreshTasks.addElement(runnable);
             }
             else {
                 // A refresh is not in progress
@@ -429,13 +441,13 @@ abstract class FolderRequestHandler {
                     // The refresh completed, but the post-refresh tasks have
                     // not yet been executed.  This means we should add our
                     // task to the end of that list.
-                    postRefreshTasks.addElement(new Object[] { runnable, new Boolean(triggerRefresh) });
+                    postRefreshTasks.addElement(runnable);
                 }
                 else if((!initialRefreshComplete || cleanPriorToUse) && triggerRefresh) {
                     // The refresh has not yet begun, but is necessary.  This
                     // means we should add our task to the list, and trigger
                     // the refresh operation
-                    postRefreshTasks.addElement(new Object[] { runnable, new Boolean(triggerRefresh) });
+                    postRefreshTasks.addElement(runnable);
                     requestFolderRefresh(refreshInProgressDeliberate);
                 }
                 else {
@@ -446,13 +458,14 @@ abstract class FolderRequestHandler {
         }
         
         if(runImmediately) {
+            runnable.refreshSuccessful = true;
             runnable.run();
         }
     }
-
+    
     public void handleMessageAvailable(final MessageToken messageToken, final MimeMessagePart messageStructure) {
-        invokeAfterRefresh(new Runnable() {
-            public void run() {
+        invokeAfterRefresh(new PostRefreshRunnable() {
+            public void run(boolean refreshSuccessful) {
                 FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
                 if(message == null) { return; }
                 
@@ -493,8 +506,8 @@ abstract class FolderRequestHandler {
     }
     
     private void setFolderMessageSeenImpl(final MessageToken messageToken, final boolean cacheOnly) {
-        invokeAfterRefresh(new Runnable() {
-            public void run() {
+        invokeAfterRefresh(new PostRefreshRunnable() {
+            public void run(boolean refreshSuccessful) {
                 if(messageToken == null) { return; }
                 FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
                 if(message == null) { return; }
@@ -519,8 +532,8 @@ abstract class FolderRequestHandler {
     }
     
     private void setFolderMessageUnseenImpl(final MessageToken messageToken, final boolean cacheOnly) {
-        invokeAfterRefresh(new Runnable() {
-            public void run() {
+        invokeAfterRefresh(new PostRefreshRunnable() {
+            public void run(boolean refreshSuccessful) {
                 if(messageToken == null) { return; }
                 FolderMessage message = folderMessageCache.getFolderMessage(folderTreeItem, messageToken);
                 if(message == null) { return; }

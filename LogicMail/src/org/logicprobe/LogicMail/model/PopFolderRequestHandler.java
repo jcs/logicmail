@@ -173,8 +173,8 @@ class PopFolderRequestHandler extends FolderRequestHandler {
     }
     
     public void setPriorFolderMessagesSeen(final Date startDate) {
-        invokeAfterRefresh(new Runnable() {
-            public void run() {
+        invokeAfterRefresh(new PostRefreshRunnable() {
+            public void run(boolean refreshSuccessful) {
                 long startTime = startDate.getTime();
                 FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
                 

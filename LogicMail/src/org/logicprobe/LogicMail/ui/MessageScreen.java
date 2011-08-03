@@ -599,8 +599,12 @@ public class MessageScreen extends AbstractScreenProvider {
     }
 
     private void addEmptyPlaceholderField(Vector messageFields) {
-        messageFields.addElement(
-                new RichTextField(resources.getString(LogicMailResource.MESSAGE_NOTDISPLAYABLE)));
+        RichTextField field = new RichTextField(
+                "\n" + resources.getString(LogicMailResource.MESSAGE_NOT_LOADED) + "\n",
+                RichTextField.TEXT_ALIGN_HCENTER | Field.NON_FOCUSABLE);
+        field.setFont(Font.getDefault().derive(Font.BOLD | Font.ITALIC));
+        field.setEditable(false);
+        messageFields.addElement(field);
     }
 
     private void addAttachmentFields(Vector messageFields) {

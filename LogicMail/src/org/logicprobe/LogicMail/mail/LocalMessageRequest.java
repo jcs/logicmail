@@ -122,6 +122,7 @@ class LocalMessageRequest extends LocalMailStoreRequest implements MessageReques
         }
         else {
             fireMailStoreRequestFailed(throwable, true);
+            mailStore.fireMessageContentAvailable(messageToken, null);
         }
     }
 
