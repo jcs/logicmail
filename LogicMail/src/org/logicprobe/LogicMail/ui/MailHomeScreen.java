@@ -860,7 +860,7 @@ public class MailHomeScreen extends AbstractScreenProvider {
         }
     }
 
-    private void saveScreenMetadata() {
+    void saveScreenMetadata() {
         SerializableHashtable folderMetadata = new SerializableHashtable();
         saveScreenState(folderMetadata);
 

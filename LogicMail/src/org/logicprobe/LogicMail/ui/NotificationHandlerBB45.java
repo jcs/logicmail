@@ -357,10 +357,18 @@ public class NotificationHandlerBB45 extends NotificationHandler {
         if(newMessages) {
             HomeScreen.updateIcon(AppInfo.getNewMessagesIcon(), 0);
             HomeScreen.setRolloverIcon(AppInfo.getNewMessagesRolloverIcon(), 0);
+            try {
+                HomeScreen.updateIcon(AppInfo.getNewMessagesIcon(), 1);
+                HomeScreen.setRolloverIcon(AppInfo.getNewMessagesRolloverIcon(), 1);
+            } catch (IllegalArgumentException e) { }
         }
         else {
             HomeScreen.updateIcon(AppInfo.getIcon(), 0);
             HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
+            try {
+                HomeScreen.updateIcon(AppInfo.getIcon(), 1);
+                HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 1);
+            } catch (IllegalArgumentException e) { }
         }
     }
 }

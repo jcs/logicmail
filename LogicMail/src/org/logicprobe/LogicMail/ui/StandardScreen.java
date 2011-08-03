@@ -40,6 +40,7 @@ import org.logicprobe.LogicMail.model.NetworkAccountNode;
 import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.ui.Field;
 import net.rim.device.api.ui.MenuItem;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.Menu;
@@ -264,14 +265,33 @@ public class StandardScreen extends MainScreen {
                         accounts[i].requestDisconnect(true);
                     }
                 }
-                cleanupTitleField(titleField);
-                LogicMail.shutdownApplication();
+                doShutdownProcess();
             }
         }
         else {
-            cleanupTitleField(titleField);
-            LogicMail.shutdownApplication();
+            doShutdownProcess();
         }
+    }
+
+    private void doShutdownProcess() {
+        // Iterate through the screen stack, find the LogicMail home screen,
+        // and tell it to save its state.  If other screens have persistable
+        // state, then this needs to be refactored into a common ScreenProvider
+        // method.
+        Screen screen = this;
+        while(screen != null) {
+            if(screen instanceof StandardScreen) {
+                ScreenProvider provider = ((StandardScreen)screen).screenProvider;
+                if(provider instanceof MailHomeScreen) {
+                    ((MailHomeScreen)provider).saveScreenMetadata();
+                    break;
+                }
+            }
+            screen = screen.getScreenBelow();
+        }
+        
+        cleanupTitleField(titleField);
+        LogicMail.shutdownApplication();
     }
 
     protected void cleanupTitleField(Field titleField) {

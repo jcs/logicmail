@@ -432,6 +432,11 @@ public final class LogicMail extends UiApplication {
                 HomeScreen.updateIcon(AppInfo.getIcon(), 0);
                 HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 0);
                 
+                try {
+                    HomeScreen.updateIcon(AppInfo.getIcon(), 1);
+                    HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), 1);
+                } catch (IllegalArgumentException e) { }
+                
                 // Register for synchronization
                 SyncManager.getInstance().enableSynchronization(LogicMailSyncCollection.getInstance());
             }

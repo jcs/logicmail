@@ -38,24 +38,18 @@ import org.logicprobe.LogicMail.AppInfo;
 
 public class NotificationHandlerBB60 extends NotificationHandlerBB46 {
     private boolean iconSet;
-    private final ApplicationDescriptor appDescriptor;
+    private final ApplicationDescriptor[] appDescriptors;
 
     public NotificationHandlerBB60() {
         super();
-        this.appDescriptor = findHomeScreenApplicationDescriptor();
+        this.appDescriptors = findApplicationDescriptors();
     }
     
-    private static ApplicationDescriptor findHomeScreenApplicationDescriptor() {
-        ApplicationDescriptor result = null;
+    private static ApplicationDescriptor[] findApplicationDescriptors() {
+        ApplicationDescriptor[] result = null;
         try {
             int moduleHandle = ApplicationDescriptor.currentApplicationDescriptor().getModuleHandle();
-            ApplicationDescriptor[] descriptors = CodeModuleManager.getApplicationDescriptors(moduleHandle);
-            for(int i=0; i<descriptors.length; i++) {
-                if(descriptors[i].getIndex() == 0) {
-                    result = descriptors[i];
-                    break;
-                }
-            }
+            result = CodeModuleManager.getApplicationDescriptors(moduleHandle);
         } catch (Exception e) { }
         return result;
     }
@@ -67,13 +61,17 @@ public class NotificationHandlerBB60 extends NotificationHandlerBB46 {
     }
     
     protected void setAppIcon(boolean newMessages) {
-        if(appDescriptor != null) {
+        if(appDescriptors != null) {
             if(!iconSet) {
-                HomeScreen.updateIcon(AppInfo.getIcon(), appDescriptor);
-                HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), appDescriptor);
+                for(int i=0; i<appDescriptors.length; i++) {
+                    HomeScreen.updateIcon(AppInfo.getIcon(), appDescriptors[i]);
+                    HomeScreen.setRolloverIcon(AppInfo.getRolloverIcon(), appDescriptors[i]);
+                }
                 iconSet = true;
             }
-            HomeScreen.setNewState(newMessages, appDescriptor);
+            for(int i=0; i<appDescriptors.length; i++) {
+                HomeScreen.setNewState(newMessages, appDescriptors[i]);
+            }
         }
         else {
             super.setAppIcon(newMessages);
