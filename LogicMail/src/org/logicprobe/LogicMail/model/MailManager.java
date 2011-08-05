@@ -32,6 +32,8 @@ package org.logicprobe.LogicMail.model;
 
 import java.util.Vector;
 
+import net.rim.device.api.system.SystemListener;
+
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -56,13 +58,14 @@ import org.logicprobe.LogicMail.util.EventListenerList;
  */
 public class MailManager {
 	private static MailManager instance = null;
-	private boolean startupComplete;
+	private volatile boolean startupComplete;
 	private final EventListenerList listenerList = new EventListenerList();
 	private final MailRootNode mailRootNode;
 	private final MailSettings mailSettings;
 	private final FolderMessageCache folderMessageCache;
     private OutboxMailboxNode outboxMailboxNode;
-	
+    private final SystemListener systemListener;
+    
 	/**
 	 * Constructor.
 	 */
@@ -107,9 +110,21 @@ public class MailManager {
 			// Refresh messages for local mailboxes
 			localMailboxes[i].refreshMessages(true);
 		}
+		
+		systemListener = new SystemListener() {
+            public void powerUp() {
+                handleSystemPowerUp();
+            }
+            public void powerOff() {
+                handleSystemPowerOff();
+            }
+            public void batteryGood() { }
+            public void batteryLow() { }
+            public void batteryStatusChange(int status) { }
+        };
 	}
-	
-	private void refreshMailboxTypes() {
+
+    private void refreshMailboxTypes() {
         AccountNode[] accounts = mailRootNode.getAccounts();
         for(int i=0; i<accounts.length; i++) {
             if(accounts[i] instanceof NetworkAccountNode) {
@@ -177,6 +192,16 @@ public class MailManager {
 		return instance;
 	}
 
+	/**
+	 * Gets the system listener used by the mail manager to respond to
+	 * system events.
+	 * 
+	 * @return The mail manager's system listener.
+	 */
+    public SystemListener getSystemListener() {
+        return systemListener;
+    }
+
     /**
      * This method should be invoked as soon as the application is completely
      * initialized, and the home screen has been displayed.  It is used to
@@ -185,7 +210,6 @@ public class MailManager {
     public synchronized void startupComplete() {
         // Make sure this method can only be called once
         if(startupComplete) { return; }
-        else { startupComplete = true; }
         
         NetworkAccountNode[] networkAccounts = mailRootNode.getNetworkAccounts();
         for(int i=0; i<networkAccounts.length; i++) {
@@ -208,6 +232,27 @@ public class MailManager {
             // enabled, then make sure the polling thread is still started.
             if(!refreshTriggered && accountConfig.getRefreshFrequency() > 0) {
                 networkAccounts[i].scheduleAutomaticRefresh();
+            }
+        }
+        startupComplete = true;
+    }
+    
+    private void handleSystemPowerUp() {
+        if(!startupComplete) { return; }
+        NetworkAccountNode[] accounts = mailRootNode.getNetworkAccounts();
+        for(int i=0; i<accounts.length; i++) {
+            AccountConfig accountConfig = accounts[i].getAccountConfig();
+            if(accountConfig.getRefreshFrequency() > 0) {
+                accounts[i].scheduleAutomaticRefresh();
+            }
+        }
+    }
+    
+    private void handleSystemPowerOff() {
+        NetworkAccountNode[] accounts = mailRootNode.getNetworkAccounts();
+        for(int i=0; i<accounts.length; i++) {
+            if(accounts[i].getStatus() == AccountNode.STATUS_ONLINE) {
+                accounts[i].requestDisconnect(false);
             }
         }
     }

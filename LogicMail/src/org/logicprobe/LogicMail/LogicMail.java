@@ -40,6 +40,7 @@ import net.rim.device.api.i18n.Locale;
 import net.rim.device.api.notification.NotificationsConstants;
 import net.rim.device.api.notification.NotificationsManager;
 import net.rim.device.api.synchronization.SyncManager;
+import net.rim.device.api.system.Application;
 import net.rim.device.api.system.ApplicationManager;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.system.ControlledAccessException;
@@ -287,6 +288,13 @@ public final class LogicMail extends UiApplication {
         } catch (ControlledAccessException e) {
             // Don't fail if permissions are denied
         }
+        
+        // Add the system listener for handling power-related events
+        try {
+            addSystemListener(MailManager.getInstance().getSystemListener());
+        } catch (ControlledAccessException e) {
+            // Don't fail if permissions are denied
+        }
     }
 
     private void showMailHomeScreen() {
@@ -375,16 +383,23 @@ public final class LogicMail extends UiApplication {
      */
     public static void shutdownApplication() {
         NotificationHandler.getInstance().shutdown();
+
         try {
-            FileSystemRegistry.removeFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+            Application.getApplication().removeSystemListener(MailManager.getInstance().getSystemListener());
         } catch (ControlledAccessException e) {
-            // Don't fail if file permissions are denied
+            // Don't fail if permissions are denied
         }
         
         try {
             UtilFactory.getInstance().removeSensorListeners();
         } catch (ControlledAccessException e) {
             // Don't fail if permissions are denied
+        }
+        
+        try {
+            FileSystemRegistry.removeFileSystemListener(MailSettings.getInstance().getFileSystemListener());
+        } catch (ControlledAccessException e) {
+            // Don't fail if file permissions are denied
         }
         
         PermissionsHandler.unregisterReasonProvider();
