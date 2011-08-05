@@ -39,7 +39,7 @@ public class ScreenFactoryBB60 extends ScreenFactoryBB50 {
     }
     
     public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-        if(hasTouchscreen) {
+        if(hasTouchscreen && hasVirtualKeyboard) {
             return getStandardTouchScreen(navigationController, new MailboxScreenBB60(mailboxNode));
         }
         else {

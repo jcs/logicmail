@@ -33,6 +33,7 @@ package org.logicprobe.LogicMail.ui;
 import net.rim.device.api.system.Bitmap;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.TouchEvent;
+import net.rim.device.api.ui.VirtualKeyboard;
 import net.rim.device.api.ui.component.TreeField;
 import net.rim.device.api.ui.component.TreeFieldCallback;
 
@@ -61,6 +62,14 @@ public class TouchScreenTreeField extends TreeField {
 		super(new TreeFieldCallbackProxy(), style);
 		this.callback = callback;
 		this.navigation = navigation;
+		
+		// If this device lacks a virtual keyboard, then we assume touch
+		// interaction is secondary and we should size the rows so vertical
+		// space isn't wasted for it.
+		if(!VirtualKeyboard.isSupported()) {
+		    int rowHeight = Math.max(getFont().getHeight() + 18, 45);
+		    this.setRowHeight(rowHeight);
+		}
 	}
 	
 	private static class TreeFieldCallbackProxy implements TreeFieldCallback {
@@ -74,10 +83,15 @@ public class TouchScreenTreeField extends TreeField {
 			TreeField treeField, Graphics graphics,
 			int node, int y, int width, int indent) {
 		int drawWidth = width;
+		
+		if(!VirtualKeyboard.isSupported()) {
+		    y += (getRowHeight() >>> 1) - (getFont().getHeight() >>> 1) - 1;
+		}
+		
 		if(navigation && isNodeSelectable(node)) {
 			int rowWidth = width + indent;
 			int xPos = rowWidth - (chevronIconWidth * 2);
-			int yPos = y + (graphics.getFont().getHeight() / 2) - 11;
+			int yPos = y + (graphics.getFont().getHeight() >>> 1) - 11;
 			
 			if(getCurrentNode() == node) {
 				graphics.drawBitmap(xPos, yPos, chevronIconWidth, chevronIconHeight, chevronIconHighlighted, 0, 0);

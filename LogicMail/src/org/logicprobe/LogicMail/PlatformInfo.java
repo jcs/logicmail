@@ -89,6 +89,13 @@ public abstract class PlatformInfo {
     public abstract boolean hasTouchscreen();
 
     /**
+     * Checks for whether the platform supports a virtual keyboard.
+     * 
+     * @return true, if this is a virtual keyboard device
+     */
+    public abstract boolean hasVirtualKeyboard();
+    
+    /**
      * Gets the filesystem roots that the application can write to.
      * 
      * @return the filesystem roots

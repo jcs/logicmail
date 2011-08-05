@@ -40,14 +40,21 @@ import net.rim.device.api.ui.component.Dialog;
 
 public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
     protected boolean hasTouchscreen;
+    protected boolean hasVirtualKeyboard;
     
     public ScreenFactoryBB47() {
         hasTouchscreen = Touchscreen.isSupported();
+        hasVirtualKeyboard = VirtualKeyboard.isSupported();
     }
     
     public StandardScreen getMailHomeScreen(NavigationController navigationController, MailRootNode mailRootNode) {
         if(hasTouchscreen) {
-            return getStandardTouchScreen(navigationController, new TouchMailHomeScreen(mailRootNode));
+            if(hasVirtualKeyboard) {
+                return getStandardTouchScreen(navigationController, new TouchMailHomeScreen(mailRootNode));
+            }
+            else {
+                return getStandardScreen(navigationController, new TouchMailHomeScreen(mailRootNode));
+            }
         }
         else {
             return getStandardScreen(navigationController, new MailHomeScreen(mailRootNode));
@@ -55,7 +62,7 @@ public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
     }
 
     public StandardScreen getMailboxScreen(NavigationController navigationController, MailboxNode mailboxNode) {
-        if(hasTouchscreen) {
+        if(hasTouchscreen && hasVirtualKeyboard) {
             return getStandardTouchScreen(navigationController, new MailboxScreen(mailboxNode));
         }
         else {
@@ -64,7 +71,7 @@ public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
     }
     
     public StandardScreen getMessageScreen(NavigationController navigationController, MessageNode messageNode) {
-        if(hasTouchscreen) {
+        if(hasTouchscreen && hasVirtualKeyboard) {
             return getStandardTouchScreen(navigationController, new MessageScreen(messageNode));
         }
         else {
@@ -74,7 +81,7 @@ public class ScreenFactoryBB47 extends ScreenFactoryBB45 {
     
     public String showFilePicker() {
         FilePickerDialog dialog = new FilePickerDialog();
-        if(hasTouchscreen) {
+        if(hasTouchscreen && hasVirtualKeyboard) {
             dialog.getVirtualKeyboard().setVisibility(VirtualKeyboard.HIDE_FORCE);
         }
         if(dialog.doModal() == Dialog.OK) {

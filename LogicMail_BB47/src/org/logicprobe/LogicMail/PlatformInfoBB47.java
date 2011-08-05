@@ -31,9 +31,14 @@
 package org.logicprobe.LogicMail;
 
 import net.rim.device.api.ui.Touchscreen;
+import net.rim.device.api.ui.VirtualKeyboard;
 
 public class PlatformInfoBB47 extends PlatformInfoBB46 {
     public boolean hasTouchscreen() {
         return Touchscreen.isSupported();
+    }
+    
+    public boolean hasVirtualKeyboard() {
+        return VirtualKeyboard.isSupported();
     }
 }

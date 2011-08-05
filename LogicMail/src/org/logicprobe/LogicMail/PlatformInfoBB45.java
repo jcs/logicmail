@@ -62,6 +62,10 @@ public class PlatformInfoBB45 extends PlatformInfo {
         return false;
     }
     
+    public boolean hasVirtualKeyboard() {
+        return false;
+    }
+    
     public String[] getFilesystemRoots() {
         Vector validRoots = new Vector();
         StringBuffer buf = new StringBuffer(FILE_URL_PREFIX);
