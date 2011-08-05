@@ -34,6 +34,10 @@ package org.logicprobe.LogicMail.conf;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+
+import net.rim.device.api.i18n.ResourceBundle;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.util.Serializable;
 import org.logicprobe.LogicMail.util.SerializableHashtable;
 import org.logicprobe.LogicMail.util.UniqueIdGenerator;
@@ -84,6 +88,18 @@ public class IdentityConfig implements Serializable {
         replyToAddress = "";
         msgSignature = "";
         changeType = 0;
+    }
+
+    /**
+     * Gets the default name of an identity configuration.
+     * 
+     * @return The default identity name
+     */
+    public static String getDefaultName() {
+        ResourceBundle resources = ResourceBundle.getBundle(
+                LogicMailResource.BUNDLE_ID,
+                LogicMailResource.BUNDLE_NAME);
+        return resources.getString(LogicMailResource.CONFIG_IDENTITY_DEFAULT_NAME);
     }
 
     /* (non-Javadoc)

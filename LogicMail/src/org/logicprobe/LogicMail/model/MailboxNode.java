@@ -40,11 +40,13 @@ import java.util.Vector;
 
 import net.rim.device.api.collection.util.BigIntVector;
 import net.rim.device.api.collection.util.BigVector;
+import net.rim.device.api.i18n.ResourceBundle;
 import net.rim.device.api.util.Comparator;
 import net.rim.device.api.util.IntHashtable;
 import net.rim.device.api.util.SimpleSortingVector;
 import net.rim.device.api.util.ToIntHashtable;
 
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
@@ -66,6 +68,7 @@ import org.logicprobe.LogicMail.util.UniqueIdGenerator;
  * <tt>MessageNode</tt> instances as its children.
  */
 public class MailboxNode implements Node, Serializable {
+    private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	private long uniqueId;
 	private AccountNode parentAccount;
 	private MailboxNode parentMailbox;
@@ -654,7 +657,28 @@ public class MailboxNode implements Node, Serializable {
 	 * @return The name.
 	 */
 	public String toString() {
-		return this.folderTreeItem.getName();
+	    String name;
+	    switch(type) {
+	    case TYPE_INBOX:
+	        name = resources.getString(LogicMailResource.FOLDER_NAME_INBOX);
+	        break;
+	    case TYPE_OUTBOX:
+	        name = resources.getString(LogicMailResource.FOLDER_NAME_OUTBOX);
+	        break;
+	    case TYPE_SENT:
+	        name = resources.getString(LogicMailResource.FOLDER_NAME_SENT);
+	        break;
+	    case TYPE_DRAFTS:
+	        name = resources.getString(LogicMailResource.FOLDER_NAME_DRAFTS);
+	        break;
+	    case TYPE_TRASH:
+	        name = resources.getString(LogicMailResource.FOLDER_NAME_TRASH);
+	        break;
+	    case TYPE_NORMAL:
+	    default:
+	        name = this.folderTreeItem.getName();;
+	    }
+		return name;
 	}
 
 	/**

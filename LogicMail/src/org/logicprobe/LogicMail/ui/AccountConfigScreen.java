@@ -168,7 +168,7 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         else {
             identityConfigs = new IdentityConfig[1];
             identityConfigs[0] = new IdentityConfig();
-            identityConfigs[0].setIdentityName("Default");
+            identityConfigs[0].setIdentityName(IdentityConfig.getDefaultName());
             createDefaultIdentity = true;
             this.setDirty(true);
         }

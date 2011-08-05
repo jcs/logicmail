@@ -30,12 +30,16 @@
  */
 package org.logicprobe.LogicMail.model;
 
+import net.rim.device.api.i18n.ResourceBundle;
+
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.util.DataStore;
 import org.logicprobe.LogicMail.util.DataStoreFactory;
 
 public class LocalAccountNode extends AccountNode {
-
+    private static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
+    
     LocalAccountNode(LocalMailStoreServices mailStore) {
         super(mailStore);
         
@@ -48,7 +52,7 @@ public class LocalAccountNode extends AccountNode {
      * @return The name.
      */
     public String toString() {
-        return "Local Folders";
+        return resources.getString(LogicMailResource.ACCOUNT_LOCAL_FOLDERS);
     }
     
     public String getProtocolName() {

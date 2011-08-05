@@ -156,7 +156,7 @@ public class AccountConfigWizard extends WizardController {
             }
             else {
                 if(index == 0) {
-                    identityNameEditField.setText("Default");
+                    identityNameEditField.setText(IdentityConfig.getDefaultName());
                 }
                 else {
                     identityNameEditField.setText("");
