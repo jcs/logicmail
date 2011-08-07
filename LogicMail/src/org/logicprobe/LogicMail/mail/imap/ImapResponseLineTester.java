@@ -69,7 +69,7 @@ public class ImapResponseLineTester extends ConnectionResponseTester {
             }
         }
  
-        int p = indexOfLinefeedIgnoringQuoted(buf, lastLength);
+        int p = indexOfLinefeedIgnoringQuoted(buf, lastLength, len);
 
         while ((p != -1) && (p < len)) {
             if ((p > 0) && (buf[p - 1] == CR)) {
@@ -120,7 +120,7 @@ public class ImapResponseLineTester extends ConnectionResponseTester {
                 return p;
             }
 
-            p = StringArrays.indexOf(buf, LF, p);
+            p = indexOfLinefeedIgnoringQuoted(buf, p, len);
         }
 
         lastLength = len;
@@ -128,12 +128,12 @@ public class ImapResponseLineTester extends ConnectionResponseTester {
         return -1;
     }
 
-    private int indexOfLinefeedIgnoringQuoted(byte[] array, int fromIndex) {
+    private int indexOfLinefeedIgnoringQuoted(byte[] array, int fromIndex, int toIndex) {
         if(fromIndex >= array.length) {
             return -1;
         }
         
-        for(int i = fromIndex; i<array.length; i++) {
+        for(int i = fromIndex; i<toIndex; i++) {
             if(inQuoted) {
                 if(array[i] == BACKSLASH && !inQuotedEscape) {
                     inQuotedEscape = true;
