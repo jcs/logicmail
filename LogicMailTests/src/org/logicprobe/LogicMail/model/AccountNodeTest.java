@@ -100,7 +100,7 @@ public class AccountNodeTest extends TestCase {
     	assertNotNull("childMailboxes", childMailboxes);
     	assertEquals(1, childMailboxes.length);
     	assertNotNull("childMailboxes[0]", childMailboxes[0]);
-    	assertEquals("INBOX", childMailboxes[0].toString());
+    	assertEquals("Inbox", childMailboxes[0].toString());
     	MailboxNode inboxNode = childMailboxes[0];
     	
     	childMailboxes = childMailboxes[0].getMailboxes();
