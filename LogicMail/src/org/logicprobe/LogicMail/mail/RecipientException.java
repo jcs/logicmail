@@ -57,7 +57,7 @@ public class RecipientException extends MailException {
      * @param cause the cause
      */
     public RecipientException(int recipientType, String address) {
-        super(resources.getString(LogicMailResource.ERROR_RECIPIENT) + ' ' + address, false, recipientType);
+        super(resources.getString(LogicMailResource.ERROR_RECIPIENT), false, recipientType);
         this.address = address;
     }
 
@@ -68,5 +68,9 @@ public class RecipientException extends MailException {
      */
     public String getAddress() {
         return address;
+    }
+    
+    public String getMessage() {
+        return resources.getString(LogicMailResource.ERROR_RECIPIENT) + ' ' + address;
     }
 }
