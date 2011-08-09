@@ -226,7 +226,13 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
                             connectionUrl,
                             true);
 
-            Connection tlsConnection = new Connection(tlsSocket, connection.getConnectionType());
+            Connection tlsConnection;
+            if(tlsSocket instanceof SocketConnection) {
+                tlsConnection = new Connection((SocketConnection)tlsSocket, connection.getConnectionType());
+            }
+            else {
+                tlsConnection = new Connection(new TLS10ConnectionDecorator(tlsSocket), connection.getConnectionType());
+            }
             return tlsConnection;
             
         } catch (IOException e) {
@@ -273,6 +279,53 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
         }
         public OutputStream openOutputStream() throws IOException {
             return dataOutputStream;
+        }
+        public String getAddress() throws IOException {
+            return socket.getAddress();
+        }
+        public String getLocalAddress() throws IOException {
+            return socket.getLocalAddress();
+        }
+        public int getLocalPort() throws IOException {
+            return socket.getLocalPort();
+        }
+        public int getPort() throws IOException {
+            return socket.getPort();
+        }
+        public int getSocketOption(byte option) throws IllegalArgumentException, IOException {
+            return socket.getSocketOption(option);
+        }
+        public void setSocketOption(byte option, int value) throws IllegalArgumentException, IOException {
+            socket.setSocketOption(option, value);
+        }
+    }
+    
+    /**
+     * Decorator to wrap an existing <code>TLS10Connection</code> so that it
+     * implements the <code>SocketConnection</code> interface.  This is a
+     * workaround to fix build issues on the later 6.0 SDK versions. 
+     */
+    private static class TLS10ConnectionDecorator implements SocketConnection {
+        private final TLS10Connection socket;
+        
+        public TLS10ConnectionDecorator(TLS10Connection socket) {
+            this.socket = socket;
+        }
+
+        public DataInputStream openDataInputStream() throws IOException {
+            return socket.openDataInputStream();
+        }
+        public InputStream openInputStream() throws IOException {
+            return socket.openInputStream();
+        }
+        public void close() throws IOException {
+            socket.close();
+        }
+        public DataOutputStream openDataOutputStream() throws IOException {
+            return socket.openDataOutputStream();
+        }
+        public OutputStream openOutputStream() throws IOException {
+            return socket.openOutputStream();
         }
         public String getAddress() throws IOException {
             return socket.getAddress();
