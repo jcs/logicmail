@@ -447,6 +447,7 @@ public class MailMessageParser {
     private static byte[] readRawData(MIMEInputStream mimeInputStream) throws IOException {
         byte[] buffer;
         SharedInputStream sis = mimeInputStream.getRawMIMEInputStream();
+        if(sis == null) { return new byte[0]; }
         buffer = IOUtilities.streamToBytes(sis);
 
         int offset = 0;
