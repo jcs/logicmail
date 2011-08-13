@@ -690,7 +690,7 @@ public class ImapProtocol {
             try {
                 int offset = Arrays.getIndex(rawText, (byte)'(');
                 parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
-            } catch (Exception exp) {
+            } catch (Throwable exp) {
                 parsedText = null;
                 return null;
             }
@@ -906,7 +906,7 @@ public class ImapProtocol {
             try {
                 int offset = Arrays.getIndex(rawText, (byte)'(');
                 parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
-            } catch (Exception exp) {
+            } catch (Throwable exp) {
                 return false;
             }
 
@@ -966,7 +966,7 @@ public class ImapProtocol {
             envRespItem.index = midx;
             envRespItem.envelope = env;
             envRespItem.structure = structure;
-        } catch (Exception exp) {
+        } catch (Throwable exp) {
             EventLogger.logEvent(AppInfo.GUID,
                 ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
             AnalyticsDataCollector.getInstance().onApplicationError("Parse error: " + exp);
@@ -1005,7 +1005,7 @@ public class ImapProtocol {
             
             try {
                 msgStructure = ImapParser.parseMessageStructure(rawText);
-            } catch (Exception exp) {
+            } catch (Throwable exp) {
                 EventLogger.logEvent(AppInfo.GUID,
                     ("Parse error: " + exp).getBytes(), EventLogger.ERROR);
                 AnalyticsDataCollector.getInstance().onApplicationError("Parse error: " + exp);
@@ -1488,7 +1488,7 @@ public class ImapProtocol {
                         refName.equals(response.name))) {
                     retVec.addElement(response);
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 // Prevent parse errors from being fatal
             }
 
@@ -1678,7 +1678,7 @@ public class ImapProtocol {
                                 } catch (NumberFormatException e) { }
                             }
                         }
-                    } catch (Exception exp) {
+                    } catch (Throwable exp) {
                         EventLogger.logEvent(AppInfo.GUID,
                                 ("Error parsing untagged FETCH: " + exp.toString()).getBytes(),
                                 EventLogger.ERROR);
