@@ -1349,7 +1349,7 @@ public class ImapClient extends AbstractIncomingMailClient {
             MessageFlags messageFlags = new MessageFlags();
             refreshMessageFlags(value.flags, messageFlags);            
             
-            if(clientListener != null) {
+            if(clientListener != null && token != null) {
                 clientListener.folderMessageFlagsChanged(token, messageFlags);
             }
         }

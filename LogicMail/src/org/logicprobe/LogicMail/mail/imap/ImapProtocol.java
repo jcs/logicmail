@@ -1121,18 +1121,20 @@ public class ImapProtocol {
                 // If we don't yet have the raw message body, try to find it in
                 // the current response line
                 int offset = Arrays.getIndex(rawList[i], (byte)'(');
-                Vector parsedList = ImapParser.parenListParser(rawList[i], offset, rawList[i].length - offset);
-                int size = parsedList.size();
+                if(offset != -1) {
+                    Vector parsedList = ImapParser.parenListParser(rawList[i], offset, rawList[i].length - offset);
+                    int size = parsedList.size();
 
-                for(int j=0; j<(size - 1); j++) {
-                    Object element = parsedList.elementAt(j);
-                    if(element instanceof String
-                            && ((String)element).startsWith(BODY)
-                            && parsedList.elementAt(j + 1) instanceof byte[]) {
-                        rawMessage = (byte[])parsedList.elementAt(j + 1);
+                    for(int j=0; j<(size - 1); j++) {
+                        Object element = parsedList.elementAt(j);
+                        if(element instanceof String
+                                && ((String)element).startsWith(BODY)
+                                && parsedList.elementAt(j + 1) instanceof byte[]) {
+                            rawMessage = (byte[])parsedList.elementAt(j + 1);
+                        }
                     }
                 }
-
+                
                 // If it wasn't in the current response line, then check for
                 // an untagged response instead
                 if(rawMessage == null) {
