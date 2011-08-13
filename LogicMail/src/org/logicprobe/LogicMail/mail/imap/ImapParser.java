@@ -491,7 +491,7 @@ class ImapParser {
             dispositionIndex = 8;
         }
         
-        if ((sectionListSize >= dispositionIndex) &&
+        if ((sectionListSize > dispositionIndex) &&
                 sectionList.elementAt(dispositionIndex) instanceof Vector) {
             tmpVec = (Vector) sectionList.elementAt(dispositionIndex);
 
