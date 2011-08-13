@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.model;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
-import org.logicprobe.LogicMail.mail.FolderMessageIndexMapEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreEvent;
@@ -107,7 +106,6 @@ public abstract class AccountNode implements Node {
                 mailboxNode.mailStoreFolderExpunged(e);
             }
 
-            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) { }
             public void folderRefreshRequired(FolderEvent e) { }
         });
 

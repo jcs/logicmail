@@ -560,32 +560,6 @@ public class MockAbstractMailStore extends org.logicprobe.LogicMail.mail.Abstrac
         super.fireFolderMessagesAvailable(arg0, arg1, arg2);
     }
 
-    public static final MockMethod MTHD_FIRE_FOLDER_MESSAGE_INDEX_MAP_AVAILABLE_$_FOLDERTREEITEM_TOINTHASHTABLE = new MockMethod(
-        MockAbstractMailStore.class, 
-        "MTHD_FIRE_FOLDER_MESSAGE_INDEX_MAP_AVAILABLE_$_FOLDERTREEITEM_TOINTHASHTABLE",
-        new Class[]{org.logicprobe.LogicMail.mail.FolderTreeItem.class, net.rim.device.api.util.ToIntHashtable.class},
-        new Class[]{},
-        null,
-        false);
-    public void fireFolderMessageIndexMapAvailable(org.logicprobe.LogicMail.mail.FolderTreeItem arg0, net.rim.device.api.util.ToIntHashtable arg1)  {
-        try {
-            Object[] args = new Object[2];
-            args[0] = arg0;
-            args[1] = arg1;
-            MethodInvocation mi = new MethodInvocation(MTHD_FIRE_FOLDER_MESSAGE_INDEX_MAP_AVAILABLE_$_FOLDERTREEITEM_TOINTHASHTABLE, this, args);
-            getInvocationHandler().invoke(mi);
-            if (mi.isEvaluated()) {
-                mi.getReturnValue();
-                return;
-            }
-        } catch (Throwable t) {
-            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
-            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
-            throw new HammockException(t);
-        }
-        super.fireFolderMessageIndexMapAvailable(arg0, arg1);
-    }
-
     public static final MockMethod MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM_BOOLEAN = new MockMethod(
         MockAbstractMailStore.class, 
         "MTHD_FIRE_FOLDER_REFRESH_REQUIRED_$_FOLDERTREEITEM_BOOLEAN",

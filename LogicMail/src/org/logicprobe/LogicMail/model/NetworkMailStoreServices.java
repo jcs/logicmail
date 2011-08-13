@@ -36,7 +36,6 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import net.rim.device.api.util.Arrays;
-import net.rim.device.api.util.ToIntHashtable;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ImapConfig;
@@ -48,7 +47,6 @@ import org.logicprobe.LogicMail.mail.FolderTreeRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MailStoreRequestCallback;
 import org.logicprobe.LogicMail.mail.MessageToken;
-import org.logicprobe.LogicMail.mail.NetworkClientIdleModeRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.mail.NetworkPollingStartRequest;
 import org.logicprobe.LogicMail.message.FolderMessage;
@@ -153,20 +151,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
     }
     
     private void requestFolderRefreshImpl(final FolderTreeItem folderTreeItem, final boolean automated) {
-        NetworkClientIdleModeRequest disableIdleRequest = mailStore.createClientIdleModeRequest(false);
-        disableIdleRequest.setRequestCallback(new MailStoreRequestCallback() {
-            public void mailStoreRequestComplete(MailStoreRequest request) {
-                FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
-                handler.requestFolderRefresh(!automated, new FolderRequestHandler.PostRefreshRunnable() {
-                    public void run(boolean refreshSuccessful) {
-                        if(!refreshSuccessful) { return; }
-                        mailStore.processRequest(mailStore.createClientIdleModeRequest(true));
-                    }
-                });
-            }
-            public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) { }
-        });
-        mailStore.processRequest(disableIdleRequest);
+        FolderRequestHandler handler = getFolderRequestHandler(folderTreeItem);
+        handler.requestFolderRefresh(!automated);
     }
     
     private void requestFolderRefreshImpl(final FolderTreeItem[] folderTreeItems, final boolean automated) {
@@ -174,51 +160,9 @@ public class NetworkMailStoreServices extends MailStoreServices {
             requestFolderRefreshImpl(folderTreeItems[0], automated);
         }
         else {
-            // Special refresh implementation that chains each folder refresh
-            // onto the end of the previous folder refresh.  This awkward
-            // process is necessary to ensure that all folders are refreshed in
-            // the specified order, without overlapping requests.
-            
-            final Vector foldersNeedingRefresh = new Vector(folderTreeItems.length - 1);
             for(int i=1; i<folderTreeItems.length; i++) {
-                foldersNeedingRefresh.addElement(folderTreeItems[i]);
-            }
-
-            NetworkClientIdleModeRequest disableIdleRequest = mailStore.createClientIdleModeRequest(false);
-            disableIdleRequest.setRequestCallback(new MailStoreRequestCallback() {
-                public void mailStoreRequestComplete(MailStoreRequest request) {
-                    FolderRequestHandler handler = getFolderRequestHandler(folderTreeItems[0]);
-                    handler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
-                }
-                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) { }
-            });
-            mailStore.processRequest(disableIdleRequest);
-        }
-    }
-    
-    private class FolderRefreshSequenceRunnable extends FolderRequestHandler.PostRefreshRunnable {
-        private final boolean automated;
-        private final Vector foldersNeedingRefresh;
-        public FolderRefreshSequenceRunnable(boolean automated, Vector foldersNeedingRefresh) {
-            this.automated = automated;
-            this.foldersNeedingRefresh = foldersNeedingRefresh;
-        }
-        public void run(boolean refreshSuccessful) {
-            if(!refreshSuccessful) { return; }
-            FolderTreeItem nextFolder = (FolderTreeItem)foldersNeedingRefresh.elementAt(0);
-            foldersNeedingRefresh.removeElementAt(0);
-            FolderRequestHandler nextHandler = getFolderRequestHandler(nextFolder);
-            
-            if(foldersNeedingRefresh.size() == 0) {
-                nextHandler.requestFolderRefresh(!automated, new FolderRequestHandler.PostRefreshRunnable() {
-                    public void run(boolean refreshSuccessful) {
-                        if(!refreshSuccessful) { return; }
-                        mailStore.processRequest(mailStore.createClientIdleModeRequest(true));
-                    }
-                });
-            }
-            else {
-                nextHandler.requestFolderRefresh(!automated, new FolderRefreshSequenceRunnable(automated, foldersNeedingRefresh));
+                FolderRequestHandler handler = getFolderRequestHandler(folderTreeItems[i]);
+                handler.requestFolderRefresh(!automated);
             }
         }
     }
@@ -271,10 +215,6 @@ public class NetworkMailStoreServices extends MailStoreServices {
         }
     }
     
-    protected void handleFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
-        // No longer handled through a mail store listener
-    }
-
     protected void handleFolderRefreshRequired(FolderTreeItem folder, int eventOrigin) {
         FolderRequestHandler handler = getFolderRequestHandler(folder);
         

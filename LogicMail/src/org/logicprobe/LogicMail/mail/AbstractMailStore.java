@@ -33,8 +33,6 @@ package org.logicprobe.LogicMail.mail;
 
 import java.util.Date;
 
-import net.rim.device.api.util.ToIntHashtable;
-
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -532,24 +530,6 @@ public abstract class AbstractMailStore {
                 e = new FolderMessagesEvent(this, folder, messages, flagsOnly);
             }
             ((FolderListener)listeners[i]).folderMessagesAvailable(e);
-        }
-    }
-    
-    /**
-     * Notifies all registered <tt>FolderListener</tt>s that
-     * the UID-to-message index map for a folder has been loaded.
-     * 
-     * @param folder The folder which has an updated map
-     * @param uidIndexMap The UID-to-index map for the folder's messages
-     */
-    protected void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
-        Object[] listeners = listenerList.getListeners(FolderListener.class);
-        FolderMessageIndexMapEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new FolderMessageIndexMapEvent(this, folder, uidIndexMap);
-            }
-            ((FolderListener)listeners[i]).folderMessageIndexMapAvailable(e);
         }
     }
     

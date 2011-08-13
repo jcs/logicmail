@@ -36,6 +36,9 @@ import java.util.Date;
 import net.rim.device.api.system.UnsupportedOperationException;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.mail.imap.ImapClient;
+import org.logicprobe.LogicMail.mail.pop.PopClient;
+import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 
@@ -212,17 +215,27 @@ public class NetworkMailStore extends AbstractMailStore {
 	}
 	
 	/**
-	 * Requests the message UID-to-index map for a particular folder.
-     * <p>
-     * Successful completion is indicated by a call to
-     * {@link FolderListener#folderMessageIndexMapAvailable(FolderMessageIndexMapEvent)}.
-     * </p>
-     * 
-     * @param folder The folder to request a message listing for.
+	 * Creates a request to synchronize a locally cached folder with data from
+	 * the mail server.  This is a complex request with protocol-dependent
+	 * implementations, and is intended to be called from within cache-handling
+	 * code.
+	 * 
+	 * @param folder The folder to refresh.
+	 * @param loadedMessages Collection of {@link FolderMessage} objects
+	 *     for messages that have already been loaded for this folder prior to
+	 *     the start of the refresh operation. 
+	 * @return the request object
 	 */
-	public NetworkFolderMessageIndexMapRequest requestFolderMessageIndexMap(FolderTreeItem folder) {
-        NetworkFolderMessageIndexMapRequest request = new NetworkFolderMessageIndexMapRequest(this, folder);
-        return request;
+	public MailStoreRequest createFolderRefreshRequest(FolderTreeItem folder, FolderMessage[] loadedMessages) {
+	    if(client instanceof ImapClient) {
+            return new ImapFolderRefreshRequest(this, folder, loadedMessages);
+	    }
+	    else if(client instanceof PopClient) {
+	        return new PopFolderRefreshRequest(this, folder, loadedMessages);
+	    }
+	    else {
+	        throw new UnsupportedOperationException();
+	    }
 	}
 	
 	public MessageRequest createMessageRequest(MessageToken messageToken, boolean useLimits) {

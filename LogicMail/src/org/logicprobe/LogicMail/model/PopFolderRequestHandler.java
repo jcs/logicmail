@@ -31,18 +31,10 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.Vector;
 
-import net.rim.device.api.util.IntHashtable;
-import net.rim.device.api.util.IntVector;
-import net.rim.device.api.util.SimpleSortingIntVector;
-import net.rim.device.api.util.ToIntHashtable;
-
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
-import org.logicprobe.LogicMail.mail.MailStoreRequest;
 import org.logicprobe.LogicMail.mail.MessageToken;
-import org.logicprobe.LogicMail.mail.NetworkFolderMessageIndexMapRequest;
 import org.logicprobe.LogicMail.mail.NetworkMailStore;
 import org.logicprobe.LogicMail.message.FolderMessage;
 import org.logicprobe.LogicMail.message.MessageFlags;
@@ -65,111 +57,6 @@ class PopFolderRequestHandler extends FolderRequestHandler {
             FolderMessageCache folderMessageCache,
             FolderTreeItem folderTreeItem) {
         super(mailStoreServices, mailStore, folderMessageCache, folderTreeItem);
-    }
-    
-    protected void beginFolderRefreshOperation() {
-        if(initialRefreshComplete) {
-            // Subsequent refresh is pointless on locked-folder mail stores
-            endFolderRefreshOperation(true);
-            return;
-        }
-
-        mailStoreServices.invokeLater(new Runnable() { public void run() {
-            // Fetch messages stored in the cache
-            loadCachedFolderMessages();
-            
-            processMailStoreRequest(mailStore.requestFolderMessageIndexMap(folderTreeItem)
-                    .setRequestCallback(new FolderRefreshRequestCallback() {
-                        public void mailStoreRequestComplete(MailStoreRequest request) {
-                            NetworkFolderMessageIndexMapRequest indexMapRequest = (NetworkFolderMessageIndexMapRequest)request;
-                            indexMapFetchComplete(indexMapRequest.getResultUidIndexMap());
-                        }
-                    }));
-        }});
-    }
-    
-    private void indexMapFetchComplete(final ToIntHashtable uidIndexMap) {
-        final int initialMessageLimit = mailStore.getAccountConfig().getInitialFolderMessages();
-        final int messageRetentionLimit = mailStore.getAccountConfig().getMaximumFolderMessages();
-        
-        mailStoreServices.invokeLater(new Runnable() { public void run() {
-            Vector messagesUpdated = new Vector();
-            SimpleSortingIntVector indexVector = new SimpleSortingIntVector();
-            IntHashtable cachedIndexToMessageMap = new IntHashtable();
-            
-            // Iterate through the UID-to-index map, and do the following:
-            // - Remove cache-loaded messages from the orphan set if they exist on the server.
-            // - Update index information for those messages that do still exist server-side.
-            // - Build a sortable vector of index values
-            Enumeration e = uidIndexMap.keys();
-            while(e.hasMoreElements()) {
-                String uid = (String)e.nextElement();
-                int index = uidIndexMap.get(uid);
-                indexVector.addElement(index);
-                
-                FolderMessage message = (FolderMessage)orphanedMessageSet.remove(uid);
-                if(message != null) {
-                    message.setIndex(index);
-                    message.getMessageToken().updateMessageIndex(index);
-                    
-                    if(folderMessageCache.updateFolderMessage(folderTreeItem, message)) {
-                        messagesUpdated.addElement(message);
-                        cachedIndexToMessageMap.put(index, message);
-                    }
-                }
-            }
-            indexVector.reSort(SimpleSortingIntVector.SORT_TYPE_NUMERIC);
-            
-            notifyMessageFlagUpdates(messagesUpdated);
-            removeOrphanedMessages();
-
-            // Determine the fetch range
-            int size = indexVector.size();
-            if(size == 0) { return; }
-            int fetchRangeStart = Math.max(0, size - initialMessageLimit);
-            
-            // Build a list of indices to fetch
-            IntVector messagesToFetch = new IntVector();
-            for(int i=indexVector.size() - 1; i >= fetchRangeStart; --i) {
-                int index = indexVector.elementAt(i);
-                if(!cachedIndexToMessageMap.containsKey(index)) {
-                    messagesToFetch.addElement(index);
-                }
-            }
-
-            int additionalMessageLimit = messageRetentionLimit - initialMessageLimit;
-            for(int i=fetchRangeStart - 1; i >= 0; --i) {
-                if(additionalMessageLimit > 0) {
-                    additionalMessageLimit--;
-                }
-                else {
-                    // Beyond the limit, add these back to the orphan set
-                    FolderMessage message = (FolderMessage)cachedIndexToMessageMap.get(indexVector.elementAt(i));
-                    if(message != null) {
-                        orphanedMessageSet.put(message.getMessageToken().getMessageUid(), message);
-                    }
-                }
-            }
-            removeOrphanedMessages();
-            
-            // Do the final request for missing messages
-            if(messagesToFetch.size() > 0) {
-                processMailStoreRequest(mailStore.createFolderMessagesSetByIndexRequest(folderTreeItem, messagesToFetch.toArray())
-                        .setRequestCallback(finalFetchCallback));
-            }
-            else {
-                initialRefreshComplete = true;
-                endFolderRefreshOperation(true);
-            }
-        }});
-    }
-    
-    private void notifyMessageFlagUpdates(final Vector messagesUpdated) {
-        if(!messagesUpdated.isEmpty()) {
-            FolderMessage[] messages = new FolderMessage[messagesUpdated.size()];
-            messagesUpdated.copyInto(messages);
-            mailStoreServices.fireFolderMessagesAvailable(folderTreeItem, messages, true, true);
-        }
     }
     
     public void setPriorFolderMessagesSeen(final Date startDate) {

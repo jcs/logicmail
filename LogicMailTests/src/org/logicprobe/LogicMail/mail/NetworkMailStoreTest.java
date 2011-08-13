@@ -101,7 +101,6 @@ public class NetworkMailStoreTest extends TestCase {
 				eventFolderStatusChanged = e;
 			}
             public void folderExpunged(FolderExpungedEvent e) { }
-            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) { }
             public void folderRefreshRequired(FolderEvent e) { }
     	});
     	

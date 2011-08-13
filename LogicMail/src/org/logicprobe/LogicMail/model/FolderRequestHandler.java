@@ -31,8 +31,6 @@
 package org.logicprobe.LogicMail.model;
 
 import java.util.Date;
-import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.MailSettings;
@@ -81,22 +79,16 @@ abstract class FolderRequestHandler {
     private final Vector postRefreshTasks = new Vector();
     
     /** Indicates that the initial refresh has completed. */
-    protected volatile boolean initialRefreshComplete;
+    private volatile boolean initialRefreshComplete;
     
     /** Indicates that cached messages have been loaded. */
     private boolean cacheLoaded;
     
     /**
-     * Set of messages that have been loaded from the cache, but no longer
-     * exist on the server.
-     */
-    protected final Hashtable orphanedMessageSet = new Hashtable();
-    
-    /**
      * Set if the mail store is disconnected, to indicate that local state
      * should be cleared prior to the next refresh request.
      */
-    protected volatile boolean cleanPriorToUse;
+    private volatile boolean cleanPriorToUse;
 
     /**
      * Tasks that need to be executed after a folder refresh should subclass
@@ -148,7 +140,6 @@ abstract class FolderRequestHandler {
         if(cleanPriorToUse) {
             refreshInProgressDeliberate = true;
             initialRefreshComplete = false;
-            orphanedMessageSet.clear();
             cleanPriorToUse = false;
         }
     }
@@ -192,7 +183,28 @@ abstract class FolderRequestHandler {
      * operation.  Upon completion of the operation, regardless of outcome,
      * {@link #endFolderRefreshOperation()} must be called.
      */
-    protected abstract void beginFolderRefreshOperation();
+    protected void beginFolderRefreshOperation() {
+        if(mailStore.hasLockedFolders() && initialRefreshComplete) {
+            // Subsequent refresh is pointless on locked-folder mail stores
+            endFolderRefreshOperation(true);
+            return;
+        }
+        
+        mailStoreServices.invokeLater(new Runnable() { public void run() {
+            FolderMessage[] cacheLoadedMessages;
+            if(!initialRefreshComplete) {
+                // Fetch messages stored in cache
+                cacheLoadedMessages = loadCachedFolderMessages();
+            }
+            else {
+                cacheLoadedMessages = null;
+            }
+
+            MailStoreRequest request = mailStore.createFolderRefreshRequest(folderTreeItem, cacheLoadedMessages);
+            request.setRequestCallback(finalFetchCallback);
+            processMailStoreRequest(request);
+        }});
+    }
     
     /**
      * This method should be called upon the completion of a folder refresh.
@@ -208,11 +220,6 @@ abstract class FolderRequestHandler {
         // queue, to make sure that they happen after the completion of any
         // other refresh-related code.
         mailStoreServices.invokeLater(new Runnable() { public void run() {
-            // Clear the set of loaded messages that have not yet been reconciled,
-            // which should only be non-empty if this method was called due to an
-            // error.
-            orphanedMessageSet.clear();
-
             // Commit the folder message cache
             folderMessageCache.commit();
             
@@ -233,7 +240,7 @@ abstract class FolderRequestHandler {
      * events are fired to notify listeners of the messages.  The load order is
      * determined by the global message display order setting.
      */
-    protected void loadCachedFolderMessages() {
+    protected FolderMessage[] loadCachedFolderMessages() {
         boolean dispOrder = MailSettings.getInstance().getGlobalConfig().getDispOrder();
         FolderMessage[] messages = folderMessageCache.getFolderMessages(folderTreeItem);
         if(messages.length > 0) {
@@ -245,8 +252,6 @@ abstract class FolderRequestHandler {
                 // it cannot be considered recent.  This is done to prevent
                 // redundant new message notifications.
                 messages[i].getFlags().setRecent(false);
-                
-                orphanedMessageSet.put(messages[i].getMessageToken().getMessageUid(), messages[i]);
             }
             
             // If the cached messages have already been loaded, then we can
@@ -276,26 +281,9 @@ abstract class FolderRequestHandler {
                 cacheLoaded = true;
             }
         }
+        return messages;
     }
 
-    /**
-     * Removes any messages stored in the <code>orphanedMessageSet</code> from
-     * the cache, clears the set, and then fires the necessary events to have
-     * them expunged by any listeners.
-     */
-    protected void removeOrphanedMessages() {
-        Enumeration e = orphanedMessageSet.elements();
-        MessageToken[] orphanedTokens = new MessageToken[orphanedMessageSet.size()];
-        int index = 0;
-        while(e.hasMoreElements()) {
-            FolderMessage message = (FolderMessage)e.nextElement();
-            folderMessageCache.removeFolderMessage(folderTreeItem, message);
-            orphanedTokens[index++] = message.getMessageToken();
-        }
-        orphanedMessageSet.clear();
-        mailStoreServices.fireFolderExpunged(folderTreeItem, orphanedTokens, new MessageToken[0]);
-    }
-    
     public void requestMoreFolderMessages(MessageToken firstToken, int increment) {
         processMailStoreRequest(mailStore.createFolderMessagesRangeRequest(folderTreeItem, firstToken, increment)
                 .setRequestCallback(new MailStoreRequestCallback() {
@@ -593,22 +581,15 @@ abstract class FolderRequestHandler {
      * refresh process. It will set the <code>initialRefreshComplete</code>
      * flag prior to cleanup.
      */
-    protected MailStoreRequestCallback finalFetchCallback = new FolderRefreshRequestCallback() {
+    private MailStoreRequestCallback finalFetchCallback = new MailStoreRequestCallback() {
         public void mailStoreRequestComplete(MailStoreRequest request) {
             initialRefreshComplete = true;
             endFolderRefreshOperation(true);
         }
-    };
-    
-    /**
-     * Standard callback used by all requests that are part of the folder
-     * refresh process.
-     */
-    protected abstract class FolderRefreshRequestCallback implements MailStoreRequestCallback {
         public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
             // All folder refresh request failures are handled by cleanly
             // ending the refresh process.
             endFolderRefreshOperation(false);
         }
-    }
+    };
 }

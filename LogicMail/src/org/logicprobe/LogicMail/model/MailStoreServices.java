@@ -32,13 +32,10 @@ package org.logicprobe.LogicMail.model;
 
 import java.util.Date;
 
-import net.rim.device.api.util.ToIntHashtable;
-
 import org.logicprobe.LogicMail.mail.AbstractMailStore;
 import org.logicprobe.LogicMail.mail.FolderEvent;
 import org.logicprobe.LogicMail.mail.FolderExpungedEvent;
 import org.logicprobe.LogicMail.mail.FolderListener;
-import org.logicprobe.LogicMail.mail.FolderMessageIndexMapEvent;
 import org.logicprobe.LogicMail.mail.FolderMessagesEvent;
 import org.logicprobe.LogicMail.mail.FolderTreeItem;
 import org.logicprobe.LogicMail.mail.MailStoreEvent;
@@ -90,9 +87,6 @@ public abstract class MailStoreServices {
                 else {
                     handleFolderExpunged(e.getFolder(), e.getExpungedIndices(), e.getUpdatedTokens());
                 }
-            }
-            public void folderMessageIndexMapAvailable(FolderMessageIndexMapEvent e) {
-                handleFolderMessageIndexMapAvailable(e.getFolder(), e.getUidIndexMap());
             }
             public void folderRefreshRequired(FolderEvent e) {
                 handleFolderRefreshRequired(e.getFolder(), e.getEventOrigin());
@@ -727,28 +721,6 @@ public abstract class MailStoreServices {
         }
     }
     
-    protected void handleFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
-        fireFolderMessageIndexMapAvailable(folder, uidIndexMap);
-    }
-    
-    /**
-     * Notifies all registered <tt>FolderListener</tt>s that
-     * the UID-to-index map for a folder has been loaded.
-     * 
-     * @param folder The folder which has available messages
-     * @param uidIndexMap The UID-to-index map for the folder's messages
-     */
-    protected final void fireFolderMessageIndexMapAvailable(FolderTreeItem folder, ToIntHashtable uidIndexMap) {
-        Object[] listeners = listenerList.getListeners(FolderListener.class);
-        FolderMessageIndexMapEvent e = null;
-        for(int i=0; i<listeners.length; i++) {
-            if(e == null) {
-                e = new FolderMessageIndexMapEvent(this, folder, uidIndexMap);
-            }
-            ((FolderListener)listeners[i]).folderMessageIndexMapAvailable(e);
-        }
-    }
-
     protected void handleFolderRefreshRequired(FolderTreeItem folder, int eventOrigin) { }
     
     protected void handleFolderExpunged(FolderTreeItem folder, int[] indices, MessageToken[] updatedTokens) {
