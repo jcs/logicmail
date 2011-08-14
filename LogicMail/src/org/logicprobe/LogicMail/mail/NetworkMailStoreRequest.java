@@ -88,7 +88,7 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         }
     }
     
-    private void handleSetActiveFolder(IncomingMailClient incomingClient, FolderTreeItem folder) throws IOException, MailException {
+    protected void handleSetActiveFolder(IncomingMailClient incomingClient, FolderTreeItem folder) throws IOException, MailException {
         boolean isStateValid = incomingClient.setActiveFolder(folder, true);
         
         if(!isStateValid) {

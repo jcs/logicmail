@@ -92,8 +92,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
      * Listener to handle asynchronous notifications from the mail client.
      */
     private IncomingMailClientListener mailClientListener = new IncomingMailClientListener() {
-        public void recentFolderMessagesAvailable() {
-            handleRecentFolderMessagesAvailable();
+        public void recentFolderMessagesAvailable(FolderTreeItem folder) {
+            handleRecentFolderMessagesAvailable(folder);
         }
         public void folderMessageFlagsChanged(MessageToken token, MessageFlags messageFlags) {
             handleFolderMessageFlagsChanged(token, messageFlags);
@@ -129,21 +129,32 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         super.handleRequest(request);
     }
     
-    private void handleRecentFolderMessagesAvailable() {
+    private void handleRecentFolderMessagesAvailable(FolderTreeItem folder) {
         if(getConnectionState() == STATE_IDLE) {
             if(idleRecentMessagesRequested) { return; }
             idleRecentMessagesRequested = true;
         }
         
-        // Make sure we ignore this event if it occurs during the setup portion
-        // of the command normally enqueued as a result of this notification.
         ConnectionHandlerRequest currentRequest = getRequestInProgress();
-        if(currentRequest instanceof FolderMessagesRequest
-                && ((FolderMessagesRequest)currentRequest).getType() == FolderMessagesRequest.TYPE_RECENT) {
-            return;
+        if(currentRequest instanceof FolderMessagesRequest) {
+            // Ignore this event if it occurs during the setup portion of the
+            // command normally enqueued as a result of this notification.
+            FolderMessagesRequest folderRequest = (FolderMessagesRequest)currentRequest;
+            if(folderRequest.getType() == FolderMessagesRequest.TYPE_RECENT
+                    && folderRequest.getFolder().getPath().equals(folder.getPath())) {
+                return;
+            }
         }
-
-        FolderMessagesRequest request = mailStore.createFolderMessagesRecentRequest(incomingClient.getActiveFolder(), false);
+        else if(currentRequest instanceof ImapFolderRefreshRequest) {
+            // If this event occurs during a folder refresh, then notify the
+            // in-progress refresh request instead of creating a new request.
+            ImapFolderRefreshRequest refreshRequest = (ImapFolderRefreshRequest)currentRequest;
+            if(refreshRequest.getFolder().getPath().equals(folder.getPath())) {
+                refreshRequest.notifyRecentMessagesAvailable();
+                return;
+            }
+        }
+        FolderMessagesRequest request = mailStore.createFolderMessagesRecentRequest(folder, false);
         ((ConnectionHandlerRequest)request).setDeliberate(false);
         mailStore.processRequest(request);
     }

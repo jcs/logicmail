@@ -45,8 +45,10 @@ public interface IncomingMailClientListener {
      * The expected behavior is to follow this with a call to
      * <code>getNewFolderMessages()</code> at the earliest convenience of the
      * connection handler.
+     * 
+     * @param folder The folder that was selected at the time of the event
      */
-    void recentFolderMessagesAvailable();
+    void recentFolderMessagesAvailable(FolderTreeItem folder);
     
     /**
      * Called to indicate that a message's flags have changed.

@@ -698,7 +698,7 @@ public class ImapClient extends AbstractIncomingMailClient {
 
         if(mapValid && notifyAvailable && mailboxState.getExists() > previousExists) {
             if(clientListener != null) {
-                clientListener.recentFolderMessagesAvailable();
+                clientListener.recentFolderMessagesAvailable(mailbox);
             }
         }
         
@@ -1312,13 +1312,13 @@ public class ImapClient extends AbstractIncomingMailClient {
             if(mailboxState.getExists() < value) {
                 mailboxState.setExists(value);
                 if(clientListener != null) {
-                    clientListener.recentFolderMessagesAvailable();
+                    clientListener.recentFolderMessagesAvailable(activeMailbox);
                 }
             }
         }
         public void recentResponse(int value) {
             if(clientListener != null) {
-                clientListener.recentFolderMessagesAvailable();
+                clientListener.recentFolderMessagesAvailable(activeMailbox);
             }
         }
         public void expungeResponse(int value) {

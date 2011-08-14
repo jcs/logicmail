@@ -73,17 +73,18 @@ public class MockIncomingMailClientListener extends AMockObject implements org.l
         }
     }
 
-    public static final MockMethod MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE = new MockMethod(
+    public static final MockMethod MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE_$_FOLDERTREEITEM = new MockMethod(
         MockIncomingMailClientListener.class, 
-        "MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE",
-        new Class[]{},
+        "MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE_$_FOLDERTREEITEM",
+        new Class[]{org.logicprobe.LogicMail.mail.FolderTreeItem.class},
         new Class[]{},
         null,
         true);
-    public void recentFolderMessagesAvailable()  {
+    public void recentFolderMessagesAvailable(org.logicprobe.LogicMail.mail.FolderTreeItem arg0)  {
         try {
-            Object[] args = new Object[0];
-            MethodInvocation mi = new MethodInvocation(MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE, this, args);
+            Object[] args = new Object[1];
+            args[0] = arg0;
+            MethodInvocation mi = new MethodInvocation(MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE_$_FOLDERTREEITEM, this, args);
             getInvocationHandler().invoke(mi);
             mi.getReturnValue();
         } catch (Throwable t) {

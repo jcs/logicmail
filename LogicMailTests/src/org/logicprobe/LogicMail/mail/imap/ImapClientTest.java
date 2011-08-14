@@ -304,7 +304,8 @@ public class ImapClientTest extends TestCase {
         
         hammock.setExpectation(MockImapProtocol.MTHD_EXECUTE_IDLE_$_IMAPPROTOCOL$IDLELISTENER,
                 new Object[] { null }).setArgumentMatcher(0, new NotNullArgumentMatcher());
-        hammock.setExpectation(MockIncomingMailClientListener.MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE);
+        hammock.setExpectation(MockIncomingMailClientListener.MTHD_RECENT_FOLDER_MESSAGES_AVAILABLE_$_FOLDERTREEITEM,
+                new Object[] { inboxFolder });
         hammock.setExpectation(MockImapProtocol.MTHD_EXECUTE_IDLE_DONE);
         
         instance.idleModeBegin();

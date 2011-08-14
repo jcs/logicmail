@@ -48,6 +48,7 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
     private final Hashtable loadedMessageMap;
     private int messageRetentionLimit;
     private volatile boolean checkAllTokens;
+    private volatile boolean recentMessageAvailable;
     private Vector secondaryMessageTokensToFetch;
     
     ImapFolderRefreshRequest(NetworkMailStore mailStore, FolderTreeItem folder, FolderMessage[] loadedMessages) {
@@ -64,25 +65,35 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
         }
     }
     
-    private FolderListener folderListener = new FolderListener() {
-        public void folderMessagesAvailable(FolderMessagesEvent e) { }
-        public void folderStatusChanged(FolderEvent e) { }
-        public void folderExpunged(FolderExpungedEvent e) { }
-        public void folderRefreshRequired(FolderEvent e) {
-            if(e.getFolder().equals(folder)){
-                checkAllTokens = true;
-            }
-        }
+    public FolderTreeItem getFolder() {
+        return folder;
+    }
+    
+    /**
+     * Called by the <code>IncomingMailConnectionHandler</code> if it receives
+     * notification of recent messages during the processing of this request.
+     * This will allow this request object to handle that situation, instead of
+     * requiring a separate request to be enqueued with the connection handler.
+     */
+    void notifyRecentMessagesAvailable() {
+        recentMessageAvailable = true;
     };
     
     protected String getInitialStatus() {
         return statusMessage + "...";
     }
 
+    protected void handleSetActiveFolder(IncomingMailClient incomingClient, FolderTreeItem folder) throws IOException, MailException {
+        boolean isStateValid = incomingClient.setActiveFolder(folder, true);
+        
+        if(!isStateValid) {
+            // Set a local flag, instead of firing an event
+            checkAllTokens = true;
+        }
+    }
+    
     public void execute(MailClient client) throws IOException, MailException {
         ImapClient incomingClient = (ImapClient)client;
-        
-        mailStore.addFolderListener(folderListener);
         
         this.messageRetentionLimit = incomingClient.getAcctConfig().getMaximumFolderMessages();
         
@@ -98,16 +109,6 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
         initialFlagsRefreshComplete(incomingClient, folderMessages);
     }
 
-    protected void fireMailStoreRequestComplete() {
-        mailStore.removeFolderListener(folderListener);
-        super.fireMailStoreRequestComplete();
-    }
-    
-    protected void fireMailStoreRequestFailed(Throwable exception, boolean isFinal) {
-        mailStore.removeFolderListener(folderListener);
-        super.fireMailStoreRequestFailed(exception, isFinal);
-    }
-    
     private void initialFlagsRefreshComplete(ImapClient incomingClient, Vector pendingFlagUpdates) throws IOException, MailException {
         secondaryMessageTokensToFetch = new Vector();
         MessageToken oldestFetchedToken = null;
@@ -229,6 +230,16 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
                     getProgressHandler(statusMessage));
         }
         loadedMessageMap.clear();
+
+        // Handle the unlikely-but-possible case of an untagged new message
+        // notification during the folder refresh process.
+        if(recentMessageAvailable) {
+            incomingClient.getNewFolderMessages(
+                    false,
+                    new GetFolderMessageCallback(false),
+                    getProgressHandler(statusMessage));
+        }
+        
         fireMailStoreRequestComplete();
     }
     
@@ -267,5 +278,5 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
                 mailStore.fireFolderMessagesAvailable(folder, null, flagsOnly);
             }
         }
-    };
+    }
 }
