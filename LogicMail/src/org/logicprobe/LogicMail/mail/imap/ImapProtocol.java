@@ -689,6 +689,7 @@ public class ImapProtocol {
 
             try {
                 int offset = Arrays.getIndex(rawText, (byte)'(');
+                if(offset == -1) { return null; }
                 parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
             } catch (Throwable exp) {
                 parsedText = null;
@@ -905,6 +906,7 @@ public class ImapProtocol {
 
             try {
                 int offset = Arrays.getIndex(rawText, (byte)'(');
+                if(offset == -1) { return false; }
                 parsedText = ImapParser.parenListParser(rawText, offset, rawText.length - offset);
             } catch (Throwable exp) {
                 return false;
