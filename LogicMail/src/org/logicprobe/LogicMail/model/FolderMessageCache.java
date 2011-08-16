@@ -112,6 +112,14 @@ public class FolderMessageCache {
             if(cacheEntry.addFolderMessage(message)) {
                 cacheObject.addFolderMessage(folder, message);
             }
+            else {
+                // If the item could not be added, then try to update its
+                // existing cache entry.
+                FolderMessage updatedMessage = cacheEntry.updateFolderMessage(message);
+                if(updatedMessage != null) {
+                    cacheObject.updateFolderMessage(folder, updatedMessage);
+                }
+            }
         }
     }
 
