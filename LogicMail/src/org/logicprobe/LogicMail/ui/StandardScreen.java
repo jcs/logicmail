@@ -173,7 +173,6 @@ public class StandardScreen extends MainScreen {
         else {
             screenProvider.onUndisplay();
             superSetStatusImpl(originalStatusField);
-            statusBarField.setStatusText(null);
             super.onUiEngineAttached(false);   
         }
     }
@@ -193,7 +192,6 @@ public class StandardScreen extends MainScreen {
     protected void onObscured() {
         super.onObscured();
         superSetStatusImpl(originalStatusField);
-        statusBarField.setStatusText(null);
     }
 
     /* (non-Javadoc)
