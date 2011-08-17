@@ -58,6 +58,7 @@ import net.rim.device.api.util.DataBuffer;
 import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.AbstractMimeMessagePartVisitor;
@@ -499,7 +500,7 @@ public class CompositionScreen extends AbstractScreenProvider {
         	}
         	else {
         		sourceMessageNode.addMessageNodeListener(messageNodeListener);
-        		sourceMessageNode.refreshMessage();
+        		sourceMessageNode.refreshMessage(GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT);
         	}
         }
         else

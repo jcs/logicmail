@@ -71,11 +71,13 @@ import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.AppInfo;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.ContentPart;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
 import org.logicprobe.LogicMail.message.MimeMessagePartTransformer;
+import org.logicprobe.LogicMail.message.TextPart;
 import org.logicprobe.LogicMail.model.AccountNode;
 import org.logicprobe.LogicMail.model.Address;
 import org.logicprobe.LogicMail.model.MailboxNode;
@@ -109,9 +111,12 @@ public class MessageScreen extends AbstractScreenProvider {
     private MessageActions messageActions;
     
     private MenuItem saveAttachmentItem;
+    private MenuItem displayHtmlItem;
+    private MenuItem displayPlainTextItem;
     private MenuItem compositionItem;
 	
     private boolean firstDisplay = true;
+    private int displayFormat;
     private MessageNode messageNode;
     private AccountNode parentAccount;
     private boolean isSentFolder;
@@ -119,11 +124,14 @@ public class MessageScreen extends AbstractScreenProvider {
     private boolean messageRendered;
     private Hashtable requestedContentSet = new Hashtable();
     private static DateFormat dateFormat = DateFormat.getInstance(DateFormat.DATETIME_DEFAULT);
+    private boolean messageHtmlAvailable;
+    private boolean messagePlainTextAvailable;
     
     private UnicodeNormalizer unicodeNormalizer;
     
     public MessageScreen(MessageNode messageNode)
     {
+        this.displayFormat = MailSettings.getInstance().getGlobalConfig().getMessageDisplayFormat();
         this.messageNode = messageNode;
         this.parentAccount = messageNode.getParent().getParentAccount();
         
@@ -292,7 +300,7 @@ public class MessageScreen extends AbstractScreenProvider {
         
     	messageNode.addMessageNodeListener(messageNodeListener);
     	if(firstDisplay) {
-            if(!messageNode.refreshMessage()) {
+            if(!messageNode.refreshMessage(displayFormat)) {
                 renderMessage();
             }
     	    firstDisplay = false;
@@ -372,7 +380,23 @@ public class MessageScreen extends AbstractScreenProvider {
 	            }
 	        }
 	    };
-	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 400100, 2000) {
+        displayHtmlItem = new MenuItem(resources, LogicMailResource.MENUITEM_GET_HTML, 300200, 2000) {
+            public void run() {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "displayHtml");
+                if(!messageNode.refreshMessage(GlobalConfig.MESSAGE_DISPLAY_HTML)) {
+                    renderMessage();
+                }
+            }
+        };
+        displayPlainTextItem = new MenuItem(resources, LogicMailResource.MENUITEM_GET_PLAIN_TEXT, 300220, 2000) {
+            public void run() {
+                AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "displayPlainText");
+                if(!messageNode.refreshMessage(GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT)) {
+                    renderMessage();
+                }
+            }
+        };
+	    compositionItem = new MenuItem(resources, LogicMailResource.MENUITEM_COMPOSE_EMAIL, 500100, 2000) {
 	        public void run() {
 	            AnalyticsDataCollector.getInstance().onButtonClick(getScreenPath(), getScreenName(), "composition");
 	            navigationController.displayComposition((NetworkAccountNode)parentAccount);
@@ -394,6 +418,15 @@ public class MessageScreen extends AbstractScreenProvider {
     	}
     	
     	messageActions.makeMenu(menu, instance, messageNode, true);
+    	
+    	if(displayFormat == GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT &&
+    	        messageHtmlAvailable) {
+    	    menu.add(displayHtmlItem);
+    	}
+    	else if(displayFormat == GlobalConfig.MESSAGE_DISPLAY_HTML &&
+    	        messagePlainTextAvailable) {
+    	    menu.add(displayPlainTextItem);
+    	}
     	
     	if(parentAccount instanceof NetworkAccountNode
     	        && ((NetworkAccountNode)parentAccount).hasMailSender()) {
@@ -547,6 +580,10 @@ public class MessageScreen extends AbstractScreenProvider {
     }
 
     private void renderMessage() {
+        updateAvailableDisplayableParts();
+        
+        displayFormat = messageNode.getRefreshDisplayFormat();
+        
 		Vector messageFields = new Vector();
     	
     	// Add fields to display the message body
@@ -573,8 +610,26 @@ public class MessageScreen extends AbstractScreenProvider {
 		messageRendered = true;
     }
 
+    private void updateAvailableDisplayableParts() {
+        MimeMessagePart[] allDisplayableParts =
+            MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure(), -1);
+        messagePlainTextAvailable = false;
+        messageHtmlAvailable = false;
+        for(int i=0; i<allDisplayableParts.length; i++) {
+            if(allDisplayableParts[i] instanceof TextPart) {
+                TextPart textPart = (TextPart)allDisplayableParts[i];
+                if(TextPart.SUBTYPE_PLAIN.equalsIgnoreCase(textPart.getMimeSubtype())) {
+                    messagePlainTextAvailable = true;
+                }
+                else if(TextPart.SUBTYPE_HTML.equalsIgnoreCase(textPart.getMimeSubtype())) {
+                    messageHtmlAvailable = true;
+                }
+            }
+        }
+    }
+
     private void addMessageBodyFields(Vector messageFields) {
-        MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure());
+        MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(messageNode.getMessageStructure(), displayFormat);
     	for(int i=0; i<displayableParts.length; i++) {
     		MimeMessageContent content = messageNode.getMessageContent(displayableParts[i]);
     		if(content != null) {

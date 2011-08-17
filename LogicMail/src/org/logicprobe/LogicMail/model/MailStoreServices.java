@@ -453,17 +453,19 @@ public abstract class MailStoreServices {
      * 
      * @param messageToken the message token
      * @param partsToSkip parts to skip in the refresh, because they are already loaded
+     * @param displayFormat A value of <code>GlobalConfig.MESSAGE_DISPLAY_XXXX</code>.
      * @return true, if a refresh was initiated
      */
-    public abstract boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip);
+    public abstract boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip, int displayFormat);
     
     /**
      * Requests a message refresh, loading only from local data.
      * 
      * @param messageToken the message token
+     * @param displayFormat A value of <code>GlobalConfig.MESSAGE_DISPLAY_XXXX</code>.
      * @return true, if a refresh was initiated
      */
-    public abstract boolean requestMessageRefreshCacheOnly(MessageToken messageToken);
+    public abstract boolean requestMessageRefreshCacheOnly(MessageToken messageToken, int displayFormat);
     
     /**
      * Requests a message refresh, similar to {@link #requestMessageRefresh(MessageToken, MimeMessagePart[])},

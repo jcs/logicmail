@@ -222,8 +222,8 @@ public class AccountNodeTest extends TestCase {
 
         public void requestFolderRefresh(FolderTreeItem folderTreeItem) { }
         public void requestMoreFolderMessages(FolderTreeItem folderTreeItem, MessageToken firstToken) { }
-        public boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip) { return false; }
-        public boolean requestMessageRefreshCacheOnly(MessageToken messageToken) { return false; }
+        public boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip, int displayFormat) { return false; }
+        public boolean requestMessageRefreshCacheOnly(MessageToken messageToken, int displayFormat) { return false; }
         public boolean requestEntireMessageRefresh(MessageToken messageToken) { return false; }
     }
     

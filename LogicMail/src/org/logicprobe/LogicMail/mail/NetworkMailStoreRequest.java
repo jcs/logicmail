@@ -74,9 +74,13 @@ abstract class NetworkMailStoreRequest extends AbstractMailStoreRequest implemen
         fireMailStoreRequestFailed(exception, isFinal);
     }
     
-    protected void checkActiveFolder(IncomingMailClient incomingClient, FolderTreeItem requestFolder) throws IOException, MailException {
+    protected boolean checkActiveFolder(IncomingMailClient incomingClient, FolderTreeItem requestFolder) throws IOException, MailException {
         if(incomingClient.getActiveFolder() == null || !incomingClient.getActiveFolder().getPath().equals(requestFolder.getPath())) {
             handleSetActiveFolder(incomingClient, requestFolder);
+            return true;
+        }
+        else {
+            return false;
         }
     }
     

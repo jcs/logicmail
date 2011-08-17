@@ -54,7 +54,7 @@ public class LocalMailStoreServices extends MailStoreServices {
         throw new UnsupportedOperationException();
     }
     
-    public boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip) {
+    public boolean requestMessageRefresh(MessageToken messageToken, MimeMessagePart[] partsToSkip, int displayFormat) {
         if(partsToSkip != null && partsToSkip.length > 0) {
             // The current local mail store implementation only loads complete
             // message content, so the presence of anything in the parts-to-skip
@@ -74,8 +74,8 @@ public class LocalMailStoreServices extends MailStoreServices {
         }
     }
     
-    public boolean requestMessageRefreshCacheOnly(MessageToken messageToken) {
-        return requestMessageRefresh(messageToken, null);
+    public boolean requestMessageRefreshCacheOnly(MessageToken messageToken, int displayFormat) {
+        return requestMessageRefresh(messageToken, null, displayFormat);
     }
     
     public boolean requestEntireMessageRefresh(MessageToken messageToken) {

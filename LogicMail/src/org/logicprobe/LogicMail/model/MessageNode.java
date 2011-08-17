@@ -161,6 +161,8 @@ public class MessageNode implements Node {
 	private String messageSource;
 	private final EventListenerList listenerList = new EventListenerList();
 	private final AtomicBoolean refreshInProgress = new AtomicBoolean();
+	private int requestedDisplayFormat = -1;
+	private int refreshDisplayFormat = -1;
 	
 	/**
 	 * Instantiates a new message node.
@@ -701,7 +703,7 @@ public class MessageNode implements Node {
 			return (messageStructure != null) && (!messageContent.isEmpty());
 		}
 	}
-	
+
 	/**
 	 * Sets whether this message has cached content available.
 	 * This method should only be called by code which is creating
@@ -1136,10 +1138,13 @@ public class MessageNode implements Node {
      * multiple events may be fired as the retrieval process completes.
      * </p>
      * 
+     * @param displayFormat A value of <code>GlobalConfig.MESSAGE_DISPLAY_XXXX</code>.
      * @return True if a refresh was triggered, false otherwise
      */
-    public boolean refreshMessage() {
+    public boolean refreshMessage(int displayFormat) {
         if(refreshInProgress.compareAndSet(false, true)) {
+            requestedDisplayFormat = displayFormat;
+            
             // Build a list of all message parts that have already been loaded
             MimeMessagePart[] loadedParts;
             synchronized(messageContent) {
@@ -1152,8 +1157,11 @@ public class MessageNode implements Node {
             }
             
             MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-            boolean refreshTriggered = mailStore.requestMessageRefresh(messageToken, loadedParts);
-            if(!refreshTriggered) { refreshInProgress.compareAndSet(true, false); }
+            boolean refreshTriggered = mailStore.requestMessageRefresh(messageToken, loadedParts, displayFormat);
+            if(!refreshTriggered) {
+                refreshDisplayFormat = requestedDisplayFormat;
+                refreshInProgress.compareAndSet(true, false);
+            }
             return refreshTriggered;
         }
         else {
@@ -1163,11 +1171,19 @@ public class MessageNode implements Node {
 
     /**
      * Called to load only cached message data for this node.
+     * 
+     * @param displayFormat A value of <code>GlobalConfig.MESSAGE_DISPLAY_XXXX</code>.
      */
-    public boolean refreshMessageCacheOnly() {
+    public boolean refreshMessageCacheOnly(int displayFormat) {
         if(refreshInProgress.compareAndSet(false, true)) {
+            requestedDisplayFormat = displayFormat;
             MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-            return mailStore.requestMessageRefreshCacheOnly(messageToken);
+            boolean refreshTriggered = mailStore.requestMessageRefreshCacheOnly(messageToken, displayFormat);
+            if(!refreshTriggered) {
+                refreshDisplayFormat = requestedDisplayFormat;
+                refreshInProgress.compareAndSet(true, false);
+            }
+            return refreshTriggered;
         }
         else {
             return false;
@@ -1187,8 +1203,14 @@ public class MessageNode implements Node {
      */
     public boolean refreshEntireMessage() {
         if(refreshInProgress.compareAndSet(false, true)) {
+            requestedDisplayFormat = -1;
             MailStoreServices mailStore = parent.getParentAccount().getMailStoreServices();
-            return mailStore.requestEntireMessageRefresh(messageToken);
+            boolean refreshTriggered = mailStore.requestEntireMessageRefresh(messageToken);
+            if(!refreshTriggered) {
+                refreshDisplayFormat = requestedDisplayFormat;
+                refreshInProgress.compareAndSet(true, false);
+            }
+            return refreshTriggered;
         }
         else {
             return false;
@@ -1274,6 +1296,7 @@ public class MessageNode implements Node {
             setMessageStructure(e.getMessageStructure());
             setMessageSource(e.getMessageSource());
             putMessageContent(content, false);
+            refreshDisplayFormat = requestedDisplayFormat;
             contentLoadComplete();
             break;
         case MessageEvent.TYPE_CONTENT_LOADED:
@@ -1282,16 +1305,29 @@ public class MessageNode implements Node {
             }
             else {
                 putMessageContent(content, false);
+                refreshDisplayFormat = requestedDisplayFormat;
             }
             break;
         }
     }
     
     private void contentLoadComplete() {
+        refreshDisplayFormat = requestedDisplayFormat;
         refreshInProgress.set(false);
         fireMessageStatusChanged(MessageNodeEvent.TYPE_CONTENT_LOADED);
     }
 
+    /**
+     * Get the requested display format from the last successful message
+     * refresh operation.
+     *
+     * @return A value of <code>GlobalConfig.MESSAGE_DISPLAY_XXXX</code>, or
+     *     <code>-1</code> if none specified.
+     */
+    public int getRefreshDisplayFormat() {
+        return refreshDisplayFormat;
+    }
+    
     /**
      * Called when the mail store notifies that message flags have changed.
      *

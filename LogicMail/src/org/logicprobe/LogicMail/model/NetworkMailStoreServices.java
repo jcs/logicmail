@@ -293,7 +293,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return contentFileManager.messageContentExists(folder, messageToken);
     }
     
-    public boolean requestMessageRefresh(final MessageToken messageToken, final MimeMessagePart[] partsToSkip) {
+    public boolean requestMessageRefresh(
+            final MessageToken messageToken,
+            final MimeMessagePart[] partsToSkip,
+            final int displayFormat) {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         if(handler == null) { return false; }
 
@@ -303,7 +306,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             public void run(boolean refreshSuccessful) {
                 boolean triggered = false;
                 if(refreshSuccessful) {
-                    triggered = requestMessageRefreshImpl(messageToken, partsToSkip, false);
+                    triggered = requestMessageRefreshImpl(messageToken, partsToSkip, false, displayFormat);
                 }
                 
                 if(!triggered) {
@@ -315,11 +318,15 @@ public class NetworkMailStoreServices extends MailStoreServices {
         return true;
     }
     
-    public boolean requestMessageRefreshCacheOnly(MessageToken messageToken) {
-        return requestMessageRefreshImpl(messageToken, new MimeMessagePart[0], true);
+    public boolean requestMessageRefreshCacheOnly(MessageToken messageToken, int displayFormat) {
+        return requestMessageRefreshImpl(messageToken, new MimeMessagePart[0], true, displayFormat);
     }
     
-    private boolean requestMessageRefreshImpl(final MessageToken messageToken, final MimeMessagePart[] partsToSkip, final boolean forceCacheOnly) {
+    private boolean requestMessageRefreshImpl(
+            final MessageToken messageToken,
+            final MimeMessagePart[] partsToSkip,
+            final boolean forceCacheOnly,
+            final int displayFormat) {
         FolderRequestHandler handler = getFolderRequestHandler(messageToken);
         if(handler == null) { return false; }
         
@@ -336,10 +343,10 @@ public class NetworkMailStoreServices extends MailStoreServices {
         requestThreadQueue.invokeLater(new Runnable() {
             public void run() {
                 if(mailStore.hasMessageParts()) {
-                    requestMessageRefreshParts(folder, messageToken, structure, partsToSkip, cacheOnly);
+                    requestMessageRefreshParts(folder, messageToken, structure, partsToSkip, cacheOnly, displayFormat);
                 }
                 else {
-                    requestMessageRefreshWhole(folder, messageToken, structure, partsToSkip, cacheOnly);
+                    requestMessageRefreshWhole(folder, messageToken, structure, partsToSkip, cacheOnly, displayFormat);
                 }
             }
         });
@@ -370,10 +377,11 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final MessageToken messageToken,
             final MimeMessagePart structure,
             final MimeMessagePart[] partsToSkip,
-            final boolean cacheOnly) {
+            final boolean cacheOnly,
+            final int displayFormat) {
         
         // Determine which parts are displayable
-        MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure);
+        MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure, displayFormat);
 
         // Prune the displayable parts array, so it doesn't contain anything
         // we want to skip.  This method is pretty inefficient, but the arrays
@@ -421,7 +429,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
                                     messageRefreshFailed(messageToken, loadedItems > 0);
                                 }
                                 else {
-                                    requestMessageRefresh(messageToken, partsToSkip);
+                                    requestMessageRefresh(messageToken, partsToSkip, displayFormat);
                                 }
                             }
                         }));
@@ -479,7 +487,8 @@ public class NetworkMailStoreServices extends MailStoreServices {
             final MessageToken messageToken,
             final MimeMessagePart structure,
             final MimeMessagePart[] partsToSkip,
-            final boolean cacheOnly) {
+            final boolean cacheOnly,
+            final int displayFormat) {
         
         messageCacheThreadQueue.completePendingTasks();
         if(structure != null && contentFileManager.messageContentExists(folder, messageToken)) {
@@ -488,7 +497,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
             // data for a message.
             
             // Determine which parts are displayable
-            MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure);
+            MimeMessagePart[] displayableParts = MimeMessagePartTransformer.getDisplayableParts(structure, displayFormat);
             int[] customValues = new int[4];
             final MimeMessageContent[] loadedContent =
                 contentFileManager.getMessageContent(folder, messageToken, displayableParts, customValues);
@@ -534,7 +543,7 @@ public class NetworkMailStoreServices extends MailStoreServices {
                                 messageRefreshFailed(messageToken, false);
                             }
                             else {
-                                requestMessageRefresh(messageToken, partsToSkip);
+                                requestMessageRefresh(messageToken, partsToSkip, displayFormat);
                             }
                         }
                     }));

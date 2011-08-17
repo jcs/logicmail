@@ -33,7 +33,6 @@ package org.logicprobe.LogicMail.message;
 import java.util.Vector;
 
 import org.logicprobe.LogicMail.conf.GlobalConfig;
-import org.logicprobe.LogicMail.conf.MailSettings;
 
 /**
  * Utility class to take a {@link MimeMessagePart} tree and transform
@@ -44,13 +43,15 @@ public class MimeMessagePartTransformer {
 	 * Gets a list of displayable message parts in order.
 	 * 
 	 * @param rootPart The root part of the message.
+	 * @param displayFormat A value of <code>GlobalConfig.MESSAGE_DISPLAY_XXXX</code>,
+	 *     or <code>-1</code> to match all possible displayable parts.
 	 * @return The displayable parts.
 	 */
-	public static MimeMessagePart[] getDisplayableParts(MimeMessagePart rootPart) {
+	public static MimeMessagePart[] getDisplayableParts(MimeMessagePart rootPart, int displayFormat) {
 	    if(rootPart == null) {
 	        return new MimeMessagePart[0];
 	    }
-		DisplayablePartVisitor visitor = new DisplayablePartVisitor();
+		DisplayablePartVisitor visitor = new DisplayablePartVisitor(displayFormat);
 		rootPart.accept(visitor);
 		Vector parts = visitor.getDisplayableParts();
 		MimeMessagePart[] result = new MimeMessagePart[parts.size()];
@@ -60,10 +61,10 @@ public class MimeMessagePartTransformer {
 	
 	private static class DisplayablePartVisitor extends AbstractMimeMessagePartVisitor {
 		private Vector displayableParts = new Vector();
-		int displayFormat;
+		private final int displayFormat;
 		
-		public DisplayablePartVisitor() {
-			displayFormat = MailSettings.getInstance().getGlobalConfig().getMessageDisplayFormat();
+		public DisplayablePartVisitor(int displayFormat) {
+		    this.displayFormat = displayFormat;
 		}
 		
 		public Vector getDisplayableParts() { return displayableParts; }
@@ -116,6 +117,11 @@ public class MimeMessagePartTransformer {
 								displayableParts.addElement(part);
 							}
 						}
+					}
+					else if(displayFormat == -1) {
+                        if(subType.equalsIgnoreCase("plain") || subType.equalsIgnoreCase("html")) {
+                            displayableParts.addElement(part);
+                        }
 					}
 				}
 				else {

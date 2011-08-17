@@ -42,6 +42,7 @@ import net.rim.device.api.ui.component.Menu;
 
 import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
+import org.logicprobe.LogicMail.conf.GlobalConfig;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
 import org.logicprobe.LogicMail.mail.AbstractMailSender;
@@ -115,54 +116,54 @@ public class MessageActions {
                 sendMessage(activeMessageNode);
             }
         };
-        propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 300120, 1030) {
+        propertiesItem = new MenuItem(resources, LogicMailResource.MENUITEM_PROPERTIES, 300120, 2000) {
             public void run() {
                 openMessageProperties(activeMessageNode);
             }
         };
-        replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 300130, 2000) {
-            public void run() {
-                replyMessage(activeMessageNode);
-            }
-        };
-        replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 300140, 2000) {
-            public void run() {
-                replyAllMessage(activeMessageNode);
-            }
-        };
-        forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 300150, 2000) {
-            public void run() {
-                forwardMessage(activeMessageNode);
-            }
-        };
-        copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 300160, 2000) {
-            public void run() {
-                copyToMailbox(activeMessageNode);
-            }
-        };
-        moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 300170, 2000) {
-            public void run() {
-                moveToMailbox(activeMessageNode);
-            }
-        };
-        deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 300180, 2000) {
-            public void run() {
-                deleteMessage(activeMessageNode);
-            }
-        };
-        undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 300190, 2000) {
-            public void run() {
-                undeleteMessage(activeMessageNode);
-            }
-        };
-        markOpenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_OPENED, 300200, 2000) {
+        markOpenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_OPENED, 400100, 2000) {
             public void run() {
                 markMessageOpened(activeMessageNode);
             }
         };
-        markUnopenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_UNOPENED, 300210, 2000) {
+        markUnopenedItem = new MenuItem(resources, LogicMailResource.MENUITEM_MARK_UNOPENED, 400110, 2000) {
             public void run() {
                 markMessageUnopened(activeMessageNode);
+            }
+        };
+        replyItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLY, 400120, 1030) {
+            public void run() {
+                replyMessage(activeMessageNode);
+            }
+        };
+        replyAllItem = new MenuItem(resources, LogicMailResource.MENUITEM_REPLYTOALL, 400130, 2000) {
+            public void run() {
+                replyAllMessage(activeMessageNode);
+            }
+        };
+        forwardItem = new MenuItem(resources, LogicMailResource.MENUITEM_FORWARD, 400140, 2000) {
+            public void run() {
+                forwardMessage(activeMessageNode);
+            }
+        };
+        copyToItem = new MenuItem(resources, LogicMailResource.MENUITEM_COPY_TO, 400150, 2000) {
+            public void run() {
+                copyToMailbox(activeMessageNode);
+            }
+        };
+        moveToItem = new MenuItem(resources, LogicMailResource.MENUITEM_MOVE_TO, 400160, 2000) {
+            public void run() {
+                moveToMailbox(activeMessageNode);
+            }
+        };
+        deleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_DELETE, 400170, 2000) {
+            public void run() {
+                deleteMessage(activeMessageNode);
+            }
+        };
+        undeleteItem = new MenuItem(resources, LogicMailResource.MENUITEM_UNDELETE, 400180, 2000) {
+            public void run() {
+                undeleteMessage(activeMessageNode);
             }
         };
     }
@@ -552,7 +553,7 @@ public class MessageActions {
                     }
                 }};
             messageNode.addMessageNodeListener(listener);
-            if(!messageNode.refreshMessageCacheOnly()) {
+            if(!messageNode.refreshMessageCacheOnly(GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT)) {
                 messageNode.removeMessageNodeListener(listener);
             }
         }
@@ -642,7 +643,7 @@ public class MessageActions {
         		    
         		    // Add a listener to the message node and then trigger a refresh.
         		    messageNode.addMessageNodeListener(new CopyToMessageNodeListener(selectedMailbox));
-        		    messageNode.refreshMessage();
+        		    messageNode.refreshMessage(GlobalConfig.MESSAGE_DISPLAY_PLAIN_TEXT);
         		}
         	}
         }
