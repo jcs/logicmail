@@ -97,8 +97,13 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
         
         this.messageRetentionLimit = incomingClient.getAcctConfig().getMaximumFolderMessages();
         
-        checkActiveFolder(incomingClient, folder);
-
+        if(!checkActiveFolder(incomingClient, folder)) {
+            // Shortcut out if the folder selection has not changed, and a
+            // refresh is not required.
+            fireMailStoreRequestComplete();
+            return;
+        }
+        
         // Fetch new folder messages from the mail store
         Vector folderMessages = new Vector();
         incomingClient.getNewFolderMessages(
