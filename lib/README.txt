@@ -14,9 +14,9 @@ external sources.  These files are laid out as follow:
  bb-ant-tools.patch      | Patch to BlackBerry Ant Tools
  ant-contrib-1.0b3.jar   | Ant-Contrib Tasks
  hammockmaker-2.1.0.jar  | HammockMaker tool (from the Hammock distribution)
- AnalyticsServicev0.9Beta.jar     | BlackBerry Analytics Service SDK
- AnalyticsServicev0.9Beta-doc.zip | JavaDocs for above
- webtrends-template.xml           | Analtics configuration template
+ AnalyticsServicev0.93Beta.jar     | BlackBerry Analytics Service SDK
+ AnalyticsServicev0.93Beta-doc.zip | JavaDocs for above
+ webtrends-template.xml            | Analtics configuration template
 
 
 Sources:
@@ -35,5 +35,5 @@ Hammock
     http://hammingweight.com/modules/hammock/
 BlackBerry Analytics Service SDK
     http://us.blackberry.com/developers/platform/analyticsservice/
-    Not included due possible legal issues with redistribution.
-    LogicMail can be successfully built and run without these libraries.
+    Not included due to possible legal issues with redistribution.
+    LogicMail can be successfully built and run without this library.

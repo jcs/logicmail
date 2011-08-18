@@ -51,6 +51,7 @@ import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.component.TextField;
 import net.rim.device.api.ui.text.TextFilter;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.AccountConfig;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
@@ -554,6 +555,23 @@ public class AccountConfigScreen extends AbstractConfigScreen {
         manager.add(new LabelField());
         
         return manager;
+    }
+    
+    protected void onUiEngineAttached(boolean attached) {
+        super.onUiEngineAttached(attached);
+        if(attached) {
+            String eventType;
+            if(accountConfig instanceof ImapConfig) {
+                eventType = "Account_IMAP";
+            }
+            else if(accountConfig instanceof PopConfig) {
+                eventType = "Account_POP";
+            }
+            else {
+                eventType = "Account";
+            }
+            AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), eventType, "Configuration");
+        }
     }
 
     public void screenFieldChanged(Field field, int context) {

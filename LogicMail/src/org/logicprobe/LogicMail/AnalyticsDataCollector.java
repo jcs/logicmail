@@ -141,20 +141,20 @@ public abstract class AnalyticsDataCollector {
             String eventType);
 
     /**
-     * Tracks instances that a user views content in an application.
+     * Tracks instances that a user views a screen in an application.
      *
-     * @param eventPath The hierarchical location of where an object or content
+     * @param eventPath The hierarchical location of where an object or screen
      *     is located in an application.
      * @param eventDesc The name of the screen where the event occurs.
      * @param eventType The event type.
-     * @param contentGroup A category name for the content.
+     * @param contentGroup A category name for the screen.
      */
-    public abstract void onContentView(
+    public abstract void onScreenView(
             String eventPath,
             String eventDesc,
             String eventType,
-            String contentGroup);
-
+            String contentGroup);    
+    
     /**
      * Tracks instances that media events occur in an application.
      *

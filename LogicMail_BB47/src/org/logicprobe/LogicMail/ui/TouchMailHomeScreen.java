@@ -41,6 +41,10 @@ public class TouchMailHomeScreen extends MailHomeScreen {
         super(mailRootNode);
     }
 
+    public String getScreenName() {
+        return "MailHomeScreen";
+    }
+    
     protected Bitmap getNodeIcon(Node node) {
         return TouchNodeIcons.getBigIcon(node);
     }

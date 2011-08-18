@@ -200,7 +200,7 @@ public class MailboxScreen extends AbstractScreenProvider {
             break;
         }
         String contentGroup = mailboxNode.getParentAccount().getProtocolName();
-        AnalyticsDataCollector.getInstance().onContentView(getScreenPath(), getScreenName(), eventType, contentGroup);
+        AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), eventType, contentGroup);
         
         if(this.hideDeleted != globalConfig.getHideDeletedMsg()) {
             this.hideDeleted = !this.hideDeleted;

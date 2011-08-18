@@ -34,6 +34,7 @@ import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.PlatformInfo;
 
 import net.rim.device.api.i18n.ResourceBundle;
+import net.rim.device.api.ui.Screen;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.component.LabelField;
 
@@ -45,7 +46,9 @@ import net.rim.device.api.ui.component.LabelField;
 public abstract class AbstractConfigScreen extends MainScreen {
 	protected static ResourceBundle resources = ResourceBundle.getBundle(LogicMailResource.BUNDLE_ID, LogicMailResource.BUNDLE_NAME);
 	protected static final boolean hasIndicators = PlatformInfo.getInstance().hasApplicationIndicators();
-
+	private final String screenName;
+	private String screenPath = "";
+	
     /**
      * Instantiates a new abstract configuration screen.
      * 
@@ -55,5 +58,39 @@ public abstract class AbstractConfigScreen extends MainScreen {
         LabelField titleField =
                 new LabelField(title, LabelField.ELLIPSIS | LabelField.USE_ALL_WIDTH);
         setTitle(titleField);
+        screenName = getSimpleClassName(getClass().getName());
+    }
+    
+    private static String getSimpleClassName(String className) {
+        int p = className.lastIndexOf('.');
+        if(p != -1 && p < className.length() - 1) {
+            return className.substring(p + 1);
+        }
+        else {
+            return className;
+        }
+    }
+    
+    protected String getScreenName() {
+        return screenName;
+    }
+    
+    protected String getScreenPath() {
+        return screenPath;
+    }
+    
+    protected void onUiEngineAttached(boolean attached) {
+        if(attached) {
+            Screen screen = getScreenBelow();
+            if(screen instanceof StandardScreen) {
+                screenPath = ((StandardScreen)screen).getScreenPath() + '/' + screenName;
+            }
+            else {
+                screenPath = '/' + screenName;
+            }
+        }
+        else {
+            screenPath = "";
+        }
     }
 }

@@ -30,6 +30,7 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.mail.MessageToken;
@@ -246,6 +247,28 @@ public class MessagePropertiesScreen extends MainScreen {
             buf.append(messageToken.getMessageUid());
         }
         return buf.toString();
+    }
+    
+    protected void onDisplay() {
+        super.onDisplay();
+        if(getScreenBelow() instanceof StandardScreen) {
+            StandardScreen below = (StandardScreen)getScreenBelow();
+
+            String eventType;
+            if(messageNode instanceof OutgoingMessageNode) {
+                eventType = "OutgoingMessage";
+            }
+            else {
+                eventType = "Message";
+            }
+            String contentGroup = messageNode.getParent().getParentAccount().getProtocolName();
+            
+            AnalyticsDataCollector.getInstance().onScreenView(
+                    below.getScreenPath() + "/MessageProperties",
+                    "MessageProperties",
+                    eventType,
+                    contentGroup);
+        }
     }
     
     private MenuItem closeItem = new MenuItem(resources, LogicMailResource.MENUITEM_CLOSE, 200000, 10) {

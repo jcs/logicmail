@@ -225,6 +225,29 @@ public class CompositionScreen extends AbstractScreenProvider {
         this.sourceMessageNode = messageNode;
     }
 
+    public void onDisplay() {
+        super.onDisplay();
+        
+        String eventType;
+        switch(composeType) {
+        case COMPOSE_REPLY:
+            eventType = "ReplyMessage";
+            break;
+        case COMPOSE_REPLY_ALL:
+            eventType = "ReplyAllMessage";
+            break;
+        case COMPOSE_FORWARD:
+            eventType = "ForwardMessage";
+            break;
+        case COMPOSE_NORMAL:
+        default:            
+            eventType = "NormalMessage";
+            break;
+        }
+        String contentGroup = accountNode.getProtocolName();
+        AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), eventType, contentGroup);
+    }
+    
     private void messageNodeListener_MessageStatusChanged(MessageNodeEvent e) {
         int type = e.getType();
         if(type == MessageNodeEvent.TYPE_STRUCTURE_LOADED

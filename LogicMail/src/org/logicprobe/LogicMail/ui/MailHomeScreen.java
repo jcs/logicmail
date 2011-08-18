@@ -239,6 +239,11 @@ public class MailHomeScreen extends AbstractScreenProvider {
         };
     }
 
+    public void onDisplay() {
+        super.onDisplay();
+        AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), "MailHome", "Home");
+    }
+    
     private abstract class TreeNodeMenuItem extends MenuItem {
         public TreeNodeMenuItem(ResourceBundle bundle, int id, int ordinal, int priority) {
             super(bundle, id, ordinal, priority);

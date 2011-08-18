@@ -119,19 +119,19 @@ public class LogicMailWebtrendsDataCollector extends AnalyticsDataCollector {
         }
     }
 
-    public void onContentView(
+    public void onScreenView(
             String eventPath,
             String eventDesc,
             String eventType,
             String contentGroup) {
         try {
-            dataCollector.onContentView(eventPath, eventDesc, eventType, null, contentGroup);
+            dataCollector.onScreenView(eventPath, eventDesc, eventType, null, contentGroup);
         }
         catch (IllegalWebtrendsParameterValueException err) {
             collectorLogger.e(err.getMessage());
         }
     }
-
+    
     public void onMediaEvent(
             String eventPath,
             String eventDesc,

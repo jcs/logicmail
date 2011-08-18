@@ -50,7 +50,7 @@ class StubDataCollector extends AnalyticsDataCollector {
             String eventDesc,
             String eventType) { }
 
-    public void onContentView(
+    public void onScreenView(
             String eventPath,
             String eventDesc,
             String eventType,

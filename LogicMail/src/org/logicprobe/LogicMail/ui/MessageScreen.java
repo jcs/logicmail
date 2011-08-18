@@ -296,6 +296,17 @@ public class MessageScreen extends AbstractScreenProvider {
      */
     public void onDisplay() {
         super.onDisplay();
+        
+        String eventType;
+        if(messageNode instanceof OutgoingMessageNode) {
+            eventType = "OutgoingMessage";
+        }
+        else {
+            eventType = "Message";
+        }
+        String contentGroup = messageNode.getParent().getParentAccount().getProtocolName();
+        AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), eventType, contentGroup);
+        
         padAndFocusScreen();
         
     	messageNode.addMessageNodeListener(messageNodeListener);

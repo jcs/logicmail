@@ -44,6 +44,7 @@ import net.rim.device.api.ui.component.PasswordEditField;
 import net.rim.device.api.ui.component.SeparatorField;
 import net.rim.device.api.ui.text.TextFilter;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.OutgoingConfig;
@@ -222,6 +223,13 @@ public class OutgoingConfigScreen extends AbstractConfigScreen {
         add(contentFieldManager);
     }
 
+    protected void onUiEngineAttached(boolean attached) {
+        super.onUiEngineAttached(attached);
+        if(attached) {
+            AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), "Outgoing", "Configuration");
+        }
+    }
+    
     private void serverSecurityField_FieldChanged(Field field, int context) {
         if(serverSecurityField.getSelectedIndex() == ConnectionConfig.SECURITY_SSL) {
             serverPortField.setText("465");

@@ -161,13 +161,14 @@ public class ConfigScreen extends AbstractConfigScreen {
     };
     
     protected void onUiEngineAttached(boolean attached) {
+        super.onUiEngineAttached(attached);
         if(attached) {
             MailSettings.getInstance().addMailSettingsListener(mailSettingsListener);
+            AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), "Global", "Configuration");
         }
         else {
             MailSettings.getInstance().removeMailSettingsListener(mailSettingsListener);
         }
-        super.onUiEngineAttached(attached);
     };
     
     private void initFileSystemChoices() {

@@ -39,6 +39,7 @@ import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.EmailAddressEditField;
 import net.rim.device.api.ui.component.LabelField;
 
+import org.logicprobe.LogicMail.AnalyticsDataCollector;
 import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.IdentityConfig;
 
@@ -108,6 +109,13 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
         add(contentFieldManager);
     }
 
+    protected void onUiEngineAttached(boolean attached) {
+        super.onUiEngineAttached(attached);
+        if(attached) {
+            AnalyticsDataCollector.getInstance().onScreenView(getScreenPath(), getScreenName(), "Identity", "Configuration");
+        }
+    }
+    
     protected boolean onSavePrompt() {
         if(identityNameField.getText().length() > 0 &&
                 emailAddressField.getText().length() > 0) {
