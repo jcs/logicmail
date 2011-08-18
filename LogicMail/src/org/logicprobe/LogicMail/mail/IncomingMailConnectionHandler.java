@@ -338,6 +338,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         }
     }
     
+    FolderTreeItem getActiveFolder() {
+        return incomingClient.getActiveFolder();
+    }
+    
     private void handleConnectionIdleTimeout(long idleDuration) {
         accumulatedIdleTime += idleDuration;
         

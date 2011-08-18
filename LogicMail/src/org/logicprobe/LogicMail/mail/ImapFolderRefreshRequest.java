@@ -50,6 +50,7 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
     private volatile boolean checkAllTokens;
     private volatile boolean recentMessageAvailable;
     private Vector secondaryMessageTokensToFetch;
+    private boolean bypassRequest;
     
     ImapFolderRefreshRequest(NetworkMailStore mailStore, FolderTreeItem folder, FolderMessage[] loadedMessages) {
         super(mailStore);
@@ -69,6 +70,21 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
         return folder;
     }
     
+    public boolean isAdministrative() {
+        // If this request enters the queue during IMAP IDLE, and it is for the
+        // same folder that is currently being idled on, then mark it as
+        // administrative to prevent anything from happening.
+        bypassRequest = false;
+        IncomingMailConnectionHandler connectionHandler = mailStore.getConnectionHandler();
+        if(connectionHandler.getConnectionState() == AbstractMailConnectionHandler.STATE_IDLE) {
+            FolderTreeItem activeFolder = connectionHandler.getActiveFolder();
+            if(activeFolder != null && activeFolder.getPath().equals(folder.getPath())) {
+                bypassRequest = true;
+            }
+        }
+        return bypassRequest;
+    }
+    
     /**
      * Called by the <code>IncomingMailConnectionHandler</code> if it receives
      * notification of recent messages during the processing of this request.
@@ -80,7 +96,12 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
     };
     
     protected String getInitialStatus() {
-        return statusMessage + "...";
+        if(bypassRequest) {
+            return null;
+        }
+        else {
+            return statusMessage + "...";
+        }
     }
 
     protected void handleSetActiveFolder(IncomingMailClient incomingClient, FolderTreeItem folder) throws IOException, MailException {
@@ -94,6 +115,11 @@ class ImapFolderRefreshRequest extends NetworkMailStoreRequest implements MailSt
     
     public void execute(MailClient client) throws IOException, MailException {
         ImapClient incomingClient = (ImapClient)client;
+        
+        if(bypassRequest) {
+            fireMailStoreRequestComplete();
+            return;
+        }
         
         this.messageRetentionLimit = incomingClient.getAcctConfig().getMaximumFolderMessages();
         
