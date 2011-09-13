@@ -1,3 +1,33 @@
+/*-
+ * Copyright (c) 2011, Derek Konigsberg
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer. 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution. 
+ * 3. Neither the name of the project nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package org.logicprobe.LogicMail.ui;
 
 import java.io.IOException;
@@ -46,9 +76,12 @@ public class AccountConfigWizard extends WizardController {
     private boolean identityCreated;
     private boolean outgoingCreated;
 
-    private final static int ACCOUNT_TYPE_IMAP = 0;
-    private final static int ACCOUNT_TYPE_POP  = 1;
+    private static final int ACCOUNT_TYPE_IMAP = 0;
+    private static final int ACCOUNT_TYPE_POP  = 1;
 
+    private static String[] PREFIX_INCOMING_SERVER = new String[] { "pop.", "pop3.", "imap." };
+    private static String PREFIX_SMTP = "smtp";
+    
     public AccountConfigWizard() {
         addWizardScreen(newAccountWizardScreen);
         addWizardScreen(accountTypeWizardScreen);
@@ -64,6 +97,12 @@ public class AccountConfigWizard extends WizardController {
     private IdentityConfig identityConfig;
     private AccountConfig accountConfig;
     private OutgoingConfig outgoingConfig;
+
+    // Data objects shared by multiple screens
+    private String identityEmailAddress;
+    private String incomingServerName;
+    private String incomingServerUsername;
+    private String incomingServerPass;
 
     private WizardScreen newAccountWizardScreen = new WizardScreen(
             WizardScreen.resources.getString(LogicMailResource.WIZARD_SCREEN_NEW_ACCOUNT_TITLE),
@@ -140,6 +179,10 @@ public class AccountConfigWizard extends WizardController {
                 setInputValid(false);
             }
         }
+
+        protected void onPageFlip() {
+            identityEmailAddress = emailAddressEditField.getText();
+        };
 
         private void populateIdentityItems() {
             int index = identityChoiceField.getSelectedIndex();
@@ -287,14 +330,18 @@ public class AccountConfigWizard extends WizardController {
         }
 
         public void onPageEnter() {
-            if(accountType == ACCOUNT_TYPE_POP) {
-                portEditField.setText("110");
+            if (nameEditField.getText().equals("")) {
+                nameEditField.setText(getDomainNameFromEmail());
+
+                if (accountType == ACCOUNT_TYPE_POP) {
+                    portEditField.setText("110");
+                } else if (accountType == ACCOUNT_TYPE_IMAP) {
+                    portEditField.setText("143");
+                }
             }
-            else if(accountType == ACCOUNT_TYPE_IMAP) {
-                portEditField.setText("143");
-            }
+            validateData();
         };
-        
+
         private void mailServerWizardScreen_fieldChanged(Field field, int context) {
             if(field == securityChoiceField) {
                 if(accountType == ACCOUNT_TYPE_POP) {
@@ -314,13 +361,19 @@ public class AccountConfigWizard extends WizardController {
                     }
                 }
             }
+            validateData();
+        }
 
-            if(nameEditField.getText().trim().length() > 0 && portEditField.getText().trim().length() > 0) {
+        private void validateData() {
+            if (nameEditField.getText().trim().length() > 0 && portEditField.getText().trim().length() > 0) {
                 setInputValid(true);
-            }
-            else {
+            } else {
                 setInputValid(false);
             }
+        }
+
+        protected void onPageFlip() {
+            incomingServerName = nameEditField.getText();
         }
         public void gatherResults() {
             accountConfig.setServerName(nameEditField.getText());
@@ -353,10 +406,22 @@ public class AccountConfigWizard extends WizardController {
             add(commentsField);
             setInputValid(true);
         }
+
+        public void onPageEnter() {
+            if (userEditField.getText().equals("")) {
+                userEditField.setText(getUsernameFromEmail());
+            }
+        };
+
         public void gatherResults() {
             accountConfig.setServerUser(userEditField.getText());
             accountConfig.setServerPass(passEditField.getText());
         }
+
+        protected void onPageFlip() {
+            incomingServerUsername = userEditField.getText();
+            incomingServerPass = passEditField.getText();
+        };
     };
     private WizardScreen outgoingServerWizardScreen = new WizardScreen(
             WizardScreen.resources.getString(LogicMailResource.WIZARD_SCREEN_OUTGOING_TITLE),
@@ -366,7 +431,9 @@ public class AccountConfigWizard extends WizardController {
         private HostnameEditField nameEditField;
         private ObjectChoiceField securityChoiceField;
         private BasicEditField portEditField;
-
+        private String nameProvided = "";
+        private String portProvided = "";
+         
         protected void initFields() {
             // Populate the list of existing server configurations
             MailSettings mailSettings = MailSettings.getInstance();
@@ -401,7 +468,7 @@ public class AccountConfigWizard extends WizardController {
                         ConnectionConfig.SECURITY_NONE);
             securityChoiceField.setChangeListener(fieldChangeListener);
 
-            portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(25));
+            portEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_PORT) + ' ', Integer.toString(587));
             portEditField.setFilter(TextFilter.get(TextFilter.NUMERIC));
             portEditField.setChangeListener(fieldChangeListener);
 
@@ -420,7 +487,7 @@ public class AccountConfigWizard extends WizardController {
                     portEditField.setText("465");
                 }
                 else {
-                    portEditField.setText("25");
+                    portEditField.setText("587");
                 }
             }
             if(field == outgoingChoiceField) {
@@ -440,6 +507,12 @@ public class AccountConfigWizard extends WizardController {
                 setInputValid(false);
             }
         }
+        
+        public void onPageEnter() {
+            populateOutgoingItems();
+            validateData();
+        };
+        
         private void populateOutgoingItems() {
             int index = outgoingChoiceField.getSelectedIndex();
             Object item = outgoingChoiceField.getChoice(index);
@@ -462,9 +535,10 @@ public class AccountConfigWizard extends WizardController {
                 portEditField.setEditable(false);
             }
             else {
-                nameEditField.setText("");
-                securityChoiceField.setSelectedIndex(ConnectionConfig.SECURITY_NONE);
-                portEditField.setText("25");
+            	nameEditField.setText(nameProvided.equals("") ? getOutgoingServerFromIncoming() : nameProvided);
+            	portEditField.setText(portProvided.equals("") ? 
+                        (securityChoiceField.getSelectedIndex() == securityChoiceField.getSize() - 1 ? "465" : "587") : 
+                        portProvided);
 
                 nameEditField.setEditable(true);
                 securityChoiceField.setEditable(true);
@@ -481,6 +555,8 @@ public class AccountConfigWizard extends WizardController {
             else {
                 outgoingAuthenticationWizardScreen.setEnabled(true);
             }
+            nameProvided = nameEditField.getText();
+            portProvided = portEditField.getText();
         }
         public void gatherResults() {
             int index = outgoingChoiceField.getSelectedIndex();
@@ -499,6 +575,8 @@ public class AccountConfigWizard extends WizardController {
                 outgoingConfig.setServerSecurity(securityChoiceField.getSelectedIndex());
                 outgoingConfig.setServerPort(Integer.parseInt(portEditField.getText()));
                 outgoingConfig.setTransportType(ConnectionConfig.TRANSPORT_GLOBAL);
+                outgoingConfig.setServerUser(accountConfig.getServerUser());
+                outgoingConfig.setServerPass(accountConfig.getServerPass());
                 outgoingCreated = true;
             }
         }
@@ -527,7 +605,7 @@ public class AccountConfigWizard extends WizardController {
                     resources.getString(LogicMailResource.MENUITEM_NONE),
                     "PLAIN", "LOGIN", "CRAM-MD5" };
             authChoiceField =
-                new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ', authTypes, 0);
+                new ObjectChoiceField(resources.getString(LogicMailResource.CONFIG_OUTGOING_AUTHENTICATION) + ' ', authTypes, 1);
             authChoiceField.setChangeListener(fieldChangeListener);
 
             userEditField = new BasicEditField(resources.getString(LogicMailResource.CONFIG_ACCOUNT_USERNAME) + ' ', "");
@@ -543,24 +621,36 @@ public class AccountConfigWizard extends WizardController {
             setInputValid(true);
         }
 
+        public void onPageEnter() {
+            super.onPageEnter();
+            updateAuthChoiceFields();
+        };
+
         private void outgoingAuthenticationWizardScreen_fieldChanged(Field field, int context) {
-            if(field == authChoiceField) {
-                if(authChoiceField.getSelectedIndex() == 0 && authMode) {
-                    authMode = false;
-                    delete(userEditField);
-                    delete(passEditField);
-                    delete(commentsSpacerLabel);
-                    delete(commentsField);
-                }
-                else if(!authMode) {
-                    authMode = true;
-                    add(userEditField);
-                    add(passEditField);
-                    add(commentsSpacerLabel);
-                    add(commentsField);
-                }
+            if (field == authChoiceField) {
+                updateAuthChoiceFields();
             }
         }
+
+        private void updateAuthChoiceFields() {
+            if (authChoiceField.getSelectedIndex() == 0 && authMode) {
+                authMode = false;
+                delete(userEditField);
+                delete(passEditField);
+                delete(commentsSpacerLabel);
+                delete(commentsField);
+            } else if (!authMode) {
+                authMode = true;
+                add(userEditField);
+                add(passEditField);
+                add(commentsSpacerLabel);
+                add(commentsField);
+
+                userEditField.setText(incomingServerUsername);
+                passEditField.setText(incomingServerPass);
+            }
+        }
+
         public void gatherResults() {
             if(outgoingConfig == null) { return; }
             int index = authChoiceField.getSelectedIndex();
@@ -972,4 +1062,31 @@ public class AccountConfigWizard extends WizardController {
     public AccountConfig getAccountConfig() {
         return this.accountConfig;
     }
+    
+
+    private String getDomainNameFromEmail() {
+        String emailDomain = identityEmailAddress.substring(identityEmailAddress.indexOf("@") + 1);
+        return emailDomain;
+    }
+
+    private String getOutgoingServerFromIncoming() {
+        String result = incomingServerName;
+        for (int i = 0; i < PREFIX_INCOMING_SERVER.length; i++) {
+            if (incomingServerName.startsWith(PREFIX_INCOMING_SERVER[i])) {
+                result = (new StringBuffer(PREFIX_SMTP).append(incomingServerName.substring(PREFIX_INCOMING_SERVER[i]
+                        .length() - 1))).toString();
+                return result;
+            }
+        }
+        return result;
+    }
+
+    private String getUsernameFromEmail() {
+        try {
+            String userName = identityEmailAddress.substring(0, identityEmailAddress.indexOf("@"));
+            return userName;
+        } catch (IndexOutOfBoundsException e) {
+            return "";
+        }
+    }    
 }
