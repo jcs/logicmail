@@ -79,6 +79,19 @@ public class QueueTest extends TestCase {
     	assertTrue(expThrown);
     }
     
+    public void testPush() {
+        instance.add(new Integer(1));
+        assertEquals(new Integer(1), instance.element());
+        instance.add(new Integer(2));
+        assertEquals(new Integer(1), instance.element());
+        instance.push(new Integer(10));
+        assertEquals(new Integer(10), instance.element());
+        
+        assertEquals(new Integer(10), instance.remove());
+        assertEquals(new Integer(1), instance.remove());
+        assertEquals(new Integer(2), instance.remove());
+    }
+    
     public void testRemove() {
     	boolean expThrown = false;
     	try {
@@ -131,6 +144,8 @@ public class QueueTest extends TestCase {
 
         suite.addTest(new QueueTest("add", new TestMethod()
         { public void run(TestCase tc) {((QueueTest)tc).testAdd(); } }));
+        suite.addTest(new QueueTest("push", new TestMethod()
+        { public void run(TestCase tc) {((QueueTest)tc).testPush(); } }));
         suite.addTest(new QueueTest("remove", new TestMethod()
         { public void run(TestCase tc) {((QueueTest)tc).testRemove(); } }));
         suite.addTest(new QueueTest("element", new TestMethod()

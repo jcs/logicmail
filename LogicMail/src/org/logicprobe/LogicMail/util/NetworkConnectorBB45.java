@@ -42,6 +42,7 @@ import net.rim.device.api.system.EventLogger;
 import net.rim.device.api.system.WLANInfo;
 
 import org.logicprobe.LogicMail.AppInfo;
+import org.logicprobe.LogicMail.LogicMailResource;
 import org.logicprobe.LogicMail.conf.ConnectionConfig;
 import org.logicprobe.LogicMail.conf.GlobalConfig;
 
@@ -53,6 +54,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
     protected boolean coverageTCP=false, coverageMDS=false, coverageWAP2=false, coverageWiFi=false;
     
     private int connectionType;
+    private Exception connectionException;
     
     public NetworkConnectorBB45(GlobalConfig globalConfig, ConnectionConfig connectionConfig) {
         super(globalConfig, connectionConfig);
@@ -64,6 +66,10 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         String urlBase = buildConnectionStringBase();
         
         SocketConnection connection = attemptToOpenConnection(urlBase);
+        
+        if(connection == null) {
+            throw new WrappedIOException(resources.getString(LogicMailResource.ERROR_UNABLE_TO_OPEN_CONNECTION), connectionException);
+        }
         
         return connection;
     }
@@ -161,7 +167,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         return urlBase;
     }
 
-    private SocketConnection attemptToOpenConnection(String urlBase) throws IOException {
+    private SocketConnection attemptToOpenConnection(String urlBase) {
         SocketConnection connection = null;
         if(((transports & TRANSPORT_WIFI) != 0) && coverageWiFi) {
             connection = attemptWiFi(urlBase);
@@ -178,7 +184,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         return connection;
     }
     
-    private SocketConnection attemptWiFi(String urlBase) throws IOException {
+    private SocketConnection attemptWiFi(String urlBase) {
         String connectStr = urlBase + ";interface=wifi";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting WiFi".getBytes(),
@@ -189,7 +195,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         return socket;
     }
 
-    private SocketConnection attemptDirectTCP(String urlBase) throws IOException {
+    private SocketConnection attemptDirectTCP(String urlBase) {
         String connectStr = urlBase + ";deviceside=true";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting Direct TCP".getBytes(),
@@ -200,7 +206,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         return socket;
     }
 
-    private SocketConnection attemptMDS(String urlBase) throws IOException {
+    private SocketConnection attemptMDS(String urlBase) {
         String connectStr = urlBase + ";deviceside=false";
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting MDS".getBytes(),
@@ -211,7 +217,7 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         return socket;
     }
 
-    private SocketConnection attemptWAP2(String urlBase) throws IOException {
+    private SocketConnection attemptWAP2(String urlBase) {
         String connectStr = urlBase + ";deviceside=true;ConnectionUID=" + srWAP2.getUid();
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID, "Attempting WAP2".getBytes(),
@@ -222,11 +228,21 @@ public class NetworkConnectorBB45 extends AbstractNetworkConnector {
         return socket;
     }
 
-    private SocketConnection openSocket(String connectStr) throws IOException {
-        SocketConnection socket = (SocketConnection) Connector.open(
-                connectStr,
-                Connector.READ_WRITE, true);
-        setConnectionUrl(connectStr);
+    private SocketConnection openSocket(String connectStr) {
+        SocketConnection socket;
+        try {
+            socket = (SocketConnection) Connector.open(
+                    connectStr,
+                    Connector.READ_WRITE, true);
+            setConnectionUrl(connectStr);
+        } catch (Exception e) {
+            connectionException = e;
+            socket = null;
+            if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
+                EventLogger.logEvent(AppInfo.GUID, e.toString().getBytes(),
+                        EventLogger.DEBUG_INFO);
+            }
+        }
         return socket;
     }
 }

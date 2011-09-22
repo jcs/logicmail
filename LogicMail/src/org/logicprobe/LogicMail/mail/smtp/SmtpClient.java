@@ -203,6 +203,10 @@ public class SmtpClient implements OutgoingMailClient {
         return connection != null && connection.isConnected();
     }
 
+    public int getConnectionType() {
+        return (connection != null) ? connection.getConnectionType() : -1;
+    }
+    
     public boolean isLoginRequired() {
         return outgoingConfig.getUseAuth() > 0;
     }

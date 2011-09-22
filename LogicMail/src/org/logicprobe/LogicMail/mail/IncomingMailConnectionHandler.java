@@ -37,9 +37,12 @@ import java.util.TimerTask;
 
 import net.rim.device.api.system.Backlight;
 import net.rim.device.api.system.DeviceInfo;
+import net.rim.device.api.system.WLANInfo;
 import net.rim.device.api.ui.UiApplication;
 
 import org.logicprobe.LogicMail.conf.AccountConfig;
+import org.logicprobe.LogicMail.conf.ConnectionConfig;
+import org.logicprobe.LogicMail.conf.MailSettings;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.util.Queue;
 
@@ -87,6 +90,10 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
     
     private static final int MS_PER_MIN = 60000;
     private static final int REFRESH_TOLERANCE = 60000;
+    
+    private String lastWiFiAttemptSSID;
+    private long lastWiFiAttemptTime;
+    private int wifiAttemptCount;
     
     /**
      * Listener to handle asynchronous notifications from the mail client.
@@ -290,7 +297,8 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                 // An idle timeout on a mail store with locked folders should
                 // be handled by promptly disconnecting.  That way, any further
                 // data requests will cause a reconnect and get fresh data.
-                NetworkDisconnectRequest disconnectRequest = new NetworkDisconnectRequest(mailStore, NetworkDisconnectRequest.REQUEST_DISCONNECT_TIMEOUT);
+                NetworkDisconnectRequest disconnectRequest =
+                    new NetworkDisconnectRequest(mailStore, NetworkDisconnectRequest.REQUEST_DISCONNECT_TIMEOUT);
                 disconnectRequest.setDeliberate(false);
                 mailStore.processRequest(disconnectRequest);
             }
@@ -314,20 +322,94 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
                         handleSetActiveFolder(inboxFolder);
                     }
                 }
+
+                // Handover is attempted during idle timeout processing,
+                // only if a refresh is about to be triggered.
                 handleConnectionIdleTimeout(System.currentTimeMillis() - idleStartTime);
             }
         }
+        else {
+            attemptConnectionHandover();
+        }
+    }
+
+    private void attemptConnectionHandover() {
+        if(tryBetterConnection()) {
+            NetworkHandoverRequest handoverRequest = new NetworkHandoverRequest(mailStore);
+            handoverRequest.setDeliberate(false);
+            handoverRequest.setRequestCallback(new MailStoreRequestCallback() {
+                public void mailStoreRequestComplete(MailStoreRequest request) {
+                    NetworkHandoverRequest handoverRequest = (NetworkHandoverRequest)request;
+                    lastWiFiAttemptSSID = handoverRequest.getAttemptedSSID();
+                    lastWiFiAttemptTime = handoverRequest.getAttemptTime();
+                    wifiAttemptCount = 0;
+                }
+                public void mailStoreRequestFailed(MailStoreRequest request, Throwable exception, boolean isFinal) {
+                    NetworkHandoverRequest handoverRequest = (NetworkHandoverRequest)request;
+                    lastWiFiAttemptSSID = handoverRequest.getAttemptedSSID();
+                    lastWiFiAttemptTime = handoverRequest.getAttemptTime();
+                    wifiAttemptCount++;
+                }
+            });
+            mailStore.processRequestFirst(handoverRequest);
+        }
     }
     
+    private boolean tryBetterConnection() {
+        if(!MailSettings.getInstance().getGlobalConfig().isConnectionHandoverEnabled()) {
+            return false;
+        }
+        
+        // Check if we are not currently connected via WiFi, but WiFi is
+        // available and enabled in the configuration.
+        if(incomingClient.getConnectionType() != ConnectionConfig.TRANSPORT_WIFI_ONLY
+                && WLANInfo.getWLANState() == WLANInfo.WLAN_STATE_CONNECTED
+                && isWiFiConfigured()) {
+            // If we've previously tried connecting via WiFi
+            if(lastWiFiAttemptSSID != null && lastWiFiAttemptTime != 0) {
+                // If the WiFi SSID has changed
+                WLANInfo.WLANAPInfo apInfo = WLANInfo.getAPInfo();
+                if(apInfo != null && !lastWiFiAttemptSSID.equals(apInfo.getSSID())) {
+                    wifiAttemptCount = 0;
+                    return true;
+                }
+                // If its been more than two minutes since our last attempt, and
+                // we haven't failed too many times
+                else if((System.currentTimeMillis() - lastWiFiAttemptTime) > 120000
+                        && wifiAttemptCount < 2) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean isWiFiConfigured() {
+        if(accountConfig.getTransportType() == ConnectionConfig.TRANSPORT_GLOBAL) {
+            return MailSettings.getInstance().getGlobalConfig().getEnableWiFi();
+        }
+        else {
+            return accountConfig.getEnableWiFi();
+        }
+    }
+
     void handleRequestDisconnect() throws IOException, MailException {
         this.previousActiveFolder = null;
-        throw new MailException("", true, REQUEST_DISCONNECT);
+        throw new MailException("Requested disconnect", true, REQUEST_DISCONNECT);
     }
     
     void handleRequestDisconnectTimeout() throws IOException, MailException {
         this.previousActiveFolder = null;
         handleConnectionDisconnectTimeout(System.currentTimeMillis() - idleStartTime);
-        throw new MailException("", true, REQUEST_DISCONNECT_TIMEOUT);
+        throw new MailException("Timeout disconnect", true, REQUEST_DISCONNECT_TIMEOUT);
     }
 
     private void handleSetActiveFolder(FolderTreeItem folder) throws IOException, MailException {
@@ -356,6 +438,9 @@ public class IncomingMailConnectionHandler extends AbstractMailConnectionHandler
         // then we should trigger a refresh.
         if(Math.abs(accumulatedIdleTime - refreshFrequency) < REFRESH_TOLERANCE) {
             accumulatedIdleTime = 0;
+            
+            attemptConnectionHandover();
+            
             mailStore.fireRefreshRequired(false);
         }
     }

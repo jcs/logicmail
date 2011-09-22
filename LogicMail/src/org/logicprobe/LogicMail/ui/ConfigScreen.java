@@ -105,6 +105,7 @@ public class ConfigScreen extends AbstractConfigScreen {
     private VerticalFieldManager networkingFieldManager;
     private ObjectChoiceField networkTransportChoiceField;
     private CheckboxField enableWiFiCheckboxField;
+    private CheckboxField enableHandoverCheckboxField;
     private CheckboxField overrideHostnameCheckboxField;
     private BasicEditField localHostnameEditField;
 
@@ -396,6 +397,10 @@ public class ConfigScreen extends AbstractConfigScreen {
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_ENABLE_WIFI),
                 existingGlobalConfig.getEnableWiFi());
 
+        enableHandoverCheckboxField = new CheckboxField(
+                resources.getString(LogicMailResource.CONFIG_GLOBAL_ENABLE_HANDOVER),
+                existingGlobalConfig.isConnectionHandoverEnabled());
+        
         boolean overrideHostname = localHostname.length() > 0;
         overrideHostnameCheckboxField = new CheckboxField(
                 resources.getString(LogicMailResource.CONFIG_GLOBAL_OVERRIDE_HOSTNAME),
@@ -423,6 +428,7 @@ public class ConfigScreen extends AbstractConfigScreen {
                 Field.NON_FOCUSABLE | LabeledSeparatorField.TOP_BORDER | LabeledSeparatorField.BOTTOM_BORDER));
         networkingFieldManager.add(networkTransportChoiceField);
         networkingFieldManager.add(enableWiFiCheckboxField);
+        networkingFieldManager.add(enableHandoverCheckboxField);
         networkingFieldManager.add(overrideHostnameCheckboxField);
         networkingFieldManager.add(localHostnameEditField);
         networkingFieldManager.add(new BlankSeparatorField(separatorHeight));
@@ -1083,6 +1089,7 @@ public class ConfigScreen extends AbstractConfigScreen {
         config.setTransportType(getTransportSetting(networkTransportChoiceField.getSelectedIndex()));
         
         config.setEnableWiFi(enableWiFiCheckboxField.getChecked());
+        config.setConnectionHandoverEnabled(enableHandoverCheckboxField.getChecked());
 
         config.setAutoStartupEnabled(autoStartupCheckboxField.getChecked());
         

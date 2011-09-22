@@ -48,6 +48,16 @@ public interface NetworkConnector {
     Connection open(ConnectionConfig connectionConfig) throws IOException;
     
     /**
+     * Open a new network connection, using the provided configuration.
+     *
+     * @param connectionConfig the connection configuration
+     * @param forceWiFi true, if only WiFi should be attempted
+     * @return the opened connection instance
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    Connection open(ConnectionConfig connectionConfig, boolean forceWiFi) throws IOException;
+    
+    /**
      * Returns a connection instance that has been switched into TLS mode,
      * as is commonly done after sending a protocol-specific <tt>STARTTLS</tt>
      * command to the server.

@@ -82,11 +82,20 @@ public abstract class AbstractNetworkConnector implements NetworkConnector {
     }
     
     public Connection open(ConnectionConfig connectionConfig) throws IOException {
+        return open(connectionConfig, false);
+    }
+    
+    public Connection open(ConnectionConfig connectionConfig, boolean forceWiFi) throws IOException {
         this.serverName = connectionConfig.getServerName();
         this.serverPort = connectionConfig.getServerPort();
         this.useSSL = (connectionConfig.getServerSecurity() == ConnectionConfig.SECURITY_SSL);
         
-        initalizeSelectedTransportSet(connectionConfig);
+        if(forceWiFi) {
+            transports = TRANSPORT_WIFI;
+        }
+        else {
+            initalizeSelectedTransportSet(connectionConfig);
+        }
         
         try {
             socket = openSocketConnection();

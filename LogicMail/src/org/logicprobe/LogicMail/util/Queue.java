@@ -69,6 +69,29 @@ public class Queue {
 			tail = tail.next;
 		}
 	}
+
+    /**
+     * Pushes an element onto the head of the queue.
+     * @param element The element
+     * @throws NullPointerException if the item is null
+     */
+	public void push(Object element) {
+        if(element == null) {
+            throw new NullPointerException();
+        }
+        Node node = new Node();
+        node.item = element;
+        
+        if(head == null) {
+            node.next = null;
+            head = node;
+            tail = head;
+        }
+        else {
+            node.next = head;
+            head = node;
+        }
+	}
 	
 	/**
 	 * Retrieves the element at the head of the queue.

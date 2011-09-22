@@ -53,7 +53,7 @@ public interface MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract boolean open() throws IOException, MailException;
+    boolean open() throws IOException, MailException;
     
     /**
      * Close an existing connection.
@@ -63,47 +63,55 @@ public interface MailClient {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
      */
-    public abstract void close() throws IOException, MailException;
+    void close() throws IOException, MailException;
 
     /**
      * Gets the connection configuration associated with this client.
      * @return Connection configuration.
      */
-    public abstract ConnectionConfig getConnectionConfig();
+    ConnectionConfig getConnectionConfig();
     
     /**
      * Find out if the connection is active.
      * @return True if the connection is active, false otherwise
      */
-    public abstract boolean isConnected();
+    boolean isConnected();
 
+    /**
+     * Gets the type of connection that was opened.
+     *
+     * @return the connection type, based on the
+     *     <code>ConnectionConfig.TRANSPORT_XXXX</code> constants.
+     */
+    int getConnectionType();
+    
     /**
      * Checks if a valid username and password are required for this client.
      * @return true, if login is required
      */
-    public abstract boolean isLoginRequired();
+    boolean isLoginRequired();
 
     /**
      * Get the configured username for this client.
      * @return Configured username, empty if none, null if n/a
      */
-    public abstract String getUsername();
+    String getUsername();
     
     /**
      * Set the username for this client to use
      * @param username The username
      */
-    public abstract void setUsername(String username);
+    void setUsername(String username);
 
     /**
      * Get the configured password for this client.
      * @return Configured password, empty if none, null if n/a
      */
-    public abstract String getPassword();
+    String getPassword();
     
     /**
      * Set the password for this client to use
      * @param password The password
      */
-    public abstract void setPassword(String password);
+    void setPassword(String password);
 }

@@ -155,6 +155,21 @@ public abstract class AbstractMailConnectionHandler {
 		}
 	}
 	
+    /**
+     * Pushes a request onto the head of the queue.
+     * If the connection is shutting down, all requests will be ignored.
+     * 
+     * @param request Request object to be pushed
+     */
+    public void pushRequest(ConnectionHandlerRequest request) {
+        synchronized(requestQueue) {
+            if(!shutdownInProgress) {
+                requestQueue.push(request);
+                requestQueue.notifyAll();
+            }
+        }
+    }
+	
 	/**
 	 * Handles the CLOSED state.
 	 */
@@ -224,7 +239,7 @@ public abstract class AbstractMailConnectionHandler {
      * @throws IOException on I/O errors
      * @throws MailException on protocol errors
 	 */
-	private void handleOpenedConnection() throws IOException, MailException {
+	protected void handleOpenedConnection() throws IOException, MailException {
 		showTransitionStatus(null);
 		retryCount = 0;
 		synchronized(requestQueue) {

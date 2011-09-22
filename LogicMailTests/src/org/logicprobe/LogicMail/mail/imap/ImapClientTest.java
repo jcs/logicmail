@@ -496,6 +496,9 @@ public class ImapClientTest extends TestCase {
     
     class TestNetworkConnector implements NetworkConnector {
         public Connection open(ConnectionConfig connectionConfig) throws IOException {
+            return open(connectionConfig, false);
+        }
+        public Connection open(ConnectionConfig connectionConfig, boolean forceWiFi) throws IOException {
             Hamspy hamspy = new Hamspy(true);
             SocketConnection stubSocket = new MockSocketConnection(hamspy);
             hamspy.setStubExpectation(MockSocketConnection.MTHD_OPEN_DATA_INPUT_STREAM).setReturnValue(

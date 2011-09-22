@@ -188,6 +188,28 @@ public class MockIncomingMailClient extends AMockObject implements org.logicprob
         }
     }
 
+    public static final MockMethod MTHD_GET_CONNECTION_TYPE = new MockMethod(
+        MockIncomingMailClient.class, 
+        "MTHD_GET_CONNECTION_TYPE",
+        new Class[]{},
+        new Class[]{},
+        Integer.class,
+        true);
+    public int getConnectionType()  {
+        try {
+            Object[] args = new Object[0];
+            MethodInvocation mi = new MethodInvocation(MTHD_GET_CONNECTION_TYPE, this, args);
+            getInvocationHandler().invoke(mi);
+            Object retVal = mi.getReturnValue();
+            AMockObject.assertReturnNotNull(MTHD_GET_CONNECTION_TYPE, retVal);
+            return ((Integer)retVal).intValue();
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            throw new HammockException(t);
+        }
+    }
+
     public static final MockMethod MTHD_GET_FOLDER_MESSAGES_$_ARRAY_INT_FOLDERMESSAGECALLBACK_MAILPROGRESSHANDLER = new MockMethod(
         MockIncomingMailClient.class, 
         "MTHD_GET_FOLDER_MESSAGES_$_ARRAY_INT_FOLDERMESSAGECALLBACK_MAILPROGRESSHANDLER",
@@ -960,6 +982,31 @@ public class MockIncomingMailClient extends AMockObject implements org.logicprob
             getInvocationHandler().invoke(mi);
             Object retVal = mi.getReturnValue();
             AMockObject.assertReturnNotNull(MTHD_OPEN, retVal);
+            return ((Boolean)retVal).booleanValue();
+        } catch (Throwable t) {
+            if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }
+            if (t instanceof java.lang.RuntimeException) { throw (java.lang.RuntimeException)t; }
+            if (t instanceof java.io.IOException) { throw (java.io.IOException)t; }
+            if (t instanceof org.logicprobe.LogicMail.mail.MailException) { throw (org.logicprobe.LogicMail.mail.MailException)t; }
+            throw new HammockException(t);
+        }
+    }
+
+    public static final MockMethod MTHD_OPEN_$_CONNECTION = new MockMethod(
+        MockIncomingMailClient.class, 
+        "MTHD_OPEN_$_CONNECTION",
+        new Class[]{org.logicprobe.LogicMail.util.Connection.class},
+        new Class[]{java.io.IOException.class, org.logicprobe.LogicMail.mail.MailException.class},
+        Boolean.class,
+        true);
+    public boolean open(org.logicprobe.LogicMail.util.Connection arg0) throws java.io.IOException, org.logicprobe.LogicMail.mail.MailException {
+        try {
+            Object[] args = new Object[1];
+            args[0] = arg0;
+            MethodInvocation mi = new MethodInvocation(MTHD_OPEN_$_CONNECTION, this, args);
+            getInvocationHandler().invoke(mi);
+            Object retVal = mi.getReturnValue();
+            AMockObject.assertReturnNotNull(MTHD_OPEN_$_CONNECTION, retVal);
             return ((Boolean)retVal).booleanValue();
         } catch (Throwable t) {
             if (t instanceof java.lang.Error) { throw (java.lang.Error)t; }

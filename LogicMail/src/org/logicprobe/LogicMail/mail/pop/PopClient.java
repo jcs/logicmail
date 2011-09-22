@@ -166,8 +166,24 @@ public class PopClient extends AbstractIncomingMailClient {
      */
     public boolean open() throws IOException, MailException {
         if(!openStarted) {
+            Connection localConnection = networkConnector.open(accountConfig);
+            return open(localConnection);
+        }
+        else {
+            return open(connection);
+        }
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.IncomingMailClient#open(org.logicprobe.LogicMail.util.Connection)
+     */
+    public boolean open(Connection localConnection) throws IOException, MailException {
+        if(openStarted && connection != localConnection) {
+            close();
+        }
+        if(!openStarted) {
             watchdog.shutdown();
-            connection = networkConnector.open(accountConfig);
+            this.connection = localConnection;
             popProtocol.setConnection(connection);
             popProtocol.setWatchdog(watchdog);
             watchdog.setDefaultTimeoutForConnection(connection.getConnectionType());
@@ -247,6 +263,13 @@ public class PopClient extends AbstractIncomingMailClient {
      */
     public boolean isConnected() {
         return connection != null && connection.isConnected();
+    }
+    
+    /* (non-Javadoc)
+     * @see org.logicprobe.LogicMail.mail.MailClient#getConnectionType()
+     */
+    public int getConnectionType() {
+        return (connection != null) ? connection.getConnectionType() : -1;
     }
 
     /* (non-Javadoc)

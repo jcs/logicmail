@@ -40,6 +40,7 @@ import org.logicprobe.LogicMail.message.Message;
 import org.logicprobe.LogicMail.message.MessageFlags;
 import org.logicprobe.LogicMail.message.MimeMessageContent;
 import org.logicprobe.LogicMail.message.MimeMessagePart;
+import org.logicprobe.LogicMail.util.Connection;
 
 /**
  * Provides a generic interface to different incoming mail protocols.
@@ -57,6 +58,21 @@ import org.logicprobe.LogicMail.message.MimeMessagePart;
  * </p>
  */
 public interface IncomingMailClient extends MailClient {
+    /**
+     * Open a new session with the mail server, on an already open connection.
+     * This method assumes that it is being provided a newly created socket
+     * connection, which it will then send protocol-specific login commands to.
+     * It should also be possible to invoke this method multiple times
+     * to correct for authentication failures, without having to reopen
+     * the underlying connection.
+     *
+     * @param connection Newly opened socket connection
+     * @return True if successful, false on authentication failure
+     * @throws IOException on I/O errors
+     * @throws MailException on protocol errors
+     */
+    boolean open(Connection connection) throws IOException, MailException;
+    
     /**
      * Set the listener used to handle asynchronous events from the mail client.
      * 

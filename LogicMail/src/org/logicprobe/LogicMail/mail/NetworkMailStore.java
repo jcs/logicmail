@@ -319,6 +319,22 @@ public class NetworkMailStore extends AbstractMailStore {
         }
     }
     
+    /**
+     * Submits the request to the mail store for processing, placing it at the
+     * top of the request queue.
+     *
+     * @param request the request to process
+     */
+    public void processRequestFirst(MailStoreRequest request) {
+        if(request instanceof NetworkMailStoreRequest
+                && request instanceof ConnectionHandlerRequest) {
+            connectionHandler.pushRequest((ConnectionHandlerRequest)request);
+        }
+        else {
+            throw new IllegalArgumentException();
+        }
+    }
+    
     IncomingMailConnectionHandler getConnectionHandler() {
         return connectionHandler;
     }

@@ -83,6 +83,8 @@ public class GlobalConfig implements Serializable {
     private int transportType;
     /** Whether WiFi should be used if available */
     private boolean enableWiFi;
+    /** Whether mobile-to-WiFi connection handover should be attempted. */
+    private boolean connectionHandoverEnabled;
     /** Connection debugging */
     private boolean connDebug;
     /** Hide deleted messages */
@@ -134,6 +136,7 @@ public class GlobalConfig implements Serializable {
         this.dispOrder = false;
         this.transportType = ConnectionConfig.TRANSPORT_AUTO;
         this.enableWiFi = true;
+        this.connectionHandoverEnabled = false;
         this.hideDeletedMsg = true;
         this.localHostname = "";
         this.filesystemRoot = "";
@@ -316,7 +319,28 @@ public class GlobalConfig implements Serializable {
             changeType |= CHANGE_TYPE_NETWORK;
         }
     }
-
+    
+    /**
+     * Checks if mobile-to-WiFi connection handover is enabled.
+     *
+     * @return true, if connection handover is enabled
+     */
+    public boolean isConnectionHandoverEnabled() {
+        return connectionHandoverEnabled;
+    }
+    
+    /**
+     * Sets whether mobile-to-WiFi connection handover is enabled.
+     *
+     * @param connectionHandoverEnabled True to enable, false to disable
+     */
+    public void setConnectionHandoverEnabled(boolean connectionHandoverEnabled) {
+        if(this.connectionHandoverEnabled != connectionHandoverEnabled) {
+            this.connectionHandoverEnabled = connectionHandoverEnabled;
+            changeType |= CHANGE_TYPE_NETWORK;
+        }
+    }
+    
     /**
      * Gets the connection debugging mode.
      * 
@@ -479,6 +503,7 @@ public class GlobalConfig implements Serializable {
         table.put("global_filesystemRoot", filesystemRoot);
         table.put("global_transportType", new Integer(transportType));
         table.put("global_enableWiFi", new Boolean(enableWiFi));
+        table.put("global_connectionHandoverEnabled", new Boolean(connectionHandoverEnabled));
         table.put("global_connDebug", new Boolean(connDebug));
         table.put("global_hideDeletedMsg", new Boolean(hideDeletedMsg));
         table.put("global_localHostname", localHostname);
@@ -530,6 +555,10 @@ public class GlobalConfig implements Serializable {
         value = table.get("global_enableWiFi");
         if(value instanceof Boolean) {
             enableWiFi = ((Boolean)value).booleanValue();
+        }
+        value = table.get("global_connectionHandoverEnabled");
+        if(value instanceof Boolean) {
+            connectionHandoverEnabled = ((Boolean)value).booleanValue();
         }
         value = table.get("global_connDebug");
         if (value instanceof Boolean) {
