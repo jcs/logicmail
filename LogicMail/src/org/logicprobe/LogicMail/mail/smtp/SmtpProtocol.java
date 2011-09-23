@@ -101,8 +101,8 @@ public class SmtpProtocol {
             EventLogger.DEBUG_INFO);
         }
         
-        // Wait 45 sec for the initial greeting
-        watchdog.start(45000);
+        // Wait 60 sec for the initial greeting
+        watchdog.start(60000);
         
         byte[] buffer = connection.receive();
         watchdog.kick();
@@ -345,8 +345,11 @@ public class SmtpProtocol {
         }
         
         connection.sendCommand("\r\n.");
-        result = new String(connection.receive());
         watchdog.cancel();
+
+        // Wait without a watchdog, which will fail if the underlying
+        // connection hits a timeout.
+        result = new String(connection.receive());
 		
         return result.startsWith(CODE_250);
     }
