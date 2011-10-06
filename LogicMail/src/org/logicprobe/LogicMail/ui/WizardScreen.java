@@ -39,11 +39,13 @@ import net.rim.device.api.ui.FieldChangeListener;
 import net.rim.device.api.ui.Graphics;
 import net.rim.device.api.ui.Keypad;
 import net.rim.device.api.ui.Manager;
+import net.rim.device.api.ui.XYEdges;
 import net.rim.device.api.ui.component.ButtonField;
 import net.rim.device.api.ui.component.Dialog;
 import net.rim.device.api.ui.component.LabelField;
 import net.rim.device.api.ui.container.MainScreen;
 import net.rim.device.api.ui.container.HorizontalFieldManager;
+import net.rim.device.api.ui.container.VerticalFieldManager;
 
 /**
  * Provides the base class for wizard pages, with a title
@@ -57,7 +59,7 @@ public abstract class WizardScreen extends MainScreen {
     private static String PREV_PREFIX = "< ";
     private WizardController controller;
     private LabelField titleLabel;
-    private BorderedFieldManager contentFieldManager;
+    private VerticalFieldManager contentFieldManager;
     private HorizontalFieldManager statusFieldManager;
     private ButtonField cancelButton;
     private ButtonField prevButton;
@@ -83,9 +85,8 @@ public abstract class WizardScreen extends MainScreen {
         this.title = title;
         this.pageType = pageType;
         this.pageResult = RESULT_CANCEL;
-        this.contentFieldManager = FieldFactory.getInstance().getBorderedFieldManager(
-                BorderedFieldManager.BOTTOM_BORDER_NONE
-                | BorderedFieldManager.FILL_NONE);
+        this.contentFieldManager = new VerticalFieldManager();
+        this.contentFieldManager.setMargin(new XYEdges(5, 5, 5, 5));
         super.add(this.contentFieldManager);
         initBaseFields();
         initFields();
@@ -286,8 +287,10 @@ public abstract class WizardScreen extends MainScreen {
     }
 
     private void nextButton_fieldChanged(Field field, int context) {
-        pageResult = RESULT_NEXT;	
-        onClose();
+        if(confirmPageFlip()) {
+            pageResult = RESULT_NEXT;
+            onClose();
+        }
     }
 
     /**
@@ -297,6 +300,15 @@ public abstract class WizardScreen extends MainScreen {
      */
     public void onPageEnter() { }
 
+    /**
+     * Called when the Next button is clicked, before handling the event.
+     * This can be used as a hook to prompt the user before advancing to
+     * the next page.
+     * 
+     * @return true, if the page should be flipped
+     */
+    protected boolean confirmPageFlip() { return true; }
+    
     /**
      * Called just before a page transition, so the screen can
      * store any local data.

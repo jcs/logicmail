@@ -63,4 +63,8 @@ public class FieldFactoryBB45 extends FieldFactory {
         
         return field;
     }
+    
+    public void addRoundedBorder(Field field) {
+        // Borders not supported
+    }
 }

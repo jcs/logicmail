@@ -30,7 +30,18 @@
  */
 package org.logicprobe.LogicMail.ui;
 
+import net.rim.device.api.ui.Color;
+import net.rim.device.api.ui.Field;
+import net.rim.device.api.ui.XYEdges;
+import net.rim.device.api.ui.decor.Border;
+import net.rim.device.api.ui.decor.BorderFactory;
+
 public class FieldFactoryBB46 extends FieldFactoryBB45 {
     public FieldFactoryBB46() {
+    }
+    
+    public void addRoundedBorder(Field field) {
+        field.setBorder(BorderFactory.createRoundedBorder(
+                new XYEdges(5, 5, 5, 5), Color.GRAY, Border.STYLE_SOLID));
     }
 }

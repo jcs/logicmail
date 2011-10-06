@@ -54,6 +54,14 @@ public class BlankSeparatorField extends SeparatorField {
         return new BlankSeparatorField(Font.getDefault().getAscent() >>> 1);
     }
     
+    /**
+     * Convenience method for creating a new blank separator that is a quarter
+     * the height of the default font.
+     */
+    public static BlankSeparatorField createQuarterHeightSeparator() {
+        return new BlankSeparatorField(Font.getDefault().getAscent() >>> 2);
+    }
+    
     public int getPreferredHeight() {
         return size;
     }

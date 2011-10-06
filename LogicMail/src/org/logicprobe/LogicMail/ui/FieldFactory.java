@@ -81,4 +81,6 @@ public abstract class FieldFactory {
      * @return a field that displays the content.
      */
     public abstract Field getHtmlMessageContentField(MessageNode messageNode, TextContent content);
+
+    public abstract void addRoundedBorder(Field field);
 }
