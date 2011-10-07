@@ -512,12 +512,17 @@ public class MailboxNode implements Node, Serializable {
 			messages.insertElement(MessageNode.getComparator(), message);
 			messageSet.put(message, Boolean.TRUE);
 			tokenToMessageMap.put(message.getMessageToken(), message);
-			if(getParentAccount() instanceof NetworkAccountNode) {
+			AccountNode parentAccount = getParentAccount();
+			if(parentAccount instanceof NetworkAccountNode) {
 			    NetworkAccountNode accountNode = (NetworkAccountNode)getParentAccount();
 			    NetworkMailStoreServices mailStoreServices = (NetworkMailStoreServices)accountNode.getMailStoreServices();
 			    boolean isCached = mailStoreServices.hasCachedMessageContent(
 			            this.folderTreeItem, message.getMessageToken());
 			    message.setCachedContent(isCached);
+			}
+			else if(parentAccount instanceof LocalAccountNode) {
+			    // Local accounts always have complete message data
+			    message.setCachedContent(true);
 			}
 			return true;
 		}
