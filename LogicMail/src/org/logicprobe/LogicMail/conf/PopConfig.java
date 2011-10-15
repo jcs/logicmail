@@ -63,7 +63,7 @@ public class PopConfig extends AccountConfig {
     protected void setDefaults() {
         super.setDefaults();
         setServerPort(110);
-        this.maxMessageLines = 400;
+        this.maxMessageLines = 800;
     }    
 
     /* (non-Javadoc)

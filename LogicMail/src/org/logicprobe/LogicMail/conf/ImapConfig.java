@@ -79,8 +79,8 @@ public class ImapConfig extends AccountConfig {
         setServerPort(143);
         this.refreshMailboxes = null;
         this.refreshMailboxIds = null;
-        this.maxMessageSize = 32768;
-        this.maxFolderDepth = 4;
+        this.maxMessageSize = 65536;
+        this.maxFolderDepth = 6;
         this.folderPrefix = "";
         this.onlySubscribedFolders = true;
         this.enableCompression = false;

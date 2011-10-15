@@ -129,9 +129,9 @@ public abstract class AccountConfig extends ConnectionConfig {
         forwardSignatureIncluded = false;
         signatureAbove = false;
         selectableIdentityEnabled = false;
-        initialFolderMessages = 20;
-        folderMessageIncrement = 5;
-        maximumFolderMessages = 40;
+        initialFolderMessages = 30;
+        folderMessageIncrement = 10;
+        maximumFolderMessages = 100;
     }
 
     /* (non-Javadoc)
