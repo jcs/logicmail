@@ -32,34 +32,34 @@
   <!-- Version of your application. -->
   <string name="wt_dc_app_version">1.0</string>
   
-  <!-- Percent of battery life remaining when event send is paused.  This is the recommended setting for Webtrends data collection. -->
+  <!-- Percent of battery life remaining when event send is paused.  This is the recommended setting for BlackBerry Analytics Service data collection. -->
   <string name="wt_dc_charge_threshold_minimum">30</string>
 
-  <!-- Supply a unique ID in the format dcsxxxxxxxxxxxxxxxxxxxxxx_xxxx that is associated with a Webtrends data source. This ID identifies your data to the Webtrends data collection server. If you don't have a dcsid, contact your Webtrends administrator.-->
+  <!-- Supply a unique ID in the format dcsxxxxxxxxxxxxxxxxxxxxxx_xxxx that is associated with a BlackBerry Analytics Service data source. This ID identifies your data to the BlackBerry Analytics Service data collection server. If you don't have a dcsid, contact your BlackBerry Analytics Service administrator.-->
   <string name="wt_dc_dcsid">YOUR_WEBTRENDS_DCSID_HERE</string>
 
   <!-- Set this value to "true" if you want to enable application logging. -->
   <string name="wt_dc_debug">false</string>
 
-  <!-- Set this value to "false" if you want to disable the Webtrends library. -->
+  <!-- Set this value to "false" if you want to disable the BlackBerry Analytics Service library. -->
   <string name="wt_dc_enabled">true</string>
 
-  <!-- Number of times to retry sending an event in response to send error.  This is the recommended setting for Webtrends data collection. -->
+  <!-- Number of times to retry sending an event in response to send error.  This is the recommended setting for BlackBerry Analytics Service data collection. -->
   <string name="wt_dc_event_retry_maximum">5</string>
 
-  <!-- Maximum number of events stored in event queue.  This is the recommended setting for Webtrends data collection. -->
+  <!-- Maximum number of events stored in event queue.  This is the recommended setting for BlackBerry Analytics Service data collection. -->
   <string name="wt_dc_event_table_size_maximum">10000</string>
 
-  <!-- Set this value to "true" if you want the Webtrends library to request PERMISSION_INTERNET, PERMISSION_CROSS_APPLICATION_COMMUNICATION, PERMISSION_SECURITY_DATA from the permission database.  Otherwise you must manage permissions. -->
+  <!-- Set this value to "true" if you want the BlackBerry Analytics Service library to request PERMISSION_INTERNET, PERMISSION_CROSS_APPLICATION_COMMUNICATION, PERMISSION_SECURITY_DATA from the permission database.  Otherwise you must manage permissions. -->
   <string name="wt_dc_request_permission">false</string>
 
-  <!-- Session expiration in minutes. This is the recommended setting for Webtrends data collection. -->
+  <!-- Session expiration in minutes. This is the recommended setting for BlackBerry Analytics Service data collection. -->
   <string name="wt_dc_session_maximum">480</string>
 
-  <!-- Session timeout in minutes. This is the recommended setting for Webtrends data collection. -->
+  <!-- Session timeout in minutes. This is the recommended setting for BlackBerry Analytics Service data collection. -->
   <string name="wt_dc_session_timeout">30</string>
 
-  <!-- Timezone of datasource in number of hours offset from GMT. -->
+  <!-- Time zone of data source in number of hours offset from GMT. -->
   <string name="wt_dc_timezone">-5</string>
 
   <!-- Data Collection API base URL. This URL is static and should not be changed. -->

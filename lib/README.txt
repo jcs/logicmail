@@ -14,9 +14,9 @@ external sources.  These files are laid out as follow:
  bb-ant-tools.patch      | Patch to BlackBerry Ant Tools
  ant-contrib-1.0b3.jar   | Ant-Contrib Tasks
  hammockmaker-2.1.0.jar  | HammockMaker tool (from the Hammock distribution)
- AnalyticsServicev0.93Beta.jar     | BlackBerry Analytics Service SDK
- AnalyticsServicev0.93Beta-doc.zip | JavaDocs for above
- webtrends-template.xml            | Analtics configuration template
+ AnalyticsService_v1.0.jar     | BlackBerry Analytics Service SDK
+ AnalyticsService_v1.0-doc.zip | JavaDocs for above
+ webtrends-template.xml        | Analtics configuration template
 
 
 Sources:
