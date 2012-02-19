@@ -1,3 +1,7 @@
+=== LogicMail 2.1 (branched) ===
+2011-10-16  Derek Konigsberg  <dkonigsberg@logicprobe.org>
+    * See project website for details: http://logicmail.org/
+
 === LogicMail 2.0 (branched) ===
 2010-12-31  Derek Konigsberg  <dkonigsberg@logicprobe.org>
     * See project website for details: http://logicmail.org/
