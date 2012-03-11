@@ -45,17 +45,20 @@ import net.rim.device.api.system.DeviceInfo;
  */
 public abstract class AnalyticsDataCollector {
     private static AnalyticsDataCollector instance;
+    private static boolean instanceIsWebtrends;
     
     private static String WEBTRENDS_UIAPPLICATION = "com.webtrends.mobile.rim.WebtrendsUiApplication";
     private static String WEBTRENDS_DATA_COLLECTOR = "org.logicprobe.LogicMail.LogicMailWebtrendsDataCollector";
     
     public static synchronized AnalyticsDataCollector getInstance() {
         if(instance == null) {
-            if(!DeviceInfo.isSimulator() && isWebtrendsAvailable()) {
+            if(!DeviceInfo.isSimulator() && isWebtrendsAvailable() && AppInfo.isAnalyticsEnabled()) {
                 instance = createWebtrendsDataCollector();
+                instanceIsWebtrends = true;
             }
             else {
                 instance = new StubDataCollector();
+                instanceIsWebtrends = false;
             }
         }
         return instance;
@@ -90,13 +93,39 @@ public abstract class AnalyticsDataCollector {
     }
     
     /**
+     * Checks the value of {@link AppInfo#isAnalyticsEnabled()} and enables or
+     * disables the analytics service accordingly.
+     */
+    public static synchronized void updateAnalyticsState() {
+        // No need to do anything if we have not been initialized yet.
+        if(instance == null) { return; }
+            
+        if(AppInfo.isAnalyticsEnabled()) {
+            // If analytics is enabled, and we were using the stub, throw away
+            // that stub so we'll be correctly initialized on next use.
+            if(!instanceIsWebtrends) {
+                instance.setConfigured(false);
+                instance = null;
+            }
+        }
+        else {
+            // If analytics is disabled, and we were collecting, disable and
+            // throw away the collector so we'll be stubbed out on next use.
+            if(instanceIsWebtrends) {
+                instance.setConfigured(false);
+                instance = null;
+            }
+        }
+    }
+    
+    /**
      * Turns on or turns off data collection in an application.
      * The default value is <code>true</code>.
      *
      * @param configured Specify <code>true</code> to turn on data collection,
      *     and specify <code>false</code> to turn off data collection.
      */
-    public abstract void setConfigured(boolean configured);
+    protected abstract void setConfigured(boolean configured);
     
     /**
      * Invoke this method to track instances that an application starts.

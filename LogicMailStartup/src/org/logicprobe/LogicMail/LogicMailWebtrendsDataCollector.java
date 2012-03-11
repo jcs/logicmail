@@ -56,7 +56,7 @@ public class LogicMailWebtrendsDataCollector extends AnalyticsDataCollector {
         collectorLogger = WebtrendsDataCollector.getLog();
     }
     
-    public void setConfigured(boolean configured) {
+    protected void setConfigured(boolean configured) {
         WebtrendsDataCollector.setConfigured(configured);
     }
 

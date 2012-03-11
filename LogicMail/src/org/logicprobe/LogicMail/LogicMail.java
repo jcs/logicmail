@@ -217,6 +217,7 @@ public final class LogicMail extends UiApplication {
                     AppInfo.setLicenseAccepted(true);
                     AppInfo.setAnalyticsEnabled(popupDialog.isAnalyticsEnabled());
                     PermissionsHandler.checkStartupPermissions(true);
+                    AnalyticsDataCollector.updateAnalyticsState();
                     foreground = true;
                     LogicMail.this.requestForeground();
                     pushScreen(loadingScreen);

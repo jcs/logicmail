@@ -33,7 +33,7 @@ package org.logicprobe.LogicMail;
 import java.util.Hashtable;
 
 class StubDataCollector extends AnalyticsDataCollector {
-    public void setConfigured(boolean configured) { }
+    protected void setConfigured(boolean configured) { }
 
     public void onApplicationStart() { }
 

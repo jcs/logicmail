@@ -1121,13 +1121,14 @@ public class ConfigScreen extends AbstractConfigScreen {
     private void toggleAnalyticsValue(boolean oldValue, boolean newValue) {
         if(oldValue == newValue) { return; }
         
+        AppInfo.setAnalyticsEnabled(newValue);
+        
         if(oldValue == false && newValue == true) {
-            AnalyticsDataCollector.getInstance().setConfigured(true);
+            AnalyticsDataCollector.updateAnalyticsState();
             UiApplication.getUiApplication().activate();
         }
         else if(oldValue == true && newValue == false) {
-            AnalyticsDataCollector.getInstance().setConfigured(false);
+            AnalyticsDataCollector.updateAnalyticsState();
         }
-        AppInfo.setAnalyticsEnabled(newValue);
     }
 }
