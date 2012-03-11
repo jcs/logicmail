@@ -138,8 +138,7 @@ public class ImapProtocol {
         throws IOException, MailException {
         if (EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(AppInfo.GUID,
-                ("ImapProtocol.executeLogin(\"" + username + "\", \"" +
-                password + "\")").getBytes(), EventLogger.DEBUG_INFO);
+                ("ImapProtocol.executeLogin(\"****\", \"****\")").getBytes(), EventLogger.DEBUG_INFO);
         }
 
         this.selectedMailbox = "";

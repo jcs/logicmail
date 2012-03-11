@@ -140,7 +140,7 @@ public class PopProtocol {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
-            ("PopProtocol.executeUser(\""+username+"\")").getBytes(),
+            ("PopProtocol.executeUser(\"****\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
         try {
@@ -158,7 +158,7 @@ public class PopProtocol {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
-            ("PopProtocol.executePass(\""+password+"\")").getBytes(),
+            ("PopProtocol.executePass(\"****\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
         try {

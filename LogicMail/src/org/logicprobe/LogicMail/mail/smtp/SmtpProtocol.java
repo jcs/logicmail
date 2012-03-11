@@ -139,7 +139,7 @@ public class SmtpProtocol {
         if(EventLogger.getMinimumLevel() >= EventLogger.DEBUG_INFO) {
             EventLogger.logEvent(
             AppInfo.GUID,
-            ("SmtpProtocol.executeAuth("+mech+", \""+username+"\", \""+password+"\")").getBytes(),
+            ("SmtpProtocol.executeAuth("+mech+", \"****\", \"****\")").getBytes(),
             EventLogger.DEBUG_INFO);
         }
         
