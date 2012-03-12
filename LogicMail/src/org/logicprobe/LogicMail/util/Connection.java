@@ -72,6 +72,9 @@ public class Connection {
     private int bytesReceived = 0;
     private final Object socketLock = new Object();
     private final Object socketReadLock = new Object();
+    private final Object socketWriteLock = new Object();
+    private Thread socketReadThread;
+    private Thread socketWriteThread;
     private volatile boolean connectionClosed = true;
     
     /**
@@ -120,10 +123,8 @@ public class Connection {
      * Closes a connection.
      */
     public void close() {
-        synchronized(socketLock) {
-            forceClose();
-        }
-        
+        forceClose();
+
         EventLogger.logEvent(AppInfo.GUID, "Connection closed".getBytes(),
                 EventLogger.INFORMATION);
     }
@@ -133,6 +134,17 @@ public class Connection {
      */
     public void forceClose() {
         connectionClosed = true;
+        
+        synchronized(socketLock) {
+            if(socketWriteThread != null) {
+                socketWriteThread.interrupt();
+                socketWriteThread = null;
+            }
+            if(socketReadThread != null) {
+                socketReadThread.interrupt();
+                socketReadThread = null;
+            }
+        }
         
         Exception[] exp = new Exception[3];
 
@@ -276,7 +288,8 @@ public class Connection {
                     EventLogger.DEBUG_INFO);
         }
 
-        synchronized(socketLock) {
+        synchronized (socketLock) { socketWriteThread = Thread.currentThread(); }
+        synchronized(socketWriteLock) {
             if (s == null) {
                 output.write(CRLF, 0, 2);
                 bytesSent += 2;
@@ -288,6 +301,7 @@ public class Connection {
     
             output.flush();
         }
+        synchronized (socketLock) { socketWriteThread = null; }
         if(connectionClosed) { throw new IOException(); }
     }
 
@@ -312,12 +326,15 @@ public class Connection {
                     stream.toByteArray(), EventLogger.DEBUG_INFO);
         }
 
-        synchronized(socketLock) {
+        synchronized (socketLock) { socketWriteThread = Thread.currentThread(); }
+        synchronized(socketWriteLock) {
             output.write(data, offset, length);
             bytesSent += length;
     
             output.flush();
         }
+        synchronized (socketLock) { socketWriteThread = null; }
+        
         if(connectionClosed) { throw new IOException(); }
     }
 
@@ -362,7 +379,9 @@ public class Connection {
      * @return the complete response, as a byte array
      */
     public byte[] receive(ConnectionResponseTester responseTester) throws IOException {
+        synchronized (socketLock) { socketReadThread = Thread.currentThread(); }
         byte[] result = receiveImpl(responseTester);
+        synchronized (socketLock) { socketReadThread = null; }
         
         if(result != null && globalConfig.getConnDebug()) {
                 EventLogger.logEvent(AppInfo.GUID,
