@@ -173,6 +173,7 @@ public class MessageScreen extends AbstractScreenProvider {
                 | Manager.NO_VERTICAL_SCROLL
                 | BorderedFieldManager.BOTTOM_BORDER_LINE);
         messageFieldManager = new VerticalFieldManager();
+        messageFieldManager.setPadding(5, 5, 5, 5);
         messageFieldManager.add(new NullField(Field.FOCUSABLE));
         
         populatePropertiesFields(propertiesFieldManager);
