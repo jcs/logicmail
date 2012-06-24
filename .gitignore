@@ -1,0 +1,16 @@
+.metadata
+J2MEUnit/bin/
+LogicMail-*.zip
+LogicMail/.locale_interfaces/
+LogicMail/LogFile.txt
+LogicMail/bin/
+LogicMail/dist/
+LogicMail/distalx/
+LogicMail/distota/
+LogicMailStartup/bin/
+LogicMailTests/bin/
+LogicMail_BB46/bin/
+LogicMail_BB47/bin/
+LogicMail_BB50/bin/
+LogicMail_BB60/bin/
+LogicMail_BB60/deliverables/
