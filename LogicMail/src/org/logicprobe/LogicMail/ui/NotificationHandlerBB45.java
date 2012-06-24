@@ -152,7 +152,7 @@ public class NotificationHandlerBB45 extends NotificationHandler {
 
         switch(e.getType()) {
         case MailboxNodeEvent.TYPE_NEW_MESSAGES:
-            boolean raiseNotification = messagesAreRecent(e.getAffectedMessages());
+            boolean raiseNotification = messagesAreUnseen(e.getAffectedMessages());
             if(raiseNotification && !notificationTriggered) {
                 notificationTriggered = true;
                 triggerNotification(mailboxNode);
@@ -167,15 +167,15 @@ public class NotificationHandlerBB45 extends NotificationHandler {
         }
     }
 
-    private boolean messagesAreRecent(MessageNode[] messages) {
-        boolean recent = false;
+    private boolean messagesAreUnseen(MessageNode[] messages) {
+        boolean unseen = false;
         for(int i=0; i<messages.length; i++) {
-            if((messages[i].getFlags() & MessageNode.Flag.RECENT) != 0) {
-                recent = true;
+            if((messages[i].getFlags() & MessageNode.Flag.RECENT) != 0 && (messages[i].getFlags() & MessageNode.Flag.SEEN) == 0) {
+                unseen = true;
                 break;
             }
         }
-        return recent;
+        return unseen;
     }
 
     private void updateMessageIndicator() {
