@@ -52,6 +52,7 @@ public class IdentityConfig implements Serializable {
     private String fullName;
     private String emailAddress;
     private String replyToAddress;
+    private String bccAddress;
     private String msgSignature;
     
     /** Identity changed. */
@@ -86,6 +87,7 @@ public class IdentityConfig implements Serializable {
         fullName = "";
         emailAddress = "";
         replyToAddress = "";
+        bccAddress = "";
         msgSignature = "";
         changeType = 0;
     }
@@ -192,6 +194,27 @@ public class IdentityConfig implements Serializable {
             changeType |= IDENTITY_CHANGED;
         }
     }
+    
+	/**
+     * Gets the E-Mail address for the Bcc header.
+     * 
+     * @return The Bcc address
+     */
+    public String getBccAddress() {
+        return bccAddress;
+    }
+
+    /**
+     * Sets the E-Mail address for the Bcc header.
+     * 
+     * @param bccAddress The new Bcc address
+     */
+    public void setBccAddress(String bccAddress) {
+        if(!this.bccAddress.equals(bccAddress)) {
+            this.bccAddress = bccAddress;
+            changeType |= IDENTITY_CHANGED;
+        }
+    }
 
     /**
      * Gets the message signature.
@@ -227,6 +250,7 @@ public class IdentityConfig implements Serializable {
         table.put("identity_emailAddress", emailAddress);
         table.put("identity_replyToAddress", replyToAddress);
         table.put("identity_msgSignature", msgSignature);
+        table.put("identity_bccAddress", bccAddress);
         
         table.serialize(output);
         changeType = 0;
@@ -262,6 +286,10 @@ public class IdentityConfig implements Serializable {
         value = table.get("identity_msgSignature");
         if(value instanceof String) {
             msgSignature = (String)value;
+        }
+        value = table.get("identity_bccAddress");
+        if(value instanceof String) {
+            bccAddress = (String)value;
         }
         changeType = 0;
     }

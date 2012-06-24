@@ -57,6 +57,7 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
     private BasicEditField fullNameField;
     private EmailAddressEditField emailAddressField;
     private EmailAddressEditField replyToAddressField;
+    private EmailAddressEditField bccAddressField;
     private LabelField signatureLabelField;
     private AutoTextEditField msgSignatureField;
 
@@ -87,6 +88,9 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
         replyToAddressField = new EmailAddressEditField(
                 resources.getString(LogicMailResource.CONFIG_IDENTITY_REPLYTO_ADDRESS) + ' ',
                 identityConfig.getReplyToAddress());
+        bccAddressField = new EmailAddressEditField(
+                resources.getString(LogicMailResource.CONFIG_IDENTITY_BCC_ADDRESS) + ' ',
+                identityConfig.getBccAddress());
         
         signatureLabelField = new LabelField(resources.getString(LogicMailResource.CONFIG_IDENTITY_SIGNATURE), Field.NON_FOCUSABLE);
         signatureLabelField.setFont(boldFont);
@@ -100,6 +104,7 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
         headerFieldManager.add(fullNameField);
         headerFieldManager.add(emailAddressField);
         headerFieldManager.add(replyToAddressField);
+        headerFieldManager.add(bccAddressField);
         
         contentFieldManager = new BorderedFieldManager(BorderedFieldManager.BOTTOM_BORDER_NORMAL | Field.USE_ALL_HEIGHT);
         contentFieldManager.add(signatureLabelField);
@@ -141,6 +146,7 @@ public class IdentityConfigScreen extends AbstractConfigScreen {
         identityConfig.setFullName(fullNameField.getText());
         identityConfig.setEmailAddress(emailAddressField.getText());
         identityConfig.setReplyToAddress(replyToAddressField.getText());
+        identityConfig.setBccAddress(bccAddressField.getText());
         identityConfig.setMsgSignature(msgSignatureField.getText());
         configSaved = true;
     }

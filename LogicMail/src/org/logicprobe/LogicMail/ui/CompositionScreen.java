@@ -486,6 +486,12 @@ public class CompositionScreen extends AbstractScreenProvider {
         recipientsFieldManager.add(new EmailAddressBookEditField(
                 EmailAddressBookEditField.ADDRESS_CC, ""));
 
+        String bccAddress = identityConfig.getBccAddress();
+        if ((bccAddress != null) && (bccAddress.length() > 0)) {
+            recipientsFieldManager.add(new EmailAddressBookEditField(
+                    EmailAddressBookEditField.ADDRESS_BCC, bccAddress));
+        }
+
         subjectFieldManager = fieldFactory.getBorderedFieldManager(
         		Manager.NO_HORIZONTAL_SCROLL
         		| Manager.NO_VERTICAL_SCROLL
