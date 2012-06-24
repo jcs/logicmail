@@ -123,7 +123,7 @@ public class MessageScreen extends AbstractScreenProvider {
     private boolean isOutgoingWithErrors;
     private boolean messageRendered;
     private Hashtable requestedContentSet = new Hashtable();
-    private static DateFormat dateFormat = DateFormat.getInstance(DateFormat.DATETIME_DEFAULT);
+    private static DateFormat dateFormat = DateFormat.getInstance(DateFormat.DATE_FULL | DateFormat.TIME_LONG);
     private boolean messageHtmlAvailable;
     private boolean messagePlainTextAvailable;
     
